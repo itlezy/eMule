@@ -14,6 +14,7 @@
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/ssl_cache.h"
 #include "mbedtls/sha1.h"
+#include "mbedtls/threading.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -509,10 +510,10 @@ int StartSSL()
 	mbedtls_ssl_config_init(&conf);
 	mbedtls_ctr_drbg_init(&ctr_drbg);
 	mbedtls_entropy_init(&entropy);
-	int ret = mbedtls_x509_crt_parse_file(&srvcert, thePrefs.GetWebCertPath());
+	int ret = mbedtls_x509_crt_parse_file(&srvcert, CStringA( thePrefs.GetWebCertPath() ));
 	if (!ret) {
 		mbedtls_pk_init(&pkey);
-		ret = mbedtls_pk_parse_keyfile(&pkey, thePrefs.GetWebKeyPath(), NULL);
+		ret = mbedtls_pk_parse_keyfile(&pkey, CStringA( thePrefs.GetWebKeyPath() ), NULL);
 		if (!ret) {
 			ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy, (unsigned char*)pers, strlen(pers));
 			if (!ret) {
