@@ -1,0 +1,2392 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="3DPreviewControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AddFriend.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AddSourceDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ArchivePreviewDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ArchiveRecovery.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BarShader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BuddyButton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ButtonsTabCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatSelector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CatDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CaptchaGenerator.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ChatWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientDetailDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ClosableTabCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Collection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollectionCreateDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollectionFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollectionListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CollectionViewDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\routing\Contact.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CorruptionBlackBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CreditsDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CustomAutoComplete.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DeadSourceList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DialogMinTrayBtn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectDownloadDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectoryTreeCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadClientsCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DropDownButton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DropTarget.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ED2KLink.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ED2kLinkDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EditDelayed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EditX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EMSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColorButton.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ColourPopup.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ComboBoxEx2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommentDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommentDialogLst.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CommentListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EmuleDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EnBitmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EncryptedDatagramSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="EncryptedStreamSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\Entry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ExitBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDetailDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDetailDialogInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDetailDialogName.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileDetailDlgStatistics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileIdentifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FileInfoDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FrameGrabThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FriendList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FriendListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GradientStatic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GDIThread.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GZipFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HTRichEditCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpClientReqSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpDownloadDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IconStatic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="I18n.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IESecurity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\Indexed.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Ini2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="InputBox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IrcChannelListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IrcChannelTabCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IrcNickListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IrcMain.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IrcSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IrcWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KadContactHistogramCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KadContactListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KademliaWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Friend.cpp">
+      <Filter>Include Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KadLookupGraph.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LastCommonRouteFinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KnownFileList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="KadSearchListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="LayeredWindowHelperST.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ListBoxST.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ListCtrlEditable.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ListCtrlX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ListenSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ListViewSearchDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ListViewWalkerPropertySheet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\utils\LookupHistory.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MD4.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MD5Sum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mdump.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaInfo.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MetaDataDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MeterIcon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MiniMule.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\utils\MiscUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MuleListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MuleStatusBarCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MuleSystrayDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="MuleToolBarCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="NetworkInfoDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OScopeCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ZIPFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Wizard.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WebSocket.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WebServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="VisualStylesXP.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Version.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="URLClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UPnPImplWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UPnPImplWinServ.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UPnPImplMiniLib.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\utils\UInt128.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TreePropSheetPgFrameDef.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TreePropSheetPgFrame.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeOptionsCtrlEx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TreePropSheet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TreeOptionsCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrayMenuBtn.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TrayDialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TransferWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TransferDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolTipCtrlX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolbarWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ToolBarCtrlX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TLSthreading.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TitleMenu.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\utils\ThreadName.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TimeTick.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TextToSpeech.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TaskbarNotifier.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StringConversion.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TabCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Parser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\net\PacketTracking.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Packets.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="OtherFunctions.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PartFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PartFileConvert.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PeerCacheClient.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PeerCacheFinder.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PerfLog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgConnection.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Pinger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgDebug.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgDirectories.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgDisplay.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgFiles.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgGeneral.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgIRC.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgMessages.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgNotify.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgProxy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgScheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgSecurity.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgStats.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgTweaks.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PPgWebServer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Preferences.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PreferencesDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\Prefs.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Preview.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PreviewDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ProgressCtrlX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PShtWiz1.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Quantize.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="QueueListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RARFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RichEditCtrlX.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="RichEditStream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\routing\RoutingBin.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\routing\RoutingZone.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SafeFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scanner.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Scheduler.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\Search.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatisticsTree.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatisticsDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Statistics.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="StatisticFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SplitterControl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SplashScreen.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SMTPdialog.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SmileySelector.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedFilesWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedFilesCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedFileList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SharedDirsTreeCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ShareableFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SHAHashSet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SHA.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SendMail.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SelfTest.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SecRunAsUser.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchResultsWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchParamsWnd.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\SearchManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchListCtrl.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchList.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SearchFile.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="AICHSyncThread.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncProxySocketLayer.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncSocketEx.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="AsyncSocketExLayer.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="BaseClient.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\io\BufferedFileIO.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\io\ByteIO.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientCredits.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientList.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientListCtrl.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="ClientUDPSocket.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\io\DataIO.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadClient.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadQueue.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="CreditsThread.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="IPFilter.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\io\IOException.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\io\FileIO.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="FirewallOpener.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="Emule.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="KnownFile.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\Kademlia.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\net\KademliaUDPListener.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="UPnPImpl.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="kademlia\kademlia\UDPFirewallTester.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="UDPSocket.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="Server.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerConnect.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="ServerSocket.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="AbstractFile.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadBandwidthThrottler.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadDiskIOThread.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadClient.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadQueue.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="IPFilterDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="3DPreviewControl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AbstractFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AddFriend.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AddSourceDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AICHSyncThread.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BarShader.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ArchivePreviewDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ArchiveRecovery.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncProxySocketLayer.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncSocketEx.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AsyncSocketExLayer.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\io\BufferedFileIO.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ButtonsTabCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\io\ByteIO.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CaptchaGenerator.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CatDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatSelector.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ChatWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientCredits.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientDetailDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientStateDefs.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientUDPSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClientVersionInfo.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ClosableTabCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Collection.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollectionCreateDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollectionFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollectionListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CollectionViewDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColorButton.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ColourPopup.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComboBoxEx2.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommentDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommentDialogLst.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CommentListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\routing\Contact.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CorruptionBlackBox.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CreditsDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CreditsThread.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CustomAutoComplete.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\io\DataIO.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DeadSourceList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugHelpers.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Debug_FileSize.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Defines.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DialogMinTrayBtn.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectDownloadDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectoryTreeCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DownloadClientsCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DownloadListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DownloadQueue.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Drawgdix.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DropDownButton.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DropTarget.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ED2KLink.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ED2kLinkDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EditDelayed.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EditX.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EMSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Emule.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EmuleDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EnBitmap.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EncryptedDatagramSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EncryptedStreamSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Entry.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Error.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Exceptions.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ExitBox.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="emule_site_config.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDetailDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDetailDialogInfo.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDetailDialogName.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileDetailDlgStatistics.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileIdentifier.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FileInfoDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\io\FileIO.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FirewallOpener.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FrameGrabThread.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Friend.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FriendList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FriendListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GDIThread.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GradientStatic.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GZipFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HelpIDs.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpClientReqSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HTRichEditCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpDownloadDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IconStatic.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IESecurity.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ImportParts.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Indexed.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Ini2.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="InputBox.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\io\IOException.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPFilter.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IPFilterDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IrcChannelListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IrcChannelTabCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IrcMain.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IrcNickListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IrcSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IrcWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\utils\KadClientSearcher.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KadContactHistogramCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KadContactListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Kademlia.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\net\KademliaUDPListener.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KademliaWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HighColorTab.hpp">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KadLookupGraph.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KadSearchListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\utils\KadUDPKey.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KnownFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="KnownFileList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="langids.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LastCommonRouteFinder.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LayeredWindowHelperST.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListBoxST.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListCtrlEditable.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListCtrlItemWalk.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListCtrlX.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListenSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListViewSearchDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ListViewWalkerPropertySheet.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Log.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\utils\LookupHistory.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MapKey.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\routing\Maps.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MD4.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MD5Sum.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mdump.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaInfo.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MemDC.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MenuCmds.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MetaDataDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MeterIcon.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MiniMule.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\utils\MiscUtils.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MuleListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MuleStatusBarCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MuleSystrayDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="MuleToolBarCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="NetworkInfoDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Opcodes.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OScopeCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="OtherFunctions.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Packets.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\net\PacketTracking.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Parser.hpp">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PartFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PartFileConvert.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PeerCacheFinder.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PeerCacheSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PerfLog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Pinger.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgConnection.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgDebug.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgDirectories.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgDisplay.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgFiles.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgGeneral.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgIRC.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgMessages.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgNotify.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgProxy.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgScheduler.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgSecurity.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgServer.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgStats.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgTweaks.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PPgWebServer.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Preferences.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PreferencesDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Prefs.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Preview.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PreviewDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ProgressCtrlX.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QArray.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Quantize.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="QueueListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RARFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Resource.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RichEditCtrlX.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="RichEditStream.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\routing\RoutingBin.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\routing\RoutingZone.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SafeFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scanner.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Scheduler.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Search.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchExpr.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\SearchManager.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchParams.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchParamsWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SearchResultsWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SecRunAsUser.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerConnect.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ServerWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SHA.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SHAHashSet.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ShareableFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedDirsTreeCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedFileList.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedFilesCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SharedFilesWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SmileySelector.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SMTPdialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SplashScreen.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SplitterControl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatisticFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Statistics.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatisticsDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StatisticsTree.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Stdafx.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="StringConversion.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TabCtrl.hpp">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\Tag.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TaskbarNotifier.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TextToSpeech.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\utils\ThreadName.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ThrottledSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TimeTick.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TitleMenu.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TLSthreading.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolBarCtrlX.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolbarWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ToolTipCtrlX.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TransferDlg.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TransferWnd.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrayDialog.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TrayMenuBtn.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeOptionsCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TreeOptionsCtrlEx.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TreePropSheet.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TreePropSheetPgFrame.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TreePropSheetPgFrameDef.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Types.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\kademlia\UDPFirewallTester.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UDPSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="kademlia\utils\UInt128.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UpdownClient.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadBandwidthThrottler.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadDiskIOThread.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadListCtrl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UploadQueue.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UPnPImpl.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UPnPImplMiniLib.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UPnPImplWinServ.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UPnPImplWrapper.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="URLClient.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="UserMsgs.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Version.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VistaDefines.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="VisualStylesXP.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WebServer.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WebServices.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WebSocket.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Wizard.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ZIPFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="Scanner.l">
+      <Filter>Other Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="Parser.y">
+      <Filter>Other Files</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\all.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ArchivePreview.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\bold.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Browse8.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Cancel.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Chat.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Category.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\clear1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\clear2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Client0.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Client1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Client3.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientCompatiblePlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientCompatible.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientaMulePlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientaMule.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Client4.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Client2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientDefaultPlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientDefault.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientlPhantPlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientlPhant.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Clientsecurehasobfuhovl.ICO">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientSecureHashOvl.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Clientobfuovl.ICO">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientMLDonkeyPlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientMLDonkey.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientsOnQueue.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientsKnown.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientShareazaPlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClientShareaza.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\colour.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Collapse.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\CloseTabSelected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\CloseTab.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClienteDonkeyHybridPlus.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ClienteDonkeyHybrid.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectDo.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectDrop.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Connected.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedHighHigh.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedHighHigh.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedHighLow.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedHighLow.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedHighNot.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedHighNot.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedLowHigh.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedLowHigh.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedLowLow.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedLowLow.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedLowNot.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedLowNot.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedNotHigh.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedNotHigh.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedNotLow.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedNotLow.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedNotNot.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectedNotNot.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Connection.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ConnectStop.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Contact0.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Contact1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Contact2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Contact3.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Contact4.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ContentDB.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Convert.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Copy.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\CopySelected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\CopyVisible.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SharedFolderOvl.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Cry.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Disgust.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Happy.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Interest.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Laugh.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_lookside.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Love.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_omg.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Ph34r.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Sad.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_sadq.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Sealed.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Skeptic.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Smile.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_smileq.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Tongue.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Smiley_Wink.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SharedFiles.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SharedFilesList.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Start.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SplitWindow.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SpeedMin.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SpeedMax.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Speed.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Spam.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Statistics.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatisticsDetail.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsCumulative.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsDay.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsGeneric.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsProjected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsMonth.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsTime.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\StatsYear.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Scheduler.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Friends1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Friends2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FriendSlot.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Friends3.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Friend.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Folders.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FolderOpen.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileOpen.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Delete.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\DeleteAll.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\DeleteSelected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\DirectDownload.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Display.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Download.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Download.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\DownloadFiles.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\eD2kLink.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\eD2kLinkPaste.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Email.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Empty.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\emuleCollAdd.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\emuleCollectionFileType.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\emuleCollEdit.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\emuleCollSearch.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\emuleCollView.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ExpandAll.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ExpandAll2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ExportAll.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileComments.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileCommentsOvl.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Exit.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileInfo.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileInfo.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileImportParts.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileDonkey.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeVideo.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FilePriority.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRating0.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRating1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRating2.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRating3.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRating4.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRating5.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileRename.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileSharedKad.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileSharedServer.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeAny.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeArchive.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeAudio.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeCDImage.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeDocument.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypePicture.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\FileTypeProgram.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Help.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\HardDisk.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\HardDisk.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Global.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Import.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Incoming.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Incoming.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\incomplete.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Info.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\IPFilter.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\IRC.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\IRCClipboard.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadContactList.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadBootstrap.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Kad.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\italic.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadCurrentSearches.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadFileSearch.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadNodeSearch.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadServer.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadStoreFile.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadStoreWord.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\KadWordSearch.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ListAdd.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ListRemove.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ListViewSortDown.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ListViewSortDown2x.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ListViewSortUp.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ListViewSortUp2x.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Log.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Logo.jpg">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Message.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\MessagePending.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Messages.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\MetaData.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\MiniMuleBack.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Mule_Vista.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Mule.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\mule_wiz.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\mule_wiz_hdr.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\NavigateBack.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\NavigateForward.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\NoAccessFolderOvl.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Notifications.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Pause.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Preview.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Preferences.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\RestoreWindow.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\RestoreWindow.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\resetformat.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Rename.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Records.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Proxy.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Priority.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Server.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ServerAdd.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Security.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchServerActive.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchResults.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchParams.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchKadActive.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchKad.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchGlobalActive.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\SearchEdit.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Search.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ServerSearch.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ServerList.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ServersUpdate.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TaskbarNotifier.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Tweak.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TrayLowID.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TrayDisconnected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TrayConnected.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TrayBtnMetallic.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TrayBtnHomestead.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TrayBtnBlue.bmp">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\TransferUpDown.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Tools.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\underline.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Up0down0.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Up0down1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Up1down0.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Up1down1.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\UserAdd.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\User.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\UserDelete.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\UserDetails.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\UserFiles.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\UserMessage.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Web.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Wizard.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Upload.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Upload.gif">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Transfer.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Restore.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\MediaInfo.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Preferences.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\ServerInfo.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="res\Stop.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="res\InetDownload.avi">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="res\emule.rc2">
+      <Filter>Other Files</Filter>
+    </None>
+    <None Include="..\setup\eMule Light.tmpl">
+      <Filter>Other Files</Filter>
+    </None>
+    <None Include="..\setup\Template.eMuleSkin.ini">
+      <Filter>Other Files</Filter>
+    </None>
+    <None Include="..\setup\staticservers.dat">
+      <Filter>Other Files</Filter>
+    </None>
+    <None Include="res\WideCharLowerMap.bin">
+      <Filter>Other Files</Filter>
+    </None>
+    <None Include="res\MiniMule.htm">
+      <Filter>Other Files</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="..\docs\readme.txt">
+      <Filter>Other Files</Filter>
+    </Text>
+    <Text Include="..\docs\kademlia\changelog.txt">
+      <Filter>Other Files</Filter>
+    </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{287c0187-1f86-4110-b4ff-e7c664e1e327}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{cc57d51d-2001-4d54-8eee-945ad4add44f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Include Files">
+      <UniqueIdentifier>{0d246975-a786-4112-851b-3bb0ae926d72}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Other Files">
+      <UniqueIdentifier>{867e00c7-3061-4816-aabf-ab73d3168987}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Transfers &amp; Networking">
+      <UniqueIdentifier>{cc80733b-e5e1-46de-b505-a6587d22612a}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="emule.rc">
+      <Filter>Other Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
