@@ -57,7 +57,7 @@
 
 // MOD Note: Do not change this part - Merkur
 #define UDPSEARCHSPEED			SEC2MS(1)	//1 sec - if this value is too low you will miss sources
-#define MAX_RESULTS				100			// max global search results
+#define MAX_RESULTS				600			// max global search results
 #define	MAX_MORE_SEARCH_REQ		5			// this gives a max. total search results of (1+5)*201 = 1206 or (1+5)*300 = 1800
 #define MAX_CLIENTCONNECTIONTRY	2
 #define CONNECTION_TIMEOUT		SEC2MS(40)	//40 secs - set his lower if you want less connections at once, set it higher if you have enough sockets (edonkey has its own timeout too, so a very high value won't effect this)
@@ -108,7 +108,7 @@
 #define MAXCON5WIN9X			10
 #define	UPLOAD_CLIENT_MAXDATARATE	(512*1024) // max. target upload speed per client
 #define	MIN_UP_CLIENTS_ALLOWED	2			// min. clients allowed to download regardless of any other factors. Don't set this too high
-#define	MAX_UP_CLIENTS_ALLOWED	3			// max. clients allowed regardless of any other factors; cannot be below MIN_UP_CLIENTS_ALLOWED+3
+#define	MAX_UP_CLIENTS_ALLOWED	4			// max. clients allowed regardless of any other factors; cannot be below MIN_UP_CLIENTS_ALLOWED+3
 #define DOWNLOADTIMEOUT			SEC2MS(100)
 #define CONSERVTIMEOUT			SEC2MS(25)	// age limit for pending connection attempts
 #define RARE_FILE				50
