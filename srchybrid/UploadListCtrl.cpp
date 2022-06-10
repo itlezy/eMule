@@ -89,6 +89,36 @@ void CUploadListCtrl::Init()
 	InsertColumn(6, GetResString(IDS_STATUS),		LVCFMT_LEFT, 100);
 	InsertColumn(7, GetResString(IDS_UPSTATUS),		LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);
 
+	//MORPH START - Added by SiRoB, Client Software
+	InsertColumn(8,GetResString(IDS_CD_CSOFT),LVCFMT_LEFT,100);
+	//MORPH END - Added by SiRoB, Client Software
+	InsertColumn(9,CString("Up/Down"),LVCFMT_LEFT,100); //Total up down //TODO
+	InsertColumn(10,GetResString(IDS_CL_DOWNLSTATUS),LVCFMT_LEFT,100); //Yun.SF3 Remote Queue Status
+	//MORPH START - Added by SiRoB, ZZ Upload System 20030724-0336
+	InsertColumn(11,CString("UP Slot"),LVCFMT_LEFT,100);
+	//MORPH END - Added by SiRoB, ZZ Upload System 20030724-0336
+	//MORPH START - Added by SiRoB, Show Compression by Tarod
+	InsertColumn(12,CString("Compress"),LVCFMT_LEFT,50);
+	//MORPH END - Added by SiRoB, Show Compression by Tarod
+
+	// Mighty Knife: Community affiliation
+	InsertColumn(13,CString("Community"),LVCFMT_LEFT,100,-1,true);
+	// [end] Mighty Knife
+
+	// EastShare - Added by Pretender, Friend Tab
+	InsertColumn(14,GetResString(IDS_FRIENDLIST),LVCFMT_LEFT,75);
+	// EastShare - Added by Pretender, Friend Tab
+
+	// Commander - Added: IP2Country column - Start
+	InsertColumn(15,CString("Country"),LVCFMT_LEFT,100);
+	// Commander - Added: IP2Country column - End
+	
+	//MORPH START - Added by SiRoB, Display current uploading chunk
+	InsertColumn(16,CString("Chunk"),LVCFMT_LEFT,100);
+	//MORPH END   - Added by SiRoB, Display current uploading chunk
+
+	InsertColumn(17, GetResString(IDS_IP),  LVCFMT_LEFT, 100);
+	
 	SetAllIcons();
 	Localize();
 	LoadSettings();
@@ -233,6 +263,81 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 	case 7:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+
+	case 8:			
+		sText = client->GetClientSoftVer();
+		break;
+	//MORPH END - Added by SiRoB, Client Software
+
+	//MORPH START - Added By Yun.SF3, Upload/Download
+	case 9: //LSD Total UP/DL
+		{
+			if (client->Credits()){
+				sText.Format(_T("%s/%s"),
+				CastItoXBytes(client->Credits()->GetUploadedTotal(),false,false),
+				CastItoXBytes(client->Credits()->GetDownloadedTotal(),false,false));
+			}
+			else
+				sText.Format(_T("%s/%s"), _T("?"), _T("?"));
+			break;	
+		}
+	//MORPH END - Added By Yun.SF3, Upload/Download
+
+	//MORPH START - Added By Yun.SF3, Remote Status
+	case 10: //Yun.SF3 remote queue status
+		{	
+			int qr = client->GetRemoteQueueRank();
+			if (client->GetDownloadDatarate() > 0){
+				sText = CastItoXBytes(client->GetDownloadDatarate(),false,true);
+			}
+			else if (qr)
+				sText.Format(_T("QR: %u"), qr);
+			//Dia+ Show NoNeededParts
+			else if (client->GetDownloadState()==DS_NONEEDEDPARTS)
+				sText = GetResString(IDS_NONEEDEDPARTS);
+			//Dia- Show NoNeededParts							
+			else if(client->IsRemoteQueueFull())
+				sText = GetResString(IDS_QUEUEFULL);
+			else
+				sText = GetResString(IDS_UNKNOWN);
+			break;	
+		}
+	//MORPH END - Added By Yun.SF3, Remote Status
+
+	//MORPH START - Added by SiRoB, Upload Bandwidth Splited by class
+	case 11:{
+		break;
+	}
+	//MORPH END   - Added by SiRoB, Upload Bandwidth Splited by class
+
+	//MORPH START - Added by SiRoB, Show Compression by Tarod
+	case 12:
+		break;
+	//MORPH END - Added by SiRoB, Show Compression by Tarod
+
+	// Mighty Knife: Community affiliation
+	case 13:
+		break;
+	// [end] Mighty Knife
+
+	// EastShare - Added by Pretender, Friend Tab
+	case 14:
+		sText = client->IsFriend() ? GetResString(IDS_YES) : _T("");
+		break;
+	// EastShare - Added by Pretender, Friend Tab
+
+	case 15:
+		//_tcsncpy(pszText, client->GetCountryName(), cchTextMax);
+		sText = client->GetCountryName();
+		break;
+
+	case 16:
+		break;
+
+	case 17:
+		sText = ipstr(client->GetIP());
+		break;
 	}
 	return sText;
 }

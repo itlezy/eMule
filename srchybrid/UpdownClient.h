@@ -19,6 +19,7 @@
 #include "ClientStateDefs.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
+#include "IP2Country.h" //EastShare - added by AndCycle, IP to Country
 
 class CClientReqSocket;
 class CPeerCacheDownSocket;
@@ -87,6 +88,10 @@ public:
 	explicit CUpDownClient(CClientReqSocket *sender = NULL);
 	CUpDownClient(CPartFile *in_reqfile, uint16 in_port, uint32 in_userid, uint32 in_serverip, uint16 in_serverport, bool ed2kID = false);
 	virtual	~CUpDownClient();
+
+	CString			GetCountryName(bool longName = false) const;
+	int				GetCountryFlagIndex() const;
+	void			ResetIP2Country(uint32 dwIP = 0);
 
 	void			StartDownload();
 	virtual void	CheckDownloadTimeout();
@@ -479,6 +484,9 @@ public:
 
 	CPeerCacheDownSocket *m_pPCDownSocket;
 	CPeerCacheUpSocket *m_pPCUpSocket;
+
+private:
+	struct	IPRange_Struct2* m_structUserCountry; //EastShare - added by AndCycle, IP to Country
 
 protected:
 	int		m_iHttpSendState;

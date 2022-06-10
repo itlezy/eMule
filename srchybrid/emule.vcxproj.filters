@@ -235,9 +235,6 @@
     <ClCompile Include="KademliaWnd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Friend.cpp">
-      <Filter>Include Files</Filter>
-    </ClCompile>
     <ClCompile Include="KadLookupGraph.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -737,6 +734,12 @@
       <Filter>Source Files\Transfers &amp; Networking</Filter>
     </ClCompile>
     <ClCompile Include="IPFilterDlg.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="IP2Country.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Friend.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1549,6 +1552,9 @@
       <Filter>Include Files</Filter>
     </ClInclude>
     <ClInclude Include="ZIPFile.h">
+      <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="IP2Country.h">
       <Filter>Include Files</Filter>
     </ClInclude>
   </ItemGroup>

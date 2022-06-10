@@ -323,6 +323,7 @@
     <ClCompile Include="IESecurity.cpp" />
     <ClCompile Include="Ini2.cpp" />
     <ClCompile Include="InputBox.cpp" />
+    <ClCompile Include="IP2Country.cpp" />
     <ClCompile Include="IPFilter.cpp" />
     <ClCompile Include="IPFilterDlg.cpp" />
     <ClCompile Include="IrcChannelListCtrl.cpp" />
@@ -608,6 +609,7 @@
     <ClInclude Include="ImportParts.h" />
     <ClInclude Include="Ini2.h" />
     <ClInclude Include="InputBox.h" />
+    <ClInclude Include="IP2Country.h" />
     <ClInclude Include="IPFilter.h" />
     <ClInclude Include="IPFilterDlg.h" />
     <ClInclude Include="IrcChannelListCtrl.h" />

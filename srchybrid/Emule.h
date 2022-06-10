@@ -51,6 +51,8 @@ class CFirewallOpener;
 class CUPnPImplWrapper;
 class CUploadDiskIOThread;
 
+class CIP2Country; //EastShare - added by AndCycle, IP to Country
+
 struct SLogItem;
 
 enum AppState
@@ -99,6 +101,8 @@ public:
 	static const UINT	m_nVersionUpd;
 	static const UINT	m_nVersionBld;
 	static const TCHAR	*m_sPlatform;
+
+	CIP2Country* ip2country; //EastShare - added by AndCycle, IP to Country
 
 	HANDLE		m_hMutexOneInstance;
 	int			m_iDfltImageListColorFlags;
