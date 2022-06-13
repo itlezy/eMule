@@ -107,8 +107,6 @@ CUploadQueue::~CUploadQueue()
  */
 CUpDownClient* CUploadQueue::FindBestClientInQueue()
 {
-	Log(_T("CUploadQueue::FindBestClientInQueue()"));
-
 	uint32 bestscore = 0;
 	uint32 bestlowscore = 0;
 	CUpDownClient *newclient = NULL;
@@ -183,8 +181,6 @@ void CUploadQueue::InsertInUploadingList(UploadingToClient_Struct *pNewClientUpl
 
 bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 {
-	Log(_T("CUploadQueue::AddUpNextClient %s"), pszReason);
-
 	CUpDownClient *newclient;
 	// select next client or use given client
 	if (directadd)
@@ -403,8 +399,6 @@ bool CUploadQueue::AcceptNewClient(bool addOnNextConnect) const
 
 bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 {
-	Log(_T("CUploadQueue::AddUpNextClient %lu"), curUploadSlots);
-
 	// check if we can allow a new client to start downloading from us
 
 	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
@@ -442,14 +436,16 @@ uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 
 bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 {
-	// Log(_T("CUploadQueue::ForceNewClient %i"), allowEmptyWaitingQueue);
-
 	if (!allowEmptyWaitingQueue && waitinglist.IsEmpty())
 		return false;
 
 	INT_PTR curUploadSlots = uploadinglist.GetCount();
+
 	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
 		return true;
+
+	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return false;
 
 	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
@@ -545,8 +541,6 @@ CUpDownClient* CUploadQueue::GetWaitingClientByIP(uint32 dwIP) const
  */
 void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit)
 {
-	Log(_T("CUploadQueue::AddClientToQueue %s , %i"), client->m_strClientSoftware, bIgnoreTimelimit);
-
 	//This is to keep users from abusing the limits we put on lowID callbacks.
 	//1)Check if we are connected to any network and that we are a lowID.
 	//(Although this check shouldn't matter as they wouldn't have found us.
