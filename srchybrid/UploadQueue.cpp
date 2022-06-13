@@ -404,6 +404,9 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
 		return true;
 
+	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return false;
+
 	uint32 MaxSpeed;
 	if (thePrefs.IsDynUpEnabled())
 		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024u;
@@ -442,6 +445,9 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	INT_PTR curUploadSlots = uploadinglist.GetCount();
 	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
 		return true;
+
+	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return false;
 
 	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
