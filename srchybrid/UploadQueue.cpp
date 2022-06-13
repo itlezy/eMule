@@ -404,6 +404,9 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
 		return true;
 
+	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return false;
+
 	uint32 MaxSpeed;
 	if (thePrefs.IsDynUpEnabled())
 		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024u;
@@ -823,6 +826,11 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 			return false;
 		if (thePrefs.GetLogUlDlEvents())
 			AddDebugLogLine(DLP_HIGH, false, _T("%s: Upload session ended - client with Collection Slot tried to request blocks from another file"), client->GetUserName());
+		return true;
+	}
+
+	if (client->IsSlowDownloader() && !ForceNewClient()) {
+		AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow %u"), client->GetUserName(), client->GetDatarate());
 		return true;
 	}
 

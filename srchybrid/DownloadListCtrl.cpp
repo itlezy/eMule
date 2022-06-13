@@ -464,7 +464,7 @@ void CDownloadListCtrl::DrawFileItem(CDC *dc, int nColumn, LPCRECT lpRect, UINT 
 			cdcStatus.SelectObject(hOldBitmap);
 
 			if (thePrefs.GetUseDwlPercentage()) {
-				COLORREF oldclr = dc->SetTextColor(RGB(255, 223, 0));
+				COLORREF oldclr = dc->SetTextColor(RGB(255, 255, 255));
 				int iOMode = dc->SetBkMode(TRANSPARENT);
 				dc->DrawText(sItem.Mid(sItem.ReverseFind(_T(' ')) + 1), -1, rcDraw, (MLC_DT_TEXT & ~DT_LEFT) | DT_CENTER);
 				dc->SetBkMode(iOMode);

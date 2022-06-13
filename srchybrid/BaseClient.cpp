@@ -179,6 +179,8 @@ void CUpDownClient::Init()
 	SetLastBuddyPingPongTime();
 	SetBuddyID(NULL);
 
+	m_caughtBeingSlow = 0; // counter to keep track how many times this client was "slow"
+
 	m_clientSoft = SO_UNKNOWN;
 	m_eChatstate = MS_NONE;
 	m_eKadState = KS_NONE;

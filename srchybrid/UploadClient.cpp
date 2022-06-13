@@ -483,6 +483,10 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		// download rate and the throttler can't
 		if (GetDatarate() > 100 * 1024)
 			s->UseBigSendBuffer();
+
+		// if a client is "slow" meaning a 1/4 of the target upload rate, we increase the counter
+		if (GetDatarate() < (UPLOAD_CLIENT_MAXDATARATE / 4))
+			m_caughtBeingSlow++;
 	}
 
 	if (sentBytesCompleteFile + sentBytesPartFile > 0 ||

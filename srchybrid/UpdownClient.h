@@ -90,7 +90,6 @@ public:
 	virtual	~CUpDownClient();
 
 	CString			GetCountryName(bool longName = false) const;
-	int				GetCountryFlagIndex() const;
 	void			ResetIP2Country(uint32 dwIP = 0);
 
 	void			StartDownload();
@@ -296,6 +295,8 @@ public:
 	// Download
 	UINT			GetAskedCountDown() const						{ return m_cDownAsked; }
 	void			AddAskedCountDown()								{ ++m_cDownAsked; }
+	bool			IsSlowDownloader()  const						{ return m_caughtBeingSlow > 1024; } // How many times was the client slow? As the update happens on a timer basis, this give some temporal information
+
 	void			SetAskedCountDown(UINT cInDownAsked)			{ m_cDownAsked = cInDownAsked; }
 	EDownloadState	GetDownloadState() const						{ return m_eDownloadState; }
 	void			SetDownloadState(EDownloadState nNewState, LPCTSTR pszReason = _T("Unspecified"));
@@ -603,6 +604,7 @@ protected:
 	uchar		requpfileid[16];
 	UINT		m_slotNumber;
 	bool		m_bCollectionUploadSlot;
+	uint32		m_caughtBeingSlow;
 
 	typedef struct
 	{

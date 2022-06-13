@@ -92,32 +92,13 @@ void CUploadListCtrl::Init()
 	//MORPH START - Added by SiRoB, Client Software
 	InsertColumn(8,GetResString(IDS_CD_CSOFT),LVCFMT_LEFT,100);
 	//MORPH END - Added by SiRoB, Client Software
-	InsertColumn(9,CString("Up/Down"),LVCFMT_LEFT,100); //Total up down //TODO
-	InsertColumn(10,GetResString(IDS_CL_DOWNLSTATUS),LVCFMT_LEFT,100); //Yun.SF3 Remote Queue Status
-	//MORPH START - Added by SiRoB, ZZ Upload System 20030724-0336
-	InsertColumn(11,CString("UP Slot"),LVCFMT_LEFT,100);
-	//MORPH END - Added by SiRoB, ZZ Upload System 20030724-0336
-	//MORPH START - Added by SiRoB, Show Compression by Tarod
-	InsertColumn(12,CString("Compress"),LVCFMT_LEFT,50);
-	//MORPH END - Added by SiRoB, Show Compression by Tarod
-
-	// Mighty Knife: Community affiliation
-	InsertColumn(13,CString("Community"),LVCFMT_LEFT,100,-1,true);
-	// [end] Mighty Knife
-
-	// EastShare - Added by Pretender, Friend Tab
-	InsertColumn(14,GetResString(IDS_FRIENDLIST),LVCFMT_LEFT,75);
-	// EastShare - Added by Pretender, Friend Tab
-
+	InsertColumn(9,CString("Client Uploaded"),LVCFMT_LEFT,100); //Total up down //TODO
 	// Commander - Added: IP2Country column - Start
-	InsertColumn(15,CString("Country"),LVCFMT_LEFT,100);
+	InsertColumn(10, CString("Country"), LVCFMT_LEFT, 100);
 	// Commander - Added: IP2Country column - End
-	
-	//MORPH START - Added by SiRoB, Display current uploading chunk
-	InsertColumn(16,CString("Chunk"),LVCFMT_LEFT,100);
-	//MORPH END   - Added by SiRoB, Display current uploading chunk
-
-	InsertColumn(17, GetResString(IDS_IP),  LVCFMT_LEFT, 100);
+	InsertColumn(11, GetResString(IDS_IP), LVCFMT_LEFT, 100);
+	InsertColumn(12, GetResString(IDS_IDLOW), LVCFMT_LEFT, 50);
+	InsertColumn(13, GetResString(IDS_CD_UHASH), LVCFMT_LEFT, 50);
 	
 	SetAllIcons();
 	Localize();
@@ -266,6 +247,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 
 	case 8:			
+		//sText.Format(_T("%s (%s)"), client->GetClientSoftVer(), client->GetClientModVer());
 		sText = client->GetClientSoftVer();
 		break;
 	//MORPH END - Added by SiRoB, Client Software
@@ -274,9 +256,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	case 9: //LSD Total UP/DL
 		{
 			if (client->Credits()){
-				sText.Format(_T("%s/%s"),
-				CastItoXBytes(client->Credits()->GetUploadedTotal(),false,false),
-				CastItoXBytes(client->Credits()->GetDownloadedTotal(),false,false));
+				sText.Format(_T("%s"), CastItoXBytes(client->Credits()->GetUploadedTotal(),false,false));
 			}
 			else
 				sText.Format(_T("%s/%s"), _T("?"), _T("?"));
@@ -284,61 +264,23 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		}
 	//MORPH END - Added By Yun.SF3, Upload/Download
 
-	//MORPH START - Added By Yun.SF3, Remote Status
-	case 10: //Yun.SF3 remote queue status
-		{	
-			int qr = client->GetRemoteQueueRank();
-			if (client->GetDownloadDatarate() > 0){
-				sText = CastItoXBytes(client->GetDownloadDatarate(),false,true);
-			}
-			else if (qr)
-				sText.Format(_T("QR: %u"), qr);
-			//Dia+ Show NoNeededParts
-			else if (client->GetDownloadState()==DS_NONEEDEDPARTS)
-				sText = GetResString(IDS_NONEEDEDPARTS);
-			//Dia- Show NoNeededParts							
-			else if(client->IsRemoteQueueFull())
-				sText = GetResString(IDS_QUEUEFULL);
-			else
-				sText = GetResString(IDS_UNKNOWN);
-			break;	
-		}
-	//MORPH END - Added By Yun.SF3, Remote Status
-
-	//MORPH START - Added by SiRoB, Upload Bandwidth Splited by class
-	case 11:{
-		break;
-	}
-	//MORPH END   - Added by SiRoB, Upload Bandwidth Splited by class
-
-	//MORPH START - Added by SiRoB, Show Compression by Tarod
-	case 12:
-		break;
-	//MORPH END - Added by SiRoB, Show Compression by Tarod
-
-	// Mighty Knife: Community affiliation
-	case 13:
-		break;
-	// [end] Mighty Knife
-
-	// EastShare - Added by Pretender, Friend Tab
-	case 14:
-		sText = client->IsFriend() ? GetResString(IDS_YES) : _T("");
-		break;
-	// EastShare - Added by Pretender, Friend Tab
-
-	case 15:
-		//_tcsncpy(pszText, client->GetCountryName(), cchTextMax);
+	case 10:
 		sText = client->GetCountryName();
 		break;
 
-	case 16:
-		break;
-
-	case 17:
+	case 11:
 		sText = ipstr(client->GetIP());
 		break;
+
+	case 12:
+		sText.Format(_T("%s"), GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH));
+		break;
+
+	case 13:
+		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
+		break;
 	}
+
 	return sText;
 }
 
@@ -470,6 +412,29 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 7:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 8:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 9:
+		if (item1->Credits() && item2->Credits()) {
+			iResult = CompareUnsigned(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		}
+		break;
+	case 10:
+		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
+	break;
+	case 11:
+		iResult = CompareLocaleStringNoCase(ipstr(item1->GetIP()), ipstr(item2->GetIP()));
+		break;
+	case 12:
+		iResult = CompareUnsigned(item1->HasLowID(), item2->HasLowID());
+		break;
+	case 13:
+		if (item1->HasValidHash() && item2->HasValidHash()) {
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		}
+		break;
 	}
 
 	if (lParamSort >= 100)
