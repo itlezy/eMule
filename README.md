@@ -41,5 +41,6 @@ In future releases these limit values might be either configurable from setting 
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`
 
 ## Installation
-Just get che zip from the release and replace your current executable. Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing.  
+Just get che zip from the release and replace your current executable. Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
+
 Enjoy
