@@ -100,6 +100,7 @@ void CUploadListCtrl::Init()
 	InsertColumn(12, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
 	InsertColumn(13, CString("Client Hash"),		LVCFMT_LEFT, 50);
 	InsertColumn(14, CString("Upload %"),			LVCFMT_RIGHT, 50);
+	InsertColumn(15, CString("File Size"),			LVCFMT_RIGHT, 50);
 	
 	SetAllIcons();
 	Localize();
@@ -282,13 +283,23 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 
 	case 14:
-		// show session upload as % of max session trans
-		sText.Format(_T("%.1f%%"), (float)client->GetQueueSessionPayloadUp() / (float)SESSIONMAXTRANS * 100.0 );
-		
-		//sText.Format(_T("%.1f%% (%s/%s)"),
-		//	(float)client->GetQueueSessionPayloadUp() / (float)SESSIONMAXTRANS * 100.0,
-		//	(LPCTSTR)CastItoXBytes(client->GetQueueSessionPayloadUp()),					// show in Mb
-		//	(LPCTSTR)CastItoXBytes(SESSIONMAXTRANS));
+	{
+		// TODO need to review better this calculation as the client might have already part of the file
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file) {
+			// display the percentage over the overall file size if less than max trans
+			sText.Format(_T("%.1f%%"), (float)client->GetQueueSessionPayloadUp() / (float)min(SESSIONMAXTRANS, file->GetFileSize()) * 100.0);
+		}
+		else {
+			sText.Format(_T("(%s)"), (LPCTSTR)GetResString(IDS_UNKNOWN));
+		}
+	}
+		break;
+
+	case 15:
+		const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%s"), (LPCTSTR)CastItoXBytes(file->GetFileSize()));
 		break;
 	}
 
@@ -448,6 +459,14 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 14:
 		iResult = CompareUnsigned(item1->GetSessionUp(), item2->GetSessionUp());
+		break;
+	case 15:
+		const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(file1->GetFileSize(), file2->GetFileSize());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
 		break;
 	}
 

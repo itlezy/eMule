@@ -95,7 +95,7 @@
 #define RSAKEYSIZE				384			//384 bits
 #define	MAX_SOURCES_FILE_SOFT	750
 #define	MAX_SOURCES_FILE_UDP	50u
-#define SESSIONMAXTRANS			(1024ui64*1024*1024) // With larger files being shared this needs to be raised accordingly, here set to 1Gb
+#define SESSIONMAXTRANS			(1024ui64*1024*1024*12) // With larger files being shared this needs to be raised accordingly, here set to 36Gb
 #define SESSIONMAXTIME			HR2MS(1)	//1 hour
 #define	MAXFILECOMMENTLEN		128
 #define	PARTSIZE				9728000ui64
