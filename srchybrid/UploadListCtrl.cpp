@@ -99,7 +99,6 @@ void CUploadListCtrl::Init()
 	InsertColumn(11, GetResString(IDS_IP),			LVCFMT_LEFT, 100);
 	InsertColumn(12, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
 	InsertColumn(13, GetResString(IDS_CD_UHASH),	LVCFMT_LEFT, 50);
-
 	InsertColumn(14, CString("Upload %"),			LVCFMT_RIGHT, 50);
 	
 	SetAllIcons();
@@ -446,6 +445,9 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		if (item1->HasValidHash() && item2->HasValidHash()) {
 			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
 		}
+		break;
+	case 14:
+		iResult = CompareUnsigned(item1->GetSessionUp(), item2->GetSessionUp());
 		break;
 	}
 

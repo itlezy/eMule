@@ -831,9 +831,9 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 
 	if (client->IsSlowDownloader() && !ForceNewClient()) {
 		if (thePrefs.GetLogUlDlEvents())
-			AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow %u, time downloading %s"),
+			AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow. Rate: %s, time downloading: %s"),
 				client->GetUserName(),
-				client->GetDatarate(),
+				CastItoXBytes(client->GetDatarate()),
 				CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1)));
 
 		return true;
@@ -843,7 +843,7 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 		// Allow the client to download a specified amount per session; but keep going if no one needs this slot
 		if (client->GetQueueSessionPayloadUp() > SESSIONMAXTRANS && !ForceNewClient()) {
 			if (thePrefs.GetLogUlDlEvents())
-				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to max transferred amount (%s), time downloading %s"),
+				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to max transferred amount (%s), time downloading: %s"),
 					client->GetUserName(),
 					(LPCTSTR)CastItoXBytes(SESSIONMAXTRANS),
 					CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1)));
