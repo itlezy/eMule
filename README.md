@@ -9,6 +9,7 @@ Enjoy and contribute!
 
 ## Optimal Settings
 Really the one reccomendation would be to set capacity and upload limit, plus a limit of max connections. Other settings as you please.
+Be fair about it, the purpose is to maximise seeding, so be generous with your bandwidth.
 
 ![2022-06-14 14_05_11-Window](https://user-images.githubusercontent.com/24484050/173573013-6a76d50f-f168-4a81-83c7-888ee3de6b6a.png)
 
