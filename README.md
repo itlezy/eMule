@@ -23,4 +23,6 @@ MAX_UP_CLIENTS_ALLOWED
 UPLOAD_CLIENT_MAXDATARATE
 ```
 
-to more appropriate values for high-speed connections and large files. In future releases these values might be either configurable from setting file or derived by formula based on the stated bandwidth of the user
+to more appropriate values for high-speed connections and large files, and by actually applying the limit of `MAX_UP_CLIENTS_ALLOWED`. As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds.
+
+In future releases these values might be either configurable from setting file or derived by formula based on the stated bandwidth of the user
