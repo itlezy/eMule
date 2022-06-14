@@ -90,15 +90,17 @@ void CUploadListCtrl::Init()
 	InsertColumn(7, GetResString(IDS_UPSTATUS),		LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);
 
 	//MORPH START - Added by SiRoB, Client Software
-	InsertColumn(8,GetResString(IDS_CD_CSOFT),LVCFMT_LEFT,100);
+	InsertColumn(8, GetResString(IDS_CD_CSOFT),		LVCFMT_LEFT, 100);
 	//MORPH END - Added by SiRoB, Client Software
-	InsertColumn(9,CString("Client Uploaded"),LVCFMT_LEFT,100); //Total up down //TODO
+	InsertColumn(9, CString("Client Uploaded"),		LVCFMT_LEFT, 100); //Total up down //TODO
 	// Commander - Added: IP2Country column - Start
-	InsertColumn(10, CString("Country"), LVCFMT_LEFT, 100);
+	InsertColumn(10, CString("Country"),			LVCFMT_LEFT, 100);
 	// Commander - Added: IP2Country column - End
-	InsertColumn(11, GetResString(IDS_IP), LVCFMT_LEFT, 100);
-	InsertColumn(12, GetResString(IDS_IDLOW), LVCFMT_LEFT, 50);
-	InsertColumn(13, GetResString(IDS_CD_UHASH), LVCFMT_LEFT, 50);
+	InsertColumn(11, GetResString(IDS_IP),			LVCFMT_LEFT, 100);
+	InsertColumn(12, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
+	InsertColumn(13, GetResString(IDS_CD_UHASH),	LVCFMT_LEFT, 50);
+
+	InsertColumn(14, CString("Upload %"),			LVCFMT_RIGHT, 50);
 	
 	SetAllIcons();
 	Localize();
@@ -215,12 +217,12 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			sText.Format(_T("(%s)"), (LPCTSTR)GetResString(IDS_UNKNOWN));
 		break;
 	case 1:
-		{
-			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-			if (file)
-				sText = file->GetFileName();
-		}
-		break;
+	{
+		const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText = file->GetFileName();
+	}
+	break;
 	case 2:
 		sText = CastItoXBytes(client->GetDatarate(), false, true);
 		break;
@@ -246,22 +248,22 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		sText = GetResString(IDS_UPSTATUS);
 		break;
 
-	case 8:			
+	case 8:
 		//sText.Format(_T("%s (%s)"), client->GetClientSoftVer(), client->GetClientModVer());
 		sText = client->GetClientSoftVer();
 		break;
-	//MORPH END - Added by SiRoB, Client Software
+		//MORPH END - Added by SiRoB, Client Software
 
-	//MORPH START - Added By Yun.SF3, Upload/Download
+		//MORPH START - Added By Yun.SF3, Upload/Download
 	case 9: //LSD Total UP/DL
-		{
-			if (client->Credits()){
-				sText.Format(_T("%s"), CastItoXBytes(client->Credits()->GetUploadedTotal(),false,false));
-			}
-			else
-				sText.Format(_T("%s/%s"), _T("?"), _T("?"));
-			break;	
+	{
+		if (client->Credits()) {
+			sText.Format(_T("%s"), CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false));
 		}
+		else
+			sText.Format(_T("%s/%s"), _T("?"), _T("?"));
+		break;
+	}
 	//MORPH END - Added By Yun.SF3, Upload/Download
 
 	case 10:
@@ -278,6 +280,16 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 
 	case 13:
 		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
+		break;
+
+	case 14:
+		// show session upload as % of max session trans
+		sText.Format(_T("%.1f%%"), (float)client->GetQueueSessionPayloadUp() / (float)SESSIONMAXTRANS * 100.0 );
+		
+		//sText.Format(_T("%.1f%% (%s/%s)"),
+		//	(float)client->GetQueueSessionPayloadUp() / (float)SESSIONMAXTRANS * 100.0,
+		//	(LPCTSTR)CastItoXBytes(client->GetQueueSessionPayloadUp()),					// show in Mb
+		//	(LPCTSTR)CastItoXBytes(SESSIONMAXTRANS));
 		break;
 	}
 
