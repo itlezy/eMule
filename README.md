@@ -43,4 +43,6 @@ As some other minor change to the upload list, the IP 2 Country is being added b
 ## Installation
 Just get che zip from the release and replace your current executable. Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
+Download the latest release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband
+
 Enjoy
