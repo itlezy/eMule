@@ -14,7 +14,8 @@ Be fair about it, the purpose is to maximise seeding, so be generous with your b
 ![2022-06-14 14_05_11-Window](https://user-images.githubusercontent.com/24484050/173573013-6a76d50f-f168-4a81-83c7-888ee3de6b6a.png)
 
 ## Summary of changes
-The only real difference is fiddling the values of  
+### opcodes
+The one real difference is fiddling the values of  
 
 ```c
 SESSIONMAXTRANS
@@ -26,9 +27,15 @@ UPLOAD_CLIENT_MAXDATARATE
 to more appropriate values for high-speed connections and large files, and by actually applying the limit of `MAX_UP_CLIENTS_ALLOWED`.  
 As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds.
 
+### UploadQueue
+Added a bit of logic to remove from the upload slots clients that have been below a download rate `UPLOAD_CLIENT_MAXDATARATE / 4` for a certain period of time, so to give more priority to fast downloaders, which should also be fast uploaders to a certain extent so then they can propagate files quicker if they get it first.
+
+### Sample Results
+This would be a normal upload slots list
+
 ![2022-06-14 14_15_35-Window](https://user-images.githubusercontent.com/24484050/173574898-44543e7e-9fde-484a-9851-fd88fd0286cb.png)
 
-In future releases these values might be either configurable from setting file or derived by formula based on the stated bandwidth of the user
+In future releases these limit values might be either configurable from setting file or derived by formula based on the stated bandwidth of the user
 
 ## IP 2 Country
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`
