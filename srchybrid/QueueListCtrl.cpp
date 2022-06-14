@@ -87,6 +87,7 @@ void CQueueListCtrl::Init()
 	InsertColumn(7, GetResString(IDS_ENTERQUEUE),	LVCFMT_LEFT, 110);
 	InsertColumn(8, GetResString(IDS_BANNED),		LVCFMT_LEFT,  60);
 	InsertColumn(9, GetResString(IDS_UPSTATUS),		LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);
+	InsertColumn(10,CString("Client Hash"),			LVCFMT_LEFT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -267,6 +268,10 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		break;
 	case 9:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+	case 10:
+		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
+		break;
 	}
 	return sText;
 }
@@ -379,6 +384,12 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		break;
 	case 9:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 10:
+		if (item1->HasValidHash() && item2->HasValidHash()) {
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		}
+		break;
 	}
 
 	if (lParamSort >= 100)

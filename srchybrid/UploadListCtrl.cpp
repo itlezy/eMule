@@ -98,7 +98,7 @@ void CUploadListCtrl::Init()
 	// Commander - Added: IP2Country column - End
 	InsertColumn(11, GetResString(IDS_IP),			LVCFMT_LEFT, 100);
 	InsertColumn(12, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
-	InsertColumn(13, GetResString(IDS_CD_UHASH),	LVCFMT_LEFT, 50);
+	InsertColumn(13, CString("Client Hash"),		LVCFMT_LEFT, 50);
 	InsertColumn(14, CString("Upload %"),			LVCFMT_RIGHT, 50);
 	
 	SetAllIcons();
