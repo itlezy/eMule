@@ -87,7 +87,18 @@ void CQueueListCtrl::Init()
 	InsertColumn(7, GetResString(IDS_ENTERQUEUE),	LVCFMT_LEFT, 110);
 	InsertColumn(8, GetResString(IDS_BANNED),		LVCFMT_LEFT,  60);
 	InsertColumn(9, GetResString(IDS_UPSTATUS),		LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);
-	InsertColumn(10,CString("Client Hash"),			LVCFMT_LEFT, 50);
+
+	//MORPH START - Added by SiRoB, Client Software
+	InsertColumn(10, GetResString(IDS_CD_CSOFT), LVCFMT_LEFT, 100);
+	//MORPH END - Added by SiRoB, Client Software
+	InsertColumn(11, CString("Client Uploaded"), LVCFMT_LEFT, 100); //Total up down //TODO
+	// Commander - Added: IP2Country column - Start
+	InsertColumn(12, CString("Country"), LVCFMT_LEFT, 100);
+	// Commander - Added: IP2Country column - End
+	InsertColumn(13, GetResString(IDS_IP), LVCFMT_LEFT, 100);
+	InsertColumn(14, GetResString(IDS_IDLOW), LVCFMT_LEFT, 50);
+	InsertColumn(15, CString("Client Hash"), LVCFMT_LEFT, 50);	
+	InsertColumn(16, CString("File Size"), LVCFMT_RIGHT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -270,8 +281,45 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		sText = GetResString(IDS_UPSTATUS);
 		break;
 	case 10:
+		//sText.Format(_T("%s (%s)"), client->GetClientSoftVer(), client->GetClientModVer());
+		sText = client->GetClientSoftVer();
+		break;
+		//MORPH END - Added by SiRoB, Client Software
+
+		//MORPH START - Added By Yun.SF3, Upload/Download
+	case 11: //LSD Total UP/DL
+	{
+		if (client->Credits()) {
+			sText.Format(_T("%s"), CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false));
+		}
+		else
+			sText.Format(_T("%s/%s"), _T("?"), _T("?"));
+		break;
+	}
+	//MORPH END - Added By Yun.SF3, Upload/Download
+
+	case 12:
+		sText = client->GetCountryName();
+		break;
+
+	case 13:
+		sText = ipstr(client->GetIP());
+		break;
+
+	case 14:
+		sText.Format(_T("%s"), GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH));
+		break;
+
+	case 15:
 		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
 		break;
+
+	case 16:
+		const CKnownFile * file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%s"), (LPCTSTR)CastItoXBytes(file->GetFileSize()));
+		break;
+
 	}
 	return sText;
 }
@@ -386,10 +434,36 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
 		break;
 	case 10:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 11:
+		if (item1->Credits() && item2->Credits()) {
+			iResult = CompareUnsigned(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		}
+		break;
+	case 12:
+		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
+		break;
+	case 13:
+		iResult = CompareLocaleStringNoCase(ipstr(item1->GetIP()), ipstr(item2->GetIP()));
+		break;
+	case 14:
+		iResult = CompareUnsigned(item1->HasLowID(), item2->HasLowID());
+		break;
+	case 15:
 		if (item1->HasValidHash() && item2->HasValidHash()) {
 			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
 		}
 		break;
+	case 16:
+		const CKnownFile * file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(file1->GetFileSize(), file2->GetFileSize());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+		break;
+
 	}
 
 	if (lParamSort >= 100)

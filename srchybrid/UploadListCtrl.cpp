@@ -288,7 +288,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 		if (file) {
 			// display the percentage over the overall file size if less than max trans
-			sText.Format(_T("%.1f%%"), (float)client->GetQueueSessionPayloadUp() / (float)min(SESSIONMAXTRANS, file->GetFileSize()) * 100.0);
+			sText.Format(_T("%.1f%%"), (float)client->GetQueueSessionPayloadUp() / (float)file->GetFileSize() * 100.0);
 		}
 		else {
 			sText.Format(_T("(%s)"), (LPCTSTR)GetResString(IDS_UNKNOWN));
