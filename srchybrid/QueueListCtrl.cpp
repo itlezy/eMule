@@ -438,7 +438,7 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		break;
 	case 11:
 		if (item1->Credits() && item2->Credits()) {
-			iResult = CompareUnsigned(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+			iResult = CompareUnsigned64(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
 		}
 		break;
 	case 12:
@@ -459,7 +459,7 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		const CKnownFile * file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
 		if (file1 != NULL && file2 != NULL)
-			iResult = CompareUnsigned(file1->GetFileSize(), file2->GetFileSize());
+			iResult = CompareUnsigned64(file1->GetFileSize(), file2->GetFileSize());
 		else
 			iResult = (file1 == NULL) ? 1 : -1;
 		break;
