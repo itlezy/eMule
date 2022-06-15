@@ -4,19 +4,19 @@ The focus here is to maximise throughput for broadband users, to optimize seedin
 The focus is as well to introduce the least amount of changes to preserve the original quality and stability of the client.  
 
 ## Installation
-Just get che zip from the release and replace your current executable.  
+Just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current executable.  
 Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
 Download the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband
 
 ### Optimal Settings
-Really the one reccomendation would be to set capacity and **upload limit**, plus a limit of max connections. Other settings, as you please.  
-Be fair about it, the purpose is to **maximise seeding**, so be generous with your bandwidth.
+Really the one recommendation would be to set the values of bandwidth capacity and the **upload limit**, plus a limit of max connections if you wish so. Other settings, as you please.  
+Be fair about it, the purpose is to **maximise seeding**, so be generous with your bandwidth and set it as much as possible based on your connection.
 
 ![2022-06-14 14_05_11-Window](https://user-images.githubusercontent.com/24484050/173573013-6a76d50f-f168-4a81-83c7-888ee3de6b6a.png)
 
 ### Configuration
-Max upload slots are configurable from ini file. Just launch the exe once, close it, and then edit the ini file:
+**Max upload slots** are configurable from ini file. Just launch the eMule exe once, close it, and then edit the ini file:
 
 `%LOCALAPPDATA%\eMule\config\preferences.ini`
 
