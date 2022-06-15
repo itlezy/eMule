@@ -57,6 +57,11 @@ CString	CPreferences::strNick;
 uint32	CPreferences::m_minupload;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
+
+// broadband-MOD>>
+uint32	CPreferences::m_maxUpClientsAllowed;
+// broadband-MOD<<
+
 LPCSTR	CPreferences::m_pszBindAddrA;
 CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
@@ -1546,7 +1551,8 @@ void CPreferences::SavePreferences()
 		tempdirs += tempdir[i];
 	}
 	ini.WriteString(_T("TempDirs"), tempdirs);
-
+	
+	ini.WriteInt(_T("MaxUpClientsAllowed"), m_maxUpClientsAllowed);
 	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
@@ -1976,6 +1982,7 @@ void CPreferences::LoadPreferences()
 			maxGraphUploadRate = nOldUploadCapacity; // use old custom value
 	}
 
+	m_maxUpClientsAllowed = (uint32)ini.GetInt(_T("MaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED);
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), UNLIMITED);
 	if (m_maxupload > (uint32)maxGraphUploadRate && m_maxupload != UNLIMITED)

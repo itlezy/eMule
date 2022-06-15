@@ -404,7 +404,7 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
 		return true;
 
-	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+	if (curUploadSlots >= thePrefs.GetMaxUpClientsAllowed())
 		return false;
 
 	uint32 MaxSpeed;
@@ -447,7 +447,7 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
 		return true;
 
-	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+	if (curUploadSlots >= thePrefs.GetMaxUpClientsAllowed())
 		return false;
 
 	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)

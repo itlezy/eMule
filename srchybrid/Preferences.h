@@ -151,6 +151,11 @@ public:
 	// ZZ:UploadSpeedSense <--
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
+	
+	// broadband-MOD>>
+	static uint32	m_maxUpClientsAllowed;
+	// broadband-MOD<<
+
 	static LPCSTR	m_pszBindAddrA;
 	static CStringA m_strBindAddrA;
 	static LPCWSTR	m_pszBindAddrW;
@@ -714,6 +719,7 @@ public:
 	// ZZ:UploadSpeedSense -->
 	static uint32	GetMinUpload()						{ return m_minupload; }
 	// ZZ:UploadSpeedSense <--
+	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }
