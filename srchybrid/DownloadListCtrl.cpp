@@ -143,6 +143,9 @@ void CDownloadListCtrl::Init()
 	InsertColumn(11, stitle,						LVCFMT_LEFT,	120, -1, true);
 	InsertColumn(12, GetResString(IDS_CAT),			LVCFMT_LEFT,	100, -1, true);
 	InsertColumn(13, GetResString(IDS_ADDEDON),		LVCFMT_LEFT,	120);
+	InsertColumn(14, CString("%"),					LVCFMT_RIGHT,	50);
+	InsertColumn(15, GetResString(IDS_IP),			LVCFMT_LEFT,	50);
+	InsertColumn(16, CString("Country"),			LVCFMT_LEFT,	50);
 
 	SetAllIcons();
 	Localize();
@@ -568,7 +571,13 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 				sText += _T('*');
 // ZZ:DownloadManager <--
 		}
-	//	break;
+		break;
+	case 15:
+		sText = pClient->GetCountryName();
+		break;
+	case 16:
+		sText = ipstr(pClient->GetIP());
+		break;
 	//case 9: //remaining time & size
 	//case 10: //last seen complete
 	//case 11: //last received
@@ -1793,6 +1802,7 @@ int CDownloadListCtrl::Compare(const CPartFile *file1, const CPartFile *file2, L
 	case 4: //speed asc
 		return CompareUnsigned(file1->GetDatarate(), file2->GetDatarate());
 	case 5: //progress asc
+	case 14:
 		return sgn((float)file1->GetCompletedSize() / (float)file1->GetFileSize() - (float)file2->GetCompletedSize() / (float)file2->GetFileSize()); //compare exact ratio instead of rounded percents
 	case 6: //sources asc
 		return CompareUnsigned(file1->GetSourceCount(), file2->GetSourceCount());
@@ -2168,6 +2178,10 @@ CString CDownloadListCtrl::GetFileItemDisplayText(const CPartFile *lpPartFile, i
 			sText = lpPartFile->GetCrCFileDate().Format(thePrefs.GetDateTimeFormat4Lists());
 		else
 			sText += _T('?');
+		break;
+	case 14:
+		sText.Format(_T("%.1f%%"), lpPartFile->GetPercentCompleted());
+		break;
 	}
 	return sText;
 }
