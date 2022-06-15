@@ -96,7 +96,7 @@
 #define	MAX_SOURCES_FILE_SOFT	750
 #define	MAX_SOURCES_FILE_UDP	50u
 #define SESSIONMAXTRANS			(1024ui64*1024*1024*64) // Target to upload the entire file to a fast user
-#define SESSIONMAXTIME			HR2MS(1)	//1 hour
+#define SESSIONMAXTIME			HR2MS(3)	//3 hours
 #define	MAXFILECOMMENTLEN		128
 #define	PARTSIZE				9728000ui64
 #define	MAX_EMULE_FILE_SIZE		0x4000000000ui64 // = 2^38 = 256GB
