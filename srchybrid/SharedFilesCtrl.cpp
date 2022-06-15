@@ -283,6 +283,7 @@ void CSharedFilesCtrl::Init()
 	InsertColumn(17, GetResString(IDS_CODEC), LVCFMT_LEFT, DFLT_CODEC_COL_WIDTH, -1, true);
 
 	InsertColumn(18, CString("Ratio"),		  LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
+	InsertColumn(19, CString("Session Ratio"),		  LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
 
 	SetAllIcons();
 	CreateMenus();
@@ -700,6 +701,9 @@ CString CSharedFilesCtrl::GetItemDisplayText(const CShareableFile *file, int iSu
 			break;
 		case 18:
 			sText.Format(_T("%.1f"), (float)pKnownFile->statistic.GetAllTimeTransferred() / (uint64)file->GetFileSize());
+			break;
+		case 19:
+			sText.Format(_T("%.1f"), (float)pKnownFile->statistic.GetTransferred() / (uint64)file->GetFileSize());
 			break;
 		}
 	}
@@ -1251,6 +1255,11 @@ int CALLBACK CSharedFilesCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM l
 				iResult = CompareUnsigned64(
 					100.0f * (float)kitem1->statistic.GetAllTimeTransferred() / (uint64)kitem1->GetFileSize(),
 					100.0f * (float)kitem2->statistic.GetAllTimeTransferred() / (uint64)kitem2->GetFileSize());
+				break;
+			case 19:
+				iResult = CompareUnsigned64(
+					100.0f * (float)kitem1->statistic.GetTransferred() / (uint64)kitem1->GetFileSize(),
+					100.0f * (float)kitem2->statistic.GetTransferred() / (uint64)kitem2->GetFileSize());
 				break;
 
 			case 105: //all requests
