@@ -1,5 +1,5 @@
 # eMule - broadband branch
-The initial purpose of this project was to provide an eMule repository (including dependencies) that is ready to build and update the dependent libraries when possible. This branch specifically focuses on providing a build that is better suited to address nowadays file sizes and broadband availability. Default hard-coded parameters of eMule were better suite for small-files/slow-connections, leading to very low per-client transfer rates by nowadays standards.  
+The initial purpose of this project was to provide an eMule repository (including dependencies) that is ready to build and update the dependent libraries when possible. This branch specifically focuses on providing a build that is better suited to address nowadays file sizes and broadband availability. Default hard-coded parameters of eMule were better suited for small-files/slow-connections, leading to very low per-client transfer rates by nowadays standards.  
 The focus here is to maximise throughput for broadband users, to optimize seeding.  
 The focus is as well to introduce the least amount of changes to preserve the original quality and stability of the client.  
 
