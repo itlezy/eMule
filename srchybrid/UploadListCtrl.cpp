@@ -350,9 +350,9 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		iResult = CompareUnsigned(item1->GetDatarate(), item2->GetDatarate());
 		break;
 	case 3:
-		iResult = CompareUnsigned(item1->GetSessionUp(), item2->GetSessionUp());
+		iResult = CompareUnsigned64(item1->GetSessionUp(), item2->GetSessionUp());
 		if (iResult == 0 && thePrefs.m_bExtControls)
-			iResult = CompareUnsigned(item1->GetQueueSessionPayloadUp(), item2->GetQueueSessionPayloadUp());
+			iResult = CompareUnsigned64(item1->GetQueueSessionPayloadUp(), item2->GetQueueSessionPayloadUp());
 		break;
 	case 4:
 		iResult = CompareUnsigned(item1->GetWaitTime(), item2->GetWaitTime());
