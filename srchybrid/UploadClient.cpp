@@ -484,9 +484,22 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		if (GetDatarate() > 100 * 1024)
 			s->UseBigSendBuffer();
 
-		// if a client is "slow" meaning a 1/4 of the target upload rate, we increase the counter
-		if (GetDatarate() < (UPLOAD_CLIENT_MAXDATARATE / 4))
+		//AddDebugLogLine(false, _T("MU %u UX %u CA %u DR %u"),
+		//	thePrefs.GetMaxUpload() * 1024u, UPLOAD_CLIENT_MAXDATARATE, MAX_UP_CLIENTS_ALLOWED, GetDatarate());
+
+		// if a client is "slow" meaning a 1/MAX_UP_CLIENTS_ALLOWED of the target upload rate, we increase the counter, so to remove the client from the upload slots
+		// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
+		if (thePrefs.GetMaxUpload() != UNLIMITED &&
+			(GetDatarate() < (thePrefs.GetMaxUpload() * 1024u) / MAX_UP_CLIENTS_ALLOWED)) {
 			m_caughtBeingSlow++;
+		}
+		else if (
+			thePrefs.GetMaxUpload() == UNLIMITED &&
+			GetDatarate() < (UPLOAD_CLIENT_MAXDATARATE / MAX_UP_CLIENTS_ALLOWED)) {
+			// this division is a bit of an heuristic, as the UPLOAD_CLIENT_MAXDATARATE logically refers to the single client download speed, but hey, for now it's good enough
+			m_caughtBeingSlow++;
+		}
+
 	}
 
 	if (sentBytesCompleteFile + sentBytesPartFile > 0 ||
