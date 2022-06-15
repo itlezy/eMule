@@ -82,12 +82,6 @@
     <ClCompile Include="DirectoryTreeCtrl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DownloadClientsCtrl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DownloadListCtrl.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DropDownButton.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -344,9 +338,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="UPnPImplMiniLib.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UploadListCtrl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="kademlia\utils\UInt128.cpp">
@@ -741,6 +732,15 @@
     </ClCompile>
     <ClCompile Include="Friend.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="UploadListCtrl.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadListCtrl.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
+    </ClCompile>
+    <ClCompile Include="DownloadClientsCtrl.cpp">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1182,9 +1182,6 @@
     <ClInclude Include="NetworkInfoDlg.h">
       <Filter>Include Files</Filter>
     </ClInclude>
-    <ClInclude Include="Opcodes.h">
-      <Filter>Include Files</Filter>
-    </ClInclude>
     <ClInclude Include="OScopeCtrl.h">
       <Filter>Include Files</Filter>
     </ClInclude>
@@ -1556,6 +1553,9 @@
     </ClInclude>
     <ClInclude Include="IP2Country.h">
       <Filter>Include Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Opcodes.h">
+      <Filter>Source Files\Transfers &amp; Networking</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
