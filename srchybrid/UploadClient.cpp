@@ -495,8 +495,8 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		}
 		else if (
 			thePrefs.GetMaxUpload() == UNLIMITED &&
-			GetDatarate() < (UPLOAD_CLIENT_MAXDATARATE / thePrefs.GetMaxUpClientsAllowed())) {
-			// this division is a bit of an heuristic, as the UPLOAD_CLIENT_MAXDATARATE logically refers to the single client download speed, but hey, for now it's good enough
+			GetDatarate() < UPLOAD_CLIENT_MAXDATARATE) {
+			// still apply a boundary when up speed unlimited
 			m_caughtBeingSlow++;
 		}
 
