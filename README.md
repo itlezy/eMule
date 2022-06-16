@@ -68,7 +68,8 @@ Added some more technical fields to the Download and Upload Slots (like progress
 
 
 ### Sample Results
-This would be a normal upload slots list, in a scenario of 50Mbps capacity
+This would be a normal upload slots list, in a scenario of 50Mbps capacity. So rather than having tenths of uploads, you can get few uploads at top speed.  
 
-![2022-06-14 14_15_35-Window](https://user-images.githubusercontent.com/24484050/173574898-44543e7e-9fde-484a-9851-fd88fd0286cb.png)
+![2022-06-16 12_30_07-Window](https://user-images.githubusercontent.com/24484050/174051485-6e3e2cb6-5a11-4930-bcf4-0e4c49f4d71f.png)
+
 
