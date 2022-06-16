@@ -54,9 +54,17 @@ Added also a bit of logic to remove from the upload slots clients that have been
 ### More fields
 Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT).  
 
+#### Downloads
 ![2022-06-16 12_08_58-Window](https://user-images.githubusercontent.com/24484050/174048587-d5ee8449-8714-47e9-bd3e-695dcf2c6573.png)
+
+#### Uploads
 ![2022-06-16 12_10_15-Window](https://user-images.githubusercontent.com/24484050/174048689-9c5331da-3875-49be-b90f-61e2645af831.png)
+
+#### Shared Files
 ![2022-06-16 12_11_24-Window](https://user-images.githubusercontent.com/24484050/174048775-8f2f56c8-bf71-421e-a532-ebb6dcec3a6e.png)
+
+#### Queue
+![2022-06-16 12_17_22-Window](https://user-images.githubusercontent.com/24484050/174049352-d1b664b5-f952-421f-b720-e4d5ab8b3d42.png)
 
 
 ### Sample Results
