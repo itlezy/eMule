@@ -146,6 +146,7 @@ void CDownloadListCtrl::Init()
 	InsertColumn(14, CString("%"),					LVCFMT_RIGHT,	50);
 	InsertColumn(15, CString("Country"),			LVCFMT_LEFT,	50);
 	InsertColumn(16, GetResString(IDS_IP),			LVCFMT_LEFT,	50);
+	InsertColumn(17, GetResString(IDS_IDLOW), LVCFMT_LEFT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -577,6 +578,9 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 		break;
 	case 16:
 		sText = ipstr(pClient->GetIP());
+		break;
+	case 17:
+		sText.Format(_T("%s"), GetResString(pClient->HasLowID() ? IDS_IDLOW : IDS_IDHIGH));
 		break;
 	//case 9: //remaining time & size
 	//case 10: //last seen complete
