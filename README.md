@@ -36,7 +36,7 @@ Enjoy and contribute!
 
 ## Summary of changes
 ### opcodes
-The one real difference is fiddling the values of  
+The one main difference is fiddling the values of  
 
 ```c
 SESSIONMAXTRANS
@@ -45,14 +45,22 @@ MAX_UP_CLIENTS_ALLOWED
 UPLOAD_CLIENT_MAXDATARATE
 ```
   
-to more appropriate values for high-speed connections and large files, and by actually applying the limit of `MAX_UP_CLIENTS_ALLOWED`.  
+to more appropriate values for high-speed connections and large files, and by actually applying the limit of `MAX_UP_CLIENTS_ALLOWED`, which can also be configured from ini file.  
 As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds. In addition to that it is likely best to let clients download entire files, so `SESSIONMAXTRANS` and `SESSIONMAXTIME` are increased.  
 
 ### UploadQueue
 Added also a bit of logic to remove from the upload slots clients that have been below a download rate for a certain period of time, so to give more priority to fast downloaders, which should also be fast uploaders to an extent so then they can propagate files quicker if they get it first. The *slower* clients will be able to be back in the slots once the fastest have been served.  
 
+### More fields
+Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT).  
+
+![2022-06-16 12_08_58-Window](https://user-images.githubusercontent.com/24484050/174048587-d5ee8449-8714-47e9-bd3e-695dcf2c6573.png)
+![2022-06-16 12_10_15-Window](https://user-images.githubusercontent.com/24484050/174048689-9c5331da-3875-49be-b90f-61e2645af831.png)
+![2022-06-16 12_11_24-Window](https://user-images.githubusercontent.com/24484050/174048775-8f2f56c8-bf71-421e-a532-ebb6dcec3a6e.png)
+
+
 ### Sample Results
-This would be a normal upload slots list
+This would be a normal upload slots list, in a scenario of 50Mbps capacity
 
 ![2022-06-14 14_15_35-Window](https://user-images.githubusercontent.com/24484050/173574898-44543e7e-9fde-484a-9851-fd88fd0286cb.png)
 
