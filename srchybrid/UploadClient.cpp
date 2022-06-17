@@ -163,7 +163,7 @@ int CUpDownClient::GetFilePrioFromRatio() const
 	float ratio = (float)currequpfile->statistic.GetAllTimeTransferred() / (uint64)currequpfile->GetFileSize();
 
 	if      (ratio <  1.0f) return 50;
-	else if (ratio <  6.0f) return 50 - ratio;
+	else if (ratio <  6.0f) return 20 - ratio;
 	else return 1;
 }
 
