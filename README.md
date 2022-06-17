@@ -49,7 +49,9 @@ to more appropriate values for high-speed connections and large files, and by ac
 As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds. In addition to that it is likely best to let clients download entire files, so `SESSIONMAXTRANS` and `SESSIONMAXTIME` are increased.  
 
 ### UploadQueue
-Added also a bit of logic to remove from the upload slots clients that have been below a download rate for a certain period of time, so to give more priority to fast downloaders, which should also be fast uploaders to an extent so then they can propagate files quicker if they get it first. The *slower* clients will be able to be back in the slots once the fastest have been served.  
+With the philosophy of keeping changes to a minimum:
+- Added a bit of logic to remove from the upload slots clients that have been below a download rate for a certain period of time, so to give more priority to fast downloaders, which should also be fast uploaders to an extent so then they can propagate files quicker if they get it first. The *slower* clients will be able to be back in the slots once the fastest have been served
+- Added a "ratio" display in upload slot, upload queue and shared files, so to provide evidence on the seeding ratio of files. Low ratio files from the queue will be "bumped" to an higher score, to spread quicker  
 
 ### More fields
 Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT).  
