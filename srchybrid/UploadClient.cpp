@@ -152,6 +152,22 @@ float CUpDownClient::GetCombinedFilePrioAndCredit()
 }
 
 /**
+ * Gets the file multiplier based on the shared ratio
+ */
+int CUpDownClient::GetFilePrioFromRatio() const
+{
+	const CKnownFile* currequpfile = theApp.sharedfiles->GetFileByID(requpfileid);
+	if (!currequpfile)
+		return 0;
+
+	float ratio = (float)currequpfile->statistic.GetAllTimeTransferred() / (uint64)currequpfile->GetFileSize();
+
+	if      (ratio <  1.0f) return 50;
+	else if (ratio <  6.0f) return 50 - ratio;
+	else return 1;
+}
+
+/**
  * Gets the file multiplier for the file this client has requested.
  */
 int CUpDownClient::GetFilePrioAsNumber() const
@@ -216,7 +232,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
 
-	int filepriority = GetFilePrioAsNumber();
+	int filepriority = GetFilePrioAsNumber() + GetFilePrioFromRatio();
 
 	// calculate score, based on waitingtime and other factors
 	float fBaseValue;
@@ -243,6 +259,11 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;
+
+	//AddDebugLogLine(false, _T("File %s prio o %u u %u obv %u fbv %f"), 
+	//	theApp.sharedfiles->GetFileByID(requpfileid)->GetFileName(), ofilepriority, filepriority,
+	//	onlybasevalue, fBaseValue);
+
 	return (uint32)fBaseValue;
 }
 

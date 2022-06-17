@@ -590,6 +590,8 @@ protected:
 	// Upload
 	//
 	int GetFilePrioAsNumber() const;
+	int GetFilePrioFromRatio() const;
+
 
 	UINT		m_nTransferredUp;
 	DWORD		m_dwUploadTime;

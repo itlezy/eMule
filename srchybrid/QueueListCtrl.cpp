@@ -100,6 +100,9 @@ void CQueueListCtrl::Init()
 	InsertColumn(15, CString("Client Hash"), LVCFMT_LEFT, 50);	
 	InsertColumn(16, CString("File Size"), LVCFMT_RIGHT, 50);
 
+	InsertColumn(17, CString("Ratio"), LVCFMT_RIGHT, 50);
+	InsertColumn(18, CString("Session Ratio"), LVCFMT_RIGHT, 50);
+
 	SetAllIcons();
 	Localize();
 	LoadSettings();
@@ -315,9 +318,26 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		break;
 
 	case 16:
-		const CKnownFile * file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 		if (file)
 			sText.Format(_T("%s"), (LPCTSTR)CastItoXBytes(file->GetFileSize()));
+	}
+		break;
+
+
+	case 17: // total ratio
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		sText.Format(_T("%.1f"), file->GetAllTimeRatio());
+	}
+		break;
+
+	case 18: // session ratio
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		sText.Format(_T("%.1f"), file->GetRatio());
+	}
 		break;
 
 	}
@@ -456,12 +476,42 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		}
 		break;
 	case 16:
-		const CKnownFile * file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
 		if (file1 != NULL && file2 != NULL)
 			iResult = CompareUnsigned64(file1->GetFileSize(), file2->GetFileSize());
 		else
 			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 17:
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(
+				100 * file1->GetAllTimeRatio(),
+				100 * file2->GetAllTimeRatio());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 18:
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(
+				100 * file1->GetRatio(),
+				100 * file2->GetRatio());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
 		break;
 
 	}

@@ -63,6 +63,9 @@ public:
 	// nr. of 9MB parts according the file size wrt ED2K protocol (OP_FILESTATUS)
 	inline uint16 GetED2KPartCount() const				{ return m_iED2KPartCount; }
 
+	float GetRatio() const { return (float)statistic.GetTransferred() / (uint64)GetFileSize(); }
+	float GetAllTimeRatio() const { return (float)statistic.GetAllTimeTransferred() / (uint64)GetFileSize(); }
+
 	// file upload priority
 	uint8	GetUpPriority() const						{ return m_iUpPriority; }
 	void	SetUpPriority(uint8 iNewUpPriority, bool bSave = true);

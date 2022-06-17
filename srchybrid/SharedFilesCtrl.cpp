@@ -699,11 +699,11 @@ CString CSharedFilesCtrl::GetItemDisplayText(const CShareableFile *file, int iSu
 		case 17:
 			sText = GetCodecDisplayName(pKnownFile->GetStrTagValue(FT_MEDIA_CODEC));
 			break;
-		case 18:
-			sText.Format(_T("%.1f"), (float)pKnownFile->statistic.GetAllTimeTransferred() / (uint64)file->GetFileSize());
+		case 18: // total ratio
+			sText.Format(_T("%.1f"), pKnownFile->GetAllTimeRatio());
 			break;
-		case 19:
-			sText.Format(_T("%.1f"), (float)pKnownFile->statistic.GetTransferred() / (uint64)file->GetFileSize());
+		case 19: // session ratio
+			sText.Format(_T("%.1f"), pKnownFile->GetRatio());
 			break;
 		}
 	}
@@ -1252,14 +1252,14 @@ int CALLBACK CSharedFilesCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM l
 				iResult = CompareOptLocaleStringNoCaseUndefinedAtBottom(GetCodecDisplayName(kitem1->GetStrTagValue(FT_MEDIA_CODEC)), GetCodecDisplayName(kitem2->GetStrTagValue(FT_MEDIA_CODEC)), bSortAscending);
 				break;
 			case 18:
-				iResult = CompareUnsigned64(
-					100.0f * (float)kitem1->statistic.GetAllTimeTransferred() / (uint64)kitem1->GetFileSize(),
-					100.0f * (float)kitem2->statistic.GetAllTimeTransferred() / (uint64)kitem2->GetFileSize());
+				iResult = CompareUnsigned(
+					100 * kitem1->GetAllTimeRatio(),
+					100 * kitem2->GetAllTimeRatio());
 				break;
 			case 19:
-				iResult = CompareUnsigned64(
-					100.0f * (float)kitem1->statistic.GetTransferred() / (uint64)kitem1->GetFileSize(),
-					100.0f * (float)kitem2->statistic.GetTransferred() / (uint64)kitem2->GetFileSize());
+				iResult = CompareUnsigned(
+					100 * kitem1->GetRatio(),
+					100 * kitem2->GetRatio());
 				break;
 
 			case 105: //all requests
