@@ -160,10 +160,10 @@ int CUpDownClient::GetFilePrioFromRatio() const
 	if (!currequpfile)
 		return 0;
 
-	float ratio = (float)currequpfile->statistic.GetAllTimeTransferred() / (uint64)currequpfile->GetFileSize();
+	float ratio = (float)currequpfile->GetAllTimeRatio();
 
-	if      (ratio <  1.0f) return 50;
-	else if (ratio <  6.0f) return 20 - ratio;
+	if      (ratio <  1.0f) return 60;           // if share ratio below 1, bump up by 60 points
+	else if (ratio <  6.0f) return 15 - ratio;   // if share ratio below 6, bump up by much less
 	else return 1;
 }
 
@@ -496,8 +496,8 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		CKnownFile *pCurrentUploadFile = theApp.sharedfiles->GetFileByID(GetUploadFileID());
 		if (pCurrentUploadFile != NULL)
 			pCurrentUploadFile->statistic.AddTransferred(sentBytesPayload);
-//		else
-//			ASSERT( false ); //fired after deleting shared files which had uploads in the current eMule run. Closing messagebox did not cause any problems.
+		//		else
+		//			ASSERT( false ); //fired after deleting shared files which had uploads in the current eMule run. Closing messagebox did not cause any problems.
 
 		// increase the sockets buffer on fast uploads. Even though this check should rather be
 		// in the throttler thread, its better to do it here because we can access the client's

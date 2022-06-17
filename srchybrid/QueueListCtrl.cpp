@@ -329,14 +329,16 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 	case 17: // total ratio
 	{
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-		sText.Format(_T("%.1f"), file->GetAllTimeRatio());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetAllTimeRatio());
 	}
 		break;
 
 	case 18: // session ratio
 	{
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-		sText.Format(_T("%.1f"), file->GetRatio());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetRatio());
 	}
 		break;
 

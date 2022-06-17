@@ -289,13 +289,8 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	{
 		// TODO need to review better this calculation as the client might have already part of the file
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-		if (file) {
-			// display the percentage over the overall file size if less than max trans
-			sText.Format(_T("%.1f%%"), (float)client->GetQueueSessionPayloadUp() / (float)file->GetFileSize() * 100.0);
-		}
-		else {
-			sText.Format(_T("(%s)"), (LPCTSTR)GetResString(IDS_UNKNOWN));
-		}
+		if (file) 
+			sText.Format(_T("%.1f%%"), (float)client->GetSessionUp() / (float)file->GetFileSize() * 100.0);
 	}
 		break;
 
@@ -310,14 +305,16 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	case 16: // total ratio
 	{
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-		sText.Format(_T("%.1f"), file->GetAllTimeRatio());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetAllTimeRatio());
 	}
 		break;
 
 	case 17: // session ratio
 	{
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-		sText.Format(_T("%.1f"), file->GetRatio());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetRatio());
 	}
 		break;
 
