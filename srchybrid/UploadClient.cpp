@@ -218,7 +218,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
 
-	int filepriority = GetFilePrioAsNumber();// +GetFilePrioFromRatio();
+	int filepriority = GetFilePrioAsNumber();
 
 	// calculate score, based on waitingtime and other factors
 	float fBaseValue;
@@ -492,8 +492,8 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		CKnownFile *pCurrentUploadFile = theApp.sharedfiles->GetFileByID(GetUploadFileID());
 		if (pCurrentUploadFile != NULL)
 			pCurrentUploadFile->statistic.AddTransferred(sentBytesPayload);
-		//		else
-		//			ASSERT( false ); //fired after deleting shared files which had uploads in the current eMule run. Closing messagebox did not cause any problems.
+//		else
+//			ASSERT( false ); //fired after deleting shared files which had uploads in the current eMule run. Closing messagebox did not cause any problems.
 
 		// increase the sockets buffer on fast uploads. Even though this check should rather be
 		// in the throttler thread, its better to do it here because we can access the client's
