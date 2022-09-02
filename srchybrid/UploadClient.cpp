@@ -152,22 +152,6 @@ float CUpDownClient::GetCombinedFilePrioAndCredit()
 }
 
 /**
- * Gets the file multiplier based on the shared ratio
- */
-int CUpDownClient::GetFilePrioFromRatio() const
-{
-	const CKnownFile* currequpfile = theApp.sharedfiles->GetFileByID(requpfileid);
-	if (!currequpfile)
-		return 0;
-
-	float ratio = (float)currequpfile->GetAllTimeRatio();
-
-	if      (ratio <  1.0f) return 60;           // if share ratio below 1, bump up by 60 points
-	else if (ratio <  6.0f) return 15 - ratio;   // if share ratio below 6, bump up by much less
-	else return 1;
-}
-
-/**
  * Gets the file multiplier for the file this client has requested.
  */
 int CUpDownClient::GetFilePrioAsNumber() const
@@ -216,7 +200,9 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 		return 0;
 	}
 
-	if (!theApp.sharedfiles->GetFileByID(requpfileid)) //is any file requested?
+	const CKnownFile* currequpfile = theApp.sharedfiles->GetFileByID(requpfileid);
+
+	if (!currequpfile) //is any file requested?
 		return 0;
 
 	// bad clients (see note in function)
@@ -232,7 +218,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
 
-	int filepriority = GetFilePrioAsNumber() + GetFilePrioFromRatio();
+	int filepriority = GetFilePrioAsNumber();// +GetFilePrioFromRatio();
 
 	// calculate score, based on waitingtime and other factors
 	float fBaseValue;
@@ -260,9 +246,19 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;
 
-	//AddDebugLogLine(false, _T("File %s prio o %u u %u obv %u fbv %f"), 
-	//	theApp.sharedfiles->GetFileByID(requpfileid)->GetFileName(), ofilepriority, filepriority,
-	//	onlybasevalue, fBaseValue);
+	float ratio = (float)currequpfile->GetAllTimeRatio();
+
+	// boost low ratio files
+	if      (ratio < 1.33f) fBaseValue = (fBaseValue + 333) * 3.33f;
+	else if (ratio < 2.33f) fBaseValue = (fBaseValue +  33) * 1.33f;
+
+	// lower LowIDs or files shared more than 3 times
+	if (HasLowID() || (ratio > 3.33f)) fBaseValue *= 0.33f;
+
+	// boost smaller files (lt 64Mb) as they go away quickly
+	if ((float)currequpfile->GetFileSize() < (64.0f * 1024 * 1024)) fBaseValue = (fBaseValue + 99) * 3.33f;
+
+	//AddDebugLogLine(false, _T("File fprio %u atratio %f fBaseValue %f - '%s'"), filepriority, ratio, fBaseValue, currequpfile->GetFileName());
 
 	return (uint32)fBaseValue;
 }
