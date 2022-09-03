@@ -249,7 +249,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	float ratio = (float)currequpfile->GetAllTimeRatio();
 
 	// boost low ratio files
-	if      (ratio < 1.33f) fBaseValue = (fBaseValue + 333) * 3.33f;
+	if      (ratio < 1.33f) fBaseValue = (fBaseValue + 133) * 3.33f;
 	else if (ratio < 2.33f) fBaseValue = (fBaseValue +  33) * 1.33f;
 
 	// lower LowIDs or files shared more than 3 times
@@ -505,10 +505,10 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		//	thePrefs.GetMaxUpload() * 1024u, UPLOAD_CLIENT_MAXDATARATE, MAX_UP_CLIENTS_ALLOWED, GetDatarate());
 
 		//TODO a sensible approach would be to scale this behavior based on a max observed (or average 90pct) speed so to avoid the ifs
-		// if a client is "slow" meaning a 1/MAX_UP_CLIENTS_ALLOWED of the target upload rate, we increase the counter, so to remove the client from the upload slots
+		// if a client is "slow" meaning a 1/(1.33 * MAX_UP_CLIENTS_ALLOWED) of the target upload rate, we increase the counter, so to remove the client from the upload slots
 		// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
 		if ((thePrefs.GetMaxUpload() != UNLIMITED) &&
-			(GetDatarate() < ((thePrefs.GetMaxUpload() * 1024u) / (1 + thePrefs.GetMaxUpClientsAllowed())))) {
+			(GetDatarate() < ((thePrefs.GetMaxUpload() * 1024u) / (1.33f * thePrefs.GetMaxUpClientsAllowed())))) {
 			m_caughtBeingSlow++;
 		}
 		else if (

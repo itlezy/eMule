@@ -290,7 +290,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		// TODO need to review better this calculation as the client might have already part of the file
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 		if (file) 
-			sText.Format(_T("%.1f%%"), (float)client->GetSessionUp() / (float)file->GetFileSize() * 100.0);
+			sText.Format(_T("%.1f%%"), (float)client->GetTransferredUp() / (float)file->GetFileSize() * 100.0);
 	}
 		break;
 
@@ -475,7 +475,15 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		}
 		break;
 	case 14:
-		iResult = CompareUnsigned64(item1->GetSessionUp(), item2->GetSessionUp());
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned64(
+				(float)item1->GetTransferredUp() / (float)file1->GetFileSize() * 1000.0,
+				(float)item2->GetTransferredUp() / (float)file2->GetFileSize() * 1000.0);
+		
+	}
 		break;
 	case 15:
 	{
