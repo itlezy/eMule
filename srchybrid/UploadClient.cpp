@@ -505,10 +505,10 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		//	thePrefs.GetMaxUpload() * 1024u, UPLOAD_CLIENT_MAXDATARATE, MAX_UP_CLIENTS_ALLOWED, GetDatarate());
 
 		//TODO a sensible approach would be to scale this behavior based on a max observed (or average 90pct) speed so to avoid the ifs
-		// if a client is "slow" meaning a 1/(1.33 * MAX_UP_CLIENTS_ALLOWED) of the target upload rate, we increase the counter, so to remove the client from the upload slots
+		// if a client is "slow" meaning a 1/(1.33 * (1 + MAX_UP_CLIENTS_ALLOWED)) of the target upload rate, we increase the counter, so to remove the client from the upload slots
 		// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
 		if ((thePrefs.GetMaxUpload() != UNLIMITED) &&
-			(GetDatarate() < ((thePrefs.GetMaxUpload() * 1024u) / (1.33f * thePrefs.GetMaxUpClientsAllowed())))) {
+			(GetDatarate() < ((thePrefs.GetMaxUpload() * 1024u) / (1.33f * (1 + thePrefs.GetMaxUpClientsAllowed()))))) {
 			m_caughtBeingSlow++;
 		}
 		else if (
