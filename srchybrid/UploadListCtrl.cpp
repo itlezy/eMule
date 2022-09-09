@@ -105,6 +105,10 @@ void CUploadListCtrl::Init()
 	InsertColumn(16, CString("Ratio"), LVCFMT_RIGHT, 50);
 	InsertColumn(17, CString("Session Ratio"), LVCFMT_RIGHT, 50);
 
+	InsertColumn(18, GetResString(IDS_UPSTATUS), LVCFMT_RIGHT, 50);
+
+	InsertColumn(19, CString("ETA"), LVCFMT_RIGHT, 50);
+
 	SetAllIcons();
 	Localize();
 	LoadSettings();
@@ -317,6 +321,33 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			sText.Format(_T("%.1f"), file->GetRatio());
 	}
 		break;
+
+	case 18: // upload parts status (numeric)
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		UploadingToClient_Struct* pUpClientStruct = theApp.uploadqueue->GetUploadingClientStructByClient(client);
+
+		if (file && pUpClientStruct)
+			sText.Format(_T("%d / %d"),
+				pUpClientStruct->m_DoneBlocks_list.GetCount(),
+				(uint64)file->GetFileSize() / EMBLOCKSIZE);
+
+	}
+		break;
+
+	case 19:
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file) {
+			uint64 dataLeft = (uint64)file->GetFileSize() - client->GetSessionUp();
+			uint64 dataRate = client->GetDatarate();
+
+			if (dataLeft > 0 && dataRate > 0) sText = CastSecondsToHM(dataLeft / dataRate);
+			else sText = "-";
+		}
+	}
+		break;
+
 
 	}
 
