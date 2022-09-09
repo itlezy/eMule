@@ -62,16 +62,16 @@ void CUpDownClient::DrawUpStatusBar(CDC *dc, const CRect &rect, bool onlygreyrec
 	if (GetSlotNumber() <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
 		|| (GetUploadState() != US_UPLOADING && GetUploadState() != US_CONNECTING))
 	{
-		crNeither = RGB(224, 224, 224);
-		crNextSending = RGB(255, 208, 0);
-		crBoth = bFlat ? RGB(0, 0, 0) : RGB(104, 104, 104);
-		crSending = RGB(0, 150, 0);
+		crNeither = RGB(224, 224, 224); // light gray
+		crNextSending = RGB(255, 208, 0); // dark yellow
+		crBoth = bFlat ? RGB(0, 0, 0) : RGB(104, 104, 104); // black or dark gray
+		crSending = RGB(0, 150, 0); // light green
 	} else {
 		// grayed out
-		crNeither = RGB(248, 248, 248);
-		crNextSending = RGB(255, 244, 191);
-		crBoth = /*bFlat ? RGB(191, 191, 191) :*/ RGB(191, 191, 191);
-		crSending = RGB(191, 229, 191);
+		crNeither = RGB(248, 248, 248); // very light gray
+		crNextSending = RGB(255, 244, 191); // very light yellow
+		crBoth = /*bFlat ? RGB(191, 191, 191) :*/ RGB(191, 191, 191); // gray
+		crSending = RGB(191, 229, 191); // light green
 	}
 
 	// wistily: UpStatusFix
@@ -516,6 +516,10 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 			(GetDatarate() < UPLOAD_CLIENT_MAXDATARATE)) {
 			// still apply a boundary when up speed unlimited
 			m_caughtBeingSlow++;
+		}
+
+		if (0 == GetDatarate()) {
+			m_caughtBeingSlow += 32;
 		}
 
 	}
