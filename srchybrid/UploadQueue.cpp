@@ -205,6 +205,8 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	if (pszReason && thePrefs.GetLogUlDlEvents())
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
 
+	newclient->m_caughtBeingSlow = 0;
+
 	if (newclient->HasCollectionUploadSlot() && directadd == NULL) {
 		ASSERT(0);
 		newclient->SetCollectionUploadSlot(false);
