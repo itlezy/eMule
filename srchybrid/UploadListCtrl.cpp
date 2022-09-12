@@ -289,7 +289,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
 		break;
 
-	case 14:
+	case 14: // upload percentage %
 	{
 		// TODO need to review better this calculation as the client might have already part of the file
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
@@ -298,7 +298,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	}
 		break;
 
-	case 15:
+	case 15: // file size
 	{
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 		if (file)
@@ -329,20 +329,21 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 
 		if (file && pUpClientStruct)
 			sText.Format(_T("%d / %d"),
-				pUpClientStruct->m_DoneBlocks_list.GetCount(),
-				(uint64)file->GetFileSize() / EMBLOCKSIZE);
+				(int)pUpClientStruct->m_DoneBlocks_list.GetCount(),
+				(int)file->GetFileSize() / EMBLOCKSIZE);
 
 	}
 		break;
 
-	case 19:
+	case 19: // ETA
 	{
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 		if (file) {
 			uint64 dataLeft = (uint64)file->GetFileSize() - client->GetSessionUp();
 			uint64 dataRate = client->GetDatarate();
 
-			if (dataLeft > 0 && dataRate > 0) sText = CastSecondsToHM(dataLeft / dataRate);
+			if (dataLeft > 1024 && dataRate > 1024 &&
+				dataLeft / dataRate > 0 && dataLeft / dataRate < 60 * 60 * 8) sText = CastSecondsToHM(dataLeft / dataRate);
 			else sText = "-";
 		}
 	}
