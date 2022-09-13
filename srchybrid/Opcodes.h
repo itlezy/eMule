@@ -57,7 +57,7 @@
 
 // MOD Note: Do not change this part - Merkur
 #define UDPSEARCHSPEED			SEC2MS(1)	//1 sec - if this value is too low you will miss sources
-#define MAX_RESULTS				300			// max global search results
+#define MAX_RESULTS				100			// max global search results
 #define	MAX_MORE_SEARCH_REQ		5			// this gives a max. total search results of (1+5)*201 = 1206 or (1+5)*300 = 1800
 #define MAX_CLIENTCONNECTIONTRY	2
 #define CONNECTION_TIMEOUT		SEC2MS(40)	//40 secs - set his lower if you want less connections at once, set it higher if you have enough sockets (edonkey has its own timeout too, so a very high value won't effect this)
