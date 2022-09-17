@@ -353,7 +353,6 @@ int		CPreferences::iMaxLogBuff;
 UINT	CPreferences::uMaxLogFileSize;
 ELogFileFormat CPreferences::m_iLogFileFormat = Unicode;
 bool	CPreferences::scheduler;
-bool	CPreferences::dontcompressavi;
 bool	CPreferences::msgonlyfriends;
 bool	CPreferences::msgsecure;
 bool	CPreferences::m_bUseChatCaptchas;
@@ -2022,7 +2021,6 @@ void CPreferences::LoadPreferences()
 	trafficOMeterInterval = ini.GetInt(_T("StatGraphsInterval"), 3);
 	statsInterval = ini.GetInt(_T("statsInterval"), 5);
 	m_bFillGraphs = ini.GetBool(_T("StatsFillGraphs"));
-	dontcompressavi = ini.GetBool(_T("DontCompressAvi"), false);
 
 	m_uDeadServerRetries = ini.GetInt(_T("DeadServerRetry"), 1);
 	if (m_uDeadServerRetries > MAX_SERVERFAILCOUNT)

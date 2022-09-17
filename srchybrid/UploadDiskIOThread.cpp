@@ -40,8 +40,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define SLOT_COMPRESSIONCHECK_DATARATE		(150 * 1024)	// Data rate for a single client from which we start to check if we need to disable compression
-#define MAX_FINISHED_REQUESTS_COMPRESSION	15				// Max waiting finished requests before disabling compression (if total upload > SLOT_COMPRESSIONCHECK_DATARATE)
 #define BIGBUFFER_MINDATARATE				(75 * 1024)
 
 IMPLEMENT_DYNCREATE(CUploadDiskIOThread, CWinThread)
@@ -113,7 +111,6 @@ UINT CUploadDiskIOThread::RunInternal()
 			if (GetOverlappedResult(pCurPendingIO->pFileStruct->hFile, &pCurPendingIO->oOverlap, &dwRead, FALSE)) {
 				m_listPendingIO.RemoveAt(pos2);
 				// we add it to a list instead of processing it directly because we need to know how many finished IOs
-				// we have to decide if we can use compression or need to speedup later on
 				pCurPendingIO->dwRead = dwRead;
 				m_listFinishedIO.AddTail(pCurPendingIO);
 			} else {
@@ -258,7 +255,6 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 				pOpenOvFileStruct->hFile = hFile;
 				pOpenOvFileStruct->nInUse = 0; // we increase it later right before the right call
 				pOpenOvFileStruct->bStatsIsPartfile = srcfile->IsPartFile();
-				pOpenOvFileStruct->bCompress = ShouldCompressBasedOnFilename(fullname);
 				pOpenOvFileStruct->uFileSize = (uint64)srcfile->GetFileSize();
 				m_listOpenFiles.AddTail(pOpenOvFileStruct);
 			}
@@ -365,24 +361,6 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwErrorCode, DWORD dwBytes
 			if (pSocket == NULL || !(bPeerCache || pSocket->IsConnected()))
 				theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pOverlappedExStruct->pUploadClientStruct->m_pClient->DbgGetClientInfo(true));
 			else {
-				// figure out if we need to disable compression. If the data rate is high enough, the socket indicates that it needs more data
-				// and we have requests pending, its time to disable it
-				bool bUseCompression = false;
-				// first the static check to see if we could at all
-				if (!bPeerCache && pOverlappedExStruct->pFileStruct->bCompress && pOverlappedExStruct->pUploadClientStruct->m_pClient->GetDataCompressionVersion() == 1 && !pOverlappedExStruct->pUploadClientStruct->m_bDisableCompression) {
-					// now the dynamic ones to check if its fine for this upload slot
-					if (m_listFinishedIO.GetCount() > MAX_FINISHED_REQUESTS_COMPRESSION && theApp.uploadqueue->GetDatarate() > SLOT_COMPRESSIONCHECK_DATARATE) {
-						pOverlappedExStruct->pUploadClientStruct->m_bDisableCompression = true;
-						if (thePrefs.GetVerbose())
-							theApp.QueueDebugLogLine(false, _T("Disabled compression for upload slot because of too many unprocessed finished IO requests (%u), client: %s"), m_listFinishedIO.GetCount(), (LPCTSTR)pOverlappedExStruct->pUploadClientStruct->m_pClient->DbgGetClientInfo(true));
-					} else if (pOverlappedExStruct->pUploadClientStruct->m_pClient->GetDatarate() > SLOT_COMPRESSIONCHECK_DATARATE && !pSocket->HasQueues(true) && !pSocket->IsBusyQuickCheck()) {
-						pOverlappedExStruct->pUploadClientStruct->m_bDisableCompression = true;
-						if (thePrefs.GetVerbose())
-							theApp.QueueDebugLogLine(false, _T("Disabled compression for upload slot because socket is starving for data, client: %s"), (LPCTSTR)pOverlappedExStruct->pUploadClientStruct->m_pClient->DbgGetClientInfo(true));
-					} else
-						bUseCompression = true;
-				}
-
 				CString strDbgClientInfo;
 				if (thePrefs.GetDebugClientTCPLevel() > 0)
 					strDbgClientInfo = pOverlappedExStruct->pUploadClientStruct->m_pClient->DbgGetClientInfo(true);
@@ -391,10 +369,6 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwErrorCode, DWORD dwBytes
 						, pOverlappedExStruct->uEndOffset, pOverlappedExStruct->pFileStruct->uFileSize
 						, pOverlappedExStruct->pFileStruct->bStatsIsPartfile, packetsList, pOverlappedExStruct->pFileStruct->ucMD4FileHash
 						, pOverlappedExStruct->pUploadClientStruct->m_pClient);
-				} else if (bUseCompression) {
-					CreatePackedPackets(pOverlappedExStruct->pBuffer, pOverlappedExStruct->uStartOffset
-						, pOverlappedExStruct->uEndOffset, pOverlappedExStruct->pFileStruct->bStatsIsPartfile, packetsList
-						, pOverlappedExStruct->pFileStruct->ucMD4FileHash, strDbgClientInfo);
 				} else {
 					CreateStandardPackets(pOverlappedExStruct->pBuffer, pOverlappedExStruct->uStartOffset
 						, pOverlappedExStruct->uEndOffset, pOverlappedExStruct->pFileStruct->bStatsIsPartfile, packetsList
@@ -440,17 +414,6 @@ bool CUploadDiskIOThread::ReleaseOvOpenFile(OpenOvFile_Struct *pOpenOvFileStruct
 	return false;
 }
 
-bool CUploadDiskIOThread::ShouldCompressBasedOnFilename(const CString &strFileName)
-{
-	int pos = strFileName.ReverseFind(_T('.'));
-	if (pos < 0)
-		return true;
-	const CString &strExt(strFileName.Mid(pos + 1).MakeLower());
-	if (strExt == _T("avi"))
-		return !thePrefs.GetDontCompressAvi();
-	return strExt != _T("zip") && strExt != _T("7z") && strExt != _T("rar") && strExt != _T("cbz") && strExt != _T("cbr") && strExt != _T("ace") && strExt != _T("ogm");
-}
-
 void CUploadDiskIOThread::CreateStandardPackets(byte *pbyData, uint64 uStartOffset, uint64 uEndOffset, bool bFromPF, CPacketList &rOutPacketList, const uchar *pucMD4FileHash, const CString &strDbgClientInfo)
 {
 	uint32 togo = (uint32)(uEndOffset - uStartOffset);
@@ -489,64 +452,6 @@ void CUploadDiskIOThread::CreateStandardPackets(byte *pbyData, uint64 uStartOffs
 		packet->uStatsPayLoad = nPacketSize;
 		rOutPacketList.AddTail(packet);
 	}
-}
-
-void CUploadDiskIOThread::CreatePackedPackets(byte *pbyData, uint64 uStartOffset, uint64 uEndOffset, bool bFromPF, CPacketList &rOutPacketList, const uchar *pucMD4FileHash, const CString &strDbgClientInfo)
-{
-	uint32 togo = (uint32)(uEndOffset - uStartOffset);
-	uLongf newsize = togo + 300;
-	BYTE *output = new BYTE[newsize];
-	int result = compress2(output, &newsize, pbyData, togo, 9);
-	if (result != Z_OK || togo <= newsize) {
-		delete[] output;
-		CreateStandardPackets(pbyData, uStartOffset, uEndOffset, bFromPF, rOutPacketList, pucMD4FileHash, strDbgClientInfo);
-		return;
-	}
-	CMemFile memfile(output, newsize);
-	uint32 oldSize = togo;
-	togo = newsize;
-	uint32 nPacketSize = (togo > 10240u) ? togo / (togo / 10240u) : togo;
-
-	uint32 totalPayloadSize = 0;
-
-	while (togo) {
-		if (togo < nPacketSize * 2)
-			nPacketSize = togo;
-		ASSERT(nPacketSize);
-		togo -= nPacketSize;
-		uint64 statpos = uStartOffset;
-		Packet *packet;
-		if (uStartOffset > UINT32_MAX || uEndOffset > UINT32_MAX) {
-			packet = new Packet(OP_COMPRESSEDPART_I64, nPacketSize + 28, OP_EMULEPROT, bFromPF);
-			md4cpy(&packet->pBuffer[0], pucMD4FileHash);
-			PokeUInt64(&packet->pBuffer[16], statpos);
-			PokeUInt32(&packet->pBuffer[24], newsize);
-			memfile.Read(&packet->pBuffer[28], nPacketSize);
-		} else {
-			packet = new Packet(OP_COMPRESSEDPART, nPacketSize + 24, OP_EMULEPROT, bFromPF);
-			md4cpy(&packet->pBuffer[0], pucMD4FileHash);
-			PokeUInt32(&packet->pBuffer[16], (uint32)statpos);
-			PokeUInt32(&packet->pBuffer[20], newsize);
-			memfile.Read(&packet->pBuffer[24], nPacketSize);
-		}
-
-		if (thePrefs.GetDebugClientTCPLevel() > 0) {
-			Debug(_T(">>> %-20hs to   %s; %s\n"), _T("OP_CompressedPart"), (LPCTSTR)strDbgClientInfo, (LPCTSTR)md4str(pucMD4FileHash));
-			Debug(_T("  Start=%I64u  BlockSize=%u  Size=%u\n"), statpos, newsize, nPacketSize);
-		}
-		// approximate payload size
-		uint32 payloadSize = nPacketSize * oldSize / newsize;
-
-		if (togo == 0 && totalPayloadSize + payloadSize < oldSize)
-			payloadSize = oldSize - totalPayloadSize;
-
-		totalPayloadSize += payloadSize;
-
-		theStats.AddUpDataOverheadFileRequest(24);
-		packet->uStatsPayLoad = payloadSize;
-		rOutPacketList.AddTail(packet);
-	}
-	delete[] output;
 }
 
 // not tested for the new threaded upload, if we ever use the PeerCache code again, take a look before

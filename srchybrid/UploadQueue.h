@@ -25,7 +25,6 @@ struct UploadingToClient_Struct
 	UploadingToClient_Struct()
 		: m_pClient()
 		, m_bIOError()
-		, m_bDisableCompression()
 	{
 	}
 	~UploadingToClient_Struct();
@@ -35,7 +34,6 @@ struct UploadingToClient_Struct
 	CTypedPtrList<CPtrList, Requested_Block_Struct*>	m_DoneBlocks_list;
 	CCriticalSection									m_csBlockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
 	bool												m_bIOError;
-	bool												m_bDisableCompression;
 };
 typedef CTypedPtrList<CPtrList, UploadingToClient_Struct*> CUploadingPtrList;
 

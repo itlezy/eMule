@@ -1256,7 +1256,6 @@ public:
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
 	static bool		IsSchedulerEnabled()				{ return scheduler; }
 	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
-	static bool		GetDontCompressAvi()				{ return dontcompressavi; }
 
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }
