@@ -1,13 +1,14 @@
 # eMule - broadband branch
-The initial purpose of this project was to provide an eMule repository (including dependencies) that is ready to build and update the dependent libraries when possible. This branch specifically focuses on providing a build that is better suited to address nowadays file sizes and broadband availability. Default hard-coded parameters of eMule were better suited for small-files/slow-connections, leading to very low per-client transfer rates by nowadays standards.  
-The focus here is to maximise throughput for broadband users, to optimize seeding.  
+The initial purpose of this project was to provide an eMule repository (including dependencies) that is ready to build and update the dependent libraries when possible.  
+This development branch specifically focuses on providing a build that is better suited to address nowadays file sizes and broadband availability. Default hard-coded parameters of eMule were better suited for small-files/slow-connections, leading to very low per-client transfer rates by nowadays standards.  
+The focus here is to maximise throughput for broadband users, to **optimize seeding**. This is a seeder mod, designed to seed back to the E2DK network.  
 The focus is as well to introduce the least amount of changes to preserve the original quality and stability of the client.  
 
 ## Installation
 Just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current executable.  
 Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
-Download the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband
+**Download** the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband
 
 ### Optimal Settings
 Really the one recommendation would be to set the values of bandwidth capacity and the **upload limit**, plus a limit of max connections if you wish so. Other settings, as you please.  
@@ -24,8 +25,8 @@ The key to edit is the following:
 
 `BBMaxUpClientsAllowed=8`
 
-You can adjust this limit according to your bandwitdh and I/O preferences, suggested ranges are 5, 8, 12, 24, 36  
-This setting allows to set a maximum amount of upload slots that will never be surpassed, to reduce I/O contention in both disk and network.  
+You can adjust this limit according to your bandwitdh and I/O preferences, suggested ranges are 5, 8, 12, 24, 36, .. up to you  
+This setting allows to set a maximum amount of upload slots that will never be surpassed, to reduce I/O contention in both disk and network. If you are seeding from multiple disk drives or SSD drives, then you can bump up the upload slots as you deem fit.  
 
 ### Additional Settings
 `BBSlowDownloaderSampleDepth=4` indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 and 12  
@@ -72,7 +73,9 @@ Added some more technical fields to the Download and Upload Slots (like progress
 ![2022-06-16 12_08_58-Window](https://user-images.githubusercontent.com/24484050/174048587-d5ee8449-8714-47e9-bd3e-695dcf2c6573.png)
 
 #### Uploads
-![2022-06-16 12_10_15-Window](https://user-images.githubusercontent.com/24484050/174048689-9c5331da-3875-49be-b90f-61e2645af831.png)
+Few more fields have been added for who likes to monitor how their seeding status is going. Check out the context menu as well.  
+![2022-09-18 19_31_28-Window](https://user-images.githubusercontent.com/24484050/190920794-f86db4ab-20fc-4b31-bdeb-5c1f38d95e66.png)
+
 
 #### Shared Files
 ![2022-06-16 12_11_24-Window](https://user-images.githubusercontent.com/24484050/174048775-8f2f56c8-bf71-421e-a532-ebb6dcec3a6e.png)
