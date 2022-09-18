@@ -100,4 +100,14 @@ This would be a normal upload slots list, in a scenario of 50Mbps capacity. So r
 
 ![2022-06-16 12_30_07-Window](https://user-images.githubusercontent.com/24484050/174051485-6e3e2cb6-5a11-4930-bcf4-0e4c49f4d71f.png)
 
-
+### All Settings (suggested)
+![2022-09-18 19_44_23-Window](https://user-images.githubusercontent.com/24484050/190921214-bc859198-3552-436b-8d08-49a212dbfb76.png)
+\
+![2022-09-18 19_43_57-Window](https://user-images.githubusercontent.com/24484050/190921216-1c7d3a0e-732b-41d7-9c94-4345e99bcc94.png)
+\
+![2022-09-18 19_45_58-Window](https://user-images.githubusercontent.com/24484050/190921217-35313e76-a1c5-4bfd-a0eb-83924b88dfa9.png)
+\
+![2022-09-18 19_45_21-Window](https://user-images.githubusercontent.com/24484050/190921218-b07edb40-d85d-4170-827b-e754da82cb8b.png)
+\
+![2022-09-18 19_44_56-Window](https://user-images.githubusercontent.com/24484050/190921219-5343b7c5-09ac-49d1-b64a-d3ff17443072.png)
+\
