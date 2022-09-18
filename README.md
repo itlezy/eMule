@@ -70,7 +70,7 @@ to more appropriate values for high-speed connections and large files, and by ac
 \
 As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds. In addition to that it is likely best to let clients download entire files, so `SESSIONMAXTRANS` and `SESSIONMAXTIME` are increased.  
 \
-Some have argued that these values were marked as do not changed in the opcodes file, but please consider that this software was literally designed with 3Mb average files and 56k connections in mind, running on 100MHz computers. The sole purpose of this mod is to seed back to the E2K network, which has been slowly fading very likely because the clients are not correctly set to cope with nowadays large files.  
+Some have argued that these values were marked as _do not change_ in the opcodes file, but please consider that this software was literally designed with 3Mb average files and 56k connections in mind, running on 100MHz computers. The sole purpose of this mod is to seed back to the E2K network, which has been slowly fading very likely because the clients are not correctly set to cope with nowadays large files.  
 
 ### UploadQueue
 With the philosophy of keeping changes to a minimum:

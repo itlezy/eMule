@@ -149,6 +149,7 @@
 
 // broadband-MOD>>
 #define MP_BAN					10365
+#define MP_COPY_ED2K_HASH		10366
 // broadband-MOD<<
 
 // quick-speed changer
