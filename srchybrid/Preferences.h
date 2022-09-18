@@ -154,6 +154,15 @@ public:
 	
 	// broadband-MOD>>
 	static uint32	m_maxUpClientsAllowed;
+	static uint64	m_sessionMaxTrans;
+	static uint64	m_sessionMaxTime;
+	static uint32	m_slowDownloaderSampleDepth;
+	static uint32	m_uploadClientMaxDataRate;
+	static uint32	m_boostLowRatioFiles;
+	static uint32	m_boostLowRatioFilesBy;
+	static uint32	m_boostFilesSmallerThan;
+	static uint32	m_deboostLowIDs;
+	static uint32	m_deboostHighRatioFiles;
 	// broadband-MOD<<
 
 	static LPCSTR	m_pszBindAddrA;
@@ -719,7 +728,18 @@ public:
 	// ZZ:UploadSpeedSense -->
 	static uint32	GetMinUpload()						{ return m_minupload; }
 	// ZZ:UploadSpeedSense <--
+	// broadband-MOD>>
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
+	static uint64	GetSessionMaxTrans()				{ return m_sessionMaxTrans; }
+	static uint64	GetSessionMaxTime()					{ return m_sessionMaxTime; }
+	static uint32	GetSlowDownloaderSampleDepth()		{ return m_slowDownloaderSampleDepth; }
+	static uint32	GetUploadClientMaxDataRate()		{ return m_uploadClientMaxDataRate; }
+	static uint32	GetBoostLowRatioFiles()				{ return m_boostLowRatioFiles; }
+	static uint32	GetBoostLowRatioFilesBy()			{ return m_boostLowRatioFilesBy; }
+	static uint32	GetBoostFilesSmallerThan()			{ return m_boostFilesSmallerThan; }
+	static uint32	GetDeboostLowIDs()					{ return m_deboostLowIDs; }
+	static uint32	GetDeboostHighRatioFiles()			{ return m_deboostHighRatioFiles; }
+	// broadband-MOD<<
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }

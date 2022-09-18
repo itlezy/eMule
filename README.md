@@ -22,10 +22,21 @@ Be fair about it, the purpose is to **maximise seeding**, so be generous with yo
 
 The key to edit is the following:
 
-`MaxUpClientsAllowed=8`
+`BBMaxUpClientsAllowed=8`
 
 You can adjust this limit according to your bandwitdh and I/O preferences, suggested ranges are 5, 8, 12, 24, 36  
 This setting allows to set a maximum amount of upload slots that will never be surpassed, to reduce I/O contention in both disk and network.  
+
+### Additional Settings
+`BBSlowDownloaderSampleDepth=4` indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 and 12  
+`BBSessionMaxTrans=68719476736` indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb  
+`BBSessionMaxTime=10800000` indicates how much time is allowed for a client to download in a single session, default is 3hrs  
+`BBUploadClientMaxDataRate=1048576` indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb  
+`BBBoostLowRatioFiles=2` indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy=400`  
+`BBBoostFilesSmallerThan=16` speaks for itself (in Mb)  
+`BBDeboostLowIDs=3` deboost LowID clients in the queue by this factor  
+`BBDeboostHighRatioFiles=3` deboost files higher than this ratio by a factor of the ratio itself  
+Your best take to fully understand the logic is to review the code itself `git diff origin/v0.60d-build origin/v0.60d-dev`  We have no time to test, so be sensible  
 
 ### IP 2 Country
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`  
@@ -36,7 +47,7 @@ Enjoy and contribute!
 
 ## Summary of changes
 ### opcodes
-The one main difference is fiddling the values of  
+The one main difference is allow to fiddle with the values of  
 
 ```c
 SESSIONMAXTRANS
@@ -47,14 +58,15 @@ UPLOAD_CLIENT_MAXDATARATE
   
 to more appropriate values for high-speed connections and large files, and by actually applying the limit of `MAX_UP_CLIENTS_ALLOWED`, which can also be configured from ini file.  
 As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds. In addition to that it is likely best to let clients download entire files, so `SESSIONMAXTRANS` and `SESSIONMAXTIME` are increased.  
+Some have argued that these values were marked as do not changed in the opcodes file, but please consider that this software was literally designed with 3Mb average files and 56k connections in mind, running on 100MHz computers. The sole purpose of this mod is to seed back to the E2K network, which has been slowly fading very likely because the clients are not correctly set to cope with nowadays large files.  
 
 ### UploadQueue
 With the philosophy of keeping changes to a minimum:
 - Added a bit of logic to remove from the upload slots clients that have been below a download rate for a certain period of time, so to give more priority to fast downloaders, which should also be fast uploaders to an extent so then they can propagate files quicker if they get it first. The *slower* clients will be able to be back in the slots once the fastest have been served
 - Added a "ratio" display in upload slot, upload queue and shared files, so to provide evidence on the seeding ratio of files. Low ratio files from the queue will be "bumped" to an higher score, to spread quicker  
 
-### More fields
-Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT).  
+### More stuff
+Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT). Upload compression has been disabled, which logic was not applicable to nowadays extensions, thanks for the idea to https://github.com/mercu01/amule  
 
 #### Downloads
 ![2022-06-16 12_08_58-Window](https://user-images.githubusercontent.com/24484050/174048587-d5ee8449-8714-47e9-bd3e-695dcf2c6573.png)

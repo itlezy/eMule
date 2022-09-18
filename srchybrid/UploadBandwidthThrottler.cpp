@@ -315,8 +315,8 @@ uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed)
 	// if throttler doesn't require another slot, go with a slightly more restrictive method
 	if (currentUpSpeed > 49 * 1024) {
 		upPerClient += currentUpSpeed / 43;
-		if (upPerClient > UPLOAD_CLIENT_MAXDATARATE)
-			upPerClient = UPLOAD_CLIENT_MAXDATARATE;
+		if (upPerClient > thePrefs.GetUploadClientMaxDataRate())
+			upPerClient = thePrefs.GetUploadClientMaxDataRate();
 	}
 
 	//now the final check

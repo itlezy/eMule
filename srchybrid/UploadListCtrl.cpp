@@ -108,6 +108,7 @@ void CUploadListCtrl::Init()
 	InsertColumn(18, GetResString(IDS_UPSTATUS), LVCFMT_RIGHT, 50);
 
 	InsertColumn(19, CString("ETA"), LVCFMT_RIGHT, 50);
+	InsertColumn(20, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -349,6 +350,14 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	}
 		break;
 
+	case 20: // File Folder
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText = file->GetPath();
+	}
+		break;
+
 
 	}
 
@@ -506,7 +515,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
 		}
 		break;
-	case 14:
+	case 14: // Session Transfer %
 	{
 		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
@@ -517,7 +526,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		
 	}
 		break;
-	case 15:
+	case 15: // File Size
 	{
 		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
@@ -528,7 +537,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 	}
 		break;
 
-	case 16:
+	case 16: // All Time Ratio
 	{
 		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
@@ -542,7 +551,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 	}
 		break;
 
-	case 17:
+	case 17: // Session Ratio
 	{
 		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
@@ -553,6 +562,54 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 				100 * file2->GetRatio());
 		else
 			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+
+	case 18: // Uploaded parts
+	{
+		UploadingToClient_Struct* pUpClientStruct1 = theApp.uploadqueue->GetUploadingClientStructByClient(item1);
+		UploadingToClient_Struct* pUpClientStruct2 = theApp.uploadqueue->GetUploadingClientStructByClient(item2);
+
+		if (pUpClientStruct1 != NULL && pUpClientStruct2 != NULL)
+			iResult = CompareUnsigned((int)pUpClientStruct1->m_DoneBlocks_list.GetCount(), (int)pUpClientStruct2->m_DoneBlocks_list.GetCount());
+		else
+			iResult = 1;
+	}
+		break;
+
+	case 19: // ETA
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL) {
+			uint64 dataLeft1 = (uint64)file1->GetFileSize() - item1->GetSessionUp();
+			uint64 dataRate1 = item1->GetDatarate();
+
+			uint64 dataLeft2 = (uint64)file2->GetFileSize() - item2->GetSessionUp();
+			uint64 dataRate2 = item2->GetDatarate();
+
+			if (dataLeft1 > 1024 && dataRate1 > 1024 &&
+				dataLeft1 / dataRate1 > 0 && dataLeft1 / dataRate1 < 60 * 60 * 8 &&
+				dataLeft2 > 1024 && dataRate2 > 1024 &&
+				dataLeft2 / dataRate2 > 0 && dataLeft2 / dataRate2 < 60 * 60 * 8)
+				iResult = CompareUnsigned(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
+		}
+		else
+			iResult = 1;
+	}
+		break;
+
+	case 20: // File Folder
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
+		else
+			iResult = 1;
 	}
 		break;
 
@@ -601,6 +658,10 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
+	
+	ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_BAN, CString("Ban"));
+	ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
+
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
@@ -627,6 +688,15 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		case MP_ADDFRIEND:
 			if (theApp.friendlist->AddFriend(client))
 				Update(iSel);
+			break;
+		case MP_BAN:
+			client->Ban(CString("Arbitrary Ban"));
+			break;
+		case MP_OPEN: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellDefaultVerb(file->GetFilePath());
+			}
 			break;
 		case MP_DETAIL:
 		case MPG_ALTENTER:

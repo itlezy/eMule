@@ -60,6 +60,15 @@ uint32	CPreferences::m_maxdownload;
 
 // broadband-MOD>>
 uint32	CPreferences::m_maxUpClientsAllowed;
+uint64	CPreferences::m_sessionMaxTrans;
+uint64	CPreferences::m_sessionMaxTime;
+uint32	CPreferences::m_slowDownloaderSampleDepth;
+uint32	CPreferences::m_uploadClientMaxDataRate;
+uint32	CPreferences::m_boostLowRatioFiles;
+uint32	CPreferences::m_boostLowRatioFilesBy;
+uint32	CPreferences::m_boostFilesSmallerThan;
+uint32	CPreferences::m_deboostLowIDs;
+uint32	CPreferences::m_deboostHighRatioFiles;
 // broadband-MOD<<
 
 LPCSTR	CPreferences::m_pszBindAddrA;
@@ -1551,7 +1560,19 @@ void CPreferences::SavePreferences()
 	}
 	ini.WriteString(_T("TempDirs"), tempdirs);
 	
-	ini.WriteInt(_T("MaxUpClientsAllowed"), m_maxUpClientsAllowed);
+	// broadband-MOD>>
+	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
+	ini.WriteUInt64(_T("BBSessionMaxTrans"), m_sessionMaxTrans);
+	ini.WriteUInt64(_T("BBSessionMaxTime"), m_sessionMaxTime);
+	ini.WriteInt(_T("BBSlowDownloaderSampleDepth"), m_slowDownloaderSampleDepth);
+	ini.WriteInt(_T("BBUploadClientMaxDataRate"), m_uploadClientMaxDataRate);
+	ini.WriteInt(_T("BBBoostLowRatioFiles"), m_boostLowRatioFiles);
+	ini.WriteInt(_T("BBBoostLowRatioFilesBy"), m_boostLowRatioFilesBy);
+	ini.WriteInt(_T("BBBoostFilesSmallerThan"), m_boostFilesSmallerThan);
+	ini.WriteInt(_T("BBDeboostLowIDs"), m_deboostLowIDs);
+	ini.WriteInt(_T("BBDeboostHighRatioFiles"), m_deboostHighRatioFiles);
+	// broadband-MOD<<
+
 	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
@@ -1981,7 +2002,21 @@ void CPreferences::LoadPreferences()
 			maxGraphUploadRate = nOldUploadCapacity; // use old custom value
 	}
 
-	m_maxUpClientsAllowed = (uint32)ini.GetInt(_T("MaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED);
+	// broadband-MOD>>
+	m_maxUpClientsAllowed = (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED);
+	m_sessionMaxTrans = (uint64)ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS);
+	m_sessionMaxTime = (uint64)ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME);
+	m_slowDownloaderSampleDepth = (uint32)ini.GetInt(_T("BBSlowDownloaderSampleDepth"), 4);
+	m_uploadClientMaxDataRate = (uint32)ini.GetInt(_T("BBUploadClientMaxDataRate"), UPLOAD_CLIENT_MAXDATARATE);
+
+	m_boostLowRatioFiles = (uint32)ini.GetInt(_T("BBBoostLowRatioFiles"), 2);
+	m_boostLowRatioFilesBy = (uint32)ini.GetInt(_T("BBBoostLowRatioFilesBy"), 400);
+	m_boostFilesSmallerThan = (uint32)ini.GetInt(_T("BBBoostFilesSmallerThan"), 16);
+
+	m_deboostLowIDs = (uint32)ini.GetInt(_T("BBDeboostLowIDs"), 3);
+	m_deboostHighRatioFiles = (uint32)ini.GetInt(_T("BBDeboostHighRatioFiles"), 3);
+	// broadband-MOD<<
+
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), UNLIMITED);
 	if (m_maxupload > (uint32)maxGraphUploadRate && m_maxupload != UNLIMITED)

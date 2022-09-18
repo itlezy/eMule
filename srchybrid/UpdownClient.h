@@ -295,7 +295,9 @@ public:
 	// Download
 	UINT			GetAskedCountDown() const						{ return m_cDownAsked; }
 	void			AddAskedCountDown()								{ ++m_cDownAsked; }
-	bool			IsSlowDownloader()  const						{ return m_caughtBeingSlow > (6 * 1024); } // How many times was the client slow? As the update happens on a timer basis, this give some temporal depth
+	// broadband-MOD>>
+	bool			IsSlowDownloader() const;
+	// broadband-MOD<<
 
 	void			SetAskedCountDown(UINT cInDownAsked)			{ m_cDownAsked = cInDownAsked; }
 	EDownloadState	GetDownloadState() const						{ return m_eDownloadState; }

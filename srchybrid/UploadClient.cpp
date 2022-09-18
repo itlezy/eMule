@@ -186,6 +186,12 @@ int CUpDownClient::GetFilePrioAsNumber() const
 	return filepriority;
 }
 
+// broadband-MOD>>
+bool CUpDownClient::IsSlowDownloader() const {
+	return m_caughtBeingSlow > (1024 * thePrefs.GetSlowDownloaderSampleDepth());
+}
+// broadband-MOD<<
+
 /**
  * Gets the current waiting score for this client, taking into consideration waiting
  * time, priority of requested file, and the client's credits.
@@ -246,17 +252,27 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;
 
+	// broadband-MOD>>
+
 	float ratio = (float)currequpfile->GetAllTimeRatio();
 
 	// boost low ratio files
-	if      (ratio < 1.33f) fBaseValue = (fBaseValue + 133) * 3.33f;
-	else if (ratio < 2.33f) fBaseValue = (fBaseValue +  33) * 1.33f;
+	if (thePrefs.GetBoostLowRatioFiles() > 0) {
+		if      (ratio < thePrefs.GetBoostLowRatioFiles() + 0.33f) fBaseValue = (fBaseValue + (thePrefs.GetBoostLowRatioFilesBy() * 2));
+		else if (ratio < thePrefs.GetBoostLowRatioFiles() + 1.66f) fBaseValue = (fBaseValue +  thePrefs.GetBoostLowRatioFilesBy());
+	}
 
-	// lower LowIDs or files shared more than 3 times
-	if (HasLowID() || (ratio > 3.33f)) fBaseValue *= 0.33f;
+	if (thePrefs.GetDeboostLowIDs() > 0)
+		fBaseValue = (fBaseValue / thePrefs.GetDeboostLowIDs());
 
-	// boost smaller files (lt 64Mb) as they go away quickly
-	if ((float)currequpfile->GetFileSize() < (64.0f * 1024 * 1024)) fBaseValue = (fBaseValue + 99) * 3.33f;
+	if (thePrefs.GetDeboostHighRatioFiles() > 0 && ratio > thePrefs.GetDeboostHighRatioFiles())
+		fBaseValue = (fBaseValue / ratio);
+
+	// boost smaller files as they go away quickly
+	if (thePrefs.GetBoostFilesSmallerThan() > 0 && 
+		(uint64)currequpfile->GetFileSize() < ((uint64)thePrefs.GetBoostFilesSmallerThan() * 1024 * 1024)) fBaseValue = (fBaseValue + 99) * 3.33f;
+
+	// broadband-MOD<<
 
 	//AddDebugLogLine(false, _T("File fprio %u atratio %f fBaseValue %f - '%s'"), filepriority, ratio, fBaseValue, currequpfile->GetFileName());
 
@@ -513,7 +529,7 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		}
 		else if (
 			(thePrefs.GetMaxUpload() == UNLIMITED) &&
-			(GetDatarate() < UPLOAD_CLIENT_MAXDATARATE)) {
+			(GetDatarate() < thePrefs.GetUploadClientMaxDataRate())) {
 			// still apply a boundary when up speed unlimited
 			m_caughtBeingSlow++;
 		}

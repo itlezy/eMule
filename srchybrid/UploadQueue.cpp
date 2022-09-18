@@ -434,7 +434,7 @@ uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 	if (nOpenSlots <= 3)
 		nResult = 3 * 1024;
 	else
-		nResult = min(UPLOAD_CLIENT_MAXDATARATE, nOpenSlots * 1024);
+		nResult = min(thePrefs.GetUploadClientMaxDataRate(), nOpenSlots * 1024);
 
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
@@ -469,8 +469,8 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	// if throttler doesn't require another slot, go with a slightly more restrictive method
 	if (MaxSpeed > 49 /*|| MaxSpeed == UNLIMITED */) { //because UNLIMITED > 20
 		upPerClient += datarate / 43;
-		if (upPerClient > UPLOAD_CLIENT_MAXDATARATE)
-			upPerClient = UPLOAD_CLIENT_MAXDATARATE;
+		if (upPerClient > thePrefs.GetUploadClientMaxDataRate())
+			upPerClient = thePrefs.GetUploadClientMaxDataRate();
 	}
 
 	//now the final check
@@ -843,20 +843,20 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 
 	if (thePrefs.TransferFullChunks()) {
 		// Allow the client to download a specified amount per session; but keep going if no one needs this slot
-		if (client->GetQueueSessionPayloadUp() > SESSIONMAXTRANS && !ForceNewClient()) {
+		if (client->GetQueueSessionPayloadUp() > thePrefs.GetSessionMaxTrans() && !ForceNewClient()) {
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to max transferred amount (%s), time downloading: %s"),
 					client->GetUserName(),
-					(LPCTSTR)CastItoXBytes(SESSIONMAXTRANS),
+					(LPCTSTR)CastItoXBytes(thePrefs.GetSessionMaxTrans()),
 					CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1)));
 
 			return true;
 		}
 	} else {
 		// Try to keep the clients from downloading forever; but keep going if no one needs this slot
-		if (client->GetUpStartTimeDelay() > SESSIONMAXTIME && !ForceNewClient()) {
+		if (client->GetUpStartTimeDelay() > thePrefs.GetSessionMaxTime() && !ForceNewClient()) {
 			if (thePrefs.GetLogUlDlEvents())
-				AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to max time %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(SESSIONMAXTIME / SEC2MS(1)));
+				AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to max time %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(thePrefs.GetSessionMaxTime() / SEC2MS(1)));
 			return true;
 		}
 
