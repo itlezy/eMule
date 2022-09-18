@@ -102,6 +102,7 @@ void CQueueListCtrl::Init()
 
 	InsertColumn(17, CString("Ratio"), LVCFMT_RIGHT, 50);
 	InsertColumn(18, CString("Session Ratio"), LVCFMT_RIGHT, 50);
+	InsertColumn(19, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -342,6 +343,14 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 	}
 		break;
 
+	case 19: // File Folder
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText = file->GetPath();
+	}
+		break;
+
 	}
 	return sText;
 }
@@ -516,6 +525,18 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 	}
 		break;
 
+	case 19: // File Folder
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
+		else
+			iResult = 1;
+	}
+		break;
+
 	}
 
 	if (lParamSort >= 100)
@@ -558,11 +579,17 @@ void CQueueListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_ADDFRIEND, GetResString(IDS_ADDFRIEND), _T("ADDFRIEND"));
 	ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
-	if (thePrefs.IsExtControlsEnabled())
+	if (thePrefs.IsExtControlsEnabled()) {
+		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, CString("Ban"));
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
+	}
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() != 0 && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
+
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
+
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
@@ -596,6 +623,24 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				client->UnBan();
 				Update(iSel);
 			}
+			break;
+		case MP_BAN:
+			if (!client->IsBanned()) {
+				client->Ban(CString("Arbitrary Ban"));
+				Update(iSel);
+			}
+			break;
+		case MP_OPEN: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellDefaultVerb(file->GetFilePath());
+		}
+			break;
+		case MP_OPENFOLDER: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
+		}
 			break;
 		case MP_DETAIL:
 		case MPG_ALTENTER:
