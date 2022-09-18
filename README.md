@@ -30,14 +30,23 @@ This setting allows to set a maximum amount of upload slots that will never be s
 
 ### Additional Settings
 `BBSlowDownloaderSampleDepth=4` indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 and 12  
+\
 `BBSessionMaxTrans=68719476736` indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb  
+\
 `BBSessionMaxTime=10800000` indicates how much time is allowed for a client to download in a single session, default is 3hrs  
+\
 `BBUploadClientMaxDataRate=1048576` indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb  
+\
 `BBBoostLowRatioFiles=2` indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy=400`  
+\
 `BBBoostFilesSmallerThan=16` speaks for itself (in Mb)  
+\
 `BBDeboostLowIDs=3` deboost LowID clients in the queue by this factor  
+\
 `BBDeboostHighRatioFiles=3` deboost files higher than this ratio by a factor of the ratio itself  
-Your best take to fully understand the logic is to review the code itself `git diff origin/v0.60d-build origin/v0.60d-dev`  We have no time to test, so be sensible  
+\
+Your best take to fully understand the logic is to **review the code itself** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
+\
 
 ### IP 2 Country
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`  
@@ -58,7 +67,9 @@ UPLOAD_CLIENT_MAXDATARATE
 ```
   
 to more appropriate values for high-speed connections and large files, and by actually applying the limit of `MAX_UP_CLIENTS_ALLOWED`, which can also be configured from ini file.  
+\
 As the debate is long, my take on the matter is that it is best to upload at a high-speed to few clients rather than uploading to tenths of clients at ridicolously low speeds. In addition to that it is likely best to let clients download entire files, so `SESSIONMAXTRANS` and `SESSIONMAXTIME` are increased.  
+\
 Some have argued that these values were marked as do not changed in the opcodes file, but please consider that this software was literally designed with 3Mb average files and 56k connections in mind, running on 100MHz computers. The sole purpose of this mod is to seed back to the E2K network, which has been slowly fading very likely because the clients are not correctly set to cope with nowadays large files.  
 
 ### UploadQueue
