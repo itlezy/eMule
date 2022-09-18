@@ -45,8 +45,8 @@ This setting allows to set a maximum amount of upload slots that will never be s
 \
 `BBDeboostHighRatioFiles=3` deboost files higher than this ratio by a factor of the ratio itself  
 \
-Your best take to fully understand the logic is to **review the code itself** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
-\
+Your best take to fully understand the logic is to **review the [code itself](https://github.com/itlezy/eMule/commits/v0.60d-dev)** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
+
 
 ### IP 2 Country
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`  
