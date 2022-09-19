@@ -48,15 +48,16 @@ This setting allows to set a maximum amount of upload slots that will never be s
 Your best take to fully understand the logic is to **review the [code itself](https://github.com/itlezy/eMule/commits/v0.60d-dev)** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
 
 ## Get an High ID
-As you might know, eMule serves assign you a Low or an High ID based on the fact you are able to receive inbound connections. So how to get an High ID? There are a number of guides to help you with this, but let me summarize few steps.  
-Ensure you got UPnP option active, this will work in most scenarios.  
+As you might know, eMule servers assign you a Low or an High ID based on the fact you are able to receive inbound connections. So how to get an High ID? There are a number of guides to help you with this, but let me summarize few steps. Getting an High ID is important for a number of reasons and to improve your overall download/upload experience.  
+\
+Ensure you got the UPnP option active in eMule's connectiong settings, this should work in most scenarios.  
 ![2022-09-19 09_10_51-Window](https://user-images.githubusercontent.com/24484050/190966375-c8a2839c-67ec-44e7-9eb3-39a392de176e.png)
 \
-Some users might be behind network infrastructure that does not support it, so a very good option would be to get a VPN service that supports port mapping. Some do support UPnP, do a google search _vpn with port forwarding_.  
+Some users might be behind network infrastructure that does not support it, so a very good option would be to get a VPN service that supports port mapping. Some do support UPnP, do a google search _vpn with port forwarding_. This has the benefit to help you with privacy.  
 ![2022-09-19 09_02_57-Window](https://user-images.githubusercontent.com/24484050/190966620-94fd4903-9358-4891-8f5c-f75dc93bb5f3.png)
 \
-Once you are setup you can check the port forwarding status with UPnP Wizard, to ensure the ports are correctly setup.  
-Then you can verify online if you are able to receive inbound connections on one of these websites https://www.yougetsignal.com/tools/open-ports/ https://portchecker.co/check  
+Once you are setup you can check the port forwarding status with [UPnP Wizard](https://www.xldevelopment.net/upnpwiz.php), to ensure the ports are correctly setup.  
+Then you can verify online if you are able to receive inbound connections on one of these websites https://www.yougetsignal.com/tools/open-ports/ or https://portchecker.co/check  
 
 ## IP 2 Country
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`  
