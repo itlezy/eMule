@@ -53,8 +53,10 @@ As you might know, eMule servers assign you a Low or an High ID based on the fac
 Ensure you got the UPnP option active in eMule's connectiong settings, this should work in most scenarios.  
 ![2022-09-19 09_10_51-Window](https://user-images.githubusercontent.com/24484050/190966375-c8a2839c-67ec-44e7-9eb3-39a392de176e.png)
 \
+\
 Some users might be behind network infrastructure that does not support it, so a very good option would be to get a VPN service that supports port mapping. Some do support UPnP, do a google search _vpn with port forwarding_. This has the benefit to help you with privacy.  
 ![2022-09-19 09_02_57-Window](https://user-images.githubusercontent.com/24484050/190966620-94fd4903-9358-4891-8f5c-f75dc93bb5f3.png)
+\
 \
 Once you are setup you can check the port forwarding status with [UPnP Wizard](https://www.xldevelopment.net/upnpwiz.php), to ensure the ports are correctly setup.  
 Then you can verify online if you are able to receive inbound connections on one of these websites https://www.yougetsignal.com/tools/open-ports/ or https://portchecker.co/check  
