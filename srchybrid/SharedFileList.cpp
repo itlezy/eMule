@@ -841,7 +841,8 @@ void CSharedFileList::SendListToServer()
 			bool added = false;
 			for (POSITION pos1 = sortedList.GetHeadPosition(); pos1 != 0 && !added;) {
 				POSITION pos2 = pos1;
-				if (GetRealPrio(sortedList.GetNext(pos1)->GetUpPriority()) <= GetRealPrio(cur_file->GetUpPriority())) {
+				if (GetRealPrio(sortedList.GetNext(pos1)->GetUpPriority()) <= GetRealPrio(cur_file->GetUpPriority()) ||
+					sortedList.GetNext(pos1)->GetAllTimeRatio() <= cur_file->GetAllTimeRatio()) {
 					sortedList.InsertBefore(pos2, cur_file);
 					added = true;
 				}
