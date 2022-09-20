@@ -1,3 +1,5 @@
+#pragma once
+
 // Microsoft Visual C++ generated resource script.
 //
 #include "resource.h"
@@ -16,7 +18,7 @@
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_NEU)
 LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
-#pragma code_page(1252)
+#pragma code_page(65001)
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -4040,7 +4042,8 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "res\\emule.manifest"
 
 #include "version.h"
 #include "res\emule.rc2"
-#include "afxres.rc"
+#include "afxres.rc"
+
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED

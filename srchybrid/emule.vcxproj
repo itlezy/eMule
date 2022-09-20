@@ -167,6 +167,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;XP_BUILD;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>Level2</WarningLevel>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <ResourceCompile>
       <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
