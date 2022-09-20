@@ -92,22 +92,22 @@ void CUploadListCtrl::Init()
 	//MORPH START - Added by SiRoB, Client Software
 	InsertColumn(8, GetResString(IDS_CD_CSOFT),		LVCFMT_LEFT, 100);
 	//MORPH END - Added by SiRoB, Client Software
-	InsertColumn(9, CString("Client Uploaded"),		LVCFMT_LEFT, 100); //Total up down //TODO
+	InsertColumn(9, GetResString(IDS_CLIENT_UPLOADED),		LVCFMT_LEFT, 100); //Total up down //TODO
 	// Commander - Added: IP2Country column - Start
-	InsertColumn(10, CString("Country"),			LVCFMT_LEFT, 100);
+	InsertColumn(10, GetResString(IDS_COUNTRY),			LVCFMT_LEFT, 100);
 	// Commander - Added: IP2Country column - End
 	InsertColumn(11, GetResString(IDS_IP),			LVCFMT_LEFT, 100);
 	InsertColumn(12, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
-	InsertColumn(13, CString("Client Hash"),		LVCFMT_LEFT, 50);
-	InsertColumn(14, CString("Upload %"),			LVCFMT_RIGHT, 50);
-	InsertColumn(15, CString("File Size"),			LVCFMT_RIGHT, 50);
+	InsertColumn(13, GetResString(IDS_CLIENT_HASH),		LVCFMT_LEFT, 50);
+	InsertColumn(14, GetResString(IDS_UPLOAD_PCT),			LVCFMT_RIGHT, 50);
+	InsertColumn(15, GetResString(IDS_FILE_SIZE),			LVCFMT_RIGHT, 50);
 	
-	InsertColumn(16, CString("Ratio"), LVCFMT_RIGHT, 50);
-	InsertColumn(17, CString("Session Ratio"), LVCFMT_RIGHT, 50);
+	InsertColumn(16, GetResString(IDS_RATIO), LVCFMT_RIGHT, 50);
+	InsertColumn(17, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, 50);
 
 	InsertColumn(18, GetResString(IDS_UPSTATUS), LVCFMT_RIGHT, 50);
 
-	InsertColumn(19, CString("ETA"), LVCFMT_RIGHT, 50);
+	InsertColumn(19, GetResString(IDS_ETA), LVCFMT_RIGHT, 50);
 	InsertColumn(20, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
 
 	SetAllIcons();
@@ -662,10 +662,10 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	
 	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
 	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
-	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_COPY_ED2K_HASH, CString("Copy Has&h"));
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_COPY_ED2K_HASH, GetResString(IDS_COPY_HASH));
 
 	if (thePrefs.IsExtControlsEnabled()) {
-		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, CString("Ban"));
+		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
 	}
 
@@ -712,7 +712,7 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			break;
 		case MP_BAN:
 			if (!client->IsBanned()) {
-				client->Ban(CString("Arbitrary Ban"));
+				client->Ban(GetResString(IDS_BAN_ARBITRARY));
 				Update(iSel);
 			}
 			break;

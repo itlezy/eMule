@@ -114,9 +114,9 @@ CIP2Country::CIP2Country(){
 	defaultIP2Country.IPstart = 0;
 	defaultIP2Country.IPend = 0;
 
-	defaultIP2Country.ShortCountryName = CString("N/A");
-	defaultIP2Country.MidCountryName = CString("N/A");
-	defaultIP2Country.LongCountryName = CString("N/A");
+	defaultIP2Country.ShortCountryName = GetResString(IDS_NA);
+	defaultIP2Country.MidCountryName = GetResString(IDS_NA);
+	defaultIP2Country.LongCountryName = GetResString(IDS_NA);
 
 	Load();
 
@@ -350,7 +350,7 @@ bool CIP2Country::LoadFromFile(){
 
 		}
 		else{
-			throw CString(CString("IDS_IP2COUNTRY_ERROR3"));
+			throw CString("IDS_IP2COUNTRY_ERROR3");
 		}
 	}
 	catch(CString strerror){

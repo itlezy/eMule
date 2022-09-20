@@ -282,8 +282,8 @@ void CSharedFilesCtrl::Init()
 	InsertColumn(16, GetResString(IDS_BITRATE), LVCFMT_RIGHT, DFLT_BITRATE_COL_WIDTH, -1, true);
 	InsertColumn(17, GetResString(IDS_CODEC), LVCFMT_LEFT, DFLT_CODEC_COL_WIDTH, -1, true);
 
-	InsertColumn(18, CString("Ratio"),		  LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
-	InsertColumn(19, CString("Session Ratio"),		  LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
+	InsertColumn(18, GetResString(IDS_RATIO), LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
+	InsertColumn(19, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
 
 	SetAllIcons();
 	CreateMenus();

@@ -143,10 +143,10 @@ void CDownloadListCtrl::Init()
 	InsertColumn(11, stitle,						LVCFMT_LEFT,	120, -1, true);
 	InsertColumn(12, GetResString(IDS_CAT),			LVCFMT_LEFT,	100, -1, true);
 	InsertColumn(13, GetResString(IDS_ADDEDON),		LVCFMT_LEFT,	120);
-	InsertColumn(14, CString("%"),					LVCFMT_RIGHT,	50);
-	InsertColumn(15, CString("Country"),			LVCFMT_LEFT,	50);
+	InsertColumn(14, GetResString(IDS_PERCENTAGE),	LVCFMT_RIGHT,	50);
+	InsertColumn(15, GetResString(IDS_COUNTRY),		LVCFMT_LEFT,	50);
 	InsertColumn(16, GetResString(IDS_IP),			LVCFMT_LEFT,	50);
-	InsertColumn(17, GetResString(IDS_IDLOW), LVCFMT_LEFT, 50);
+	InsertColumn(17, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
 
 	SetAllIcons();
 	Localize();

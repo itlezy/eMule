@@ -1,4 +1,3 @@
-#pragma once
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by emule.rc
@@ -1009,7 +1008,6 @@
 #define IDS_USS_STARTING                1065
 #define IDS_A4AF                        1066
 #define IDS_ENABLEIMPORTPARTS           1067
-//***#define                            1068
 #define IDS_AUTOCAT_LABEL               1069
 #define IDS_SHOWEXTSETTINGS             1070
 #define IDS_TREEOPTIONS_TRUE            1071
@@ -1024,8 +1022,6 @@
 #define IDS_WRN_INCFILE_RESERVED        1080
 #define IDS_WRN_TEMPFILES_RESERVED      1081
 #define IDS_WRN_INCTEMP_SAME            1082
-//***#define                            1083
-//***#define                            1084
 #define IDS_SHOWDWLPERCENTAGE           1085
 #define IDS_TBN_ONNEWDOWNLOAD           1086
 #define IDS_ARTIST                      1087
@@ -2372,13 +2368,26 @@
 #define IDC_SMTPUSER                    3034
 #define IDC_SMTPPASS_LBL                3035
 #define IDC_SMTPPASS                    3036
+#define IDS_CLIENT_UPLOADED             6001
+#define IDS_COUNTRY                     6002
+#define IDS_CLIENT_HASH                 6003
+#define IDS_UPLOAD_PCT                  6004
+#define IDS_FILE_SIZE                   6005
+#define IDS_RATIO                       6006
+#define IDS_RATIO_SESSION               6007
+#define IDS_ETA                         6008
+#define IDS_PERCENTAGE                  6009
+#define IDS_COPY_HASH                   6010
+#define IDS_BAN                         6011
+#define IDS_BAN_ARBITRARY               6012
+#define IDS_NA                          6013
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        1568
+#define _APS_NEXT_RESOURCE_VALUE        1596
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3037
 #define _APS_NEXT_SYMED_VALUE           1610
