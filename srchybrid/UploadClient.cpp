@@ -224,6 +224,13 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
 
+	// broadband-MOD>>
+	// important fix to avoid slow clients going back in the queue too soon
+	// m_caughtBeingSlow will be set to 0 in AddUpNextClient(), if it makes it back to the upload queue
+	if (IsSlowDownloader())
+		return 0; 
+	// broadband-MOD<<
+
 	int filepriority = GetFilePrioAsNumber();
 
 	// calculate score, based on waitingtime and other factors
