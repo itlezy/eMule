@@ -8,8 +8,7 @@ The focus is as well to introduce the least amount of changes to preserve the or
 Just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current executable.  
 Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
-**Download** the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband
-\
+**Download** the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband  
 
 ### Optimal Settings
 Really the one recommendation would be to set the values of bandwidth capacity and the **upload limit**, plus a limit of max connections if you wish so. Other settings, as you please.  
