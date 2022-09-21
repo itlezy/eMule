@@ -60,6 +60,8 @@ uint32	CPreferences::m_maxdownload;
 
 // broadband-MOD>>
 uint32	CPreferences::m_maxUpClientsAllowed;
+uint32	CPreferences::m_maxUploadTargetFillPerc;
+uint32	CPreferences::m_slowRateTolerancePerc;
 uint64	CPreferences::m_sessionMaxTrans;
 uint64	CPreferences::m_sessionMaxTime;
 uint32	CPreferences::m_slowDownloaderSampleDepth;
@@ -1562,6 +1564,8 @@ void CPreferences::SavePreferences()
 	
 	// broadband-MOD>>
 	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
+	ini.WriteInt(_T("BBMaxUploadTargetFillPerc"), m_maxUploadTargetFillPerc);
+	ini.WriteInt(_T("BBSlowRateTolerancePerc"), m_slowRateTolerancePerc);
 	ini.WriteUInt64(_T("BBSessionMaxTrans"), m_sessionMaxTrans);
 	ini.WriteUInt64(_T("BBSessionMaxTime"), m_sessionMaxTime);
 	ini.WriteInt(_T("BBSlowDownloaderSampleDepth"), m_slowDownloaderSampleDepth);
@@ -2004,6 +2008,8 @@ void CPreferences::LoadPreferences()
 
 	// broadband-MOD>>
 	m_maxUpClientsAllowed = (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED);
+	m_maxUploadTargetFillPerc = (uint32)ini.GetInt(_T("BBMaxUploadTargetFillPerc"), 75);
+	m_slowRateTolerancePerc = (uint32)ini.GetInt(_T("BBSlowRateTolerancePerc"), 133);
 	m_sessionMaxTrans = (uint64)ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS);
 	m_sessionMaxTime = (uint64)ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME);
 	m_slowDownloaderSampleDepth = (uint32)ini.GetInt(_T("BBSlowDownloaderSampleDepth"), 4);

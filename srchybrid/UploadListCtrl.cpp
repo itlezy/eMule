@@ -109,6 +109,7 @@ void CUploadListCtrl::Init()
 
 	InsertColumn(19, GetResString(IDS_ETA), LVCFMT_RIGHT, 50);
 	InsertColumn(20, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
+	InsertColumn(21, GetResString(IDS_CAUGHT_SLOW), LVCFMT_RIGHT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -344,7 +345,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			uint64 dataRate = client->GetDatarate();
 
 			if (dataLeft > 1024 && dataRate > 1024 &&
-				dataLeft / dataRate > 0 && dataLeft / dataRate < 60 * 60 * 8) sText = CastSecondsToHM(dataLeft / dataRate);
+				dataLeft / dataRate > 0 && dataLeft / dataRate < 60 * 60 * 10) sText = CastSecondsToHM(dataLeft / dataRate);
 			else sText = "-";
 		}
 	}
@@ -358,6 +359,11 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	}
 		break;
 
+	case 21: // File Folder
+	{
+		sText.Format(_T("%d / %d"), client->GetCaughtBeingSlow(), 1024 * thePrefs.GetSlowDownloaderSampleDepth());
+	}
+	break;
 
 	}
 
@@ -591,10 +597,10 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			uint64 dataRate2 = item2->GetDatarate();
 
 			if (dataLeft1 > 1024 && dataRate1 > 1024 &&
-				dataLeft1 / dataRate1 > 0 && dataLeft1 / dataRate1 < 60 * 60 * 8 &&
+				dataLeft1 / dataRate1 > 0 && dataLeft1 / dataRate1 < 60 * 60 * 10 &&
 				dataLeft2 > 1024 && dataRate2 > 1024 &&
-				dataLeft2 / dataRate2 > 0 && dataLeft2 / dataRate2 < 60 * 60 * 8)
-				iResult = CompareUnsigned(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
+				dataLeft2 / dataRate2 > 0 && dataLeft2 / dataRate2 < 60 * 60 * 10)
+				iResult = CompareUnsigned64(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
 		}
 		else
 			iResult = 1;
