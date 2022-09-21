@@ -297,6 +297,7 @@ public:
 	void			AddAskedCountDown()								{ ++m_cDownAsked; }
 	// broadband-MOD>>
 	bool			IsSlowDownloader() const;
+	int				GetCaughtBeingSlow() const							{ return m_caughtBeingSlow; }
 	// broadband-MOD<<
 
 	void			SetAskedCountDown(UINT cInDownAsked)			{ m_cDownAsked = cInDownAsked; }
@@ -592,8 +593,6 @@ protected:
 	// Upload
 	//
 	int GetFilePrioAsNumber() const;
-	int GetFilePrioFromRatio() const;
-
 
 	UINT		m_nTransferredUp;
 	DWORD		m_dwUploadTime;

@@ -2381,6 +2381,7 @@
 #define IDS_BAN                         6011
 #define IDS_BAN_ARBITRARY               6012
 #define IDS_NA                          6013
+#define IDS_CAUGHT_SLOW                 6014
 #define IDA_ENTER                       32771
 
 // Next default values for new objects

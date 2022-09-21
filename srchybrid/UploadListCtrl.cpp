@@ -109,6 +109,7 @@ void CUploadListCtrl::Init()
 
 	InsertColumn(19, GetResString(IDS_ETA), LVCFMT_RIGHT, 50);
 	InsertColumn(20, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
+	InsertColumn(21, GetResString(IDS_CAUGHT_SLOW), LVCFMT_RIGHT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -344,7 +345,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			uint64 dataRate = client->GetDatarate();
 
 			if (dataLeft > 1024 && dataRate > 1024 &&
-				dataLeft / dataRate > 0 && dataLeft / dataRate < 60 * 60 * 8) sText = CastSecondsToHM(dataLeft / dataRate);
+				dataLeft / dataRate > 0 && dataLeft / dataRate < 60 * 60 * 10) sText = CastSecondsToHM(dataLeft / dataRate);
 			else sText = "-";
 		}
 	}
@@ -358,6 +359,11 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	}
 		break;
 
+	case 21: // File Folder
+	{
+		sText.Format(_T("%d / %d"), client->GetCaughtBeingSlow(), 1024 * thePrefs.GetSlowDownloaderSampleDepth());
+	}
+	break;
 
 	}
 
@@ -581,7 +587,9 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 	case 19: // ETA
 	{
 		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
-		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		iResult = 1;
 
 		if (file1 != NULL && file2 != NULL) {
 			uint64 dataLeft1 = (uint64)file1->GetFileSize() - item1->GetSessionUp();
@@ -590,14 +598,9 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			uint64 dataLeft2 = (uint64)file2->GetFileSize() - item2->GetSessionUp();
 			uint64 dataRate2 = item2->GetDatarate();
 
-			if (dataLeft1 > 1024 && dataRate1 > 1024 &&
-				dataLeft1 / dataRate1 > 0 && dataLeft1 / dataRate1 < 60 * 60 * 8 &&
-				dataLeft2 > 1024 && dataRate2 > 1024 &&
-				dataLeft2 / dataRate2 > 0 && dataLeft2 / dataRate2 < 60 * 60 * 8)
-				iResult = CompareUnsigned(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
+			if (dataLeft1 > 0 && dataRate1 > 0 && dataLeft2 > 0 && dataRate2 > 0)
+				iResult = CompareUnsigned64(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
 		}
-		else
-			iResult = 1;
 	}
 		break;
 
@@ -610,6 +613,12 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
 		else
 			iResult = 1;
+	}
+		break;
+
+	case 21: // caught slow
+	{
+		iResult = CompareUnsigned(item1->GetCaughtBeingSlow(), item2->GetCaughtBeingSlow());
 	}
 		break;
 

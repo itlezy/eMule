@@ -103,6 +103,7 @@ void CQueueListCtrl::Init()
 	InsertColumn(17, GetResString(IDS_RATIO), LVCFMT_RIGHT, 50);
 	InsertColumn(18, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, 50);
 	InsertColumn(19, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
+	InsertColumn(20, GetResString(IDS_CAUGHT_SLOW), LVCFMT_RIGHT, 50);
 
 	SetAllIcons();
 	Localize();
@@ -351,6 +352,12 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 	}
 		break;
 
+	case 20: // Caught Being Slow
+	{
+		sText.Format(_T("%d / %d"), client->GetCaughtBeingSlow(), 1024 * thePrefs.GetSlowDownloaderSampleDepth());
+	}
+		break;
+
 	}
 	return sText;
 }
@@ -534,6 +541,12 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 			iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
 		else
 			iResult = 1;
+	}
+		break;
+
+	case 20: // caught slow
+	{
+		iResult = CompareUnsigned(item1->GetCaughtBeingSlow(), item2->GetCaughtBeingSlow());
 	}
 		break;
 

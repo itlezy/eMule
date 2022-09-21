@@ -188,7 +188,7 @@ int CUpDownClient::GetFilePrioAsNumber() const
 
 // broadband-MOD>>
 bool CUpDownClient::IsSlowDownloader() const {
-	return m_caughtBeingSlow > (1024 * thePrefs.GetSlowDownloaderSampleDepth());
+	return m_caughtBeingSlow >= (1024 * thePrefs.GetSlowDownloaderSampleDepth());
 }
 // broadband-MOD<<
 
@@ -524,26 +524,39 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		if (GetDatarate() > 100 * 1024)
 			s->UseBigSendBuffer();
 
-		//AddDebugLogLine(false, _T("MU %u UX %u CA %u DR %u"),
-		//	thePrefs.GetMaxUpload() * 1024u, UPLOAD_CLIENT_MAXDATARATE, MAX_UP_CLIENTS_ALLOWED, GetDatarate());
+		// broadband-MOD>>
+		// apply "slow clients" logic only when there actually is people in the waiting list
+		if (theApp.uploadqueue->GetWaitingUserCount() > 0) {
 
-		//TODO a sensible approach would be to scale this behavior based on a max observed (or average 90pct) speed so to avoid the ifs
-		// if a client is "slow" meaning a 1/(1.33 * (1 + MAX_UP_CLIENTS_ALLOWED)) of the target upload rate, we increase the counter, so to remove the client from the upload slots
-		// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
-		if ((thePrefs.GetMaxUpload() != UNLIMITED) &&
-			(GetDatarate() < ((thePrefs.GetMaxUpload() * 1024u) / (1.33f * (1 + thePrefs.GetMaxUpClientsAllowed()))))) {
-			m_caughtBeingSlow++;
-		}
-		else if (
-			(thePrefs.GetMaxUpload() == UNLIMITED) &&
-			(GetDatarate() < thePrefs.GetUploadClientMaxDataRate())) {
-			// still apply a boundary when up speed unlimited
-			m_caughtBeingSlow++;
-		}
+			// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
+			if (thePrefs.GetMaxUpload() != UNLIMITED) {
 
-		if (0 == GetDatarate()) {
-			m_caughtBeingSlow += 32;
+				if (
+					// if a client is "slow" meaning a 1/(1.33 * (1 + MAX_UP_CLIENTS_ALLOWED)) of the target upload rate
+					GetDatarate() < 
+						((thePrefs.GetMaxUpload() * 1024u)    /
+						((thePrefs.GetSlowRateTolerancePerc() / 100.0f) * (1 + thePrefs.GetMaxUpClientsAllowed())))
+					) {
+					// only if below 75% of the max speed, if we're going fast enough we can leave the slow guys alone
+					if (theApp.uploadqueue->GetDatarate() < ((thePrefs.GetMaxUploadTargetFillPerc() / 100.0f) * (thePrefs.GetMaxUpload() * 1024u)))
+						m_caughtBeingSlow++;
+				}
+				else if (m_caughtBeingSlow > 0)
+					m_caughtBeingSlow--;
+			}
+			else if (thePrefs.GetMaxUpload() == UNLIMITED) {
+				// still apply a boundary when up speed unlimited
+
+				if (GetDatarate() < thePrefs.GetUploadClientMaxDataRate())
+					m_caughtBeingSlow++;
+				else if (m_caughtBeingSlow > 0)
+					m_caughtBeingSlow--;
+			}
+
+			if (0 == GetDatarate()) 
+				m_caughtBeingSlow += 24;
 		}
+		// broadband-MOD<<
 
 	}
 

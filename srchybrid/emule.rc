@@ -4016,6 +4016,7 @@ BEGIN
     IDS_BAN                 "Ban"
     IDS_BAN_ARBITRARY       "Arbitrary Ban"
     IDS_NA                  "n/a"
+    IDS_CAUGHT_SLOW         "Caught Slow"
 END
 
 #endif    // English (United States) resources

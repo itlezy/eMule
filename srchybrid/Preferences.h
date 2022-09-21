@@ -154,6 +154,8 @@ public:
 	
 	// broadband-MOD>>
 	static uint32	m_maxUpClientsAllowed;
+	static uint32	m_maxUploadTargetFillPerc;
+	static uint32	m_slowRateTolerancePerc;
 	static uint64	m_sessionMaxTrans;
 	static uint64	m_sessionMaxTime;
 	static uint32	m_slowDownloaderSampleDepth;
@@ -730,6 +732,8 @@ public:
 	// ZZ:UploadSpeedSense <--
 	// broadband-MOD>>
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
+	static uint32	GetMaxUploadTargetFillPerc()		{ return m_maxUploadTargetFillPerc; }
+	static uint32	GetSlowRateTolerancePerc()			{ return m_slowRateTolerancePerc; }
 	static uint64	GetSessionMaxTrans()				{ return m_sessionMaxTrans; }
 	static uint64	GetSessionMaxTime()					{ return m_sessionMaxTime; }
 	static uint32	GetSlowDownloaderSampleDepth()		{ return m_slowDownloaderSampleDepth; }
