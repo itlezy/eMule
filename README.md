@@ -42,8 +42,9 @@ Please find below all preferences.ini settings.
 |`BBSlowDownloaderSampleDepth`|4|Indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 (aggressive) and 12 (more relaxed)|
 |`BBSessionMaxTrans`|68719476736|Indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb|
 |`BBSessionMaxTime`|10800000|Indicates how much time is allowed for a client to download in a single session, default is 3hrs|
-|`BBUploadClientMaxDataRate`|1048576|Indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb|
-|`BBBoostLowRatioFiles`|2|Indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy=400`|
+|`BBUploadClientMaxDataRate`|1048576|Indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb. Please note, this is a pre-existing parameter and it does not apply as data-rate limit for single uploads|
+|`BBBoostLowRatioFiles`|2|Indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy`|
+|`BBBoostLowRatioFilesBy`|400|Add 400 points to low-ratio files|
 |`BBBoostFilesSmallerThan`|16|Speaks for itself (in Mb)|
 |`BBDeboostLowIDs`|3|Deboost LowID clients in the queue by this factor|
 |`BBDeboostHighRatioFiles`|3|Deboost files higher than this ratio by a factor of the ratio itself|
