@@ -509,7 +509,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 10:
 		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
-	break;
+		break;
 	case 11:
 		iResult = CompareLocaleStringNoCase(ipstr(item1->GetIP()), ipstr(item2->GetIP()));
 		break;
@@ -598,7 +598,10 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			uint64 dataLeft2 = (uint64)file2->GetFileSize() - item2->GetSessionUp();
 			uint64 dataRate2 = item2->GetDatarate();
 
-			if (dataLeft1 > 0 && dataRate1 > 0 && dataLeft2 > 0 && dataRate2 > 0)
+			if (dataLeft1 > 1024 && dataRate1 > 1024 &&
+				dataLeft1 / dataRate1 > 0 && dataLeft1 / dataRate1 < 60 * 60 * 24 &&
+				dataLeft2 > 1024 && dataRate2 > 1024 &&
+				dataLeft2 / dataRate2 > 0 && dataLeft2 / dataRate2 < 60 * 60 * 24)
 				iResult = CompareUnsigned64(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
 		}
 	}
