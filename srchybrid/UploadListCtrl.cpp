@@ -330,9 +330,9 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		UploadingToClient_Struct* pUpClientStruct = theApp.uploadqueue->GetUploadingClientStructByClient(client);
 
 		if (file && pUpClientStruct)
-			sText.Format(_T("%d / %d"),
-				(int)pUpClientStruct->m_DoneBlocks_list.GetCount(),
-				(int)file->GetFileSize() / EMBLOCKSIZE);
+			sText.Format(_T("%llu / %llu"),
+				(uint64)pUpClientStruct->m_DoneBlocks_list.GetCount(),
+				(uint64)file->GetFileSize() / EMBLOCKSIZE);
 
 	}
 		break;
