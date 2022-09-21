@@ -1006,7 +1006,7 @@ void CPreferences::SaveCompletedDownloadsStat()
 } // SaveCompletedDownloadsStat()
 
 void CPreferences::Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF,
-	BOOL bUpDown, uint32 bytes, bool sentToFriend)
+	BOOL bUpDown, uint64 bytes, bool sentToFriend)
 {
 	//	This function adds the transferred bytes to the appropriate variables,
 	//	as well as to the totals for all clients. - Khaos

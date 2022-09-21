@@ -116,8 +116,8 @@ public:
 	void			SetConnectIP(uint32 val)						{ m_nConnectIP = val; }
 	uint16			GetUserPort() const								{ return m_nUserPort; }
 	void			SetUserPort(uint16 val)							{ m_nUserPort = val; }
-	UINT			GetTransferredUp() const						{ return m_nTransferredUp; }
-	UINT			GetTransferredDown() const						{ return m_nTransferredDown; }
+	uint64			GetTransferredUp() const						{ return m_nTransferredUp; }
+	uint64			GetTransferredDown() const						{ return m_nTransferredDown; }
 	uint32			GetServerIP() const								{ return m_dwServerIP; }
 	void			SetServerIP(uint32 nIP)							{ m_dwServerIP = nIP; }
 	uint16			GetServerPort() const							{ return m_nServerPort; }
@@ -266,15 +266,15 @@ public:
 	void			SetCollectionUploadSlot(bool bValue);
 	bool			HasCollectionUploadSlot() const					{ return m_bCollectionUploadSlot; }
 
-	UINT			GetSessionUp() const							{ return m_nTransferredUp - m_nCurSessionUp; }
+	uint64			GetSessionUp() const							{ return m_nTransferredUp - m_nCurSessionUp; }
 	void			ResetSessionUp() {
 						m_nCurSessionUp = m_nTransferredUp;
 						m_addedPayloadQueueSession = 0;
 						m_nCurQueueSessionPayloadUp = 0;
 					}
 
-	UINT			GetSessionDown() const							{ return m_nTransferredDown - m_nCurSessionDown; }
-	UINT			GetSessionPayloadDown() const					{ return m_nCurSessionPayloadDown; }
+	uint64			GetSessionDown() const							{ return m_nTransferredDown - m_nCurSessionDown; }
+	uint64			GetSessionPayloadDown() const					{ return m_nCurSessionPayloadDown; }
 	void			ResetSessionDown()								{ m_nCurSessionDown = m_nTransferredDown; m_nCurSessionPayloadDown = 0; }
 	UINT			GetQueueSessionPayloadUp() const				{ return m_nCurQueueSessionPayloadUp; } // Data uploaded/transmitted
 	UINT			GetQueueSessionUploadAdded() const				{ return m_addedPayloadQueueSession; } // Data put into upload buffers
@@ -594,12 +594,12 @@ protected:
 	//
 	int GetFilePrioAsNumber() const;
 
-	UINT		m_nTransferredUp;
+	uint64		m_nTransferredUp;
 	DWORD		m_dwUploadTime;
 	UINT		m_cAsked;
 	uint32		m_dwLastUpRequest;
-	UINT		m_nCurSessionUp;
-	UINT		m_nCurSessionDown;
+	uint64		m_nCurSessionUp;
+	uint64		m_nCurSessionDown;
 	UINT		m_nCurQueueSessionPayloadUp;
 	UINT		m_addedPayloadQueueSession;
 	uint16		m_nUpPartCount;
@@ -611,7 +611,7 @@ protected:
 
 	typedef struct
 	{
-		UINT	datalen;
+		uint64	datalen;
 		DWORD	timestamp;
 	} TransferredData;
 	CTypedPtrList<CPtrList, Requested_File_Struct*>	 m_RequestedFiles_list;
@@ -624,8 +624,8 @@ protected:
 	uint8		*m_abyPartStatus;
 	CString		m_strClientFilename;
 	UINT		m_cDownAsked;
-	UINT		m_nTransferredDown;
-	UINT		m_nCurSessionPayloadDown;
+	uint64		m_nTransferredDown;
+	uint64		m_nCurSessionPayloadDown;
 	DWORD		m_dwDownStartTime;
 	uint64		m_nLastBlockOffset;
 	uint32		m_dwLastBlockReceived;
@@ -653,7 +653,7 @@ protected:
 	// Upload data rate computation
 	//
 	UINT		m_nUpDatarate;
-	UINT		m_nSumForAvgUpDataRate;
+	uint64		m_nSumForAvgUpDataRate;
 	CList<TransferredData> m_AverageUDR_list;
 
 	//////////////////////////////////////////////////////////
@@ -661,7 +661,7 @@ protected:
 	//
 	UINT		m_nDownDatarate;
 	UINT		m_nDownDataRateMS;
-	UINT		m_nSumForAvgDownDataRate;
+	uint64		m_nSumForAvgDownDataRate;
 	CList<TransferredData> m_AverageDDR_list;
 
 	//////////////////////////////////////////////////////////

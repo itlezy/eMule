@@ -807,13 +807,13 @@ BOOL CALLBACK CemuleApp::SearchEmuleWindow(HWND hWnd, LPARAM lParam) noexcept
 }
 
 
-void CemuleApp::UpdateReceivedBytes(uint32 bytesToAdd)
+void CemuleApp::UpdateReceivedBytes(uint64 bytesToAdd)
 {
 	SetTimeOnTransfer();
 	theStats.sessionReceivedBytes += bytesToAdd;
 }
 
-void CemuleApp::UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend)
+void CemuleApp::UpdateSentBytes(uint64 bytesToAdd, bool sentToFriend)
 {
 	SetTimeOnTransfer();
 	theStats.sessionSentBytes += bytesToAdd;

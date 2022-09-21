@@ -146,8 +146,8 @@ public:
 	CString		CopyTextFromClipboard();
 
 	void		OnlineSig();
-	void		UpdateReceivedBytes(uint32 bytesToAdd);
-	void		UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend = false);
+	void		UpdateReceivedBytes(uint64 bytesToAdd);
+	void		UpdateSentBytes(uint64 bytesToAdd, bool sentToFriend = false);
 	int			GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength = -1, bool bNormalsSize = false);
 	HIMAGELIST	GetSystemImageList()							{ return m_hSystemImageList; }
 	HIMAGELIST	GetBigSystemImageList()							{ return m_hBigSystemImageList; }

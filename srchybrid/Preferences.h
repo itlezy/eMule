@@ -782,7 +782,7 @@ public:
 	static void		Add2ConnDownloadTime(int in)		{ cumConnDownloadTime += in; }
 	static void		Add2ConnUploadTime(int in)			{ cumConnUploadTime += in; }
 	static void		Add2DownSessionCompletedFiles()		{ ++sesDownCompletedFiles; }
-	static void		Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF, BOOL bUpDown, uint32 bytes, bool sentToFriend = false);
+	static void		Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF, BOOL bUpDown, uint64 bytes, bool sentToFriend = false);
 	static void		Add2DownSuccessfulSessions()		{ ++sesDownSuccessfulSessions;
 														  ++cumDownSuccessfulSessions; }
 	static void		Add2DownFailedSessions()			{ ++sesDownFailedSessions;

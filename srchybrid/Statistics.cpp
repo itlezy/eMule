@@ -266,8 +266,8 @@ void CStatistics::RecordRate()
 
 	// Accurate data rate Calculation
 	const DWORD tick = ::GetTickCount();
-	downrateHistory.push_front(TransferredData{(uint32)theStats.sessionReceivedBytes, tick});
-	uprateHistory.push_front(TransferredData{(uint32)theStats.sessionSentBytes, tick});
+	downrateHistory.push_front(TransferredData{theStats.sessionReceivedBytes, tick});
+	uprateHistory.push_front(TransferredData{theStats.sessionSentBytes, tick});
 
 	// limit to maxmins
 	UINT uAverageMilliseconds = MIN2MS(thePrefs.GetStatsAverageMinutes());

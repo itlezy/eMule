@@ -1,5 +1,7 @@
 #pragma once
 
+// https://learn.microsoft.com/en-us/cpp/cpp/data-type-ranges?view=msvc-170
+
 typedef unsigned char		uchar;
 typedef unsigned char		uint8;
 typedef	  signed char		sint8;

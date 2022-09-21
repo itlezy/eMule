@@ -500,14 +500,14 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		// This also updates the grand total for sent bytes, etc.  And where this data came from.
 		sentBytesCompleteFile = s->GetSentBytesCompleteFileSinceLastCallAndReset();
 		sentBytesPartFile = s->GetSentBytesPartFileSinceLastCallAndReset();
-		thePrefs.Add2SessionTransferData(GetClientSoft(), uUpStatsPort, false, true, (UINT)sentBytesCompleteFile, (IsFriend() && GetFriendSlot()));
-		thePrefs.Add2SessionTransferData(GetClientSoft(), uUpStatsPort, true, true, (UINT)sentBytesPartFile, (IsFriend() && GetFriendSlot()));
+		thePrefs.Add2SessionTransferData(GetClientSoft(), uUpStatsPort, false, true, sentBytesCompleteFile, (IsFriend() && GetFriendSlot()));
+		thePrefs.Add2SessionTransferData(GetClientSoft(), uUpStatsPort, true, true, sentBytesPartFile, (IsFriend() && GetFriendSlot()));
 
-		m_nTransferredUp = (UINT)(m_nTransferredUp + sentBytesCompleteFile + sentBytesPartFile);
+		m_nTransferredUp = (m_nTransferredUp + sentBytesCompleteFile + sentBytesPartFile);
 		credits->AddUploaded((uint32)(sentBytesCompleteFile + sentBytesPartFile), GetIP());
 
 		uint64 sentBytesPayload = s->GetSentPayloadSinceLastCall(true);
-		m_nCurQueueSessionPayloadUp = (UINT)(m_nCurQueueSessionPayloadUp + sentBytesPayload);
+		m_nCurQueueSessionPayloadUp = m_nCurQueueSessionPayloadUp + sentBytesPayload;
 
 		// on some rare cases (namely switching upload files while still data is in the send queue),
 		// we count some bytes for the wrong file, but fixing it (and not counting data only based on
@@ -565,9 +565,9 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		// Store how much data we've transferred this round,
 		// to be able to calculate average speed later
 		// keep sum of all values in list up to date
-		TransferredData newitem = {(UINT)(sentBytesCompleteFile + sentBytesPartFile), curTick};
+		TransferredData newitem = {(sentBytesCompleteFile + sentBytesPartFile), curTick};
 		m_AverageUDR_list.AddTail(newitem);
-		m_nSumForAvgUpDataRate = (UINT)(m_nSumForAvgUpDataRate + sentBytesCompleteFile + sentBytesPartFile);
+		m_nSumForAvgUpDataRate = (m_nSumForAvgUpDataRate + sentBytesCompleteFile + sentBytesPartFile);
 	}
 
 	// remove to old values in list
