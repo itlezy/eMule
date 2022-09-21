@@ -9,6 +9,7 @@ Just get the zip archive from the [release page](https://github.com/itlezy/eMule
 Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
 **Download** the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband
+\
 
 ### Optimal Settings
 Really the one recommendation would be to set the values of bandwidth capacity and the **upload limit**, plus a limit of max connections if you wish so. Other settings, as you please.  
@@ -29,7 +30,11 @@ You can adjust this limit according to your bandwitdh and I/O preferences, sugge
 This setting allows to set a maximum amount of upload slots that will never be surpassed, to reduce I/O contention in both disk and network. If you are seeding from multiple disk drives or SSD drives, then you can bump up the upload slots as you deem fit.  
 
 ### Additional Settings
-`BBSlowDownloaderSampleDepth=4` indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 and 12  
+`BBMaxUploadTargetFillPerc=80` given the max upload speed (which we reccomend to set!), indicates the target % to fill. Below that overall upload speed target, the slow client logic will take place and slow clients will be deprioritized from the upload slots. Slow clients will be deprioritized only when there are clients in the waiting list  
+\
+`BBSlowRateTolerancePerc=133` given the max up clients allowed, will identify slow clients based on the formula `BBSlowRateTolerancePerc / 100.0f * (1 + BBMaxUpClientsAllowed)` You can monitor the slowness of a client by the _caught slow_ column in the upload list  
+\
+`BBSlowDownloaderSampleDepth=4` indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 (aggressive) and 12 (more relaxed)  
 \
 `BBSessionMaxTrans=68719476736` indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb  
 \
@@ -123,4 +128,3 @@ This would be a normal upload slots list, in a scenario of 50Mbps capacity. So r
 ![2022-09-18 19_45_21-Window](https://user-images.githubusercontent.com/24484050/190921218-b07edb40-d85d-4170-827b-e754da82cb8b.png)
 \
 ![2022-09-18 19_44_56-Window](https://user-images.githubusercontent.com/24484050/190921219-5343b7c5-09ac-49d1-b64a-d3ff17443072.png)
-\
