@@ -5,7 +5,11 @@ The focus here is to maximise throughput for broadband users, to **optimize seed
 The focus is as well to introduce the least amount of changes to preserve the original quality and stability of the client.  
 
 ## Installation
-Just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current executable.  
+### eMule
+Reccomended to install the latest eMule Community version, but any 0.50+ should be fine as well. https://github.com/irwir/eMule/releases  
+
+### Broadband Edition
+Just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current eMule executable.  
 Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
 **Download** the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband  
@@ -19,7 +23,7 @@ Be fair about it, the purpose is to **maximise seeding**, so be generous with yo
 ### Upload Slots Settings
 **Max upload slots** are configurable from ini file. Just launch the eMule exe once, close it, and then edit the ini file:
 
-`%LOCALAPPDATA%\eMule\config\preferences.ini`
+Run notepad `%LOCALAPPDATA%\eMule\config\preferences.ini`
 
 The key to edit is the following:
 
@@ -28,27 +32,22 @@ The key to edit is the following:
 You can adjust this limit according to your bandwitdh and I/O preferences, suggested ranges are 5, 8, 12, 24, 36, .. up to you  
 This setting allows to set a maximum amount of upload slots that will never be surpassed, to reduce I/O contention in both disk and network. If you are seeding from multiple disk drives or SSD drives, then you can bump up the upload slots as you deem fit.  
 
-### Additional Settings
-`BBMaxUploadTargetFillPerc=80` given the max upload speed (which we reccomend to set!), indicates the target % to fill. Below that overall upload speed target, the slow client logic will take place and slow clients will be deprioritized from the upload slots. Slow clients will be deprioritized only when there are clients in the waiting list  
-\
-`BBSlowRateTolerancePerc=133` given the max up clients allowed, will identify slow clients based on the formula `BBSlowRateTolerancePerc / 100.0f * (1 + BBMaxUpClientsAllowed)` You can monitor the slowness of a client by the _caught slow_ column in the upload list  
-\
-`BBSlowDownloaderSampleDepth=4` indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 (aggressive) and 12 (more relaxed)  
-\
-`BBSessionMaxTrans=68719476736` indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb  
-\
-`BBSessionMaxTime=10800000` indicates how much time is allowed for a client to download in a single session, default is 3hrs  
-\
-`BBUploadClientMaxDataRate=1048576` indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb  
-\
-`BBBoostLowRatioFiles=2` indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy=400`  
-\
-`BBBoostFilesSmallerThan=16` speaks for itself (in Mb)  
-\
-`BBDeboostLowIDs=3` deboost LowID clients in the queue by this factor  
-\
-`BBDeboostHighRatioFiles=3` deboost files higher than this ratio by a factor of the ratio itself  
-\
+### Broadband Settings
+Please find below all preferences.ini settings.  
+|Setting|Default|Description|
+|---|---|---|
+|`BBMaxUpClientsAllowed`|5|Upper limit of concurrent uploads|
+|`BBMaxUploadTargetFillPerc`|75|Given the max upload speed (which we reccomend to set!), indicates the target % to fill. Below that overall upload speed target, the slow client logic will take place and slow clients will be deprioritized from the upload slots. Slow clients will be deprioritized only when there are clients in the waiting list|
+|`BBSlowRateTolerancePerc`|133|Given the max up clients allowed, will identify slow clients based on the formula `BBSlowRateTolerancePerc / 100.0f * (1 + BBMaxUpClientsAllowed)` You can monitor the slowness of a client by the _caught slow_ column in the upload list|
+|`BBSlowDownloaderSampleDepth`|4|Indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 (aggressive) and 12 (more relaxed)|
+|`BBSessionMaxTrans`|68719476736|Indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb|
+|`BBSessionMaxTime`|10800000|Indicates how much time is allowed for a client to download in a single session, default is 3hrs|
+|`BBUploadClientMaxDataRate`|1048576|Indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb|
+|`BBBoostLowRatioFiles`|2|Indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy=400`|
+|`BBBoostFilesSmallerThan`|16|Speaks for itself (in Mb)|
+|`BBDeboostLowIDs`|3|Deboost LowID clients in the queue by this factor|
+|`BBDeboostHighRatioFiles`|3|Deboost files higher than this ratio by a factor of the ratio itself|
+
 Your best take to fully understand the logic is to **review the [code itself](https://github.com/itlezy/eMule/commits/v0.60d-dev)** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
 
 ## Get an High ID
