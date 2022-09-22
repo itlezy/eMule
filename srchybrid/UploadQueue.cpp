@@ -443,69 +443,19 @@ uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 
 bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 {
-	if (!allowEmptyWaitingQueue && waitinglist.IsEmpty())
-		return false;
-
 	INT_PTR curUploadSlots = uploadinglist.GetCount();
 
-	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
-		return true;
-
-	if (curUploadSlots >= thePrefs.GetMaxUpClientsAllowed())
+	if (!allowEmptyWaitingQueue && waitinglist.IsEmpty())
 		return false;
 
 	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
+	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED || curUploadSlots < thePrefs.GetMaxUpClientsAllowed())
+		return true;
+
 	if (!AcceptNewClient(curUploadSlots) || !theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
 		return false;
-
-	uint32 MaxSpeed;
-	if (thePrefs.IsDynUpEnabled())
-		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024u;
-	else
-		MaxSpeed = thePrefs.GetMaxUpload();
-
-	uint32 upPerClient = GetTargetClientDataRate(false);
-
-	// if throttler doesn't require another slot, go with a slightly more restrictive method
-	if (MaxSpeed > 49 /*|| MaxSpeed == UNLIMITED */) { //because UNLIMITED > 20
-		upPerClient += datarate / 43;
-		if (upPerClient > thePrefs.GetUploadClientMaxDataRate())
-			upPerClient = thePrefs.GetUploadClientMaxDataRate();
-	}
-
-	//now the final check
-	if (MaxSpeed == UNLIMITED) {
-		if ((uint32)curUploadSlots < (datarate / upPerClient))
-			return true;
-	} else {
-		uint32 nMaxSlots;
-		if (MaxSpeed > 25)
-			nMaxSlots = max((MaxSpeed * 1024u) / upPerClient, (uint32)(MIN_UP_CLIENTS_ALLOWED + 3));
-		else if (MaxSpeed > 16)
-			nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 2;
-		else if (MaxSpeed > 9)
-			nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 1;
-		else
-			nMaxSlots = MIN_UP_CLIENTS_ALLOWED;
-		//AddLogLine(true,"maxslots=%u, upPerClient=%u, datarateslot=%u|%u|%u",nMaxSlots,upPerClient,datarate/UPLOAD_CHECK_CLIENT_DR, datarate, UPLOAD_CHECK_CLIENT_DR);
-
-		if ((uint32)curUploadSlots < nMaxSlots)
-			return true;
-	}
-/*
-	if(m_iHighestNumberOfFullyActivatedSlotsSinceLastCall > uploadinglist.GetCount()) {
-		// uploadThrottler requests another slot. If throttler says it needs another slot, we will allow more slots
-		// than what we require ourself. Never allow more slots than to give each slot high enough average transfer speed, though (checked above).
-		//if(thePrefs.GetLogUlDlEvents() && !waitinglist.IsEmpty())
-		//	AddDebugLogLine(false, _T("UploadQueue: Added new slot since throttler needs it. m_iHighestNumberOfFullyActivatedSlotsSinceLastCall: %i uploadinglist.GetCount(): %i tick: %i"), m_iHighestNumberOfFullyActivatedSlotsSinceLastCall, uploadinglist.GetCount(), ::GetTickCount());
-		return true;
-	}
-	//nope
-	return false;
-*/
-	return m_iHighestNumberOfFullyActivatedSlotsSinceLastCall > uploadinglist.GetCount();
 }
 
 CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
