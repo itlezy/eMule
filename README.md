@@ -51,6 +51,39 @@ Please find below all preferences.ini settings.
 
 Your best take to fully understand the logic is to **review the [code itself](https://github.com/itlezy/eMule/commits/v0.60d-dev)** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
 
+### Example Settings
+#### More aggressive
+```ini
+BBMaxUpClientsAllowed=6
+BBMaxUploadTargetFillPerc=90
+BBSlowRateTolerancePerc=111
+BBSlowDownloaderSampleDepth=2
+BBUploadClientMaxDataRate=1048576
+BBBoostLowRatioFiles=3
+BBBoostLowRatioFilesBy=900
+BBBoostFilesSmallerThan=0
+BBDeboostLowIDs=4
+BBDeboostHighRatioFiles=4
+BBSessionMaxTrans=68719476736
+BBSessionMaxTime=10800000
+```
+
+#### More Relaxed
+```ini
+BBMaxUpClientsAllowed=8
+BBMaxUploadTargetFillPerc=80
+BBSlowRateTolerancePerc=133
+BBSlowDownloaderSampleDepth=6
+BBUploadClientMaxDataRate=1048576
+BBBoostLowRatioFiles=3
+BBBoostLowRatioFilesBy=500
+BBBoostFilesSmallerThan=0
+BBDeboostLowIDs=3
+BBDeboostHighRatioFiles=4
+BBSessionMaxTrans=68719476736
+BBSessionMaxTime=10800000
+```
+
 ## Get an High ID
 As you might know, eMule servers assign you a Low or an High ID based on the fact you are able to receive inbound connections. So how to get an High ID? There are a number of guides to help you with this, but let me summarize few steps. Getting an High ID is important for a number of reasons and to improve your overall download/upload experience.  
 \
@@ -97,6 +130,15 @@ With the philosophy of keeping changes to a minimum:
 ### More stuff
 Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT). Upload compression has been disabled, which logic was not applicable to nowadays extensions, thanks for the idea to https://github.com/mercu01/amule  
 
+#### Sample Results
+The aim of this mod is to maximize seeding, by filling up the max upload bandwidth with a predefined number of upload slots.  
+![up-chart](https://user-images.githubusercontent.com/24484050/191764494-e2a1a2b9-5c0b-4dd2-bfb1-902ccabeb24c.png)
+
+This would be a normal upload slots list, in a scenario of 50Mbps capacity. So rather than having tenths of uploads, you can get few uploads at top speed.  
+
+![2022-06-16 12_30_07-Window](https://user-images.githubusercontent.com/24484050/174051485-6e3e2cb6-5a11-4930-bcf4-0e4c49f4d71f.png)
+
+
 #### Downloads
 ![2022-06-16 12_08_58-Window](https://user-images.githubusercontent.com/24484050/174048587-d5ee8449-8714-47e9-bd3e-695dcf2c6573.png)
 
@@ -104,18 +146,11 @@ Added some more technical fields to the Download and Upload Slots (like progress
 Few more fields have been added for who likes to monitor how their seeding status is going. Check out the context menu as well.  
 ![2022-09-18 19_31_28-Window](https://user-images.githubusercontent.com/24484050/190920794-f86db4ab-20fc-4b31-bdeb-5c1f38d95e66.png)
 
-
 #### Shared Files
 ![2022-06-16 12_11_24-Window](https://user-images.githubusercontent.com/24484050/174048775-8f2f56c8-bf71-421e-a532-ebb6dcec3a6e.png)
 
 #### Queue
 ![2022-06-16 12_17_22-Window](https://user-images.githubusercontent.com/24484050/174049352-d1b664b5-f952-421f-b720-e4d5ab8b3d42.png)
-
-
-### Sample Results
-This would be a normal upload slots list, in a scenario of 50Mbps capacity. So rather than having tenths of uploads, you can get few uploads at top speed.  
-
-![2022-06-16 12_30_07-Window](https://user-images.githubusercontent.com/24484050/174051485-6e3e2cb6-5a11-4930-bcf4-0e4c49f4d71f.png)
 
 ### All Settings (suggested)
 ![2022-09-18 19_44_23-Window](https://user-images.githubusercontent.com/24484050/190921214-bc859198-3552-436b-8d08-49a212dbfb76.png)
