@@ -46,7 +46,6 @@ public:
 	void EndThread();
 
 	void Pause(bool paused);
-	static uint32 GetSlotLimit(uint32 currentUpSpeed);
 private:
 	static UINT AFX_CDECL RunProc(LPVOID pParam);
 	UINT RunInternal();

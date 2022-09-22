@@ -309,26 +309,6 @@ void UploadBandwidthThrottler::Pause(bool paused)
 		pauseEvent->SetEvent();
 }
 
-uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed)
-{
-	uint32 upPerClient = theApp.uploadqueue->GetTargetClientDataRate(true);
-	// if throttler doesn't require another slot, go with a slightly more restrictive method
-	if (currentUpSpeed > 49 * 1024) {
-		upPerClient += currentUpSpeed / 43;
-		if (upPerClient > thePrefs.GetUploadClientMaxDataRate())
-			upPerClient = thePrefs.GetUploadClientMaxDataRate();
-	}
-
-	//now the final check
-	if (currentUpSpeed > 25 * 1024)
-		return max(currentUpSpeed / upPerClient, MIN_UP_CLIENTS_ALLOWED + 3);
-	if (currentUpSpeed > 16 * 1024)
-		return MIN_UP_CLIENTS_ALLOWED + 2;
-	if (currentUpSpeed > 9 * 1024)
-		return MIN_UP_CLIENTS_ALLOWED + 1;
-	return MIN_UP_CLIENTS_ALLOWED;
-}
-
 uint32 UploadBandwidthThrottler::CalculateChangeDelta(uint32 numberOfConsecutiveChanges)
 {
 	static const uint32 deltas[9] =
@@ -393,7 +373,7 @@ UINT UploadBandwidthThrottler::RunInternal()
 		sendLocker.Lock();
 		m_eventNewDataAvailable.ResetEvent();
 		m_eventSocketAvailable.ResetEvent();
-		for (INT_PTR i = mini(GetStandardListSize(), (INT_PTR)max(GetSlotLimit(theApp.uploadqueue->GetDatarate()), 3u)); --i >= 0;)
+		for (INT_PTR i = mini(GetStandardListSize(), (INT_PTR)max(thePrefs.GetMaxUpClientsAllowed(), 3u)); --i >= 0;)
 			if (m_StandardOrder_list[i] != NULL && m_StandardOrder_list[i]->HasQueues()) {
 				++nCanSend;
 				nBusy += static_cast<uint32>(m_StandardOrder_list[i]->IsBusyExtensiveCheck());
