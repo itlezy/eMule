@@ -94,8 +94,7 @@ public:
 
 protected:
 	void		RemoveFromWaitingQueue(POSITION pos, bool updatewindow);
-	bool		AcceptNewClient(bool addOnNextConnect = false) const;
-	bool		AcceptNewClient(INT_PTR curUploadSlots) const;
+	bool		AcceptNewClient() const;
 	bool		ForceNewClient(bool allowEmptyWaitingQueue = false);
 	bool		AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd = NULL);
 

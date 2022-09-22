@@ -389,42 +389,9 @@ void CUploadQueue::Process()
 	}
 };
 
-bool CUploadQueue::AcceptNewClient(bool addOnNextConnect) const
+bool CUploadQueue::AcceptNewClient() const
 {
-	INT_PTR curUploadSlots = uploadinglist.GetCount();
-
-	//We allow ONE extra slot to be created to accommodate lowID users.
-	//This is because we skip these users when it was actually their turn
-	//to get an upload slot.
-	curUploadSlots -= static_cast<INT_PTR>(addOnNextConnect && curUploadSlots > 0);
-
-	return AcceptNewClient(curUploadSlots);
-}
-
-bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
-{
-	// check if we can allow a new client to start downloading from us
-
-	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
-		return true;
-
-	if (curUploadSlots >= thePrefs.GetMaxUpClientsAllowed())
-		return false;
-
-	uint32 MaxSpeed;
-	if (thePrefs.IsDynUpEnabled())
-		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024u;
-	else
-		MaxSpeed = thePrefs.GetMaxUpload();
-	uint32 TargetRate = GetTargetClientDataRate(false);
-
-	if (curUploadSlots >= (INT_PTR)mini(datarate / GetTargetClientDataRate(true), MaxSpeed * 1024u / TargetRate))
-		return false;
-
-	return MaxSpeed != UNLIMITED
-		|| thePrefs.IsDynUpEnabled()
-		|| thePrefs.GetMaxGraphUploadRate(true) <= 0
-		|| curUploadSlots < (INT_PTR)(thePrefs.GetMaxGraphUploadRate(false) * 1024 / TargetRate);
+	return (uploadinglist.GetCount() < thePrefs.GetMaxUpClientsAllowed());
 }
 
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
@@ -451,10 +418,11 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
-	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED || curUploadSlots < thePrefs.GetMaxUpClientsAllowed())
+	if (curUploadSlots < thePrefs.GetMaxUpClientsAllowed())
 		return true;
 
-	if (!AcceptNewClient(curUploadSlots) || !theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
+	if (curUploadSlots >= thePrefs.GetMaxUpClientsAllowed() ||
+		!theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
 		return false;
 }
 
@@ -532,7 +500,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		POSITION pos2 = pos;
 		CUpDownClient *cur_client = waitinglist.GetNext(pos);
 		if (cur_client == client) {
-			if (client->m_bAddNextConnect && AcceptNewClient(client->m_bAddNextConnect)) {
+			if (client->m_bAddNextConnect && AcceptNewClient()) {
 				//Special care is given to lowID clients that missed their upload slot
 				//due to the saving bandwidth on callbacks.
 				if (thePrefs.GetLogUlDlEvents())
