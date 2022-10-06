@@ -71,6 +71,7 @@ uint32	CPreferences::m_boostLowRatioFilesBy;
 uint32	CPreferences::m_boostFilesSmallerThan;
 uint32	CPreferences::m_deboostLowIDs;
 uint32	CPreferences::m_deboostHighRatioFiles;
+uint32	CPreferences::m_autoFriendManagement;
 // broadband-MOD<<
 
 LPCSTR	CPreferences::m_pszBindAddrA;
@@ -1575,6 +1576,7 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("BBBoostFilesSmallerThan"), m_boostFilesSmallerThan);
 	ini.WriteInt(_T("BBDeboostLowIDs"), m_deboostLowIDs);
 	ini.WriteInt(_T("BBDeboostHighRatioFiles"), m_deboostHighRatioFiles);
+	ini.WriteInt(_T("BBAutoFriendManagement"), m_autoFriendManagement);
 	// broadband-MOD<<
 
 	ini.WriteInt(_T("MinUpload"), m_minupload);
@@ -2007,7 +2009,7 @@ void CPreferences::LoadPreferences()
 	}
 
 	// broadband-MOD>>
-	m_maxUpClientsAllowed = (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED);
+	m_maxUpClientsAllowed = max(MIN_UP_CLIENTS_ALLOWED, (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED));
 	m_maxUploadTargetFillPerc = (uint32)ini.GetInt(_T("BBMaxUploadTargetFillPerc"), 75);
 	m_slowRateTolerancePerc = (uint32)ini.GetInt(_T("BBSlowRateTolerancePerc"), 133);
 	m_sessionMaxTrans = (uint64)ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS);
@@ -2021,6 +2023,8 @@ void CPreferences::LoadPreferences()
 
 	m_deboostLowIDs = (uint32)ini.GetInt(_T("BBDeboostLowIDs"), 3);
 	m_deboostHighRatioFiles = (uint32)ini.GetInt(_T("BBDeboostHighRatioFiles"), 3);
+
+	m_autoFriendManagement = (uint32)ini.GetInt(_T("BBAutoFriendManagement"), 0);
 	// broadband-MOD<<
 
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
@@ -2493,7 +2497,7 @@ void CPreferences::LoadPreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
-	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), false, _T("UPnP"));
+	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), true, _T("UPnP"));
 	m_bSkipWANIPSetup = ini.GetBool(_T("SkipWANIPSetup"), false);
 	m_bSkipWANPPPSetup = ini.GetBool(_T("SkipWANPPPSetup"), false);
 	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true);

@@ -39,6 +39,7 @@
 #include "Log.h"
 #include "Collection.h"
 #include "UploadDiskIOThread.h"
+#include "friendlist.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -528,33 +529,45 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		// apply "slow clients" logic only when there actually is people in the waiting list
 		if (theApp.uploadqueue->GetWaitingUserCount() > 0) {
 
+			bool isSlow = false;
+
 			// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
 			if (thePrefs.GetMaxUpload() != UNLIMITED) {
 
 				if (
-					// if a client is "slow" meaning a 1/(1.33 * (1 + MAX_UP_CLIENTS_ALLOWED)) of the target upload rate
+					// if a client is "slow" meaning a 1 / (SlowRateTolerancePerc * (1 + MaxUpClientsAllowed)) of the target upload rate
 					GetDatarate() < 
 						((thePrefs.GetMaxUpload() * 1024u)    /
 						((thePrefs.GetSlowRateTolerancePerc() / 100.0f) * (1 + thePrefs.GetMaxUpClientsAllowed())))
 					) {
-					// only if below 75% of the max speed, if we're going fast enough we can leave the slow guys alone
+					// only if Datarate below MaxUploadTargetFillPerc % of the max speed, if we're going fast enough we can leave the slow guys alone
 					if (theApp.uploadqueue->GetDatarate() < ((thePrefs.GetMaxUploadTargetFillPerc() / 100.0f) * (thePrefs.GetMaxUpload() * 1024u)))
-						m_caughtBeingSlow++;
+						isSlow = true;
 				}
-				else if (m_caughtBeingSlow > 0)
-					m_caughtBeingSlow--;
+
 			}
 			else if (thePrefs.GetMaxUpload() == UNLIMITED) {
 				// still apply a boundary when up speed unlimited
 
 				if (GetDatarate() < thePrefs.GetUploadClientMaxDataRate())
-					m_caughtBeingSlow++;
-				else if (m_caughtBeingSlow > 0)
-					m_caughtBeingSlow--;
+					isSlow = true;
+
 			}
 
-			if (0 == GetDatarate()) 
-				m_caughtBeingSlow += 24;
+			if (!isSlow) {
+				if (m_caughtBeingSlow > 0)
+					m_caughtBeingSlow--;
+
+				if (thePrefs.GetAutoFriendManagement() > 0) // auto friend fast high ids
+					if (!HasLowID() && !IsFriend() && ((float)GetSessionUp() / (float)pCurrentUploadFile->GetFileSize() * 100.0f) > 55.0f)
+						theApp.friendlist->AddFriend(this);
+			}
+			else {
+				m_caughtBeingSlow++;
+
+				if (0 == GetDatarate()) // kick out stuck clients quicker
+					m_caughtBeingSlow += 24;
+			}
 		}
 		// broadband-MOD<<
 
@@ -805,6 +818,11 @@ bool CUpDownClient::GetFriendSlot() const
 		case IS_IDBADGUY:
 			return false;
 		}
+
+	// broadband-MOD>> // TODO is this actually needed? the logic of friend vs friend slot is not much clear..
+	if (thePrefs.GetAutoFriendManagement() > 0 && IsSlowDownloader())
+		return false;
+	// broadband-MOD<<
 
 	return m_bFriendSlot;
 }

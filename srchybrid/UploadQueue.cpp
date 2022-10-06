@@ -28,6 +28,7 @@
 #include "LastCommonRouteFinder.h"
 #include "DownloadQueue.h"
 #include "FriendList.h"
+#include "Friend.h"
 #include "Statistics.h"
 #include "UpDownClient.h"
 #include "SharedFileList.h"
@@ -735,6 +736,12 @@ void CUploadQueue::UpdateMaxClientScore()
 
 bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 {
+	// broadband-MOD>>
+	if (thePrefs.GetAutoFriendManagement() > 0) // auto un-friend low ids & slow high ids
+		if (client->IsFriend() && (client->HasLowID() || client->IsSlowDownloader()))
+			theApp.friendlist->RemoveFriend(client->GetFriend());
+	// broadband-MOD<<
+	
 	//If we have nobody in the queue, do NOT remove the current uploads.
 	//This will save some bandwidth and some unneeded swapping from upload/queue/upload.
 	if (waitinglist.IsEmpty() || client->GetFriendSlot())

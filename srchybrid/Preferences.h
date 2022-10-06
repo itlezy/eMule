@@ -165,6 +165,7 @@ public:
 	static uint32	m_boostFilesSmallerThan;
 	static uint32	m_deboostLowIDs;
 	static uint32	m_deboostHighRatioFiles;
+	static uint32	m_autoFriendManagement;
 	// broadband-MOD<<
 
 	static LPCSTR	m_pszBindAddrA;
@@ -743,6 +744,7 @@ public:
 	static uint32	GetBoostFilesSmallerThan()			{ return m_boostFilesSmallerThan; }
 	static uint32	GetDeboostLowIDs()					{ return m_deboostLowIDs; }
 	static uint32	GetDeboostHighRatioFiles()			{ return m_deboostHighRatioFiles; }
+	static uint32	GetAutoFriendManagement()			{ return m_autoFriendManagement; }
 	// broadband-MOD<<
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
