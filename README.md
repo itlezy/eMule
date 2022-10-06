@@ -48,6 +48,7 @@ Please find below all preferences.ini settings.
 |`BBBoostFilesSmallerThan`|16|Speaks for itself (in Mb)|
 |`BBDeboostLowIDs`|3|Deboost LowID clients in the queue by this factor|
 |`BBDeboostHighRatioFiles`|3|Deboost files higher than this ratio by a factor of the ratio itself|
+|`BBAutoFriendManagement`|0|Automatically add as Friends the fast HighIDs, and remove them if they become slow or LowIDs|
 
 Your best take to fully understand the logic is to **review the [code itself](https://github.com/itlezy/eMule/commits/v0.60d-dev)** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
 
