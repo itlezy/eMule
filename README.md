@@ -40,7 +40,7 @@ Please find below all preferences.ini settings.
 |`BBMaxUploadTargetFillPerc`|75|Given the max upload speed (which we reccomend to set!), indicates the target % to fill. Below that overall upload speed target, the slow client logic will take place and slow clients will be deprioritized from the upload slots. Slow clients will be deprioritized only when there are clients in the waiting list|
 |`BBSlowRateTolerancePerc`|133|Given the max up clients allowed, will identify slow clients based on the formula `BBSlowRateTolerancePerc / 100.0f * (1 + BBMaxUpClientsAllowed)` You can monitor the slowness of a client by the _caught slow_ column in the upload list|
 |`BBSlowDownloaderSampleDepth`|4|Indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 (aggressive) and 12 (more relaxed)|
-|`BBSessionMaxTrans`|68719476736|Indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb|
+|`BBSessionMaxTrans`|68719476736|Indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb. You can adjust this, based on the upload strategy you want to pursue. In example you can set it to smaller chunks, like 256Mb or so, to rotate more frequently the clients in the queue|
 |`BBSessionMaxTime`|10800000|Indicates how much time is allowed for a client to download in a single session, default is 3hrs|
 |`BBUploadClientMaxDataRate`|1048576|Indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb. Please note, this is a pre-existing parameter and it does not apply as data-rate limit for single uploads|
 |`BBBoostLowRatioFiles`|2|Indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy`|
@@ -82,6 +82,13 @@ BBBoostFilesSmallerThan=0
 BBDeboostLowIDs=3
 BBDeboostHighRatioFiles=4
 BBSessionMaxTrans=68719476736
+BBSessionMaxTime=10800000
+```
+
+#### Classic Behavior
+Bear in mind that you can adjust the max trans and the max time, so to decide the best upload strategy for you, by rotating clients every x Mb, or every x seconds.
+```ini
+BBSessionMaxTrans=268435456
 BBSessionMaxTime=10800000
 ```
 
