@@ -2012,9 +2012,12 @@ void CPreferences::LoadPreferences()
 	m_maxUpClientsAllowed = max(MIN_UP_CLIENTS_ALLOWED, (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED));
 	m_maxUploadTargetFillPerc = (uint32)ini.GetInt(_T("BBMaxUploadTargetFillPerc"), 75);
 	m_slowRateTolerancePerc = (uint32)ini.GetInt(_T("BBSlowRateTolerancePerc"), 133);
-	m_sessionMaxTrans = (uint64)ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS);
-	m_sessionMaxTime = (uint64)ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME);
-	m_slowDownloaderSampleDepth = (uint32)ini.GetInt(_T("BBSlowDownloaderSampleDepth"), 4);
+	m_sessionMaxTrans = max((uint64)ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS), 1);
+	if (m_sessionMaxTrans > 100 && m_sessionMaxTrans < 32 * 1024 * 1024)
+		m_sessionMaxTrans = 32 * 1024 * 1024; // force a minimum of 32 Mb, less than that makes little sense
+
+	m_sessionMaxTime = max((uint64)ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME), MIN2MS(10)); // at least 10 mins
+	m_slowDownloaderSampleDepth = max((uint32)ini.GetInt(_T("BBSlowDownloaderSampleDepth"), 4), 1); // at least 1 sample depth
 	m_uploadClientMaxDataRate = (uint32)ini.GetInt(_T("BBUploadClientMaxDataRate"), UPLOAD_CLIENT_MAXDATARATE);
 
 	m_boostLowRatioFiles = (uint32)ini.GetInt(_T("BBBoostLowRatioFiles"), 2);
@@ -2024,7 +2027,7 @@ void CPreferences::LoadPreferences()
 	m_deboostLowIDs = (uint32)ini.GetInt(_T("BBDeboostLowIDs"), 3);
 	m_deboostHighRatioFiles = (uint32)ini.GetInt(_T("BBDeboostHighRatioFiles"), 3);
 
-	m_autoFriendManagement = (uint32)ini.GetInt(_T("BBAutoFriendManagement"), 0);
+	m_autoFriendManagement = min((uint32)ini.GetInt(_T("BBAutoFriendManagement"), 0), 100);
 	// broadband-MOD<<
 
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);

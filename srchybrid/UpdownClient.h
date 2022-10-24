@@ -271,14 +271,17 @@ public:
 						m_nCurSessionUp = m_nTransferredUp;
 						m_addedPayloadQueueSession = 0;
 						m_nCurQueueSessionPayloadUp = 0;
+						// broadband-MOD>>
+						m_caughtBeingSlow = 0;
+						// broadband-MOD<<
 					}
 
 	uint64			GetSessionDown() const							{ return m_nTransferredDown - m_nCurSessionDown; }
 	uint64			GetSessionPayloadDown() const					{ return m_nCurSessionPayloadDown; }
 	void			ResetSessionDown()								{ m_nCurSessionDown = m_nTransferredDown; m_nCurSessionPayloadDown = 0; }
-	UINT			GetQueueSessionPayloadUp() const				{ return m_nCurQueueSessionPayloadUp; } // Data uploaded/transmitted
-	UINT			GetQueueSessionUploadAdded() const				{ return m_addedPayloadQueueSession; } // Data put into upload buffers
-	UINT			GetPayloadInBuffer() const						{ return m_addedPayloadQueueSession - m_nCurQueueSessionPayloadUp; }
+	uint64			GetQueueSessionPayloadUp() const				{ return m_nCurQueueSessionPayloadUp; } // Data uploaded/transmitted
+	uint64			GetQueueSessionUploadAdded() const				{ return m_addedPayloadQueueSession; } // Data put into upload buffers
+	uint64			GetPayloadInBuffer() const						{ return m_addedPayloadQueueSession - m_nCurQueueSessionPayloadUp; }
 	void			SetQueueSessionUploadAdded(UINT uVal)			{ m_addedPayloadQueueSession = uVal; }
 
 	bool			ProcessExtendedInfo(CSafeMemFile *data, CKnownFile *tempreqfile);
@@ -600,8 +603,8 @@ protected:
 	uint32		m_dwLastUpRequest;
 	uint64		m_nCurSessionUp;
 	uint64		m_nCurSessionDown;
-	UINT		m_nCurQueueSessionPayloadUp;
-	UINT		m_addedPayloadQueueSession;
+	uint64		m_nCurQueueSessionPayloadUp;
+	uint64		m_addedPayloadQueueSession;
 	uint16		m_nUpPartCount;
 	uint16		m_nUpCompleteSourcesCount;
 	uchar		requpfileid[16];

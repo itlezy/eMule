@@ -206,10 +206,6 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	if (pszReason && thePrefs.GetLogUlDlEvents())
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
 
-	// broadband-MOD>>
-	newclient->m_caughtBeingSlow = 0;
-	// broadband-MOD<<
-
 	if (newclient->HasCollectionUploadSlot() && directadd == NULL) {
 		ASSERT(0);
 		newclient->SetCollectionUploadSlot(false);
@@ -421,10 +417,8 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 
 	if (curUploadSlots < thePrefs.GetMaxUpClientsAllowed())
 		return true;
-
-	if (curUploadSlots >= thePrefs.GetMaxUpClientsAllowed() ||
-		!theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
-		return false;
+	
+	return false;
 }
 
 CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
@@ -740,6 +734,10 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 	if (thePrefs.GetAutoFriendManagement() > 0) // auto un-friend low ids & slow high ids
 		if (client->IsFriend() && (client->HasLowID() || client->IsSlowDownloader()))
 			theApp.friendlist->RemoveFriend(client->GetFriend());
+	
+	const CKnownFile* pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
+	if (pDownloadingFile == NULL)
+		return true;
 	// broadband-MOD<<
 	
 	//If we have nobody in the queue, do NOT remove the current uploads.
@@ -748,9 +746,6 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 		return false;
 
 	if (client->HasCollectionUploadSlot()) {
-		const CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
-		if (pDownloadingFile == NULL)
-			return true;
 		if (CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) && pDownloadingFile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE)
 			return false;
 		if (thePrefs.GetLogUlDlEvents())
@@ -770,7 +765,20 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 
 	if (thePrefs.TransferFullChunks()) {
 		// Allow the client to download a specified amount per session; but keep going if no one needs this slot
-		if (client->GetQueueSessionPayloadUp() > thePrefs.GetSessionMaxTrans() && !ForceNewClient()) {
+		if (
+			(
+				(
+				thePrefs.GetSessionMaxTrans() > 0 && thePrefs.GetSessionMaxTrans() <= 100  && // it is a % of the total file size
+				client->GetQueueSessionPayloadUp() > (pDownloadingFile->GetFileSize() * (thePrefs.GetSessionMaxTrans() / 100.0f))
+				)
+			||
+				(
+				thePrefs.GetSessionMaxTrans() >= 1024 * 1024 &&
+				// it is an absolute value in size (let's assume at least 1Mb)
+				client->GetQueueSessionPayloadUp() > thePrefs.GetSessionMaxTrans()
+				)
+			)
+			&& !ForceNewClient()) {
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to max transferred amount (%s), time downloading: %s"),
 					client->GetUserName(),

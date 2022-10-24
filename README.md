@@ -1,22 +1,23 @@
 # eMule - broadband branch
 The initial purpose of this project was to provide an eMule repository (including dependencies) that is ready to build and update the dependent libraries when possible.  
 This development branch specifically focuses on providing a build that is better suited to address nowadays file sizes and broadband availability. Default hard-coded parameters of eMule were better suited for small-files/slow-connections, leading to very low per-client transfer rates by nowadays standards.  
-The focus here is to maximise throughput for broadband users, to **optimize seeding**. This is a seeder mod, designed to seed back to the E2DK network.  
+The focus here is to maximise throughput for broadband users, to **optimize seeding**. The main feature that was added was the capability of limiting the upload slots to a certain number, while ensuring to make full usage of the upload bandwidth. Small other features have been added in the meanwhile. This is a seeder mod, designed to seed back to the E2DK network, to allow a personalized upload strategy based on the nature of your shared library and your IT setup.  
 The focus is as well to introduce the least amount of changes to preserve the original quality and stability of the client.  
+Please read the guide below to understand the configuration parameters and the capabilities.  
 
 ## Installation
 ### eMule
-Reccomended to install the latest eMule Community version, but any 0.50+ should be fine as well. https://github.com/irwir/eMule/releases  
+Reccomended to install the latest eMule Community version, but any 0.50+ should be fine as well. Get the latest eMule Community edition from here https://github.com/irwir/eMule/releases  
 
 ### Broadband Edition
-Just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current eMule executable.  
+To install eMule broadband, just get the zip archive from the [release page](https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband) and replace your current eMule executable.  
 Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is a "beta" build which requires testing, even if the amount of changes are minimal some external dependencies have been bumped up at compiler flags made uniform to optimize the runtime.  
 
 **Download** the latest Windows x64 release from https://github.com/itlezy/eMule/releases/tag/eMule_v0.60d-broadband  
 
 ### Optimal Settings
 Really the one recommendation would be to set the values of bandwidth capacity and the **upload limit**, plus a limit of max connections if you wish so. Other settings, as you please.  
-Be fair about it, the purpose is to **maximise seeding**, so be generous with your bandwidth and set it as much as possible based on your connection.
+Be fair about it, the purpose is to **maximise seeding**, so be generous with your bandwidth and set it as much as possible based on your connection.  
 
 ![2022-06-14 14_05_11-Window](https://user-images.githubusercontent.com/24484050/173573013-6a76d50f-f168-4a81-83c7-888ee3de6b6a.png)
 
@@ -40,15 +41,16 @@ Please find below all preferences.ini settings.
 |`BBMaxUploadTargetFillPerc`|75|Given the max upload speed (which we reccomend to set!), indicates the target % to fill. Below that overall upload speed target, the slow client logic will take place and slow clients will be deprioritized from the upload slots. Slow clients will be deprioritized only when there are clients in the waiting list|
 |`BBSlowRateTolerancePerc`|133|Given the max up clients allowed, will identify slow clients based on the formula `BBSlowRateTolerancePerc / 100.0f * (1 + BBMaxUpClientsAllowed)` You can monitor the slowness of a client by the _caught slow_ column in the upload list|
 |`BBSlowDownloaderSampleDepth`|4|Indicates how many samples are taken in account to mark a client as "slow downloader". This provides a temporal depth to mark slow clients and remove them from the upload slots. Suggested values are between 2 (aggressive) and 12 (more relaxed)|
-|`BBSessionMaxTrans`|68719476736|Indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb. You can adjust this, based on the upload strategy you want to pursue. In example you can set it to smaller chunks, like 256Mb or so, to rotate more frequently the clients in the queue|
-|`BBSessionMaxTime`|10800000|Indicates how much time is allowed for a client to download in a single session, default is 3hrs|
+|`BBSessionMaxTrans`|68719476736|Values above 100 - Indicates how much data in bytes is allowed for a client to download in a single session. Adjust based on the files you plan to share, default is 64Gb. You can adjust this, based on the upload strategy you want to pursue. In example you can set it to smaller chunks, like 256Mb or so, to rotate more frequently the clients in the queue|
+|`BBSessionMaxTrans`|1-100|Values in the range of 1 to 100 indicate how much data in percentage of the size of the file being uploaded is allowed for a client to download in a single session. This allows to set upload sessions to in example a third of the entire file, and then pick the next client in queue. In example, set to 33 to allow a third of the file(s) size to be uploaded in a single session|
+|`BBSessionMaxTime`|10800000|Indicates how much time (in ms!) is allowed for a client to download in a single session, default is 3hrs|
 |`BBUploadClientMaxDataRate`|1048576|Indicates the target max data rate used in a number of calculations done by the upload throttler and it is also used to mark slow clients when an upload limit is not set. Suggested values are between 256k and 1Mb. Please note, this is a pre-existing parameter and it does not apply as data-rate limit for single uploads|
 |`BBBoostLowRatioFiles`|2|Indicates the ratio threshold below which files are prioritized in the queue by adding `BBBoostLowRatioFilesBy`|
 |`BBBoostLowRatioFilesBy`|400|Add 400 points to low-ratio files|
 |`BBBoostFilesSmallerThan`|16|Speaks for itself (in Mb)|
 |`BBDeboostLowIDs`|3|Deboost LowID clients in the queue by this factor|
 |`BBDeboostHighRatioFiles`|3|Deboost files higher than this ratio by a factor of the ratio itself|
-|`BBAutoFriendManagement`|0|Automatically add as Friends the fast HighIDs, and remove them if they become slow or LowIDs|
+|`BBAutoFriendManagement`|0,1-100|Automatically add as Friends the fast High IDs, and remove them if they become slow or LowIDs. Values greater than 0 activates the feature and indicates the threshold of uploaded percentage of the file for when to add the client as friend. In example, set to 10 to auto-friend a fast High ID client when it has downloaded a 10% of the file. Set to a value consistent with `BBSessionMaxTrans` or leave it off otherwise|
 
 Your best take to fully understand the logic is to **review the [code itself](https://github.com/itlezy/eMule/commits/v0.60d-dev)** `git diff origin/v0.60d-build origin/v0.60d-dev`  We have not much time to test, so be sensible  
 
@@ -67,6 +69,7 @@ BBDeboostLowIDs=4
 BBDeboostHighRatioFiles=4
 BBSessionMaxTrans=68719476736
 BBSessionMaxTime=10800000
+BBAutoFriendManagement=10
 ```
 
 #### More Relaxed
@@ -83,13 +86,18 @@ BBDeboostLowIDs=3
 BBDeboostHighRatioFiles=4
 BBSessionMaxTrans=68719476736
 BBSessionMaxTime=10800000
+BBAutoFriendManagement=10
 ```
 
-#### Classic Behavior
-Bear in mind that you can adjust the max trans and the max time, so to decide the best upload strategy for you, by rotating clients every x Mb, or every x seconds.
+#### Control over Max Trans and Max Time
+Bear in mind that you can adjust the max trans and the max time, so to decide the best upload strategy for you, by rotating clients every x Mb, or every x seconds.  
 ```ini
 BBSessionMaxTrans=268435456
 BBSessionMaxTime=10800000
+```
+Or as mentioned above, you can set the Max Trans to a percentage of the file being uploaded, like in example a third
+```ini
+BBSessionMaxTrans=33
 ```
 
 ## Get an High ID

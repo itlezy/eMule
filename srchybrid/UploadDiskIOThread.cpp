@@ -168,12 +168,12 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
 	// See if we can do an early return. There may be no new blocks to load from disk and add to buffer, or buffer may be large enough already.
 
-	uint32 nCurQueueSessionPayloadUp = pUploadClientStruct->m_pClient->GetQueueSessionPayloadUp();
+	uint64 nCurQueueSessionPayloadUp = pUploadClientStruct->m_pClient->GetQueueSessionPayloadUp();
 	// GetQueueSessionPayloadUp is probably outdated so also add the value reported by the sockets as sent
 	CClientReqSocket *pSock = pUploadClientStruct->m_pClient->socket;
 	if (pSock != NULL)
 		nCurQueueSessionPayloadUp += (uint32)pSock->GetSentPayloadSinceLastCall(false);
-	uint32 addedPayloadQueueSession = pUploadClientStruct->m_pClient->GetQueueSessionUploadAdded();
+	uint64 addedPayloadQueueSession = pUploadClientStruct->m_pClient->GetQueueSessionUploadAdded();
 
 	// buffer at least 1 block (180KB) on normal uploads and 5 blocks (~900KB) on fast uploads
 	bool bFastUpload = pUploadClientStruct->m_pClient->GetDatarate() > BIGBUFFER_MINDATARATE;

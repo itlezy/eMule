@@ -559,7 +559,7 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 					m_caughtBeingSlow--;
 
 				if (thePrefs.GetAutoFriendManagement() > 0) // auto friend fast high ids
-					if (!HasLowID() && !IsFriend() && ((float)GetSessionUp() / (float)pCurrentUploadFile->GetFileSize() * 100.0f) > 55.0f)
+					if (!HasLowID() && !IsFriend() && ((float)GetSessionUp() / (float)pCurrentUploadFile->GetFileSize() * 100.0f) > thePrefs.GetAutoFriendManagement())
 						theApp.friendlist->AddFriend(this);
 			}
 			else {
