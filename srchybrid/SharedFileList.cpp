@@ -1289,6 +1289,17 @@ void CSharedFileList::Process()
 	Publish();
 	if (m_lastPublishED2KFlag && ::GetTickCount() >= m_lastPublishED2K + ED2KREPUBLISHTIME) {
 		SendListToServer();
+
+		// broadband-MOD>>
+		// reload the shared files every 33 min
+		if (::GetTickCount() >= m_lastPublishED2K + MIN2MS(33)) {
+
+			AddDebugLogLine(DLP_DEFAULT, false, _T("Reloading Shared Files list at Ticks %d"), m_lastPublishED2K);
+
+			Reload();
+		}
+		// broadband-MOD<<
+
 		m_lastPublishED2K = ::GetTickCount();
 	}
 }

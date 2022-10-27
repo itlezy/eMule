@@ -769,7 +769,7 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 			(
 				(
 				thePrefs.GetSessionMaxTrans() > 0 && thePrefs.GetSessionMaxTrans() <= 100  && // it is a % of the total file size
-				client->GetQueueSessionPayloadUp() > (pDownloadingFile->GetFileSize() * (thePrefs.GetSessionMaxTrans() / 100.0f))
+				client->GetQueueSessionPayloadUp() > ((uint64)pDownloadingFile->GetFileSize() * (thePrefs.GetSessionMaxTrans() / 100.0f))
 				)
 			||
 				(
@@ -892,11 +892,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 				theApp.serverconnect->TryAnotherConnectionRequest();
 
 			theApp.listensocket->UpdateConnectionsStatus();
-			if (thePrefs.WatchClipboard4ED2KLinks()) {
-				// TODO: Remove this from here. This has to be done with a clipboard chain
-				// and *not* with a timer!!
-				theApp.SearchClipboard();
-			}
 
 			if (theApp.serverconnect->IsConnecting())
 				theApp.serverconnect->CheckForTimeout();

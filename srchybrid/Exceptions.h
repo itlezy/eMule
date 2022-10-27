@@ -17,6 +17,7 @@
 
 #define CATCH_MFC_EXCEPTION(fname) \
 	catch(CException *e){ \
+		ASSERT(0); \
 		TCHAR szError[1024]; \
 		GetExceptionMessage(*e, szError, _countof(szError)); \
 		const CRuntimeClass *pRuntimeClass = e->GetRuntimeClass(); \

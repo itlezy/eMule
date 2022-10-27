@@ -143,6 +143,9 @@ With the philosophy of keeping changes to a minimum:
 - Added a bit of logic to remove from the upload slots clients that have been below a download rate for a certain period of time, so to give more priority to fast downloaders, which should also be fast uploaders to an extent so then they can propagate files quicker if they get it first. The *slower* clients will be able to be back in the slots once the fastest have been served
 - Added a "ratio" display in upload slot, upload queue and shared files, so to provide evidence on the seeding ratio of files. Low ratio files from the queue will be "bumped" to an higher score, to spread quicker  
 
+### For Linux
+For Linux and other platforms, or Windows as well, please check friend project https://github.com/mercu01/amule  
+
 ### More stuff
 Added some more technical fields to the Download and Upload Slots (like progress %), Queue, Shared Files (including a ratio column, similar to BT). Upload compression has been disabled, which logic was not applicable to nowadays extensions, thanks for the idea to https://github.com/mercu01/amule  
 

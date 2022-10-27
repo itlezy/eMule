@@ -44,7 +44,7 @@
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <UseDebugLibraries>true</UseDebugLibraries>
-    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -116,7 +116,7 @@
       <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\..\libs\cryptlib.lib;..\..\libs\cximage.lib;..\..\libs\id3lib.lib;..\..\libs\libpng15.lib;..\..\libs\mbedTLS.lib;..\..\libs\miniupnpc.lib;..\..\libs\ResizableLib.lib;..\..\libs\zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\..\libs_debug\cryptlib.lib;..\..\libs_debug\cximage.lib;..\..\libs_debug\id3lib.lib;..\..\libs_debug\libpng15.lib;..\..\libs_debug\mbedTLS.lib;..\..\libs_debug\miniupnpc.lib;..\..\libs_debug\ResizableLib.lib;..\..\libs_debug\zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <OptimizeReferences>true</OptimizeReferences>
