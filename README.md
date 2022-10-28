@@ -116,6 +116,7 @@ Then you can verify online if you are able to receive inbound connections on one
 
 ## IP 2 Country
 As some other minor change to the upload list, the IP 2 Country is being added back. At some point it will be updated to latest formats, but for now just google `GeoIPCountryWhois.csv` to download a reasonably recent file and place it in your `%LOCALAPPDATA%\eMule\config`  
+Refer to https://mailfud.org/geoip-legacy/ , download the file version GeoIP-legacy.csv.gz	and remove the IPv6 entries from it at the bottom, with a text editor.  
 
 ## Building
 Please see this repo [eMule-build](https://github.com/itlezy/eMule-build) for build instructions and scripts if you are interested in performing a build. This is the broadband branch for features and experimentation, but if you want to start from the base 0.60d here's the [build branch](https://github.com/itlezy/eMule/tree/v0.60d-build) which contains no changes.  
