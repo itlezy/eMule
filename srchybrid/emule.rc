@@ -2275,8 +2275,8 @@ BEGIN
     IDS_ERR_COMPLETIONFAILED 
                             "Unexpected file error while completing ""%s"". File paused, restart eMule for another try to complete"
     IDS_ERR_DELETEFAILED    "Failed to delete %s, you will need to do this by hand"
-    IDS_DOWNLOADDONE        "Finished downloading %s :-)"
-    IDS_ERR_DELETE          "Failed to delete %s"
+    IDS_DOWNLOADDONE        "Finished downloading [ %s ]"
+    IDS_ERR_DELETE          "Failed to delete [ %s ]"
 END
 
 STRINGTABLE
@@ -2407,7 +2407,7 @@ BEGIN
     IDS_ERR_FAILED_CREDITSAVE "Failed to save credit file"
     IDS_NOPARTSFOUND        "No part files found"
     IDS_FOUNDPARTS          "Found %u part files"
-    IDS_NEWDOWNLOAD         "Downloading %s"
+    IDS_NEWDOWNLOAD         "Downloading [ %s ]"
     IDS_ERR_ALREADY_DOWNLOADING 
                             "You are already trying to download the file %s"
     IDS_ERR_ALREADY_DOWNLOADED "You already have the file %s"
