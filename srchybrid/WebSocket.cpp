@@ -6,6 +6,7 @@
 #include "StringConversion.h"
 #include "Log.h"
 
+#include <vector>
 #include "mbedtls/net_sockets.h"
 #include "mbedtls/ssl_cache.h"
 #include "mbedtls/ssl_ticket.h"
@@ -499,9 +500,37 @@ int StartSSL()
 	mbedtls_ssl_ticket_init(&ticket_ctx);
 	int ret = (int)psa_crypto_init();
 	if (!ret) { // PSA_SUCCESS is 0
-		ret = mbedtls_x509_crt_parse_file(&srvcert, thePrefs.GetWebCertPath());
+		// Load certificate via Windows CFile (uses CreateFileW internally) so that paths
+		// containing non-ASCII characters are handled correctly.  The old approach used
+		// CT2A() + mbedtls_x509_crt_parse_file(), which called fopen() with an ANSI path
+		// and silently broke for any cert path outside the system code page.
+		// mbedtls_x509_crt_parse() accepts a PEM or DER buffer; for PEM the buffer must
+		// be null-terminated, so we allocate size+1 bytes zeroed.
+		{
+			CFile certFile;
+			if (!certFile.Open(thePrefs.GetWebCertPath(), CFile::modeRead | CFile::shareDenyWrite)) {
+				ret = MBEDTLS_ERR_X509_FILE_IO_ERROR;
+			} else {
+				const ULONGLONG fileLen = certFile.GetLength();
+				std::vector<unsigned char> buf(static_cast<size_t>(fileLen) + 1, 0);
+				certFile.Read(buf.data(), static_cast<UINT>(fileLen));
+				certFile.Close();
+				ret = mbedtls_x509_crt_parse(&srvcert, buf.data(), buf.size());
+			}
+		}
 		if (!ret) {
-			ret = mbedtls_pk_parse_keyfile(&pkey, thePrefs.GetWebKeyPath(), NULL);
+			// Same wide-path approach for the private key file.
+			// mbedtls_pk_parse_key() for PEM also requires a null-terminated, +1-byte buffer.
+			CFile keyFile;
+			if (!keyFile.Open(thePrefs.GetWebKeyPath(), CFile::modeRead | CFile::shareDenyWrite)) {
+				ret = MBEDTLS_ERR_PK_FILE_IO_ERROR;
+			} else {
+				const ULONGLONG fileLen = keyFile.GetLength();
+				std::vector<unsigned char> buf(static_cast<size_t>(fileLen) + 1, 0);
+				keyFile.Read(buf.data(), static_cast<UINT>(fileLen));
+				keyFile.Close();
+				ret = mbedtls_pk_parse_key(&pkey, buf.data(), buf.size(), NULL, 0);
+			}
 			if (!ret) {
 				ret = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
 				if (!ret) {
