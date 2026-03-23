@@ -1,0 +1,10 @@
+/.vs/
+*.VC.db
+*.VC.opendb
+*.sln.docstates
+*.suo
+*.user
+/srchybrid/Debug/
+/srchybrid/Release/
+/srchybrid/ipch/
+/srchybrid/x64/
