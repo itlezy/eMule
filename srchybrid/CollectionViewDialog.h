@@ -16,7 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "CollectionListCtrl.h"
-#include "ResizableLib\ResizableDialog.h"
+#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
 
 class CCollection;
 

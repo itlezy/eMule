@@ -17,7 +17,7 @@
 #include "stdafx.h"
 #include "SearchListCtrl.h"
 #include "emule.h"
-#include "ResizableLib/ResizableSheet.h"
+#include "../../eMule-ResizableLib/ResizableLib/ResizableSheet.h"
 #include "SearchFile.h"
 #include "SearchList.h"
 #include "emuledlg.h"

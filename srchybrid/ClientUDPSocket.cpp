@@ -35,7 +35,7 @@
 #include "kademlia/io/IOException.h"
 #include "kademlia/kademlia/prefs.h"
 #include "kademlia/utils/KadUDPKey.h"
-#include "zlib/zlib.h"
+#include "../../eMule-zlib/zlib.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

@@ -9,7 +9,7 @@
 #include "stdafx.h"
 #include <uxtheme.h>
 #include "DialogMinTrayBtn.h"
-#include "ResizableLib\ResizableDialog.h"
+#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
 #include "OtherFunctions.h"
 #include "MenuCmds.h"
 #undef SCHEMADEF_H

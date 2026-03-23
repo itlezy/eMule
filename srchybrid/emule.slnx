@@ -7,30 +7,30 @@
     <Platform Name="Win32" />
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="../cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">
+  <Project Path="../../eMule-cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
-  <Project Path="../id3lib/libprj/id3lib.vcxproj" Id="4aacbf8d-b90f-41ad-a5be-d5e557c668e3">
+  <Project Path="../../eMule-id3lib/libprj/id3lib.vcxproj" Id="4aacbf8d-b90f-41ad-a5be-d5e557c668e3">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
-  <Project Path="../mbedtls/visualc/VS2017/mbedTLS.vcxproj" Id="46cf2d25-6a36-4189-b59c-e4815388e554">
+  <Project Path="../../eMule-mbedtls/visualc/VS2017/mbedTLS.vcxproj" Id="46cf2d25-6a36-4189-b59c-e4815388e554">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
-  <Project Path="../miniupnpc/msvc/miniupnpc.vcxproj" Id="d28ce435-cb33-4bae-8a52-c6ef915956f5">
+  <Project Path="../../eMule-miniupnp/miniupnpc/msvc/miniupnpc.vcxproj" Id="d28ce435-cb33-4bae-8a52-c6ef915956f5">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
-  <Project Path="../ResizableLib/ResizableLib.vcxproj" Id="86cec5cb-94de-4e3c-a1c6-0653d58c0625">
+  <Project Path="../../eMule-ResizableLib/ResizableLib/ResizableLib.vcxproj" Id="86cec5cb-94de-4e3c-a1c6-0653d58c0625">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
-  <Project Path="../zlib/contrib/vstudio/vc/zlib.vcxproj" Id="745dec58-ebb3-47a9-a9b8-4c6627c01bf8">
+  <Project Path="../../eMule-zlib/contrib/vstudio/vc/zlib.vcxproj" Id="745dec58-ebb3-47a9-a9b8-4c6627c01bf8">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="emule.vcxproj" Id="584ea69d-3443-4197-8994-364880fc1b9b">
-    <BuildDependency Project="../cryptopp/cryptlib.vcxproj" />
-    <BuildDependency Project="../id3lib/libprj/id3lib.vcxproj" />
-    <BuildDependency Project="../mbedtls/visualc/VS2017/mbedTLS.vcxproj" />
-    <BuildDependency Project="../miniupnpc/msvc/miniupnpc.vcxproj" />
-    <BuildDependency Project="../ResizableLib/ResizableLib.vcxproj" />
-    <BuildDependency Project="../zlib/contrib/vstudio/vc/zlib.vcxproj" />
+    <BuildDependency Project="../../eMule-cryptopp/cryptlib.vcxproj" />
+    <BuildDependency Project="../../eMule-id3lib/libprj/id3lib.vcxproj" />
+    <BuildDependency Project="../../eMule-mbedtls/visualc/VS2017/mbedTLS.vcxproj" />
+    <BuildDependency Project="../../eMule-miniupnp/miniupnpc/msvc/miniupnpc.vcxproj" />
+    <BuildDependency Project="../../eMule-ResizableLib/ResizableLib/ResizableLib.vcxproj" />
+    <BuildDependency Project="../../eMule-zlib/contrib/vstudio/vc/zlib.vcxproj" />
   </Project>
 </Solution>

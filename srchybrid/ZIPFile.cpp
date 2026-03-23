@@ -21,7 +21,7 @@
 
 #include "StdAfx.h"
 #include "ZIPFile.h"
-#include "zlib/zlib.h"
+#include "../../eMule-zlib/zlib.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

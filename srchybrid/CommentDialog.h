@@ -1,5 +1,5 @@
 #pragma once
-#include "ResizableLib/ResizablePage.h"
+#include "../../eMule-ResizableLib/ResizableLib/ResizablePage.h"
 #include "ComboBoxEx2.h"
 #include "CommentListCtrl.h"
 

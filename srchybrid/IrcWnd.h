@@ -15,7 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
-#include "ResizableLib/ResizableDialog.h"
+#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
 #include "IrcNickListCtrl.h"
 #include "IrcChannelListCtrl.h"
 #include "IrcChannelTabCtrl.h"

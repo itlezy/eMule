@@ -28,7 +28,7 @@
 #include "HighColorTab.hpp"
 #include "ListViewWalkerPropertySheet.h"
 #include "UserMsgs.h"
-#include "ResizableLib/ResizableSheet.h"
+#include "../../eMule-ResizableLib/ResizableLib/ResizableSheet.h"
 #include "SharedFileList.h"
 #include "MemDC.h"
 #include "PartFile.h"

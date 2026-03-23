@@ -36,7 +36,7 @@
 #include "Log.h"
 #include "MuleToolbarCtrl.h"
 #include "VistaDefines.h"
-#include "cryptopp/osrng.h"
+#include "../../eMule-cryptopp/osrng.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

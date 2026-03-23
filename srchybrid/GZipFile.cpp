@@ -19,7 +19,7 @@
 #include <sys/stat.h>
 #include <share.h>
 #include <io.h>
-#include "zlib/zlib.h"
+#include "../../eMule-zlib/zlib.h"
 #include "GZipFile.h"
 
 #ifdef _DEBUG

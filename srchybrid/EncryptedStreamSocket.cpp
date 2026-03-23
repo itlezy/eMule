@@ -83,7 +83,7 @@ Basic Obfuscated Handshake Protocol Client <-> Server:
 #include "opcodes.h"
 #include "clientlist.h"
 #include "ServerConnect.h"
-#include "cryptopp/osrng.h"
+#include "../../eMule-cryptopp/osrng.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
