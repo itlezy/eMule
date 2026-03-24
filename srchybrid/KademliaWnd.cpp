@@ -206,7 +206,8 @@ BOOL CKademliaWnd::OnInitDialog()
 	if (GetDlgItem(IDC_BOOTSTRAPURL)->GetWindowTextLength() == 0)
 		SetDlgItemText(IDC_BOOTSTRAPURL, DEFAULT_NODESDAT_URL);
 
-	CheckDlgButton(IDC_RADCLIENTS, 1);
+	CheckRadioButton(IDC_RADIP, IDC_RADNODESURL, IDC_RADNODESURL);
+	UpdateControlsState();
 	ShowLookupGraph(false);
 
 	return TRUE;

@@ -623,7 +623,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
 
 	m_uFileBufferSize = thePrefs.m_uFileBufferSize;
-	m_ctlFileBuffSize.SetRange(16, 1024 + 512, TRUE);
+	m_ctlFileBuffSize.SetRange(16, 4096, TRUE);
 	int iMin, iMax;
 	m_ctlFileBuffSize.GetRange(iMin, iMax);
 	m_ctlFileBuffSize.SetPos(m_uFileBufferSize / 1024);

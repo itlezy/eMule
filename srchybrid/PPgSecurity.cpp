@@ -40,6 +40,7 @@ static char THIS_FILE[] = __FILE__;
 bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType);
 
 #define	IPFILTERUPDATEURL_STRINGS_PROFILE	_T("AC_IPFilterUpdateURLs.dat")
+#define DEFAULT_IPFILTER_URL				_T("http://upd.emule-security.org/ipfilter.zip")
 
 IMPLEMENT_DYNAMIC(CPPgSecurity, CPropertyPage)
 
@@ -117,13 +118,17 @@ BOOL CPPgSecurity::OnInitDialog()
 			if (m_pacIPFilterURL->Bind(::GetDlgItem(m_hWnd, IDC_UPDATEURL), ACO_UPDOWNKEYDROPSLIST | ACO_AUTOSUGGEST | ACO_FILTERPREFIXES))
 				m_pacIPFilterURL->LoadList(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + IPFILTERUPDATEURL_STRINGS_PROFILE);
 		}
-		SetDlgItemText(IDC_UPDATEURL, m_pacIPFilterURL->GetItem(0));
+		if (m_pacIPFilterURL->GetItemCount() > 0)
+			SetDlgItemText(IDC_UPDATEURL, m_pacIPFilterURL->GetItem(0));
 		if (theApp.m_fontSymbol.m_hObject) {
 			GetDlgItem(IDC_DD)->SetFont(&theApp.m_fontSymbol);
 			SetDlgItemText(IDC_DD, _T("6")); // show a down-arrow
 		}
 	} else
 		GetDlgItem(IDC_DD)->ShowWindow(SW_HIDE);
+
+	if (GetDlgItem(IDC_UPDATEURL)->GetWindowTextLength() == 0)
+		SetDlgItemText(IDC_UPDATEURL, DEFAULT_IPFILTER_URL);
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -455,9 +460,15 @@ void CPPgSecurity::OnEnChangeUpdateUrl()
 void CPPgSecurity::OnDDClicked()
 {
 	CWnd *box = GetDlgItem(IDC_UPDATEURL);
+	CString strText;
+	box->GetWindowText(strText);
 	box->SetFocus();
 	box->SetWindowText(_T(""));
 	box->SendMessage(WM_KEYDOWN, VK_DOWN, 0x00510001);
+	if (!strText.IsEmpty()) {
+		box->SetWindowText(strText);
+		static_cast<CEdit*>(box)->SetSel(strText.GetLength(), strText.GetLength());
+	}
 }
 
 void CPPgSecurity::OnHelp()

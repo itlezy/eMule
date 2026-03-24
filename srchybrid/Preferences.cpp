@@ -1922,7 +1922,7 @@ void CPreferences::LoadPreferences()
 			tempdir.Add(sTmp);
 	}
 
-	SetMaxGraphDownloadRate((uint32)ini.GetInt(_T("DownloadCapacity"), 50000));
+	SetMaxGraphDownloadRate((uint32)ini.GetInt(_T("DownloadCapacity"), 200000));
 
 	SetMaxGraphUploadRate((uint32)ini.GetInt(_T("UploadCapacityNew"), 50000));
 	if (maxGraphUploadRate == UNLIMITED) {
@@ -1950,11 +1950,11 @@ void CPreferences::LoadPreferences()
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	if (m_minupload < 1)
 		m_minupload = 1;
-	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), 80);
+	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), 50000);
 	if (m_maxupload > maxGraphUploadRate && m_maxupload != UNLIMITED)
 		m_maxupload = maxGraphUploadRate * 4 / 5;
 
-	m_maxdownload = (uint32)ini.GetInt(_T("MaxDownload"), 90);
+	m_maxdownload = (uint32)ini.GetInt(_T("MaxDownload"), 200000);
 	if (m_maxdownload > maxGraphDownloadRate && m_maxdownload != UNLIMITED)
 		m_maxdownload = maxGraphDownloadRate * 9 / 10;
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
@@ -1989,7 +1989,7 @@ void CPreferences::LoadPreferences()
 	statsInterval = ini.GetInt(_T("statsInterval"), 5);
 	m_bFillGraphs = ini.GetBool(_T("StatsFillGraphs"));
 
-	m_uDeadServerRetries = ini.GetInt(_T("DeadServerRetry"), 1);
+	m_uDeadServerRetries = ini.GetInt(_T("DeadServerRetry"), 5);
 	if (m_uDeadServerRetries > MAX_SERVERFAILCOUNT)
 		m_uDeadServerRetries = MAX_SERVERFAILCOUNT;
 	m_dwServerKeepAliveTimeout = ini.GetInt(_T("ServerKeepAliveTimeout"), 0);
@@ -2034,7 +2034,7 @@ void CPreferences::LoadPreferences()
 
 	m_bPreventStandby = ini.GetBool(_T("PreventStandby"), false);
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
-	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
+	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), true);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
 	splashscreen = ini.GetBool(_T("Splashscreen"), false);
 	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
@@ -2162,7 +2162,7 @@ void CPreferences::LoadPreferences()
 	m_iDebugSearchResultDetailLevel = 0;
 #endif
 
-	m_bpreviewprio = ini.GetBool(_T("PreviewPrio"), false);
+	m_bpreviewprio = ini.GetBool(_T("PreviewPrio"), true);
 	m_bupdatequeuelist = ini.GetBool(_T("UpdateQueueListPref"), false);
 	m_bManualAddedServersHighPriority = ini.GetBool(_T("ManualHighPrio"), false);
 	m_btransferfullchunks = ini.GetBool(_T("FullChunkTransfers"), true);
@@ -2184,7 +2184,7 @@ void CPreferences::LoadPreferences()
 	// Get file buffer size (with backward compatibility)
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSizePref"), 0); // old setting
 	if (m_uFileBufferSize == 0)
-		m_uFileBufferSize = 256 * 1024;
+		m_uFileBufferSize = 512 * 1024;
 	else
 		m_uFileBufferSize = ((m_uFileBufferSize * 15000 + 512) / 1024) * 1024;
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
@@ -2207,7 +2207,7 @@ void CPreferences::LoadPreferences()
 	showCatTabInfos = ini.GetBool(_T("ShowInfoOnCatTabs"), false);
 	//resumeSameCat = ini.GetBool(_T("ResumeNextFromSameCat"), false);
 	dontRecreateGraphs = ini.GetBool(_T("DontRecreateStatGraphsOnResize"), false);
-	m_bExtControls = ini.GetBool(_T("ShowExtControls"), false);
+	m_bExtControls = ini.GetBool(_T("ShowExtControls"), true);
 
 	versioncheckLastAutomatic = ini.GetInt(_T("VersionCheckLastAutomatic"), 0);
 	m_bDisableKnownClientList = ini.GetBool(_T("DisableKnownClientList"), false);
