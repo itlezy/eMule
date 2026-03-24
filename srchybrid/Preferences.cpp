@@ -55,6 +55,7 @@ bool	CPreferences::m_abDefaultDirsCreated[13] = {};
 int		CPreferences::m_nCurrentUserDirMode = -1;
 int		CPreferences::m_iDbgHeap;
 uint32	CPreferences::m_minupload;
+uint32	CPreferences::m_maxUpClientsAllowed;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
 LPCSTR	CPreferences::m_pszBindAddrA;
@@ -1511,6 +1512,7 @@ void CPreferences::SavePreferences()
 	}
 	ini.WriteString(_T("TempDirs"), tempdirs);
 
+	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
 	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
@@ -1925,6 +1927,8 @@ void CPreferences::LoadPreferences()
 			maxGraphUploadRate = nOldUploadCapacity; // use old custom value
 	}
 
+	// Hidden broadband knob: keep the normal upload-slot target low on modern uplinks.
+	m_maxUpClientsAllowed = max((uint32)MIN_UP_CLIENTS_ALLOWED, min((uint32)MAX_UP_CLIENTS_ALLOWED, (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), 12)));
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	if (m_minupload < 1)
 		m_minupload = 1;

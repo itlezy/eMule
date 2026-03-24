@@ -79,6 +79,11 @@ public:
 	uint32	GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged);
 	uint32	GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const;
 	uint32	GetTargetClientDataRate(bool bMinDatarate) const;
+	uint32	GetEffectiveUploadBudget() const;
+	uint32	GetSoftMaxUploadSlots() const;
+	uint32	GetUploadSlotLimit() const;
+	uint32	GetSlowUploadRateThreshold() const;
+	bool	ShouldTrackSlowUploadSlots() const;
 
 	POSITION GetFirstFromUploadList() const					{ return uploadinglist.GetHeadPosition(); }
 	CUpDownClient* GetNextFromUploadList(POSITION &curpos) const { return static_cast<UploadingToClient_Struct*>(uploadinglist.GetNext(curpos))->m_pClient; }
@@ -120,6 +125,8 @@ private:
 	void	UpdateMaxClientScore();
 	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
 	void	UpdateActiveClientsInfo(DWORD curTick);
+	void	UpdateSlotCapacityState(DWORD curTick);
+	bool	AllowTemporaryUploadOverflow() const;
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
@@ -156,6 +163,7 @@ private:
 	uint64	m_sendingBytes;
 	uint64	m_average_ur_sum;
 	DWORD	m_lastCalculatedDataRateTick;
+	DWORD	m_dwUnderfillStartTick;
 
 	DWORD	m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;

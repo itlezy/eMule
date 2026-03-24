@@ -248,22 +248,9 @@ void UploadBandwidthThrottler::EndThread()
 */
 uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed)
 {
-	uint32 upPerClient = theApp.uploadqueue->GetTargetClientDataRate(true);
-	// if throttler doesn't require another slot, go with a slightly more restrictive method
-	if (currentUpSpeed > 49 * 1024) {
-		upPerClient += currentUpSpeed / 43;
-		if (upPerClient > UPLOAD_CLIENT_MAXDATARATE)
-			upPerClient = UPLOAD_CLIENT_MAXDATARATE;
-	}
-
-	//now the final check
-	if (currentUpSpeed > 25 * 1024)
-		return max(currentUpSpeed / upPerClient, MIN_UP_CLIENTS_ALLOWED + 3);
-	if (currentUpSpeed > 16 * 1024)
-		return MIN_UP_CLIENTS_ALLOWED + 2;
-	if (currentUpSpeed > 9 * 1024)
-		return MIN_UP_CLIENTS_ALLOWED + 1;
-	return MIN_UP_CLIENTS_ALLOWED;
+	// The queue owns the broadband slot policy; the throttler only consumes the current slot ceiling.
+	UNREFERENCED_PARAMETER(currentUpSpeed);
+	return theApp.uploadqueue->GetUploadSlotLimit();
 }
 
 uint32 UploadBandwidthThrottler::CalculateChangeDelta(uint32 numberOfConsecutiveChanges)

@@ -59,6 +59,14 @@ static uint32 igraph, istats;
 #define HIGHSPEED_UPLOADRATE_START	(500*1024)
 #define HIGHSPEED_UPLOADRATE_END	(300*1024)
 
+namespace
+{
+constexpr uint32 UPLOAD_OVERFLOW_SLOT_ALLOWANCE = 2;
+constexpr uint32 UPLOAD_FILL_TARGET_PERCENT = 95;
+constexpr DWORD UPLOAD_OVERFLOW_GRACE_TIME = SEC2MS(2);
+constexpr uint32 UPLOAD_SLOW_RATE_DIVISOR = 3;
+constexpr uint32 UPLOAD_SLOW_COUNTER_THRESHOLD = 180;
+}
 
 CUploadQueue::CUploadQueue()
 	: average_ur_hist(512, 512)
@@ -78,6 +86,7 @@ CUploadQueue::CUploadQueue()
 	, m_MaxActiveClientsShortTime()
 	, m_average_ur_sum()
 	, m_lastCalculatedDataRateTick()
+	, m_dwUnderfillStartTick()
 	, m_dwLastResortedUploadSlots()
 	, m_bStatisticsWaitingListDirty(true)
 {
@@ -197,6 +206,8 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	if (pszReason && thePrefs.GetLogUlDlEvents())
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
 
+	newclient->ResetCaughtBeingSlow();
+
 	if (newclient->HasCollectionUploadSlot() && directadd == NULL) {
 		ASSERT(0);
 		newclient->SetCollectionUploadSlot(false);
@@ -273,6 +284,64 @@ void CUploadQueue::UpdateActiveClientsInfo(DWORD curTick)
 	}
 }
 
+// Base all broadband slot decisions on the effective upload budget: capacity, user limit and USS allowance.
+uint32 CUploadQueue::GetEffectiveUploadBudget() const
+{
+	uint32 budget = thePrefs.GetMaxGraphUploadRate(true);
+	const uint32 maxUpload = thePrefs.GetMaxUpload();
+	if (maxUpload != UNLIMITED)
+		budget = min(budget, maxUpload);
+	if (thePrefs.IsDynUpEnabled())
+		budget = min(budget, theApp.lastCommonRouteFinder->GetUpload() / 1024u);
+	return max(1u, budget);
+}
+
+uint32 CUploadQueue::GetSoftMaxUploadSlots() const
+{
+	return max((uint32)MIN_UP_CLIENTS_ALLOWED, min((uint32)MAX_UP_CLIENTS_ALLOWED, thePrefs.GetMaxUpClientsAllowed()));
+}
+
+// Allow only a small overflow above the steady-state slot target, and only after sustained underfill.
+bool CUploadQueue::AllowTemporaryUploadOverflow() const
+{
+	return m_dwUnderfillStartTick != 0 && ::GetTickCount() >= m_dwUnderfillStartTick + UPLOAD_OVERFLOW_GRACE_TIME;
+}
+
+uint32 CUploadQueue::GetUploadSlotLimit() const
+{
+	uint32 slotLimit = GetSoftMaxUploadSlots();
+	if (AllowTemporaryUploadOverflow())
+		slotLimit = min((uint32)MAX_UP_CLIENTS_ALLOWED, slotLimit + UPLOAD_OVERFLOW_SLOT_ALLOWANCE);
+	return slotLimit;
+}
+
+uint32 CUploadQueue::GetSlowUploadRateThreshold() const
+{
+	return max(3u * 1024u, GetTargetClientDataRate(false) / UPLOAD_SLOW_RATE_DIVISOR);
+}
+
+// Slow-slot tracking is only meaningful when we are already at the target slot count and still underfilling the line.
+bool CUploadQueue::ShouldTrackSlowUploadSlots() const
+{
+	return !waitinglist.IsEmpty()
+		&& uploadinglist.GetCount() >= (INT_PTR)GetSoftMaxUploadSlots()
+		&& (uint64)datarate * 100u < (uint64)GetEffectiveUploadBudget() * 1024u * UPLOAD_FILL_TARGET_PERCENT;
+}
+
+// Keep a short underfill timer so the throttler can ask for at most a couple of temporary overflow slots.
+void CUploadQueue::UpdateSlotCapacityState(DWORD curTick)
+{
+	if (ShouldTrackSlowUploadSlots()
+		&& m_iHighestNumberOfFullyActivatedSlotsSinceLastCall > uploadinglist.GetCount()
+		&& uploadinglist.GetCount() < (INT_PTR)MAX_UP_CLIENTS_ALLOWED)
+	{
+		if (m_dwUnderfillStartTick == 0)
+			m_dwUnderfillStartTick = curTick;
+	}
+	else
+		m_dwUnderfillStartTick = 0;
+}
+
 /**
  * Maintenance method for the uploading slots. It adds and removes clients to the
  * uploading list. It also makes sure that all the uploading slots' Sockets
@@ -284,6 +353,7 @@ void CUploadQueue::Process()
 {
 	const DWORD curTick = ::GetTickCount();
 	UpdateActiveClientsInfo(curTick);
+	UpdateSlotCapacityState(curTick);
 
 	if (ForceNewClient())
 		// There's not enough open uploads. Open another one.
@@ -378,33 +448,14 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 		return true;
 	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
 		return false;
-
-	uint32 MaxSpeed;
-	if (thePrefs.IsDynUpEnabled())
-		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024;
-	else
-		MaxSpeed = thePrefs.GetMaxUpload();
-	uint32 TargetRate = GetTargetClientDataRate(false);
-	if (curUploadSlots >= (INT_PTR)(datarate / GetTargetClientDataRate(true)) || curUploadSlots >= (INT_PTR)(MaxSpeed * 1024 / TargetRate))
-		return false;
-
-	return MaxSpeed != UNLIMITED
-		|| thePrefs.IsDynUpEnabled()
-		|| thePrefs.GetMaxGraphUploadRate(true) <= 0
-		|| curUploadSlots < (INT_PTR)(thePrefs.GetMaxGraphUploadRate(false) * 1024 / TargetRate);
+	return (uint32)curUploadSlots < GetUploadSlotLimit();
 }
 
+// The per-slot target is derived from the broadband budget and the configured steady-state slot target.
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
-	uint32 nOpenSlots = (uint32)GetUploadQueueLength();
-	// 3 slots or less - 3KiB/s
-	// 4 slots or more - linear growth by 1 KiB/s steps, cap off at UPLOAD_CLIENT_MAXDATARATE
-	uint32 nResult;
-	if (nOpenSlots <= 3)
-		nResult = 3 * 1024;
-	else
-		nResult = min(UPLOAD_CLIENT_MAXDATARATE, nOpenSlots * 1024);
-
+	const uint32 slotCount = max(1u, GetSoftMaxUploadSlots());
+	const uint32 nResult = max(3u * 1024u, (GetEffectiveUploadBudget() * 1024u) / slotCount);
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
 
@@ -420,44 +471,10 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
-	if (!AcceptNewClient(curUploadSlots) || !theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
+	if (!theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
 		return false;
 
-	uint32 MaxSpeed;
-	if (thePrefs.IsDynUpEnabled())
-		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024;
-	else
-		MaxSpeed = thePrefs.GetMaxUpload();
-
-	uint32 upPerClient = GetTargetClientDataRate(false);
-
-	// if throttler doesn't require another slot, go with a slightly more restrictive method
-	if (MaxSpeed > 49 /*|| MaxSpeed == UNLIMITED */) { //because UNLIMITED > 20
-		upPerClient += datarate / 43;
-		if (upPerClient > UPLOAD_CLIENT_MAXDATARATE)
-			upPerClient = UPLOAD_CLIENT_MAXDATARATE;
-	}
-
-	//now the final check
-	if (MaxSpeed == UNLIMITED) {
-		if ((uint32)curUploadSlots < (datarate / upPerClient))
-			return true;
-	} else {
-		uint32 nMaxSlots;
-		if (MaxSpeed > 25)
-			nMaxSlots = max((MaxSpeed * 1024) / upPerClient, (uint32)(MIN_UP_CLIENTS_ALLOWED + 3));
-		else if (MaxSpeed > 16)
-			nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 2;
-		else if (MaxSpeed > 9)
-			nMaxSlots = MIN_UP_CLIENTS_ALLOWED + 1;
-		else
-			nMaxSlots = MIN_UP_CLIENTS_ALLOWED;
-		//AddLogLine(true, "maxslots=%u, upPerClient=%u, datarateslot=%u|%u|%u", nMaxSlots, upPerClient, datarate / UPLOAD_CHECK_CLIENT_DR, datarate, UPLOAD_CHECK_CLIENT_DR);
-
-		if ((uint32)curUploadSlots < nMaxSlots)
-			return true;
-	}
-	return m_iHighestNumberOfFullyActivatedSlotsSinceLastCall > uploadinglist.GetCount();
+	return AcceptNewClient(curUploadSlots);
 }
 
 CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
@@ -781,6 +798,14 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 			return false;
 		if (thePrefs.GetLogUlDlEvents())
 			AddDebugLogLine(DLP_HIGH, false, _T("%s: Upload session ended - client with Collection Slot tried to request blocks from another file"), client->GetUserName());
+		return true;
+	}
+
+	// Prefer replacing a slot that has been bad for a while over growing the upload list indefinitely.
+	if (ShouldTrackSlowUploadSlots()
+		&& client->GetCaughtBeingSlow() >= UPLOAD_SLOW_COUNTER_THRESHOLD) {
+		if (thePrefs.GetLogUlDlEvents())
+			AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow. Rate: %s"), client->GetUserName(), (LPCTSTR)CastItoXBytes(client->GetUploadDatarate()));
 		return true;
 	}
 

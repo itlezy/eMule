@@ -473,6 +473,17 @@ void CUpDownClient::UpdateUploadingStatisticsData()
 	else
 		m_nUpDatarate = 0; // not enough data to calculate trustworthy speed
 
+	// Track persistently weak uploaders so the queue can recycle bad slots instead of opening many more.
+	if (theApp.uploadqueue != NULL) {
+		const bool trackSlowClients = theApp.uploadqueue->ShouldTrackSlowUploadSlots();
+		if (trackSlowClients && m_nUpDatarate < theApp.uploadqueue->GetSlowUploadRateThreshold()) {
+			++m_caughtBeingSlow;
+			if (m_nUpDatarate == 0)
+				m_caughtBeingSlow += 5;
+		} else if (m_caughtBeingSlow > 0)
+			--m_caughtBeingSlow;
+	}
+
 	// Check if it's time to update the display.
 	if (curTick >= m_lastRefreshedULDisplay + MINWAIT_BEFORE_ULDISPLAY_WINDOWUPDATE + rand() % 800) {
 		// Update display

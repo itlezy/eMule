@@ -220,6 +220,7 @@ void CUpDownClient::Init()
 
 	m_nUpDatarate = 0;
 	m_nSumForAvgUpDataRate = 0;
+	m_caughtBeingSlow = 0;
 
 	m_nDownDatarate = 0;
 	m_nDownDataRateMS = 0;
