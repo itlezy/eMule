@@ -499,7 +499,6 @@ public:
 	static UINT		uMaxLogFileSize;
 	static ELogFileFormat m_iLogFileFormat;
 	static bool		scheduler;
-	static bool		dontcompressavi;
 	static bool		msgonlyfriends;
 	static bool		msgsecure;
 	static bool		m_bUseChatCaptchas;
@@ -1244,7 +1243,6 @@ public:
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
 	static bool		IsSchedulerEnabled()				{ return scheduler; }
 	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
-	static bool		GetDontCompressAvi()				{ return dontcompressavi; }
 
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }

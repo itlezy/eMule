@@ -143,7 +143,6 @@ public:
 	//overlapped disk reads
 	HANDLE		m_hRead;
 	int			nInUse; //count outstanding I/O (reads) to know if the file is in use
-	bool		bCompress;
 	bool		bNoNewReads; //blocks new overlapped reads
 #ifdef _DEBUG
 	// Diagnostic Support

@@ -29,7 +29,6 @@
 #include "packets.h"
 #include "Statistics.h"
 #include "UploadBandwidthThrottler.h"
-#include "../../eMule-zlib/zlib.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -37,7 +36,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define SLOT_COMPRESSION_DATARATE		(1000 * 1024)	// Data rate for a single client from which we start to check if we need to disable compression
 #define RUN_STOP	0
 #define RUN_IDLE	1
 #define RUN_WORK	2
@@ -152,7 +150,6 @@ bool CUploadDiskIOThread::AssociateFile(CKnownFile *pFile)
 			DissociateFile(pFile);
 			return false;
 		}
-		pFile->bCompress = ShouldCompressBasedOnFilename(fullname);
 	}
 	return true;
 }
@@ -317,11 +314,9 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				CUpDownClient *pClient = pStruct->m_pClient;
 				CClientReqSocket *pSocket = pClient->socket;
 				if (pSocket && pSocket->IsConnected()) {
-					// Try to use compression whenever possible (see CreatePackedPackets notes)
-					if (pKnownFile->bCompress)
-						CreatePackedPackets(*pOvRead, packetsList);
-					else
-						CreateStandardPackets(*pOvRead, packetsList);
+					// Broadband parity: always send standard upload packets and avoid
+					// the extra CPU/latency path of compressed-part generation.
+					CreateStandardPackets(*pOvRead, packetsList);
 
 					m_bSignalThrottler = true;
 				} else
@@ -351,23 +346,6 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 	// cleanup
 	delete[] pOvRead->pBuffer;
 	delete pOvRead;
-}
-
-bool CUploadDiskIOThread::ShouldCompressBasedOnFilename(const CString &strFileName)
-{
-	LPCTSTR const pDot = ::PathFindExtension(strFileName);
-	if (!pDot[0] || !pDot[1])
-		return true; //no extension
-	CString strExt(&pDot[1]);
-	strExt.MakeLower();
-	if (strExt == _T("avi"))
-		return !thePrefs.GetDontCompressAvi();
-
-	static LPCTSTR const exts[] = { _T("zip"), _T("rar"), _T("7z"), _T("cbz"), _T("cbr"), _T("ogm"), _T("ace"), NULL };
-	for (LPCTSTR ext = *exts; *ext; ++ext)
-		if (strExt == ext)
-			return false;
-	return true;
 }
 
 void CUploadDiskIOThread::CreateStandardPackets(const OverlappedRead_Struct &OverlappedRead, CPacketList &rOutPacketList)
@@ -413,75 +391,6 @@ void CUploadDiskIOThread::CreateStandardPackets(const OverlappedRead_Struct &Ove
 		packet->uStatsPayLoad = nPacketSize;
 		rOutPacketList.AddTail(packet);
 	}
-}
-
-void CUploadDiskIOThread::CreatePackedPackets(const OverlappedRead_Struct &OverlappedRead, CPacketList &rOutPacketList)
-{
-	const uint64 uStartOffset = OverlappedRead.uStartOffset;
-	const uint64 uEndOffset = OverlappedRead.uEndOffset;
-	const uchar *pucMD4FileHash = OverlappedRead.pFile->GetFileHash();
-	bool bIsPartFile = OverlappedRead.pFile->IsPartFile();
-
-	uint32 togo = (uint32)(uEndOffset - uStartOffset);
-	uLongf newsize = togo + 300;
-	BYTE *output = new BYTE[newsize];
-
-	// Use the lowest compression level 1 instead of the highest 9 because typically for 10240 blocks:
-	// - compressed size difference is usually small enough (~4% for .exe, .avi, .pdf and 12% for .c text)
-	// - time was 1.5-2.5 better
-	// Of course, throughput of the deflate() routine depends on processor and data bytes,
-	// but should not be the bottleneck because 50-70 MB/s rates were seen when using one CPU core.
-	if (compress2(output, &newsize, OverlappedRead.pBuffer, togo, 1) != Z_OK || togo <= newsize) {
-		delete[] output;
-		CreateStandardPackets(OverlappedRead, rOutPacketList);
-		return;
-	}
-	CString sDbgClientInfo;
-	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		sDbgClientInfo = OverlappedRead.pUploadClientStruct->m_pClient->DbgGetClientInfo(true);
-
-	CMemFile memfile(output, newsize);
-	uint32 oldSize = togo;
-	togo = newsize;
-
-	uint32 totalPayloadSize = 0;
-
-	while (togo) {
-		uint32 nPacketSize = (togo < 13000) ? togo : 10240u;
-		togo -= nPacketSize;
-		Packet *packet;
-		LPCTSTR sOp;
-		if (uEndOffset > UINT32_MAX) {
-			packet = new Packet(OP_COMPRESSEDPART_I64, nPacketSize + 28, OP_EMULEPROT, bIsPartFile);
-			md4cpy(&packet->pBuffer[0], pucMD4FileHash);
-			PokeUInt64(&packet->pBuffer[16], uStartOffset);
-			PokeUInt32(&packet->pBuffer[24], newsize);
-			memfile.Read(&packet->pBuffer[28], nPacketSize);
-			sOp = _T("OP_CompressedPart_I64");
-		} else {
-			packet = new Packet(OP_COMPRESSEDPART, nPacketSize + 24, OP_EMULEPROT, bIsPartFile);
-			md4cpy(&packet->pBuffer[0], pucMD4FileHash);
-			PokeUInt32(&packet->pBuffer[16], (uint32)uStartOffset);
-			PokeUInt32(&packet->pBuffer[20], newsize);
-			memfile.Read(&packet->pBuffer[24], nPacketSize);
-			sOp = _T("OP_CompressedPart");
-		}
-
-		if (thePrefs.GetDebugClientTCPLevel() > 0) {
-			Debug(_T(">>> %-20s to   %s; %s\n"), sOp, (LPCTSTR)sDbgClientInfo, (LPCTSTR)md4str(pucMD4FileHash));
-			Debug(_T("  Start=%I64u  BlockSize=%u  Size=%u\n"), uStartOffset, newsize, nPacketSize);
-		}
-		// approximate payload size
-		uint32 payloadSize = togo ? nPacketSize * oldSize / newsize : oldSize - totalPayloadSize;
-
-		totalPayloadSize += payloadSize;
-
-		theStats.AddUpDataOverheadFileRequest(24);
-		packet->uStatsPayLoad = payloadSize;
-		rOutPacketList.AddTail(packet);
-	}
-	memfile.Close();
-	delete[] output;
 }
 
 void CUploadDiskIOThread::WakeUpCall()
