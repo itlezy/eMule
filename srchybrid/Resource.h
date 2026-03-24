@@ -1560,6 +1560,10 @@
 #define IDS_CLIENT_HASH                 1616
 #define IDS_FILE_SIZE                   1617
 #define IDS_BLOCKS                      1618
+#define IDS_CLIENT_ID                   1619
+#define IDS_UPLOAD_PERCENT              1620
+#define IDS_SLOW_TIME                   1621
+#define IDS_ETA                         1622
 #define IDC_ANIMATE1                    2000
 #define IDC_STATUS                      2001
 #define IDC_FILESTATUS                  2002

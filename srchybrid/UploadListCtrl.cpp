@@ -25,6 +25,7 @@
 #include "emuledlg.h"
 #include "friendlist.h"
 #include "MemDC.h"
+#include "ClientCredits.h"
 #include "KnownFile.h"
 #include "SharedFileList.h"
 #include "ChatWnd.h"
@@ -36,6 +37,37 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+uint64 ResolveUploadSessionDisplayTarget(const CKnownFile *pFile)
+{
+	const uint64 configuredLimit = thePrefs.GetBBSessionMaxTrans();
+	if (configuredLimit == 0)
+		return pFile != NULL ? static_cast<uint64>(pFile->GetFileSize()) : 0;
+	if (configuredLimit <= 100) {
+		if (pFile == NULL)
+			return 0;
+		return max(1ui64, ((uint64)pFile->GetFileSize() * configuredLimit + 99ui64) / 100ui64);
+	}
+	return configuredLimit;
+}
+
+uint64 GetUploadDoneBlockCount(const CUpDownClient *client)
+{
+	const UploadingToClient_Struct *pUploadStruct = theApp.uploadqueue != NULL ? theApp.uploadqueue->GetUploadingClientStructByClient(client) : NULL;
+	if (pUploadStruct == NULL)
+		return 0;
+
+	CSingleLock lockBlockLists(const_cast<CCriticalSection*>(&pUploadStruct->m_csBlockListsLock), TRUE);
+	return static_cast<uint64>(pUploadStruct->m_DoneBlocks_list.GetCount());
+}
+
+uint64 GetUploadTotalBlockCount(const CKnownFile *pFile)
+{
+	return pFile != NULL ? (((uint64)pFile->GetFileSize() + EMBLOCKSIZE - 1ui64) / EMBLOCKSIZE) : 0;
+}
+}
 
 
 IMPLEMENT_DYNAMIC(CUploadListCtrl, CMuleListCtrl)
@@ -80,6 +112,18 @@ void CUploadListCtrl::Init()
 	InsertColumn(8,	_T(""),	LVCFMT_RIGHT, 90);							//IDS_ALL_TIME_RATIO
 	InsertColumn(9,	_T(""),	LVCFMT_RIGHT, 90);							//IDS_SESSION_RATIO
 	InsertColumn(10,_T(""),	LVCFMT_LEFT, 80);							//IDS_COOLDOWN
+	InsertColumn(11,_T(""),	LVCFMT_LEFT, 110);							//IDS_CD_CSOFT
+	InsertColumn(12,_T(""),	LVCFMT_RIGHT, 110);							//IDS_CLIENT_UPLOADED
+	InsertColumn(13,_T(""),	LVCFMT_LEFT, 100);							//IDS_COUNTRY
+	InsertColumn(14,_T(""),	LVCFMT_LEFT, 100);							//IDS_IP
+	InsertColumn(15,_T(""),	LVCFMT_LEFT, 75);							//IDS_CLIENT_ID
+	InsertColumn(16,_T(""),	LVCFMT_LEFT, 120);							//IDS_CLIENT_HASH
+	InsertColumn(17,_T(""),	LVCFMT_RIGHT, 80);							//IDS_UPLOAD_PERCENT
+	InsertColumn(18,_T(""),	LVCFMT_RIGHT, 90);							//IDS_FILE_SIZE
+	InsertColumn(19,_T(""),	LVCFMT_RIGHT, 80);							//IDS_BLOCKS
+	InsertColumn(20,_T(""),	LVCFMT_RIGHT, 70);							//IDS_ETA
+	InsertColumn(21,_T(""),	LVCFMT_LEFT, 120);							//IDS_FOLDER
+	InsertColumn(22,_T(""),	LVCFMT_RIGHT, 80);							//IDS_SLOW_TIME
 
 	SetAllIcons();
 	Localize();
@@ -90,10 +134,12 @@ void CUploadListCtrl::Init()
 
 void CUploadListCtrl::Localize()
 {
-	static const UINT uids[11] =
+	static const UINT uids[23] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_DL_SPEED, IDS_DL_TRANSF, IDS_WAITED
 		, IDS_UPLOADTIME, IDS_STATUS, IDS_UPSTATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN
+		, IDS_CD_CSOFT, IDS_CLIENT_UPLOADED, IDS_COUNTRY, IDS_IP, IDS_CLIENT_ID, IDS_CLIENT_HASH
+		, IDS_UPLOAD_PERCENT, IDS_FILE_SIZE, IDS_BLOCKS, IDS_ETA, IDS_FOLDER, IDS_SLOW_TIME
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -237,6 +283,75 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			if (dwRemaining != 0)
 				sText = SecToTimeLength((dwRemaining + SEC2MS(1) - 1) / SEC2MS(1));
 		}
+		break;
+	case 11:
+		sText = client->GetClientSoftVer();
+		break;
+	case 12:
+		if (client->Credits() != NULL)
+			sText = CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false);
+		break;
+	case 13:
+		sText = client->GetCountryName();
+		break;
+	case 14:
+		sText = ipstr(client->GetIP());
+		break;
+	case 15:
+		sText = GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		break;
+	case 16:
+		sText = client->HasValidHash() ? md4str(client->GetUserHash()) : _T("?");
+		break;
+	case 17:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			const uint64 uTarget = ResolveUploadSessionDisplayTarget(file);
+			if (uTarget > 0)
+				sText.Format(_T("%.1f%%"), (static_cast<double>(client->GetQueueSessionPayloadUp()) * 100.0) / static_cast<double>(uTarget));
+		}
+		break;
+	case 18:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file != NULL)
+				sText = CastItoXBytes(file->GetFileSize());
+		}
+		break;
+	case 19:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			const uint64 uDoneBlocks = GetUploadDoneBlockCount(client);
+			const uint64 uTotalBlocks = GetUploadTotalBlockCount(file);
+			if (uTotalBlocks > 0)
+				sText.Format(_T("%I64u / %I64u"), uDoneBlocks, uTotalBlocks);
+		}
+		break;
+	case 20:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			const uint64 uTarget = ResolveUploadSessionDisplayTarget(file);
+			const uint64 uRate = client->GetUploadDatarate();
+			if (uTarget > client->GetQueueSessionPayloadUp() && uRate > 1024) {
+				const uint64 uSecondsRemaining = (uTarget - client->GetQueueSessionPayloadUp()) / uRate;
+				if (uSecondsRemaining > 0 && uSecondsRemaining < HR2S(10))
+					sText = CastSecondsToHM(static_cast<UINT>(uSecondsRemaining));
+			}
+			if (sText.IsEmpty())
+				sText = _T("-");
+		}
+		break;
+	case 21:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file != NULL)
+				sText = file->GetPath();
+		}
+		break;
+	case 22:
+		if (client->GetSlowUploadAccumulatedMs() > 0)
+			sText = SecToTimeLength((client->GetSlowUploadAccumulatedMs() + SEC2MS(1) - 1) / SEC2MS(1));
+		break;
 	}
 	return sText;
 }
@@ -312,6 +427,12 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 8: // All-Time Ratio
 		case 9: // Session Ratio
 		case 10: // Cooldown
+		case 12: // Client Uploaded
+		case 17: // Upload %
+		case 18: // File Size
+		case 19: // Blocks
+		case 20: // ETA
+		case 22: // Slow Time
 			sortAscending = false;
 			break;
 		default:
@@ -396,6 +517,94 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 10:
 		iResult = CompareUnsigned(item1->GetSlowUploadCooldownRemaining(), item2->GetSlowUploadCooldownRemaining());
+		break;
+	case 11:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 12:
+		if (item1->Credits() != NULL && item2->Credits() != NULL)
+			iResult = CompareUnsigned(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		else
+			iResult = (item1->Credits() == NULL) ? 1 : (item2->Credits() == NULL ? 0 : -1);
+		break;
+	case 13:
+		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
+		break;
+	case 14:
+		iResult = CompareUnsigned(htonl(item1->GetIP()), htonl(item2->GetIP()));
+		break;
+	case 15:
+		iResult = CompareUnsigned(item1->HasLowID(), item2->HasLowID());
+		break;
+	case 16:
+		if (item1->HasValidHash() && item2->HasValidHash())
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		else
+			iResult = item1->HasValidHash() ? -1 : (item2->HasValidHash() ? 1 : 0);
+		break;
+	case 17:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			const uint64 uTarget1 = ResolveUploadSessionDisplayTarget(file1);
+			const uint64 uTarget2 = ResolveUploadSessionDisplayTarget(file2);
+			if (uTarget1 > 0 && uTarget2 > 0) {
+				const uint64 uScaled1 = (item1->GetQueueSessionPayloadUp() * 1000ui64) / uTarget1;
+				const uint64 uScaled2 = (item2->GetQueueSessionPayloadUp() * 1000ui64) / uTarget2;
+				iResult = CompareUnsigned(uScaled1, uScaled2);
+			} else
+				iResult = (uTarget1 == 0) ? (uTarget2 == 0 ? 0 : 1) : -1;
+		}
+		break;
+	case 18:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareUnsigned(file1->GetFileSize(), file2->GetFileSize());
+			else
+				iResult = (file1 == NULL) ? (file2 == NULL ? 0 : 1) : -1;
+		}
+		break;
+	case 19:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			const uint64 uDone1 = GetUploadDoneBlockCount(item1);
+			const uint64 uDone2 = GetUploadDoneBlockCount(item2);
+			iResult = CompareUnsigned(uDone1, uDone2);
+			if (iResult == 0)
+				iResult = CompareUnsigned(GetUploadTotalBlockCount(file1), GetUploadTotalBlockCount(file2));
+		}
+		break;
+	case 20:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			const uint64 uTarget1 = ResolveUploadSessionDisplayTarget(file1);
+			const uint64 uTarget2 = ResolveUploadSessionDisplayTarget(file2);
+			uint64 uEta1 = 0;
+			uint64 uEta2 = 0;
+			if (uTarget1 > item1->GetQueueSessionPayloadUp() && item1->GetUploadDatarate() > 1024)
+				uEta1 = (uTarget1 - item1->GetQueueSessionPayloadUp()) / item1->GetUploadDatarate();
+			if (uTarget2 > item2->GetQueueSessionPayloadUp() && item2->GetUploadDatarate() > 1024)
+				uEta2 = (uTarget2 - item2->GetQueueSessionPayloadUp()) / item2->GetUploadDatarate();
+			iResult = CompareUnsigned(uEta1, uEta2);
+		}
+		break;
+	case 21:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
+			else
+				iResult = (file1 == NULL) ? (file2 == NULL ? 0 : 1) : -1;
+		}
+		break;
+	case 22:
+		iResult = CompareUnsigned(item1->GetSlowUploadAccumulatedMs(), item2->GetSlowUploadAccumulatedMs());
+		break;
 	}
 
 	if (HIWORD(lParamSort))
@@ -429,6 +638,8 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	const CUpDownClient *client = (iSel >= 0) ? reinterpret_cast<CUpDownClient*>(GetItemData(iSel)) : NULL;
 	const bool is_ed2k = client && client->IsEd2kClient();
+	const CKnownFile *file = client != NULL ? theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) : NULL;
+	const bool has_openable_file = file != NULL && !file->IsPartFile();
 
 	CTitledMenu ClientMenu;
 	ClientMenu.CreatePopupMenu();
@@ -436,10 +647,13 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("CLIENTDETAILS"));
 	ClientMenu.SetDefaultItem(MP_DETAIL);
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_ADDFRIEND, GetResString(IDS_ADDFRIEND), _T("ADDFRIEND"));
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_REMOVEFRIEND, GetResString(IDS_REMOVEFRIEND), _T("DELETEFRIEND"));
 	ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
+	ClientMenu.AppendMenu(MF_STRING | (has_openable_file ? MF_ENABLED : MF_GRAYED), MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
+	ClientMenu.AppendMenu(MF_STRING | (has_openable_file ? MF_ENABLED : MF_GRAYED), MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
@@ -468,12 +682,35 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			if (theApp.friendlist->AddFriend(client))
 				Update(iSel);
 			break;
+		case MP_REMOVEFRIEND:
+			{
+				CFriend *fr = theApp.friendlist->SearchFriend(client->GetUserHash(), 0, 0);
+				if (fr != NULL) {
+					theApp.friendlist->RemoveFriend(fr);
+					Update(iSel);
+				}
+			}
+			break;
 		case MP_DETAIL:
 		case MPG_ALTENTER:
 		case IDA_ENTER:
 			{
 				CClientDetailDialog dialog(client, this);
 				dialog.DoModal();
+			}
+			break;
+		case MP_OPEN:
+			{
+				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+				if (file != NULL && !file->IsPartFile())
+					ShellDefaultVerb(file->GetFilePath());
+			}
+			break;
+		case MP_OPENFOLDER:
+			{
+				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+				if (file != NULL && !file->IsPartFile())
+					ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
 			}
 			break;
 		case MP_BOOT:
