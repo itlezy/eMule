@@ -95,8 +95,8 @@
 #define RSAKEYSIZE				384			//384 bits
 #define	MAX_SOURCES_FILE_SOFT	750
 #define	MAX_SOURCES_FILE_UDP	50u
-#define SESSIONMAXTRANS			(PARTSIZE+20*1024) // "Try to send complete chunks" always sends this amount of data
-#define SESSIONMAXTIME			HR2MS(1)	//1 hour
+#define SESSIONMAXTRANS			(1024ui64*1024*1024*64) // Target to upload the entire file to a fast user
+#define SESSIONMAXTIME			HR2MS(3)	//3 hours
 #define	MAXFILECOMMENTLEN		128
 #define	PARTSIZE				9728000ui64
 #define	MAX_EMULE_FILE_SIZE		0x4000000000ui64 // = 2^38 = 256GB
@@ -106,9 +106,9 @@
 #define CONFIGFOLDER			_T("config\\")
 #define MAXCONPER5SEC			20
 #define MAXCON5WIN9X			10
-#define	UPLOAD_CLIENT_MAXDATARATE	(25*1024) // max. target upload speed per client
+#define	UPLOAD_CLIENT_MAXDATARATE	(1*1024*1024) // max. target upload speed per client, 1MBps
 #define	MIN_UP_CLIENTS_ALLOWED	2			// min. clients allowed to download regardless of any other factors. Don't set this too high
-#define	MAX_UP_CLIENTS_ALLOWED	100			// max. clients allowed regardless of any other factors; cannot be below MIN_UP_CLIENTS_ALLOWED+3
+#define	MAX_UP_CLIENTS_ALLOWED	50			// max. clients allowed regardless of any other factors; cannot be below MIN_UP_CLIENTS_ALLOWED+3
 #define DOWNLOADTIMEOUT			SEC2MS(100)
 #define CONSERVTIMEOUT			SEC2MS(25)	// age limit for pending connection attempts
 #define RARE_FILE				50
