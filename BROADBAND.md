@@ -9,6 +9,7 @@ fits the `v0.72a` codebase and current broadband links.
 The implementation is intentionally narrow:
 
 - keep `BBMaxUpClientsAllowed` as the steady-state slot target
+- override the legacy session rotation defaults with `BBSessionMaxTrans` and `BBSessionMaxTime`
 - base slot decisions on the actual upload budget
 - allow only small temporary overflow when the upload pipe is still not full
 - reclaim obviously weak upload slots instead of compensating by opening many more
@@ -79,7 +80,8 @@ That behavior maps well to the goal on `v0.72a`.
 
 This branch keeps the following parts of the old broadband approach:
 
-- hidden `BBMaxUpClientsAllowed` configuration key as the only broadband-specific tuning input
+- hidden `BBMaxUpClientsAllowed` configuration key as the steady-state slot target
+- hidden `BBSessionMaxTrans` and `BBSessionMaxTime` overrides for broadband session rotation
 - a steady-state soft cap for upload slots
 - slow/stuck slot tracking on each uploading client
 - replacement of bad slots instead of relying on runaway slot growth
@@ -89,7 +91,6 @@ This branch keeps the following parts of the old broadband approach:
 This branch does not carry over the broader old branch behavior:
 
 - no full replay of the old slot-admission formulas
-- no queue-score suppression changes
 - no wider set of hidden broadband tuning knobs
 - no UI/config panel work
 
@@ -98,7 +99,7 @@ the patch maintainable on top of `v0.72a`.
 
 ## New Controller Design
 
-### Hidden preference
+### Hidden preferences
 
 `BBMaxUpClientsAllowed=<int>`
 
@@ -108,6 +109,18 @@ the patch maintainable on top of `v0.72a`.
 
 This value is the normal broadband slot target. It is a soft cap, not a hard
 ban on any temporary overflow.
+
+`BBSessionMaxTrans=<uint64>`
+
+- stored in `preferences.ini`
+- defaults to `SESSIONMAXTRANS`
+- overrides the stock one-chunk session cap on this branch
+
+`BBSessionMaxTime=<int>`
+
+- stored in `preferences.ini`
+- defaults to `SESSIONMAXTIME`
+- overrides the stock one-hour session cap on this branch
 
 ### Effective upload budget
 
@@ -154,7 +167,8 @@ On a `50 Mbit/s` uplink with `BBMaxUpClientsAllowed=12`:
 
 Normal behavior:
 
-- fill freely up to `BBMaxUpClientsAllowed`
+- fill freely only while the upload budget is still underfilled
+- stop opening slots once the current upload is already satisfying the effective budget, even below `BBMaxUpClientsAllowed`
 - keep `MAX_UP_CLIENTS_ALLOWED = 100` only as an absolute safety ceiling
 
 Temporary overflow:
@@ -165,7 +179,7 @@ Temporary overflow:
   - half of one target slot, or
   - `5%` of the effective budget
 - only after that underfill persists for at least `2 seconds`
-- only if the existing throttler path still indicates demand for another slot
+- only if the throttler explicitly reported that it still wanted another productive slot
 
 That gives the controller a small escape hatch for edge cases without returning
 to unbounded growth.
@@ -195,11 +209,39 @@ Time windows:
 
 When a client gets a fresh upload slot, its slow timers are reset.
 
+When a client is evicted for being slow or stuck, it is still requeued
+immediately for protocol compatibility, but its queue score is held at zero for
+one slow-eviction window. That short cooldown prevents the same weak uploader
+from bouncing straight back into the next slot.
+
 This keeps the feature intentionally simple:
 
 - it does not punish normal short-term variance
 - it removes clearly bad slots over time
 - it helps maintain fill without opening many more slots
+
+### Session rotation
+
+The branch now replaces the stock `SESSIONMAXTRANS` and `SESSIONMAXTIME`
+rotation checks with the hidden broadband overrides:
+
+- `BBSessionMaxTrans` replaces the stock one-chunk transfer cap
+- `BBSessionMaxTime` replaces the stock one-hour time cap
+
+This keeps healthy upload sessions bounded without relying on the old score-based
+rotation logic, which caused extra churn on broadband-oriented low-slot setups.
+
+### Buffering
+
+The branch also derives buffering behavior from the current per-slot target:
+
+- large socket send buffers are enabled once a slot reaches roughly half of the
+  current target-per-slot rate
+- upload disk prefetch grows from `1` to `3` to `5` blocks based on the current
+  slot rate relative to that same target
+
+That keeps queueing and I/O policy aligned with broadband slot sizes instead of
+using the old fixed `75 KiB/s` and `100 KiB/s` thresholds.
 
 ## Expected Outcome
 
@@ -221,6 +263,8 @@ is roughly:
 - `srchybrid/UploadQueue.h`
 - `srchybrid/UploadQueue.cpp`
 - `srchybrid/UploadBandwidthThrottler.cpp`
+- `srchybrid/UploadBandwidthThrottler.h`
+- `srchybrid/UploadDiskIOThread.cpp`
 
 ## Design Notes
 

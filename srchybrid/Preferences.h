@@ -153,6 +153,8 @@ public:
 	static uint32	m_minupload;
 	// ZZ:UploadSpeedSense <--
 	static uint32	m_maxUpClientsAllowed;
+	static uint64	m_bbSessionMaxTrans;
+	static uint32	m_bbSessionMaxTime;
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
 	static CStringA m_strBindAddrA;
@@ -706,6 +708,8 @@ public:
 	static uint32	GetMinUpload()						{ return m_minupload; }
 	// ZZ:UploadSpeedSense <--
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
+	static uint64	GetBBSessionMaxTrans()				{ return m_bbSessionMaxTrans; }
+	static uint32	GetBBSessionMaxTime()				{ return m_bbSessionMaxTime; }
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }

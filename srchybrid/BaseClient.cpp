@@ -223,6 +223,7 @@ void CUpDownClient::Init()
 	m_dwSlowUploadAccumulatedMs = 0;
 	m_dwZeroUploadAccumulatedMs = 0;
 	m_dwLastUploadDataRateTick = 0;
+	m_dwSlowUploadCooldownUntil = 0;
 
 	m_nDownDatarate = 0;
 	m_nDownDataRateMS = 0;

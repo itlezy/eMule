@@ -32,6 +32,7 @@ public:
 	//The number of overhead bytes that has been put on the sockets since the last call (control packets)
 	uint64 GetNumberOfSentBytesOverheadSinceLastCallAndReset()	{ return (uint64)::InterlockedExchange64((LONG64*)&m_SentBytesSinceLastCallOverhead, 0); }
 	INT_PTR GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset();
+	bool GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
 
 	INT_PTR GetStandardListSize()								{ return m_StandardOrder_list.GetCount(); }
 
@@ -76,6 +77,7 @@ private:
 	uint64 m_SentBytesSinceLastCall;
 	uint64 m_SentBytesSinceLastCallOverhead;
 	INT_PTR m_highestNumberOfFullyActivatedSlots;
+	volatile LONG m_needsMoreBandwidthSlots;
 
 	volatile bool m_bRun;
 };

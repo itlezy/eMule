@@ -72,7 +72,7 @@ public:
 	uint32	GetDatarate() const								{ return datarate; }
 	uint32  GetToNetworkDatarate() const;
 
-	bool	CheckForTimeOver(const CUpDownClient *client);
+	bool	CheckForTimeOver(CUpDownClient *client);
 	INT_PTR	GetWaitingUserCount() const						{ return waitinglist.GetCount(); }
 	INT_PTR	GetUploadQueueLength() const					{ return uploadinglist.GetCount(); }
 	INT_PTR	GetActiveUploadsCount()	const					{ return m_MaxActiveClientsShortTime; }
@@ -123,10 +123,9 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
-	void	UpdateMaxClientScore();
-	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
 	void	UpdateActiveClientsInfo(DWORD curTick);
 	void	UpdateSlotCapacityState(DWORD curTick);
+	bool	ShouldOpenMoreUploadSlots(INT_PTR curUploadSlots) const;
 	struct BroadbandControlState;
 	BroadbandControlState GetBroadbandControlState() const;
 	bool	AllowTemporaryUploadOverflow() const;
@@ -154,8 +153,6 @@ private:
 	uint32	failedupcount;
 	uint32	totaluploadtime;
 	DWORD	m_nLastStartUpload;
-	uint32	m_dwRemovedClientByScore;
-	uint32	m_imaxscore;
 
 	DWORD	m_dwLastCalculatedAverageCombinedFilePrioAndCredit;
 	float	m_fAverageCombinedFilePrioAndCredit;
@@ -167,6 +164,7 @@ private:
 	uint64	m_average_ur_sum;
 	DWORD	m_lastCalculatedDataRateTick;
 	DWORD	m_dwUnderfillStartTick;
+	bool	m_bNeedMoreBandwidthSlots;
 
 	DWORD	m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;

@@ -230,6 +230,9 @@ public:
 	UINT			GetUploadDatarate() const						{ return m_nUpDatarate; }
 	DWORD			GetSlowUploadAccumulatedMs() const				{ return m_dwSlowUploadAccumulatedMs; }
 	DWORD			GetZeroUploadAccumulatedMs() const				{ return m_dwZeroUploadAccumulatedMs; }
+	bool			IsInSlowUploadCooldown() const					{ return m_dwSlowUploadCooldownUntil != 0 && ::GetTickCount() < m_dwSlowUploadCooldownUntil; }
+	void			SetSlowUploadCooldown(DWORD dwUntil)			{ m_dwSlowUploadCooldownUntil = dwUntil; }
+	void			ClearSlowUploadCooldown()						{ m_dwSlowUploadCooldownUntil = 0; }
 	UINT			GetScore(bool sysvalue, bool isdownloading = false, bool onlybasevalue = false) const;
 	void			AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIOThread);
 	DWORD			GetUpStartTime() const							{ return m_dwUploadTime; }
@@ -594,6 +597,7 @@ protected:
 	DWORD		m_dwSlowUploadAccumulatedMs;	// Time spent below the broadband slow-rate threshold while tracking is active.
 	DWORD		m_dwZeroUploadAccumulatedMs;	// Time spent at zero upload rate while tracking is active.
 	DWORD		m_dwLastUploadDataRateTick;		// Last tick used to accumulate slow-upload timing.
+	DWORD		m_dwSlowUploadCooldownUntil;	// Hold a slow client back briefly after eviction so it cannot bounce straight back in.
 	UINT		m_nUpDatarate;
 	uint64		m_nSumForAvgUpDataRate;
 	CRing<TransferredData> m_AverageUDR_hist;

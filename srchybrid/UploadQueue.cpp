@@ -87,8 +87,6 @@ CUploadQueue::CUploadQueue()
 	, failedupcount()
 	, totaluploadtime()
 	, m_nLastStartUpload()
-	, m_dwRemovedClientByScore(::GetTickCount())
-	, m_imaxscore()
 	, m_dwLastCalculatedAverageCombinedFilePrioAndCredit()
 	, m_fAverageCombinedFilePrioAndCredit()
 	, m_iHighestNumberOfFullyActivatedSlotsSinceLastCall()
@@ -97,6 +95,7 @@ CUploadQueue::CUploadQueue()
 	, m_average_ur_sum()
 	, m_lastCalculatedDataRateTick()
 	, m_dwUnderfillStartTick()
+	, m_bNeedMoreBandwidthSlots()
 	, m_dwLastResortedUploadSlots()
 	, m_bStatisticsWaitingListDirty(true)
 {
@@ -207,9 +206,6 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	RemoveFromWaitingQueue(newclient, true);
 	theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
 
-	if (!thePrefs.TransferFullChunks())
-		UpdateMaxClientScore(); // refresh score caching, now that the highest score is removed
-
 	if (IsDownloading(newclient))
 		return false;
 
@@ -217,6 +213,7 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
 
 	newclient->ResetSlowUploadTracking();
+	newclient->ClearSlowUploadCooldown();
 
 	if (newclient->HasCollectionUploadSlot() && directadd == NULL) {
 		ASSERT(0);
@@ -257,6 +254,7 @@ void CUploadQueue::UpdateActiveClientsInfo(DWORD curTick)
 {
 	// Save number of active clients for statistics
 	INT_PTR tempHighest = theApp.uploadBandwidthThrottler->GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset();
+	m_bNeedMoreBandwidthSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
 
 	//if(thePrefs.GetLogUlDlEvents() && theApp.uploadBandwidthThrottler->GetStandardListSize() > uploadinglist.GetCount())
 		// debug info, will remove this when I'm done.
@@ -374,7 +372,7 @@ bool CUploadQueue::ShouldTrackSlowUploadSlots() const
 void CUploadQueue::UpdateSlotCapacityState(DWORD curTick)
 {
 	if (ShouldTrackSlowUploadSlots()
-		&& m_iHighestNumberOfFullyActivatedSlotsSinceLastCall > uploadinglist.GetCount()
+		&& m_bNeedMoreBandwidthSlots
 		&& uploadinglist.GetCount() < (INT_PTR)MAX_UP_CLIENTS_ALLOWED)
 	{
 		if (m_dwUnderfillStartTick == 0)
@@ -382,6 +380,21 @@ void CUploadQueue::UpdateSlotCapacityState(DWORD curTick)
 	}
 	else
 		m_dwUnderfillStartTick = 0;
+}
+
+bool CUploadQueue::ShouldOpenMoreUploadSlots(INT_PTR curUploadSlots) const
+{
+	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
+		return true;
+	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return false;
+
+	const BroadbandControlState state = GetBroadbandControlState();
+	if (!state.hasBudget)
+		return (uint32)curUploadSlots < GetUploadSlotLimit();
+
+	// Broadband mode grows slots only while there is still measurable budget headroom.
+	return state.isUnderfilled && (uint32)curUploadSlots < GetUploadSlotLimit();
 }
 
 /**
@@ -424,10 +437,9 @@ void CUploadQueue::Process()
 				cur_client->SendOutOfPartReqsAndAddToWaitingQueue();
 				continue;
 			}
-			// Increase the sockets buffer for fast uploads (was in UpdateUploadingStatisticsData()).
-			// This should be done in the throttling thread, but the throttler
-			// does not have access to the client's download rate
-			if (cur_client->GetUploadDatarate() > 100 * 1024) {
+			// Scale the large send-buffer trigger from the current slot target instead of a fixed legacy rate.
+			const uint32 bigSendBufferThreshold = max(32u * 1024u, GetTargetClientDataRate(false) / 2u);
+			if (cur_client->GetUploadDatarate() >= bigSendBufferThreshold) {
 				CEMSocket *sock = cur_client->GetFileUploadSocket();
 				if (sock)
 					sock->UseBigSendBuffer();
@@ -486,11 +498,7 @@ bool CUploadQueue::AcceptNewClient(bool addOnNextConnect) const
 // check if we can allow a new client to start downloading from us
 bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 {
-	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
-		return true;
-	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
-		return false;
-	return (uint32)curUploadSlots < GetUploadSlotLimit();
+	return ShouldOpenMoreUploadSlots(curUploadSlots);
 }
 
 // The per-slot target is derived from the broadband budget and the configured steady-state slot target.
@@ -526,7 +534,7 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (!theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
 		return false;
 
-	return AcceptNewClient(curUploadSlots);
+	return ShouldOpenMoreUploadSlots(curUploadSlots);
 }
 
 CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
@@ -603,7 +611,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		POSITION pos2 = pos;
 		CUpDownClient *cur_client = waitinglist.GetNext(pos);
 		if (cur_client == client) {
-			if (client->m_bAddNextConnect && AcceptNewClient(client->m_bAddNextConnect)) {
+			if (client->m_bAddNextConnect && !client->IsInSlowUploadCooldown() && AcceptNewClient(client->m_bAddNextConnect)) {
 				//Special care is given to lowID clients that missed their upload slot
 				//due to the saving bandwidth on callbacks.
 				if (thePrefs.GetLogUlDlEvents())
@@ -709,7 +717,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		client->SendPacket(packet);
 		return;
 	}
-	if (waitinglist.IsEmpty() && ForceNewClient(true)) {
+	if (waitinglist.IsEmpty() && !client->IsInSlowUploadCooldown() && ForceNewClient(true)) {
 		client->SetWaitStartTime();
 		AddUpNextClient(_T("Direct add with empty queue."), client);
 	} else {
@@ -825,17 +833,7 @@ void CUploadQueue::RemoveFromWaitingQueue(POSITION pos, bool updatewindow)
 	todelete->SetUploadState(US_NONE);
 }
 
-void CUploadQueue::UpdateMaxClientScore()
-{
-	m_imaxscore = 0;
-	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
-		uint32 score = waitinglist.GetNext(pos)->GetScore(true, false);
-		if (score > m_imaxscore)
-			m_imaxscore = score;
-	}
-}
-
-bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
+bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 {
 	//If we have nobody in the queue, do NOT remove the current uploads.
 	//This will save some bandwidth and some unneeded swapping from upload/queue/upload.
@@ -856,45 +854,29 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 	// Prefer replacing a slot that has been bad for a while over growing the upload list indefinitely.
 	if (ShouldTrackSlowUploadSlots()) {
 		if (client->GetZeroUploadAccumulatedMs() >= UPLOAD_ZERO_RATE_EVICT_TIME) {
+			client->SetSlowUploadCooldown(::GetTickCount() + UPLOAD_SLOW_EVICT_TIME);
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to zero upload rate for %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(UPLOAD_ZERO_RATE_EVICT_TIME / SEC2MS(1)));
 			return true;
 		}
 		if (client->GetSlowUploadAccumulatedMs() >= UPLOAD_SLOW_EVICT_TIME) {
+			client->SetSlowUploadCooldown(::GetTickCount() + UPLOAD_SLOW_EVICT_TIME);
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow for %s. Rate: %s"), client->GetUserName(), (LPCTSTR)CastSecondsToHM(UPLOAD_SLOW_EVICT_TIME / SEC2MS(1)), (LPCTSTR)CastItoXBytes(client->GetUploadDatarate()));
 			return true;
 		}
 	}
 
-	if (thePrefs.TransferFullChunks()) {
-		// Allow the client to download a specified amount per session; but keep going if no one needs this slot
-		if (client->GetQueueSessionPayloadUp() > SESSIONMAXTRANS && !ForceNewClient()) {
-			if (thePrefs.GetLogUlDlEvents())
-				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to max transferred amount (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(SESSIONMAXTRANS));
-			return true;
-		}
-	} else {
-		// Try to keep the clients from downloading forever; but keep going if no one needs this slot
-		if (client->GetUpStartTimeDelay() > SESSIONMAXTIME && !ForceNewClient()) {
-			if (thePrefs.GetLogUlDlEvents())
-				AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to max time %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(SESSIONMAXTIME / SEC2MS(1)));
-			return true;
-		}
-
-		// Check if another client has a higher score than the current client
-		if (client->GetScore(true, true) < GetMaxClientScore()) {
-			const DWORD curTick = ::GetTickCount();
-			if (curTick >= m_dwRemovedClientByScore) {
-				if (thePrefs.GetLogUlDlEvents())
-					AddDebugLogLine(DLP_VERYLOW, false, _T("%s: Upload session ended due to score."), client->GetUserName());
-				//Set timer to prevent too many upload slots getting kicked due to score.
-				//Upload slots are delayed by at least 1 sec, and the max score is reset every 5 sec.
-				//So, I choose 6 secs to make sure the max score was updated before doing this again.
-				m_dwRemovedClientByScore = curTick + SEC2MS(6);
-				return true;
-			}
-		}
+	// Broadband session limits override the stock SESSIONMAX* rotation defaults on this branch.
+	if (client->GetQueueSessionPayloadUp() > thePrefs.GetBBSessionMaxTrans() && !ForceNewClient()) {
+		if (thePrefs.GetLogUlDlEvents())
+			AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to BBSessionMaxTrans (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(thePrefs.GetBBSessionMaxTrans()));
+		return true;
+	}
+	if (client->GetUpStartTimeDelay() > thePrefs.GetBBSessionMaxTime() && !ForceNewClient()) {
+		if (thePrefs.GetLogUlDlEvents())
+			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to BBSessionMaxTime %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(thePrefs.GetBBSessionMaxTime() / SEC2MS(1)));
+		return true;
 	}
 
 	return false;
@@ -1049,9 +1031,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 					theApp.emuledlg->ShowTransferRate();
 
 				thePrefs.EstimateMaxUploadCap(theApp.uploadqueue->GetDatarate() / 1024);
-
-				if (!thePrefs.TransferFullChunks())
-					theApp.uploadqueue->UpdateMaxClientScore();
 
 				// update cat-titles with downloads info only when needed
 				if (thePrefs.ShowCatTabInfos()

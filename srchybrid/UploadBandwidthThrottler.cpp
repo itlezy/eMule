@@ -42,6 +42,7 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 	, m_SentBytesSinceLastCall()
 	, m_SentBytesSinceLastCallOverhead()
 	, m_highestNumberOfFullyActivatedSlots()
+	, m_needsMoreBandwidthSlots()
 	, m_bRun(true)
 {
 	AfxBeginThread(RunProc, (LPVOID)this);
@@ -77,6 +78,11 @@ INT_PTR UploadBandwidthThrottler::GetHighestNumberOfFullyActivatedSlotsSinceLast
 	queueLocker.Unlock();
 
 	return highestNumberOfFullyActivatedSlots;
+}
+
+bool UploadBandwidthThrottler::GetNeedsMoreBandwidthSlotsSinceLastCallAndReset()
+{
+	return ::InterlockedExchange((LONG*)&m_needsMoreBandwidthSlots, FALSE) != FALSE;
 }
 
 /**
@@ -599,6 +605,7 @@ UINT UploadBandwidthThrottler::RunInternal()
 				spendingRate = SEC2MS(1) - 1;
 				if (thisLoopTick >= lastTickReachedBandwidth + max(SEC2MS(1), timeSinceLastLoop * 2)) {
 					m_highestNumberOfFullyActivatedSlots = GetStandardListSize() + 1;
+					::InterlockedExchange((LONG*)&m_needsMoreBandwidthSlots, TRUE);
 					lastTickReachedBandwidth = thisLoopTick;
 					//theApp.QueueDebugLogLine(false, _T("UploadBandwidthThrottler: request new slot due to bw not reached. m_highestNumberOfFullyActivatedSlots: %i GetStandardListSize(): %i tick: %i"), m_highestNumberOfFullyActivatedSlots, GetStandardListSize(), thisLoopTick);
 				}

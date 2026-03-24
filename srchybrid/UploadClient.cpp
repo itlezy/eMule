@@ -203,6 +203,11 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
 
+	// Slow-slot eviction requeues the client immediately for protocol reasons, so keep its
+	// score at zero for a short cooldown window to avoid bouncing straight back into upload.
+	if (IsInSlowUploadCooldown())
+		return 0;
+
 	// calculate score, based on waiting time and other factors
 	DWORD dwBaseValue;
 	if (onlybasevalue)
