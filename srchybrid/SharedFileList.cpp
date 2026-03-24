@@ -813,7 +813,14 @@ void CSharedFileList::SendListToServer()
 			bool added = false;
 			for (POSITION pos = sortedList.GetHeadPosition(); pos != 0 && !added;) {
 				POSITION pos2 = pos;
-				if (GetRealPrio(sortedList.GetNext(pos)->GetUpPriority()) <= GetRealPrio(cur_file->GetUpPriority())) {
+				CKnownFile* pSortedFile = sortedList.GetNext(pos);
+				const uint8 uSortedPrio = GetRealPrio(pSortedFile->GetUpPriority());
+				const uint8 uCurPrio = GetRealPrio(cur_file->GetUpPriority());
+				// Broadband parity: when publishing to a server, keep the old priority ordering but
+				// prefer files with the lower all-time upload ratio inside the same priority bucket.
+				if (uSortedPrio < uCurPrio
+					|| (uSortedPrio == uCurPrio && pSortedFile->GetAllTimeUploadRatio() <= cur_file->GetAllTimeUploadRatio()))
+				{
 					sortedList.InsertBefore(pos2, cur_file);
 					added = true;
 				}

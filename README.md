@@ -286,6 +286,8 @@ With the philosophy of keeping changes to a minimum:
 - Added configurable session rotation by transfer amount or session time.
 - Added support for `BBSessionMaxTrans=1..100` as a percentage of the currently
   uploaded file size.
+- When publishing shared files to a server, files with a lower all-time upload
+  ratio are preferred within the same upload-priority bucket.
 
 ### What has been dropped from `v0.60d-dev`
 
@@ -293,7 +295,6 @@ This branch intentionally does **not** carry over:
 
 - the extra hidden broadband knobs for queue score boosting/deboosting
 - the auto-friend management logic
-- the restored IP2Country feature
 - the wider upload/download/shared/queue UI field additions beyond the
   ratio/cooldown columns
 

@@ -128,6 +128,10 @@ void CDownloadListCtrl::Init()
 	InsertColumn(11,	_T(""),	LVCFMT_LEFT,	120, -1, true);					//IDS_FD_LASTCHANGE
 	InsertColumn(12,	_T(""),	LVCFMT_LEFT,	100, -1, true);					//IDS_CAT
 	InsertColumn(13,	_T(""),	LVCFMT_LEFT,	120);							//IDS_ADDEDON
+	InsertColumn(14,	_T(""),	LVCFMT_RIGHT,	50);							//IDS_PERCENTAGE
+	InsertColumn(15,	_T(""),	LVCFMT_LEFT,	100);							//IDS_COUNTRY
+	InsertColumn(16,	_T(""),	LVCFMT_LEFT,	120);							//IDS_IP
+	InsertColumn(17,	_T(""),	LVCFMT_LEFT,	70);							//IDS_IDLOW/IDS_IDHIGH
 
 	SetAllIcons();
 	Localize();
@@ -203,11 +207,12 @@ void CDownloadListCtrl::SetAllIcons()
 
 void CDownloadListCtrl::Localize()
 {
-	static const UINT uids[14] =
+	static const UINT uids[18] =
 	{
 		IDS_DL_FILENAME, IDS_DL_SIZE, IDS_DL_TRANSF, IDS_DL_TRANSFCOMPL, IDS_DL_SPEED
 		, IDS_DL_PROGRESS, IDS_DL_SOURCES, IDS_PRIORITY, IDS_STATUS, IDS_DL_REMAINS
 		, 0/*IDS_LASTSEENCOMPL*/, 0/*IDS_FD_LASTCHANGE*/, IDS_CAT, IDS_ADDEDON
+		, IDS_PERCENTAGE, IDS_COUNTRY, IDS_IP, IDS_IDLOW
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -536,7 +541,16 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 				sText += _T('*');
 // ZZ:DownloadManager <--
 		}
-	//	break;
+		break;
+	case 15: // country
+		sText = pClient->GetCountryName();
+		break;
+	case 16: // IP
+		sText = ipstr(pClient->GetIP());
+		break;
+	case 17: // ID
+		sText = GetResString(pClient->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		break;
 	//case 9: //remaining time & size
 	//case 10: //last seen complete
 	//case 11: //last received
@@ -1695,6 +1709,7 @@ int CDownloadListCtrl::Compare(const CPartFile *file1, const CPartFile *file2, L
 	case 4: //speed
 		return CompareUnsigned(file1->GetDatarate(), file2->GetDatarate());
 	case 5: //progress
+	case 14: //percentage
 		return sgn((float)file1->GetCompletedSize() / (float)file1->GetFileSize() - (float)file2->GetCompletedSize() / (float)file2->GetFileSize()); //compare exact ratio instead of rounded percents
 	case 6: //sources
 		return CompareUnsigned(file1->GetSourceCount(), file2->GetSourceCount());
@@ -1792,6 +1807,12 @@ int CDownloadListCtrl::Compare(const CUpDownClient *client1, const CUpDownClient
 				return -1;
 		}
 		return client1->GetDownloadState() - client2->GetDownloadState();
+	case 15: // country
+		return CompareLocaleStringNoCase(client1->GetCountryName(), client2->GetCountryName());
+	case 16: // IP
+		return CompareUnsigned(htonl(client1->GetIP()), htonl(client2->GetIP()));
+	case 17: // ID
+		return (int)client1->HasLowID() - (int)client2->HasLowID();
 	}
 	return 0;
 }
@@ -2071,6 +2092,9 @@ CString CDownloadListCtrl::GetFileItemDisplayText(const CPartFile *lpPartFile, i
 			sText = lpPartFile->GetCrCFileDate().Format(thePrefs.GetDateTimeFormat4Lists());
 		else
 			sText += _T('?');
+		break;
+	case 14: //percentage
+		sText.Format(_T("%.1f%%"), lpPartFile->GetPercentCompleted());
 	}
 	return sText;
 }

@@ -3581,6 +3581,8 @@ BEGIN
     IDS_ALL_TIME_RATIO      "All-Time Ratio"
     IDS_SESSION_RATIO       "Session Ratio"
     IDS_COOLDOWN            "Cooldown"
+    IDS_COUNTRY             "Country"
+    IDS_PERCENTAGE          "%"
     IDS_SEARCH_UNKATTR      "Unknown search attribute '%s'"
     IDS_SEARCH_ATTRERR      "Syntax error in '%s' search attribute"
     IDS_SEARCH_MISSINGANDRIGHT "Missing right side for AND operator"

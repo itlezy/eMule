@@ -83,11 +83,14 @@ This branch keeps the following parts of the old broadband approach:
 - hidden `BBMaxUpClientsAllowed` configuration key as the steady-state slot target
 - hidden `BBBoostLowRatioFiles`, `BBBoostLowRatioFilesBy`, and `BBDeboostLowIDs` queue-score controls for strict seeders
 - hidden `BBSessionMaxTrans` and `BBSessionMaxTime` overrides for broadband session rotation
+- restored `IP2Country` backend support for client country lookups
 - `All-Time Ratio` / `Session Ratio` columns in shared, upload, and queue lists
 - `Cooldown` column in upload and queue lists
 - a steady-state soft cap for upload slots
 - slow/stuck slot tracking on each uploading client
 - replacement of bad slots instead of relying on runaway slot growth
+- low-ratio preference when ordering the shared-file list published to servers,
+  while still respecting upload priority first
 
 ## What This Branch Does Not Port
 
@@ -95,7 +98,8 @@ This branch does not carry over the broader old branch behavior:
 
 - no full replay of the old slot-admission formulas
 - no wider set of hidden broadband tuning knobs beyond the slot target, score bias, and session rotation overrides
-- no UI/config panel work beyond the ratio and cooldown columns
+- no UI/config panel work beyond the ratio/cooldown columns and the narrow
+  download-list parity fields
 
 That is deliberate. The goal is to isolate the broadband behavior change and keep
 the patch maintainable on top of `v0.72a`.
