@@ -473,15 +473,20 @@ void CUpDownClient::UpdateUploadingStatisticsData()
 	else
 		m_nUpDatarate = 0; // not enough data to calculate trustworthy speed
 
+	const DWORD deltaMs = m_dwLastUploadDataRateTick ? min(curTick - m_dwLastUploadDataRateTick, (DWORD)SEC2MS(1)) : 0;
+	m_dwLastUploadDataRateTick = curTick;
+
 	// Track persistently weak uploaders so the queue can recycle bad slots instead of opening many more.
-	if (theApp.uploadqueue != NULL) {
-		const bool trackSlowClients = theApp.uploadqueue->ShouldTrackSlowUploadSlots();
-		if (trackSlowClients && m_nUpDatarate < theApp.uploadqueue->GetSlowUploadRateThreshold()) {
-			++m_caughtBeingSlow;
-			if (m_nUpDatarate == 0)
-				m_caughtBeingSlow += 5;
-		} else if (m_caughtBeingSlow > 0)
-			--m_caughtBeingSlow;
+	if (deltaMs > 0 && theApp.uploadqueue != NULL && theApp.uploadqueue->ShouldTrackSlowUploadSlots()) {
+		if (m_nUpDatarate < theApp.uploadqueue->GetSlowUploadRateThreshold())
+			m_dwSlowUploadAccumulatedMs += deltaMs;
+		else
+			m_dwSlowUploadAccumulatedMs = (m_dwSlowUploadAccumulatedMs > deltaMs) ? m_dwSlowUploadAccumulatedMs - deltaMs : 0;
+
+		if (m_nUpDatarate == 0)
+			m_dwZeroUploadAccumulatedMs += deltaMs;
+		else
+			m_dwZeroUploadAccumulatedMs = 0;
 	}
 
 	// Check if it's time to update the display.

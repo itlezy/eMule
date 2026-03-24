@@ -228,7 +228,8 @@ public:
 	DWORD			GetWaitTime() const								{ return m_dwUploadTime - GetWaitStartTime(); }
 	bool			IsDownloading() const							{ return (m_eUploadState == US_UPLOADING); }
 	UINT			GetUploadDatarate() const						{ return m_nUpDatarate; }
-	uint32			GetCaughtBeingSlow() const					{ return m_caughtBeingSlow; }
+	DWORD			GetSlowUploadAccumulatedMs() const				{ return m_dwSlowUploadAccumulatedMs; }
+	DWORD			GetZeroUploadAccumulatedMs() const				{ return m_dwZeroUploadAccumulatedMs; }
 	UINT			GetScore(bool sysvalue, bool isdownloading = false, bool onlybasevalue = false) const;
 	void			AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIOThread);
 	DWORD			GetUpStartTime() const							{ return m_dwUploadTime; }
@@ -249,7 +250,11 @@ public:
 	void			FlushSendBlocks(); // call this when you stop upload, or the socket might be not able to send
 	DWORD			GetLastUpRequest() const						{ return m_dwLastUpRequest; }
 	void			SetLastUpRequest()								{ m_dwLastUpRequest = ::GetTickCount(); }
-	void			ResetCaughtBeingSlow()						{ m_caughtBeingSlow = 0; }
+	void			ResetSlowUploadTracking() {
+						m_dwSlowUploadAccumulatedMs = 0;
+						m_dwZeroUploadAccumulatedMs = 0;
+						m_dwLastUploadDataRateTick = 0;
+					}
 	void			SetCollectionUploadSlot(bool bValue);
 	bool			HasCollectionUploadSlot() const					{ return m_bCollectionUploadSlot; }
 
@@ -586,7 +591,9 @@ protected:
 	//////////////////////////////////////////////////////////
 	// Upload data rate computation
 	//
-	uint32		m_caughtBeingSlow;	// Broadband slot health counter used to retire persistently weak uploaders.
+	DWORD		m_dwSlowUploadAccumulatedMs;	// Time spent below the broadband slow-rate threshold while tracking is active.
+	DWORD		m_dwZeroUploadAccumulatedMs;	// Time spent at zero upload rate while tracking is active.
+	DWORD		m_dwLastUploadDataRateTick;		// Last tick used to accumulate slow-upload timing.
 	UINT		m_nUpDatarate;
 	uint64		m_nSumForAvgUpDataRate;
 	CRing<TransferredData> m_AverageUDR_hist;

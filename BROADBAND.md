@@ -79,7 +79,7 @@ That behavior maps well to the goal on `v0.72a`.
 
 This branch keeps the following parts of the old broadband approach:
 
-- hidden `BBMaxUpClientsAllowed` configuration key
+- hidden `BBMaxUpClientsAllowed` configuration key as the only broadband-specific tuning input
 - a steady-state soft cap for upload slots
 - slow/stuck slot tracking on each uploading client
 - replacement of bad slots instead of relying on runaway slot growth
@@ -128,6 +128,11 @@ In other words:
 Units follow the existing queue code and are kept in `KiB/s` until converted for
 comparisons against byte-rate counters.
 
+Broadband-specific overflow and slow-slot logic only activate when this budget is
+based on a real capacity or live USS allowance. If the code only has the old
+`UNLIMITED -> 16 KiB/s` fallback, it falls back to the legacy per-slot target
+logic instead of pretending that `16 KiB/s` is a real line budget.
+
 ### Target per slot
 
 The per-slot target now becomes:
@@ -154,9 +159,11 @@ Normal behavior:
 
 Temporary overflow:
 
-- allow at most `+2` extra slots
+- allow a derived overflow allowance of roughly `ceil(softMaxSlots / 6)`
 - only while the waiting queue is non-empty
-- only while upload is below `95%` of the effective budget
+- only while upload is underfilled by at least the larger of:
+  - half of one target slot, or
+  - `5%` of the effective budget
 - only after that underfill persists for at least `2 seconds`
 - only if the existing throttler path still indicates demand for another slot
 
@@ -165,26 +172,28 @@ to unbounded growth.
 
 ### Slow/stuck slot reclamation
 
-Each uploading client tracks a simple slow counter.
+Each uploading client tracks time spent in a bad state instead of a raw sample
+counter.
 
-The counter is only meaningful while:
+Slow-slot tracking is only meaningful while:
 
 - the waiting queue is non-empty
 - the upload list is already at or above the soft cap
-- total upload is below `95%` of the effective budget
+- total upload is underfilled according to the derived headroom rule above
+- a real effective budget exists
 
 Slow threshold:
 
 - smoothed client upload rate below `targetPerSlot / 3`
 
-Counter behavior:
+Time windows:
 
-- `+1` on a slow sample
-- additional `+5` when the sample is exactly `0`
-- `-1` on a good sample, down to `0`
-- considered slow enough for eviction at `180`
+- evict after `15 seconds` spent below the slow-rate threshold
+- evict after `3 seconds` spent at exactly `0` upload rate
+- good samples reduce accumulated slow time
+- neutral periods freeze the timers instead of silently forgiving the client
 
-When a client gets a fresh upload slot, its slow counter is reset.
+When a client gets a fresh upload slot, its slow timers are reset.
 
 This keeps the feature intentionally simple:
 

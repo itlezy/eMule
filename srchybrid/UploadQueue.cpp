@@ -61,12 +61,22 @@ static uint32 igraph, istats;
 
 namespace
 {
-constexpr uint32 UPLOAD_OVERFLOW_SLOT_ALLOWANCE = 2;
-constexpr uint32 UPLOAD_FILL_TARGET_PERCENT = 95;
 constexpr DWORD UPLOAD_OVERFLOW_GRACE_TIME = SEC2MS(2);
-constexpr uint32 UPLOAD_SLOW_RATE_DIVISOR = 3;
-constexpr uint32 UPLOAD_SLOW_COUNTER_THRESHOLD = 180;
+constexpr DWORD UPLOAD_SLOW_EVICT_TIME = SEC2MS(15);
+constexpr DWORD UPLOAD_ZERO_RATE_EVICT_TIME = SEC2MS(3);
 }
+
+struct CUploadQueue::BroadbandControlState
+{
+	bool	hasBudget;
+	uint32	effectiveBudgetBytesPerSec;
+	uint32	softMaxSlots;
+	uint32	targetPerSlotBytesPerSec;
+	uint32	underfillHeadroomBytesPerSec;
+	uint32	overflowAllowance;
+	uint32	slowRateThresholdBytesPerSec;
+	bool	isUnderfilled;
+};
 
 CUploadQueue::CUploadQueue()
 	: average_ur_hist(512, 512)
@@ -206,7 +216,7 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	if (pszReason && thePrefs.GetLogUlDlEvents())
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
 
-	newclient->ResetCaughtBeingSlow();
+	newclient->ResetSlowUploadTracking();
 
 	if (newclient->HasCollectionUploadSlot() && directadd == NULL) {
 		ASSERT(0);
@@ -284,6 +294,14 @@ void CUploadQueue::UpdateActiveClientsInfo(DWORD curTick)
 	}
 }
 
+// Only treat the upload budget as valid when it comes from an explicit capacity or live USS allowance.
+bool CUploadQueue::HasEffectiveUploadBudget() const
+{
+	if (thePrefs.GetMaxGraphUploadRate(false) != UNLIMITED)
+		return true;
+	return thePrefs.IsDynUpEnabled() && theApp.lastCommonRouteFinder->GetUpload() > 0;
+}
+
 // Base all broadband slot decisions on the effective upload budget: capacity, user limit and USS allowance.
 uint32 CUploadQueue::GetEffectiveUploadBudget() const
 {
@@ -301,31 +319,55 @@ uint32 CUploadQueue::GetSoftMaxUploadSlots() const
 	return max((uint32)MIN_UP_CLIENTS_ALLOWED, min((uint32)MAX_UP_CLIENTS_ALLOWED, thePrefs.GetMaxUpClientsAllowed()));
 }
 
+// Derive the full broadband controller state from the slot target and the current budget.
+CUploadQueue::BroadbandControlState CUploadQueue::GetBroadbandControlState() const
+{
+	BroadbandControlState state = {};
+	state.softMaxSlots = GetSoftMaxUploadSlots();
+	state.hasBudget = HasEffectiveUploadBudget();
+	if (!state.hasBudget)
+		return state;
+
+	state.effectiveBudgetBytesPerSec = GetEffectiveUploadBudget() * 1024u;
+	state.targetPerSlotBytesPerSec = max(3u * 1024u, state.effectiveBudgetBytesPerSec / max(1u, state.softMaxSlots));
+	state.underfillHeadroomBytesPerSec = max(state.targetPerSlotBytesPerSec / 2u, state.effectiveBudgetBytesPerSec / 20u);
+	state.overflowAllowance = max(1u, (state.softMaxSlots + 5u) / 6u);
+	state.slowRateThresholdBytesPerSec = max(3u * 1024u, state.targetPerSlotBytesPerSec / 3u);
+	state.isUnderfilled = (uint64)datarate + state.underfillHeadroomBytesPerSec < state.effectiveBudgetBytesPerSec;
+	return state;
+}
+
 // Allow only a small overflow above the steady-state slot target, and only after sustained underfill.
 bool CUploadQueue::AllowTemporaryUploadOverflow() const
 {
-	return m_dwUnderfillStartTick != 0 && ::GetTickCount() >= m_dwUnderfillStartTick + UPLOAD_OVERFLOW_GRACE_TIME;
+	return GetBroadbandControlState().hasBudget
+		&& m_dwUnderfillStartTick != 0
+		&& ::GetTickCount() >= m_dwUnderfillStartTick + UPLOAD_OVERFLOW_GRACE_TIME;
 }
 
 uint32 CUploadQueue::GetUploadSlotLimit() const
 {
-	uint32 slotLimit = GetSoftMaxUploadSlots();
+	const BroadbandControlState state = GetBroadbandControlState();
+	uint32 slotLimit = state.softMaxSlots;
 	if (AllowTemporaryUploadOverflow())
-		slotLimit = min((uint32)MAX_UP_CLIENTS_ALLOWED, slotLimit + UPLOAD_OVERFLOW_SLOT_ALLOWANCE);
+		slotLimit = min((uint32)MAX_UP_CLIENTS_ALLOWED, slotLimit + state.overflowAllowance);
 	return slotLimit;
 }
 
 uint32 CUploadQueue::GetSlowUploadRateThreshold() const
 {
-	return max(3u * 1024u, GetTargetClientDataRate(false) / UPLOAD_SLOW_RATE_DIVISOR);
+	const BroadbandControlState state = GetBroadbandControlState();
+	return state.hasBudget ? state.slowRateThresholdBytesPerSec : max(3u * 1024u, GetTargetClientDataRate(false) / 3u);
 }
 
 // Slow-slot tracking is only meaningful when we are already at the target slot count and still underfilling the line.
 bool CUploadQueue::ShouldTrackSlowUploadSlots() const
 {
-	return !waitinglist.IsEmpty()
-		&& uploadinglist.GetCount() >= (INT_PTR)GetSoftMaxUploadSlots()
-		&& (uint64)datarate * 100u < (uint64)GetEffectiveUploadBudget() * 1024u * UPLOAD_FILL_TARGET_PERCENT;
+	const BroadbandControlState state = GetBroadbandControlState();
+	return state.hasBudget
+		&& !waitinglist.IsEmpty()
+		&& uploadinglist.GetCount() >= (INT_PTR)state.softMaxSlots
+		&& state.isUnderfilled;
 }
 
 // Keep a short underfill timer so the throttler can ask for at most a couple of temporary overflow slots.
@@ -454,8 +496,18 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 // The per-slot target is derived from the broadband budget and the configured steady-state slot target.
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
-	const uint32 slotCount = max(1u, GetSoftMaxUploadSlots());
-	const uint32 nResult = max(3u * 1024u, (GetEffectiveUploadBudget() * 1024u) / slotCount);
+	if (!HasEffectiveUploadBudget()) {
+		uint32 nOpenSlots = (uint32)GetUploadQueueLength();
+		uint32 nResult;
+		if (nOpenSlots <= 3)
+			nResult = 3 * 1024;
+		else
+			nResult = min(UPLOAD_CLIENT_MAXDATARATE, nOpenSlots * 1024);
+		return bMinDatarate ? nResult * 3 / 4 : nResult;
+	}
+
+	const BroadbandControlState state = GetBroadbandControlState();
+	const uint32 nResult = state.targetPerSlotBytesPerSec;
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
 
@@ -802,11 +854,17 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 	}
 
 	// Prefer replacing a slot that has been bad for a while over growing the upload list indefinitely.
-	if (ShouldTrackSlowUploadSlots()
-		&& client->GetCaughtBeingSlow() >= UPLOAD_SLOW_COUNTER_THRESHOLD) {
-		if (thePrefs.GetLogUlDlEvents())
-			AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow. Rate: %s"), client->GetUserName(), (LPCTSTR)CastItoXBytes(client->GetUploadDatarate()));
-		return true;
+	if (ShouldTrackSlowUploadSlots()) {
+		if (client->GetZeroUploadAccumulatedMs() >= UPLOAD_ZERO_RATE_EVICT_TIME) {
+			if (thePrefs.GetLogUlDlEvents())
+				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to zero upload rate for %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(UPLOAD_ZERO_RATE_EVICT_TIME / SEC2MS(1)));
+			return true;
+		}
+		if (client->GetSlowUploadAccumulatedMs() >= UPLOAD_SLOW_EVICT_TIME) {
+			if (thePrefs.GetLogUlDlEvents())
+				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to being too slow for %s. Rate: %s"), client->GetUserName(), (LPCTSTR)CastSecondsToHM(UPLOAD_SLOW_EVICT_TIME / SEC2MS(1)), (LPCTSTR)CastItoXBytes(client->GetUploadDatarate()));
+			return true;
+		}
 	}
 
 	if (thePrefs.TransferFullChunks()) {
