@@ -1,0 +1,941 @@
+# eMule P2P Application — Networking, Sockets, UPnP & Async Processing Analysis
+
+**Date:** 2026-03-24
+**Branch:** v0.72a-broadband-dev
+**Scope:** Full networking stack — `srchybrid/` (TCP, UDP, encryption, UPnP, throttling, proxy, Kademlia)
+
+---
+
+## Executive Summary
+
+The eMule networking stack is a mature **Windows-native asynchronous I/O architecture** built entirely on `WSAAsyncSelect` with a layered socket abstraction. It handles hundreds of simultaneous P2P connections through a message-pump–driven notification model, a dedicated upload bandwidth throttler thread, dual TCP/UDP encrypted transports, a SOCKS/HTTP proxy layer, and two independent UPnP implementations. The overall design is sound and well-suited to its use case. This report documents every major subsystem with file and line references, identifies architectural limitations, and calls out specific issues.
+
+---
+
+## 1. Socket Class Hierarchy
+
+### 1.1 Full Inheritance Chain
+
+```
+CAsyncSocketEx  (AsyncSocketEx.h — base, wraps WSAAsyncSelect)
+├── CEncryptedStreamSocket  (EncryptedStreamSocket.h — adds RC4 obfuscation)
+│   ├── CEMSocket  (EMSocket.h — adds packet framing + dual send queues)
+│   │   ├── CClientReqSocket  (ListenSocket.h — incoming peer TCP connections)
+│   │   └── CServerSocket  (ServerSocket.h — outgoing ed2k server connections)
+│   └── [implements ThrottledFileSocket interface]
+└── CListenSocket  (ListenSocket.h — accepts new peer connections on TCP port)
+
+CAsyncSocket  (MFC — used for simpler sockets)
+├── CClientUDPSocket  (ClientUDPSocket.h — peer UDP + Kademlia, throttled)
+│   └── [implements CEncryptedDatagramSocket + ThrottledControlSocket]
+└── CUDPSocket  (UDPSocket.h — server UDP control/queries)
+    └── [implements CEncryptedDatagramSocket + ThrottledControlSocket]
+```
+
+### 1.2 Layered Socket Middleware
+
+A separate **layer chain** can be inserted between `CAsyncSocketEx` and the raw socket:
+
+```
+Application (CEncryptedStreamSocket / CEMSocket)
+     ↕  virtual Send/Receive + event callbacks
+CAsyncSocketExLayer  (AsyncSocketExLayer.h:67)
+     ↕  doubly-linked list: m_pNextLayer / m_pPrevLayer
+CAsyncProxySocketLayer  (AsyncProxySocketLayer.h — SOCKS4/5, HTTP proxy)
+     ↕
+Raw WinSock2 socket
+```
+
+Only one layer is currently used in practice (proxy). The design supports arbitrary stacking — a TLS layer could be inserted without changing higher-level code.
+
+**Key files:**
+
+| File | Role |
+|------|------|
+| `srchybrid/AsyncSocketEx.h/.cpp` | Base socket; per-thread helper window; WM dispatch |
+| `srchybrid/AsyncSocketExLayer.h/.cpp` | Abstract layer base; chain management |
+| `srchybrid/AsyncProxySocketLayer.h/.cpp` | SOCKS4/4A/5 + HTTP 1.0/1.1 proxy middleware |
+| `srchybrid/EncryptedStreamSocket.h/.cpp` | RC4 obfuscation layer for TCP |
+| `srchybrid/EncryptedDatagramSocket.h/.cpp` | Stateless RC4 encryption for UDP |
+| `srchybrid/EMSocket.h/.cpp` | Packet framing, dual send queues, rate control |
+| `srchybrid/ListenSocket.h/.cpp` | Accept loop, half-open tracking, timeout logic |
+| `srchybrid/ServerConnect.h/.cpp` | Server connection state machine |
+| `srchybrid/ClientUDPSocket.h/.cpp` | Peer UDP socket |
+| `srchybrid/UDPSocket.h/.cpp` | Server UDP socket |
+| `srchybrid/ThrottledSocket.h` | Abstract throttle interface |
+| `srchybrid/UploadBandwidthThrottler.h/.cpp` | Dedicated throttler thread |
+
+---
+
+## 2. Async I/O Model — WSAAsyncSelect + Helper Windows
+
+### 2.1 Design Overview
+
+All TCP sockets use `WSAAsyncSelect` rather than `WSAEventSelect` or Windows IOCP. Each thread that creates sockets gets its own **invisible helper window** (`CAsyncSocketExHelperWindow`) which receives socket event messages from WinSock and dispatches them to the correct socket object.
+
+**Per-thread data structure** (`AsyncSocketEx.h:261`):
+
+```cpp
+struct t_AsyncSocketExThreadData {
+    CAsyncSocketExHelperWindow *pHelperWindow;
+    int nInstanceCount;
+    DWORD nThreadId;
+    CAsyncSocketEx **pAllocatedSockets;  // direct array indexed by socket message offset
+};
+```
+
+### 2.2 Message Assignment and Dispatch (`AsyncSocketEx.cpp:80–497`)
+
+When a socket is created it is assigned a unique offset into `pAllocatedSockets`. `WSAAsyncSelect` is called with a message `WM_USER + 0x101 + offset`. The helper window's `WindowProc` receives this message, looks up the socket in O(1) by index, and calls the appropriate virtual handler.
+
+```
+Inbound WM_ message with socket index
+  → pAllocatedSockets[index]->OnReceive / OnSend / OnConnect / OnClose
+```
+
+**Comparison with MFC `CAsyncSocket`:** MFC uses a single `WM_SOCKET_NOTIFY` for all sockets plus a `CMapWordToPtr` lookup — O(log n). eMule's approach is O(1) at the cost of pre-allocating an array slot per socket.
+
+**Maximum sockets per thread:** `(0xBFFF - 0x0101) = 49,150` theoretically; the code caps the array at `0xBAFD` = 47,869 (`AsyncSocketEx.h:82–86`).
+
+### 2.3 Layered Socket Event Flow
+
+When a proxy layer is present, raw socket events are intercepted by the lowest layer:
+
+```
+WinSock event fires for raw socket
+  → helper window dispatches to layer chain bottom
+  → CAsyncProxySocketLayer::OnReceive / OnSend
+  → Layer processes SOCKS handshake bytes
+  → On negotiation complete: posts WM_SOCKETEX_TRIGGER to helper window
+  → Helper window dispatches t_LayerNotifyMsg* up the chain
+  → CEncryptedStreamSocket / CEMSocket receives event
+```
+
+Three special messages are used (`AsyncSocketEx.h`):
+
+| Message | Value | Purpose |
+|---------|-------|---------|
+| `WM_SOCKETEX_NOTIFY` | `0x0504` | Raw socket event from WinSock |
+| `WM_SOCKETEX_TRIGGER` | `0x0501` | Layer-generated synthetic event |
+| `WM_SOCKETEX_GETHOST` | `0x0502` | Async DNS resolution reply |
+
+### 2.4 Architectural Limitations of WSAAsyncSelect
+
+- **Not IOCP:** `WSAAsyncSelect` posts a Windows message per event; under high load the message queue can become congested. IOCP (`WSAIoctl` + completion ports) would scale better on Windows Vista+ with hundreds of simultaneous active connections.
+- **Single-threaded dispatch:** All socket callbacks for a given thread run on that thread's message pump. A slow `OnReceive` handler blocks all other socket events on that thread.
+- **Message queue overflow:** If the queue fills (hard limit ~10,000 messages in classic Win32), events are dropped silently. The custom message range mitigates this by keeping socket messages separate from UI messages, but doesn't eliminate the risk under extreme load.
+
+---
+
+## 3. TCP Packet Framing and Reassembly — `CEMSocket`
+
+### 3.1 Wire Format
+
+Every eMule TCP packet uses a 5-byte header:
+
+```
+Byte 0:    Protocol ID
+             0xE3 = OP_EDONKEYPROT  (plain ED2K)
+             0xC5 = OP_EMULEPROT    (eMule extended)
+             0xD4 = OP_PACKEDPROT   (zlib-compressed payload)
+Bytes 1–4: uint32 LE — payload length (EXCLUDING this 5-byte header)
+Byte 5:    Opcode (first byte of payload)
+Bytes 6…:  Remaining payload
+```
+
+The header struct in `srchybrid/Packets.h` is `#pragma pack(push, 1)` ensuring no padding regardless of alignment.
+
+### 3.2 Reassembly State Machine (`EMSocket.cpp:316–398`)
+
+Incoming data is appended to `GlobalReadBuffer` (2 MB static buffer). The reassembler loops until no complete packet can be extracted:
+
+```cpp
+static char GlobalReadBuffer[2000000];
+
+while (rend >= rptr + PACKET_HEADER_SIZE || pendingPacket != NULL) {
+    if (pendingPacket == NULL) {
+        // validate protocol marker (lines 340–348)
+        switch (header->eDonkeyID) {
+        case OP_EDONKEYPROT: case OP_PACKEDPROT: case OP_EMULEPROT: break;
+        default: OnError(ERR_WRONGHEADER); return;
+        }
+        // guard against > 2 MB (line 351)
+        if (header->packetlength - 1 > sizeof GlobalReadBuffer) {
+            OnError(ERR_TOOBIG); return;
+        }
+        pendingPacket = new Packet(rptr);
+        rptr += PACKET_HEADER_SIZE;
+    }
+    uint32 toCopy = min(pendingPacket->size - pendingPacketSize, rend - rptr);
+    memcpy(&pendingPacket->pBuffer[pendingPacketSize], rptr, toCopy);
+    pendingPacketSize += toCopy;
+    rptr += toCopy;
+    if (pendingPacketSize == pendingPacket->size)
+        PacketReceived(pendingPacket);  // complete — hand off to protocol handler
+}
+```
+
+**Partial header handling:** Up to 4 bytes of an incomplete header are saved in `pendingHeader[PACKET_HEADER_SIZE]` and merged with the next `OnReceive` call.
+
+### 3.3 Compressed Packets (`OP_PACKEDPROT`)
+
+When protocol byte `0xD4` is detected, the payload is zlib-decompressed before `PacketReceived` is called. The decompressed size is stored in the header's `packetlength` field; a secondary field carries the compressed size. Decompression is transparent to all higher-level protocol handlers.
+
+**Note:** The recent WIP commit `6c6fd3f` removes upload compression. Once that work is finalised, `OP_PACKEDPROT` on the receive path should be audited: the code may still need to accept compressed packets from older peers even if it no longer sends them.
+
+### 3.4 Send Queue Architecture
+
+`CEMSocket` maintains two separate send queues protected by a single `CCriticalSection sendLocker`:
+
+```cpp
+// EMSocket.h:132–134
+CTypedPtrList<CPtrList, Packet*>          controlpacket_queue;  // high priority
+CList<StandardPacketQueueEntry>           standardpacket_queue; // file data
+CCriticalSection                          sendLocker;
+```
+
+Additionally, a `sendbuffer` / `sendblen` / `sent` triple tracks the packet currently being sent mid-stream.
+
+**Send flow** (`EMSocket.cpp:537–696`):
+
+1. Throttler thread calls `SendEM(maxBytes, minFragSize, controlOnly)`.
+2. Control queue drained first; standard queue only if `controlOnly == false`.
+3. `send()` called on the raw socket; if `WSAEWOULDBLOCK` is returned:
+   - `m_bBusy = true`
+   - `sendLocker.Unlock()` — **critical: lock released before return**
+   - Returns to throttler; next `OnSend` callback will resume.
+4. Sent byte count accumulated in `SocketSentBytes` return struct.
+
+### 3.5 Download Rate Limiting
+
+Per-socket download throttling is implemented directly in the `OnReceive` path (`EMSocket.cpp:273–292`):
+
+```cpp
+if (downloadLimitEnable && downloadLimit == 0) {
+    pendingOnReceive = true;
+    return;                    // block further reads until limit refreshed
+}
+if (downloadLimitEnable && readMax > downloadLimit)
+    readMax = downloadLimit;
+// … recv() … subtract from downloadLimit
+```
+
+The limit is refreshed by the parent calling `SetDownloadLimit(newBytes)`. This is a simple **credit-based** scheme: once credits are exhausted, `OnReceive` is suppressed until the next credit grant. This causes bursty behaviour at very low limits (< ~10 KB/s) because the granularity is one `OnReceive` event.
+
+---
+
+## 4. Encryption Transport — `CEncryptedStreamSocket`
+
+### 4.1 Two Handshake Modes
+
+#### Mode A — Client-to-Client (RC4 with MD5 key derivation)
+
+```
+A → B (plaintext header + RC4-encrypted body):
+  <SemiRandomNotProtocolMarker[1]>  — distinguishes obfuscation from raw protocol
+  <RandomKeyPart[4]>
+  <MagicValue 0x22[4]>             — MAGICVALUE_REQUESTER = 34
+  <EncryptionMethods[1]>
+  <Preferred[1]>
+  <RandomPadding[0–15]>
+
+Key derivation (both sides):
+  SendKey = MD5(PeerHash[16] || 0x22 || RandomKeyPart[4])
+  RecvKey = MD5(PeerHash[16] || 0xCB || RandomKeyPart[4])
+  First 1024 bytes of each RC4 keystream discarded
+```
+
+Overhead: ~33 bytes per connection setup.
+
+#### Mode B — Client-to-Server (Diffie-Hellman, 768-bit prime)
+
+```
+Client → Server (cleartext):
+  <SemiRandomNotProtocolMarker[1]>
+  <G^A[96]>                        — 768-bit DH public key
+  <RandomBytes[0–15]>
+
+Server → Client:
+  <G^B[96]>
+  <MagicValue 0xCB[4]>             — MAGICVALUE_SERVER = 203
+  <EncMethods[1]>
+  <Preferred[1]>
+  <Padding>
+
+Shared secret S = G^(A*B) mod p  (768-bit, hardcoded prime at EncryptedStreamSocket.cpp:101–110)
+Key derivation via MD5(S || magic)
+```
+
+Overhead: ~229 bytes.
+
+### 4.2 Encryption State Machine
+
+**`EStreamCryptState`** (11 states for client-client, 8 for server, `EncryptedStreamSocket.h:36–66`):
+
+```
+ECS_NONE → ECS_PENDING / ECS_PENDING_SERVER
+  → ECS_NEGOTIATING (handshake bytes exchanged)
+  → ECS_ENCRYPTING  (RC4 active, normal traffic flows)
+```
+
+State is advanced in `Receive()` (`EncryptedStreamSocket.cpp:229–328`). Once `ECS_ENCRYPTING`, every `recv()` call decrypts the buffer in-place with RC4 before returning bytes to `CEMSocket`.
+
+### 4.3 Known Issues in Encryption Layer
+
+**ASSERT(0) with "must be a bug" comments (`EncryptedStreamSocket.cpp`):**
+
+Lines 150, 168, 181, 195, 300, 325, 432, 444, 471, 642, 655, 688, 700, 742 — 14 instances. In a Release build all ASSERTs compile out, meaning these code paths fall through silently. Several are annotated "this must be a bug" which implies the socket state becomes corrupted. These should be converted to `OnError(ERR_ENCRYPTION)` + disconnect.
+
+**No forward secrecy:** Once the RC4 keys are established they never rotate. Recording a session and later compromising the client hash / DH exchange fully decrypts the session.
+
+**No renegotiation path:** The state machine has no transition from `ECS_ENCRYPTING` back to a negotiation state. Cipher upgrade requires a new connection.
+
+---
+
+## 5. Proxy Support — `CAsyncProxySocketLayer`
+
+### 5.1 Supported Proxy Types
+
+```cpp
+// AsyncProxySocketLayer.h:22
+PROXYTYPE_NOPROXY  = 0
+PROXYTYPE_SOCKS4   = 1
+PROXYTYPE_SOCKS4A  = 2   // hostname via proxy DNS
+PROXYTYPE_SOCKS5   = 3   // username/password auth (RFC 1929)
+PROXYTYPE_HTTP10   = 4
+PROXYTYPE_HTTP11   = 5
+```
+
+### 5.2 SOCKS4 Handshake (`AsyncProxySocketLayer.cpp:263–310`)
+
+```
+Client → Proxy: [0x04][0x01][port_BE_2][ip_4][userid\0]
+Proxy → Client: [0x00][status][port_2][ip_4]
+  Status 90 = granted; 91-93 = rejected (server failure / identd / user mismatch)
+```
+
+### 5.3 SOCKS5 Authentication (`AsyncProxySocketLayer.cpp:363–400+`)
+
+Two-phase:
+
+1. **Method negotiation:** Client offers `{NO_AUTH, USERNAME_PASSWORD}`, proxy selects one.
+2. **Auth (if selected):**
+   ```
+   Client → Proxy: [0x01][ulen][username][plen][password]
+   Proxy → Client: [0x01][0x00=OK / other=fail]
+   ```
+
+On success, the layer triggers `FD_CONNECT + FD_READ + FD_WRITE` to the application. On failure, `FD_CONNECT + error_code`.
+
+### 5.4 HTTP CONNECT Proxy (`AsyncProxySocketLayer.cpp`)
+
+```
+Client → Proxy: "CONNECT host:port HTTP/1.1\r\nHost: host:port\r\n\r\n"
+Proxy → Client: "HTTP/1.1 200 Connection established\r\n\r\n"
+```
+
+### 5.5 Proxy Initialization (`EMSocket.cpp:158–191`)
+
+```cpp
+void CEMSocket::InitProxySupport() {
+    if (settings.bUseProxy && settings.type != PROXYTYPE_NOPROXY) {
+        m_bUseOverlappedSend = false;    // overlapped send incompatible with proxy
+        Close();
+        m_pProxyLayer = new CAsyncProxySocketLayer;
+        m_pProxyLayer->SetProxy(type, host, port, user, pass);
+        AddLayer(m_pProxyLayer);
+        Create(…);
+        AsyncSelect(FD_DEFAULT);
+    }
+}
+```
+
+**Important:** When proxy is enabled, overlapped I/O is disabled. The proxy layer expects synchronous `Send()` semantics because it may need to intercept and buffer sends during the SOCKS negotiation phase. This makes proxy connections measurably slower than direct connections, particularly for the initial handshake.
+
+### 5.6 UDP Through Proxy
+
+UDP proxying is **not implemented**. SOCKS5 supports UDP associate (command `0x03`) but this codebase does not use it. Kademlia and peer UDP traffic always goes direct, bypassing the proxy. This means proxy users leak their real IP address on UDP. This is a known limitation of essentially all eMule variants.
+
+---
+
+## 6. Upload Bandwidth Throttler
+
+### 6.1 Architecture
+
+`UploadBandwidthThrottler` is a dedicated `CWinThread` that runs its own tight loop, calling `Send()` on sockets rather than waiting for `OnSend` callbacks. This decouples upload bandwidth management from the main message pump.
+
+```cpp
+// UploadBandwidthThrottler.h:22–83
+class UploadBandwidthThrottler : public CWinThread {
+    std::list<ThrottledControlSocket*> m_ControlQueue_list;
+    std::list<ThrottledControlSocket*> m_ControlQueueFirst_list;
+    std::list<ThrottledControlSocket*> m_TempControlQueue_list;
+    std::list<ThrottledControlSocket*> m_TempControlQueueFirst_list;
+    CArray<ThrottledFileSocket*>        m_StandardOrder_list;   // upload slots
+    CCriticalSection queueLocker;
+    CCriticalSection tempQueueLocker;
+    HANDLE m_eventSocketAvailable;     // wakeup signal when sockets added
+    volatile bool m_bRun;
+};
+```
+
+### 6.2 Throttler Main Loop (`UploadBandwidthThrottler.cpp:294–end`)
+
+Each iteration:
+
+1. **Determine allowed bytes:** Query `CLastCommonRouteFinder::GetUpload()` for the current bandwidth ceiling.
+2. **Merge temp queues:** Swap `m_TempControl*` lists into active lists (under `tempQueueLocker`).
+3. **Send control packets first:**
+   - Drain `m_ControlQueueFirst_list` (sockets that already sent this cycle — re-queued for priority).
+   - Then drain `m_ControlQueue_list`.
+   - Each call: `socket->SendControlData(allowedBytes, minFragSize)`.
+4. **Send file data:**
+   - Iterate `m_StandardOrder_list` in order.
+   - Each call: `socket->SendFileAndControlData(remainingBytes, minFragSize)`.
+   - Stop when `remainingBytes == 0` or all sockets return busy (`WSAEWOULDBLOCK`).
+5. **Auto-limit adjustment:** If no bandwidth cap is configured, guess an optimal limit based on the ratio of busy sockets.
+
+### 6.3 Interface — `ThrottledSocket.h:12–31`
+
+```cpp
+struct SocketSentBytes { uint32 sentBytesControlPackets; uint32 sentBytesStandardPackets; };
+
+class ThrottledControlSocket {
+    virtual SocketSentBytes SendControlData(uint32 maxBytes, uint32 minFragment) = 0;
+};
+
+class ThrottledFileSocket : public ThrottledControlSocket {
+    virtual SocketSentBytes SendFileAndControlData(uint32 maxBytes, uint32 minFragment) = 0;
+    virtual bool HasQueues(bool onlyStandard = false) const = 0;
+    virtual bool IsBusyExtensiveCheck() = 0;
+    virtual bool IsBusyQuickCheck() const = 0;
+};
+```
+
+`CEMSocket` implements both interfaces by delegating to `SendEM()`.
+
+### 6.4 Locking Order
+
+Three locks are involved; they must always be acquired in this order to avoid deadlock:
+
+```
+1. queueLocker      (throttler's slot list)
+2. tempQueueLocker  (staging queues)
+3. sendLocker       (per-socket send queue)
+```
+
+`sendLocker` is released **before** returning from any `SendEM()` call that hits `WSAEWOULDBLOCK` — this is the critical discipline that prevents deadlock between the throttler thread and the main thread.
+
+### 6.5 Busy Detection
+
+- **Quick:** `m_bBusy` flag — set when `send()` returns `WSAEWOULDBLOCK`, cleared on `OnSend`.
+- **Extensive:** Checks queue depth, `sendbuffer != NULL`, fragment state, and time since last successful send. Called less frequently to avoid lock overhead.
+
+### 6.6 Limitations
+
+- **No token bucket:** The throttler uses a simple per-loop byte counter. This produces correct average rate but allows short-burst overruns between loop iterations. A sliding-window token bucket would produce smoother output.
+- **Tight loop without sleep:** The throttler loop runs as fast as possible with no fixed tick rate. Under light load this wastes CPU. Under very high load it may starve the main thread. A `Sleep(1)` or `WaitForSingleObject(m_eventSocketAvailable, 1)` at the loop bottom helps on some hardware but is not consistently applied.
+- **Single thread for all uploads:** All upload slots are serialised through one throttler thread. On multi-core machines this is a bottleneck once aggregate upload exceeds ~50–100 MB/s.
+
+---
+
+## 7. UPnP — Port Mapping Architecture
+
+### 7.1 Design: Strategy Pattern with Fallback
+
+UPnP is implemented using a **strategy pattern** with two concrete implementations and an automatic fallback mechanism.
+
+```
+CUPnPImplWrapper  (UPnPImplWrapper.h — selects and manages active impl)
+├── m_liAvailable  (unused implementations)
+├── m_liUsed       (tried implementations)
+└── m_pActiveImpl  → one of:
+    ├── CUPnPImplWinServ   (UPNP_IMPL_WINDOWSERVICE = 0)  — Windows UPnP Service / COM
+    ├── CUPnPImplMiniLib   (UPNP_IMPL_MINIUPNPLIB = 1)   — miniupnpc library
+    └── CUPnPImplNone      (UPNP_IMPL_NONE)               — dummy, no-op
+```
+
+**Base interface** (`UPnPImpl.h:51–56`):
+
+```cpp
+virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort) = 0;
+virtual bool CheckAndRefresh() = 0;
+virtual void StopAsyncFind() = 0;
+virtual void DeletePorts() = 0;
+virtual bool IsReady() = 0;
+virtual int  GetImplementationID() = 0;
+```
+
+Three ports are mapped: **TCP peer port**, **UDP peer port**, **TCP web server port** (optional).
+
+### 7.2 Implementation Selection (`UPnPImplWrapper.cpp:30–68`)
+
+On startup, the wrapper:
+
+1. Creates both implementations (unless disabled in preferences).
+2. Checks `thePrefs.GetLastWorkingUPnPImpl()` — if the last working implementation is in the available list, promotes it to active.
+3. Falls back to the list head if no preference match.
+4. `SwitchImplementation()` is called on failure to try the next available impl.
+
+```cpp
+CUPnPImplWrapper::CUPnPImplWrapper() {
+    if (!thePrefs.IsWinServUPnPImplDisabled())
+        m_liAvailable.AddTail(new CUPnPImplWinServ());
+    if (!thePrefs.IsMinilibUPnPImplDisabled())
+        m_liAvailable.AddTail(new CUPnPImplMiniLib());
+    if (m_liAvailable.IsEmpty())
+        m_liAvailable.AddTail(new CUPnPImplNone());
+    Init();
+}
+```
+
+### 7.3 Windows UPnP Service Implementation — `CUPnPImplWinServ`
+
+**File:** `srchybrid/UPnPImplWinServ.h/.cpp`
+**Origin:** Derived/adapted from the Shareaza project (copyright notice retained in header)
+
+Uses the Windows `upnp.h` COM API (`IUPnPDeviceFinder`, `IUPnPDevice`, `IUPnPService`).
+
+**Discovery flow:**
+
+1. `ProcessAsyncFind(L"urn:schemas-upnp-org:device:InternetGatewayDevice:1")` — async search via `IUPnPDeviceFinder::CreateInstanceAsync`.
+2. `CDeviceFinderCallback::DeviceAdded()` fires for each discovered device.
+3. `GetDeviceServices()` enumerates WANIPConnection and WANPPPConnection services.
+4. `StartPortMapping()` → `MapPort()` → `InvokeAction()` — calls `AddPortMapping` SOAP action.
+5. Result message posted to application window (`SendResultMessage()`).
+
+**ADSL detection** (`m_bADSL`, `m_ADSLFailed`): The implementation separately tracks whether the gateway is ADSL-type and whether port mapping failed for it. If ADSL mapping fails, it retries with `m_bDisableWANPPPSetup = true` (tries WANIPConnection instead).
+
+**`CheckAndRefresh()` returns false** — acknowledged in a comment:
+
+> *"No Support for Refreshing in this (fallback) implementation yet — in many cases where it would be needed (router reset etc) the windows side of the implementation tends to get bugged until reboot anyway."*
+
+**Timeout handling** (`IsAsyncFindRunning()`, line 100):
+
+```cpp
+if (::GetTickCount() >= m_tLastEvent + SEC2MS(10)) {
+    m_pDeviceFinder->CancelAsyncFind(m_nAsyncFindHandle);
+    m_bAsyncFindRunning = false;
+}
+// + message pump drain while waiting:
+while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+    ::TranslateMessage(&msg); ::DispatchMessage(&msg);
+}
+```
+
+**Issue:** Calling `PeekMessage` / `DispatchMessage` inside `IsAsyncFindRunning()` introduces a **re-entrant message pump**. If any of those dispatched messages trigger further UPnP code this can cause re-entrancy bugs. This pattern is a known hazard in Windows COM callback code.
+
+**`std::unary_function` usage** (`UPnPImplWinServ.h:116`):
+
+```cpp
+struct FindDevice : private std::unary_function<DevicePointer, bool>
+```
+
+`std::unary_function` was deprecated in C++11 and removed in C++17. This will fail to compile with `/std:c++17` or later.
+
+### 7.4 miniupnpc Implementation — `CUPnPImplMiniLib`
+
+**File:** `srchybrid/UPnPImplMiniLib.h/.cpp`
+**Library:** `miniupnpc\include\miniupnpc.h` + `upnpcommands.h`
+
+Uses the miniupnpc C library, which does its own SSDP discovery and direct UPnP/SOAP HTTP calls — no Windows UPnP service dependency.
+
+**Discovery thread** (`CStartDiscoveryThread : public CWinThread`):
+
+Discovery runs in a separate `CWinThread`, protecting the main thread from blocking SSDP/HTTP calls. The thread sets `m_bAbortDiscovery = true` as its stop flag.
+
+**Abort / cleanup** (`UPnPImplMiniLib.cpp:68–87`):
+
+```cpp
+void CUPnPImplMiniLib::StopAsyncFind() {
+    if (m_hThreadHandle != NULL) {
+        m_bAbortDiscovery = true;
+        CSingleLock lockTest(&m_mutBusy);
+        if (!lockTest.Lock(SEC2MS(7))) {
+            DebugLogError(_T("Waiting for UPnP StartDiscoveryThread to quit failed, trying to terminate..."));
+            if (m_hThreadHandle != NULL)
+                DebugLogError(::TerminateThread(m_hThreadHandle, 0) ? _T("...OK") : _T("...Failed"));
+        }
+    }
+}
+```
+
+**Issue:** `TerminateThread()` is used as a last resort if the thread doesn't exit within 7 seconds. `TerminateThread` does not unwind the stack, does not release locks, and does not close file handles. It is documented by Microsoft as a dangerous API. The comment in the code acknowledges this: *"there isn't a good solution here… terminating is quite bad too."* If the miniupnpc library holds internal state (e.g. open sockets or malloc'd memory) at termination time, the process heap can be left in an inconsistent state.
+
+**`CheckAndRefresh()` is fully implemented** in `CUPnPImplMiniLib` — it re-runs port mapping to refresh leases. This makes it the preferred implementation for long-running sessions where router reboots are possible.
+
+**Port deletion** (`DeletePort()`, `UPnPImplMiniLib.cpp:99–110`):
+
+```cpp
+void CUPnPImplMiniLib::DeletePort(uint16 port, LPCTSTR prot) {
+    char achPort[8];
+    sprintf(achPort, "%hu", port);   // safe: %hu with uint16 always fits in 8 bytes
+    UPNP_DeletePortMapping(m_pURLs->controlURL, …, achPort, CStringA(prot), NULL);
+}
+```
+
+The `sprintf` here is safe (port number is at most 5 digits), but would benefit from `sprintf_s` for consistency with the rest of the codebase.
+
+### 7.5 `TRISTATE` Port Forwarding State
+
+```cpp
+enum TRISTATE { TRIS_FALSE, TRIS_UNKNOWN, TRIS_TRUE };
+volatile TRISTATE m_bUPnPPortsForwarded;
+```
+
+`TRIS_UNKNOWN` is the initial state and the state after a failed/pending discovery. The application uses this to show "unknown" in the status bar rather than a definitive success/failure indication.
+
+### 7.6 Late Web Server Port Addition
+
+```cpp
+void CUPnPImpl::LateEnableWebServerPort(uint16 nPort);
+```
+
+This allows the web server TCP port to be added to an existing mapping without re-running full discovery. Called when the web server is enabled after UPnP discovery has already completed.
+
+### 7.7 UPnP Issues Summary
+
+| Issue | Severity | File |
+|-------|----------|------|
+| Re-entrant message pump in `IsAsyncFindRunning()` | Medium | `UPnPImplWinServ.h:100–109` |
+| `std::unary_function` deprecated/removed in C++17 | High (compile break) | `UPnPImplWinServ.h:116` |
+| `TerminateThread()` on stuck miniupnpc thread | Medium | `UPnPImplMiniLib.cpp:79` |
+| `WinServ` impl does not support `CheckAndRefresh()` | Low | `UPnPImplWinServ.h:86` |
+| `sprintf` instead of `sprintf_s` in `DeletePort()` | Low | `UPnPImplMiniLib.cpp:103` |
+| UDP proxy bypass (real IP leaked) | Medium (by design) | `AsyncProxySocketLayer.*` |
+
+---
+
+## 8. UDP Sockets
+
+### 8.1 Peer UDP — `CClientUDPSocket`
+
+**File:** `srchybrid/ClientUDPSocket.h:38`
+
+```cpp
+class CClientUDPSocket : public CAsyncSocket,
+                          public CEncryptedDatagramSocket,
+                          public ThrottledControlSocket
+{
+    CTypedPtrList<CPtrList, UDPPack*> controlpacket_queue;
+    CCriticalSection sendLocker;
+    uint16 m_port;
+    bool m_bWouldBlock;
+};
+```
+
+UDP packet struct (`ClientUDPSocket.h:23–36`):
+
+```cpp
+struct UDPPack {
+    Packet  *packet;
+    uint32   dwIP;
+    uint16   nPort;
+    DWORD    dwTime;          // enqueue time — aged packets dropped
+    bool     bEncrypt;
+    bool     bKad;            // route to Kademlia listener
+    uint32   nReceiverVerifyKey;
+    uchar    pachTargetClientHashORKadID[16];
+};
+```
+
+Packets are removed from the queue if `dwTime` is too old — prevents stale UDP packets from being sent after a timeout.
+
+### 8.2 Server UDP — `CUDPSocket`
+
+**File:** `srchybrid/UDPSocket.h:51`
+
+Similar to `CClientUDPSocket` but sends `SServerUDPPacket` structs to ed2k servers. Uses `CUDPSocketWnd` (a message-only window) for async DNS resolution.
+
+### 8.3 UDP Encryption — `CEncryptedDatagramSocket`
+
+**File:** `srchybrid/EncryptedDatagramSocket.h:19–32`
+
+Unlike TCP, UDP has **no handshake**. Keys are pre-derived from known material:
+
+**Client-to-client:**
+
+```cpp
+static int DecryptReceivedClient(BYTE *in, int len, BYTE **out,
+    uint32 ip, uint32 *recvKey, uint32 *sendKey);
+static uint32 EncryptSendClient(uchar *buf, uint32 len,
+    const uchar *clientHash, bool isKad, uint32 recvKey, uint32 sendKey);
+```
+
+Keys derived from the target's client hash — same MD5-based derivation as TCP obfuscation, applied statically.
+
+**Client-to-server:**
+
+```cpp
+static int DecryptReceivedServer(BYTE *in, int len, BYTE **out,
+    uint32 baseKey, const SOCKADDR_IN &dbgIP);
+static uint32 EncryptSendServer(uchar *buf, uint32 len, uint32 baseKey);
+```
+
+`baseKey` is derived from the server's public key material.
+
+**No replay protection noted.** UDP packets carry no sequence number or nonce in the obfuscation layer. A captured and replayed UDP packet will decrypt and be processed normally if it arrives within the server's processing window.
+
+### 8.4 Kademlia UDP
+
+Kademlia traffic flows through `CClientUDPSocket` (marked `bKad = true`). The Kademlia listener (`kademlia/net/KademliaUDPListener`) processes DHT operations (bootstrap, ping, search, store). Kademlia UDP has no explicit bandwidth throttling — it is treated as control traffic and bypasses the standard upload throttler's file-data slot mechanism.
+
+---
+
+## 9. Server Connection State Machine — `CServerConnect`
+
+### 9.1 Connection States (`ServerConnect.h:19–29`)
+
+```cpp
+CS_NOTCONNECTED         =  0
+CS_CONNECTING           =  1   // TCP SYN sent
+CS_CONNECTED            =  2   // logged in, fully operational
+CS_WAITFORLOGIN         =  3   // connected, awaiting OP_LOGINREPLY
+CS_WAITFORPROXYLISTENING=  4   // SOCKS BIND awaiting accept
+CS_SERVERFULL           = -1   // server rejected: capacity
+CS_ERROR                = -2   // protocol-level error
+CS_SERVERDEAD           = -3   // timeout / connection reset
+CS_DISCONNECTED         = -4   // intentional disconnect
+CS_FATALERROR           = -5   // unrecoverable
+```
+
+### 9.2 Lifecycle (`ServerConnect.cpp:115–211`)
+
+```
+ConnectToServer(CServer*, multiconnect)
+  → Create CServerSocket
+  → socket->Create(0, SOCK_STREAM, FD_DEFAULT)
+  → socket->ConnectTo(server, bNoCrypt)   — async
+  → OnConnect() fires
+  → Send OP_LOGINREQUEST  [clienthash, port, tags: name/version/flags]
+  → Await OP_LOGINREPLY
+  → State = CS_CONNECTED
+```
+
+### 9.3 Retry Logic
+
+A `SetTimer` callback fires every `CS_RETRYCONNECTTIME = 30 seconds`. Up to 2 simultaneous connection attempts are allowed (obfuscated port + plain port). If the obfuscated attempt fails, the plain port is tried automatically. `StopConnectionTry()` cleanly destroys all pending attempt sockets.
+
+---
+
+## 10. Connection Acceptance — `CListenSocket`
+
+### 10.1 Half-Open Connection Tracking
+
+`CListenSocket` tracks the number of half-open (TCP SYN received, not yet fully established) connections:
+
+```cpp
+// ListenSocket.h
+int m_nHalfOpen;    // count of SS_Half sockets
+int m_nComp;        // count of SS_Complete sockets
+```
+
+This is important on Windows XP SP2+ which throttles half-open connections system-wide. The code uses this count to delay accepting new connections when the half-open count is high.
+
+### 10.2 Timeout Logic (`ListenSocket.cpp:120–154`)
+
+```cpp
+bool CClientReqSocket::CheckTimeOut() {
+    if (m_nOnConnect == SS_Half) {
+        // 4× normal timeout for half-open — accommodates Win XP SP2 connection limits
+        if (curTick < timeout_timer + GetTimeOut() * 4)
+            return false;
+        Disconnect("SS_Half timeout");
+        return true;
+    }
+    // SS_Complete: timeout depends on activity (downloading, chatting, Kad buddy)
+}
+```
+
+The 4× multiplier for `SS_Half` exists specifically to accommodate Windows XP SP2's connection throttling. This is a form of legacy OS compatibility code (see also `REPOFUNC.md` Section 6).
+
+### 10.3 Safe Deferred Deletion (`ListenSocket.cpp:194–207`)
+
+```cpp
+void CClientReqSocket::Safe_Delete() {
+    AsyncSelect(FD_CLOSE);     // suppress further event notifications
+    ShutDown(both);            // TCP FIN
+    deltimer = GetTickCount();
+    deletethis = true;         // deferred: actual delete after 10 seconds
+}
+```
+
+The 10-second deferral allows any in-flight packets to be drained before the socket object is freed. The main window timer sweeps `deletethis` sockets periodically.
+
+---
+
+## 11. Thread Model and Synchronization
+
+### 11.1 Threads Involved in Networking
+
+| Thread | Role | Socket access |
+|--------|------|--------------|
+| **Main UI thread** | Message pump; all socket callbacks (`OnReceive`, `OnConnect`, `OnClose`) | Direct — owns sockets |
+| **Upload throttler** | Calls `SendEM()` on upload slots | Via `sendLocker` per socket |
+| **UPnP MiniLib discovery** | SSDP + SOAP HTTP calls | None (own network I/O via miniupnpc) |
+| **AICH sync thread** | File hash verification | No socket I/O |
+| **Kademlia worker** | DHT routing decisions | Posts to main thread for actual sends |
+
+### 11.2 Critical Section Discipline
+
+All lock acquisitions in networking code follow this strict order:
+
+```
+1. UploadBandwidthThrottler::queueLocker       (throttler slot list)
+2. UploadBandwidthThrottler::tempQueueLocker   (staging queues)
+3. CEMSocket::sendLocker                       (per-socket send buffer)
+```
+
+Violating this order (e.g. acquiring `sendLocker` then trying to acquire `queueLocker`) would deadlock with the throttler thread.
+
+### 11.3 WSAEWOULDBLOCK and Lock Release
+
+The critical discipline in `SendEM()` (`EMSocket.cpp:630–640`):
+
+```cpp
+if (result == SOCKET_ERROR && WSAGetLastError() == WSAEWOULDBLOCK) {
+    m_bBusy = true;
+    sendLocker.Unlock();    // MUST unlock before returning to throttler
+    return ret;
+}
+```
+
+If `sendLocker` were held when returning `WSAEWOULDBLOCK` to the throttler, and the throttler then tried to acquire `queueLocker` while the main thread was trying to add to the queue (acquiring `queueLocker` then `sendLocker`), deadlock would occur. The explicit unlock before return is the correct and necessary pattern here.
+
+### 11.4 Main Thread Stall Risk
+
+Because all socket callbacks run on the main UI thread's message pump, any slow handler stalls every socket in the application. Handlers that do file I/O, decompress large packets, or acquire locks that might be held by the throttler thread are potential stall points. The architecture has no mechanism to shed work to worker threads within a single packet callback.
+
+---
+
+## 12. Network Error Handling
+
+### 12.1 Error Constants (`EMSocket.h` / `EncryptedStreamSocket.h`)
+
+```cpp
+ERR_WRONGHEADER         = 0x01  // unknown protocol byte
+ERR_TOOBIG              = 0x02  // packet > 2 MB
+ERR_ENCRYPTION          = 0x03  // handshake failed
+ERR_ENCRYPTION_NOTALLOWED = 0x04 // unencrypted connection when encryption required
+```
+
+### 12.2 Disconnect on Error
+
+`OnError(code)` → `CClientReqSocket::Disconnect(reason)` → `Safe_Delete()` (deferred 10s). All error paths should reach `OnError`; the 14 `ASSERT(0)` calls in `EncryptedStreamSocket.cpp` that currently skip `OnError` in Release builds are a gap (see Section 4.3).
+
+### 12.3 Protocol Header Validation
+
+Every packet's protocol byte is validated before the packet object is allocated (`EMSocket.cpp:340–348`). Unknown protocol bytes call `OnError(ERR_WRONGHEADER)` and disconnect immediately. This is correct and prevents allocation of arbitrarily large `Packet` objects from malformed input.
+
+---
+
+## 13. Performance Characteristics
+
+| Metric | Value | Notes |
+|--------|-------|-------|
+| Max sockets per thread | 47,869 | `AsyncSocketEx.h:82–86` |
+| Socket lookup time | O(1) | Direct array index by message ID |
+| Packet reassembly buffer | 2 MB static | `GlobalReadBuffer` in `EMSocket.cpp` |
+| TCP encryption handshake overhead | ~33 bytes (c2c) / ~229 bytes (c2s) | One-time per connection |
+| TCP encryption CPU cost | RC4 — ~300–500 MB/s on modern CPU | Negligible for P2P workloads |
+| UDP encryption overhead | Per-packet RC4, no handshake | Stateless, keyed from client hash |
+| UPnP discovery time | 1–10 seconds | Async; both impls have timeouts |
+| Half-open timeout | 4× `GetTimeOut()` (~6 min) | Accommodates Win XP SP2 |
+| Deferred socket delete delay | 10 seconds | Safe_Delete() deferral |
+
+---
+
+## 14. Issues and Recommendations
+
+### Priority 1 — Should Fix
+
+**14.1 Convert `ASSERT(0)` + "must be a bug" to real error paths in `EncryptedStreamSocket.cpp`**
+
+Lines: 150, 168, 181, 195, 300, 325, 432, 444, 471, 642, 655, 688, 700, 742.
+In Release builds these compile out. The socket continues in an undefined state. Each should call `OnError(ERR_ENCRYPTION)` and disconnect.
+
+**14.2 Fix `std::unary_function` in `UPnPImplWinServ.h:116`**
+
+`std::unary_function` was deprecated in C++11 and **removed in C++17**. Replace with either a lambda or a plain functor struct:
+
+```cpp
+// Before:
+struct FindDevice : private std::unary_function<DevicePointer, bool> { … };
+// After (C++11+):
+struct FindDevice {
+    using argument_type = DevicePointer;
+    using result_type = bool;
+    …
+};
+// Or just use auto with a lambda at the call site.
+```
+
+**14.3 Address re-entrant message pump in `CUPnPImplWinServ::IsAsyncFindRunning()`**
+
+The `PeekMessage` / `DispatchMessage` loop inside `IsAsyncFindRunning()` at line 104–108 can cause re-entrant calls into UPnP code or other message handlers while the function is in use. Move discovery to a dedicated thread (as `CUPnPImplMiniLib` already does) or process only a specific message range rather than all messages.
+
+**14.4 UDP — No Replay Protection**
+
+UDP packets carry no sequence number or per-packet nonce in the obfuscation layer. An attacker can replay captured UDP packets. For Kademlia this could be used to inject stale routing information. Add a timestamp or nonce field to the UDP obfuscation header and reject packets outside a ±30 second window.
+
+### Priority 2 — Should Address
+
+**14.5 `TerminateThread()` in `UPnPImplMiniLib::StopAsyncFind()`**
+
+The 7-second timeout followed by `TerminateThread()` is dangerous. Consider: (a) increasing the timeout, (b) setting `m_bAbortDiscovery` earlier so miniupnpc has more time to notice, (c) structuring the thread's inner loop to check the abort flag more frequently between SSDP/HTTP calls.
+
+**14.6 UDP not proxied — real IP leakage**
+
+Document this limitation clearly in UI preferences. If a user configures a SOCKS5 proxy expecting full anonymity, they will have their real IP exposed on UDP (Kademlia + peer UDP). Either implement SOCKS5 UDP associate or display a warning when proxy is enabled.
+
+**14.7 Download rate-limiting granularity**
+
+The credit-based `downloadLimit` scheme produces bursty downloads at low limits. Replace with a token-bucket refill on a 100ms timer for smoother behaviour.
+
+**14.8 Throttler loop CPU usage**
+
+The upload throttler runs a tight loop with no yield when no sockets are active. Ensure `WaitForSingleObject(m_eventSocketAvailable, timeout)` is used to sleep when the queue is empty, and that the event is signalled whenever sockets are added to the queue.
+
+### Priority 3 — Modernisation
+
+**14.9 IOCP migration**
+
+`WSAAsyncSelect` is functional but `WSAIoctl` + completion ports (IOCP) would deliver better scalability on Windows Vista+ for very high connection counts. This is a significant rewrite but would allow moving socket I/O off the main UI thread entirely.
+
+**14.10 Separate socket I/O from UI thread**
+
+All socket callbacks currently run on the main thread. A dedicated network I/O thread feeding a lock-free command queue to the UI thread would prevent socket event handling from stalling UI rendering.
+
+**14.11 Replace `sprintf` with `sprintf_s` in `UPnPImplMiniLib.cpp:103`**
+
+Minor consistency fix — the rest of the codebase uses `_s` variants.
+
+---
+
+## 15. Component Reference Table
+
+| Component | Class | Files | Technology |
+|-----------|-------|-------|------------|
+| Base async socket | `CAsyncSocketEx` | `AsyncSocketEx.h/.cpp` | WSAAsyncSelect + helper window |
+| Socket middleware | `CAsyncSocketExLayer` | `AsyncSocketExLayer.h/.cpp` | Doubly-linked layer chain |
+| Proxy middleware | `CAsyncProxySocketLayer` | `AsyncProxySocketLayer.h/.cpp` | SOCKS4/5 + HTTP CONNECT |
+| TCP obfuscation | `CEncryptedStreamSocket` | `EncryptedStreamSocket.h/.cpp` | RC4 + MD5 / DH-768 handshake |
+| P2P TCP | `CEMSocket` | `EMSocket.h/.cpp` | Packet framing, dual queues |
+| Peer TCP | `CClientReqSocket` | `ListenSocket.h/.cpp` | Timeout management, deferred delete |
+| Server TCP | `CServerSocket` | `ServerSocket.h/.cpp` | Login protocol |
+| Server state machine | `CServerConnect` | `ServerConnect.h/.cpp` | 9-state machine, retry timer |
+| Accept loop | `CListenSocket` | `ListenSocket.h/.cpp` | Half-open tracking |
+| Peer UDP | `CClientUDPSocket` | `ClientUDPSocket.h/.cpp` | Encrypted datagrams, aged queue |
+| Server UDP | `CUDPSocket` | `UDPSocket.h/.cpp` | Encrypted datagrams |
+| UDP obfuscation | `CEncryptedDatagramSocket` | `EncryptedDatagramSocket.h/.cpp` | Stateless RC4, key from hash |
+| Throttle interface | `ThrottledSocket` | `ThrottledSocket.h` | Abstract send interface |
+| Upload throttler | `UploadBandwidthThrottler` | `UploadBandwidthThrottler.h/.cpp` | Dedicated thread, 3-tier queues |
+| UPnP wrapper | `CUPnPImplWrapper` | `UPnPImplWrapper.h/.cpp` | Strategy + fallback |
+| UPnP (Windows) | `CUPnPImplWinServ` | `UPnPImplWinServ.h/.cpp` | COM / `IUPnPDeviceFinder` |
+| UPnP (miniupnpc) | `CUPnPImplMiniLib` | `UPnPImplMiniLib.h/.cpp` | miniupnpc library, worker thread |
+| UPnP (none) | `CUPnPImplNone` | `UPnPImpl.h` | No-op dummy |
+| Kademlia UDP | `CKademliaUDPListener` | `kademlia/net/` | DHT overlay on peer UDP port |
+
+---
+
+*End of report.*
