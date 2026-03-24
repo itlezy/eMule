@@ -57,7 +57,7 @@ int		CPreferences::m_iDbgHeap;
 uint32	CPreferences::m_minupload;
 uint32	CPreferences::m_maxUpClientsAllowed;
 uint64	CPreferences::m_bbSessionMaxTrans;
-uint32	CPreferences::m_bbSessionMaxTime;
+uint64	CPreferences::m_bbSessionMaxTime;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
 LPCSTR	CPreferences::m_pszBindAddrA;
@@ -975,7 +975,7 @@ void CPreferences::SaveCompletedDownloadsStat()
 } // SaveCompletedDownloadsStat()
 
 void CPreferences::Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF,
-	BOOL bUpDown, uint32 bytes, bool sentToFriend)
+	BOOL bUpDown, uint64 bytes, bool sentToFriend)
 {
 	//	This function adds the transferred bytes to the appropriate variables,
 	//	as well as to the totals for all clients. - Khaos
@@ -1516,7 +1516,7 @@ void CPreferences::SavePreferences()
 
 	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
 	ini.WriteUInt64(_T("BBSessionMaxTrans"), m_bbSessionMaxTrans);
-	ini.WriteInt(_T("BBSessionMaxTime"), (int)m_bbSessionMaxTime);
+	ini.WriteUInt64(_T("BBSessionMaxTime"), m_bbSessionMaxTime);
 	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
@@ -1933,9 +1933,10 @@ void CPreferences::LoadPreferences()
 
 	// Hidden broadband knob: keep the normal upload-slot target low on modern uplinks.
 	m_maxUpClientsAllowed = max((uint32)MIN_UP_CLIENTS_ALLOWED, min((uint32)MAX_UP_CLIENTS_ALLOWED, (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), 12)));
-	// Broadband session limits override the stock one-chunk / one-hour rotation defaults when set.
-	m_bbSessionMaxTrans = max((ULONGLONG)SESSIONMAXTRANS, ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS));
-	m_bbSessionMaxTime = max((uint32)MIN2MS(1), (uint32)ini.GetInt(_T("BBSessionMaxTime"), SESSIONMAXTIME));
+	// Broadband session limits override the stock one-chunk / one-hour rotation defaults when configured.
+	// A stored value of 0 explicitly disables that rotation path.
+	m_bbSessionMaxTrans = ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS);
+	m_bbSessionMaxTime = ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME);
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	if (m_minupload < 1)
 		m_minupload = 1;

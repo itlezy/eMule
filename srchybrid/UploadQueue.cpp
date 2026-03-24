@@ -64,6 +64,19 @@ namespace
 constexpr DWORD UPLOAD_OVERFLOW_GRACE_TIME = SEC2MS(2);
 constexpr DWORD UPLOAD_SLOW_EVICT_TIME = SEC2MS(15);
 constexpr DWORD UPLOAD_ZERO_RATE_EVICT_TIME = SEC2MS(3);
+
+uint64 ResolveBBSessionMaxTransferLimit(uint64 configuredLimit, const CKnownFile *pUploadingFile)
+{
+	if (configuredLimit == 0)
+		return 0;
+	if (configuredLimit <= 100) {
+		if (pUploadingFile == NULL)
+			return 0;
+		// Percent mode is based on the full file size and rounded up so non-zero values stay meaningful.
+		return max(1ui64, ((uint64)pUploadingFile->GetFileSize() * configuredLimit + 99ui64) / 100ui64);
+	}
+	return configuredLimit;
+}
 }
 
 struct CUploadQueue::BroadbandControlState
@@ -840,11 +853,12 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 	if (waitinglist.IsEmpty() || client->GetFriendSlot())
 		return false;
 
+	const CKnownFile *pUploadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
+
 	if (client->HasCollectionUploadSlot()) {
-		const CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
-		if (pDownloadingFile == NULL)
+		if (pUploadingFile == NULL)
 			return true;
-		if (CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) && pDownloadingFile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE)
+		if (CCollection::HasCollectionExtention(pUploadingFile->GetFileName()) && pUploadingFile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE)
 			return false;
 		if (thePrefs.GetLogUlDlEvents())
 			AddDebugLogLine(DLP_HIGH, false, _T("%s: Upload session ended - client with Collection Slot tried to request blocks from another file"), client->GetUserName());
@@ -868,14 +882,20 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 	}
 
 	// Broadband session limits override the stock SESSIONMAX* rotation defaults on this branch.
-	if (client->GetQueueSessionPayloadUp() > thePrefs.GetBBSessionMaxTrans() && !ForceNewClient()) {
-		if (thePrefs.GetLogUlDlEvents())
-			AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to BBSessionMaxTrans (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(thePrefs.GetBBSessionMaxTrans()));
+	const uint64 configuredSessionMaxTrans = thePrefs.GetBBSessionMaxTrans();
+	const uint64 resolvedSessionMaxTrans = ResolveBBSessionMaxTransferLimit(configuredSessionMaxTrans, pUploadingFile);
+	if (resolvedSessionMaxTrans > 0 && client->GetQueueSessionPayloadUp() > resolvedSessionMaxTrans && !ForceNewClient()) {
+		if (thePrefs.GetLogUlDlEvents()) {
+			if (configuredSessionMaxTrans <= 100)
+				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to BBSessionMaxTrans=%I64u%% (%s)."), client->GetUserName(), configuredSessionMaxTrans, (LPCTSTR)CastItoXBytes(resolvedSessionMaxTrans));
+			else
+				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to BBSessionMaxTrans (%s)."), client->GetUserName(), (LPCTSTR)CastItoXBytes(resolvedSessionMaxTrans));
+		}
 		return true;
 	}
-	if (client->GetUpStartTimeDelay() > thePrefs.GetBBSessionMaxTime() && !ForceNewClient()) {
+	if (thePrefs.GetBBSessionMaxTime() > 0 && (uint64)client->GetUpStartTimeDelay() > thePrefs.GetBBSessionMaxTime() && !ForceNewClient()) {
 		if (thePrefs.GetLogUlDlEvents())
-			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to BBSessionMaxTime %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(thePrefs.GetBBSessionMaxTime() / SEC2MS(1)));
+			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to BBSessionMaxTime %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM((time_t)(thePrefs.GetBBSessionMaxTime() / SEC2MS(1))));
 		return true;
 	}
 

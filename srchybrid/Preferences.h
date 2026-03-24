@@ -154,7 +154,7 @@ public:
 	// ZZ:UploadSpeedSense <--
 	static uint32	m_maxUpClientsAllowed;
 	static uint64	m_bbSessionMaxTrans;
-	static uint32	m_bbSessionMaxTime;
+	static uint64	m_bbSessionMaxTime;
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
 	static CStringA m_strBindAddrA;
@@ -709,7 +709,7 @@ public:
 	// ZZ:UploadSpeedSense <--
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
 	static uint64	GetBBSessionMaxTrans()				{ return m_bbSessionMaxTrans; }
-	static uint32	GetBBSessionMaxTime()				{ return m_bbSessionMaxTime; }
+	static uint64	GetBBSessionMaxTime()				{ return m_bbSessionMaxTime; }
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }
@@ -748,7 +748,7 @@ public:
 	static void		Add2ConnDownloadTime(int in)		{ cumConnDownloadTime += in; }
 	static void		Add2ConnUploadTime(int in)			{ cumConnUploadTime += in; }
 	static void		Add2DownSessionCompletedFiles()		{ ++sesDownCompletedFiles; }
-	static void		Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF, BOOL bUpDown, uint32 bytes, bool sentToFriend = false);
+	static void		Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF, BOOL bUpDown, uint64 bytes, bool sentToFriend = false);
 	static void		Add2DownSuccessfulSessions()		{ ++sesDownSuccessfulSessions;
 														  ++cumDownSuccessfulSessions; }
 	static void		Add2DownFailedSessions()			{ ++sesDownFailedSessions;

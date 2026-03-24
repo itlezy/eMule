@@ -115,12 +115,17 @@ ban on any temporary overflow.
 - stored in `preferences.ini`
 - defaults to `SESSIONMAXTRANS`
 - overrides the stock one-chunk session cap on this branch
+- semantics:
+  - `0` disables transfer-based session rotation
+  - `1..100` means percent of the currently uploaded file size
+  - `>100` means an absolute byte limit
 
-`BBSessionMaxTime=<int>`
+`BBSessionMaxTime=<uint64>`
 
 - stored in `preferences.ini`
 - defaults to `SESSIONMAXTIME`
 - overrides the stock one-hour session cap on this branch
+- `0` disables time-based session rotation
 
 ### Effective upload budget
 
@@ -227,6 +232,7 @@ rotation checks with the hidden broadband overrides:
 
 - `BBSessionMaxTrans` replaces the stock one-chunk transfer cap
 - `BBSessionMaxTime` replaces the stock one-hour time cap
+- both are stored as `uint64`
 
 This keeps healthy upload sessions bounded without relying on the old score-based
 rotation logic, which caused extra churn on broadband-oriented low-slot setups.
