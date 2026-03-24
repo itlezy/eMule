@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "QueueListCtrl.h"
 #include "UpDownClient.h"
+#include "ClientCredits.h"
 #include "MenuCmds.h"
 #include "ClientDetailDialog.h"
 #include "Exceptions.h"
@@ -85,6 +86,13 @@ void CQueueListCtrl::Init()
 	InsertColumn(10,_T(""),	LVCFMT_RIGHT, 90);							//IDS_ALL_TIME_RATIO
 	InsertColumn(11,_T(""),	LVCFMT_RIGHT, 90);							//IDS_SESSION_RATIO
 	InsertColumn(12,_T(""),	LVCFMT_LEFT, 80);							//IDS_COOLDOWN
+	InsertColumn(13,_T(""),	LVCFMT_LEFT, 100);							//IDS_CD_CSOFT
+	InsertColumn(14,_T(""),	LVCFMT_RIGHT, 100);							//IDS_CLIENT_UPLOADED
+	InsertColumn(15,_T(""),	LVCFMT_LEFT, 100);							//IDS_COUNTRY
+	InsertColumn(16,_T(""),	LVCFMT_LEFT, 120);							//IDS_IP
+	InsertColumn(17,_T(""),	LVCFMT_LEFT, 70);							//IDS_IDLOW
+	InsertColumn(18,_T(""),	LVCFMT_LEFT, 120);							//IDS_CLIENT_HASH
+	InsertColumn(19,_T(""),	LVCFMT_RIGHT, 90);							//IDS_FILE_SIZE
 
 	SetAllIcons();
 	Localize();
@@ -95,11 +103,12 @@ void CQueueListCtrl::Init()
 
 void CQueueListCtrl::Localize()
 {
-	static const UINT uids[13] =
+	static const UINT uids[20] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_QL_RATING, IDS_SCORE
 		, IDS_ASKED, IDS_LASTSEEN, IDS_ENTERQUEUE, IDS_BANNED, IDS_UPSTATUS
-		, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN
+		, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_CD_CSOFT
+		, IDS_CLIENT_UPLOADED, IDS_COUNTRY, IDS_IP, IDS_IDLOW, IDS_CLIENT_HASH, IDS_FILE_SIZE
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -277,6 +286,34 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 			if (dwRemaining != 0)
 				sText = SecToTimeLength((dwRemaining + SEC2MS(1) - 1) / SEC2MS(1));
 		}
+		break;
+	case 13:
+		sText = client->GetClientSoftVer();
+		break;
+	case 14:
+		if (client->Credits())
+			sText = CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false);
+		else
+			sText = _T("?");
+		break;
+	case 15:
+		sText = client->GetCountryName();
+		break;
+	case 16:
+		sText = ipstr(client->GetIP());
+		break;
+	case 17:
+		sText = GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		break;
+	case 18:
+		sText = client->HasValidHash() ? md4str(client->GetUserHash()) : _T("?");
+		break;
+	case 19:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file != NULL)
+				sText = CastItoXBytes(file->GetFileSize());
+		}
 	}
 	return sText;
 }
@@ -320,6 +357,8 @@ void CQueueListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 10: // All-Time Ratio
 		case 11: // Session Ratio
 		case 12: // Cooldown
+		case 14: // Client Uploaded
+		case 19: // File Size
 			sortAscending = false;
 			break;
 		default:
@@ -418,6 +457,40 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		break;
 	case 12:
 		iResult = CompareUnsigned(item1->GetSlowUploadCooldownRemaining(), item2->GetSlowUploadCooldownRemaining());
+		break;
+	case 13:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 14:
+		if (item1->Credits() != NULL && item2->Credits() != NULL)
+			iResult = CompareUnsigned(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		else
+			iResult = (item1->Credits() == NULL) ? 1 : -1;
+		break;
+	case 15:
+		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
+		break;
+	case 16:
+		iResult = CompareUnsigned(htonl(item1->GetIP()), htonl(item2->GetIP()));
+		break;
+	case 17:
+		iResult = (int)item1->HasLowID() - (int)item2->HasLowID();
+		break;
+	case 18:
+		if (item1->HasValidHash() && item2->HasValidHash())
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		else
+			iResult = item1->HasValidHash() ? -1 : (item2->HasValidHash() ? 1 : 0);
+		break;
+	case 19:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareUnsigned(file1->GetFileSize(), file2->GetFileSize());
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
 	}
 
 	if (HIWORD(lParamSort))

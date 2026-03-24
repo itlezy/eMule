@@ -1556,6 +1556,10 @@
 #define IDS_COOLDOWN                    1612
 #define IDS_COUNTRY                     1613
 #define IDS_PERCENTAGE                  1614
+#define IDS_CLIENT_UPLOADED             1615
+#define IDS_CLIENT_HASH                 1616
+#define IDS_FILE_SIZE                   1617
+#define IDS_BLOCKS                      1618
 #define IDC_ANIMATE1                    2000
 #define IDC_STATUS                      2001
 #define IDC_FILESTATUS                  2002
@@ -2379,6 +2383,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3037
-#define _APS_NEXT_SYMED_VALUE           1615
+#define _APS_NEXT_SYMED_VALUE           1619
 #endif
 #endif

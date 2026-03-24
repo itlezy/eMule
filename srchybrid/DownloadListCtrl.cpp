@@ -132,6 +132,7 @@ void CDownloadListCtrl::Init()
 	InsertColumn(15,	_T(""),	LVCFMT_LEFT,	100);							//IDS_COUNTRY
 	InsertColumn(16,	_T(""),	LVCFMT_LEFT,	120);							//IDS_IP
 	InsertColumn(17,	_T(""),	LVCFMT_LEFT,	70);							//IDS_IDLOW/IDS_IDHIGH
+	InsertColumn(18,	_T(""),	LVCFMT_RIGHT,	70);							//IDS_BLOCKS
 
 	SetAllIcons();
 	Localize();
@@ -207,12 +208,12 @@ void CDownloadListCtrl::SetAllIcons()
 
 void CDownloadListCtrl::Localize()
 {
-	static const UINT uids[18] =
+	static const UINT uids[19] =
 	{
 		IDS_DL_FILENAME, IDS_DL_SIZE, IDS_DL_TRANSF, IDS_DL_TRANSFCOMPL, IDS_DL_SPEED
 		, IDS_DL_PROGRESS, IDS_DL_SOURCES, IDS_PRIORITY, IDS_STATUS, IDS_DL_REMAINS
 		, 0/*IDS_LASTSEENCOMPL*/, 0/*IDS_FD_LASTCHANGE*/, IDS_CAT, IDS_ADDEDON
-		, IDS_PERCENTAGE, IDS_COUNTRY, IDS_IP, IDS_IDLOW
+		, IDS_PERCENTAGE, IDS_COUNTRY, IDS_IP, IDS_IDLOW, IDS_BLOCKS
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -550,6 +551,9 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 		break;
 	case 17: // ID
 		sText = GetResString(pClient->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		break;
+	case 18: // blocks / available parts
+		sText.Format(_T("%u"), pClient->GetAvailablePartCount());
 		break;
 	//case 9: //remaining time & size
 	//case 10: //last seen complete
@@ -1755,6 +1759,8 @@ int CDownloadListCtrl::Compare(const CPartFile *file1, const CPartFile *file2, L
 				  , (const_cast<CPartFile*>(file2)->GetCategory() != 0) ? thePrefs.GetCategory(const_cast<CPartFile*>(file2)->GetCategory())->strTitle : GetResString(IDS_ALL));
 	case 13: // added on
 		return sgn(file1->GetCrFileDate() - file2->GetCrFileDate());
+	case 18: // source-side blocks only
+		return 0;
 	}
 	return 0;
 }
@@ -1813,6 +1819,8 @@ int CDownloadListCtrl::Compare(const CUpDownClient *client1, const CUpDownClient
 		return CompareUnsigned(htonl(client1->GetIP()), htonl(client2->GetIP()));
 	case 17: // ID
 		return (int)client1->HasLowID() - (int)client2->HasLowID();
+	case 18: // blocks / available parts
+		return CompareUnsigned(client1->GetAvailablePartCount(), client2->GetAvailablePartCount());
 	}
 	return 0;
 }
