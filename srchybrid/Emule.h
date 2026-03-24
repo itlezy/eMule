@@ -50,6 +50,7 @@ class CFirewallOpener;
 class CUPnPImplWrapper;
 class CUploadDiskIOThread;
 class CPartFileWriteThread;
+class CIP2Country;
 
 struct SLogItem;
 
@@ -73,6 +74,7 @@ public:
 	// ZZ:UploadSpeedSense -->
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	LastCommonRouteFinder *lastCommonRouteFinder;
+	CIP2Country			*ip2country;
 	// ZZ:UploadSpeedSense <--
 	CemuleDlg			*emuledlg;
 	CClientList			*clientlist;

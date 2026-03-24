@@ -41,6 +41,7 @@
 #include "UpDownClient.h"
 #include "DownloadQueue.h"
 #include "IPFilter.h"
+#include "IP2Country.h"
 #include "Statistics.h"
 #include "WebServer.h"
 #include "UploadQueue.h"
@@ -275,6 +276,7 @@ END_MESSAGE_MAP()
 
 CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	: CWinApp(lpszAppName)
+	, ip2country()
 	, emuledlg()
 	, m_ullComCtrlVer(MAKEDLLVERULL(4, 0, 0, 0))
 	, m_iDfltImageListColorFlags(ILC_COLOR)
@@ -594,6 +596,7 @@ BOOL CemuleApp::InitInstance()
 	listensocket = new CListenSocket();
 	clientudp = new CClientUDPSocket();
 	clientcredits = new CClientCreditsList();
+	ip2country = new CIP2Country();
 	downloadqueue = new CDownloadQueue();	// bugfix - do this before creating the upload queue
 	uploadqueue = new CUploadQueue();
 	ipfilter = new CIPFilter();
@@ -1268,7 +1271,7 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 				}
 			} else {
 				// WINBUG???: 'ExtractIcon' does not work well on ICO-files when using the color
-				// scheme 'Windows-Standard (extragroß)' -> always try to use 'LoadImage'!
+				// scheme 'Windows-Standard (extragroÃŸ)' -> always try to use 'LoadImage'!
 				//
 				// If the ICO file contains a 16x16 icon, 'LoadImage' will though return a 32x32 icon,
 				// if LR_DEFAULTSIZE is specified! -> always specify the requested size!

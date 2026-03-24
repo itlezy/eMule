@@ -31,6 +31,7 @@
 #include "Server.h"
 #include "ClientCredits.h"
 #include "IPFilter.h"
+#include "IP2Country.h"
 #include "Friend.h"
 #include "Statistics.h"
 #include "ServerConnect.h"
@@ -116,6 +117,8 @@ void CUpDownClient::Init()
 		SetIP(sockAddr.sin_addr.s_addr);
 	} else
 		SetIP(0);
+	// Cache the country once the real peer IP is known so list controls do not need to re-parse the CSV on refresh.
+	ResetIP2Country();
 	m_dwServerIP = 0;
 	m_nUserIDHybrid = 0;
 	m_nUserPort = 0;
@@ -596,6 +599,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 	int nSockAddrLen = sizeof sockAddr;
 	socket->GetPeerName((LPSOCKADDR)&sockAddr, &nSockAddrLen);
 	SetIP(sockAddr.sin_addr.s_addr);
+	ResetIP2Country();
 
 	if (thePrefs.GetAddServersFromClients() && m_dwServerIP && m_nServerPort) {
 		CServer *addsrv = new CServer(m_nServerPort, ipstr(m_dwServerIP));
@@ -2955,4 +2959,20 @@ void CUpDownClient::SendSharedDirectories()
 	replypacket->opcode = OP_ASKSHAREDDIRSANS;
 	theStats.AddUpDataOverheadOther(replypacket->size);
 	VERIFY(SendPacket(replypacket, true));
+}
+
+CString CUpDownClient::GetCountryName() const
+{
+	return theApp.ip2country != NULL ? theApp.ip2country->GetCountryNameFromRef(m_structUserCountry) : CString(_T("N/A"));
+}
+
+void CUpDownClient::ResetIP2Country(uint32 dwIP)
+{
+	if (theApp.ip2country == NULL) {
+		m_structUserCountry = NULL;
+		return;
+	}
+
+	const uint32 dwResolvedIP = dwIP != 0 ? dwIP : m_dwUserIP;
+	m_structUserCountry = theApp.ip2country->GetCountryFromIP(dwResolvedIP);
 }

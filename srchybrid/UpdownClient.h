@@ -33,6 +33,7 @@ class CSafeMemFile;
 class CEMSocket;
 class CAICHHash;
 enum EUTF8str : uint8;
+struct IPRange_Struct2;
 
 struct Pending_Block_Struct
 {
@@ -95,6 +96,8 @@ public:
 	uint32			GetIP() const									{ return m_dwUserIP; }
 	//Only use this when you know the real IP or when your clearing it.
 	void			SetIP(uint32 val)								{ m_dwUserIP = m_nConnectIP = val; }
+	CString			GetCountryName() const;
+	void			ResetIP2Country(uint32 dwIP = 0);
 
 	inline bool		HasLowID() const								{ return ::IsLowID(m_nUserIDHybrid); }
 	uint32			GetConnectIP() const							{ return m_nConnectIP; }
@@ -466,6 +469,7 @@ protected:
 
 	uint32	m_nConnectIP;	// holds the supposed IP or (after we had a connection) the real IP
 	uint32	m_dwUserIP;		// holds 0 (real IP not yet available) or the real IP (after we had a connection)
+	IPRange_Struct2* m_structUserCountry;
 	uint32	m_dwServerIP;
 	uint32	m_nUserIDHybrid;
 	uint16	m_nUserPort;

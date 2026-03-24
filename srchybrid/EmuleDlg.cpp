@@ -43,6 +43,7 @@
 #include "ChatWnd.h"
 #include "IrcWnd.h"
 #include "StatisticsDlg.h"
+#include "IP2Country.h"
 #include "CreditsDlg.h"
 #include "PreferencesDlg.h"
 #include "ServerConnect.h"
@@ -1743,6 +1744,7 @@ void CemuleDlg::OnClose()
 	delete theApp.downloadqueue;			theApp.downloadqueue = NULL;	// N * (CPartFile::FlushBuffer + CPartFile::SavePartFile)
 	delete theApp.uploadqueue;				theApp.uploadqueue = NULL;
 	delete theApp.clientlist;				theApp.clientlist = NULL;
+	delete theApp.ip2country;				theApp.ip2country = NULL;
 	delete theApp.friendlist;				theApp.friendlist = NULL;		// CFriendList::SaveList
 	delete theApp.scheduler;				theApp.scheduler = NULL;
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
