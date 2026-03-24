@@ -1,50 +1,68 @@
 # eMule - broadband branch
 
-The initial purpose of this project was to provide an eMule repository that is
-ready to build while keeping the amount of branch-specific logic under control.
-This development branch specifically focuses on providing a build that is better
-suited to address nowadays file sizes and broadband availability.
+The initial purpose of this project was to provide an eMule repository
+(including dependencies) that is ready to build and update the dependent
+libraries when possible.
 
+This development branch specifically focuses on providing a build that is
+better suited to address nowadays file sizes and broadband availability.
 Default hard-coded parameters of eMule were better suited for
 small-files/slow-connections, leading to very low per-client transfer rates by
-nowadays standards. The focus here is to maximize throughput for broadband
-users, to optimize seeding, while still preserving the original quality and
-stability of the client as much as possible.
+nowadays standards.
 
-The main feature added by this branch is the capability of limiting the upload
-slots to a certain number while ensuring to make full usage of the upload
-bandwidth. This branch is intentionally narrower than the old `v0.60d-dev`
-branch: it keeps the core broadband upload behavior, but drops the wider set of
-queue/UI experiments and the global opcode retuning.
+The focus here is to maximise throughput for broadband users, to **optimize
+seeding**. The main feature that was added was the capability of limiting the
+upload slots to a certain number, while ensuring to make full usage of the
+upload bandwidth.
 
-Please read the guide below to understand the configuration parameters and the
-capabilities. For the controller internals and rationale, see
+This is a seeder-oriented branch, designed to seed back to the ED2K network, to
+allow a personalized upload strategy based on the nature of your shared library
+and your IT setup.
+
+The focus is as well to introduce the least amount of changes to preserve the
+original quality and stability of the client. Please read the guide below to
+understand the configuration parameters and the capabilities.
+
+This branch keeps the broadband upload controller and session controls, but does
+not carry over the wider UI/queue experiments from `v0.60d-dev`. For the code
+level rationale and the current `v0.72a-broadband-dev` design notes, please see
 [`BROADBAND.md`](BROADBAND.md).
 
 ## Installation
 
 ### eMule
 
-Recommended to start from a recent eMule Community build, then replace the
-executable with a build produced from this branch.
+Reccomended to install the latest eMule Community version, but any `0.50+`
+should be fine as well.
 
-Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is still an
-experimental broadband-oriented build even if the amount of code changes is kept
-deliberately low.
+Get the latest eMule Community edition from here:
+https://github.com/irwir/eMule/releases
+
+### Broadband Edition
+
+To install eMule broadband, build the executable from this branch and replace
+your current eMule executable.
+
+Be sure to make a backup of `%LOCALAPPDATA%\eMule` first, as this is still a
+"beta" build which requires testing. Even if the amount of changes is kept
+deliberately low, this branch changes the upload controller behavior and some
+legacy hard-coded defaults.
 
 ### Optimal Settings
 
-Really the one recommendation is to set the values of bandwidth capacity and the
-upload limit properly, plus a limit of max connections if you wish so. Other
+Really the one recommendation would be to set the values of bandwidth capacity
+and the **upload limit**, plus a limit of max connections if you wish so. Other
 settings, as you please.
 
-Be fair about it, the purpose is to maximize seeding, so be generous with your
-bandwidth and set it as much as possible based on your connection and I/O
-capabilities.
+Be fair about it, the purpose is to **maximise seeding**, so be generous with
+your bandwidth and set it as much as possible based on your connection and I/O
+preferences.
 
-## Upload Slots Settings
+![2022-06-14 14_05_11-Window](https://user-images.githubusercontent.com/24484050/173573013-6a76d50f-f168-4a81-83c7-888ee3de6b6a.png)
 
-**Max upload slots** are configurable from the ini file.
+### Upload Slots Settings
+
+**Max upload slots** are configurable from ini file.
 
 Just launch the eMule exe once, close it, and then edit the ini file:
 
@@ -54,46 +72,47 @@ The key to edit is the following:
 
 `BBMaxUpClientsAllowed=12`
 
-You can adjust this limit according to your bandwidth and I/O preferences.
-Suggested ranges are 6, 8, 12, 16, 24, and so on.
+You can adjust this limit according to your bandwitdh and I/O preferences,
+suggested ranges are `6`, `8`, `12`, `16`, `24`, and so on.
 
-This setting acts as the normal broadband slot target. The controller may
-briefly exceed it by a small amount if the upload pipe is still underfilled, but
-it should not keep climbing toward the legacy hard ceiling.
+This setting acts as the normal amount of upload slots the controller will aim
+for. In edge cases the controller may briefly exceed it by a small amount if
+the upload pipe is still underfilled, but the goal is to avoid the old runaway
+slot growth.
 
-## Broadband Settings
+If you are seeding from multiple disk drives or SSD drives, then you can bump
+up the upload slots as you deem fit.
 
-This branch keeps only the hidden settings that are directly relevant to the
-broadband upload strategy.
+### Broadband Settings
+
+Please find below the `preferences.ini` settings that this branch keeps.
 
 |Setting|Default|Description|
 |---|---|---|
-|`BBMaxUpClientsAllowed`|12|Normal target for concurrent uploads. This is the steady-state slot target, not a global hard cap.|
-|`BBSessionMaxTrans`|`SESSIONMAXTRANS`|Controls how much data a client may download in a single upload session. `0` disables transfer-based rotation. Values `1..100` indicate percentage of the size of the file being uploaded. Values `>100` are interpreted as absolute bytes.|
-|`BBSessionMaxTime`|`SESSIONMAXTIME`|Controls how much time in milliseconds a client may keep a single upload session. `0` disables time-based rotation. Stored as 64-bit to support very long-running sessions.|
+|`BBMaxUpClientsAllowed`|12|Upper target of concurrent uploads in steady state.|
+|`BBSessionMaxTrans`|68719476736|Values above `100` indicate how much data in bytes is allowed for a client to download in a single session. Default is `64 GiB`, matching the current broadband opcode value.|
+|`BBSessionMaxTrans`|1-100|Values in the range of `1` to `100` indicate how much data in percentage of the size of the file being uploaded is allowed for a client to download in a single session. In example, set to `33` to allow roughly a third of the file size to be uploaded in a single session.|
+|`BBSessionMaxTrans`|0|Disables transfer-based session rotation.|
+|`BBSessionMaxTime`|10800000|Indicates how much time (in ms) is allowed for a client to download in a single session, default is `3 hrs`.|
+|`BBSessionMaxTime`|0|Disables time-based session rotation.|
 
-The best take to fully understand the logic is still to review the code itself,
-but the intended behavior is:
+Please note that the rest of the broadband behavior is now derived from the
+current upload budget and slot target rather than being controlled by the wider
+set of hidden settings that existed on `v0.60d-dev`.
 
-- keep a small number of productive upload slots
-- derive the per-slot target from the effective upload budget
-- open temporary overflow slots only when the link is still underfilled
-- replace persistently weak uploaders instead of compensating by opening many
-  more slots
+The useful behavioral pieces that were kept are:
 
-### Notes on `BBSessionMaxTrans`
+- limit the normal upload slots to a sensible amount
+- make full usage of the upload bandwidth
+- recycle persistently weak uploaders instead of opening many more slots
+- allow configurable rotation by transfer amount or time
 
-Examples:
+Your best take to fully understand the logic is to **review the code itself**:
 
-- `BBSessionMaxTrans=0`
-  Disable transfer-based rotation entirely.
-- `BBSessionMaxTrans=33`
-  Allow roughly one third of the current file to be uploaded in a single
-  session.
-- `BBSessionMaxTrans=268435456`
-  Allow `256 MiB` in a single session.
-- `BBSessionMaxTrans=68719476736`
-  Allow `64 GiB` in a single session.
+- old branch reference: https://github.com/itlezy/eMule/commits/v0.60d-dev
+- current branch design notes: [`BROADBAND.md`](BROADBAND.md)
+
+We have not much time to test, so be sensible.
 
 ### Example Settings
 
@@ -105,7 +124,7 @@ BBSessionMaxTrans=33
 BBSessionMaxTime=7200000
 ```
 
-#### More relaxed
+#### More Relaxed
 
 ```ini
 BBMaxUpClientsAllowed=12
@@ -115,86 +134,128 @@ BBSessionMaxTime=10800000
 
 #### Control over Max Trans and Max Time
 
-Bear in mind that you can adjust the max trans and the max time to decide the
-best upload strategy for you, by rotating clients every x MiB, every x percent
-of file, or every x seconds.
+Bear in mind that you can adjust the max trans and the max time, so to decide
+the best upload strategy for you, by rotating clients every x MiB, every x
+seconds, or every x percent of file.
 
 ```ini
 BBSessionMaxTrans=268435456
 BBSessionMaxTime=10800000
 ```
 
-Or, as mentioned above, you can set max trans to a percentage of the file being
-uploaded, like in example a third:
+Or as mentioned above, you can set the max trans to a percentage of the file
+being uploaded, like in example a third:
 
 ```ini
 BBSessionMaxTrans=33
 ```
 
-## Get a High ID
+## Get an High ID
 
-As you might know, eMule servers assign you a Low or a High ID based on whether
-you are able to receive inbound connections. Getting a High ID remains important
-to improve your overall download/upload experience.
+As you might know, eMule servers assign you a Low or an High ID based on the
+fact you are able to receive inbound connections. So how to get an High ID?
+There are a number of guides to help you with this, but let me summarize few
+steps.
 
-Ensure you have UPnP active in eMule's connection settings if your setup
-supports it. Some users might be behind network infrastructure that does not
-support it, so alternatives such as manual port forwarding or a VPN service
-with port forwarding may be needed.
+Getting an High ID is important for a number of reasons and to improve your
+overall download/upload experience.
 
-Then verify that you are actually able to receive inbound connections on the
-configured ports.
+Ensure you got the UPnP option active in eMule's connection settings, this
+should work in most scenarios.
+
+![2022-09-19 09_10_51-Window](https://user-images.githubusercontent.com/24484050/190966375-c8a2839c-67ec-44e7-9eb3-39a392de176e.png)
+
+Some users might be behind network infrastructure that does not support it, so
+a very good option would be to get a VPN service that supports port mapping.
+Some do support UPnP, do a google search _vpn with port forwarding_. This has
+the benefit to help you with privacy.
+
+![2022-09-19 09_02_57-Window](https://user-images.githubusercontent.com/24484050/190966620-94fd4903-9358-4891-8f5c-f75dc93bb5f3.png)
+
+Once you are setup you can check the port forwarding status with
+[UPnP Wizard](https://www.xldevelopment.net/upnpwiz.php), to ensure the ports
+are correctly setup.
+
+Then you can verify online if you are able to receive inbound connections on one
+of these websites:
+
+- https://www.yougetsignal.com/tools/open-ports/
+- https://portchecker.co/check
 
 ## Building
 
-This repository is the broadband feature branch. Build validation on this branch
-is done through the companion build workspace, with the application repo checked
-out as `eMule`.
+Please see the companion build workspace one level up from this repo for build
+instructions and scripts if you are interested in performing a build.
 
-If you are interested in performing a build, use the workspace scripts that
-provide the dependency layout and the Visual Studio build environment expected by
-this branch.
-
-## Summary of Changes
-
-### Broad philosophy
-
-The purpose of this branch is still to seed back to the ED2K network by
-uploading at sensible modern rates to a limited number of clients rather than
-uploading to tens of clients at very low speeds.
-
-### What this branch changes
-
-- adds a hidden `BBMaxUpClientsAllowed` slot target
-- bases slot behavior on upload capacity, upload limit, and UploadSpeedSense
-  allowance when enabled
-- reclaims slow or stuck upload slots instead of relying on runaway slot growth
-- adds broadband session rotation overrides through `BBSessionMaxTrans` and
-  `BBSessionMaxTime`
-- supports very large transfer caps and very long session caps with 64-bit
-  storage
-- supports `BBSessionMaxTrans=1..100` as percentage of the file being uploaded
-- adds a short cooldown so slow-evicted clients do not bounce straight back into
-  upload
-- scales buffering decisions from the current target-per-slot instead of fixed
-  old thresholds
-
-### What this branch does not carry over from `v0.60d-dev`
-
-- no global retuning of `SESSIONMAXTRANS`, `SESSIONMAXTIME`,
-  `MAX_UP_CLIENTS_ALLOWED`, or `UPLOAD_CLIENT_MAXDATARATE` in `Opcodes.h`
-- no extra hidden broadband tuning knobs such as queue boosting/deboosting
-- no queue-score suppression changes
-- no auto-friend management
-- no restored IP2Country feature
-- no wider UI column/context-menu work from the old branch
-
-That is deliberate. The focus here is to keep the broadband controller changes
-isolated and maintainable on top of `v0.72a`.
-
-## For Linux
-
-For Linux and other platforms, or Windows as well, please check the friend
-project https://github.com/mercu01/amule
+This is the broadband branch for features and experimentation, but the build is
+validated through the parent workspace scripts rather than by building this repo
+standalone.
 
 Enjoy and contribute!
+
+## Summary of changes
+
+### opcodes
+
+The one main difference is to allow more appropriate values for high-speed
+connections and large files in:
+
+```c
+SESSIONMAXTRANS
+SESSIONMAXTIME
+MAX_UP_CLIENTS_ALLOWED
+UPLOAD_CLIENT_MAXDATARATE
+```
+
+The current values on this branch are:
+
+- `SESSIONMAXTRANS = 64 GiB`
+- `SESSIONMAXTIME = 3 hours`
+- `UPLOAD_CLIENT_MAXDATARATE = 1 MiB/s`
+- `MAX_UP_CLIENTS_ALLOWED = 50`
+
+As the debate is long, my take on the matter is that it is best to upload at a
+high speed to few clients rather than uploading to tenths of clients at
+ridicolously low speeds. In addition to that it is likely best to let clients
+download entire files or meaningful parts of them, so `SESSIONMAXTRANS` and
+`SESSIONMAXTIME` are increased.
+
+Some have argued that these values were marked as _do not change_ in the
+opcodes file, but please consider that this software was literally designed with
+small files and slow connections in mind. The sole purpose of this branch is to
+seed back to the ED2K network with settings that cope better with nowadays
+large files and broadband links.
+
+### UploadQueue
+
+With the philosophy of keeping changes to a minimum:
+
+- Added logic to keep the upload slots near a configurable broadband target
+  instead of allowing the old controller to keep growing them.
+- Added logic to remove from the upload slots clients that have been below a
+  reasonable download rate for a certain period of time, so to give more
+  priority to fast downloaders, which should also be fast uploaders to an extent
+  so then they can propagate files quicker if they get it first.
+- The *slower* clients will be able to be back in the slots once the faster
+  have been served again, but not immediately, thanks to a short cooldown after
+  slow-slot eviction.
+- Added configurable session rotation by transfer amount or session time.
+- Added support for `BBSessionMaxTrans=1..100` as a percentage of the currently
+  uploaded file size.
+
+### What has been dropped from `v0.60d-dev`
+
+This branch intentionally does **not** carry over:
+
+- the extra hidden broadband knobs for queue score boosting/deboosting
+- the auto-friend management logic
+- the restored IP2Country feature
+- the wider upload/download/shared/queue UI field additions
+
+The focus here is to keep the broadband upload controller isolated and
+maintainable on top of `v0.72a`.
+
+### For Linux
+
+For Linux and other platforms, or Windows as well, please check friend project
+https://github.com/mercu01/amule
