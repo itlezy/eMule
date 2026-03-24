@@ -1889,7 +1889,7 @@ void CPreferences::LoadPreferences()
 #endif
 
 	m_nWebMirrorAlertLevel = ini.GetInt(_T("WebMirrorAlertLevel"), 0);
-	updatenotify = ini.GetBool(_T("UpdateNotifyTestClient"), true);
+	updatenotify = ini.GetBool(_T("UpdateNotifyTestClient"), false);
 
 	SetUserNick(ini.GetStringUTF8(_T("Nick"), DEFAULT_NICK));
 	if (strNick.IsEmpty() || IsDefaultNick(strNick))
@@ -1922,9 +1922,9 @@ void CPreferences::LoadPreferences()
 			tempdir.Add(sTmp);
 	}
 
-	SetMaxGraphDownloadRate((uint32)ini.GetInt(_T("DownloadCapacity"), 100));
+	SetMaxGraphDownloadRate((uint32)ini.GetInt(_T("DownloadCapacity"), 50000));
 
-	SetMaxGraphUploadRate((uint32)ini.GetInt(_T("UploadCapacityNew"), 0));
+	SetMaxGraphUploadRate((uint32)ini.GetInt(_T("UploadCapacityNew"), 50000));
 	if (maxGraphUploadRate == UNLIMITED) {
 		// converting value from prior versions
 		int nOldUploadCapacity = ini.GetInt(_T("UploadCapacity"), 100);
@@ -2036,7 +2036,7 @@ void CPreferences::LoadPreferences()
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
-	splashscreen = ini.GetBool(_T("Splashscreen"), true);
+	splashscreen = ini.GetBool(_T("Splashscreen"), false);
 	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
 	transferDoubleclick = ini.GetBool(_T("TransferDoubleClick"), true);
 	beepOnError = ini.GetBool(_T("BeepOnError"), true);
@@ -2044,7 +2044,7 @@ void CPreferences::LoadPreferences()
 	filterLANIPs = ini.GetBool(_T("FilterBadIPs"), true);
 	m_bAllocLocalHostIP = ini.GetBool(_T("AllowLocalHostIP"), false);
 	autoconnect = ini.GetBool(_T("Autoconnect"), false);
-	showRatesInTitle = ini.GetBool(_T("ShowRatesOnTitle"), false);
+	showRatesInTitle = ini.GetBool(_T("ShowRatesOnTitle"), true);
 	m_bIconflashOnNewMessage = ini.GetBool(_T("IconflashOnNewMessage"), false);
 
 	onlineSig = ini.GetBool(_T("OnlineSignature"), false);
@@ -2411,7 +2411,7 @@ void CPreferences::LoadPreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
-	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), false, _T("UPnP"));
+	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), true, _T("UPnP"));
 	m_bSkipWANIPSetup = ini.GetBool(_T("SkipWANIPSetup"), false);
 	m_bSkipWANPPPSetup = ini.GetBool(_T("SkipWANPPPSetup"), false);
 	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true);

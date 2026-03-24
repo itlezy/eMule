@@ -42,6 +42,7 @@ static char THIS_FILE[] = __FILE__;
 
 
 #define	ONBOOTSTRAP_STRINGS_PROFILE	_T("AC_BootstrapIPs.dat")
+#define DEFAULT_NODESDAT_URL		_T("http://upd.emule-security.org/nodes.dat")
 
 #define	DFLT_TOOLBAR_BTN_WIDTH	24
 
@@ -201,6 +202,9 @@ BOOL CKademliaWnd::OnInitDialog()
 		if (m_pacONBSIPs->Bind(::GetDlgItem(m_hWnd, IDC_BOOTSTRAPIP), ACO_UPDOWNKEYDROPSLIST | ACO_AUTOSUGGEST | ACO_FILTERPREFIXES))
 			m_pacONBSIPs->LoadList(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + ONBOOTSTRAP_STRINGS_PROFILE);
 	}
+
+	if (GetDlgItem(IDC_BOOTSTRAPURL)->GetWindowTextLength() == 0)
+		SetDlgItemText(IDC_BOOTSTRAPURL, DEFAULT_NODESDAT_URL);
 
 	CheckDlgButton(IDC_RADCLIENTS, 1);
 	ShowLookupGraph(false);

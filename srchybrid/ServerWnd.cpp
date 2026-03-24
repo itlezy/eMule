@@ -43,6 +43,7 @@ static char THIS_FILE[] = __FILE__;
 
 #define	SERVERMET_STRINGS_PROFILE	_T("AC_ServerMetURLs.dat")
 #define SZ_DEBUG_LOG_TITLE			_T("Verbose")
+#define DEFAULT_SERVERMET_URL		_T("http://upd.emule-security.org/server.met")
 
 // CServerWnd dialog
 
@@ -263,6 +264,9 @@ BOOL CServerWnd::OnInitDialog()
 		}
 	} else
 		GetDlgItem(IDC_DD)->ShowWindow(SW_HIDE);
+
+	if (GetDlgItem(IDC_SERVERMETURL)->GetWindowTextLength() == 0)
+		SetDlgItemText(IDC_SERVERMETURL, DEFAULT_SERVERMET_URL);
 
 	InitWindowStyles(this);
 

@@ -822,6 +822,7 @@ BOOL FirstTimeWizard()
 	thePrefs.SetUserNick(page2.m_strNick);
 	thePrefs.SetAutoConnect(page2.m_iAutoConnectAtStart != 0);
 	thePrefs.SetAutoStart(page2.m_iAutoStart != 0);
+	thePrefs.m_bEnableUPnP = true;
 	SetAutoStart(thePrefs.GetAutoStart());
 
 	thePrefs.SetNewAutoDown(page4.m_iDAP != 0);
