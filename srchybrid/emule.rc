@@ -3591,6 +3591,8 @@ BEGIN
     IDS_UPLOAD_PERCENT      "Upload %"
     IDS_SLOW_TIME           "Slow Time"
     IDS_ETA                 "ETA"
+    IDS_COPY_HASH           "Copy Has&h"
+    IDS_UPLOADDONE          "Finished uploading a full copy of ""%s"" to %s"
     IDS_SEARCH_UNKATTR      "Unknown search attribute '%s'"
     IDS_SEARCH_ATTRERR      "Syntax error in '%s' search attribute"
     IDS_SEARCH_MISSINGANDRIGHT "Missing right side for AND operator"

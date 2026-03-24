@@ -148,6 +148,7 @@
 #define MP_TOGGLEDTOOLBAR		10362
 #define MP_AUTOKADLOOKUPGRAPH	10363
 #define MP_UPDATE				10364
+#define MP_COPY_HASH			10365
 
 
 // quick-speed changer

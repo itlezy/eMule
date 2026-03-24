@@ -639,6 +639,7 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	const CUpDownClient *client = (iSel >= 0) ? reinterpret_cast<CUpDownClient*>(GetItemData(iSel)) : NULL;
 	const bool is_ed2k = client && client->IsEd2kClient();
 	const CKnownFile *file = client != NULL ? theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) : NULL;
+	const bool has_file = file != NULL;
 	const bool has_openable_file = file != NULL && !file->IsPartFile();
 
 	CTitledMenu ClientMenu;
@@ -654,6 +655,7 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	ClientMenu.AppendMenu(MF_STRING | (has_openable_file ? MF_ENABLED : MF_GRAYED), MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
 	ClientMenu.AppendMenu(MF_STRING | (has_openable_file ? MF_ENABLED : MF_GRAYED), MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
+	ClientMenu.AppendMenu(MF_STRING | (has_file ? MF_ENABLED : MF_GRAYED), MP_COPY_HASH, GetResString(IDS_COPY_HASH));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
@@ -711,6 +713,13 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 				if (file != NULL && !file->IsPartFile())
 					ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
+			}
+			break;
+		case MP_COPY_HASH:
+			{
+				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+				if (file != NULL)
+					theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
 			}
 			break;
 		case MP_BOOT:

@@ -524,6 +524,9 @@ void CQueueListCtrl::OnContextMenu(CWnd*, CPoint point)
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(iSel >= 0 ? GetItemData(iSel) : NULL);
 	const bool is_ed2k = client && client->IsEd2kClient();
+	const CKnownFile *file = client != NULL ? theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) : NULL;
+	const bool has_file = file != NULL;
+	const bool has_openable_file = file != NULL && !file->IsPartFile();
 
 	CTitledMenu ClientMenu;
 	ClientMenu.CreatePopupMenu();
@@ -531,12 +534,16 @@ void CQueueListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("CLIENTDETAILS"));
 	ClientMenu.SetDefaultItem(MP_DETAIL);
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_ADDFRIEND, GetResString(IDS_ADDFRIEND), _T("ADDFRIEND"));
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_REMOVEFRIEND, GetResString(IDS_REMOVEFRIEND), _T("DELETEFRIEND"));
 	ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
 	if (thePrefs.IsExtControlsEnabled())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() != 0 && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
+	ClientMenu.AppendMenu(MF_STRING | (has_openable_file ? MF_ENABLED : MF_GRAYED), MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
+	ClientMenu.AppendMenu(MF_STRING | (has_openable_file ? MF_ENABLED : MF_GRAYED), MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
+	ClientMenu.AppendMenu(MF_STRING | (has_file ? MF_ENABLED : MF_GRAYED), MP_COPY_HASH, GetResString(IDS_COPY_HASH));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
@@ -566,10 +573,40 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			if (theApp.friendlist->AddFriend(client))
 				Update(iSel);
 			break;
+		case MP_REMOVEFRIEND:
+			{
+				CFriend *fr = theApp.friendlist->SearchFriend(client->GetUserHash(), 0, 0);
+				if (fr != NULL) {
+					theApp.friendlist->RemoveFriend(fr);
+					Update(iSel);
+				}
+			}
+			break;
 		case MP_UNBAN:
 			if (client->IsBanned()) {
 				client->UnBan();
 				Update(iSel);
+			}
+			break;
+		case MP_OPEN:
+			{
+				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+				if (file != NULL && !file->IsPartFile())
+					ShellDefaultVerb(file->GetFilePath());
+			}
+			break;
+		case MP_OPENFOLDER:
+			{
+				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+				if (file != NULL && !file->IsPartFile())
+					ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
+			}
+			break;
+		case MP_COPY_HASH:
+			{
+				const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+				if (file != NULL)
+					theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
 			}
 			break;
 		case MP_DETAIL:

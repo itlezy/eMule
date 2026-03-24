@@ -463,14 +463,19 @@ void CUpDownClient::UpdateUploadingStatisticsData()
 		credits->AddUploaded(sentBytesFile, GetIP());
 
 		uint32 sentBytesPayload = sock->GetSentPayloadSinceLastCall(true);
+		const uint64 uPrevQueueSessionPayloadUp = m_nCurQueueSessionPayloadUp;
 		m_nCurQueueSessionPayloadUp += sentBytesPayload;
 
 		// in some rare cases (namely, switching upload files while data still is in the send queue),
 		// we count some bytes for the wrong file, but fixing it (and not counting data only based on
 		// what was put into the queue and not sent yet) isn't really worth it
 		CKnownFile *pCurrentUploadFile = theApp.sharedfiles->GetFileByID(GetUploadFileID());
-		if (pCurrentUploadFile != NULL)
+		if (pCurrentUploadFile != NULL) {
 			pCurrentUploadFile->statistic.AddTransferred(sentBytesPayload);
+			const uint64 uFileSize = static_cast<uint64>(pCurrentUploadFile->GetFileSize());
+			if (uFileSize > 0 && uPrevQueueSessionPayloadUp < uFileSize && m_nCurQueueSessionPayloadUp >= uFileSize)
+				Log(LOG_SUCCESS, GetResString(IDS_UPLOADDONE), (LPCTSTR)pCurrentUploadFile->GetFileName(), GetUserName() != NULL ? GetUserName() : (LPCTSTR)GetResString(IDS_UNKNOWN));
+		}
 		//else
 		//	ASSERT(0); //fired after deleting shared files which had uploads in the current eMule session. Closing this messagebox caused no issues.
 	} else

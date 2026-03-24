@@ -1564,6 +1564,8 @@
 #define IDS_UPLOAD_PERCENT              1620
 #define IDS_SLOW_TIME                   1621
 #define IDS_ETA                         1622
+#define IDS_COPY_HASH                   1623
+#define IDS_UPLOADDONE                  1624
 #define IDC_ANIMATE1                    2000
 #define IDC_STATUS                      2001
 #define IDC_FILESTATUS                  2002
