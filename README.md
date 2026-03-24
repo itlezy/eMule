@@ -63,13 +63,9 @@ preferences.
 
 ### Upload Slots Settings
 
-**Max upload slots** are configurable from ini file.
+**Max upload slots** are now configurable from **Preferences > Tweaks > Broadband**.
 
-Just launch the eMule exe once, close it, and then edit the ini file:
-
-Run notepad `%LOCALAPPDATA%\eMule\config\preferences.ini`
-
-The key to edit is the following:
+If you prefer editing the ini file directly, the underlying key is still:
 
 `BBMaxUpClientsAllowed=12`
 
@@ -86,7 +82,8 @@ up the upload slots as you deem fit.
 
 ### Broadband Settings
 
-Please find below the `preferences.ini` settings that this branch keeps.
+These settings are now available in **Preferences > Tweaks > Broadband** and
+still map directly to the same `preferences.ini` keys.
 
 |Setting|Default|Description|
 |---|---|---|
@@ -103,6 +100,14 @@ Please find below the `preferences.ini` settings that this branch keeps.
 Please note that the rest of the broadband behavior is now derived from the
 current upload budget and slot target rather than being controlled by the wider
 set of hidden settings that existed on `v0.60d-dev`.
+
+The Tweaks page presents the session transfer limit in a friendlier way:
+
+- `Disabled`
+- `Percent of file size`
+- `Absolute limit (MiB)`
+
+and presents the session time limit in **minutes** instead of raw milliseconds.
 
 The useful behavioral pieces that were kept are:
 

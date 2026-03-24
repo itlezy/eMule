@@ -98,15 +98,15 @@ This branch does not carry over the broader old branch behavior:
 
 - no full replay of the old slot-admission formulas
 - no wider set of hidden broadband tuning knobs beyond the slot target, score bias, and session rotation overrides
-- no UI/config panel work beyond the ratio/cooldown columns and the narrow
-  download-list parity fields
+- no separate broadband preferences page; the current branch exposes the kept
+  broadband controls on `Preferences > Tweaks > Broadband`
 
 That is deliberate. The goal is to isolate the broadband behavior change and keep
 the patch maintainable on top of `v0.72a`.
 
 ## New Controller Design
 
-### Hidden preferences
+### Broadband preferences
 
 `BBMaxUpClientsAllowed=<int>`
 
@@ -155,6 +155,22 @@ ban on any temporary overflow.
 - `0` and `1` disable the behavior
 - values above `1` divide the queue score of actual LowID clients by the
   configured value
+
+These settings are also exposed in `Preferences > Tweaks > Broadband` with a
+friendlier editor:
+
+- `Max Upload Clients`
+- `Session Transfer Limit`
+  - `Disabled`
+  - `Percent of file size`
+  - `Absolute limit (MiB)`
+- `Enable session time limit`
+  - `Minutes`
+- `Enable low-ratio file boost`
+  - `Ratio threshold`
+  - `Score bonus`
+- `Deboost LowID clients`
+  - `Divisor`
 
 ### Effective upload budget
 

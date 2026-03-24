@@ -1566,6 +1566,18 @@
 #define IDS_ETA                         1622
 #define IDS_COPY_HASH                   1623
 #define IDS_UPLOADDONE                  1624
+#define IDS_BROADBAND                   1625
+#define IDS_BB_MAX_UPLOAD_CLIENTS       1626
+#define IDS_BB_SESSION_TRANSFER_LIMIT   1627
+#define IDS_BB_PERCENT_OF_FILE_SIZE     1628
+#define IDS_BB_ABSOLUTE_LIMIT           1629
+#define IDS_BB_ABSOLUTE_LIMIT_MIB       1630
+#define IDS_BB_ENABLE_SESSION_TIME_LIMIT 1631
+#define IDS_BB_ENABLE_LOW_RATIO_BOOST   1632
+#define IDS_BB_RATIO_THRESHOLD          1633
+#define IDS_BB_SCORE_BONUS              1634
+#define IDS_BB_DEBOOST_LOWIDS           1635
+#define IDS_BB_DIVISOR                  1636
 #define IDC_ANIMATE1                    2000
 #define IDC_STATUS                      2001
 #define IDC_FILESTATUS                  2002
@@ -2389,6 +2401,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3037
-#define _APS_NEXT_SYMED_VALUE           1619
+#define _APS_NEXT_SYMED_VALUE           1637
 #endif
 #endif

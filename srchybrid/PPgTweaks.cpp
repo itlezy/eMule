@@ -41,6 +41,24 @@ static char THIS_FILE[] = __FILE__;
 #define	DFLT_MAXCONPERFIVE	20
 #define DFLT_MAXHALFOPEN	9
 
+namespace
+{
+	enum EBroadbandSessionTransferMode
+	{
+		BBSTM_DISABLED = 0,
+		BBSTM_PERCENT = 1,
+		BBSTM_ABSOLUTE = 2
+	};
+
+	static void FailTreeValidation(CDataExchange *pDX, UINT uMessageId, HTREEITEM hItem)
+	{
+		AfxMessageBox(uMessageId);
+		pDX->PrepareEditCtrl(IDC_EXT_OPTS);
+		pDX->Fail();
+		UNREFERENCED_PARAMETER(hItem);
+	}
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // CPPgTweaks dialog
 
@@ -60,6 +78,21 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiA4AFSaveCpu()
 	, m_htiAutoArch()
 	, m_htiAutoTakeEd2kLinks()
+	, m_htiBroadband()
+	, m_htiBBLowIDDeboost()
+	, m_htiBBLowIDDeboostDivisor()
+	, m_htiBBLowRatioBoost()
+	, m_htiBBLowRatioBonus()
+	, m_htiBBLowRatioThreshold()
+	, m_htiBBMaxUpClientsAllowed()
+	, m_htiBBSessionMaxTime()
+	, m_htiBBSessionMaxTimeMinutes()
+	, m_htiBBSessionTransferLimit()
+	, m_htiBBSessionTransAbsolute()
+	, m_htiBBSessionTransAbsoluteValue()
+	, m_htiBBSessionTransDisabled()
+	, m_htiBBSessionTransPercent()
+	, m_htiBBSessionTransPercentValue()
 	, m_htiCheckDiskspace()
 	, m_htiCloseUPnPPorts()
 	, m_htiCommit()
@@ -115,10 +148,18 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiVerbose()
 	, m_htiVerboseGroup()
 	, m_htiYourHostname()
+	, m_fBBLowRatioBonus()
+	, m_fBBLowRatioThreshold()
 	, m_fMinFreeDiskSpaceMB()
 	, m_iQueueSize()
+	, m_uBBSessionMaxTimeMinutes()
+	, m_uBBSessionTransAbsoluteMiB()
 	, m_uFileBufferSize()
 	, m_uServerKeepAliveTimeout()
+	, m_iBBLowIDDeboostDivisor()
+	, m_iBBMaxUpClientsAllowed()
+	, m_iBBSessionTransMode(BBSTM_DISABLED)
+	, m_iBBSessionTransPercent()
 	, m_iCommitFiles()
 	, m_iDynUpGoingDownDivider()
 	, m_iDynUpGoingUpDivider()
@@ -135,6 +176,9 @@ CPPgTweaks::CPPgTweaks()
 	, m_bA4AFSaveCpu()
 	, m_bAutoArchDisable(true)
 	, m_bAutoTakeEd2kLinks()
+	, m_bBBLowIDDeboost()
+	, m_bBBLowRatioBoost()
+	, m_bBBSessionMaxTime()
 	, m_bCheckDiskspace()
 	, m_bCloseUPnPOnExit(true)
 	, m_bConditionalTCPAccept()
@@ -218,6 +262,32 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiYourHostname, RUNTIME_CLASS(CTreeOptionsEditEx));
 
 		/////////////////////////////////////////////////////////////////////////////
+		// Broadband group
+		//
+		m_htiBroadband = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_BROADBAND), iImgDynyp, TVI_ROOT);
+		m_htiBBMaxUpClientsAllowed = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_MAX_UPLOAD_CLIENTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBroadband);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBMaxUpClientsAllowed, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiBBSessionTransferLimit = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_BB_SESSION_TRANSFER_LIMIT), iImgDynyp, m_htiBroadband);
+		m_htiBBSessionTransDisabled = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DISABLED), m_htiBBSessionTransferLimit, m_iBBSessionTransMode == BBSTM_DISABLED);
+		m_htiBBSessionTransPercent = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_BB_PERCENT_OF_FILE_SIZE), m_htiBBSessionTransferLimit, m_iBBSessionTransMode == BBSTM_PERCENT);
+		m_htiBBSessionTransAbsolute = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_BB_ABSOLUTE_LIMIT), m_htiBBSessionTransferLimit, m_iBBSessionTransMode == BBSTM_ABSOLUTE);
+		m_htiBBSessionTransPercentValue = m_ctrlTreeOptions.InsertItem(GetResString(IDS_PERCENTAGE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBSessionTransferLimit);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBSessionTransPercentValue, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiBBSessionTransAbsoluteValue = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_ABSOLUTE_LIMIT_MIB), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBSessionTransferLimit);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBSessionTransAbsoluteValue, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiBBSessionMaxTime = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_BB_ENABLE_SESSION_TIME_LIMIT), m_htiBroadband, m_bBBSessionMaxTime);
+		m_htiBBSessionMaxTimeMinutes = m_ctrlTreeOptions.InsertItem(GetResString(IDS_LONGMINS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBSessionMaxTime);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBSessionMaxTimeMinutes, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiBBLowRatioBoost = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_BB_ENABLE_LOW_RATIO_BOOST), m_htiBroadband, m_bBBLowRatioBoost);
+		m_htiBBLowRatioThreshold = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_RATIO_THRESHOLD), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBLowRatioBoost);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBLowRatioThreshold, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiBBLowRatioBonus = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_SCORE_BONUS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBLowRatioBoost);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBLowRatioBonus, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiBBLowIDDeboost = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_BB_DEBOOST_LOWIDS), m_htiBroadband, m_bBBLowIDDeboost);
+		m_htiBBLowIDDeboostDivisor = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_DIVISOR), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBLowIDDeboost);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBLowIDDeboostDivisor, RUNTIME_CLASS(CNumTreeOptionsEdit));
+
+		/////////////////////////////////////////////////////////////////////////////
 		// File related group
 		//
 		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), TVI_ROOT, m_bSparsePartFiles);
@@ -295,6 +365,11 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiImportParts = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLEIMPORTPARTS), TVI_ROOT, m_bImportParts);
 
 		m_ctrlTreeOptions.Expand(m_htiTCPGroup, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiBroadband, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiBBSessionTransferLimit, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiBBSessionMaxTime, m_bBBSessionMaxTime ? TVE_EXPAND : TVE_COLLAPSE);
+		m_ctrlTreeOptions.Expand(m_htiBBLowRatioBoost, m_bBBLowRatioBoost ? TVE_EXPAND : TVE_COLLAPSE);
+		m_ctrlTreeOptions.Expand(m_htiBBLowIDDeboost, m_bBBLowIDDeboost ? TVE_EXPAND : TVE_COLLAPSE);
 		if (m_htiVerboseGroup)
 			m_ctrlTreeOptions.Expand(m_htiVerboseGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiCommit, TVE_EXPAND);
@@ -331,6 +406,37 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiA4AFSaveCpu, m_bA4AFSaveCpu);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiYourHostname, m_sYourHostname);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoArch, m_bAutoArchDisable);
+
+	/////////////////////////////////////////////////////////////////////////////
+	// Broadband group
+	//
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBMaxUpClientsAllowed, m_iBBMaxUpClientsAllowed);
+	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferLimit, m_iBBSessionTransMode);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBSessionTransPercentValue, m_iBBSessionTransPercent);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBSessionTransAbsoluteValue, m_uBBSessionTransAbsoluteMiB);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBBSessionMaxTime, m_bBBSessionMaxTime);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBSessionMaxTimeMinutes, m_uBBSessionMaxTimeMinutes);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBoost, m_bBBLowRatioBoost);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBLowRatioThreshold, m_fBBLowRatioThreshold);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBonus, m_fBBLowRatioBonus);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBBLowIDDeboost, m_bBBLowIDDeboost);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBLowIDDeboostDivisor, m_iBBLowIDDeboostDivisor);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_iBBMaxUpClientsAllowed < MIN_UP_CLIENTS_ALLOWED || m_iBBMaxUpClientsAllowed > MAX_UP_CLIENTS_ALLOWED)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBMaxUpClientsAllowed);
+		if (m_iBBSessionTransMode == BBSTM_PERCENT && (m_iBBSessionTransPercent < 1 || m_iBBSessionTransPercent > 100))
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBSessionTransPercentValue);
+		if (m_iBBSessionTransMode == BBSTM_ABSOLUTE && m_uBBSessionTransAbsoluteMiB < 1)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBSessionTransAbsoluteValue);
+		if (m_bBBSessionMaxTime && m_uBBSessionMaxTimeMinutes < 1)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBSessionMaxTimeMinutes);
+		if (m_bBBLowRatioBoost && m_fBBLowRatioThreshold <= 0.0f)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_REAL, m_htiBBLowRatioThreshold);
+		if (m_bBBLowRatioBoost && m_fBBLowRatioBonus <= 0.0f)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_REAL, m_htiBBLowRatioBonus);
+		if (m_bBBLowIDDeboost && m_iBBLowIDDeboostDivisor < 2)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBLowIDDeboostDivisor);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////
 	// File related group
@@ -460,6 +566,39 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bFirewallStartup = ((thePrefs.GetWindowsVersion() == _WINVER_XP_) ? thePrefs.m_bOpenPortsOnStartUp : 0);
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
+	m_iBBMaxUpClientsAllowed = static_cast<int>(thePrefs.GetMaxUpClientsAllowed());
+	const uint64 uBBSessionMaxTrans = thePrefs.GetBBSessionMaxTrans();
+	if (uBBSessionMaxTrans == 0) {
+		m_iBBSessionTransMode = BBSTM_DISABLED;
+		m_iBBSessionTransPercent = 33;
+		m_uBBSessionTransAbsoluteMiB = 256;
+	} else if (uBBSessionMaxTrans <= 100) {
+		m_iBBSessionTransMode = BBSTM_PERCENT;
+		m_iBBSessionTransPercent = static_cast<int>(uBBSessionMaxTrans);
+		m_uBBSessionTransAbsoluteMiB = 256;
+	} else {
+		m_iBBSessionTransMode = BBSTM_ABSOLUTE;
+		m_iBBSessionTransPercent = 33;
+		uint64 uAbsoluteMiB = uBBSessionMaxTrans / (1024ui64 * 1024ui64);
+		if (uAbsoluteMiB < 1)
+			uAbsoluteMiB = 1;
+		m_uBBSessionTransAbsoluteMiB = static_cast<UINT>(uAbsoluteMiB);
+	}
+	const uint64 uBBSessionMaxTime = thePrefs.GetBBSessionMaxTime();
+	m_bBBSessionMaxTime = (uBBSessionMaxTime != 0);
+	if (m_bBBSessionMaxTime) {
+		uint64 uMinutes = (uBBSessionMaxTime + MIN2MS(1) - 1) / MIN2MS(1);
+		if (uMinutes < 1)
+			uMinutes = 1;
+		m_uBBSessionMaxTimeMinutes = static_cast<UINT>(uMinutes);
+	} else {
+		m_uBBSessionMaxTimeMinutes = 180;
+	}
+	m_fBBLowRatioThreshold = thePrefs.GetBBBoostLowRatioFiles() > 0.0f ? thePrefs.GetBBBoostLowRatioFiles() : 0.5f;
+	m_fBBLowRatioBonus = thePrefs.GetBBBoostLowRatioFilesBy() > 0.0f ? thePrefs.GetBBBoostLowRatioFilesBy() : 50.0f;
+	m_bBBLowRatioBoost = thePrefs.GetBBBoostLowRatioFiles() > 0.0f && thePrefs.GetBBBoostLowRatioFilesBy() > 0.0f;
+	m_iBBLowIDDeboostDivisor = thePrefs.GetBBDeboostLowIDs() > 1 ? static_cast<int>(thePrefs.GetBBDeboostLowIDs()) : 4;
+	m_bBBLowIDDeboost = thePrefs.GetBBDeboostLowIDs() > 1;
 
 	m_bDynUpEnabled = thePrefs.m_bDynUpEnabled;
 	m_iDynUpMinUpload = thePrefs.GetMinUpload();
@@ -580,6 +719,22 @@ BOOL CPPgTweaks::OnApply()
 		theApp.emuledlg->transferwnd->GetDownloadList()->CreateMenus();
 
 	thePrefs.m_dwServerKeepAliveTimeout = MIN2MS(m_uServerKeepAliveTimeout);
+	thePrefs.m_maxUpClientsAllowed = static_cast<uint32>(max(MIN_UP_CLIENTS_ALLOWED, min(MAX_UP_CLIENTS_ALLOWED, m_iBBMaxUpClientsAllowed)));
+	switch (m_iBBSessionTransMode) {
+		case BBSTM_DISABLED:
+			thePrefs.m_bbSessionMaxTrans = 0;
+			break;
+		case BBSTM_PERCENT:
+			thePrefs.m_bbSessionMaxTrans = static_cast<uint64>(m_iBBSessionTransPercent);
+			break;
+		default:
+			thePrefs.m_bbSessionMaxTrans = static_cast<uint64>(m_uBBSessionTransAbsoluteMiB) * 1024ui64 * 1024ui64;
+			break;
+	}
+	thePrefs.m_bbSessionMaxTime = m_bBBSessionMaxTime ? static_cast<uint64>(m_uBBSessionMaxTimeMinutes) * MIN2MS(1) : 0;
+	thePrefs.m_bbBoostLowRatioFiles = m_bBBLowRatioBoost ? max(0.0f, m_fBBLowRatioThreshold) : 0.0f;
+	thePrefs.m_bbBoostLowRatioFilesBy = m_bBBLowRatioBoost ? max(0.0f, m_fBBLowRatioBonus) : 0.0f;
+	thePrefs.m_bbDeboostLowIDs = m_bBBLowIDDeboost ? static_cast<uint32>(max(2, m_iBBLowIDDeboostDivisor)) : 0;
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
 	thePrefs.checkDiskspace = m_bCheckDiskspace;
@@ -661,6 +816,13 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiDynUpMinUpload, IDS_DYNUP_MINUPLOAD);
 		LocalizeEditLabel(m_htiDynUpNumberOfPings, IDS_DYNUP_NUMBEROFPINGS);
 		LocalizeEditLabel(m_htiDynUpPingTolerance, IDS_DYNUP_PINGTOLERANCE);
+		LocalizeEditLabel(m_htiBBMaxUpClientsAllowed, IDS_BB_MAX_UPLOAD_CLIENTS);
+		LocalizeEditLabel(m_htiBBSessionTransPercentValue, IDS_PERCENTAGE);
+		LocalizeEditLabel(m_htiBBSessionTransAbsoluteValue, IDS_BB_ABSOLUTE_LIMIT_MIB);
+		LocalizeEditLabel(m_htiBBSessionMaxTimeMinutes, IDS_LONGMINS);
+		LocalizeEditLabel(m_htiBBLowRatioThreshold, IDS_BB_RATIO_THRESHOLD);
+		LocalizeEditLabel(m_htiBBLowRatioBonus, IDS_BB_SCORE_BONUS);
+		LocalizeEditLabel(m_htiBBLowIDDeboostDivisor, IDS_BB_DIVISOR);
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
@@ -670,6 +832,14 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiA4AFSaveCpu, IDS_A4AF_SAVE_CPU);
 		LocalizeItemText(m_htiAutoArch, IDS_DISABLE_AUTOARCHPREV);
 		LocalizeItemText(m_htiAutoTakeEd2kLinks, IDS_AUTOTAKEED2KLINKS);
+		LocalizeItemText(m_htiBroadband, IDS_BROADBAND);
+		LocalizeItemText(m_htiBBSessionTransferLimit, IDS_BB_SESSION_TRANSFER_LIMIT);
+		LocalizeItemText(m_htiBBSessionTransDisabled, IDS_DISABLED);
+		LocalizeItemText(m_htiBBSessionTransPercent, IDS_BB_PERCENT_OF_FILE_SIZE);
+		LocalizeItemText(m_htiBBSessionTransAbsolute, IDS_BB_ABSOLUTE_LIMIT);
+		LocalizeItemText(m_htiBBSessionMaxTime, IDS_BB_ENABLE_SESSION_TIME_LIMIT);
+		LocalizeItemText(m_htiBBLowRatioBoost, IDS_BB_ENABLE_LOW_RATIO_BOOST);
+		LocalizeItemText(m_htiBBLowIDDeboost, IDS_BB_DEBOOST_LOWIDS);
 		LocalizeItemText(m_htiCheckDiskspace, IDS_CHECKDISKSPACE);
 		LocalizeItemText(m_htiCloseUPnPPorts, IDS_UPNPCLOSEONEXIT);
 		LocalizeItemText(m_htiCommit, IDS_COMMITFILES);
@@ -726,6 +896,21 @@ void CPPgTweaks::OnDestroy()
 	m_ctrlTreeOptions.DestroyWindow();
 	m_bInitializedTreeOpts = false;
 	m_htiTCPGroup = NULL;
+	m_htiBroadband = NULL;
+	m_htiBBMaxUpClientsAllowed = NULL;
+	m_htiBBSessionTransferLimit = NULL;
+	m_htiBBSessionTransDisabled = NULL;
+	m_htiBBSessionTransPercent = NULL;
+	m_htiBBSessionTransAbsolute = NULL;
+	m_htiBBSessionTransPercentValue = NULL;
+	m_htiBBSessionTransAbsoluteValue = NULL;
+	m_htiBBSessionMaxTime = NULL;
+	m_htiBBSessionMaxTimeMinutes = NULL;
+	m_htiBBLowRatioBoost = NULL;
+	m_htiBBLowRatioThreshold = NULL;
+	m_htiBBLowRatioBonus = NULL;
+	m_htiBBLowIDDeboost = NULL;
+	m_htiBBLowIDDeboostDivisor = NULL;
 	m_htiMaxCon5Sec = NULL;
 	m_htiMaxHalfOpen = NULL;
 	m_htiConditionalTCPAccept = NULL;
@@ -814,6 +999,17 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 				if (m_htiLogUlDlEvents)
 					m_ctrlTreeOptions.SetCheckBoxEnable(m_htiLogUlDlEvents, bCheck);
 			}
+		} else if ((m_htiBBSessionMaxTime && pton->hItem == m_htiBBSessionMaxTime)
+				|| (m_htiBBLowRatioBoost && pton->hItem == m_htiBBLowRatioBoost)
+				|| (m_htiBBLowIDDeboost && pton->hItem == m_htiBBLowIDDeboost))
+		{
+			BOOL bCheck = FALSE;
+			if (pton->hItem == m_htiBBSessionMaxTime && m_ctrlTreeOptions.GetCheckBox(m_htiBBSessionMaxTime, bCheck))
+				m_ctrlTreeOptions.Expand(m_htiBBSessionMaxTime, bCheck ? TVE_EXPAND : TVE_COLLAPSE);
+			else if (pton->hItem == m_htiBBLowRatioBoost && m_ctrlTreeOptions.GetCheckBox(m_htiBBLowRatioBoost, bCheck))
+				m_ctrlTreeOptions.Expand(m_htiBBLowRatioBoost, bCheck ? TVE_EXPAND : TVE_COLLAPSE);
+			else if (pton->hItem == m_htiBBLowIDDeboost && m_ctrlTreeOptions.GetCheckBox(m_htiBBLowIDDeboost, bCheck))
+				m_ctrlTreeOptions.Expand(m_htiBBLowIDDeboost, bCheck ? TVE_EXPAND : TVE_COLLAPSE);
 		} else if ((m_htiShareeMuleMultiUser  && pton->hItem == m_htiShareeMuleMultiUser)
 				|| (m_htiShareeMulePublicUser && pton->hItem == m_htiShareeMulePublicUser)
 				|| (m_htiShareeMuleOldStyle   && pton->hItem == m_htiShareeMuleOldStyle))
