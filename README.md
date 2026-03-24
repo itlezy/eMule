@@ -23,8 +23,9 @@ The focus is as well to introduce the least amount of changes to preserve the
 original quality and stability of the client. Please read the guide below to
 understand the configuration parameters and the capabilities.
 
-This branch keeps the broadband upload controller and session controls, but does
-not carry over the wider UI/queue experiments from `v0.60d-dev`. For the code
+This branch keeps the broadband upload controller and session controls, and
+reapplies a small set of useful ratio/cooldown columns, but does not carry over
+the wider UI/queue experiments from `v0.60d-dev`. For the code
 level rationale and the current `v0.72a-broadband-dev` design notes, please see
 [`BROADBAND.md`](BROADBAND.md).
 
@@ -90,6 +91,9 @@ Please find below the `preferences.ini` settings that this branch keeps.
 |Setting|Default|Description|
 |---|---|---|
 |`BBMaxUpClientsAllowed`|12|Upper target of concurrent uploads in steady state.|
+|`BBBoostLowRatioFiles`|0|Enable a score bonus for files whose all-time uploaded-bytes-to-file-size ratio is below this threshold. `0` disables the feature.|
+|`BBBoostLowRatioFilesBy`|0|Additive queue-score bonus applied when `BBBoostLowRatioFiles` matches. `0` disables the effect.|
+|`BBDeboostLowIDs`|0|If set above `1`, divide the score of actual LowID clients by this value. `0` or `1` disable the penalty.|
 |`BBSessionMaxTrans`|68719476736|Values above `100` indicate how much data in bytes is allowed for a client to download in a single session. Default is `64 GiB`, matching the current broadband opcode value.|
 |`BBSessionMaxTrans`|1-100|Values in the range of `1` to `100` indicate how much data in percentage of the size of the file being uploaded is allowed for a client to download in a single session. In example, set to `33` to allow roughly a third of the file size to be uploaded in a single session.|
 |`BBSessionMaxTrans`|0|Disables transfer-based session rotation.|
@@ -105,6 +109,7 @@ The useful behavioral pieces that were kept are:
 - limit the normal upload slots to a sensible amount
 - make full usage of the upload bandwidth
 - recycle persistently weak uploaders instead of opening many more slots
+- let strict seeders boost low-ratio files and penalize LowID clients in queue score
 - allow configurable rotation by transfer amount or time
 
 Your best take to fully understand the logic is to **review the code itself**:
@@ -114,12 +119,35 @@ Your best take to fully understand the logic is to **review the code itself**:
 
 We have not much time to test, so be sensible.
 
+### Ratio Columns
+
+This branch also reintroduces a small part of the old broadband UI in a cleaned
+up form:
+
+- `All-Time Ratio`
+- `Session Ratio`
+- `Cooldown` on upload and queue lists
+
+The ratio columns are file-level metrics:
+
+- `All-Time Ratio` = all-time uploaded bytes for the file divided by the file size
+- `Session Ratio` = current-session uploaded bytes for the file divided by the file size
+
+These columns are available in:
+
+- Shared Files
+- Uploading
+- On Queue
+
 ### Example Settings
 
 #### More aggressive
 
 ```ini
 BBMaxUpClientsAllowed=6
+BBBoostLowRatioFiles=0.5
+BBBoostLowRatioFilesBy=50
+BBDeboostLowIDs=4
 BBSessionMaxTrans=33
 BBSessionMaxTime=7200000
 ```
@@ -149,6 +177,22 @@ being uploaded, like in example a third:
 ```ini
 BBSessionMaxTrans=33
 ```
+
+#### Strict seeder bias
+
+If you want to prioritize files you have uploaded the least and push LowIDs back
+in the queue, you can enable the score policy knobs below:
+
+```ini
+BBBoostLowRatioFiles=0.5
+BBBoostLowRatioFilesBy=50
+BBDeboostLowIDs=4
+```
+
+With the example above:
+
+- files whose all-time upload ratio is below `0.5` get a `+50` score bonus
+- actual LowID clients have their queue score divided by `4`
 
 ## Get an High ID
 
@@ -250,7 +294,8 @@ This branch intentionally does **not** carry over:
 - the extra hidden broadband knobs for queue score boosting/deboosting
 - the auto-friend management logic
 - the restored IP2Country feature
-- the wider upload/download/shared/queue UI field additions
+- the wider upload/download/shared/queue UI field additions beyond the
+  ratio/cooldown columns
 
 The focus here is to keep the broadband upload controller isolated and
 maintainable on top of `v0.72a`.

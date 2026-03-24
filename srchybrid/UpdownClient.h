@@ -231,6 +231,7 @@ public:
 	DWORD			GetSlowUploadAccumulatedMs() const				{ return m_dwSlowUploadAccumulatedMs; }
 	DWORD			GetZeroUploadAccumulatedMs() const				{ return m_dwZeroUploadAccumulatedMs; }
 	bool			IsInSlowUploadCooldown() const					{ return m_dwSlowUploadCooldownUntil != 0 && ::GetTickCount() < m_dwSlowUploadCooldownUntil; }
+	DWORD			GetSlowUploadCooldownRemaining() const			{ return IsInSlowUploadCooldown() ? (m_dwSlowUploadCooldownUntil - ::GetTickCount()) : 0; }
 	void			SetSlowUploadCooldown(DWORD dwUntil)			{ m_dwSlowUploadCooldownUntil = dwUntil; }
 	void			ClearSlowUploadCooldown()						{ m_dwSlowUploadCooldownUntil = 0; }
 	UINT			GetScore(bool sysvalue, bool isdownloading = false, bool onlybasevalue = false) const;

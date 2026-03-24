@@ -77,6 +77,9 @@ void CUploadListCtrl::Init()
 	InsertColumn(5,	_T(""),	LVCFMT_LEFT, 80);							//IDS_UPLOADTIME
 	InsertColumn(6,	_T(""),	LVCFMT_LEFT, 100);							//IDS_STATUS
 	InsertColumn(7,	_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
+	InsertColumn(8,	_T(""),	LVCFMT_RIGHT, 90);							//IDS_ALL_TIME_RATIO
+	InsertColumn(9,	_T(""),	LVCFMT_RIGHT, 90);							//IDS_SESSION_RATIO
+	InsertColumn(10,_T(""),	LVCFMT_LEFT, 80);							//IDS_COOLDOWN
 
 	SetAllIcons();
 	Localize();
@@ -87,10 +90,10 @@ void CUploadListCtrl::Init()
 
 void CUploadListCtrl::Localize()
 {
-	static const UINT uids[8] =
+	static const UINT uids[11] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_DL_SPEED, IDS_DL_TRANSF, IDS_WAITED
-		, IDS_UPLOADTIME, IDS_STATUS, IDS_UPSTATUS
+		, IDS_UPLOADTIME, IDS_STATUS, IDS_UPSTATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -213,6 +216,27 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 	case 7:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+	case 8:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file)
+				sText.Format(_T("%.1f"), file->GetAllTimeUploadRatio());
+		}
+		break;
+	case 9:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file)
+				sText.Format(_T("%.1f"), file->GetSessionUploadRatio());
+		}
+		break;
+	case 10:
+		{
+			const DWORD dwRemaining = client->GetSlowUploadCooldownRemaining();
+			if (dwRemaining != 0)
+				sText = SecToTimeLength((dwRemaining + SEC2MS(1) - 1) / SEC2MS(1));
+		}
 	}
 	return sText;
 }
@@ -285,6 +309,9 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 3: // Session Up
 		case 4: // Wait Time
 		case 7: // Part Count
+		case 8: // All-Time Ratio
+		case 9: // Session Ratio
+		case 10: // Cooldown
 			sortAscending = false;
 			break;
 		default:
@@ -342,6 +369,33 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 7:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 8:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareUnsigned(
+					static_cast<uint32>(1000.0f * file1->GetAllTimeUploadRatio()),
+					static_cast<uint32>(1000.0f * file2->GetAllTimeUploadRatio()));
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
+		break;
+	case 9:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareUnsigned(
+					static_cast<uint32>(1000.0f * file1->GetSessionUploadRatio()),
+					static_cast<uint32>(1000.0f * file2->GetSessionUploadRatio()));
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
+		break;
+	case 10:
+		iResult = CompareUnsigned(item1->GetSlowUploadCooldownRemaining(), item2->GetSlowUploadCooldownRemaining());
 	}
 
 	if (HIWORD(lParamSort))

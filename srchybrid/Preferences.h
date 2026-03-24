@@ -155,6 +155,9 @@ public:
 	static uint32	m_maxUpClientsAllowed;
 	static uint64	m_bbSessionMaxTrans;
 	static uint64	m_bbSessionMaxTime;
+	static float	m_bbBoostLowRatioFiles;
+	static float	m_bbBoostLowRatioFilesBy;
+	static uint32	m_bbDeboostLowIDs;
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
 	static CStringA m_strBindAddrA;
@@ -710,6 +713,9 @@ public:
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
 	static uint64	GetBBSessionMaxTrans()				{ return m_bbSessionMaxTrans; }
 	static uint64	GetBBSessionMaxTime()				{ return m_bbSessionMaxTime; }
+	static float	GetBBBoostLowRatioFiles()			{ return m_bbBoostLowRatioFiles; }
+	static float	GetBBBoostLowRatioFilesBy()			{ return m_bbBoostLowRatioFilesBy; }
+	static uint32	GetBBDeboostLowIDs()				{ return m_bbDeboostLowIDs; }
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }

@@ -58,6 +58,9 @@ uint32	CPreferences::m_minupload;
 uint32	CPreferences::m_maxUpClientsAllowed;
 uint64	CPreferences::m_bbSessionMaxTrans;
 uint64	CPreferences::m_bbSessionMaxTime;
+float	CPreferences::m_bbBoostLowRatioFiles;
+float	CPreferences::m_bbBoostLowRatioFilesBy;
+uint32	CPreferences::m_bbDeboostLowIDs;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
 LPCSTR	CPreferences::m_pszBindAddrA;
@@ -1517,6 +1520,9 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
 	ini.WriteUInt64(_T("BBSessionMaxTrans"), m_bbSessionMaxTrans);
 	ini.WriteUInt64(_T("BBSessionMaxTime"), m_bbSessionMaxTime);
+	ini.WriteFloat(_T("BBBoostLowRatioFiles"), m_bbBoostLowRatioFiles);
+	ini.WriteFloat(_T("BBBoostLowRatioFilesBy"), m_bbBoostLowRatioFilesBy);
+	ini.WriteInt(_T("BBDeboostLowIDs"), m_bbDeboostLowIDs);
 	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
@@ -1937,6 +1943,11 @@ void CPreferences::LoadPreferences()
 	// A stored value of 0 explicitly disables that rotation path.
 	m_bbSessionMaxTrans = ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS);
 	m_bbSessionMaxTime = ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME);
+	// Seeder-biased queue policy is opt-in. A zero threshold or bonus disables the low-ratio boost.
+	m_bbBoostLowRatioFiles = max(0.0f, ini.GetFloat(_T("BBBoostLowRatioFiles"), 0.0f));
+	m_bbBoostLowRatioFilesBy = max(0.0f, ini.GetFloat(_T("BBBoostLowRatioFilesBy"), 0.0f));
+	// A divisor of 0 or 1 is treated as disabled to avoid surprising no-op math in GetScore.
+	m_bbDeboostLowIDs = max(0, ini.GetInt(_T("BBDeboostLowIDs"), 0));
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	if (m_minupload < 1)
 		m_minupload = 1;

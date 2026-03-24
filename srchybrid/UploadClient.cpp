@@ -187,7 +187,8 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 		return 0;
 	}
 
-	if (!theApp.sharedfiles->GetFileByID(requpfileid)) //is any file requested?
+	const CKnownFile *currequpfile = theApp.sharedfiles->GetFileByID(requpfileid);
+	if (!currequpfile) //is any file requested?
 		return 0;
 
 	// bad clients (see note in function)
@@ -229,6 +230,23 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 
 	if (!onlybasevalue)
 		fBaseValue *= GetFilePrioAsNumber() / 10.0f;
+
+	if (!onlybasevalue) {
+		// This broadband branch intentionally lets strict seeders bias the queue toward
+		// files which have historically seen fewer uploaded copies.
+		const float fLowRatioThreshold = thePrefs.GetBBBoostLowRatioFiles();
+		const float fLowRatioBonus = thePrefs.GetBBBoostLowRatioFilesBy();
+		if (fLowRatioThreshold > 0.0f && fLowRatioBonus > 0.0f) {
+			if (currequpfile->GetAllTimeUploadRatio() < fLowRatioThreshold)
+				fBaseValue += fLowRatioBonus;
+		}
+
+		// LowID clients are less useful to a strict seeder with limited upload budget,
+		// so an optional divisor can push them behind better-connected peers.
+		const uint32 nLowIDDivisor = thePrefs.GetBBDeboostLowIDs();
+		if (HasLowID() && nLowIDDivisor > 1)
+			fBaseValue /= static_cast<float>(nLowIDDivisor);
+	}
 
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;

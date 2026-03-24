@@ -81,7 +81,10 @@ That behavior maps well to the goal on `v0.72a`.
 This branch keeps the following parts of the old broadband approach:
 
 - hidden `BBMaxUpClientsAllowed` configuration key as the steady-state slot target
+- hidden `BBBoostLowRatioFiles`, `BBBoostLowRatioFilesBy`, and `BBDeboostLowIDs` queue-score controls for strict seeders
 - hidden `BBSessionMaxTrans` and `BBSessionMaxTime` overrides for broadband session rotation
+- `All-Time Ratio` / `Session Ratio` columns in shared, upload, and queue lists
+- `Cooldown` column in upload and queue lists
 - a steady-state soft cap for upload slots
 - slow/stuck slot tracking on each uploading client
 - replacement of bad slots instead of relying on runaway slot growth
@@ -91,8 +94,8 @@ This branch keeps the following parts of the old broadband approach:
 This branch does not carry over the broader old branch behavior:
 
 - no full replay of the old slot-admission formulas
-- no wider set of hidden broadband tuning knobs
-- no UI/config panel work
+- no wider set of hidden broadband tuning knobs beyond the slot target, score bias, and session rotation overrides
+- no UI/config panel work beyond the ratio and cooldown columns
 
 That is deliberate. The goal is to isolate the broadband behavior change and keep
 the patch maintainable on top of `v0.72a`.
@@ -126,6 +129,28 @@ ban on any temporary overflow.
 - defaults to `SESSIONMAXTIME`
 - overrides the stock one-hour session cap on this branch
 - `0` disables time-based session rotation
+
+`BBBoostLowRatioFiles=<float>`
+
+- stored in `preferences.ini`
+- defaults to `0`
+- `0` disables the low-ratio bias
+- when enabled, files whose all-time uploaded-bytes-to-file-size ratio is below
+  the configured threshold get a queue-score bonus
+
+`BBBoostLowRatioFilesBy=<float>`
+
+- stored in `preferences.ini`
+- defaults to `0`
+- additive score bonus applied when the low-ratio threshold matches
+
+`BBDeboostLowIDs=<int>`
+
+- stored in `preferences.ini`
+- defaults to `0`
+- `0` and `1` disable the behavior
+- values above `1` divide the queue score of actual LowID clients by the
+  configured value
 
 ### Effective upload budget
 
@@ -218,6 +243,38 @@ When a client is evicted for being slow or stuck, it is still requeued
 immediately for protocol compatibility, but its queue score is held at zero for
 one slow-eviction window. That short cooldown prevents the same weak uploader
 from bouncing straight back into the next slot.
+
+### UI readouts
+
+The branch surfaces the seeding policy with a small, explicit UI replay:
+
+- `All-Time Ratio` = all-time transferred bytes for the file divided by file size
+- `Session Ratio` = current-session transferred bytes for the file divided by file size
+- `Cooldown` = remaining slow-upload suppression time after a weak slot was evicted
+
+Those columns are shown in:
+
+- shared files: `All-Time Ratio`, `Session Ratio`
+- upload list: `All-Time Ratio`, `Session Ratio`, `Cooldown`
+- queue list: `All-Time Ratio`, `Session Ratio`, `Cooldown`
+
+### Queue scoring for strict seeders
+
+The slot controller decides how many productive upload slots exist. Queue score
+still decides who gets them.
+
+This branch keeps that policy explicit instead of burying it in slot math:
+
+- `BBBoostLowRatioFiles` and `BBBoostLowRatioFilesBy` let the queue favor files
+  that have historically seen fewer uploaded copies
+- the ratio metric is simple and local to the current file:
+  `allTimeTransferred / fileSize`
+- `BBDeboostLowIDs` optionally penalizes actual LowID clients with a score
+  divisor
+
+This is intentionally harsh. The goal of this branch is not neutral fairness; it
+is to let a strict seeder spend limited upload bandwidth on the files and peers
+the operator considers most useful.
 
 This keeps the feature intentionally simple:
 

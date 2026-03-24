@@ -117,6 +117,8 @@ public:
 	// Display / Info / Strings
 	virtual CString	GetInfoSummary(bool bNoFormatCommands = false) const;
 	CString	GetUpPriorityDisplayString() const;
+	float	GetAllTimeUploadRatio() const;
+	float	GetSessionUploadRatio() const;
 	virtual void	UpdateFileRatingCommentAvail(bool bForceUpdate = false);
 
 	//aich

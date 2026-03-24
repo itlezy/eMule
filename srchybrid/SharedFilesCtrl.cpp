@@ -277,6 +277,8 @@ void CSharedFilesCtrl::Init()
 	InsertColumn(15,	_T(""),	LVCFMT_RIGHT,	DFLT_LENGTH_COL_WIDTH, -1, true);	//IDS_LENGTH
 	InsertColumn(16,	_T(""),	LVCFMT_RIGHT,	DFLT_BITRATE_COL_WIDTH, -1, true);	//IDS_BITRATE
 	InsertColumn(17,	_T(""),	LVCFMT_LEFT,	DFLT_CODEC_COL_WIDTH, -1, true);	//IDS_CODEC
+	InsertColumn(18,	_T(""),	LVCFMT_RIGHT,	90);								//IDS_ALL_TIME_RATIO
+	InsertColumn(19,	_T(""),	LVCFMT_RIGHT,	90);								//IDS_SESSION_RATIO
 
 	SetAllIcons();
 	CreateMenus();
@@ -337,12 +339,12 @@ void CSharedFilesCtrl::SetAllIcons()
 
 void CSharedFilesCtrl::Localize()
 {
-	static const UINT uids[18] =
+	static const UINT uids[20] =
 	{
 		IDS_DL_FILENAME, IDS_DL_SIZE, IDS_TYPE, IDS_PRIORITY, IDS_FILEID
 		, IDS_SF_REQUESTS, IDS_SF_ACCEPTS, IDS_SF_TRANSFERRED, IDS_SHARED_STATUS, IDS_FOLDER
 		, IDS_COMPLSOURCES, IDS_SHAREDTITLE, IDS_ARTIST, IDS_ALBUM, IDS_TITLE
-		, IDS_LENGTH, IDS_BITRATE, IDS_CODEC
+		, IDS_LENGTH, IDS_BITRATE, IDS_CODEC, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -672,6 +674,12 @@ CString CSharedFilesCtrl::GetItemDisplayText(const CShareableFile *file, int iSu
 			break;
 		case 17:
 			sText = GetCodecDisplayName(pKnownFile->GetStrTagValue(FT_MEDIA_CODEC));
+			break;
+		case 18:
+			sText.Format(_T("%.1f"), pKnownFile->GetAllTimeUploadRatio());
+			break;
+		case 19:
+			sText.Format(_T("%.1f"), pKnownFile->GetSessionUploadRatio());
 		}
 	}
 	return sText;
@@ -1223,6 +1231,16 @@ int CALLBACK CSharedFilesCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM l
 				break;
 			case 17:
 				iResult = CompareOptLocaleStringNoCaseUndefinedAtBottom(GetCodecDisplayName(kitem1->GetStrTagValue(FT_MEDIA_CODEC)), GetCodecDisplayName(kitem2->GetStrTagValue(FT_MEDIA_CODEC)), bSortAscending);
+				break;
+			case 18:
+				iResult = CompareUnsigned(
+					static_cast<uint32>(1000.0f * kitem1->GetAllTimeUploadRatio()),
+					static_cast<uint32>(1000.0f * kitem2->GetAllTimeUploadRatio()));
+				break;
+			case 19:
+				iResult = CompareUnsigned(
+					static_cast<uint32>(1000.0f * kitem1->GetSessionUploadRatio()),
+					static_cast<uint32>(1000.0f * kitem2->GetSessionUploadRatio()));
 				break;
 
 			case 105: //all requests

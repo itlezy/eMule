@@ -1551,6 +1551,9 @@
 #define IDS_IMPORTPARTS_IMPORTSTART     1607
 #define IDS_IMPORTPARTS                 1608
 #define IDS_IMPORTPARTS_STOP            1609
+#define IDS_ALL_TIME_RATIO              1610
+#define IDS_SESSION_RATIO               1611
+#define IDS_COOLDOWN                    1612
 #define IDC_ANIMATE1                    2000
 #define IDC_STATUS                      2001
 #define IDC_FILESTATUS                  2002
@@ -2374,6 +2377,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3037
-#define _APS_NEXT_SYMED_VALUE           1610
+#define _APS_NEXT_SYMED_VALUE           1613
 #endif
 #endif
