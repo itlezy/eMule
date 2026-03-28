@@ -24,6 +24,34 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	static void CenterWindowOnActiveMonitor(CWnd *pWnd)
+	{
+		ASSERT(pWnd != NULL);
+		if (pWnd == NULL || !::IsWindow(pWnd->GetSafeHwnd()))
+			return;
+
+		CWnd *pOwnerWnd = pWnd->GetWindow(GW_OWNER);
+		HWND hReferenceWnd = pOwnerWnd != NULL ? pOwnerWnd->GetSafeHwnd() : NULL;
+		if (hReferenceWnd == NULL || !::IsWindowVisible(hReferenceWnd))
+			hReferenceWnd = ::GetForegroundWindow();
+		if (hReferenceWnd == NULL && AfxGetMainWnd() != NULL)
+			hReferenceWnd = AfxGetMainWnd()->GetSafeHwnd();
+
+		const HMONITOR hMonitor = ::MonitorFromWindow(hReferenceWnd != NULL ? hReferenceWnd : pWnd->GetSafeHwnd(), MONITOR_DEFAULTTONEAREST);
+		MONITORINFO mi = { sizeof mi };
+		if (!::GetMonitorInfo(hMonitor, &mi))
+			return;
+
+		CRect rectWindow;
+		pWnd->GetWindowRect(&rectWindow);
+		const int iNewX = mi.rcWork.left + max(0, (mi.rcWork.right - mi.rcWork.left - rectWindow.Width()) / 2);
+		const int iNewY = mi.rcWork.top + max(0, (mi.rcWork.bottom - mi.rcWork.top - rectWindow.Height()) / 2);
+		pWnd->SetWindowPos(NULL, iNewX, iNewY, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+	}
+}
+
 
 IMPLEMENT_DYNAMIC(CPreferencesDlg, CTreePropSheet)
 
@@ -123,6 +151,7 @@ BOOL CPreferencesDlg::OnInitDialog()
 		}
 
 	Localize();
+	CenterWindowOnActiveMonitor(this);
 	return bResult;
 }
 

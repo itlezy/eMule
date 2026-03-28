@@ -161,6 +161,7 @@
     <ClCompile Include="AsyncProxySocketLayer.cpp" />
     <ClCompile Include="AsyncSocketEx.cpp" />
     <ClCompile Include="AsyncSocketExLayer.cpp" />
+    <ClCompile Include="BindAddressResolver.cpp" />
     <ClCompile Include="BarShader.cpp" />
     <ClCompile Include="BaseClient.cpp" />
     <ClCompile Include="BuddyButton.cpp" />
@@ -439,6 +440,7 @@
     <ClInclude Include="AsyncProxySocketLayer.h" />
     <ClInclude Include="AsyncSocketEx.h" />
     <ClInclude Include="AsyncSocketExLayer.h" />
+    <ClInclude Include="BindAddressResolver.h" />
     <ClInclude Include="BarShader.h" />
     <ClInclude Include="ButtonsTabCtrl.h" />
     <ClInclude Include="CaptchaGenerator.h" />

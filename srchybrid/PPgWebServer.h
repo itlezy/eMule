@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include "BindAddressResolver.h"
+
 class CPPgWebServer : public CPropertyPage
 {
 	DECLARE_DYNAMIC(CPPgWebServer)
@@ -10,6 +13,9 @@ class CPPgWebServer : public CPropertyPage
 	};
 	long m_generating;
 	bool m_bNewCert;
+	std::vector<BindableNetworkInterface> m_bindInterfaces;
+	CString m_strMissingBindInterfaceId;
+	CString m_strMissingBindInterfaceName;
 
 public:
 	CPPgWebServer();
@@ -20,8 +26,16 @@ public:
 protected:
 	BOOL m_bModified;
 	HICON m_icoBrowse;
+	CComboBox m_bindInterface;
+	CComboBox m_bindAddress;
 
 	void LoadSettings();
+	void LoadBindableInterfaces();
+	void FillBindInterfaceCombo();
+	void FillBindAddressCombo(const CString &strPreferredAddress);
+	CString GetSelectedBindInterfaceId() const;
+	CString GetSelectedBindInterfaceName() const;
+	CString GetSelectedBindAddress() const;
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();
@@ -46,4 +60,5 @@ protected:
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
 	afx_msg void OnDataChange();
 	afx_msg void OnDestroy();
+	afx_msg void OnCbnSelChangeBindInterface();
 };

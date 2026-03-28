@@ -39,6 +39,12 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	static DWORD_PTR const s_dwAnyInterfaceItemData = static_cast<DWORD_PTR>(-1);
+	static DWORD_PTR const s_dwMissingInterfaceItemData = static_cast<DWORD_PTR>(-2);
+}
+
 
 IMPLEMENT_DYNAMIC(CPPgConnection, CPropertyPage)
 
@@ -66,6 +72,8 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_OPENPORTS, OnBnClickedOpenports)
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
+	ON_CBN_SELCHANGE(IDC_BIND_INTERFACE, OnCbnSelChangeBindInterface)
+	ON_CBN_SELCHANGE(IDC_BIND_ADDRESS, OnSettingsChange)
 END_MESSAGE_MAP()
 
 CPPgConnection::CPPgConnection()
@@ -74,11 +82,142 @@ CPPgConnection::CPPgConnection()
 {
 }
 
+void CPPgConnection::LoadBindableInterfaces()
+{
+	// Refresh the live adapter list so the bind selectors reflect current interface availability.
+	m_bindInterfaces = CBindAddressResolver::GetBindableInterfaces();
+}
+
+void CPPgConnection::FillBindInterfaceCombo()
+{
+	m_bindInterface.ResetContent();
+	m_strMissingBindInterfaceId.Empty();
+	m_strMissingBindInterfaceName.Empty();
+
+	int iItem = m_bindInterface.AddString(GetResString(IDS_BIND_ANY_INTERFACE));
+	m_bindInterface.SetItemData(iItem, s_dwAnyInterfaceItemData);
+	m_bindInterface.SetCurSel(iItem);
+
+	const CString &strConfiguredInterface = thePrefs.GetBindInterface();
+	int iSelectedItem = iItem;
+
+	for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+		iItem = m_bindInterface.AddString(m_bindInterfaces[i].strDisplayName);
+		m_bindInterface.SetItemData(iItem, static_cast<DWORD_PTR>(i));
+		if (!m_bindInterfaces[i].strId.CompareNoCase(strConfiguredInterface))
+			iSelectedItem = iItem;
+	}
+
+	if (!strConfiguredInterface.IsEmpty() && iSelectedItem == 0) {
+		m_strMissingBindInterfaceId = strConfiguredInterface;
+		m_strMissingBindInterfaceName = thePrefs.GetBindInterfaceName();
+		const CString strMissingLabel = m_strMissingBindInterfaceName.IsEmpty() ? m_strMissingBindInterfaceId : m_strMissingBindInterfaceName;
+		iItem = m_bindInterface.AddString(strMissingLabel);
+		m_bindInterface.SetItemData(iItem, s_dwMissingInterfaceItemData);
+		iSelectedItem = iItem;
+	}
+
+	m_bindInterface.SetCurSel(iSelectedItem);
+}
+
+void CPPgConnection::FillBindAddressCombo(const CString &strPreferredAddress)
+{
+	m_bindAddress.ResetContent();
+	int iItem = m_bindAddress.AddString(GetResString(IDS_BIND_ALL_ADDRESSES));
+	m_bindAddress.SetCurSel(iItem);
+
+	CStringArray astrAddresses;
+	const CString strSelectedInterfaceId = GetSelectedBindInterfaceId();
+	if (strSelectedInterfaceId.IsEmpty()) {
+		for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+			for (size_t j = 0; j < m_bindInterfaces[i].addresses.size(); ++j) {
+				bool bDuplicate = false;
+				for (INT_PTR k = 0; k < astrAddresses.GetCount(); ++k) {
+					if (!astrAddresses[k].CompareNoCase(m_bindInterfaces[i].addresses[j])) {
+						bDuplicate = true;
+						break;
+					}
+				}
+				if (!bDuplicate)
+					astrAddresses.Add(m_bindInterfaces[i].addresses[j]);
+			}
+		}
+	} else {
+		for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+			if (m_bindInterfaces[i].strId.CompareNoCase(strSelectedInterfaceId))
+				continue;
+
+			for (size_t j = 0; j < m_bindInterfaces[i].addresses.size(); ++j)
+				astrAddresses.Add(m_bindInterfaces[i].addresses[j]);
+			break;
+		}
+	}
+
+	int iSelectedItem = 0;
+	for (INT_PTR i = 0; i < astrAddresses.GetCount(); ++i) {
+		iItem = m_bindAddress.AddString(astrAddresses[i]);
+		if (!astrAddresses[i].CompareNoCase(strPreferredAddress))
+			iSelectedItem = iItem;
+	}
+
+	if (!strPreferredAddress.IsEmpty() && iSelectedItem == 0) {
+		iItem = m_bindAddress.AddString(strPreferredAddress);
+		iSelectedItem = iItem;
+	}
+
+	m_bindAddress.SetCurSel(iSelectedItem);
+}
+
+CString CPPgConnection::GetSelectedBindInterfaceId() const
+{
+	const int iSel = m_bindInterface.GetCurSel();
+	if (iSel == CB_ERR)
+		return CString();
+
+	const DWORD_PTR dwItemData = m_bindInterface.GetItemData(iSel);
+	if (dwItemData == s_dwAnyInterfaceItemData)
+		return CString();
+	if (dwItemData == s_dwMissingInterfaceItemData)
+		return m_strMissingBindInterfaceId;
+	if (dwItemData >= m_bindInterfaces.size())
+		return CString();
+	return m_bindInterfaces[dwItemData].strId;
+}
+
+CString CPPgConnection::GetSelectedBindInterfaceName() const
+{
+	const int iSel = m_bindInterface.GetCurSel();
+	if (iSel == CB_ERR)
+		return CString();
+
+	const DWORD_PTR dwItemData = m_bindInterface.GetItemData(iSel);
+	if (dwItemData == s_dwAnyInterfaceItemData)
+		return CString();
+	if (dwItemData == s_dwMissingInterfaceItemData)
+		return m_strMissingBindInterfaceName;
+	if (dwItemData >= m_bindInterfaces.size())
+		return CString();
+	return m_bindInterfaces[dwItemData].strName;
+}
+
+CString CPPgConnection::GetSelectedBindAddress() const
+{
+	const int iSel = m_bindAddress.GetCurSel();
+	if (iSel <= 0)
+		return CString();
+
+	CString strAddress;
+	m_bindAddress.GetLBText(iSel, strAddress);
+	return strAddress;
+}
+
 void CPPgConnection::DoDataExchange(CDataExchange *pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_MAXDOWN_SLIDER, m_ctlMaxDown);
 	DDX_Control(pDX, IDC_MAXUP_SLIDER, m_ctlMaxUp);
+	DDX_Control(pDX, IDC_BIND_INTERFACE, m_bindInterface);
+	DDX_Control(pDX, IDC_BIND_ADDRESS, m_bindAddress);
 }
 
 void CPPgConnection::OnEnKillFocusTCP()
@@ -142,6 +281,7 @@ BOOL CPPgConnection::OnInitDialog()
 	static_cast<CEdit*>(GetDlgItem(IDC_PORT))->SetLimitText(5);
 	static_cast<CEdit*>(GetDlgItem(IDC_UDPPORT))->SetLimitText(5);
 
+	LoadBindableInterfaces();
 	LoadSettings();
 	Localize();
 
@@ -154,6 +294,7 @@ BOOL CPPgConnection::OnInitDialog()
 void CPPgConnection::LoadSettings()
 {
 	if (m_hWnd) {
+		LoadBindableInterfaces();
 		if (thePrefs.m_maxupload != 0)
 			thePrefs.m_maxdownload = thePrefs.GetMaxDownload();
 		m_lastudp = thePrefs.udpport;
@@ -184,6 +325,8 @@ void CPPgConnection::LoadSettings()
 		m_ctlMaxUp.SetPos(up);
 
 		SetDlgItemInt(IDC_PORT, thePrefs.port, FALSE);
+		FillBindInterfaceCombo();
+		FillBindAddressCombo(thePrefs.GetConfiguredBindAddr());
 		SetDlgItemInt(IDC_MAXCON, thePrefs.maxconnections);
 		SetDlgItemInt(IDC_MAXSOURCEPERFILE, (thePrefs.maxsourceperfile == 0xffff ? 0 : thePrefs.maxsourceperfile));
 
@@ -264,6 +407,7 @@ BOOL CPPgConnection::OnApply()
 	thePrefs.maxsourceperfile = (u > INT_MAX ? 1 : u);
 
 	bool bRestartApp = false;
+	bool bBindRestartRequired = false;
 
 	u = GetDlgItemInt(IDC_PORT, NULL, FALSE);
 	uint16 nNewPort = (uint16)(u > _UI16_MAX ? 0 : u);
@@ -283,6 +427,17 @@ BOOL CPPgConnection::OnApply()
 			theApp.clientudp->Rebind();
 		else
 			bRestartApp = true;
+	}
+
+	const CString strBindInterfaceId = GetSelectedBindInterfaceId();
+	const CString strBindInterfaceName = GetSelectedBindInterfaceName();
+	const CString strBindAddress = GetSelectedBindAddress();
+	if (thePrefs.GetBindInterface().CompareNoCase(strBindInterfaceId)
+		|| thePrefs.GetBindInterfaceName().CompareNoCase(strBindInterfaceName)
+		|| thePrefs.GetConfiguredBindAddr().CompareNoCase(strBindAddress)) {
+		// The P2P sockets use the resolved bind address during startup, so interface changes take effect after restart.
+		thePrefs.SetBindNetworkSelection(strBindInterfaceId, strBindInterfaceName, strBindAddress);
+		bBindRestartRequired = true;
 	}
 
 	if (thePrefs.m_bshowoverhead != (IsDlgButtonChecked(IDC_SHOWOVERHEAD) != 0)) {
@@ -343,6 +498,8 @@ BOOL CPPgConnection::OnApply()
 
 	if (bRestartApp)
 		LocMessageBox(IDS_NOPORTCHANGEPOSSIBLE, MB_OK, 0);
+	else if (bBindRestartRequired)
+		LocMessageBox(IDS_SETTINGCHANGED_RESTART, MB_OK, 0);
 
 	ChangePorts(2);	//"Test ports" button enable/disable
 
@@ -376,6 +533,8 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_OPENPORTS, GetResString(IDS_FO_PREFBUTTON));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));
+		SetDlgItemText(IDC_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE) + _T(':'));
+		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS) + _T(':'));
 		ShowLimitValues();
 	}
 }
@@ -488,6 +647,12 @@ BOOL CPPgConnection::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+void CPPgConnection::OnCbnSelChangeBindInterface()
+{
+	FillBindAddressCombo(GetSelectedBindAddress());
+	SetModified();
 }
 
 void CPPgConnection::OnBnClickedOpenports()

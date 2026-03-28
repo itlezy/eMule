@@ -430,7 +430,7 @@ UINT AFX_CDECL WebSocketListeningFunc(LPVOID pThis)
 		SOCKADDR_IN stAddr;
 		stAddr.sin_family = AF_INET;
 		stAddr.sin_port = htons(thePrefs.GetWSPort());
-		stAddr.sin_addr.s_addr = thePrefs.GetBindAddrA() ? inet_addr(thePrefs.GetBindAddrA()) : INADDR_ANY;
+		stAddr.sin_addr.s_addr = thePrefs.GetWebBindAddrA() ? inet_addr(thePrefs.GetWebBindAddrA()) : INADDR_ANY;
 
 		if (!bind(hSocket, (LPSOCKADDR)&stAddr, sizeof stAddr) && !listen(hSocket, SOMAXCONN)) {
 			HANDLE hEvent = CreateEvent(NULL, FALSE, TRUE, NULL);

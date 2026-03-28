@@ -36,6 +36,12 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	static DWORD_PTR const s_dwAnyInterfaceItemData = static_cast<DWORD_PTR>(-1);
+	static DWORD_PTR const s_dwMissingInterfaceItemData = static_cast<DWORD_PTR>(-2);
+}
+
 struct options
 {
 	LPCTSTR	issuer_key;		//filename of the issuer key file
@@ -206,6 +212,8 @@ BEGIN_MESSAGE_MAP(CPPgWebServer, CPropertyPage)
 	ON_BN_CLICKED(IDC_WS_GZIP, OnDataChange)
 	ON_BN_CLICKED(IDC_WS_ALLOWHILEVFUNC, OnDataChange)
 	ON_BN_CLICKED(IDC_WSUPNP, OnDataChange)
+	ON_CBN_SELCHANGE(IDC_WS_BIND_INTERFACE, OnCbnSelChangeBindInterface)
+	ON_CBN_SELCHANGE(IDC_WS_BIND_ADDRESS, OnDataChange)
 	ON_WM_HELPINFO()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
@@ -222,6 +230,137 @@ CPPgWebServer::CPPgWebServer()
 void CPPgWebServer::DoDataExchange(CDataExchange *pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_WS_BIND_INTERFACE, m_bindInterface);
+	DDX_Control(pDX, IDC_WS_BIND_ADDRESS, m_bindAddress);
+}
+
+void CPPgWebServer::LoadBindableInterfaces()
+{
+	// Refresh the live adapter list so the Web UI bind selectors match the current interface state.
+	m_bindInterfaces = CBindAddressResolver::GetBindableInterfaces();
+}
+
+void CPPgWebServer::FillBindInterfaceCombo()
+{
+	m_bindInterface.ResetContent();
+	m_strMissingBindInterfaceId.Empty();
+	m_strMissingBindInterfaceName.Empty();
+
+	int iItem = m_bindInterface.AddString(GetResString(IDS_BIND_ANY_INTERFACE));
+	m_bindInterface.SetItemData(iItem, s_dwAnyInterfaceItemData);
+	m_bindInterface.SetCurSel(iItem);
+
+	const CString &strConfiguredInterface = thePrefs.GetWebBindInterface();
+	int iSelectedItem = iItem;
+
+	for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+		iItem = m_bindInterface.AddString(m_bindInterfaces[i].strDisplayName);
+		m_bindInterface.SetItemData(iItem, static_cast<DWORD_PTR>(i));
+		if (!m_bindInterfaces[i].strId.CompareNoCase(strConfiguredInterface))
+			iSelectedItem = iItem;
+	}
+
+	if (!strConfiguredInterface.IsEmpty() && iSelectedItem == 0) {
+		m_strMissingBindInterfaceId = strConfiguredInterface;
+		m_strMissingBindInterfaceName = thePrefs.GetWebBindInterfaceName();
+		const CString strMissingLabel = m_strMissingBindInterfaceName.IsEmpty() ? m_strMissingBindInterfaceId : m_strMissingBindInterfaceName;
+		iItem = m_bindInterface.AddString(strMissingLabel);
+		m_bindInterface.SetItemData(iItem, s_dwMissingInterfaceItemData);
+		iSelectedItem = iItem;
+	}
+
+	m_bindInterface.SetCurSel(iSelectedItem);
+}
+
+void CPPgWebServer::FillBindAddressCombo(const CString &strPreferredAddress)
+{
+	m_bindAddress.ResetContent();
+	int iItem = m_bindAddress.AddString(GetResString(IDS_BIND_ALL_ADDRESSES));
+	m_bindAddress.SetCurSel(iItem);
+
+	CStringArray astrAddresses;
+	const CString strSelectedInterfaceId = GetSelectedBindInterfaceId();
+	if (strSelectedInterfaceId.IsEmpty()) {
+		for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+			for (size_t j = 0; j < m_bindInterfaces[i].addresses.size(); ++j) {
+				bool bDuplicate = false;
+				for (INT_PTR k = 0; k < astrAddresses.GetCount(); ++k) {
+					if (!astrAddresses[k].CompareNoCase(m_bindInterfaces[i].addresses[j])) {
+						bDuplicate = true;
+						break;
+					}
+				}
+				if (!bDuplicate)
+					astrAddresses.Add(m_bindInterfaces[i].addresses[j]);
+			}
+		}
+	} else {
+		for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+			if (m_bindInterfaces[i].strId.CompareNoCase(strSelectedInterfaceId))
+				continue;
+
+			for (size_t j = 0; j < m_bindInterfaces[i].addresses.size(); ++j)
+				astrAddresses.Add(m_bindInterfaces[i].addresses[j]);
+			break;
+		}
+	}
+
+	int iSelectedItem = 0;
+	for (INT_PTR i = 0; i < astrAddresses.GetCount(); ++i) {
+		iItem = m_bindAddress.AddString(astrAddresses[i]);
+		if (!astrAddresses[i].CompareNoCase(strPreferredAddress))
+			iSelectedItem = iItem;
+	}
+
+	if (!strPreferredAddress.IsEmpty() && iSelectedItem == 0) {
+		iItem = m_bindAddress.AddString(strPreferredAddress);
+		iSelectedItem = iItem;
+	}
+
+	m_bindAddress.SetCurSel(iSelectedItem);
+}
+
+CString CPPgWebServer::GetSelectedBindInterfaceId() const
+{
+	const int iSel = m_bindInterface.GetCurSel();
+	if (iSel == CB_ERR)
+		return CString();
+
+	const DWORD_PTR dwItemData = m_bindInterface.GetItemData(iSel);
+	if (dwItemData == s_dwAnyInterfaceItemData)
+		return CString();
+	if (dwItemData == s_dwMissingInterfaceItemData)
+		return m_strMissingBindInterfaceId;
+	if (dwItemData >= m_bindInterfaces.size())
+		return CString();
+	return m_bindInterfaces[dwItemData].strId;
+}
+
+CString CPPgWebServer::GetSelectedBindInterfaceName() const
+{
+	const int iSel = m_bindInterface.GetCurSel();
+	if (iSel == CB_ERR)
+		return CString();
+
+	const DWORD_PTR dwItemData = m_bindInterface.GetItemData(iSel);
+	if (dwItemData == s_dwAnyInterfaceItemData)
+		return CString();
+	if (dwItemData == s_dwMissingInterfaceItemData)
+		return m_strMissingBindInterfaceName;
+	if (dwItemData >= m_bindInterfaces.size())
+		return CString();
+	return m_bindInterfaces[dwItemData].strName;
+}
+
+CString CPPgWebServer::GetSelectedBindAddress() const
+{
+	const int iSel = m_bindAddress.GetCurSel();
+	if (iSel <= 0)
+		return CString();
+
+	CString strAddress;
+	m_bindAddress.GetLBText(iSel, strAddress);
+	return strAddress;
 }
 
 BOOL CPPgWebServer::OnInitDialog()
@@ -242,6 +381,7 @@ BOOL CPPgWebServer::OnInitDialog()
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPASSLOW))->SetLimitText(32);
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPORT))->SetLimitText(5);
 
+	LoadBindableInterfaces();
 	LoadSettings();
 	Localize();
 
@@ -252,12 +392,15 @@ BOOL CPPgWebServer::OnInitDialog()
 
 void CPPgWebServer::LoadSettings()
 {
+	LoadBindableInterfaces();
 	CheckDlgButton(IDC_WSENABLED, static_cast<UINT>(thePrefs.GetWSIsEnabled()));
 	CheckDlgButton(IDC_WS_GZIP, static_cast<UINT>(thePrefs.GetWebUseGzip()));
 
 	CheckDlgButton(IDC_WSUPNP, static_cast<UINT>(thePrefs.m_bWebUseUPnP));
 	GetDlgItem(IDC_WSUPNP)->EnableWindow(thePrefs.IsUPnPEnabled() && thePrefs.GetWSIsEnabled());
 	SetDlgItemInt(IDC_WSPORT, thePrefs.GetWSPort());
+	FillBindInterfaceCombo();
+	FillBindAddressCombo(thePrefs.GetConfiguredWebBindAddr());
 
 	SetDlgItemText(IDC_TMPLPATH, thePrefs.GetTemplate());
 	SetDlgItemInt(IDC_WSTIMEOUT, thePrefs.GetWebTimeoutMins());
@@ -343,6 +486,18 @@ BOOL CPPgWebServer::OnApply()
 			theApp.webserver->RestartSockets();
 		}
 
+		const CString strBindInterfaceId = GetSelectedBindInterfaceId();
+		const CString strBindInterfaceName = GetSelectedBindInterfaceName();
+		const CString strBindAddress = GetSelectedBindAddress();
+		if (thePrefs.GetWebBindInterface().CompareNoCase(strBindInterfaceId)
+			|| thePrefs.GetWebBindInterfaceName().CompareNoCase(strBindInterfaceName)
+			|| thePrefs.GetConfiguredWebBindAddr().CompareNoCase(strBindAddress)) {
+			// The Web UI owns its own listener, so its bind selection can be applied immediately.
+			thePrefs.SetWebBindNetworkSelection(strBindInterfaceId, strBindInterfaceName, strBindAddress);
+			thePrefs.RefreshResolvedWebBindAddress();
+			theApp.webserver->RestartSockets();
+		}
+
 		if (thePrefs.GetWebUseHttps() != bHTTPS || (bHTTPS && m_bNewCert))
 			theApp.webserver->StopServer();
 		m_bNewCert = false;
@@ -376,6 +531,8 @@ void CPPgWebServer::Localize()
 		SetDlgItemText(IDC_WS_GZIP, GetResString(IDS_WEB_GZIP_COMPRESSION));
 		SetDlgItemText(IDC_WSUPNP, GetResString(IDS_WEBUPNPINCLUDE));
 		SetDlgItemText(IDC_WSPORT_LBL, GetResString(IDS_PORT) + _T(':'));
+		SetDlgItemText(IDC_WS_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE) + _T(':'));
+		SetDlgItemText(IDC_WS_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS) + _T(':'));
 
 		SetDlgItemText(IDC_TEMPLATE, GetResString(IDS_WS_RELOAD_TMPL) + _T(':'));
 		SetDlgItemText(IDC_WSRELOADTMPL, GetResString(IDS_SF_RELOAD));
@@ -426,6 +583,8 @@ void CPPgWebServer::OnEnChangeWSEnabled()
 	bool bIsWIEnabled = IsDlgButtonChecked(IDC_WSENABLED) != 0;
 	GetDlgItem(IDC_WS_GZIP)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSPORT)->EnableWindow(bIsWIEnabled);
+	GetDlgItem(IDC_WS_BIND_INTERFACE)->EnableWindow(bIsWIEnabled);
+	GetDlgItem(IDC_WS_BIND_ADDRESS)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_TMPLPATH)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_TMPLBROWSE)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSTIMEOUT)->EnableWindow(bIsWIEnabled);
@@ -544,6 +703,12 @@ BOOL CPPgWebServer::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+void CPPgWebServer::OnCbnSelChangeBindInterface()
+{
+	FillBindAddressCombo(GetSelectedBindAddress());
+	SetModified();
 }
 
 void CPPgWebServer::OnDestroy()

@@ -65,6 +65,9 @@ The last two groups are documented because they still live in the same file, but
 | `Port` | `eMule` | `RW` | Yes | existing app default | Main TCP listening port. |
 | `UDPPort` | `eMule` | `RW` | Yes | existing app default | Main UDP listening port. |
 | `ServerUDPPort` | `eMule` | `RW` | Yes | existing app default | UDP port used for server communication. |
+| `BindInterface` | `eMule` | `RW` | Yes | empty | Preferred network interface for P2P sockets. Empty means no interface restriction. |
+| `BindInterfaceName` | `eMule` | `RW` | Yes | empty | Stored display name for the selected P2P bind interface, mainly to keep the UI readable if the adapter is currently missing. |
+| `BindAddr` | `eMule` | `RW` | Yes | empty | Optional IPv4 address for P2P sockets. Empty means all addresses on the selected interface, or all interfaces when no interface is selected. |
 | `ConditionalTCPAccept` | `eMule` | `RW` | Yes | existing app default | Controls conditional TCP accept behavior. This is an advanced network-side knob. |
 | `OpenPortsOnStartUp` | `eMule` | `RW` | Yes | `false` | Open port mappings or startup networking paths early on launch. |
 
@@ -223,6 +226,9 @@ The last two groups are documented because they still live in the same file, but
 | `Password` | `WebServer` | `RW` | Yes | empty | Admin web password. |
 | `PasswordLow` | `eMule` | `RW` | Yes | empty | Low-rights web password. |
 | `Port` | `eMule` | `RW` | Yes | `4711` for web path | Web server port. |
+| `BindInterface` | `WebServer` | `RW` | Yes | empty | Preferred network interface for the Web UI listener. Empty means no interface restriction. |
+| `BindInterfaceName` | `WebServer` | `RW` | Yes | empty | Stored display name for the selected Web UI bind interface. |
+| `BindAddr` | `WebServer` | `RW` | Yes | empty | Optional IPv4 address for the Web UI listener. Empty means all addresses on the selected interface, or all interfaces when no interface is selected. |
 | `Enabled` | `eMule` | `RW` | Yes | `false` | Enable the web server. |
 | `UseLowRightsUser` | `eMule` | `RW` | Yes | `false` | Enable low-rights web user mode. |
 | `PageRefreshTime` | `eMule` | `RW` | Yes | `120` | Auto-refresh interval in seconds. |
@@ -301,7 +307,6 @@ These settings are active and meaningful. They are now exposed in the Advanced t
 | `FileBufferSizePref` | `eMule` | `R` | old compatibility import | Old file-buffer key. Current code reads it only as migration input, then uses `FileBufferSize`. |
 | `QueueSizePref` | `eMule` | `R` | old compatibility import | Old queue-size key. Current code reads it only as migration input, then uses `QueueSize`. |
 | `UploadCapacity` | `eMule` | `R` | legacy compatibility | Older upload-capacity key superseded by `UploadCapacityNew`. |
-| `BindAddr` | `eMule` | `R` | empty | Legacy bind-address input. |
 | `UserSortedServerList` | `eMule` | `R` | legacy compatibility | Legacy server-list ordering state. |
 | `AICHTrustEveryHash` | `eMule` | `R` | `false` | Loaded into preferences, but no confirmed non-`Preferences.*` runtime use was found during the audit. Likely stale or unfinished. |
 

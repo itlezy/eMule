@@ -1,5 +1,8 @@
 #pragma once
 
+#include <vector>
+#include "BindAddressResolver.h"
+
 class CPPgConnection : public CPropertyPage
 {
 	DECLARE_DYNAMIC(CPPgConnection)
@@ -9,8 +12,17 @@ class CPPgConnection : public CPropertyPage
 		IDD = IDD_PPG_CONNECTION
 	};
 	uint16 m_lastudp;
+	std::vector<BindableNetworkInterface> m_bindInterfaces;
+	CString m_strMissingBindInterfaceId;
+	CString m_strMissingBindInterfaceName;
 	void ChangePorts(uint8 iWhat); //0 - UDP, 1 - TCP, 2 - enable/disable "Test ports"
 	bool ChangeUDP();
+	void LoadBindableInterfaces();
+	void FillBindInterfaceCombo();
+	void FillBindAddressCombo(const CString &strPreferredAddress);
+	CString GetSelectedBindInterfaceId() const;
+	CString GetSelectedBindInterfaceName() const;
+	CString GetSelectedBindAddress() const;
 
 public:
 	CPPgConnection();
@@ -23,6 +35,8 @@ public:
 protected:
 	CSliderCtrl m_ctlMaxDown;
 	CSliderCtrl m_ctlMaxUp;
+	CComboBox m_bindInterface;
+	CComboBox m_bindAddress;
 
 	void ShowLimitValues();
 	void SetRateSliderTicks(CSliderCtrl &rRate);
@@ -45,4 +59,5 @@ protected:
 	afx_msg void OnStartPortTest();
 	afx_msg void OnEnKillFocusTCP();
 	afx_msg void OnEnKillFocusUDP();
+	afx_msg void OnCbnSelChangeBindInterface();
 };

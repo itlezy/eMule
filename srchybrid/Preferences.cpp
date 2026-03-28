@@ -34,6 +34,7 @@
 #include "emuledlg.h"
 #include "StatisticsDlg.h"
 #include "Log.h"
+#include "BindAddressResolver.h"
 #include "MuleToolbarCtrl.h"
 #include "VistaDefines.h"
 #include "../../eMule-cryptopp/osrng.h"
@@ -54,6 +55,77 @@ namespace
 	static const uint16 s_uStartupTcpPortMin = 21756;
 	static const uint16 s_uStartupTcpPortMax = 65500;
 	static const uint16 s_uStartupUdpPortOffset = 10;
+
+	static void SetResolvedBindAddress(const CString &strResolvedAddress
+		, CStringW &rstrBindAddrW
+		, LPCWSTR &rpszBindAddrW
+		, CStringA &rstrBindAddrA
+		, LPCSTR &rpszBindAddrA)
+	{
+		rstrBindAddrW = strResolvedAddress;
+		rpszBindAddrW = rstrBindAddrW.IsEmpty() ? NULL : (LPCWSTR)rstrBindAddrW;
+		rstrBindAddrA = rstrBindAddrW;
+		rpszBindAddrA = rstrBindAddrA.IsEmpty() ? NULL : (LPCSTR)rstrBindAddrA;
+	}
+
+	static void LogBindAddressResolution(LPCTSTR pszBindingName
+		, const CString &strInterfaceId
+		, const CString &strInterfaceName
+		, const CString &strConfiguredAddress
+		, EBindAddressResolveResult eResult
+		, const CString &strResolvedAddress)
+	{
+		switch (eResult) {
+		case BARR_Default:
+			if (strInterfaceId.IsEmpty() && strConfiguredAddress.IsEmpty())
+				DebugLog(_T("%s binding uses the default interface selection"), pszBindingName);
+			break;
+		case BARR_Resolved:
+			if (!strResolvedAddress.IsEmpty())
+				DebugLog(_T("%s binding resolved to %s"), pszBindingName, (LPCTSTR)strResolvedAddress);
+			break;
+		case BARR_InterfaceNotFound:
+			DebugLogWarning(_T("%s binding interface not found; falling back to the default interface selection (%s)"), pszBindingName
+				, !strInterfaceName.IsEmpty() ? (LPCTSTR)strInterfaceName : (LPCTSTR)strInterfaceId);
+			break;
+		case BARR_InterfaceHasNoAddress:
+			DebugLogWarning(_T("%s binding interface has no usable IPv4 address; falling back to the default interface selection (%s)"), pszBindingName
+				, !strInterfaceName.IsEmpty() ? (LPCTSTR)strInterfaceName : (LPCTSTR)strInterfaceId);
+			break;
+		case BARR_AddressNotFoundOnInterface:
+			DebugLogWarning(_T("%s binding address %s was not found on interface %s; using %s instead"), pszBindingName
+				, (LPCTSTR)strConfiguredAddress
+				, !strInterfaceName.IsEmpty() ? (LPCTSTR)strInterfaceName : (LPCTSTR)strInterfaceId
+				, (LPCTSTR)strResolvedAddress);
+			break;
+		default:
+			ASSERT(0);
+		}
+	}
+
+	static void ResolveConfiguredBinding(LPCTSTR pszBindingName
+		, const CString &strInterfaceId
+		, CString &rstrInterfaceName
+		, const CString &strConfiguredAddress
+		, CStringW &rstrBindAddrW
+		, LPCWSTR &rpszBindAddrW
+		, CStringA &rstrBindAddrA
+		, LPCSTR &rpszBindAddrA)
+	{
+		CString strResolvedAddress;
+		CString strResolvedInterfaceName;
+		const EBindAddressResolveResult eResult = CBindAddressResolver::ResolveBindAddress(strInterfaceId, strConfiguredAddress
+			, strResolvedAddress, &strResolvedInterfaceName);
+
+		if (!strResolvedInterfaceName.IsEmpty())
+			rstrInterfaceName = strResolvedInterfaceName;
+
+		if (eResult == BARR_InterfaceNotFound || eResult == BARR_InterfaceHasNoAddress)
+			strResolvedAddress.Empty();
+
+		SetResolvedBindAddress(strResolvedAddress, rstrBindAddrW, rpszBindAddrW, rstrBindAddrA, rpszBindAddrA);
+		LogBindAddressResolution(pszBindingName, strInterfaceId, rstrInterfaceName, strConfiguredAddress, eResult, strResolvedAddress);
+	}
 
 	static uint16 GetRandomStartupTCPPort(bool bReserveUdpPair)
 	{
@@ -131,10 +203,20 @@ float	CPreferences::m_bbBoostLowRatioFilesBy;
 uint32	CPreferences::m_bbDeboostLowIDs;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
+CString	CPreferences::m_strConfiguredBindAddr;
+CString	CPreferences::m_strBindInterface;
+CString	CPreferences::m_strBindInterfaceName;
 LPCSTR	CPreferences::m_pszBindAddrA;
 CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
 CStringW CPreferences::m_strBindAddrW;
+CString	CPreferences::m_strConfiguredWebBindAddr;
+CString	CPreferences::m_strWebBindInterface;
+CString	CPreferences::m_strWebBindInterfaceName;
+LPCSTR	CPreferences::m_pszWebBindAddrA;
+CStringA CPreferences::m_strWebBindAddrA;
+LPCWSTR	CPreferences::m_pszWebBindAddrW;
+CStringW CPreferences::m_strWebBindAddrW;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
 uint16	CPreferences::nServerUDPPort;
@@ -1601,6 +1683,9 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("ConditionalTCPAccept"), m_bConditionalTCPAccept);
 	ini.WriteInt(_T("Port"), port);
 	ini.WriteInt(_T("UDPPort"), udpport);
+	ini.WriteString(_T("BindInterface"), m_strBindInterface);
+	ini.WriteString(_T("BindInterfaceName"), m_strBindInterfaceName);
+	ini.WriteString(_T("BindAddr"), m_strConfiguredBindAddr);
 	ini.WriteBool(_T("RandomizePortsOnStartup"), m_bRandomizePortsOnStartup);
 	ini.WriteInt(_T("ServerUDPPort"), nServerUDPPort);
 	ini.WriteInt(_T("MaxSourcesPerFile"), maxsourceperfile);
@@ -1894,6 +1979,9 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("Password"), GetWSPass(), _T("WebServer"));
 	ini.WriteString(_T("PasswordLow"), GetWSLowPass());
 	ini.WriteInt(_T("Port"), m_nWebPort);
+	ini.WriteString(_T("BindInterface"), m_strWebBindInterface, _T("WebServer"));
+	ini.WriteString(_T("BindInterfaceName"), m_strWebBindInterfaceName, _T("WebServer"));
+	ini.WriteString(_T("BindAddr"), m_strConfiguredWebBindAddr, _T("WebServer"));
 	ini.WriteBool(_T("WebUseUPnP"), m_bWebUseUPnP);
 	ini.WriteBool(_T("Enabled"), m_bWebEnabled);
 	ini.WriteBool(_T("UseGzip"), m_bWebUseGzip);
@@ -2060,10 +2148,11 @@ void CPreferences::LoadPreferences()
 	if (dwSP2OrHigher != static_cast<int>(dwCurSP2OrHigher))
 		maxhalfconnections = dwCurSP2OrHigher ? 9 : 50;
 
-	m_strBindAddrW = ini.GetString(_T("BindAddr")).Trim();
-	m_pszBindAddrW = m_strBindAddrW.IsEmpty() ? NULL : (LPCWSTR)m_strBindAddrW;
-	m_strBindAddrA = m_strBindAddrW;
-	m_pszBindAddrA = m_strBindAddrA.IsEmpty() ? NULL : (LPCSTR)m_strBindAddrA;
+	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
+	m_strBindInterfaceName = ini.GetString(_T("BindInterfaceName")).Trim();
+	m_strConfiguredBindAddr = ini.GetString(_T("BindAddr")).Trim();
+	ResolveConfiguredBinding(_T("P2P"), m_strBindInterface, m_strBindInterfaceName, m_strConfiguredBindAddr
+		, m_strBindAddrW, m_pszBindAddrW, m_strBindAddrA, m_pszBindAddrA);
 	m_bRandomizePortsOnStartup = ini.GetBool(_T("RandomizePortsOnStartup"), false);
 
 	const uint16 nConfiguredTCPPort = static_cast<uint16>(ini.GetInt(_T("Port"), 0));
@@ -2499,6 +2588,11 @@ void CPreferences::LoadPreferences()
 	m_strWebPassword = ini.GetString(_T("Password"), _T(""), _T("WebServer"));
 	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
 	m_nWebPort = (uint16)ini.GetInt(_T("Port"), 4711);
+	m_strWebBindInterface = ini.GetString(_T("BindInterface"), _T(""), _T("WebServer")).Trim();
+	m_strWebBindInterfaceName = ini.GetString(_T("BindInterfaceName"), _T(""), _T("WebServer")).Trim();
+	m_strConfiguredWebBindAddr = ini.GetString(_T("BindAddr"), _T(""), _T("WebServer")).Trim();
+	ResolveConfiguredBinding(_T("Web interface"), m_strWebBindInterface, m_strWebBindInterfaceName, m_strConfiguredWebBindAddr
+		, m_strWebBindAddrW, m_pszWebBindAddrW, m_strWebBindAddrA, m_pszWebBindAddrA);
 	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
 	m_bWebEnabled = ini.GetBool(_T("Enabled"), false);
 	m_bWebLowEnabled = ini.GetBool(_T("UseLowRightsUser"), false);
@@ -2732,6 +2826,32 @@ void CPreferences::UpdateLastVC()
 void CPreferences::SetWSPass(const CString &strNewPass)
 {
 	m_strWebPassword = MD5Sum(strNewPass).GetHashString();
+}
+
+void CPreferences::SetBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress)
+{
+	m_strBindInterface = strInterfaceId;
+	m_strBindInterface.Trim();
+	m_strBindInterfaceName = strInterfaceName;
+	m_strBindInterfaceName.Trim();
+	m_strConfiguredBindAddr = strAddress;
+	m_strConfiguredBindAddr.Trim();
+}
+
+void CPreferences::SetWebBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress)
+{
+	m_strWebBindInterface = strInterfaceId;
+	m_strWebBindInterface.Trim();
+	m_strWebBindInterfaceName = strInterfaceName;
+	m_strWebBindInterfaceName.Trim();
+	m_strConfiguredWebBindAddr = strAddress;
+	m_strConfiguredWebBindAddr.Trim();
+}
+
+void CPreferences::RefreshResolvedWebBindAddress()
+{
+	ResolveConfiguredBinding(_T("Web interface"), m_strWebBindInterface, m_strWebBindInterfaceName, m_strConfiguredWebBindAddr
+		, m_strWebBindAddrW, m_pszWebBindAddrW, m_strWebBindAddrA, m_pszWebBindAddrA);
 }
 
 void CPreferences::SetWSLowPass(const CString &strNewPass)

@@ -2394,6 +2394,14 @@
 #define IDC_SF_FICON                    3037
 #define IDC_SF_FNAME                    3038
 #define IDC_RANDOMIZEPORTSONSTARTUP     3039
+#define IDC_BIND_INTERFACE_LABEL        3040
+#define IDC_BIND_INTERFACE              3041
+#define IDC_BIND_ADDRESS_LABEL          3042
+#define IDC_BIND_ADDRESS                3043
+#define IDC_WS_BIND_INTERFACE_LABEL     3044
+#define IDC_WS_BIND_INTERFACE           3045
+#define IDC_WS_BIND_ADDRESS_LABEL       3046
+#define IDC_WS_BIND_ADDRESS             3047
 #define IDS_RANDOMIZEPORTSONSTARTUP     1638
 #define IDS_HIDDENRUNTIME_STARTUP       1639
 #define IDS_HIDDENRUNTIME_FILE          1640
@@ -2419,6 +2427,10 @@
 #define IDS_ADJUSTNTFSDAYLIGHTFILETIME  1660
 #define IDS_REARRANGEKADSEARCHKEYWORDS  1661
 #define IDS_MESSAGEFROMVALIDSOURCESONLY 1662
+#define IDS_BIND_INTERFACE              1663
+#define IDS_BIND_ADDRESS                1664
+#define IDS_BIND_ANY_INTERFACE          1665
+#define IDS_BIND_ALL_ADDRESSES          1666
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2427,7 +2439,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3040
-#define _APS_NEXT_SYMED_VALUE           1663
+#define _APS_NEXT_CONTROL_VALUE         3048
+#define _APS_NEXT_SYMED_VALUE           1667
 #endif
 #endif

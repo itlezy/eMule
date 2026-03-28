@@ -146,6 +146,8 @@ class CPreferences
 
 	static LPCSTR	m_pszBindAddrA;
 	static LPCWSTR	m_pszBindAddrW;
+	static LPCSTR	m_pszWebBindAddrA;
+	static LPCWSTR	m_pszWebBindAddrW;
 	static void		MovePreferences(EDefaultDirectory eSrc, LPCTSTR const sFile, const CString &dst);
 public:
 	static CString	strNick;
@@ -160,8 +162,16 @@ public:
 	static uint32	m_bbDeboostLowIDs;
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
+	static CString	m_strConfiguredBindAddr;
+	static CString	m_strBindInterface;
+	static CString	m_strBindInterfaceName;
 	static CStringA m_strBindAddrA;
 	static CStringW m_strBindAddrW;
+	static CString	m_strConfiguredWebBindAddr;
+	static CString	m_strWebBindInterface;
+	static CString	m_strWebBindInterfaceName;
+	static CStringA m_strWebBindAddrA;
+	static CStringW m_strWebBindAddrW;
 	static uint16	port;
 	static uint16	udpport;
 	static uint16	nServerUDPPort;
@@ -697,6 +707,10 @@ public:
 
 	static LPCSTR	GetBindAddrA()						{ return m_pszBindAddrA; }
 	static LPCWSTR	GetBindAddrW()						{ return m_pszBindAddrW; }
+	static const CString& GetConfiguredBindAddr()		{ return m_strConfiguredBindAddr; }
+	static const CString& GetBindInterface()			{ return m_strBindInterface; }
+	static const CString& GetBindInterfaceName()		{ return m_strBindInterfaceName; }
+	static void		SetBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress);
 #ifdef UNICODE
 #define GetBindAddr  GetBindAddrW
 #else
@@ -1216,6 +1230,13 @@ public:
 	static uint16	GetWSPort()							{ return m_nWebPort; }
 	static bool		GetWSUseUPnP()						{ return m_bWebUseUPnP && GetWSIsEnabled(); }
 	static void		SetWSPort(uint16 uPort)				{ m_nWebPort = uPort; }
+	static LPCSTR	GetWebBindAddrA()					{ return m_pszWebBindAddrA; }
+	static LPCWSTR	GetWebBindAddrW()					{ return m_pszWebBindAddrW; }
+	static const CString& GetConfiguredWebBindAddr()	{ return m_strConfiguredWebBindAddr; }
+	static const CString& GetWebBindInterface()		{ return m_strWebBindInterface; }
+	static const CString& GetWebBindInterfaceName()	{ return m_strWebBindInterfaceName; }
+	static void		SetWebBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress);
+	static void		RefreshResolvedWebBindAddress();
 	static const CString& GetWSPass()					{ return m_strWebPassword; }
 	static void		SetWSPass(const CString &strNewPass);
 	static bool		GetWSIsEnabled()					{ return m_bWebEnabled; }
