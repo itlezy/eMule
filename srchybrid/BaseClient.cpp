@@ -2966,6 +2966,11 @@ CString CUpDownClient::GetCountryName() const
 	return theApp.ip2country != NULL ? theApp.ip2country->GetCountryNameFromRef(m_structUserCountry) : CString(_T("N/A"));
 }
 
+int CUpDownClient::GetCountryFlagIndex() const
+{
+	return theApp.ip2country != NULL ? theApp.ip2country->GetFlagImageIndexFromRef(m_structUserCountry) : -1;
+}
+
 void CUpDownClient::ResetIP2Country(uint32 dwIP)
 {
 	if (theApp.ip2country == NULL) {

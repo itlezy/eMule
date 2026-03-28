@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "QueueListCtrl.h"
+#include "IP2Country.h"
 #include "UpDownClient.h"
 #include "ClientCredits.h"
 #include "MenuCmds.h"
@@ -88,11 +89,12 @@ void CQueueListCtrl::Init()
 	InsertColumn(12,_T(""),	LVCFMT_LEFT, 80);							//IDS_COOLDOWN
 	InsertColumn(13,_T(""),	LVCFMT_LEFT, 100);							//IDS_CD_CSOFT
 	InsertColumn(14,_T(""),	LVCFMT_RIGHT, 100);							//IDS_CLIENT_UPLOADED
-	InsertColumn(15,_T(""),	LVCFMT_LEFT, 100);							//IDS_COUNTRY
-	InsertColumn(16,_T(""),	LVCFMT_LEFT, 120);							//IDS_IP
-	InsertColumn(17,_T(""),	LVCFMT_LEFT, 70);							//IDS_IDLOW
-	InsertColumn(18,_T(""),	LVCFMT_LEFT, 120);							//IDS_CLIENT_HASH
-	InsertColumn(19,_T(""),	LVCFMT_RIGHT, 90);							//IDS_FILE_SIZE
+	InsertColumn(15,_T(""),	LVCFMT_LEFT, 35);							//IDS_FLAG
+	InsertColumn(16,_T(""),	LVCFMT_LEFT, 100);							//IDS_COUNTRY
+	InsertColumn(17,_T(""),	LVCFMT_LEFT, 120);							//IDS_IP
+	InsertColumn(18,_T(""),	LVCFMT_LEFT, 70);							//IDS_IDLOW
+	InsertColumn(19,_T(""),	LVCFMT_LEFT, 120);							//IDS_CLIENT_HASH
+	InsertColumn(20,_T(""),	LVCFMT_RIGHT, 90);							//IDS_FILE_SIZE
 
 	SetAllIcons();
 	Localize();
@@ -103,12 +105,12 @@ void CQueueListCtrl::Init()
 
 void CQueueListCtrl::Localize()
 {
-	static const UINT uids[20] =
+	static const UINT uids[21] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_QL_RATING, IDS_SCORE
 		, IDS_ASKED, IDS_LASTSEEN, IDS_ENTERQUEUE, IDS_BANNED, IDS_UPSTATUS
 		, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_CD_CSOFT
-		, IDS_CLIENT_UPLOADED, IDS_COUNTRY, IDS_IP, IDS_IDLOW, IDS_CLIENT_HASH, IDS_FILE_SIZE
+		, IDS_CLIENT_UPLOADED, IDS_FLAG, IDS_COUNTRY, IDS_IP, IDS_IDLOW, IDS_CLIENT_HASH, IDS_FILE_SIZE
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -173,6 +175,18 @@ void CQueueListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				rcItem.left += sm_iSubItemInset;
 				rcItem.right -= sm_iSubItemInset;
 				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
+			case 15: // flag
+				rcItem.left += sm_iSubItemInset;
+				rcItem.right -= sm_iSubItemInset;
+				{
+					const int iFlagImage = client->GetCountryFlagIndex();
+					CImageList* pFlagImageList = (iFlagImage >= 0 && theApp.ip2country != NULL) ? theApp.ip2country->GetFlagImageList() : NULL;
+					if (pFlagImageList != NULL) {
+						const POINT point = {rcItem.left, rcItem.top + iIconY};
+						pFlagImageList->Draw(&dc, iFlagImage, point, ILD_NORMAL);
+					}
+				}
 				break;
 			case 9: //obtained parts
 				if (client->GetUpPartCount()) {
@@ -297,18 +311,20 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 			sText = _T("?");
 		break;
 	case 15:
-		sText = client->GetCountryName();
 		break;
 	case 16:
-		sText = ipstr(client->GetIP());
+		sText = client->GetCountryName();
 		break;
 	case 17:
-		sText = GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		sText = ipstr(client->GetIP());
 		break;
 	case 18:
-		sText = client->HasValidHash() ? md4str(client->GetUserHash()) : _T("?");
+		sText = GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
 		break;
 	case 19:
+		sText = client->HasValidHash() ? md4str(client->GetUserHash()) : _T("?");
+		break;
+	case 20:
 		{
 			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 			if (file != NULL)
@@ -358,7 +374,7 @@ void CQueueListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 11: // Session Ratio
 		case 12: // Cooldown
 		case 14: // Client Uploaded
-		case 19: // File Size
+		case 20: // File Size
 			sortAscending = false;
 			break;
 		default:
@@ -468,21 +484,22 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 			iResult = (item1->Credits() == NULL) ? 1 : -1;
 		break;
 	case 15:
+	case 16:
 		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
 		break;
-	case 16:
+	case 17:
 		iResult = CompareUnsigned(htonl(item1->GetIP()), htonl(item2->GetIP()));
 		break;
-	case 17:
+	case 18:
 		iResult = (int)item1->HasLowID() - (int)item2->HasLowID();
 		break;
-	case 18:
+	case 19:
 		if (item1->HasValidHash() && item2->HasValidHash())
 			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
 		else
 			iResult = item1->HasValidHash() ? -1 : (item2->HasValidHash() ? 1 : 0);
 		break;
-	case 19:
+	case 20:
 		{
 			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());

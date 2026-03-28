@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "DownloadListCtrl.h"
+#include "IP2Country.h"
 #include "updownclient.h"
 #include "MenuCmds.h"
 #include "ClientDetailDialog.h"
@@ -129,10 +130,11 @@ void CDownloadListCtrl::Init()
 	InsertColumn(12,	_T(""),	LVCFMT_LEFT,	100, -1, true);					//IDS_CAT
 	InsertColumn(13,	_T(""),	LVCFMT_LEFT,	120);							//IDS_ADDEDON
 	InsertColumn(14,	_T(""),	LVCFMT_RIGHT,	50);							//IDS_PERCENTAGE
-	InsertColumn(15,	_T(""),	LVCFMT_LEFT,	100);							//IDS_COUNTRY
-	InsertColumn(16,	_T(""),	LVCFMT_LEFT,	120);							//IDS_IP
-	InsertColumn(17,	_T(""),	LVCFMT_LEFT,	70);							//IDS_IDLOW/IDS_IDHIGH
-	InsertColumn(18,	_T(""),	LVCFMT_RIGHT,	70);							//IDS_BLOCKS
+	InsertColumn(15,	_T(""),	LVCFMT_LEFT,	35);							//IDS_FLAG
+	InsertColumn(16,	_T(""),	LVCFMT_LEFT,	100);							//IDS_COUNTRY
+	InsertColumn(17,	_T(""),	LVCFMT_LEFT,	120);							//IDS_IP
+	InsertColumn(18,	_T(""),	LVCFMT_LEFT,	70);							//IDS_IDLOW/IDS_IDHIGH
+	InsertColumn(19,	_T(""),	LVCFMT_RIGHT,	70);							//IDS_BLOCKS
 
 	SetAllIcons();
 	Localize();
@@ -208,12 +210,12 @@ void CDownloadListCtrl::SetAllIcons()
 
 void CDownloadListCtrl::Localize()
 {
-	static const UINT uids[19] =
+	static const UINT uids[20] =
 	{
 		IDS_DL_FILENAME, IDS_DL_SIZE, IDS_DL_TRANSF, IDS_DL_TRANSFCOMPL, IDS_DL_SPEED
 		, IDS_DL_PROGRESS, IDS_DL_SOURCES, IDS_PRIORITY, IDS_STATUS, IDS_DL_REMAINS
 		, 0/*IDS_LASTSEENCOMPL*/, 0/*IDS_FD_LASTCHANGE*/, IDS_CAT, IDS_ADDEDON
-		, IDS_PERCENTAGE, IDS_COUNTRY, IDS_IP, IDS_IDLOW, IDS_BLOCKS
+		, IDS_PERCENTAGE, IDS_FLAG, IDS_COUNTRY, IDS_IP, IDS_IDLOW, IDS_BLOCKS
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -543,16 +545,16 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 // ZZ:DownloadManager <--
 		}
 		break;
-	case 15: // country
+	case 16: // country
 		sText = pClient->GetCountryName();
 		break;
-	case 16: // IP
+	case 17: // IP
 		sText = ipstr(pClient->GetIP());
 		break;
-	case 17: // ID
+	case 18: // ID
 		sText = GetResString(pClient->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
 		break;
-	case 18: // blocks / available parts
+	case 19: // blocks / available parts
 		sText.Format(_T("%u"), pClient->GetAvailablePartCount());
 		break;
 	//case 9: //remaining time & size
@@ -661,6 +663,21 @@ void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UIN
 				hOldBitmap = cdcStatus.SelectObject(pCtrlItem->status);
 			dc.BitBlt(lpRect->left, lpRect->top + 1, iWidth, iHeight, &cdcStatus, 0, 0, SRCCOPY);
 			cdcStatus.SelectObject(hOldBitmap);
+		}
+		break;
+	case 15: // flag
+		{
+			CRect rcItem(*lpRect);
+			rcItem.left += sm_iSubItemInset;
+			rcItem.right -= sm_iSubItemInset;
+
+			const int iFlagImage = pClient->GetCountryFlagIndex();
+			CImageList* pFlagImageList = (iFlagImage >= 0 && theApp.ip2country != NULL) ? theApp.ip2country->GetFlagImageList() : NULL;
+			if (pFlagImageList != NULL) {
+				const int iIconPosY = max((rcItem.Height() - 15) / 2, 0);
+				const POINT point = {rcItem.left, rcItem.top + iIconPosY};
+				pFlagImageList->Draw(&dc, iFlagImage, point, ILD_NORMAL);
+			}
 		}
 		break;
 	//case 9: // remaining time & size
@@ -1813,13 +1830,14 @@ int CDownloadListCtrl::Compare(const CUpDownClient *client1, const CUpDownClient
 				return -1;
 		}
 		return client1->GetDownloadState() - client2->GetDownloadState();
-	case 15: // country
+	case 15: // flag
+	case 16: // country
 		return CompareLocaleStringNoCase(client1->GetCountryName(), client2->GetCountryName());
-	case 16: // IP
+	case 17: // IP
 		return CompareUnsigned(htonl(client1->GetIP()), htonl(client2->GetIP()));
-	case 17: // ID
+	case 18: // ID
 		return (int)client1->HasLowID() - (int)client2->HasLowID();
-	case 18: // blocks / available parts
+	case 19: // blocks / available parts
 		return CompareUnsigned(client1->GetAvailablePartCount(), client2->GetAvailablePartCount());
 	}
 	return 0;

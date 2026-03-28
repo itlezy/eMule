@@ -1578,6 +1578,7 @@
 #define IDS_BB_SCORE_BONUS              1634
 #define IDS_BB_DEBOOST_LOWIDS           1635
 #define IDS_BB_DIVISOR                  1636
+#define IDS_FLAG                        1637
 #define IDC_ANIMATE1                    2000
 #define IDC_STATUS                      2001
 #define IDC_FILESTATUS                  2002
@@ -2401,6 +2402,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3037
-#define _APS_NEXT_SYMED_VALUE           1637
+#define _APS_NEXT_SYMED_VALUE           1638
 #endif
 #endif

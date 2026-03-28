@@ -97,6 +97,7 @@ public:
 	//Only use this when you know the real IP or when your clearing it.
 	void			SetIP(uint32 val)								{ m_dwUserIP = m_nConnectIP = val; }
 	CString			GetCountryName() const;
+	int				GetCountryFlagIndex() const;
 	void			ResetIP2Country(uint32 dwIP = 0);
 
 	inline bool		HasLowID() const								{ return ::IsLowID(m_nUserIDHybrid); }

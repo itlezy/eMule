@@ -29,6 +29,7 @@
 #include "Opcodes.h"
 #include "Log.h"
 #include "IPFilter.h"
+#include "IP2Country.h"
 #include "MemDC.h"
 
 #ifdef _DEBUG
@@ -36,6 +37,30 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+IPRange_Struct2* GetServerCountryRef(const CServer *pServer)
+{
+	return (theApp.ip2country != NULL && pServer != NULL)
+		? theApp.ip2country->GetCountryFromIP(pServer->GetIP())
+		: NULL;
+}
+
+CString GetServerCountryName(const CServer *pServer)
+{
+	return (theApp.ip2country != NULL)
+		? theApp.ip2country->GetCountryNameFromRef(GetServerCountryRef(pServer))
+		: CString(_T("N/A"));
+}
+
+int GetServerCountryFlagIndex(const CServer *pServer)
+{
+	return (theApp.ip2country != NULL)
+		? theApp.ip2country->GetFlagImageIndexFromRef(GetServerCountryRef(pServer))
+		: -1;
+}
+}
 
 
 IMPLEMENT_DYNAMIC(CServerListCtrl, CMuleListCtrl)
@@ -82,6 +107,8 @@ bool CServerListCtrl::Init()
 	InsertColumn(12, _T(""),	LVCFMT_LEFT,	50, -1, true);	//IDS_VERSION
 	InsertColumn(13, _T(""),	LVCFMT_RIGHT,	60);			//IDS_IDLOW
 	InsertColumn(14, _T(""),	LVCFMT_RIGHT,	50);			//IDS_OBFUSCATION
+	InsertColumn(15, _T(""),	LVCFMT_LEFT,	35);			//IDS_FLAG
+	InsertColumn(16, _T(""),	LVCFMT_LEFT,	100);			//IDS_COUNTRY
 
 	SetAllIcons();
 	Localize();
@@ -184,6 +211,9 @@ CString CServerListCtrl::GetItemDisplayText(const CServer *server, int iSubItem)
 		break;
 	case 14: //obfuscation
 		sText = GetResString(server->SupportsObfuscationTCP() ? IDS_YES : IDS_NO);
+		break;
+	case 16: // country
+		sText = GetServerCountryName(server);
 	}
 	return sText;
 }
@@ -239,6 +269,19 @@ void CServerListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			default: //any text column
 				rcItem.left += sm_iSubItemInset;
 				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
+			case 15: // flag
+				rcItem.left += sm_iSubItemInset;
+				rcItem.right -= sm_iSubItemInset;
+				{
+					const int iFlagImage = GetServerCountryFlagIndex(pServer);
+					CImageList *pFlagImageList = (iFlagImage >= 0 && theApp.ip2country != NULL) ? theApp.ip2country->GetFlagImageList() : NULL;
+					if (pFlagImageList != NULL) {
+						const POINT point{rcItem.left, rcItem.top + iIconY};
+						pFlagImageList->Draw(&dc, iFlagImage, point, ILD_NORMAL);
+					}
+				}
+				break;
 			}
 		}
 		itemLeft += iColumnWidth;
@@ -249,11 +292,11 @@ void CServerListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 void CServerListCtrl::Localize()
 {
-	static const UINT uids[15] =
+	static const UINT uids[17] =
 	{
 		IDS_SL_SERVERNAME, IDS_IP, IDS_DESCRIPTION, IDS_PING, IDS_UUSERS
 		, IDS_MAXCLIENT, IDS_PW_FILES, IDS_PREFERENCE, IDS_UFAILED, IDS_STATICSERVER
-		, IDS_SOFTFILES, IDS_HARDFILES, IDS_VERSION, IDS_IDLOW, IDS_OBFUSCATION
+		, IDS_SOFTFILES, IDS_HARDFILES, IDS_VERSION, IDS_IDLOW, IDS_OBFUSCATION, IDS_FLAG, IDS_COUNTRY
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -551,7 +594,7 @@ void CServerListCtrl::RefreshServer(const CServer *pServer)
 	if (pServer && !theApp.IsClosing()) {
 		int iItem = FindServer(pServer);
 		if (iItem >= 0) {
-			for (int i = 0; i <= 14; ++i) //column autosizing requires item text
+			for (int i = 0; i <= 16; ++i) //column autosizing requires item text
 				SetItemText(iItem, i, GetItemDisplayText(pServer, i));
 			Update(iItem);
 		}
@@ -663,6 +706,10 @@ int CALLBACK CServerListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 14:
 		iResult = (int)(item1->SupportsObfuscationTCP()) - (int)(item2->SupportsObfuscationTCP());
+		break;
+	case 15:
+	case 16:
+		iResult = Undefined_at_bottom(GetServerCountryName(item1), GetServerCountryName(item2));
 		break;
 	default:
 		iResult = 0;
