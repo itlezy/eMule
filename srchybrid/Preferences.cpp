@@ -49,6 +49,74 @@ LPCTSTR const strPreferencesDat = _T("preferences.dat");
 LPCTSTR const strDefaultToolbar = _T("0099010203040506070899091011");
 CPreferences thePrefs;
 
+namespace
+{
+	static const uint16 s_uStartupTcpPortMin = 21756;
+	static const uint16 s_uStartupTcpPortMax = 65500;
+	static const uint16 s_uStartupUdpPortOffset = 10;
+
+	static uint16 GetRandomStartupTCPPort(bool bReserveUdpPair)
+	{
+		// Keep generated startup TCP defaults in the configured range and optionally reserve the paired UDP port.
+		PMIB_TCPTABLE pTCPTab = NULL;
+		PMIB_UDPTABLE pUDPTab = NULL;
+		ULONG dwTCPSize = 0;
+		ULONG dwUDPSize = 0;
+
+		if (GetTcpTable(NULL, &dwTCPSize, FALSE) == ERROR_INSUFFICIENT_BUFFER) {
+			dwTCPSize += sizeof(MIB_TCPROW) * 50;
+			pTCPTab = reinterpret_cast<PMIB_TCPTABLE>(malloc(dwTCPSize));
+			if (pTCPTab != NULL && GetTcpTable(pTCPTab, &dwTCPSize, TRUE) != ERROR_SUCCESS) {
+				free(pTCPTab);
+				pTCPTab = NULL;
+			}
+		}
+
+		if (GetUdpTable(NULL, &dwUDPSize, FALSE) == ERROR_INSUFFICIENT_BUFFER) {
+			dwUDPSize += sizeof(MIB_UDPROW) * 50;
+			pUDPTab = reinterpret_cast<PMIB_UDPTABLE>(malloc(dwUDPSize));
+			if (pUDPTab != NULL && GetUdpTable(pUDPTab, &dwUDPSize, TRUE) != ERROR_SUCCESS) {
+				free(pUDPTab);
+				pUDPTab = NULL;
+			}
+		}
+
+		const UINT uCandidateRange = static_cast<UINT>(s_uStartupTcpPortMax - s_uStartupTcpPortMin + 1);
+		int iMaxTests = uCandidateRange;
+		uint16 nTcpPort = s_uStartupTcpPortMin;
+		bool bPairIsFree = false;
+		do {
+			nTcpPort = static_cast<uint16>(s_uStartupTcpPortMin + (GetRandomUInt16() % uCandidateRange));
+			const uint16 nUdpPort = static_cast<uint16>(nTcpPort + s_uStartupUdpPortOffset);
+			bPairIsFree = true;
+
+			if (pTCPTab != NULL) {
+				const uint16 nTcpPortBE = htons(nTcpPort);
+				for (DWORD e = pTCPTab->dwNumEntries; e-- > 0;) {
+					if (pTCPTab->table[e].dwLocalPort == nTcpPortBE) {
+						bPairIsFree = false;
+						break;
+					}
+				}
+			}
+
+			if (bPairIsFree && bReserveUdpPair && pUDPTab != NULL) {
+				const uint16 nUdpPortBE = htons(nUdpPort);
+				for (DWORD e = pUDPTab->dwNumEntries; e-- > 0;) {
+					if (pUDPTab->table[e].dwLocalPort == nUdpPortBE) {
+						bPairIsFree = false;
+						break;
+					}
+				}
+			}
+		} while (!bPairIsFree && --iMaxTests > 0);
+
+		free(pTCPTab);
+		free(pUDPTab);
+		return nTcpPort;
+	}
+}
+
 CString CPreferences::m_astrDefaultDirs[13];
 CString	CPreferences::strNick;
 bool	CPreferences::m_abDefaultDirsCreated[13] = {};
@@ -447,6 +515,7 @@ bool	CPreferences::m_bPreferRestrictedOverUser;
 bool	CPreferences::m_bUseOldTimeRemaining;
 
 bool	CPreferences::m_bOpenPortsOnStartUp;
+bool	CPreferences::m_bRandomizePortsOnStartup;
 int		CPreferences::m_byLogLevel;
 bool	CPreferences::m_bTrustEveryHash;
 bool	CPreferences::m_bRememberCancelledFiles;
@@ -1530,6 +1599,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("ConditionalTCPAccept"), m_bConditionalTCPAccept);
 	ini.WriteInt(_T("Port"), port);
 	ini.WriteInt(_T("UDPPort"), udpport);
+	ini.WriteBool(_T("RandomizePortsOnStartup"), m_bRandomizePortsOnStartup);
 	ini.WriteInt(_T("ServerUDPPort"), nServerUDPPort);
 	ini.WriteInt(_T("MaxSourcesPerFile"), maxsourceperfile);
 	ini.WriteWORD(_T("Language"), m_wLanguageID);
@@ -1618,6 +1688,7 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("CommentFilter"), commentFilter);
 	ini.WriteString(_T("DateTimeFormat"), GetDateTimeFormat());
 	ini.WriteString(_T("DateTimeFormat4Log"), GetDateTimeFormat4Log());
+	ini.WriteString(_T("DateTimeFormat4Lists"), m_strDateTimeFormat4Lists);
 	ini.WriteString(_T("WebTemplateFile"), m_strTemplateFile);
 	ini.WriteString(_T("FilenameCleanups"), filenameCleanups);
 	ini.WriteInt(_T("ExtractMetaData"), m_iExtractMetaData);
@@ -1691,6 +1762,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("SaveDebugToDisk"), debug2disk);
 	ini.WriteBool(_T("EnableScheduler"), scheduler);
 	ini.WriteBool(_T("MessagesFromFriendsOnly"), msgonlyfriends);
+	ini.WriteBool(_T("MessageFromValidSourcesOnly"), msgsecure);
 	ini.WriteBool(_T("MessageUseCaptchas"), m_bUseChatCaptchas);
 	ini.WriteBool(_T("ShowInfoOnCatTabs"), showCatTabInfos);
 	ini.WriteBool(_T("AutoFilenameCleanup"), autofilenamecleanup);
@@ -1714,6 +1786,25 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("RemoveFilesToBin"), m_bRemove2bin);
 	//ini.WriteBool(_T("ShowCopyEd2kLinkCmd"),m_bShowCopyEd2kLinkCmd);
 	ini.WriteBool(_T("AutoArchivePreviewStart"), m_bAutomaticArcPreviewStart);
+	// Hidden runtime preferences exposed in the advanced tree.
+	ini.WriteBool(_T("RestoreLastMainWndDlg"), m_bRestoreLastMainWndDlg);
+	ini.WriteBool(_T("RestoreLastLogPane"), m_bRestoreLastLogPane);
+	ini.WriteInt(_T("FileBufferTimeLimit"), static_cast<int>(m_uFileBufferTimeLimit / SEC2MS(1)));
+	ini.WriteBool(_T("PreviewCopiedArchives"), m_bPreviewCopiedArchives);
+	ini.WriteInt(_T("InspectAllFileTypes"), m_iInspectAllFileTypes);
+	ini.WriteBool(_T("PreviewOnIconDblClk"), m_bPreviewOnIconDblClk);
+	ini.WriteBool(_T("ShowActiveDownloadsBold"), m_bShowActiveDownloadsBold);
+	ini.WriteBool(_T("UseSystemFontForMainControls"), m_bUseSystemFontForMainControls);
+	ini.WriteBool(_T("ReBarToolbar"), m_bReBarToolbar);
+	ini.WriteBool(_T("ShowUpDownIconInTaskbar"), m_bShowUpDownIconInTaskbar);
+	ini.WriteBool(_T("ShowVerticalHourMarkers"), m_bShowVerticalHourMarkers);
+	ini.WriteBool(_T("ForceSpeedsToKB"), m_bForceSpeedsToKB);
+	ini.WriteBool(_T("ExtraPreviewWithMenu"), m_bExtraPreviewWithMenu);
+	ini.WriteBool(_T("KeepUnavailableFixedSharedDirs"), m_bKeepUnavailableFixedSharedDirs);
+	ini.WriteBool(_T("PreferRestrictedOverUser"), m_bPreferRestrictedOverUser);
+	ini.WriteBool(_T("PartiallyPurgeOldKnownFiles"), m_bPartiallyPurgeOldKnownFiles);
+	ini.WriteBool(_T("AdjustNTFSDaylightFileTime"), m_bAdjustNTFSDaylightFileTime);
+	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
 
 	// Toolbar
 	ini.WriteString(_T("ToolbarSetting"), m_sToolbarSettings);
@@ -1971,14 +2062,35 @@ void CPreferences::LoadPreferences()
 	m_pszBindAddrW = m_strBindAddrW.IsEmpty() ? NULL : (LPCWSTR)m_strBindAddrW;
 	m_strBindAddrA = m_strBindAddrW;
 	m_pszBindAddrA = m_strBindAddrA.IsEmpty() ? NULL : (LPCSTR)m_strBindAddrA;
+	m_bRandomizePortsOnStartup = ini.GetBool(_T("RandomizePortsOnStartup"), false);
 
-	port = (uint16)ini.GetInt(_T("Port"), 0);
-	if (port == 0)
-		port = thePrefs.GetRandomTCPPort();
+	const uint16 nConfiguredTCPPort = static_cast<uint16>(ini.GetInt(_T("Port"), 0));
+	const int iConfiguredUDPPort = ini.GetInt(_T("UDPPort"), INT_MAX/*invalid port value*/);
+	if (m_bRandomizePortsOnStartup) {
+		// Startup randomization always picks a fresh TCP port, while preserving explicit UDP-disable.
+		const bool bRandomizeUDP = (iConfiguredUDPPort != 0);
+		port = GetRandomStartupTCPPort(bRandomizeUDP);
+		udpport = bRandomizeUDP ? static_cast<uint16>(port + s_uStartupUdpPortOffset) : 0;
+	} else {
+		port = nConfiguredTCPPort;
+		if (port == 0) {
+			// Keep the fresh-install default TCP port inside the requested startup range.
+			if (m_bFirstStart)
+				port = GetRandomStartupTCPPort(iConfiguredUDPPort == INT_MAX);
+			else
+				port = thePrefs.GetRandomTCPPort();
+		}
 
-	// 0 is a valid value for the UDP port setting, as it is used for disabling it.
-	int iPort = ini.GetInt(_T("UDPPort"), INT_MAX/*invalid port value*/);
-	udpport = (iPort == INT_MAX) ? thePrefs.GetRandomUDPPort() : (uint16)iPort;
+		// 0 is a valid value for the UDP port setting, as it is used for disabling it.
+		if (iConfiguredUDPPort == INT_MAX) {
+			// Keep the first-start UDP default paired to TCP unless the user explicitly configured otherwise.
+			if (m_bFirstStart && port <= static_cast<uint16>(_UI16_MAX - s_uStartupUdpPortOffset))
+				udpport = static_cast<uint16>(port + s_uStartupUdpPortOffset);
+			else
+				udpport = thePrefs.GetRandomUDPPort();
+		} else
+			udpport = static_cast<uint16>(iConfiguredUDPPort);
+	}
 
 	nServerUDPPort = (uint16)ini.GetInt(_T("ServerUDPPort"), -1); // 0 = Don't use UDP port for servers, -1 = use a random port (for backward compatibility)
 	maxsourceperfile = ini.GetInt(_T("MaxSourcesPerFile"), 400);
@@ -2025,10 +2137,9 @@ void CPreferences::LoadPreferences()
 	ICH = ini.GetBool(_T("ICH"), true);
 	m_bAutoUpdateServerList = ini.GetBool(_T("Serverlist"), false);
 
-	// since the minimize to tray button is not working under Aero (at least not at this point),
-	// we enable map the minimize to tray on the minimize button by default if Aero is running
+	// Keep minimize-to-tray opt-in across all themes so fresh installs stay visible by default.
 	if (IsRunningAeroGlassTheme())
-		mintotray = ini.GetBool(_T("MinToTray_Aero"), true);
+		mintotray = ini.GetBool(_T("MinToTray_Aero"), false);
 	else
 		mintotray = ini.GetBool(_T("MinToTray"), false);
 
@@ -2040,7 +2151,7 @@ void CPreferences::LoadPreferences()
 	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
 	transferDoubleclick = ini.GetBool(_T("TransferDoubleClick"), true);
 	beepOnError = ini.GetBool(_T("BeepOnError"), true);
-	confirmExit = ini.GetBool(_T("ConfirmExit"), true);
+	confirmExit = ini.GetBool(_T("ConfirmExit"), false);
 	filterLANIPs = ini.GetBool(_T("FilterBadIPs"), true);
 	m_bAllocLocalHostIP = ini.GetBool(_T("AllowLocalHostIP"), false);
 	autoconnect = ini.GetBool(_T("Autoconnect"), false);

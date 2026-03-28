@@ -55,6 +55,7 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_EN_CHANGE(IDC_MAXSOURCEPERFILE, OnSettingsChange)
 	ON_BN_CLICKED(IDC_AUTOCONNECT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RECONN, OnSettingsChange)
+	ON_BN_CLICKED(IDC_RANDOMIZEPORTSONSTARTUP, OnSettingsChange)
 	ON_BN_CLICKED(IDC_WIZARD, OnBnClickedWizard)
 	ON_BN_CLICKED(IDC_NETWORK_ED2K, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWOVERHEAD, OnSettingsChange)
@@ -189,6 +190,7 @@ void CPPgConnection::LoadSettings()
 		CheckDlgButton(IDC_RECONN, static_cast<UINT>(thePrefs.reconnect));
 		CheckDlgButton(IDC_SHOWOVERHEAD, static_cast<UINT>(thePrefs.m_bshowoverhead));
 		CheckDlgButton(IDC_AUTOCONNECT, static_cast<UINT>(thePrefs.autoconnect));
+		CheckDlgButton(IDC_RANDOMIZEPORTSONSTARTUP, static_cast<UINT>(thePrefs.IsRandomizePortsOnStartupEnabled()));
 		CheckDlgButton(IDC_NETWORK_KADEMLIA, static_cast<UINT>(thePrefs.GetNetworkKademlia()));
 		GetDlgItem(IDC_NETWORK_KADEMLIA)->EnableWindow(thePrefs.GetUDPPort() > 0);
 		CheckDlgButton(IDC_NETWORK_ED2K, static_cast<UINT>(thePrefs.networked2k));
@@ -298,6 +300,7 @@ BOOL CPPgConnection::OnApply()
 
 	thePrefs.autoconnect = IsDlgButtonChecked(IDC_AUTOCONNECT) != 0;
 	thePrefs.reconnect = IsDlgButtonChecked(IDC_RECONN) != 0;
+	thePrefs.m_bRandomizePortsOnStartup = (IsDlgButtonChecked(IDC_RANDOMIZEPORTSONSTARTUP) != 0);
 
 	if (lastmaxgu != thePrefs.maxGraphUploadRate)
 		theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxGraphUploadRate(true));
@@ -369,6 +372,7 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_MAXSRCHARD_LBL, GetResString(IDS_HARDLIMIT));
 		SetDlgItemText(IDC_WIZARD, GetResString(IDS_WIZARD) + _T("..."));
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
+		SetDlgItemText(IDC_RANDOMIZEPORTSONSTARTUP, GetResString(IDS_RANDOMIZEPORTSONSTARTUP));
 		SetDlgItemText(IDC_OPENPORTS, GetResString(IDS_FO_PREFBUTTON));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));

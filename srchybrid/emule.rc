@@ -336,7 +336,7 @@ BEGIN
     PUSHBUTTON      "Add UNC share",IDC_UNCADD,10,218,64,14,BS_CENTER
 END
 
-IDD_PPG_CONNECTION DIALOGEX 0, 0, 231, 228
+IDD_PPG_CONNECTION DIALOGEX 0, 0, 231, 240
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Connection"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
@@ -351,17 +351,19 @@ BEGIN
     EDITTEXT        IDC_UDPPORT,29,100,38,12,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "disable",IDC_UDPDISABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,71,102,51,9
     PUSHBUTTON      "Test Ports",IDC_STARTTEST,149,99,71,14
-    EDITTEXT        IDC_MAXSOURCEPERFILE,11,153,38,12,ES_AUTOHSCROLL | ES_NUMBER
-    EDITTEXT        IDC_MAXCON,117,153,38,12,ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "Autoconnect on startup",IDC_AUTOCONNECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,178,138,10
-    CONTROL         "Reconnect on loss",IDC_RECONN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,188,140,10
-    CONTROL         "Show overhead bandwidth",IDC_SHOWOVERHEAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,198,139,10
-    PUSHBUTTON      "Wizard...",IDC_WIZARD,4,211,50,14
-    CONTROL         "Kad",IDC_NETWORK_KADEMLIA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,184,57,10
-    CONTROL         "eD2K",IDC_NETWORK_ED2K,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,194,58,10
-    GROUPBOX        "Client Port:",IDC_CLIENTPORT_FRM,4,74,223,57
-    GROUPBOX        "Max. Sources/File",IDC_MAXSRC_FRM,4,132,100,40
-    GROUPBOX        "Max. connections:",IDC_MAXCONN_FRM,110,132,117,40
+    CONTROL         "Randomize ports on startup",IDC_RANDOMIZEPORTSONSTARTUP,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,116,122,10
+    EDITTEXT        IDC_MAXSOURCEPERFILE,11,165,38,12,ES_AUTOHSCROLL | ES_NUMBER
+    EDITTEXT        IDC_MAXCON,117,165,38,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Autoconnect on startup",IDC_AUTOCONNECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,190,138,10
+    CONTROL         "Reconnect on loss",IDC_RECONN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,200,140,10
+    CONTROL         "Show overhead bandwidth",IDC_SHOWOVERHEAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,210,139,10
+    PUSHBUTTON      "Wizard...",IDC_WIZARD,4,223,50,14
+    CONTROL         "Kad",IDC_NETWORK_KADEMLIA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,196,57,10
+    CONTROL         "eD2K",IDC_NETWORK_ED2K,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,160,206,58,10
+    GROUPBOX        "Client Port:",IDC_CLIENTPORT_FRM,4,74,223,69
+    GROUPBOX        "Max. Sources/File",IDC_MAXSRC_FRM,4,144,100,40
+    GROUPBOX        "Max. connections:",IDC_MAXCONN_FRM,110,144,117,40
     GROUPBOX        "Capacities:",IDC_CAPACITIES_FRM,4,2,67,70
     CONTROL         "Download",IDC_DCAP_LBL,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,11,13,58,8
     LTEXT           "KB/s",IDC_KBS2,45,25,22,8
@@ -370,14 +372,14 @@ BEGIN
     GROUPBOX        "Limits:",IDC_LIMITS_FRM,77,2,149,70
     RTEXT           "KB/s",IDC_KBS1,176,13,44,8
     RTEXT           "KB/s",IDC_KBS4,176,43,44,8
-    LTEXT           "Hard limit",IDC_MAXSRCHARD_LBL,11,143,82,8
+    LTEXT           "Hard limit",IDC_MAXSRCHARD_LBL,11,155,82,8
     LTEXT           "UDP",IDC_UDPPORTLABEL,11,103,16,8
-    LTEXT           "Static",IDC_MAXCONLABEL,117,143,86,8
+    LTEXT           "Static",IDC_MAXCONLABEL,117,155,86,8
     LTEXT           "TCP",IDC_STATIC,11,86,17,8
-    GROUPBOX        "Network",IDC_CONNECTION_NETWORK,153,174,74,34
+    GROUPBOX        "Network",IDC_CONNECTION_NETWORK,153,186,74,34
     PUSHBUTTON      "Setup ports on WinXP SP1 firewall",IDC_OPENPORTS,83,84,137,12,WS_DISABLED
     CONTROL         "Use UPnP to Setup Port Forwarding",IDC_PREF_UPNPONSTART,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,116,208,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,128,208,10
 END
 
 IDD_WIZARD DIALOGEX 0, 0, 257, 223
@@ -3961,6 +3963,31 @@ END
 STRINGTABLE
 BEGIN
     IDS_UPNPSTART           "Use UPnP to Setup Ports"
+    IDS_RANDOMIZEPORTSONSTARTUP "Randomize ports on startup"
+    IDS_HIDDENRUNTIME_STARTUP "Startup and session"
+    IDS_HIDDENRUNTIME_FILE  "Hidden file and preview"
+    IDS_HIDDENRUNTIME_DISPLAY "Hidden display and rendering"
+    IDS_HIDDENRUNTIME_SECURITY "Hidden security, messaging, and Kad"
+    IDS_RESTORELASTMAINWNDDLG "Restore last main window page on startup"
+    IDS_RESTORELASTLOGPANE  "Restore last log pane on startup"
+    IDS_FILEBUFFERTIMELIMIT "File buffer time limit (seconds)"
+    IDS_DATETIMEFORMAT4LISTS "Date/time format for lists"
+    IDS_PREVIEWCOPIEDARCHIVES "Allow preview on copied archives"
+    IDS_INSPECTALLFILETYPES "Inspect all file types"
+    IDS_PREVIEWONICONDBLCLK "Preview on icon double-click"
+    IDS_SHOWACTIVEDOWNLOADSBOLD "Show active downloads in bold"
+    IDS_USESYSTEMFONTFORMAINCONTROLS "Use system font for main controls"
+    IDS_REBARTOOLBAR        "Use rebar toolbar host"
+    IDS_SHOWUPDOWNICONINTASKBAR "Show upload/download icon in taskbar"
+    IDS_SHOWVERTICALHOURMARKERS "Show vertical hour markers in statistics"
+    IDS_FORCESPEEDSTOKB     "Force speed units to KB"
+    IDS_EXTRAPREVIEWWITHMENU "Use extra preview action menu"
+    IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS "Keep unavailable fixed shared directories"
+    IDS_PREFERRESTRICTEDOVERUSER "Prefer restricted mode over user mode"
+    IDS_PARTIALLYPURGEOLDKNOWNFILES "Partially purge old known files"
+    IDS_ADJUSTNTFSDAYLIGHTFILETIME "Adjust NTFS daylight-saving file times"
+    IDS_REARRANGEKADSEARCHKEYWORDS "Rearrange Kad search keywords"
+    IDS_MESSAGEFROMVALIDSOURCESONLY "Allow messages only from valid sources"
     IDS_UPNPSETUP           "Trying to setup port forwarding with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwarding, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwarding for ports %u (TCP) and %u (UDP)"

@@ -115,6 +115,10 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiDynUpRadioPingTolerance()
 	, m_htiDynUpRadioPingToleranceMilliseconds()
 	, m_htiExtControls()
+	, m_htiHiddenDisplay()
+	, m_htiHiddenFile()
+	, m_htiHiddenSecurity()
+	, m_htiHiddenStartup()
 	, m_htiExtractMetaData()
 	, m_htiExtractMetaDataID3Lib()
 	, m_htiExtractMetaDataNever()
@@ -122,6 +126,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiFirewallStartup()
 	, m_htiFullAlloc()
 	, m_htiImportParts()
+	, m_htiInspectAllFileTypes()
 	, m_htiLog2Disk()
 	, m_htiLogA4AF()
 	, m_htiLogBannedClients()
@@ -134,7 +139,26 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiMaxCon5Sec()
 	, m_htiMaxHalfOpen()
 	, m_htiMinFreeDiskSpace()
+	, m_htiDateTimeFormat4Lists()
+	, m_htiPreviewCopiedArchives()
+	, m_htiPreviewOnIconDblClk()
+	, m_htiShowActiveDownloadsBold()
+	, m_htiUseSystemFontForMainControls()
+	, m_htiReBarToolbar()
+	, m_htiShowUpDownIconInTaskbar()
+	, m_htiShowVerticalHourMarkers()
+	, m_htiForceSpeedsToKB()
+	, m_htiExtraPreviewWithMenu()
+	, m_htiKeepUnavailableFixedSharedDirs()
+	, m_htiPreferRestrictedOverUser()
+	, m_htiPartiallyPurgeOldKnownFiles()
+	, m_htiAdjustNTFSDaylightFileTime()
+	, m_htiRearrangeKadSearchKeywords()
+	, m_htiMessageFromValidSourcesOnly()
+	, m_htiFileBufferTimeLimit()
 	, m_htiResolveShellLinks()
+	, m_htiRestoreLastLogPane()
+	, m_htiRestoreLastMainWndDlg()
 	, m_htiServerKeepAliveTimeout()
 	, m_htiShareeMule()
 	, m_htiShareeMuleMultiUser()
@@ -169,11 +193,14 @@ CPPgTweaks::CPPgTweaks()
 	, m_iDynUpPingToleranceMilliseconds()
 	, m_iDynUpRadioPingTolerance()
 	, m_iExtractMetaData()
+	, m_iInspectAllFileTypes()
 	, m_iLogLevel()
 	, m_iMaxConnPerFive()
 	, m_iMaxHalfOpen()
 	, m_iShareeMule()
+	, m_sDateTimeFormat4Lists()
 	, m_bA4AFSaveCpu()
+	, m_bAdjustNTFSDaylightFileTime()
 	, m_bAutoArchDisable(true)
 	, m_bAutoTakeEd2kLinks()
 	, m_bBBLowIDDeboost()
@@ -187,11 +214,13 @@ CPPgTweaks::CPPgTweaks()
 	, m_bDebugSourceExchange()
 	, m_bDynUpEnabled()
 	, m_bExtControls()
+	, m_bExtraPreviewWithMenu()
 	, m_bFilterLANIPs()
 	, m_bFirewallStartup()
 	, m_bFullAlloc()
 	, m_bImportParts()
 	, m_bInitializedTreeOpts()
+	, m_bKeepUnavailableFixedSharedDirs()
 	, m_bLog2Disk()
 	, m_bLogA4AF()
 	, m_bLogBannedClients()
@@ -200,12 +229,27 @@ CPPgTweaks::CPPgTweaks()
 	, m_bLogRatingDescReceived()
 	, m_bLogSecureIdent()
 	, m_bLogUlDlEvents()
+	, m_bMessageFromValidSourcesOnly()
+	, m_bPartiallyPurgeOldKnownFiles()
+	, m_bPreferRestrictedOverUser()
+	, m_bPreviewCopiedArchives()
+	, m_bPreviewOnIconDblClk()
+	, m_bRearrangeKadSearchKeywords()
+	, m_bReBarToolbar()
+	, m_bRestoreLastLogPane()
+	, m_bRestoreLastMainWndDlg()
 	, m_bResolveShellLinks()
+	, m_bShowActiveDownloadsBold()
 	, m_bShowedWarning()
+	, m_bShowUpDownIconInTaskbar()
+	, m_bShowVerticalHourMarkers()
 	, m_bSkipWANIPSetup()
 	, m_bSkipWANPPPSetup()
 	, m_bSparsePartFiles()
+	, m_bUseSystemFontForMainControls()
 	, m_bVerbose()
+	, m_bForceSpeedsToKB()
+	, m_uFileBufferTimeLimitSeconds()
 {
 }
 
@@ -364,6 +408,40 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 
 		m_htiImportParts = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLEIMPORTPARTS), TVI_ROOT, m_bImportParts);
 
+		/////////////////////////////////////////////////////////////////////////////
+		// Hidden runtime groups
+		//
+		m_htiHiddenStartup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_STARTUP), iImgConnection, TVI_ROOT);
+		m_htiRestoreLastMainWndDlg = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTMAINWNDDLG), m_htiHiddenStartup, m_bRestoreLastMainWndDlg);
+		m_htiRestoreLastLogPane = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTLOGPANE), m_htiHiddenStartup, m_bRestoreLastLogPane);
+
+		m_htiHiddenFile = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_FILE), iImgBackup, TVI_ROOT);
+		m_htiFileBufferTimeLimit = m_ctrlTreeOptions.InsertItem(GetResString(IDS_FILEBUFFERTIMELIMIT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
+		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferTimeLimit, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiDateTimeFormat4Lists = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DATETIMEFORMAT4LISTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
+		m_ctrlTreeOptions.AddEditBox(m_htiDateTimeFormat4Lists, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiPreviewCopiedArchives = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWCOPIEDARCHIVES), m_htiHiddenFile, m_bPreviewCopiedArchives);
+		m_htiInspectAllFileTypes = m_ctrlTreeOptions.InsertItem(GetResString(IDS_INSPECTALLFILETYPES), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
+		m_ctrlTreeOptions.AddEditBox(m_htiInspectAllFileTypes, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiPreviewOnIconDblClk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWONICONDBLCLK), m_htiHiddenFile, m_bPreviewOnIconDblClk);
+		m_htiExtraPreviewWithMenu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_EXTRAPREVIEWWITHMENU), m_htiHiddenFile, m_bExtraPreviewWithMenu);
+		m_htiKeepUnavailableFixedSharedDirs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS), m_htiHiddenFile, m_bKeepUnavailableFixedSharedDirs);
+		m_htiPartiallyPurgeOldKnownFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PARTIALLYPURGEOLDKNOWNFILES), m_htiHiddenFile, m_bPartiallyPurgeOldKnownFiles);
+		m_htiAdjustNTFSDaylightFileTime = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ADJUSTNTFSDAYLIGHTFILETIME), m_htiHiddenFile, m_bAdjustNTFSDaylightFileTime);
+
+		m_htiHiddenDisplay = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_DISPLAY), iImgLog, TVI_ROOT);
+		m_htiShowActiveDownloadsBold = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWACTIVEDOWNLOADSBOLD), m_htiHiddenDisplay, m_bShowActiveDownloadsBold);
+		m_htiUseSystemFontForMainControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USESYSTEMFONTFORMAINCONTROLS), m_htiHiddenDisplay, m_bUseSystemFontForMainControls);
+		m_htiReBarToolbar = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REBARTOOLBAR), m_htiHiddenDisplay, m_bReBarToolbar);
+		m_htiShowUpDownIconInTaskbar = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWUPDOWNICONINTASKBAR), m_htiHiddenDisplay, m_bShowUpDownIconInTaskbar);
+		m_htiShowVerticalHourMarkers = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWVERTICALHOURMARKERS), m_htiHiddenDisplay, m_bShowVerticalHourMarkers);
+		m_htiForceSpeedsToKB = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FORCESPEEDSTOKB), m_htiHiddenDisplay, m_bForceSpeedsToKB);
+
+		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_SECURITY), iImgConnection, TVI_ROOT);
+		m_htiPreferRestrictedOverUser = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREFERRESTRICTEDOVERUSER), m_htiHiddenSecurity, m_bPreferRestrictedOverUser);
+		m_htiRearrangeKadSearchKeywords = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REARRANGEKADSEARCHKEYWORDS), m_htiHiddenSecurity, m_bRearrangeKadSearchKeywords);
+		m_htiMessageFromValidSourcesOnly = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_MESSAGEFROMVALIDSOURCESONLY), m_htiHiddenSecurity, m_bMessageFromValidSourcesOnly);
+
 		m_ctrlTreeOptions.Expand(m_htiTCPGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBroadband, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBBSessionTransferLimit, TVE_EXPAND);
@@ -377,6 +455,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.Expand(m_htiDynUp, m_bDynUpEnabled ? TVE_EXPAND : TVE_COLLAPSE);
 		m_ctrlTreeOptions.Expand(m_htiDynUpPingToleranceGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiExtractMetaData, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiHiddenStartup, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiHiddenFile, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiHiddenDisplay, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiHiddenSecurity, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiUPnP, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiShareeMule, TVE_EXPAND);
 		m_ctrlTreeOptions.SendMessage(WM_VSCROLL, SB_TOP);
@@ -451,6 +533,36 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiExtractMetaData, m_iExtractMetaData);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiResolveShellLinks, m_bResolveShellLinks);
+
+	/////////////////////////////////////////////////////////////////////////////
+	// Hidden runtime groups
+	//
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastMainWndDlg, m_bRestoreLastMainWndDlg);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastLogPane, m_bRestoreLastLogPane);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferTimeLimit, m_uFileBufferTimeLimitSeconds);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDateTimeFormat4Lists, m_sDateTimeFormat4Lists);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewCopiedArchives, m_bPreviewCopiedArchives);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiInspectAllFileTypes, m_iInspectAllFileTypes);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewOnIconDblClk, m_bPreviewOnIconDblClk);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtraPreviewWithMenu, m_bExtraPreviewWithMenu);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiKeepUnavailableFixedSharedDirs, m_bKeepUnavailableFixedSharedDirs);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPartiallyPurgeOldKnownFiles, m_bPartiallyPurgeOldKnownFiles);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAdjustNTFSDaylightFileTime, m_bAdjustNTFSDaylightFileTime);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowActiveDownloadsBold, m_bShowActiveDownloadsBold);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiUseSystemFontForMainControls, m_bUseSystemFontForMainControls);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiReBarToolbar, m_bReBarToolbar);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowUpDownIconInTaskbar, m_bShowUpDownIconInTaskbar);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreferRestrictedOverUser, m_bPreferRestrictedOverUser);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_uFileBufferTimeLimitSeconds < 1)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiFileBufferTimeLimit);
+		if (m_iInspectAllFileTypes < 0)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiInspectAllFileTypes);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Logging group
@@ -616,6 +728,26 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iShareeMule = thePrefs.m_nCurrentUserDirMode;
 
 	m_bA4AFSaveCpu = thePrefs.GetA4AFSaveCpu();
+	m_bRestoreLastMainWndDlg = thePrefs.GetRestoreLastMainWndDlg();
+	m_bRestoreLastLogPane = thePrefs.GetRestoreLastLogPane();
+	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
+	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
+	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
+	m_iInspectAllFileTypes = thePrefs.GetInspectAllFileTypes();
+	m_bPreviewOnIconDblClk = thePrefs.GetPreviewOnIconDblClk();
+	m_bShowActiveDownloadsBold = thePrefs.GetShowActiveDownloadsBold();
+	m_bUseSystemFontForMainControls = thePrefs.GetUseSystemFontForMainControls();
+	m_bReBarToolbar = thePrefs.GetReBarToolbar();
+	m_bShowUpDownIconInTaskbar = thePrefs.IsShowUpDownIconInTaskbar();
+	m_bShowVerticalHourMarkers = thePrefs.m_bShowVerticalHourMarkers;
+	m_bForceSpeedsToKB = thePrefs.GetForceSpeedsToKB();
+	m_bExtraPreviewWithMenu = thePrefs.GetExtraPreviewWithMenu();
+	m_bKeepUnavailableFixedSharedDirs = thePrefs.m_bKeepUnavailableFixedSharedDirs;
+	m_bPreferRestrictedOverUser = thePrefs.IsPreferingRestrictedOverUser();
+	m_bPartiallyPurgeOldKnownFiles = thePrefs.DoPartiallyPurgeOldKnownFiles();
+	m_bAdjustNTFSDaylightFileTime = thePrefs.GetAdjustNTFSDaylightFileTime();
+	m_bRearrangeKadSearchKeywords = thePrefs.GetRearrangeKadSearchKeywords();
+	m_bMessageFromValidSourcesOnly = thePrefs.MsgOnlySecure();
 
 	m_ctrlTreeOptions.SetImageListColorFlags(theApp.m_iDfltImageListColorFlags);
 	CPropertyPage::OnInitDialog();
@@ -763,6 +895,26 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.ChangeUserDirMode(m_iShareeMule);
 
 	thePrefs.m_bA4AFSaveCpu = m_bA4AFSaveCpu;
+	thePrefs.m_bRestoreLastMainWndDlg = m_bRestoreLastMainWndDlg;
+	thePrefs.m_bRestoreLastLogPane = m_bRestoreLastLogPane;
+	thePrefs.m_uFileBufferTimeLimit = SEC2MS(m_uFileBufferTimeLimitSeconds);
+	thePrefs.m_strDateTimeFormat4Lists = m_sDateTimeFormat4Lists;
+	thePrefs.m_bPreviewCopiedArchives = m_bPreviewCopiedArchives;
+	thePrefs.m_iInspectAllFileTypes = m_iInspectAllFileTypes;
+	thePrefs.m_bPreviewOnIconDblClk = m_bPreviewOnIconDblClk;
+	thePrefs.m_bShowActiveDownloadsBold = m_bShowActiveDownloadsBold;
+	thePrefs.m_bUseSystemFontForMainControls = m_bUseSystemFontForMainControls;
+	thePrefs.m_bReBarToolbar = m_bReBarToolbar;
+	thePrefs.m_bShowUpDownIconInTaskbar = m_bShowUpDownIconInTaskbar;
+	thePrefs.m_bShowVerticalHourMarkers = m_bShowVerticalHourMarkers;
+	thePrefs.m_bForceSpeedsToKB = m_bForceSpeedsToKB;
+	thePrefs.m_bExtraPreviewWithMenu = m_bExtraPreviewWithMenu;
+	thePrefs.m_bKeepUnavailableFixedSharedDirs = m_bKeepUnavailableFixedSharedDirs;
+	thePrefs.m_bPreferRestrictedOverUser = m_bPreferRestrictedOverUser;
+	thePrefs.m_bPartiallyPurgeOldKnownFiles = m_bPartiallyPurgeOldKnownFiles;
+	thePrefs.m_bAdjustNTFSDaylightFileTime = m_bAdjustNTFSDaylightFileTime;
+	thePrefs.m_bRearrangeKadSearchKeywords = m_bRearrangeKadSearchKeywords;
+	thePrefs.msgsecure = m_bMessageFromValidSourcesOnly;
 
 	if (thePrefs.GetEnableVerboseOptions()) {
 		theApp.emuledlg->serverwnd->ToggleDebugWindow();
@@ -823,6 +975,9 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiBBLowRatioThreshold, IDS_BB_RATIO_THRESHOLD);
 		LocalizeEditLabel(m_htiBBLowRatioBonus, IDS_BB_SCORE_BONUS);
 		LocalizeEditLabel(m_htiBBLowIDDeboostDivisor, IDS_BB_DIVISOR);
+		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
+		LocalizeEditLabel(m_htiFileBufferTimeLimit, IDS_FILEBUFFERTIMELIMIT);
+		LocalizeEditLabel(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
@@ -853,14 +1008,21 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiDynUp, IDS_DYNUP);
 		LocalizeItemText(m_htiDynUpEnabled, IDS_DYNUPENABLED);
 		LocalizeItemText(m_htiExtControls, IDS_SHOWEXTSETTINGS);
+		LocalizeItemText(m_htiExtraPreviewWithMenu, IDS_EXTRAPREVIEWWITHMENU);
 		LocalizeItemText(m_htiExtractMetaData, IDS_EXTRACT_META_DATA);
 		LocalizeItemText(m_htiExtractMetaDataID3Lib, IDS_META_DATA_ID3LIB);
 		//LocalizeItemText(m_htiExtractMetaDataMediaDet, IDS_META_DATA_MEDIADET);
 		LocalizeItemText(m_htiExtractMetaDataNever, IDS_NEVER);
 		LocalizeItemText(m_htiFilterLANIPs, IDS_PW_FILTER);
+		LocalizeItemText(m_htiForceSpeedsToKB, IDS_FORCESPEEDSTOKB);
 		LocalizeItemText(m_htiFirewallStartup, IDS_FO_PREF_STARTUP);
 		LocalizeItemText(m_htiFullAlloc, IDS_FULLALLOC);
 		LocalizeItemText(m_htiImportParts, IDS_ENABLEIMPORTPARTS);
+		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
+		LocalizeItemText(m_htiHiddenDisplay, IDS_HIDDENRUNTIME_DISPLAY);
+		LocalizeItemText(m_htiHiddenFile, IDS_HIDDENRUNTIME_FILE);
+		LocalizeItemText(m_htiHiddenSecurity, IDS_HIDDENRUNTIME_SECURITY);
+		LocalizeItemText(m_htiHiddenStartup, IDS_HIDDENRUNTIME_STARTUP);
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiLogA4AF, IDS_LOG_A4AF);
 		LocalizeItemText(m_htiLogBannedClients, IDS_LOG_BANNED_CLIENTS);
@@ -869,18 +1031,32 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiLogRatingDescReceived, IDS_LOG_RATING_RECV);
 		LocalizeItemText(m_htiLogSecureIdent, IDS_LOG_SECURE_IDENT);
 		LocalizeItemText(m_htiLogUlDlEvents, IDS_LOG_ULDL_EVENTS);
+		LocalizeItemText(m_htiMessageFromValidSourcesOnly, IDS_MESSAGEFROMVALIDSOURCESONLY);
+		LocalizeItemText(m_htiPartiallyPurgeOldKnownFiles, IDS_PARTIALLYPURGEOLDKNOWNFILES);
+		LocalizeItemText(m_htiPreferRestrictedOverUser, IDS_PREFERRESTRICTEDOVERUSER);
+		LocalizeItemText(m_htiPreviewCopiedArchives, IDS_PREVIEWCOPIEDARCHIVES);
+		LocalizeItemText(m_htiPreviewOnIconDblClk, IDS_PREVIEWONICONDBLCLK);
+		LocalizeItemText(m_htiRearrangeKadSearchKeywords, IDS_REARRANGEKADSEARCHKEYWORDS);
+		LocalizeItemText(m_htiReBarToolbar, IDS_REBARTOOLBAR);
 		LocalizeItemText(m_htiResolveShellLinks, IDS_RESOLVELINKS);
+		LocalizeItemText(m_htiRestoreLastLogPane, IDS_RESTORELASTLOGPANE);
+		LocalizeItemText(m_htiRestoreLastMainWndDlg, IDS_RESTORELASTMAINWNDDLG);
 		LocalizeItemText(m_htiShareeMule, IDS_SHAREEMULELABEL);
 		LocalizeItemText(m_htiShareeMuleMultiUser, IDS_SHAREEMULEMULTI);
 		LocalizeItemText(m_htiShareeMuleOldStyle, IDS_SHAREEMULEOLD);
 		LocalizeItemText(m_htiShareeMulePublicUser, IDS_SHAREEMULEPUBLIC);
 		LocalizeItemText(m_htiSkipWANIPSetup, IDS_UPNPSKIPWANIP);
 		LocalizeItemText(m_htiSkipWANPPPSetup, IDS_UPNPSKIPWANPPP);
+		LocalizeItemText(m_htiShowActiveDownloadsBold, IDS_SHOWACTIVEDOWNLOADSBOLD);
+		LocalizeItemText(m_htiShowUpDownIconInTaskbar, IDS_SHOWUPDOWNICONINTASKBAR);
+		LocalizeItemText(m_htiShowVerticalHourMarkers, IDS_SHOWVERTICALHOURMARKERS);
 		LocalizeItemText(m_htiSparsePartFiles, IDS_SPARSEPARTFILES);
 		LocalizeItemText(m_htiTCPGroup, IDS_TCPIP_CONNS);
 		LocalizeItemText(m_htiUPnP, IDS_UPNP);
+		LocalizeItemText(m_htiUseSystemFontForMainControls, IDS_USESYSTEMFONTFORMAINCONTROLS);
 		LocalizeItemText(m_htiVerbose, IDS_ENABLED);
 		LocalizeItemText(m_htiVerboseGroup, IDS_VERBOSE);
+		LocalizeItemText(m_htiAdjustNTFSDaylightFileTime, IDS_ADJUSTNTFSDAYLIGHTFILETIME);
 
 		CString temp;
 		temp.Format(_T("%s: %s"), (LPCTSTR)GetResString(IDS_FILEBUFFERSIZE), (LPCTSTR)CastItoXBytes(m_uFileBufferSize));
@@ -929,6 +1105,30 @@ void CPPgTweaks::OnDestroy()
 	m_htiCreditSystem = NULL;
 	m_htiLog2Disk = NULL;
 	m_htiDebug2Disk = NULL;
+	m_htiHiddenDisplay = NULL;
+	m_htiHiddenFile = NULL;
+	m_htiHiddenSecurity = NULL;
+	m_htiHiddenStartup = NULL;
+	m_htiDateTimeFormat4Lists = NULL;
+	m_htiPreviewCopiedArchives = NULL;
+	m_htiInspectAllFileTypes = NULL;
+	m_htiPreviewOnIconDblClk = NULL;
+	m_htiShowActiveDownloadsBold = NULL;
+	m_htiUseSystemFontForMainControls = NULL;
+	m_htiReBarToolbar = NULL;
+	m_htiShowUpDownIconInTaskbar = NULL;
+	m_htiShowVerticalHourMarkers = NULL;
+	m_htiForceSpeedsToKB = NULL;
+	m_htiExtraPreviewWithMenu = NULL;
+	m_htiKeepUnavailableFixedSharedDirs = NULL;
+	m_htiPreferRestrictedOverUser = NULL;
+	m_htiPartiallyPurgeOldKnownFiles = NULL;
+	m_htiAdjustNTFSDaylightFileTime = NULL;
+	m_htiRearrangeKadSearchKeywords = NULL;
+	m_htiMessageFromValidSourcesOnly = NULL;
+	m_htiFileBufferTimeLimit = NULL;
+	m_htiRestoreLastLogPane = NULL;
+	m_htiRestoreLastMainWndDlg = NULL;
 	m_htiCommit = NULL;
 	m_htiCommitNever = NULL;
 	m_htiCommitOnShutdown = NULL;

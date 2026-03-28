@@ -269,30 +269,30 @@ The last two groups are documented because they still live in the same file, but
 
 ## Hidden Runtime Preferences
 
-These settings are active and meaningful, but they are not exposed in the normal Preferences dialogs.
+These settings are active and meaningful. They are now exposed in the Advanced tree on the Tweaks page, but they are still not exposed on the normal dedicated preference pages.
 
-| INI key | Section | Mode | Default | Explanation |
-| --- | --- | --- | --- | --- |
-| `RestoreLastMainWndDlg` | `eMule` | `R` | `false` | Restore the last active main tab on startup. Used in `EmuleDlg.cpp`. |
-| `RestoreLastLogPane` | `eMule` | `R` | `false` | Restore the selected log pane. Used in `ServerWnd.cpp`. |
-| `FileBufferTimeLimit` | `eMule` | `R` | `60` seconds | Maximum age of buffered part-file data before forced flush. Used in `PartFile.cpp`. |
-| `DateTimeFormat4Lists` | `eMule` | `R` | `%c` | Separate date/time format string for list controls. Used in `DownloadListCtrl.cpp`. |
-| `PreviewCopiedArchives` | `eMule` | `R` | `true` | Allow preview/archive-recovery logic on copied archives. Used in archive preview and part-file logic. |
-| `InspectAllFileTypes` | `eMule` | `R` | `0` | Force metadata inspection on all file types, not just the obvious media types. |
-| `PreviewOnIconDblClk` | `eMule` | `R` | `false` | Use icon double-click as preview action in the download list. |
-| `ShowActiveDownloadsBold` | `eMule` | `R` | `false` | Render active downloads in bold. |
-| `UseSystemFontForMainControls` | `eMule` | `R` | `false` | Use system fonts for major controls and list views. |
-| `ReBarToolbar` | `eMule` | `R` | `true` | Enable rebar-based toolbar layout. |
-| `ShowUpDownIconInTaskbar` | `eMule` | `R` | `false` | Show upload/download state in taskbar icon handling. |
-| `ShowVerticalHourMarkers` | `eMule` | `R` | `true` | Draw vertical hour markers on statistics graphs. |
-| `ForceSpeedsToKB` | `eMule` | `R` | `false` | Force speed-formatting helpers to prefer KB-based units. |
-| `ExtraPreviewWithMenu` | `eMule` | `R` | `false` | Changes where preview actions appear in the download-list UI/menu flow. |
-| `KeepUnavailableFixedSharedDirs` | `eMule` | `R` | `false` | Keep fixed shared dirs even when currently unavailable during startup/shared-dir loading. |
-| `PreferRestrictedOverUser` | `eMule` | `R` | `false` | Prefer restricted-user execution mode in the secure-launch path. |
-| `PartiallyPurgeOldKnownFiles` | `eMule` | `R` | `true` | Makes known-file/AICH cleanup less aggressive. |
-| `AdjustNTFSDaylightFileTime` | `eMule` | `R` | `false` | Adjust NTFS timestamps around daylight-saving boundaries to avoid false file-change/rehash churn. |
-| `RearrangeKadSearchKeywords` | `eMule` | `R` | `true` | Reorder Kad search keywords before issuing the search. |
-| `MessageFromValidSourcesOnly` | `eMule` | `R` | `true` | Hidden message acceptance gate used by `BaseClient.cpp`. Restricts messages to sources considered valid enough by that path. |
+| INI key | Section | Mode | UI | Default | Explanation |
+| --- | --- | --- | --- | --- | --- |
+| `RestoreLastMainWndDlg` | `eMule` | `RW` | Advanced tree | `false` | Restore the last active main tab on startup. Used in `EmuleDlg.cpp`. |
+| `RestoreLastLogPane` | `eMule` | `RW` | Advanced tree | `false` | Restore the selected log pane. Used in `ServerWnd.cpp`. |
+| `FileBufferTimeLimit` | `eMule` | `RW` | Advanced tree | `60` seconds | Maximum age of buffered part-file data before forced flush. Used in `PartFile.cpp`. |
+| `DateTimeFormat4Lists` | `eMule` | `RW` | Advanced tree | `%c` | Separate date/time format string for list controls. Used in `DownloadListCtrl.cpp`. |
+| `PreviewCopiedArchives` | `eMule` | `RW` | Advanced tree | `true` | Allow preview/archive-recovery logic on copied archives. Used in archive preview and part-file logic. |
+| `InspectAllFileTypes` | `eMule` | `RW` | Advanced tree | `0` | Force metadata inspection on all file types, not just the obvious media types. |
+| `PreviewOnIconDblClk` | `eMule` | `RW` | Advanced tree | `false` | Use icon double-click as preview action in the download list. |
+| `ShowActiveDownloadsBold` | `eMule` | `RW` | Advanced tree | `false` | Render active downloads in bold. |
+| `UseSystemFontForMainControls` | `eMule` | `RW` | Advanced tree | `false` | Use system fonts for major controls and list views. |
+| `ReBarToolbar` | `eMule` | `RW` | Advanced tree | `true` | Enable rebar-based toolbar layout. |
+| `ShowUpDownIconInTaskbar` | `eMule` | `RW` | Advanced tree | `false` | Show upload/download state in taskbar icon handling. |
+| `ShowVerticalHourMarkers` | `eMule` | `RW` | Advanced tree | `true` | Draw vertical hour markers on statistics graphs. |
+| `ForceSpeedsToKB` | `eMule` | `RW` | Advanced tree | `false` | Force speed-formatting helpers to prefer KB-based units. |
+| `ExtraPreviewWithMenu` | `eMule` | `RW` | Advanced tree | `false` | Changes where preview actions appear in the download-list UI/menu flow. |
+| `KeepUnavailableFixedSharedDirs` | `eMule` | `RW` | Advanced tree | `false` | Keep fixed shared dirs even when currently unavailable during startup/shared-dir loading. |
+| `PreferRestrictedOverUser` | `eMule` | `RW` | Advanced tree | `false` | Prefer restricted-user execution mode in the secure-launch path. |
+| `PartiallyPurgeOldKnownFiles` | `eMule` | `RW` | Advanced tree | `true` | Makes known-file/AICH cleanup less aggressive. |
+| `AdjustNTFSDaylightFileTime` | `eMule` | `RW` | Advanced tree | `false` | Adjust NTFS timestamps around daylight-saving boundaries to avoid false file-change/rehash churn. |
+| `RearrangeKadSearchKeywords` | `eMule` | `RW` | Advanced tree | `true` | Reorder Kad search keywords before issuing the search. |
+| `MessageFromValidSourcesOnly` | `eMule` | `RW` | Advanced tree | `true` | Hidden message acceptance gate used by `BaseClient.cpp`. Restricts messages to sources considered valid enough by that path. |
 
 ## Hidden Or Legacy Keys Which Look Stale, Transitional, Or Import-Only
 
@@ -482,7 +482,7 @@ The unresolved issues from [DEFECTS.md](/C:/prj/p2p/eMulebb/eMule/DEFECTS.md) th
 | `UpOverheadTotal` / `UpOverHeadTotal` mismatch | Upload overhead totals do not round-trip. | Normalize save/load spelling and optionally migrate old keys. |
 | `UpOverheadTotalPackets` / `UpOverHeadTotalPackets` mismatch | Packet-overhead totals do not round-trip. | Same fix as above. |
 | `AllowedIPs` load-only behavior | Web allowed-IP list is not written back. | Add save support or remove the feature explicitly. |
-| Hidden runtime prefs listed above | They still affect behavior but are neither saved back nor exposed in dialogs. | Decide case by case: expose, persist properly, or retire. |
+| Hidden runtime prefs listed above | They are now exposed in the Advanced tree and written back, but they still need selective runtime verification because several are niche or internal. | Verify each edited setting in the affected subsystem before treating the UI as fully validated. |
 | `AICHTrustEveryHash` | Likely stale hidden knob. | Confirm intent and then either wire it back up or remove it. |
 
 ## Practical Reading Guide
