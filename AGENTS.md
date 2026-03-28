@@ -1,9 +1,13 @@
 # Rules
-- ensure to keep a consistent code-style as the existing code base
+- this is a sub-module of the parent directory
+- dependencies and build scripts are in the parent directory, use `..\23-build-emule-debug-incremental.cmd` to build
+- keep a consistent code-style as the existing code base
+- comment the code that you add so it is clear and easy to identify its purpose
 - "eMule broadband v0.60d-dev" is at https://github.com/itlezy/eMule/tree/v0.60d-dev
 - "eMule Community v60d" is at https://github.com/irwir/eMule/tree/v0.60d
 - compare the branches to identify changes that were made in "eMule broadband v0.60d-dev" vs "eMule Community v60d"
-- avoid to keep wrappers, unused code, compatibility mapping
-- this is a development alpha branch, it is ok to make breaking changes
-- prefer `pwsh` to run commands, but `python` and `node` can be used too
-- save helper scripts to `.\helpers\` if they can be reused
+- do NOT keep wrappers, unused code, compatibility mapping when refactoring
+- this is a development alpha branch, it is ok to make breaking changes when refactoring
+- save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
+- load and strictly follow the PowerSheel guide from `%G_PRJ%\aidev\specs\POWERSHELL_GUIDE.md`
+- When checking UPNP mapping, ensure to launch `C:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
