@@ -719,7 +719,9 @@ void CPreferences::SetStandardValues()
 	defaultWPM.rcNormalPosition.top = 10;
 	defaultWPM.rcNormalPosition.right = 700;
 	defaultWPM.rcNormalPosition.bottom = 500;
-	defaultWPM.showCmd = 0;
+	// Start the main window maximized on first launch, while keeping the restore rectangle
+	// as the fallback size once the user switches back to a normal window state.
+	defaultWPM.showCmd = SW_SHOWMAXIMIZED;
 	EmuleWindowPlacement = defaultWPM;
 	versioncheckLastAutomatic = 0;
 }
