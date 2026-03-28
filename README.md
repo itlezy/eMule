@@ -27,7 +27,7 @@ This branch keeps the broadband upload controller and session controls, and
 reapplies a small set of useful ratio/cooldown columns, but does not carry over
 the wider UI/queue experiments from `v0.60d-dev`. For the code
 level rationale and the current `v0.72a-broadband-dev` design notes, please see
-[`BROADBAND.md`](BROADBAND.md).
+[`BROADBAND.md`](docs/BROADBAND.md).
 
 ## Installation
 
@@ -120,7 +120,7 @@ The useful behavioral pieces that were kept are:
 Your best take to fully understand the logic is to **review the code itself**:
 
 - old branch reference: https://github.com/itlezy/eMule/commits/v0.60d-dev
-- current branch design notes: [`BROADBAND.md`](BROADBAND.md)
+- current branch design notes: [`BROADBAND.md`](docs/BROADBAND.md)
 
 We have not much time to test, so be sensible.
 

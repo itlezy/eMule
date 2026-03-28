@@ -1,6 +1,8 @@
 # Resume
 
 ## Last chunk completed
+- Moved root-level Markdown documentation files into `.\docs`, keeping only `AGENTS.md`, `README.md`, and `RESUME.md` in the repo root.
+- Updated `README.md` links so root-level references to `BROADBAND.md` now point to `docs/BROADBAND.md`.
 - Replaced `srchybrid/IP2Country.cpp/.h` CSV range loading with an internal MaxMind/DB-IP MMDB reader.
 - Added DB-IP monthly auto-download/update from `https://download.db-ip.com/free/dbip-country-lite-YYYY-MM.mmdb.gz`.
 - Reduced downloader noise to a single visible success/failure outcome instead of one log line per fallback URL attempt.
@@ -26,7 +28,11 @@
 - Lookup backend now expects `dbip-country-lite.mmdb` in the config directory and can fetch/install it automatically when missing or stale.
 
 ## Next chunk
-- Verify the four flag-bearing list controls render and align correctly on real data.
-- Exercise a few known public IPv4 addresses in the UI and confirm country name + flag correctness end-to-end.
-- Decide whether to expose geolocation status/update controls in Preferences or keep this backend-only.
-- Consider extending flag/country display beyond the three transfer lists if the branch already has other useful country text surfaces.
+- Captured the Kad modernization plan in `KAD_IMPROVE.md`, covering joint bring-in of `CSafeKad2` and `CFastKad`, refactoring expectations, integration points, validation, and follow-on Kad improvements.
+- Identified the first preferred Kad execution chunk as: modernized `CSafeKad2`, modernized `CFastKad`, Kad UDP listener/search/routing integration, preference persistence, and Kad diagnostics.
+
+## Next chunk
+- Start the Kad work by importing and refactoring `CSafeKad2` and `CFastKad` instead of copying the eMuleAI implementations verbatim.
+- Wire both modules into Kad hello/ack verification, search response handling, routing eviction, and shutdown cleanup.
+- Add the `BanBadKadNodes` preference persistence with conservative defaults, but defer UI unless needed for validation.
+- Add Kad counters and targeted debug logging so the first behavioral changes are measurable before broader routing-quality work.
