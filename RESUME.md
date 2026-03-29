@@ -42,3 +42,4 @@
 - Runtime-verify one or more newly added extensions such as `.webm`, `.opus`, `.oga`, `.m4b`, `.mts`, or `.mxf` when suitable local sample files are available.
 - Decide whether to simplify the metadata settings UI now that there is no second backend behind the old option naming.
 - Tighten the missing-`MediaInfo.dll` user-facing diagnostics if the current log-only plus dialog-path hint is not sufficient.
+- Keep the `MAYBE-20260329-WINDOWS-PROPERTY-STORE-METADATA` note in mind if non-audio/video metadata extraction becomes a near-term priority.

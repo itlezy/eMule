@@ -11,3 +11,9 @@
 - Follow-up goal:
   - remove the startup wizard entirely
   - replace it with a single, non-duplicated first-run initialization path that owns port selection, socket startup, and first-run defaults deterministically
+
+## MAYBE-20260329-WINDOWS-PROPERTY-STORE-METADATA
+
+- Explore using the Windows Property Store as the first metadata path for non-audio/video file types that Windows can handle.
+- Treat this as a possible future direction for images, documents, or archives where property handlers expose useful fields.
+- Keep `MediaInfo.dll` as an optional fallback only where it adds meaningful coverage beyond the Windows property system.
