@@ -1342,16 +1342,10 @@ BEGIN
     IDS_IMP_DELSRC          "האם ברצונך למחוק את קבצי המקור של חלקי קובץ שהייבוא הצליח עבורם?"
     IDS_IMP_SIZE            "%s (דיסק: %s)"
     IDS_IMP_STATUS          "מייבא %s: %s"
-    IDS_DYNUPENABLED        "מצא גבול קצב העלאה אוטומטית"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "סיבולת פינג (אחזור של הפינג הנמוך ביותר)"
-    IDS_DYNUP_GOINGUPDIVIDER "Going up slowness"//!
-    IDS_DYNUP_GOINGDOWNDIVIDER "Going down slowness"//!
-    IDS_DYNUP_NUMBEROFPINGS "מספר מקסימלי של פינגים לממוצע"
-    IDS_DYNUP_MINUPLOAD     "מהירות העלאה מינימלית המותרת"
     IDS_ESTTIMELEFT         "זמן משוער שנותר:"
     IDS_TRANSFER_RATE_LABEL "קצב העברה:"
     IDS_SAVELOG             "שמור יומן"
@@ -1379,7 +1373,6 @@ BEGIN
     IDS_EM_HELP             "עזרה"
     IDS_WRN_FRIENDDUPLIPPORT
                             "חבר לא נוסף.\r\n\r\nכבר קיים חבר עם כתובת איי פי ופורט דומים."
-    IDS_DYNUP               "Upload SpeedSense (לא מומלץ)"
     IDS_KADOVERHEAD         "תקורת רשת קדמליה (מנות): %s (%s)"
     IDS_FIND                "חפש..."
     IDS_LOG_BANNED_CLIENTS  "שמור יומן קליינטים מוחרמים"
@@ -1455,10 +1448,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"סיבולת פינג (מילישניות)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"שיטת סיבולת פינג"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"מילישניות"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"אחוז (%)"
     IDS_LOG_A4AF            "שמור יומן עבור פעולות A4AF"
     IDS_A4AF_SAVE_CPU       "בטל בדיקות A4AF לחיסכון במעבד"
     IDS_SEARCH_DOC          "מסמכים"
@@ -1715,14 +1704,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "שמור אוסף בפורמט טקסט פשוט"
     IDS_SEARCHAUTHORCOLLECTION "חפש אוספים של יוצר"
     IDS_ERR_DUPL_FILES      "קובץ משותף כפול: ""%s"" ו-""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: איתור מסלולים נכשל יותר מידי פעמים. מבטל את Upload SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: סיים את ההכנות. מתחיל בשליטה על קצב ההעלאה. (60 שניות ראשונות במצב תגובה מהיר)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: אותרה הגבהה של קצב ההעלאה בהעדפות. נכנס למצב תגובה מהיר ל-60 שניות."
-    IDS_USS_STATE_PREPARING "מכין..."
-    IDS_USS_STATE_WAITING   "ממתין..."
-    IDS_USS_STATE_ERROR     "שגיאה!"
     IDS_SHAREWARNING        "(התיקייה תשותף!)"
     IDS_REMOVEALLSERVERS    "האם אתה בטוח שברצונך למחוק את כל השרתים?"
     IDS_SEARCH_UNKATTR      "מאפיין חיפוש לא ידוע '%s'"

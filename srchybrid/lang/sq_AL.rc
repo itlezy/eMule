@@ -741,10 +741,6 @@ BEGIN
     IDS_METATAGS            "'Meta Tag'u llogaritet:"
     IDS_FILEFORMAT          "Formati"
     IDS_UDPREASKS           "Rrezet e Skedës UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Toleranca e pingut (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metoda për tolerancën e pingut"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milisekonda (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Përqindje (%)"
 END
 
 STRINGTABLE
@@ -1416,16 +1412,10 @@ BEGIN
     IDS_IMP_DELSRC          "A doni që të fshihen me sukses burim-skedat e shkarkesave të importuara?"
     IDS_IMP_SIZE            "%s (Disku:%s)"
     IDS_IMP_STATUS          "Importimi i %s: %s"
-    IDS_DYNUPENABLED        "Automatikisht gjej kufirin më të mirë ngarkues"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Toleranca e pingut (% nga pingu më i ulët)"
-    IDS_DYNUP_GOINGUPDIVIDER "Vajtja sipër ngadalësisë"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Vajtja poshtë ngadalësisë"
-    IDS_DYNUP_NUMBEROFPINGS "Numri mesatar maks. i pingve"
-    IDS_DYNUP_MINUPLOAD     "Shpejtësia më e ulët e lejuar e ngarkimit"
     IDS_ESTTIMELEFT         "Kohëmbetja:"
     IDS_TRANSFER_RATE_LABEL "Vlerë e transferimit:"
     IDS_SAVELOG             "Ruaje ditarin"
@@ -1453,7 +1443,6 @@ BEGIN
     IDS_EM_HELP             "&Ndihmë"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Shoku nuk u shtua.\r\n\r\nNjë tjetër me të njëjtën adresë dhe port IP të vlefshëm ekziston që më parë."
-    IDS_DYNUP               "Ana e Shpejtësisë Ngarkuese (nuk rekomandohet)"
     IDS_KADOVERHEAD         "Sipëria e Kad-it (Paketa): %s (%s)"
     IDS_FIND                "Kërko..."
     IDS_LOG_BANNED_CLIENTS  "Shëno klientët e dëbuar"
@@ -1721,14 +1710,6 @@ BEGIN
     IDS_VIEWCOLLECTION      "Shiko Koleksionin"
     IDS_COLL_TEXTFORMAT     "Ruaje koleksionin në format të thjeshtë teksti"
     IDS_RUNNINGRESTRICTED   "eMule vepron me privilegje të pakësuara"
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "SensShpejtësiNgarkimi: kursi i gjurmimit dështon disa herë. Sensi i Shpejtësisë së Ngarkimit çaktivizohet."
-    IDS_USS_STARTING        "SensShpejtësiNgarkimi: kryerje e përgatitur. Niset kontrolli për shpejtësinë e ngarkimit. (Në 60 sekondat e para do reagohet shpejt)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "SensShpejtësiNgarkimi: Në 'prefs' diktohet një kufi i rritur ngarkimi. Për 60 sekonda do reagohet shpejt."
-    IDS_USS_STATE_PREPARING "Gati..."
-    IDS_USS_STATE_WAITING   "Në pritje..."
-    IDS_USS_STATE_ERROR     "Gabim!"
     IDS_SHAREWARNING        "(Dosja do të shpërndahet!)"
     IDS_REMOVEALLSERVERS    "Vërtet do i fshini gjithë serverat?"
     IDS_SEARCH_UNKATTR      "Atribut kërkimi i panjohur '%s'"

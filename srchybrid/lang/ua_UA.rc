@@ -742,10 +742,6 @@ BEGIN
     IDS_METATAGS            "Рахунок мета теґів:"
     IDS_FILEFORMAT          "Формат"
     IDS_UDPREASKS           "Перезапит через UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Частота пінгу (мс)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Метод для частоти пінґу"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Мілісекунди (мс)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Відсоток (%)"
 END
 
 STRINGTABLE
@@ -1318,9 +1314,6 @@ BEGIN
     IDS_PASTE               "Вставити"
     IDS_SEARCHAUTHORCOLLECTION "Пошук в колекції автора"
     IDS_ERR_DUPL_FILES      "Подвійний Спільний Файл: ""%s"" та ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Розумне відвантаження: Неодноразова помилка запитів. Вимкнення розумного відвантаження"
-    IDS_USS_STARTING        "Розумне відвантаження: Виконано з приготуванням. Початок контролю розумного відвантаження. (Перші 60 секунд мине в швидкому режимі)"
     IDS_A4AF                "Керування джерелами"
     IDS_AUTOCAT_LABEL       "Aвтовизначення категорії (розділювач |)"
     IDS_SHOWEXTSETTINGS     "Показувати додатковий контроль"
@@ -1420,16 +1413,10 @@ BEGIN
     IDS_IMP_DELSRC          "Ви хочете видалити старий тимчасовий файл після вдалої конвертації?"
     IDS_IMP_SIZE            "%s (Диск:%s)"
     IDS_IMP_STATUS          "Перенесення %s: %s"
-    IDS_DYNUPENABLED        "Автовизначення кращої швидкості відвантаження"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Частота пінґу (% найнижчого пінґу)"
-    IDS_DYNUP_GOINGUPDIVIDER "Повільне підвищення"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Повільне зниження"
-    IDS_DYNUP_NUMBEROFPINGS "Макс. середня кількість пінґів"
-    IDS_DYNUP_MINUPLOAD     "Мін. дозволена швидкість"
     IDS_ESTTIMELEFT         "Залишилося часу:"
     IDS_TRANSFER_RATE_LABEL "Швидкість:"
     IDS_SAVELOG             "Зберегти Лог"
@@ -1457,7 +1444,6 @@ BEGIN
     IDS_EM_HELP             "&Довідка"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Не додано до списку друзів.\r\n\r\nВ списках друзів даний IP вже присутній"
-    IDS_DYNUP               "'Розумне' відвантаження (не рекомендується)"
     IDS_KADOVERHEAD         "Kad перевищення (Пакети): %s (%s)"
     IDS_FIND                "Знайти..."
     IDS_LOG_BANNED_CLIENTS  "Лоґ заблокованих клієнтів"
@@ -1725,11 +1711,6 @@ BEGIN
     IDS_VIEWCOLLECTION      "Переглянути колекцію"
     IDS_COLL_TEXTFORMAT     "Зберегти коолекцію у звичайний текстовий формат"
     IDS_RUNNINGRESTRICTED   "eMule працює зі зменшеними привілеями"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Розумна віддача: Помічено збільшення швидкості віддачі в налаштуваннях. Перехід в швидкий режим на 60 секунд."
-    IDS_USS_STATE_PREPARING "Підготовка..."
-    IDS_USS_STATE_WAITING   "Очікування..."
-    IDS_USS_STATE_ERROR     "Помилка!"
     IDS_SHAREWARNING        "(Тека буде зроблена спільною!)"
     IDS_REMOVEALLSERVERS    "Ви насправді хочете видалити усі сервери?"
     IDS_SEARCH_UNKATTR      "Невідомий атрибут пошуку '%s'"

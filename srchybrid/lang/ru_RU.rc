@@ -743,10 +743,6 @@ BEGIN
     IDS_METATAGS            "Кол-во мета тегов:"
     IDS_FILEFORMAT          "Формат"
     IDS_UDPREASKS           "Перезапрос через UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Отклонение пинга (мс)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Способ определения отклонений пинга"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Миллисекунды (мс)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Процент (%)"
 END
 
 STRINGTABLE
@@ -1412,16 +1408,10 @@ BEGIN
     IDS_IMP_DELSRC          "Вы хотите удалить исходные файлы после успешной конвертации?"
     IDS_IMP_SIZE            "%s (Диск: %s)"
     IDS_IMP_STATUS          "Конвертация %s: %s"
-    IDS_DYNUPENABLED        "Автоопределение лучшего лимита отдачи"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Отклонение пинга (% от наименьшего пинга)"
-    IDS_DYNUP_GOINGUPDIVIDER "Увеличение замедления"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Уменьшение замедления"
-    IDS_DYNUP_NUMBEROFPINGS "Макс. кол-во пингов для среднего"
-    IDS_DYNUP_MINUPLOAD     "Мин. разрешенная скорость"
     IDS_ESTTIMELEFT         "Осталось времени:"
     IDS_TRANSFER_RATE_LABEL "Скорость:"
     IDS_SAVELOG             "Сохранить"
@@ -1449,7 +1439,6 @@ BEGIN
     IDS_EM_HELP             "&Помощь"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Не добавлен в список друзей.\r\n\r\nУже есть друг с таким же IP и портом."
-    IDS_DYNUP               "'Умная' отдача (не рекомендовано)"
     IDS_KADOVERHEAD         "Сеть Kad (пакеты): %s (%s)"
     IDS_FIND                "Поиск..."
     IDS_LOG_BANNED_CLIENTS  "Лог забаненных клиентов"
@@ -1718,14 +1707,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Сохранить коллекцию в простом текстовом формате"
     IDS_SEARCHAUTHORCOLLECTION "Поиск коллекций автора"
     IDS_ERR_DUPL_FILES      "Одинаковые файлы обмена: ""%s"" и ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Умная отдача: Слишком много неудавшихся попыток прохождения сигнала. Отключение умной отдачи."
-    IDS_USS_STARTING        "Умная отдача: Приготовления завершены. Начинается контроль скорости отдачи (первые 60 секунд пройдут в режиме быстрого реагирования)."
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Умная отдача: Обнаружено увеличение скорости отдачи в настройках. Переход в режим быстрого реагирования на 60 секунд."
-    IDS_USS_STATE_PREPARING "Подготовка..."
-    IDS_USS_STATE_WAITING   "Ожидание..."
-    IDS_USS_STATE_ERROR     "Ошибка!"
     IDS_SHAREWARNING        "(Папка будет на отдачу!)"
     IDS_REMOVEALLSERVERS    "Вы действительно хотите удалить все серверы?"
     IDS_SEARCH_UNKATTR      "Не известный параметр поиска '%s'"

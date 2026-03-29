@@ -742,10 +742,6 @@ BEGIN
     IDS_METATAGS            "احصاء الميتا:"
     IDS_FILEFORMAT          "نوعية"
     IDS_UDPREASKS           "يو دي بي يعيد السؤال"
-    IDS_DYNUP_PINGTOLERANCE_MS "سماح البنج (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "طريقة لسماح البنج"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "جزء من الثانية (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "نسبة مئوية (%)"
 END
 
 STRINGTABLE
@@ -1401,16 +1397,10 @@ BEGIN
     IDS_IMP_DELSRC          "هل تريد لملفات المصدر ل التحميلات المحملة بنجاح بالحذف؟"
     IDS_IMP_SIZE            "%s (ديسك:%s)"
     IDS_IMP_STATUS          "ادراج %s: %s"
-    IDS_DYNUPENABLED        "جد اكثر حد ل الرفع ذاتيا"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "حدة البنج (% من اقل بنج)"
-    IDS_DYNUP_GOINGUPDIVIDER "يتقدم ببطأ"
-    IDS_DYNUP_GOINGDOWNDIVIDER "ينسحب بطيئا"
-    IDS_DYNUP_NUMBEROFPINGS "اكبر عدد بنج كمتوسط"
-    IDS_DYNUP_MINUPLOAD     "اكل قيمة رفع مسموحة"
     IDS_ESTTIMELEFT         "تخمين الوقت المتبقي:"
     IDS_TRANSFER_RATE_LABEL "تقييم النقل:"
     IDS_SAVELOG             "اخزن اللوج"
@@ -1438,7 +1428,6 @@ BEGIN
     IDS_EM_HELP             "&مساعدة"
     IDS_WRN_FRIENDDUPLIPPORT
                             "صديق لم يضف.\r\n\r\nهناك صديق متوفر بنفس الاي بي و البورت."
-    IDS_DYNUP               "رفع بحاسة السرعة (غير منصوح به)"
     IDS_KADOVERHEAD         "Kad راس (Packets): %s (%s)"
     IDS_FIND                "جد..."
     IDS_LOG_BANNED_CLIENTS  "عملاء مطرودين"
@@ -1716,14 +1705,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "خزن المجموعة في ملف تيكتست عادي"
     IDS_SEARCHAUTHORCOLLECTION "ابحث عن مجموعات الكاتب"
     IDS_ERR_DUPL_FILES      "ضاعف الملفات المشتركة: ""%s"" و ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "حاسة سرعة الرفع: تريس روتنج فشل عدة مرات الغي تفعيل حاسة سرعة الرفع."
-    IDS_USS_STARTING        "حاسة سرعة الرفع: اكمل بتنظيمات. بدأ تحكم سرعة الرفع. (اول 60 ثانية ستكون برد فعل سريع)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "حاسة سرعة الرفع: زيد حد الرفع في حالة. سوف يكون رد الفعل سريع خلال 60 ثانية."
-    IDS_USS_STATE_PREPARING "طرو التصليح..."
-    IDS_USS_STATE_WAITING   "طور الانتظار..."
-    IDS_USS_STATE_ERROR     "خطأ!"
     IDS_SHAREWARNING        "(سيتم الاشتراك بالمجلد)"
     IDS_REMOVEALLSERVERS    "هل انت متأكد انك تريد ازالة كل السيرفرات؟"
     IDS_SEARCH_UNKATTR      "صفة بحث غير معروفة '%s'"

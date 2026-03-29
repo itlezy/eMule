@@ -58,7 +58,6 @@ The last two groups are documented because they still live in the same file, but
 | `MaxDownload` | `eMule` | `RW` | Yes | `200000` | Download speed limit in KiB/s for this branch. |
 | `DownloadCapacity` | `eMule` | `RW` | Yes | `200000` | Download line-capacity hint in KiB/s. Used for graphs and throughput logic. |
 | `UploadCapacityNew` | `eMule` | `RW` | Yes | `50000` | Upload line-capacity hint in KiB/s. Important for the broadband controller. |
-| `MinUpload` | `eMule` | `RW` | Yes | existing app default | Lower bound for upload scheduling/limit logic. |
 | `MaxConnections` | `eMule` | `RW` | Yes | existing app default | Hard cap for total connections. |
 | `MaxHalfConnections` | `eMule` | `RW` | Yes | existing app default | Cap for half-open TCP connections. |
 | `MaxConnectionsPerFiveSeconds` | `eMule` | `RW` | Yes | existing app default | Burst limiter for outbound connection attempts. |
@@ -302,10 +301,9 @@ This section explains what the more technical settings actually do in runtime te
 | Setting | What it actually does |
 | --- | --- |
 | `DownloadCapacity` | This is not a live throttle by itself. It is the app's configured estimate of available downstream capacity. Code uses it for graph scaling, throughput heuristics, and any logic that wants a line-capacity hint instead of the current live rate. |
-| `UploadCapacityNew` | This is the configured upstream-capacity hint. On this branch it matters more than in stock builds because the broadband upload controller derives its effective upload budget from configured capacity, active upload limit, and USS allowance. |
+| `UploadCapacityNew` | This is the configured upstream-capacity hint. On this branch it feeds the broadband upload controller together with the active upload limit when slot targeting and per-slot throughput goals are derived. |
 | `MaxUpload` | This is the actual upload limit presented to the rest of the app. The broadband controller treats it as one bound on the effective upload budget, so it directly constrains slot targeting and per-slot throughput goals. |
 | `MaxDownload` | This is the active download speed limit. Unlike capacity, this is the operative cap used when download throttling logic is active. |
-| `MinUpload` | Legacy low-water mark for upload logic. It acts as a floor in parts of the scheduler/throttler path and can keep upload-related code out of pathological low-limit values. |
 | `MaxConnections` | Hard cap on total tracked/open connections. It is a blunt resource guard, not a prioritization tool. |
 | `MaxHalfConnections` | Caps not-yet-fully-open TCP connections. This mainly affects connect burst behavior and old Windows TCP stack sensitivity. |
 | `MaxConnectionsPerFiveSeconds` | Burst limiter for new outbound connections. It smooths connection churn and protects both the local stack and remote peers from aggressive connect storms. |

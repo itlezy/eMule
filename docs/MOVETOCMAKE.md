@@ -727,7 +727,6 @@ set(EMULE_SOURCES
     URLClient.cpp
     WebSocket.cpp
     BindAddressResolver.cpp
-    LastCommonRouteFinder.cpp
     TLSthreading.cpp
 
     # Server

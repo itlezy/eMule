@@ -1347,16 +1347,10 @@ BEGIN
     IDS_IMP_DELSRC          "Voulez-vous supprimer les fichiers part sources des téléchargements dont l'importation a réussi ?"
     IDS_IMP_SIZE            "%s (Disque:%s)"
     IDS_IMP_STATUS          "Importation %s: %s"
-    IDS_DYNUPENABLED        "Contrôle automatique de la vitesse d'émission"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolérance du ping (% du plus petit ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Délai de réaction à l'augmentation"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Délai de réaction à la diminution"
-    IDS_DYNUP_NUMBEROFPINGS "Nombre maximum de ping pour la moyenne"
-    IDS_DYNUP_MINUPLOAD     "Vitesse minimum autorisée"
     IDS_ESTTIMELEFT         "Temps restant estimé :"
     IDS_TRANSFER_RATE_LABEL "Taux de transfert :"
     IDS_SAVELOG             "Enregistrer le journal"
@@ -1384,7 +1378,6 @@ BEGIN
     IDS_EM_HELP             "Ai&de"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Ami non ajouté.\r\n\r\nIl y a déjà un ami enregistré avec les mêmes adresse IP et port."
-    IDS_DYNUP               "Contrôle de la vitesse d'émission - USS (déconseillé)"
     IDS_KADOVERHEAD         "Surplus de Bande passante Kad (Paquets): %s (%s)"
     IDS_FIND                "Trouver..."
     IDS_LOG_BANNED_CLIENTS  "Consigner les clients bannis"
@@ -1460,10 +1453,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Tolérance du ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Méthode de tolérance pour le ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Millisecondes (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Pourcentage (%)"
     IDS_LOG_A4AF            "Consigner les actions relatives aux A4AF"
     IDS_A4AF_SAVE_CPU       "Désactiver le contrôle des A4AF pour économiser le CPU"
     IDS_SEARCH_DOC          "Document" //!
@@ -1722,14 +1711,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Sauvegarder la collection dans un fichier texte"
     IDS_SEARCHAUTHORCOLLECTION "Rechercher les auteurs des collections"
     IDS_ERR_DUPL_FILES      "Fichiers partagés en double : ""%s"" et ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense : Le traceroute a échoué de trop nombreuses fois. USS désactivé."
-    IDS_USS_STARTING        "UploadSpeedSense : Préparation terminée, début du contrôle de la vitesse d'émission (la 1ère minute sera en mode de réactivité élevée)."
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense : Limite d'émission modifiée. Passage en mode de réactivité élevée pendant 1 minute."
-    IDS_USS_STATE_PREPARING "Préparation..."
-    IDS_USS_STATE_WAITING   "En attente..."
-    IDS_USS_STATE_ERROR     "Erreur !"
     IDS_SHAREWARNING        "(le dossier sera partagé !)"
     IDS_REMOVEALLSERVERS    "Voulez-vous vraiment supprimer tous les serveurs ?"
     IDS_SEARCH_UNKATTR      "Argument de recherche '%s' inconnu"

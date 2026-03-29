@@ -1353,16 +1353,10 @@ BEGIN
     IDS_IMP_DELSRC          "Deseja que sejam apagados os ficheiros .part fonte dos downloads importados com sucesso?"
     IDS_IMP_SIZE            "%s (Disco:%s)"
     IDS_IMP_STATUS          "A importar %s: %s"
-    IDS_DYNUPENABLED        "Ajuste automático da velocidade de upload"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolerância de Ping (% do ping mais baixo)"
-    IDS_DYNUP_GOINGUPDIVIDER "Atraso da reacção ao aumento"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Atraso da reacção à diminuição"
-    IDS_DYNUP_NUMBEROFPINGS "Número Máx. de pings para a média"
-    IDS_DYNUP_MINUPLOAD     "Menor velocidade de upload permitida"
     IDS_ESTTIMELEFT         "Tempo restante estimado:"
     IDS_TRANSFER_RATE_LABEL "Taxa de transferência:"
     IDS_SAVELOG             "Guardar Relatório"
@@ -1390,7 +1384,6 @@ BEGIN
     IDS_EM_HELP             "&Ajuda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Amigo não adicionado.\r\n\r\nJá existe um amigo registado com o mesmo endereço de IP e Porta."
-    IDS_DYNUP               "Detecção da Velocidade de Upload (não recomendado)"
     IDS_KADOVERHEAD         "Largura de Banda Kad Adicional (Pacotes): %s (%s)"
     IDS_FIND                "Pesquisar..."
     IDS_LOG_BANNED_CLIENTS  "Registar clientes banidos"
@@ -1466,10 +1459,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Tolerância para o Ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Método de tolerância para o Ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Milisegundos (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Percentagem (%)"
     IDS_LOG_A4AF            "Registar acções A4AF"
     IDS_A4AF_SAVE_CPU       "Desactivar verificações A4AF para poupar CPU"
     IDS_SEARCH_DOC          "Documento"
@@ -1726,14 +1715,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Guardar a Colecção num Formato de Texto Simples"
     IDS_SEARCHAUTHORCOLLECTION "Procurar Colecções do Autor"
     IDS_ERR_DUPL_FILES      "Ficheiros partilhados duplicados: ""%s"" e ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "AutoLimiteDeUpload: O pedido de traceroute falhou demasiadas vezes. A desactivar o ajuste automático de upload."
-    IDS_USS_STARTING        "AutoLimiteDeUpload: Preparações concluídas. A iniciar o controlo sobre a velocidade de upload. (Os primeiros 60 segundos decorrerão em modo de reacção rápida)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "AutoLimiteDeUpload: Foi detectado um aumento do limite de upload nas preferências. A entrar no modo de reacção rápida por 60 segundos."
-    IDS_USS_STATE_PREPARING "A Preparar..."
-    IDS_USS_STATE_WAITING   "Em Espera..."
-    IDS_USS_STATE_ERROR     "Erro!"
     IDS_SHAREWARNING        "(A pasta será partilhada!)"
     IDS_REMOVEALLSERVERS    "Deseja realmente remover todos os servidores?"
     IDS_SEARCH_UNKATTR      "Atributo de pesquisa desconhecido '%s'"

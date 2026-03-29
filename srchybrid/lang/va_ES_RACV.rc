@@ -1354,16 +1354,10 @@ BEGIN
     IDS_IMP_DELSRC          "¿Vols eliminar l'archiu font de totes les descarregues importades correctament?"
     IDS_IMP_SIZE            "%s (Disc:%s)"
     IDS_IMP_STATUS          "Important %s: %s"
-    IDS_DYNUPENABLED        "Trobar millor llímit de pujada automàticament"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolerància al Ping (% del ping mes baix)"
-    IDS_DYNUP_GOINGUPDIVIDER "Llentitut Pujant"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Llentitut Baixant"
-    IDS_DYNUP_NUMBEROFPINGS "Número màxim de pings per promig"
-    IDS_DYNUP_MINUPLOAD     "Velocitat mínima permesa de pujada"
     IDS_ESTTIMELEFT         "Temps estimat:"
     IDS_TRANSFER_RATE_LABEL "Velocitat de transferència:"
     IDS_SAVELOG             "Guardar registre"
@@ -1391,7 +1385,6 @@ BEGIN
     IDS_EM_HELP             "A&juda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Amic no afegit.\r\n\r\nYa existix un amic en la mateixa IP i port disponible."
-    IDS_DYNUP               "Sensor de velocitat de pujada (no recomanat)"
     IDS_KADOVERHEAD         "Tràfic excedent Kad (Paquets): %s (%s)"
     IDS_FIND                "Trobar..."
     IDS_LOG_BANNED_CLIENTS  "Registrar clients prohibits"
@@ -1467,10 +1460,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS                  "Tolerància de ping(ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER        "Metodo de tolerància de ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS            "Milisegons (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT       "Percentage (%)"
     IDS_LOG_A4AF            "Registrar accions A4AF"
     IDS_A4AF_SAVE_CPU       "Desactivar comprovació A4AF per a conservar CPU"
     IDS_SEARCH_DOC          "Document"//!
@@ -1727,14 +1716,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Guardar colecció en un format de text simple"
     IDS_SEARCHAUTHORCOLLECTION "Buscar coleccions de l'autor"
     IDS_ERR_DUPL_FILES      "Archius compartits duplicats: ""%s"" i ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Sensor de velocitat de pujada: El tracerouting ha fallat moltes voltes. Desactivant sensor de velocitat de pujada."
-    IDS_USS_STARTING        "Sensor de velocitat de pujada: Preparat. Iniciant control de velocitat de pujada. (S'utilisarà modo de reacció ràpida durant 60 seg.)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Sensor de velocitat de pujada: Detectat un aument del llimit de pujada en Preferències. S'utilisarà modo de reacció ràpida durant 60 seg."
-    IDS_USS_STATE_PREPARING "Preparant..."
-    IDS_USS_STATE_WAITING   "Esperant..."
-    IDS_USS_STATE_ERROR     "¡Error!"
     IDS_SHAREWARNING        "(¡Es compartirà la carpeta!)"
     IDS_REMOVEALLSERVERS    "¿Estàs segur de voler eliminar tots els servidors?"
     IDS_SEARCH_UNKATTR      "Atribut de busca desconegut '%s'"

@@ -1344,16 +1344,10 @@ BEGIN
     IDS_IMP_DELSRC          "Vill du ha käll-delfilen av lyckade importerade nedladdningar?"
     IDS_IMP_SIZE            "%s (disk:%s)"
     IDS_IMP_STATUS          "Importerar %s: %s"
-    IDS_DYNUPENABLED        "Hitta den bästa uppladdningsgränsen automatiskt"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Pingtolerans (% av lägsta ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Växande uppladdning"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Minskande uppladdning"
-    IDS_DYNUP_NUMBEROFPINGS "Max. antal ping för medel"
-    IDS_DYNUP_MINUPLOAD     "Lägsta tillåtna uppladdningshastighet"
     IDS_ESTTIMELEFT         "Uträknad tid kvar:"
     IDS_TRANSFER_RATE_LABEL "Hastighet:"
     IDS_SAVELOG             "Spara logg"
@@ -1399,7 +1393,6 @@ BEGIN
     IDS_EM_HELP             "&Hjälp"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Kompisen blev inte tillagd.\r\n\r\nDet finns redan en kompis med samma IP-adress och port."
-    IDS_DYNUP               "Uppladdning SpeedSense (inte rekommenderat)"
     IDS_KADOVERHEAD         "Kad overhead (paket): %s (%s)"
     IDS_FIND                "Hitta..."
     IDS_LOG_BANNED_CLIENTS  "Logga bannade klienter"
@@ -1457,10 +1450,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Pingtolerans (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Metod för pingtolerans"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Millisekunder (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Procent (%)"
     IDS_LOG_A4AF            "Logga A4AF händelser"
     IDS_A4AF_SAVE_CPU       "Avaktivera A4AF kontroller för att spara CPU"
     IDS_SEARCH_DOC          "Dokument"
@@ -1717,14 +1706,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Spara samling i vanlig textformat"
     IDS_SEARCHAUTHORCOLLECTION "Sök skaparens samlingar"
     IDS_ERR_DUPL_FILES      "Duplicera utdelade filer: ""%s"" och ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting misslyckades för många gånger. Avaktiverar SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: Färdig med förberedningar. Börjar kontrollera uppladdningshastighet. (Dom första 60 sekunderna kommer att köras i snabbåtkomstläge)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Höjd uppladdningshastighet i inställningar upptäcktes. Går in i snabbåtkomstläge i 60 sekunder."
-    IDS_USS_STATE_PREPARING "Förbereder..."
-    IDS_USS_STATE_WAITING   "Väntar..."
-    IDS_USS_STATE_ERROR     "Fel!"
     IDS_SHAREWARNING        "(Katalogen kommer delas ut!)"
     IDS_REMOVEALLSERVERS    "Är du säker på att du vill radera alla servrar?"
     IDS_SEARCH_UNKATTR      "Okänt sökattribut '%s'"

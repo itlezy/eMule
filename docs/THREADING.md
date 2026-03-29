@@ -31,7 +31,6 @@ stalls, and makes the code hard to reason about under load.
 | `CPartFileWriteThread` | PartFileWriteThread.h:35 | BELOW_NORMAL | Async overlapped file writes via IOCP | `volatile` flags + CEvent m_eventThreadEnded |
 | `CUploadDiskIOThread` | UploadDiskIOThread.h:36 | NORMAL | Async overlapped file reads via IOCP | `volatile` flags + CEvent m_eventThreadEnded |
 | `UploadBandwidthThrottler` | UploadBandwidthThrottler.h:22 | NORMAL | Upload slot bandwidth pacing | CCriticalSection queues + CEvent signals |
-| `LastCommonRouteFinder` | LastCommonRouteFinder.h:46 | NORMAL | Traceroute/ping for bandwidth estimation | CCriticalSection + CEvent signals |
 | `CAICHSyncThread` | AICHSyncThread.h:23 | IDLE | Read/write KNOWN2.MET hash file | CMutex m_mutKnown2File |
 | `CFrameGrabThread` | FrameGrabThread.h:30 | BELOW_NORMAL | Decode video frames for preview | PostMessage TM_FRAMEGRABFINISHED |
 | `CGDIThread` | GDIThread.h:9 | NORMAL | GDI off-screen rendering | CEvent m_hEventKill/m_hEventDead + CCriticalSection |
@@ -183,9 +182,6 @@ the 1-second Process tick, no socket event can be processed. Every millisecond a
 | `sendLocker` | ClientUDPSocket.h:63 | UDP packet send queue |
 | `sendLocker` | UDPSocket.h:80 | Raw UDP send queue |
 | `m_csGDILock` | GDIThread.h:61 | GDI off-screen drawing |
-| `addHostLocker` | LastCommonRouteFinder.h:78 | Traceroute host list |
-| `prefsLocker` | LastCommonRouteFinder.h:79 | Bandwidth prefs |
-| `pingLocker` | LastCommonRouteFinder.h:80 | Ping result data |
 | `m_lockWriteList` | PartFileWriteThread.h:43 | File write queue |
 | `m_lockFlushList` | PartFileWriteThread.h:51 | File flush queue |
 | `sm_critSect` | SendMail.cpp:238 | SMTP send serialization |
@@ -210,9 +206,6 @@ the 1-second Process tick, no socket event can be processed. Every millisecond a
 
 | Variable | File | Reset | Initial | Purpose |
 |----------|------|-------|---------|---------|
-| `m_eventThreadEnded` | LastCommonRouteFinder.h:82 | Manual | Unsignaled | Traceroute shutdown |
-| `m_eventNewTraceRouteHost` | LastCommonRouteFinder.h:83 | Manual | Unsignaled | New trace host |
-| `m_eventPrefs` | LastCommonRouteFinder.h:84 | Manual | Unsignaled | Prefs updated |
 | `m_eventThreadEnded` | PartFileWriteThread.h:64 | Manual | Signaled | Write thread done |
 | `m_eventThreadEnded` | UploadBandwidthThrottler.h:72 | Manual | Signaled | Throttler done |
 | `m_eventPaused` | UploadBandwidthThrottler.h:73 | Manual | Signaled | Throttler paused |
@@ -236,8 +229,6 @@ Used extensively for flag variables crossing the UI thread ↔ worker thread bou
 ```
 ArchiveRecovery.h:404   volatile bool m_bIsValid
 HttpDownloadDlg.h:96    volatile bool m_bAbort
-LastCommonRouteFinder.h volatile bool m_bRun
-LastCommonRouteFinder.h volatile CHAR m_initiateFastReactionPeriod
 Indexed.h:104           volatile bool m_bAbortLoading
 Indexed.h:105           volatile bool m_bDataLoaded
 Kademlia.h:102          volatile bool m_bRunning

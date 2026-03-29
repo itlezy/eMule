@@ -383,7 +383,7 @@ class UploadBandwidthThrottler : public CWinThread {
 
 Each iteration:
 
-1. **Determine allowed bytes:** Query `CLastCommonRouteFinder::GetUpload()` for the current bandwidth ceiling.
+1. **Determine allowed bytes:** Start from the active upload limit and keep the unlimited-path estimator as the upper bound when no finite limit is configured.
 2. **Merge temp queues:** Swap `m_TempControl*` lists into active lists (under `tempQueueLocker`).
 3. **Send control packets first:**
    - Drain `m_ControlQueueFirst_list` (sockets that already sent this cycle — re-queued for priority).

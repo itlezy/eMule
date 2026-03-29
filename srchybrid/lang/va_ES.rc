@@ -1347,16 +1347,10 @@ BEGIN
     IDS_IMP_DELSRC          "Voleu que se suprimisquen els fitxers de font de les baixades importades correctament?"
     IDS_IMP_SIZE            "%s (disc:%s)"
     IDS_IMP_STATUS          "S'està important %s: %s"
-    IDS_DYNUPENABLED        "Troba el límit de pujada més adient de manera automàtica"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolerància al ping (% del ping més baix)"
-    IDS_DYNUP_GOINGUPDIVIDER "Lentitud de pujada"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Lentitud de baixada"
-    IDS_DYNUP_NUMBEROFPINGS "Mitjana de nombre màxim de pings"
-    IDS_DYNUP_MINUPLOAD     "Velocitat mínima de pujada permesa"
     IDS_ESTTIMELEFT         "Temps estimat:"
     IDS_TRANSFER_RATE_LABEL "Velocitat de transferència:"
     IDS_SAVELOG             "Alça el registre"
@@ -1384,7 +1378,6 @@ BEGIN
     IDS_EM_HELP             "A&juda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "No s'ha afegit l'amic.\r\n\r\Ja existeix un amic amb la mateixa adreça IP i port disponible."
-    IDS_DYNUP               "Sensor de velocitat de pujada (no es recomana)"
     IDS_KADOVERHEAD         "Tràfic excedent Kad (paquets): %s (%s)"
     IDS_FIND                "Troba..."
     IDS_LOG_BANNED_CLIENTS  "Registra els clients exclosos"
@@ -1457,10 +1450,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Tolerància al ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Mètode per a la tolerància al ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Mil·lisegons (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Percentatge (%)"
     IDS_LOG_A4AF            "Registra les accions A4AF"
     IDS_A4AF_SAVE_CPU       "Inhabilita les comprovacions d'A4AF per tal d'estalviar CPU"
     IDS_SEARCH_DOC          "Document"//.
@@ -1717,14 +1706,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Alça la col·lecció en un format de text simple"
     IDS_SEARCHAUTHORCOLLECTION "Cerca les col·leccions de l'autor"
     IDS_ERR_DUPL_FILES      "Estos fitxers compartits estan duplicats: «%s» i «%s»"
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: La traça d'encaminament ha fallat massa vegades. Es desactivaran les pujades SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: S'han acabat les preparacions. S'inicia el control de la velocitat de pujada. (Els primers 60 segons seran en mode de reacció ràpida)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: S'ha detectat un límit de càrrega apujat a través de les preferències. S'entrarà en mode de reacció ràpida durant 60 segons."
-    IDS_USS_STATE_PREPARING "S'està preparant..."
-    IDS_USS_STATE_WAITING   "S'està esperant..."
-    IDS_USS_STATE_ERROR     "Error."//.
     IDS_SHAREWARNING        "(La carpeta serà compartida.)"
     IDS_REMOVEALLSERVERS    "Segur que voleu eliminar tots els servidors?"
     IDS_SEARCH_UNKATTR      "L'atribut de cerca «%s» és desconegut"

@@ -182,17 +182,16 @@ The effective budget is:
 
 - configured upload capacity from `GetMaxGraphUploadRate(true)`
 - limited by `GetMaxUpload()` when the user configured a finite upload limit
-- limited further by UploadSpeedSense live allowance when USS is enabled
 
 In other words:
 
-`effectiveBudget = min(capacity, activeLimit, ussAllowance)`
+`effectiveBudget = min(capacity, activeLimit)`
 
 Units follow the existing queue code and are kept in `KiB/s` until converted for
 comparisons against byte-rate counters.
 
 Broadband-specific overflow and slow-slot logic only activate when this budget is
-based on a real capacity or live USS allowance. If the code only has the old
+based on a real configured capacity. If the code only has the old
 `UNLIMITED -> 16 KiB/s` fallback, it falls back to the legacy per-slot target
 logic instead of pretending that `16 KiB/s` is a real line budget.
 

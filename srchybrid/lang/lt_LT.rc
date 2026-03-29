@@ -1346,16 +1346,10 @@ BEGIN
     IDS_IMP_DELSRC          "Ar jūs norite ištrinti part failus iš kurių sėkmingai importavote?"
     IDS_IMP_SIZE            "%s (diskas:%s)"
     IDS_IMP_STATUS          "Importuojama %s: %s"
-    IDS_DYNUPENABLED        "Automatiškai rasti geriausią išsiuntimo limitą"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping tolerancija (% nuo žemiausio ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Padidėjimo reikšmė"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Sulėtėjimo reikšmė"
-    IDS_DYNUP_NUMBEROFPINGS "Max ping skaičius vidurkiui"
-    IDS_DYNUP_MINUPLOAD     "Žemiausias leistinas išsiuntimo greitis"
     IDS_ESTTIMELEFT         "Maždaug liko laiko:"
     IDS_TRANSFER_RATE_LABEL "Greitis:"
     IDS_SAVELOG             "Išsaugoti logą"
@@ -1383,7 +1377,6 @@ BEGIN
     IDS_EM_HELP             "Pa&galba"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Draugas nepridėtas.\r\n\r\nSąraše jau yra draugas su tokiu pačiu IP ir portu."
-    IDS_DYNUP               "Išsiuntimo greičio automatika (nerekomenduojama)"
     IDS_KADOVERHEAD         "Kad perkrova (paketai): %s (%s)"
     IDS_FIND                "Rasti..."
     IDS_LOG_BANNED_CLIENTS  "Loginti užbanintus klientus"
@@ -1459,10 +1452,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Ping tolerancija (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Ping tolerancijos metodas"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Milisekundės (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Procentai (%)"
     IDS_LOG_A4AF            "Loginti UKF veiksmus"
     IDS_A4AF_SAVE_CPU       "Išjungti UKF tikrinimą - taupyti CPU"
     IDS_SEARCH_DOC          "Dokumentai"
@@ -1719,14 +1708,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Išsaugoti kolekciją paprasto teksto formatu"
     IDS_SEARCHAUTHORCOLLECTION "Ieškoti autoriaus kolekcijas"
     IDS_ERR_DUPL_FILES      "Pasikartojantys šarinti failai: ""%s"" and ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Išsiuntimo greičio automatika: Traceroutas per dažnai nepavyko. Išjungiu išsiuntimo greičio automatiką."
-    IDS_USS_STARTING        "Išsiuntimo greičio automatika: Pasiruošimas baigtas. Pradedu išsiuntimo greičio kontrolę. (Pirmos 60 sek. bus greito reagavimo būsenoje)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Išsiuntimo greičio automatika: Nustatymuose aptiktas išsiuntimo greičio padidinimas. Persijungiu 60 sek. į greito reagavimo būseną."
-    IDS_USS_STATE_PREPARING "Ruošiuosi..."
-    IDS_USS_STATE_WAITING   "Laukiu..."
-    IDS_USS_STATE_ERROR     "Klaida!"
     IDS_SHAREWARNING        "(Katalogas bus pašarintas!)"
     IDS_REMOVEALLSERVERS    "Ar tikrai norite pašalinti visus serverius?"
     IDS_SEARCH_UNKATTR      "Nežinomas paieškos atributas '%s'"

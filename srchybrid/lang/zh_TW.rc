@@ -1346,16 +1346,10 @@ BEGIN
     IDS_IMP_DELSRC          "您想要刪除已成功匯入至下載的原始部分檔案?"
     IDS_IMP_SIZE            "%s (磁碟:%s)"
     IDS_IMP_STATUS          "匯入中 %s: %s"
-    IDS_DYNUPENABLED        "自動地找出最佳上載限制"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "反應的容差值 (最低反應的百分比%)"
-    IDS_DYNUP_GOINGUPDIVIDER "上升延遲"
-    IDS_DYNUP_GOINGDOWNDIVIDER "下降延遲"
-    IDS_DYNUP_NUMBEROFPINGS "反應平均值的最大計數次數"
-    IDS_DYNUP_MINUPLOAD     "上載最低允許速度"
     IDS_ESTTIMELEFT         "預估剩餘時間:"
     IDS_TRANSFER_RATE_LABEL "傳輸速率:"
     IDS_SAVELOG             "儲存記錄"
@@ -1419,7 +1413,6 @@ BEGIN
     IDS_EM_HELP             "說明"
     IDS_WRN_FRIENDDUPLIPPORT
                             "好友沒有被加入.\r\n\r\n在那裡已經有一個以相同 IP 位址及連接埠的好友可使用."
-    IDS_DYNUP               "上載速度感應器 - USS (不建議使用)"
     IDS_KADOVERHEAD         "Kad 額外支出的傳輸量 (封包): %s (%s)"
     IDS_FIND                "尋找..."
     IDS_LOG_BANNED_CLIENTS  "記錄已被禁止客戶端"
@@ -1454,10 +1447,6 @@ BEGIN
     IDS_METATAGS            "詮釋標籤計數:"
     IDS_FILEFORMAT          "格式"
     IDS_UDPREASKS           "UDP 檔案再要求數"
-    IDS_DYNUP_PINGTOLERANCE_MS "反應容差值 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "反應容差值方式"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "毫秒 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "百分比 (%)"
 END
 
 STRINGTABLE
@@ -1702,14 +1691,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "用簡單文字格式儲存收藏"
     IDS_SEARCHAUTHORCOLLECTION "搜尋作者的收藏"
     IDS_ERR_DUPL_FILES      "重複分享檔案: ""%s"" 和 ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "上載速度感應器: 追蹤路由失敗太多次. 停用上載速度感應器."
-    IDS_USS_STARTING        "上載速度感應器: 完成準備. 開始控制上載速度. (剛開始的 60 秒將會在快速反應模式)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "上載速度感應器: 在選項內偵測到上載限制的提升. 進入快速反應模式 60 秒."
-    IDS_USS_STATE_PREPARING "準備中..."
-    IDS_USS_STATE_WAITING   "等待中..."
-    IDS_USS_STATE_ERROR     "錯誤!"
     IDS_SHAREWARNING        "(資料夾將會被分享!)"
     IDS_REMOVEALLSERVERS    "您真的想要移除全部的伺服器?"
     IDS_SEARCH_UNKATTR      "未知的搜尋屬性 '%s'"

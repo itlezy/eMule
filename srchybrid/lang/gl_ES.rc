@@ -1350,16 +1350,10 @@ BEGIN
     IDS_IMP_DELSRC          "Queres borrar o arquivo de partes orixinal das descargas importadas?"
     IDS_IMP_SIZE            "%s (Disco:%s)"
     IDS_IMP_STATUS          "Importando %s: %s"
-    IDS_DYNUPENABLED        "Buscar o mellor límite de subida automaticamente"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolerancia de Ping (% do ping máis baixo)"
-    IDS_DYNUP_GOINGUPDIVIDER "Aumentando lentitude"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Disminuíndo lentitude"
-    IDS_DYNUP_NUMBEROFPINGS "Máximo promedio de pings"
-    IDS_DYNUP_MINUPLOAD     "Velocidade de subida máis baixa permitida"
     IDS_ESTTIMELEFT         "Tempo restante estimado:"
     IDS_TRANSFER_RATE_LABEL "Tasa de transferencia:"
     IDS_SAVELOG             "Gardar rexistro"
@@ -1405,7 +1399,6 @@ BEGIN
     IDS_EM_HELP             "A&xuda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Amigo non engadido.\r\n\r\nXa hai un amigo coa mesma IP e porto dispoñible."
-    IDS_DYNUP               "Sensor de velocidade de subida (non recomendado)"
     IDS_KADOVERHEAD         "Tráfico excedente de Kademlia (Packets): %s (%s)"
     IDS_FIND                "Buscar..."
     IDS_LOG_BANNED_CLIENTS  "Rexistrar clientes bloqueados"
@@ -1463,10 +1456,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Tolerancia de Ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Método para a tolerancia de ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Milisegundos (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Porcentaxe (%)"
     IDS_LOG_A4AF            "Rexistrar accións A4AF"
     IDS_A4AF_SAVE_CPU       "Desactivar comprobacións A4AF para conservar CPU"
     IDS_SEARCH_DOC          "Documento"
@@ -1723,14 +1712,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Gardar colección en Formato de Texto"
     IDS_SEARCHAUTHORCOLLECTION "Buscar Coleccións de Autor"
     IDS_ERR_DUPL_FILES      "Arquivos compartidos duplicados: ""%s"" e ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: O trazado de ruta fallou demasiadas veces. Desactivando Sensor de Velocidade de Subida."
-    IDS_USS_STARTING        "UploadSpeedSense: Preparacións rematadas. Iniciando control de velocidade de subida. (Os primeiros 60 segundos serán en modo de reacción rápida)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Detectado elevación do límite de subida en Preferencias. Activando modo de reacción rápida durante 60 segundos."
-    IDS_USS_STATE_PREPARING "Preparando..."
-    IDS_USS_STATE_WAITING   "Agardando..."
-    IDS_USS_STATE_ERROR     "Erro!"
     IDS_SHAREWARNING        "(A carpeta será compartida!)"
     IDS_REMOVEALLSERVERS    "Seguro que queres borrar todos os servidores?"
     IDS_SEARCH_UNKATTR      "Atributo de busca '%s' descoñecido"

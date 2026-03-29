@@ -780,10 +780,6 @@ BEGIN
     IDS_METATAGS            "메타 태그 개수:"
     IDS_FILEFORMAT          "형식"
     IDS_UDPREASKS           "UDP 파일 재요청"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping 허용 오차 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Ping 허용 오차 방식"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "밀리초 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "퍼센트 (%)"
     IDS_LOG_A4AF            "A4AF 동작 기록"
     IDS_A4AF_SAVE_CPU       "CPU 사용을 줄이기 위해 A4AF 검사를 하지 않음"
     IDS_SEARCH_DOC          "문서"
@@ -1345,9 +1341,6 @@ BEGIN
     IDS_PASTE               "붙여넣기"
     IDS_SEARCHAUTHORCOLLECTION "저자 수집 검색"
     IDS_ERR_DUPL_FILES      "중복 공유 파일: ""%s"" 및 ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "업로드 속도 감지: 경로 라우팅 실패. 속도 감지 업로드 취소."
-    IDS_USS_STARTING        "업로드 속도 감지: 예비 항목으로 완료. 업로드 속도 제어 시작. (초기 60초 동안은 빠른 상호 모드)"
     IDS_A4AF                "소스 제어"
     IDS_AUTOCAT_LABEL       "자동 카테고리 할당 (패턴, 구분자 |)"
     IDS_SHOWEXTSETTINGS     "상세 설정 보기 (고급 모드 제어)"
@@ -1447,16 +1440,10 @@ BEGIN
     IDS_IMP_DELSRC          "성공적으로 가져 온 다운로드의 소스 파일을 삭제하시겠습니까?"
     IDS_IMP_SIZE            "%s (디스크:%s)"
     IDS_IMP_STATUS          "%s 가져오는 중: %s"
-    IDS_DYNUPENABLED        "자동으로 최적의 업로드 제한 찾기"
-    IDS_DYNUP_PINGTOLERANCE "Ping 허용치 (최저 Ping의 %)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "느린 상승 정도"
-    IDS_DYNUP_GOINGDOWNDIVIDER "느린 하강 정도"
-    IDS_DYNUP_NUMBEROFPINGS "최대 평균 Ping 횟수"
-    IDS_DYNUP_MINUPLOAD     "최저 허용 업로드 속도"
     IDS_ESTTIMELEFT         "남은 예상 시간:"
     IDS_TRANSFER_RATE_LABEL "전송 속도:"
     IDS_SAVELOG             "로그 저장"
@@ -1502,7 +1489,6 @@ BEGIN
     IDS_EM_HELP             "도움말(&H)"
     IDS_WRN_FRIENDDUPLIPPORT
                             "친구로 추가되지 않음.\r\n\r\n이미 같은 IP와 포트에 친구가 있습니다."
-    IDS_DYNUP               "업로드 속도 감지 (권장하지 않음)"
     IDS_KADOVERHEAD         "Kad 오버헤드 (패킷): %s (%s)"
     IDS_FIND                "찾기..."
     IDS_LOG_BANNED_CLIENTS  "추방당한 클라이언트 기록"
@@ -1695,11 +1681,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Simple Text Format으로 수집 저장"
     IDS_RUNNINGRESTRICTED   "eMule이 제한된 권한으로 실행 중입니다."
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "업로드 속도 감지: 업로드 제한 도달 감지됨. 60초 동안 빠른 상호 모드로 전환."
-    IDS_USS_STATE_PREPARING "준비 중..."
-    IDS_USS_STATE_WAITING   "대기 중..."
-    IDS_USS_STATE_ERROR     "오류!"
     IDS_SHAREWARNING        "(폴더가 공유됩니다!)"
     IDS_REMOVEALLSERVERS    "정말 모든 서버를 제거하시겠습니까?"
     IDS_SEARCH_UNKATTR      "알 수 없는 검색 속성: '%s'"

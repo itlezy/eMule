@@ -967,8 +967,6 @@
 #define IDS_PASTE                       1061
 #define IDS_SEARCHAUTHORCOLLECTION      1062
 #define IDS_ERR_DUPL_FILES              1063
-#define IDS_USS_TRACEROUTEOFTENFAILED   1064
-#define IDS_USS_STARTING                1065
 #define IDS_A4AF                        1066
 #define IDS_ENABLEIMPORTPARTS           1067
 #define IDS_ERR_REGEXP                  1068
@@ -1048,12 +1046,6 @@
 #define IDS_IMP_DELSRC                  1147
 #define IDS_IMP_SIZE                    1148
 #define IDS_IMP_STATUS                  1149
-#define IDS_DYNUPENABLED                1150
-#define IDS_DYNUP_PINGTOLERANCE         1151
-#define IDS_DYNUP_GOINGUPDIVIDER        1152
-#define IDS_DYNUP_GOINGDOWNDIVIDER      1153
-#define IDS_DYNUP_NUMBEROFPINGS         1154
-#define IDS_DYNUP_MINUPLOAD             1155
 #define IDS_ESTTIMELEFT                 1156
 #define IDS_TRANSFER_RATE_LABEL         1157
 #define IDS_SAVELOG                     1158
@@ -1105,7 +1097,6 @@
 #define IDS_MINLENGTH                   1206
 #define IDS_EM_HELP                     1207
 #define IDS_WRN_FRIENDDUPLIPPORT        1208
-#define IDS_DYNUP                       1209
 #define IDS_KADOVERHEAD                 1210
 #define IDS_FIND                        1211
 #define IDS_LOG_BANNED_CLIENTS          1212
@@ -1132,10 +1123,6 @@
 #define IDS_METATAGS                    1238
 #define IDS_FILEFORMAT                  1239
 #define IDS_UDPREASKS                   1240
-#define IDS_DYNUP_PINGTOLERANCE_MS      1241
-#define IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 1242
-#define IDS_DYNUP_RADIO_PINGTOLERANCE_MS 1243
-#define IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 1244
 #define IDS_LOG_A4AF                    1245
 #define IDS_A4AF_SAVE_CPU               1246
 #define IDS_SEARCH_DOC                  1247
@@ -1321,10 +1308,6 @@
 #define IDS_VIEWCOLLECTION              1439
 #define IDS_COLL_TEXTFORMAT             1440
 #define IDS_RUNNINGRESTRICTED           1441
-#define IDS_USS_MANUALUPLOADLIMITDETECTED 1442
-#define IDS_USS_STATE_PREPARING         1443
-#define IDS_USS_STATE_WAITING           1444
-#define IDS_USS_STATE_ERROR             1445
 #define IDS_SHAREWARNING                1446
 #define IDS_REMOVEALLSERVERS            1447
 #define IDS_SEARCH_UNKATTR              1448

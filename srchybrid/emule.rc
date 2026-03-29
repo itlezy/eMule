@@ -2126,9 +2126,6 @@ BEGIN
     IDS_PASTE               "Paste"
     IDS_SEARCHAUTHORCOLLECTION "Search Author's Collections..."
     IDS_ERR_DUPL_FILES      "Duplicate shared files: ""%s"" and ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Trace routing failed too many times. Disabling Upload SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: Done with preparations. Starting control of upload speed. (First 60 seconds will be in fast reaction mode)"
     IDS_A4AF                "Source Handling"
     IDS_ENABLEIMPORTPARTS   "Enable Import parts"
     IDS_ERR_REGEXP          "Bad regular expression"
@@ -2849,10 +2846,6 @@ BEGIN
     IDS_METATAGS            "Meta tag count:"
     IDS_FILEFORMAT          "Format"
     IDS_UDPREASKS           "UDP File Re-asks"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping tolerance (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Method for ping tolerance"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milliseconds (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Percent (%)"
     IDS_LOG_A4AF            "Log A4AF actions"
     IDS_A4AF_SAVE_CPU       "Disable A4AF checks to save CPU"
     IDS_SEARCH_DOC          "Document"
@@ -3492,16 +3485,10 @@ BEGIN
     IDS_IMP_DELSRC          "Do you want the source files of successfully imported downloads be deleted?"
     IDS_IMP_SIZE            "%s (Disk:%s)"
     IDS_IMP_STATUS          "Importing %s: %s"
-    IDS_DYNUPENABLED        "Find best upload limit automatically"
-    IDS_DYNUP_PINGTOLERANCE "Ping tolerance (% of lowest ping)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "Going up slowness"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Going down slowness"
-    IDS_DYNUP_NUMBEROFPINGS "Max number of pings for average"
-    IDS_DYNUP_MINUPLOAD     "Lowest allowed upload speed"
     IDS_ESTTIMELEFT         "Estimated time left:"
     IDS_TRANSFER_RATE_LABEL "Transfer rate:"
     IDS_SAVELOG             "Save Log"
@@ -3547,7 +3534,6 @@ BEGIN
     IDS_EM_HELP             "&Help"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Friend not added.\r\n\r\nThere is already a friend with same IP address and port available."
-    IDS_DYNUP               "Upload SpeedSense (not recommended)"
     IDS_KADOVERHEAD         "Kad Overhead (Packets): %s (%s)"
     IDS_FIND                "Find..."
     IDS_LOG_BANNED_CLIENTS  "Log banned clients"
@@ -3735,11 +3721,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Save collection in plain text format"
     IDS_RUNNINGRESTRICTED   "eMule is running with reduced privileges"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Raised upload limit in Options detected. Going into fast reaction mode for 60 seconds."
-    IDS_USS_STATE_PREPARING "Preparing..."
-    IDS_USS_STATE_WAITING   "Waiting..."
-    IDS_USS_STATE_ERROR     "Error!"
     IDS_SHAREWARNING        "(Folder will be shared!)"
     IDS_REMOVEALLSERVERS    "Do you really want to remove all servers?"
     IDS_ALL_TIME_RATIO      "All-Time Ratio"

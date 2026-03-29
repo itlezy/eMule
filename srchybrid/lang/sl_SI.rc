@@ -1344,16 +1344,10 @@ BEGIN
     IDS_IMP_DELSRC          "Ali želite zbrisati izvirne datoteke uspešno uvoženih prenosov?"
     IDS_IMP_SIZE            "%s (Disk:%s)" //!
     IDS_IMP_STATUS          "Uvažanje %s: %s"
-    IDS_DYNUPENABLED        "Samodejno najdi najprimernejšo omejitev prenosa gor"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping toleranca (% najnižjega pinga)"
-    IDS_DYNUP_GOINGUPDIVIDER "Hitrost dviganja"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Hitrost spuščanja"
-    IDS_DYNUP_NUMBEROFPINGS "Maks. število pingov za povprečje"
-    IDS_DYNUP_MINUPLOAD     "Najnižja dovoljena hitrost prenosa gor"
     IDS_ESTTIMELEFT         "Preostanek časa (ocena):"
     IDS_TRANSFER_RATE_LABEL "Hitrost prenosa:"
     IDS_SAVELOG             "Shrani dnevnik"
@@ -1380,7 +1374,6 @@ BEGIN
     IDS_EM_HELP             "&Pomoč"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Prijatelj ni bil dodan.\r\n\r\nPrijatelj z istim IP naslovom in vrati že obstaja."
-    IDS_DYNUP               "Zaznavanje hitrosti prenosa gor (ni priporočljivo)"
     IDS_KADOVERHEAD         "Presežek Kad (Paketov): %s (%s)"
     IDS_FIND                "Najdi..."
     IDS_LOG_BANNED_CLIENTS  "Beleži izločene odjemalce"
@@ -1456,10 +1449,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Ping toleranca (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Metoda ping tolerance"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"V milisekundah (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"V odstotkih (%)"
     IDS_LOG_A4AF            "Beleži A4AF dejanja"
     IDS_A4AF_SAVE_CPU       "Onemogoči A4AF, zmanjša porabo CPU-ja"
     IDS_SEARCH_DOC          "Dokument"
@@ -1716,14 +1705,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Shrani zbirko v enostavno tekstovno obliko"
     IDS_SEARCHAUTHORCOLLECTION "Išči avtorjeve zbirke"
     IDS_ERR_DUPL_FILES      "Dvojne deljene datoteke: ""%s"" in ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "SpeedSense: Sledenje prevečkrat ni uspelo. SpeedSense onemogočen."
-    IDS_USS_STARTING        "SpeedSense: Priprave končane. Začetek kontroliranja hitrosti prenosa gor. (Prvih 60 sekund bo v hitroreakcijskem načinu)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "SpeedSense: Zaznano povišanje hitrosti prenosa gor v nastavitvah. Prehod v hitroreakcijski način za 60 sekund."
-    IDS_USS_STATE_PREPARING "Pripravljanje..."
-    IDS_USS_STATE_WAITING   "Čakanje..."
-    IDS_USS_STATE_ERROR     "Napaka!"
     IDS_SHAREWARNING        "(Mapa bo deljena)"
     IDS_REMOVEALLSERVERS    "Ali ste prepričani, da želite odstraniti vse strežnike?"
     IDS_SEARCH_UNKATTR      "Neznan iskalni atribut '%s'"

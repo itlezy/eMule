@@ -782,10 +782,6 @@ BEGIN
     IDS_METATAGS            "Conteggio meta tag:"
     IDS_FILEFORMAT          "Formato file"
     IDS_UDPREASKS           "Richiesta file tramite UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Latenza massima (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metodo usato"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Millisecondi (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Percentuale (%)"
     IDS_LOG_A4AF            "Registra gli spostamenti delle fonti dovuti alla priorità"
     IDS_A4AF_SAVE_CPU       "Ignora la priorità dei file durante lo scaricamento per impegnare meno il processore"
     IDS_SEARCH_DOC          "Documento"
@@ -1347,9 +1343,6 @@ BEGIN
     IDS_PASTE               "Incolla"
     IDS_SEARCHAUTHORCOLLECTION "Cerca l'autore delle collezioni..."
     IDS_ERR_DUPL_FILES      "File condivisi doppi: ""%s"" e ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: traceroute fallito troppe volte. UploadSpeedSense disattivato."
-    IDS_USS_STARTING        "UploadSpeedSense: preparazione completata. Avvio del controllo della velocità di invio. Nei primi 60 secondi sarà nella modalità di reazione veloce"
     IDS_A4AF                "Gestione fonti"
     IDS_AUTOCAT_LABEL       "Riconoscimento automatico della categoria: (separatore | )"
     IDS_SHOWEXTSETTINGS     "Mostra più controlli (controlli avanzati)"
@@ -1449,16 +1442,10 @@ BEGIN
     IDS_IMP_DELSRC          "Vuoi eliminare i file .part originari degli scaricamenti importati con successo?"
     IDS_IMP_SIZE            "%s (disco: %s)"
     IDS_IMP_STATUS          "Conversione %s: %s"
-    IDS_DYNUPENABLED        "Trova automaticamente il miglior limite di invio"
-    IDS_DYNUP_PINGTOLERANCE "Percentuale massima rispetto alla latenza minore"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "Aumento velocità"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Diminuzione velocità"
-    IDS_DYNUP_NUMBEROFPINGS "Controlli al secondo per la media"
-    IDS_DYNUP_MINUPLOAD     "Velocità di invio minima consentita"
     IDS_ESTTIMELEFT         "Tempo rimanente:"
     IDS_TRANSFER_RATE_LABEL "Velocità di scaricamento:"
     IDS_SAVELOG             "Salva registro"
@@ -1504,7 +1491,6 @@ BEGIN
     IDS_EM_HELP             "Ai&uto"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Amico non aggiunto.\r\n\r\nEsiste già un amico con lo stesso IP e la stessa porta."
-    IDS_DYNUP               "Limite dinamico della banda d'invio (sconsigliato)"
     IDS_KADOVERHEAD         "Overhead Kad (pacchetti): %s (%s)"
     IDS_FIND                "Trova..."
     IDS_LOG_BANNED_CLIENTS  "Registra gli utenti bloccati"
@@ -1697,11 +1683,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Salva la collezione in formato testo"
     IDS_RUNNINGRESTRICTED   "eMule è in esecuzione con privilegi limitati"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: rilevato un incremento del limite di invio nelle opzioni. Avviata la modalità di reazione veloce per i primi 60 secondi."
-    IDS_USS_STATE_PREPARING "Preparazione..."
-    IDS_USS_STATE_WAITING   "Attesa..."
-    IDS_USS_STATE_ERROR     "Errore!"
     IDS_SHAREWARNING        "(la cartella verrà condivisa!)"
     IDS_REMOVEALLSERVERS    "Sei sicuro di voler rimuovere tutti i server?"
     IDS_SEARCH_UNKATTR      "Parametro di ricerca '%s' sconosciuto"
