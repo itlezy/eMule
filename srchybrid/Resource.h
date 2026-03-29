@@ -2333,6 +2333,7 @@
 #define IDS_BIND_ADDRESS                1664
 #define IDS_BIND_ANY_INTERFACE          1665
 #define IDS_BIND_ALL_ADDRESSES          1666
+#define IDS_PRESETS                     1669
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2342,6 +2343,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3048
-#define _APS_NEXT_SYMED_VALUE           1667
+#define _APS_NEXT_SYMED_VALUE           1670
 #endif
 #endif

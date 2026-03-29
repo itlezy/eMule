@@ -3957,6 +3957,7 @@ BEGIN
     IDS_DOWNLOADCOMMANDS    "Download Commands"
     IDS_CLOSETOOLBAR        "Close Toolbar"
     IDS_SHOWTOOLBAR         "Show Toolbar"
+    IDS_PRESETS             "Presets"
     IDS_SEARCH_BADOPERATORCOMBINATION
                             "You cannot use the first keyword with an OR operator when searching on Kad!\n\nFor example ""Keyword1 OR Keyword2"" is not possible. Try ""Keyword1 AND (Keyword2 OR Keyword3)"" or do multiple searches instead."
     IDS_DISCOVEREDBY        "Discovered by"

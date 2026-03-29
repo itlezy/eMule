@@ -503,7 +503,7 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_AUTOCONNECT, GetResString(IDS_PW_AUTOCON));
 		SetDlgItemText(IDC_RECONN, GetResString(IDS_PW_RECON));
 		SetDlgItemText(IDC_MAXSRCHARD_LBL, GetResString(IDS_HARDLIMIT));
-		SetDlgItemText(IDC_WIZARD, GetResString(IDS_WIZARD) + _T("..."));
+		SetDlgItemText(IDC_WIZARD, GetResString(IDS_PRESETS) + _T("..."));
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
 		SetDlgItemText(IDC_RANDOMIZEPORTSONSTARTUP, GetResString(IDS_RANDOMIZEPORTSONSTARTUP));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
