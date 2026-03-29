@@ -37,7 +37,6 @@ These keys are read from `preferences.ini` and used at runtime, but no write-bac
 - `ForceSpeedsToKB`
 - `ExtraPreviewWithMenu`
 - `KeepUnavailableFixedSharedDirs`
-- `PreferRestrictedOverUser`
 - `PartiallyPurgeOldKnownFiles`
 - `AdjustNTFSDaylightFileTime`
 - `RearrangeKadSearchKeywords`
@@ -114,10 +113,6 @@ None of the prefs listed below have direct hits in the `PPg*.cpp` / `PPg*.h` pre
 - `KeepUnavailableFixedSharedDirs`
   - Purpose: preserve configured fixed shared directories even when they are temporarily unavailable while loading preferences/shared dirs.
   - Runtime use: startup/shared-dir loading path in `srchybrid/Preferences.cpp`.
-
-- `PreferRestrictedOverUser`
-  - Purpose: in the restricted-user startup path, prefer the restricted token mode over the normal user token mode.
-  - Runtime use: `srchybrid/SecRunAsUser.cpp`.
 
 - `PartiallyPurgeOldKnownFiles`
   - Purpose: keep the known-files/AICH cleanup logic from fully purging old entries.

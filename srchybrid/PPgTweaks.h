@@ -108,7 +108,6 @@ protected:
 	HTREEITEM m_htiForceSpeedsToKB;
 	HTREEITEM m_htiExtraPreviewWithMenu;
 	HTREEITEM m_htiKeepUnavailableFixedSharedDirs;
-	HTREEITEM m_htiPreferRestrictedOverUser;
 	HTREEITEM m_htiPartiallyPurgeOldKnownFiles;
 	HTREEITEM m_htiAdjustNTFSDaylightFileTime;
 	HTREEITEM m_htiRearrangeKadSearchKeywords;
@@ -181,7 +180,6 @@ protected:
 	bool m_bLogUlDlEvents;
 	bool m_bMessageFromValidSourcesOnly;
 	bool m_bPartiallyPurgeOldKnownFiles;
-	bool m_bPreferRestrictedOverUser;
 	bool m_bPreviewCopiedArchives;
 	bool m_bPreviewOnIconDblClk;
 	bool m_bRearrangeKadSearchKeywords;

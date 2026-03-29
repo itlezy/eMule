@@ -770,7 +770,6 @@ BEGIN
     IDS_DELETEIPFILTERS     "Czy chcesz usunąć wybrane filtry IP?"
     IDS_TOTAL_IPFILTER_LABEL "Ilość filtrów IP:"
     IDS_TOTAL_IPS_LABEL     "Ilość IP:"
-    IDS_RAU_WARNING         "Ta opcja daje eMule dodatkową ochrone przed atakami i wykorzystywaniami, proponuje włączyć tą opcje.\nJednakżę zalecane jest przeczytanie pomocy przed aktywacją!\n\nZmiany będą widoczne po restarcie eMula"
     IDS_APPEND              "Dołącz..."
     IDS_SAVE                "Zapisz"
     IDS_IP_START            "Start" //!
@@ -788,8 +787,6 @@ STRINGTABLE
 BEGIN
     IDS_IRC_IGNOREMISCMESSAGE "Ignoruj różne wiadomości informacyjne"
     IDS_KNOWN               "Znane"
-    IDS_RAU_RUNNING         "eMule uruchomiony przez użytkownika bez uprawnień ""%s"""
-    IDS_RAU_FAILED          "Nie udało się uruchomić eMule's przez użytkownika ""eMule_Secure"". Używam uprawnień aktualnego użytkownika (""%s"")."
     IDS_KADCONTACTSREAD     "Wczytano %u kontaktów z pliku."
     IDS_ERR_KADCONTACTS     "Nie odnaleziono kontatktów, użyj bootstrap'a, lub pobierz plik nodes.dat."
     IDS_METATAGS            "Ilość znaczników meta:"
@@ -1571,7 +1568,6 @@ BEGIN
     IDS_KADUDPPORTERR       "Port UDP KAD konfliktuje z zewnętrznym portem eMule lub z portem serwera. Port został zmieniony na %u."
     IDS_CONFIRM_FILEDELETE  "Czy jesteś pewnien że chcesz usunąć wybrane pliki z dysku?"
     IDS_OPENFOLDER          "Otwórz folder"
-    IDS_RUNASUSER           "Odpal eMula jako nieuprzywilejowanego usera"
     IDS_DELETE              "Usuń z dysku"
     IDS_BOOTSTRAP           "Bootstrap" //!
     IDS_VIAED2KSQ           "Przez eD2K Serwer/Kolejkę"

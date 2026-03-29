@@ -1440,7 +1440,6 @@ BEGIN
     IDS_KADUDPPORTERR       "El port UDP de Kad entra en conflicte bé amb el port extés d'eMule o del servidor UDP d'eMule. El port ha estat canviat a %u."
     IDS_CONFIRM_FILEDELETE  "Realment vols esborrar tots els arxius seleccionats del disc?"
     IDS_OPENFOLDER          "Obrir Carpeta"
-    IDS_RUNASUSER           "Iniciar l'eMule com Usuari limitat "
     IDS_DELETE              "Eliminar del disc"
     IDS_BOOTSTRAP           "Arrencada"
     IDS_VIAED2KSQ           "via Servidor/Cua eD2K"
@@ -1480,7 +1479,6 @@ BEGIN
     IDS_DELETEIPFILTERS     "Realment vols esborrar els fitxers de filtre seleccionats?"
     IDS_TOTAL_IPFILTER_LABEL "Total filtres IP:"
     IDS_TOTAL_IPS_LABEL     "Total IPs:"//!
-    IDS_RAU_WARNING         "Aquest ajustament donarà a eMule més seguretat contra atacs i trampes i recomanem l'ús d'aquesta opció.\nTantmateix, és millor llegir el manual abans d'activar-la!\n\nEls canvis seran efectius quan reinicieu l'eMule."
     IDS_APPEND              "Afegeix..."
     IDS_SAVE                "Desa"
     IDS_IP_START            "Comença"
@@ -1498,8 +1496,6 @@ BEGIN
     IDS_RESETLABEL          "Auto Completar (funció història)"
     IDS_IRC_IGNOREMISCMESSAGE "Ignorar missatges varis d'Informació"
     IDS_KNOWN               "Coneguts"
-    IDS_RAU_RUNNING         "eMule executant-se com a usuari sense privilegis ""%s"""
-    IDS_RAU_FAILED          "Fallada en iniciar eMule com a usuari sense privilegis ""eMule_Secure"". Es mantindran els privilegis de l'usuari actual (""%s"")."
     IDS_KADCONTACTSREAD     "Llegeix %u contactes de l'arxiu."
     IDS_ERR_KADCONTACTS     "No es troben contactes, si us plau reinicia, o descarrega l'arxiu nodes.dat"
 END

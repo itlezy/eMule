@@ -1418,7 +1418,6 @@ BEGIN
     IDS_KADUDPPORTERR       "Kad's UDP-poort heeft een conflict met óf eMule's Ext UDP-poort óf eMule's Server UDP-poort. De poort is veranderd naar %u."
     IDS_CONFIRM_FILEDELETE  "Alle geselcteerde bestanden verwijderen?"
     IDS_OPENFOLDER          "Map openen"
-    IDS_RUNASUSER           "eMule uitvoeren als ongeprivilegeerde gebruiker"
     IDS_DELETE              "Verwijderen van schijf"
     IDS_BOOTSTRAP           "Bootstrap" //!
     IDS_VIAED2KSQ           "Via ED2K-server/wachtrij"
@@ -1479,7 +1478,6 @@ BEGIN
     IDS_DELETEIPFILTERS     "Alle geselecteerde IP-filters verwijderen?"
     IDS_TOTAL_IPFILTER_LABEL "Total aantal IP-filters:"
     IDS_TOTAL_IPS_LABEL     "Totale IP's:"
-    IDS_RAU_WARNING         "Deze instelling zorgt voor meer bescherming van eMule tegen aanvallen en lekken en wordt dus aangeraden.\nHet is echter nadrukkelijk aan te bevelen eerst de handleding hierover te lezen!\n\nVeranderingen treden in werking na het herstarten van eMule."
     IDS_APPEND              "Toevoegen..."
     IDS_SAVE                "Opslaan"
     IDS_IP_START            "Start" //!
@@ -1497,8 +1495,6 @@ BEGIN
     IDS_RESETLABEL          "Automatich aanvullen (geschiedenis)"
     IDS_IRC_IGNOREMISCMESSAGE "Negeer overige infoberichten"
     IDS_KNOWN               "Bekend"
-    IDS_RAU_RUNNING         "eMule is uitgevoerd als ongeprivilegeerde gebruiker ""%s"""
-    IDS_RAU_FAILED          "Kan eMule niet starten als ongeprivilegeerde gebruiker ""eMule_Secure"". De rechten van de huidige gebruiker blijven behouden (""%s"")."
     IDS_KADCONTACTSREAD     "%u contacten gelezen van bestand."
     IDS_ERR_KADCONTACTS     "Geen contacten gevonden, gebruik Kad-bootstrap of download een nodes.dat-bestand."
     IDS_METATAGS            "Totaal aantal metatags:"

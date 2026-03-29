@@ -619,9 +619,6 @@ public:
 
 	static int		m_iDbgHeap;
 	static UINT		m_nWebMirrorAlertLevel;
-	static bool		m_bRunAsUser;
-	static bool		m_bPreferRestrictedOverUser;
-
 	static bool		m_bUseOldTimeRemaining;
 
 	static bool		m_bRandomizePortsOnStartup;
@@ -1352,9 +1349,6 @@ public:
 	static bool		IsDefaultNick(const CString &strCheck);
 	static UINT		GetWebMirrorAlertLevel();
 	static bool		UseSimpleTimeRemainingComputation()	{ return m_bUseOldTimeRemaining; }
-
-	static bool		IsRunAsUserEnabled();
-	static bool		IsPreferingRestrictedOverUser()		{ return m_bPreferRestrictedOverUser; }
 
 	// Verbose log options
 	static bool		GetEnableVerboseOptions()			{ return m_bEnableVerboseOptions; }

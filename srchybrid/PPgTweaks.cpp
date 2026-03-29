@@ -152,7 +152,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiForceSpeedsToKB()
 	, m_htiExtraPreviewWithMenu()
 	, m_htiKeepUnavailableFixedSharedDirs()
-	, m_htiPreferRestrictedOverUser()
 	, m_htiPartiallyPurgeOldKnownFiles()
 	, m_htiAdjustNTFSDaylightFileTime()
 	, m_htiRearrangeKadSearchKeywords()
@@ -234,7 +233,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bLogUlDlEvents()
 	, m_bMessageFromValidSourcesOnly()
 	, m_bPartiallyPurgeOldKnownFiles()
-	, m_bPreferRestrictedOverUser()
 	, m_bPreviewCopiedArchives()
 	, m_bPreviewOnIconDblClk()
 	, m_bRearrangeKadSearchKeywords()
@@ -444,7 +442,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiForceSpeedsToKB = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FORCESPEEDSTOKB), m_htiHiddenDisplay, m_bForceSpeedsToKB);
 
 		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_SECURITY), iImgConnection, TVI_ROOT);
-		m_htiPreferRestrictedOverUser = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREFERRESTRICTEDOVERUSER), m_htiHiddenSecurity, m_bPreferRestrictedOverUser);
 		m_htiRearrangeKadSearchKeywords = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REARRANGEKADSEARCHKEYWORDS), m_htiHiddenSecurity, m_bRearrangeKadSearchKeywords);
 		m_htiMessageFromValidSourcesOnly = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_MESSAGEFROMVALIDSOURCESONLY), m_htiHiddenSecurity, m_bMessageFromValidSourcesOnly);
 
@@ -565,7 +562,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowUpDownIconInTaskbar, m_bShowUpDownIconInTaskbar);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreferRestrictedOverUser, m_bPreferRestrictedOverUser);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
 	if (pDX->m_bSaveAndValidate) {
@@ -755,7 +751,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bForceSpeedsToKB = thePrefs.GetForceSpeedsToKB();
 	m_bExtraPreviewWithMenu = thePrefs.GetExtraPreviewWithMenu();
 	m_bKeepUnavailableFixedSharedDirs = thePrefs.m_bKeepUnavailableFixedSharedDirs;
-	m_bPreferRestrictedOverUser = thePrefs.IsPreferingRestrictedOverUser();
 	m_bPartiallyPurgeOldKnownFiles = thePrefs.DoPartiallyPurgeOldKnownFiles();
 	m_bAdjustNTFSDaylightFileTime = thePrefs.GetAdjustNTFSDaylightFileTime();
 	m_bRearrangeKadSearchKeywords = thePrefs.GetRearrangeKadSearchKeywords();
@@ -924,7 +919,6 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bForceSpeedsToKB = m_bForceSpeedsToKB;
 	thePrefs.m_bExtraPreviewWithMenu = m_bExtraPreviewWithMenu;
 	thePrefs.m_bKeepUnavailableFixedSharedDirs = m_bKeepUnavailableFixedSharedDirs;
-	thePrefs.m_bPreferRestrictedOverUser = m_bPreferRestrictedOverUser;
 	thePrefs.m_bPartiallyPurgeOldKnownFiles = m_bPartiallyPurgeOldKnownFiles;
 	thePrefs.m_bAdjustNTFSDaylightFileTime = m_bAdjustNTFSDaylightFileTime;
 	thePrefs.m_bRearrangeKadSearchKeywords = m_bRearrangeKadSearchKeywords;
@@ -1048,7 +1042,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiLogUlDlEvents, IDS_LOG_ULDL_EVENTS);
 		LocalizeItemText(m_htiMessageFromValidSourcesOnly, IDS_MESSAGEFROMVALIDSOURCESONLY);
 		LocalizeItemText(m_htiPartiallyPurgeOldKnownFiles, IDS_PARTIALLYPURGEOLDKNOWNFILES);
-		LocalizeItemText(m_htiPreferRestrictedOverUser, IDS_PREFERRESTRICTEDOVERUSER);
 		LocalizeItemText(m_htiPreviewCopiedArchives, IDS_PREVIEWCOPIEDARCHIVES);
 		LocalizeItemText(m_htiPreviewOnIconDblClk, IDS_PREVIEWONICONDBLCLK);
 		LocalizeItemText(m_htiRearrangeKadSearchKeywords, IDS_REARRANGEKADSEARCHKEYWORDS);
@@ -1138,7 +1131,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiForceSpeedsToKB = NULL;
 	m_htiExtraPreviewWithMenu = NULL;
 	m_htiKeepUnavailableFixedSharedDirs = NULL;
-	m_htiPreferRestrictedOverUser = NULL;
 	m_htiPartiallyPurgeOldKnownFiles = NULL;
 	m_htiAdjustNTFSDaylightFileTime = NULL;
 	m_htiRearrangeKadSearchKeywords = NULL;

@@ -1415,7 +1415,6 @@ BEGIN
     IDS_KADUDPPORTERR       "Kads UDP port är i konflikt med antingen eMules Ext UDP port eller eMules Server UDP port. Porten ändrades till %u."
     IDS_CONFIRM_FILEDELETE  "Är du säker på att du vill radera alla markerade filer från hårddisken?"
     IDS_OPENFOLDER          "Öppna mapp"
-    IDS_RUNASUSER           "Kör eMule som oprivilegierad användare"
     IDS_DELETE              "Radera från hårddisk"
     IDS_BOOTSTRAP           "Bootstrap" //!
     IDS_VIAED2KSQ           "via ED2K-server/kö"
@@ -1476,7 +1475,6 @@ BEGIN
     IDS_DELETEIPFILTERS     "Vill du verkligen ta bort valda IP-filter?"
     IDS_TOTAL_IPFILTER_LABEL "Totalt antal IP-filter:"
     IDS_TOTAL_IPS_LABEL     "Totalt antal IP:"
-    IDS_RAU_WARNING         "Denna inställning göra eMule mer säkert mot attacker och säkerhetsrisker, vi rekommenderar denna inställning.\nVi rekommenderar också starkt att läsa manualen innan du aktiverar denna inställning!\n\nDu måste starta om eMule innan denna inställning verkar."
     IDS_APPEND              "Lägg till..."
     IDS_SAVE                "Spara"
     IDS_IP_START            "Start" //!
@@ -1494,8 +1492,6 @@ BEGIN
     IDS_RESETLABEL          "Automatisk färdigställning (historiefunktion)"
     IDS_IRC_IGNOREMISCMESSAGE "Ignorera allmäna meddelanden"
     IDS_KNOWN               "Känd"
-    IDS_RAU_RUNNING         "eMule körs som oprivilegierad användare ""%s"""
-    IDS_RAU_FAILED          "Misslyckades att starta eMule som oprivilegierad användare ""eMule_Secure"". Använder privilegieringar från nuvarande användare (""%s"")."
     IDS_KADCONTACTSREAD     "Läs %u kontakter från fil."
     IDS_ERR_KADCONTACTS     "Inga kontakter hittade, gör en bootstrap, eller ladda hem en nodes.dat fil."
     IDS_METATAGS            "Metataggar:"

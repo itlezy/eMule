@@ -594,8 +594,6 @@ Preferences_Ext_Struct *CPreferences::prefsExt;
 WORD	CPreferences::m_wWinVer;
 CArray<Category_Struct*, Category_Struct*> CPreferences::catArr;
 UINT	CPreferences::m_nWebMirrorAlertLevel;
-bool	CPreferences::m_bRunAsUser;
-bool	CPreferences::m_bPreferRestrictedOverUser;
 bool	CPreferences::m_bUseOldTimeRemaining;
 
 bool	CPreferences::m_bRandomizePortsOnStartup;
@@ -1891,7 +1889,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("ForceSpeedsToKB"), m_bForceSpeedsToKB);
 	ini.WriteBool(_T("ExtraPreviewWithMenu"), m_bExtraPreviewWithMenu);
 	ini.WriteBool(_T("KeepUnavailableFixedSharedDirs"), m_bKeepUnavailableFixedSharedDirs);
-	ini.WriteBool(_T("PreferRestrictedOverUser"), m_bPreferRestrictedOverUser);
 	ini.WriteBool(_T("PartiallyPurgeOldKnownFiles"), m_bPartiallyPurgeOldKnownFiles);
 	ini.WriteBool(_T("AdjustNTFSDaylightFileTime"), m_bAdjustNTFSDaylightFileTime);
 	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
@@ -1921,7 +1918,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("A4AFSaveCpu"), m_bA4AFSaveCpu); // ZZ:DownloadManager
 	ini.WriteBool(_T("HighresTimer"), m_bHighresTimer);
 	ini.WriteInt(_T("WebMirrorAlertLevel"), m_nWebMirrorAlertLevel);
-	ini.WriteBool(_T("RunAsUnprivilegedUser"), m_bRunAsUser);
 	ini.WriteInt(_T("DebugLogLevel"), m_byLogLevel);
 	ini.WriteBool(_T("RememberCancelledFiles"), m_bRememberCancelledFiles);
 	ini.WriteBool(_T("RememberDownloadedFiles"), m_bRememberDownloadedFiles);
@@ -2512,8 +2508,6 @@ void CPreferences::LoadPreferences()
 
 	m_bA4AFSaveCpu = ini.GetBool(_T("A4AFSaveCpu"), false); // ZZ:DownloadManager
 	m_bHighresTimer = ini.GetBool(_T("HighresTimer"), false);
-	m_bRunAsUser = ini.GetBool(_T("RunAsUnprivilegedUser"), false);
-	m_bPreferRestrictedOverUser = ini.GetBool(_T("PreferRestrictedOverUser"), false);
 	m_byLogLevel = ini.GetInt(_T("DebugLogLevel"), DLP_VERYLOW);
 	m_bTrustEveryHash = ini.GetBool(_T("AICHTrustEveryHash"), false);
 	m_bRememberCancelledFiles = ini.GetBool(_T("RememberCancelledFiles"), true);
@@ -2937,17 +2931,6 @@ UINT CPreferences::GetWebMirrorAlertLevel()
 	}
 	// end
 	return UpdateNotify() ? m_nWebMirrorAlertLevel : 0;
-}
-
-bool CPreferences::IsRunAsUserEnabled()
-{
-	switch (GetWindowsVersion()) {
-	case _WINVER_2K_:
-	case _WINVER_XP_:
-	case _WINVER_2003_:
-		return m_bRunAsUser	&& m_nCurrentUserDirMode == 2;
-	}
-	return false;
 }
 
 bool CPreferences::GetUseReBarToolbar()

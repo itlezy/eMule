@@ -37,7 +37,6 @@ protected:
 	afx_msg void OnDDClicked();
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
-	afx_msg void OnBnClickedRunAsUser();
 	afx_msg void OnDestroy();
 	afx_msg void OnObfuscatedDisabledChange();
 	afx_msg void OnObfuscatedRequestedChange();

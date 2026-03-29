@@ -706,13 +706,12 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,120,202,10
     CONTROL         "Disable support for obfuscated connections",IDC_DISABLEOBFUSCATION,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,130,202,10
-    GROUPBOX        "Misc",IDC_SEC_MISC,4,149,223,55,WS_GROUP
+    GROUPBOX        "Misc",IDC_SEC_MISC,4,149,223,45,WS_GROUP
     CONTROL         "Use secure Identification",IDC_USESECIDENT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,159,212,10
-    CONTROL         "Run eMule as unprivileged user",IDC_RUNASUSER,"Button",BS_AUTOCHECKBOX | WS_DISABLED | WS_TABSTOP,11,169,212,10
     CONTROL         "Enable spam filter for search results",IDC_SEARCHSPAMFILTER,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,179,212,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,169,212,10
     CONTROL         "Warn when opening untrusted files",IDC_CHECK_FILE_OPEN,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,189,212,10
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,179,212,10
 END
 
 IDD_EXITBOX DIALOGEX 0, 0, 188, 96
@@ -2874,7 +2873,6 @@ BEGIN
     IDS_DELETEIPFILTERS     "Do you really want to delete the selected IP filters?"
     IDS_TOTAL_IPFILTER_LABEL "Total IP filters:"
     IDS_TOTAL_IPS_LABEL     "Total IPs:"
-    IDS_RAU_WARNING         "This setting will give eMule additional security against attacks and exploits and we encourage the usage of this option.\nHowever it is strongly recommended to read the manual before activating it!\n\nChanges will take effect after restarting eMule."
     IDS_APPEND              "Append..."
     IDS_SAVE                "Save"
     IDS_IP_START            "Start"
@@ -2892,8 +2890,6 @@ STRINGTABLE
 BEGIN
     IDS_IRC_IGNOREMISCMESSAGE "Ignore misc. info messages"
     IDS_KNOWN               "Known"
-    IDS_RAU_RUNNING         "eMule running as unprivileged user ""%s"""
-    IDS_RAU_FAILED          "Failed to start eMule as unprivileged user ""eMule_Secure"". Keeping the privileges of the current user (""%s"")."
     IDS_KADCONTACTSREAD     "Read %u contacts from file."
     IDS_ERR_KADCONTACTS     "No contacts found, please bootstrap, or download nodes.dat file."
     IDS_METATAGS            "Meta tag count:"
@@ -3650,7 +3646,6 @@ BEGIN
     IDS_KADUDPPORTERR       "Kad's UDP port conflicts with either eMule's Ext UDP port or eMule's Server UDP port. The port has been changed to %u."
     IDS_CONFIRM_FILEDELETE  "Do you really want to delete all selected files?"
     IDS_OPENFOLDER          "Open Folder"
-    IDS_RUNASUSER           "Run eMule as unprivileged user"
     IDS_DELETE              "Delete From Disk"
     IDS_BOOTSTRAP           "Bootstrap"
     IDS_VIAED2KSQ           "via eD2K Server"
@@ -3987,7 +3982,6 @@ BEGIN
     IDS_FORCESPEEDSTOKB     "Force speed units to KB"
     IDS_EXTRAPREVIEWWITHMENU "Use extra preview action menu"
     IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS "Keep unavailable fixed shared directories"
-    IDS_PREFERRESTRICTEDOVERUSER "Prefer restricted mode over user mode"
     IDS_PARTIALLYPURGEOLDKNOWNFILES "Partially purge old known files"
     IDS_ADJUSTNTFSDAYLIGHTFILETIME "Adjust NTFS daylight-saving file times"
     IDS_REARRANGEKADSEARCHKEYWORDS "Rearrange Kad search keywords"

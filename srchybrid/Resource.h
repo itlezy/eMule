@@ -1109,7 +1109,6 @@
 #define IDD_META_DATA                   1170
 #define IDS_CONFIRM_FILEDELETE          1170
 #define IDS_OPENFOLDER                  1171
-#define IDS_RUNASUSER                   1172
 #define IDS_DELETE                      1173
 #define IDS_BOOTSTRAP                   1174
 #define IDS_VIAED2KSQ                   1175
@@ -1157,7 +1156,6 @@
 #define IDS_DELETEIPFILTERS             1217
 #define IDS_TOTAL_IPFILTER_LABEL        1218
 #define IDS_TOTAL_IPS_LABEL             1219
-#define IDS_RAU_WARNING                 1220
 #define IDS_APPEND                      1221
 #define IDS_SAVE                        1222
 #define IDS_IP_START                    1223
@@ -1171,8 +1169,6 @@
 #define IDS_RESETLABEL                  1231
 #define IDS_IRC_IGNOREMISCMESSAGE       1232
 #define IDS_KNOWN                       1233
-#define IDS_RAU_RUNNING                 1234
-#define IDS_RAU_FAILED                  1235
 #define IDS_KADCONTACTSREAD             1236
 #define IDS_ERR_KADCONTACTS             1237
 #define IDS_METATAGS                    1238
@@ -1655,7 +1651,6 @@
 #define IDC_SHOWOVERHEAD                2132
 #define IDC_INDICATERATINGS             2133
 #define IDC_USESECIDENT                 2134
-#define IDC_RUNASUSER                   2135
 #define IDC_MMENABLED                   2136
 #define IDC_ENABLEOBFUSCATION           2136
 #define IDC_ONLYOBFUSCATED              2137
@@ -2413,7 +2408,6 @@
 #define IDS_FORCESPEEDSTOKB             1655
 #define IDS_EXTRAPREVIEWWITHMENU        1656
 #define IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS 1657
-#define IDS_PREFERRESTRICTEDOVERUSER    1658
 #define IDS_PARTIALLYPURGEOLDKNOWNFILES 1659
 #define IDS_ADJUSTNTFSDAYLIGHTFILETIME  1660
 #define IDS_REARRANGEKADSEARCHKEYWORDS  1661

@@ -154,7 +154,6 @@ The last two groups are documented because they still live in the same file, but
 | `CryptLayerSupported` | `eMule` | `RW` | Yes | `true` | Advertise obfuscation support. |
 | `EnableSearchResultSpamFilter` | `eMule` | `RW` | Yes | `true` | Filter obviously spammy search results. |
 | `CheckFileOpen` | `eMule` | `RW` | Yes | `true` | Check for open/locked files before file operations. |
-| `RunAsUnprivilegedUser` | `eMule` | `RW` | Yes | `false` | Use the restricted-user execution path when supported. |
 | `SeeShare` | `eMule` | `RW` | Yes | existing app default | Controls who can see your shared files. |
 | `AdvancedSpamFilter` | `eMule` | `RW` | Yes | `true` | Enables the more advanced spam filter path. |
 
@@ -295,7 +294,6 @@ These settings are active and meaningful. They are now exposed in the Advanced t
 | `ForceSpeedsToKB` | `eMule` | `RW` | Advanced tree | `false` | Force speed-formatting helpers to prefer KB-based units. |
 | `ExtraPreviewWithMenu` | `eMule` | `RW` | Advanced tree | `false` | Changes where preview actions appear in the download-list UI/menu flow. |
 | `KeepUnavailableFixedSharedDirs` | `eMule` | `RW` | Advanced tree | `false` | Keep fixed shared dirs even when currently unavailable during startup/shared-dir loading. |
-| `PreferRestrictedOverUser` | `eMule` | `RW` | Advanced tree | `false` | Prefer restricted-user execution mode in the secure-launch path. |
 | `PartiallyPurgeOldKnownFiles` | `eMule` | `RW` | Advanced tree | `true` | Makes known-file/AICH cleanup less aggressive. |
 | `AdjustNTFSDaylightFileTime` | `eMule` | `RW` | Advanced tree | `false` | Adjust NTFS timestamps around daylight-saving boundaries to avoid false file-change/rehash churn. |
 | `RearrangeKadSearchKeywords` | `eMule` | `RW` | Advanced tree | `true` | Reorder Kad search keywords before issuing the search. |
@@ -383,8 +381,6 @@ This section explains what the more technical settings actually do in runtime te
 | `AdvancedSpamFilter` | Enables additional filtering logic for spam-like content beyond the simpler legacy path. |
 | `MessageUseCaptchas` | Requires chat captcha checks where the message anti-spam path is active. It affects acceptance flow, not just presentation. |
 | `MessageFromValidSourcesOnly` | Hidden message gate. In `BaseClient.cpp`, it restricts which peers can send messages through that path. Despite the name, it is not exposed in the dialogs today. |
-| `RunAsUnprivilegedUser` | Enables the restricted-user launch path. This changes how the process starts and what token/privilege model it uses. |
-| `PreferRestrictedOverUser` | Hidden follow-on to the above. In the restricted launch path, it biases selection toward the restricted token mode. |
 
 ### UI / Rendering Internals
 

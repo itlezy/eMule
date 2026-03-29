@@ -342,7 +342,6 @@
     <ClCompile Include="SearchListCtrl.cpp" />
     <ClCompile Include="SearchParamsWnd.cpp" />
     <ClCompile Include="SearchResultsWnd.cpp" />
-    <ClCompile Include="SecRunAsUser.cpp" />
     <ClCompile Include="SelfTest.cpp" />
     <ClCompile Include="SendMail.cpp" />
     <ClCompile Include="Server.cpp" />
@@ -635,7 +634,6 @@
     <ClInclude Include="SearchParams.h" />
     <ClInclude Include="SearchParamsWnd.h" />
     <ClInclude Include="SearchResultsWnd.h" />
-    <ClInclude Include="SecRunAsUser.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="ServerConnect.h" />
     <ClInclude Include="ServerList.h" />

@@ -54,7 +54,6 @@ BEGIN_MESSAGE_MAP(CPPgSecurity, CPropertyPage)
 	ON_EN_CHANGE(IDC_UPDATEURL, OnEnChangeUpdateUrl)
 	ON_BN_CLICKED(IDC_DD, OnDDClicked)
 	ON_WM_HELPINFO()
-	ON_BN_CLICKED(IDC_RUNASUSER, OnBnClickedRunAsUser)
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDC_SEESHARE1, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SEESHARE2, OnSettingsChange)
@@ -83,10 +82,6 @@ void CPPgSecurity::LoadSettings()
 	CheckDlgButton(IDC_FILTERSERVERBYIPFILTER, thePrefs.filterserverbyip);
 
 	CheckDlgButton(IDC_USESECIDENT, thePrefs.m_bUseSecureIdent);
-
-	WORD wv = thePrefs.GetWindowsVersion();
-	GetDlgItem(IDC_RUNASUSER)->EnableWindow(wv >= _WINVER_2K_ && wv <= _WINVER_2003_ && thePrefs.m_nCurrentUserDirMode == 2);
-	CheckDlgButton(IDC_RUNASUSER, thePrefs.IsRunAsUserEnabled());
 
 	CheckDlgButton(IDC_DISABLEOBFUSCATION, static_cast<UINT>(!thePrefs.IsCryptLayerEnabled()));
 	GetDlgItem(IDC_ENABLEOBFUSCATION)->EnableWindow(thePrefs.IsCryptLayerEnabled());
@@ -144,8 +139,6 @@ BOOL CPPgSecurity::OnApply()
 		theApp.emuledlg->serverwnd->serverlistctrl.RemoveAllFilteredServers();
 
 	thePrefs.m_bUseSecureIdent = IsDlgButtonChecked(IDC_USESECIDENT) != 0;
-	thePrefs.m_bRunAsUser = IsDlgButtonChecked(IDC_RUNASUSER) != 0;
-
 	thePrefs.m_bCryptLayerRequested = IsDlgButtonChecked(IDC_ENABLEOBFUSCATION) != 0;
 	thePrefs.m_bCryptLayerRequired = IsDlgButtonChecked(IDC_ONLYOBFUSCATED) != 0;
 	thePrefs.m_bCryptLayerSupported = !IsDlgButtonChecked(IDC_DISABLEOBFUSCATION);
@@ -177,8 +170,6 @@ void CPPgSecurity::Localize()
 
 		SetDlgItemText(IDC_SEC_MISC, GetResString(IDS_PW_MISC));
 		SetDlgItemText(IDC_USESECIDENT, GetResString(IDS_USESECIDENT));
-		SetDlgItemText(IDC_RUNASUSER, GetResString(IDS_RUNASUSER));
-
 		SetDlgItemText(IDC_STATIC_UPDATEFROM, GetResString(IDS_UPDATEFROM));
 		SetDlgItemText(IDC_LOADURL, GetResString(IDS_LOADURL));
 
@@ -485,15 +476,6 @@ BOOL CPPgSecurity::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
-}
-
-void CPPgSecurity::OnBnClickedRunAsUser()
-{
-	if (IsDlgButtonChecked(IDC_RUNASUSER))
-		if (LocMessageBox(IDS_RAU_WARNING, MB_OKCANCEL | MB_ICONINFORMATION, 0) == IDCANCEL)
-			CheckDlgButton(IDC_RUNASUSER, BST_UNCHECKED);
-
-	OnSettingsChange();
 }
 
 void CPPgSecurity::OnObfuscatedDisabledChange()

@@ -767,7 +767,6 @@ BEGIN
     IDS_DELETEIPFILTERS     "Haluatko varmasti poistaa valitut IP-suodattimet?"
     IDS_TOTAL_IPFILTER_LABEL "IP-suodattimia:"
     IDS_TOTAL_IPS_LABEL     "IP-osoitteita:"
-    IDS_RAU_WARNING         "Tämä asetus lisää eMulen käytön turvallisuutta. Se estää koneen hyväksikäytön ylimääräisillä oikeuksilla eMulen mahdollisten tietoturva-aukkojen kautta.\nSuosittelemme käyttämään tätä asetusta, mutta ohjeiden lukeminen ennen käyttöä on suositeltavaa.\n\nMuutokset tulevat voimaan uudelleenkäynnistyksen jälkeen."
     IDS_APPEND              "Lisää..."
     IDS_SAVE                "Tallenna"
     IDS_IP_START            "Alku"
@@ -785,8 +784,6 @@ STRINGTABLE
 BEGIN
     IDS_IRC_IGNOREMISCMESSAGE "Suodata muut viestit"
     IDS_KNOWN               "Tunnettu"
-    IDS_RAU_RUNNING         "Käytän käyttäjänä ""%s"" tunnusta"
-    IDS_RAU_FAILED          "En pystynyt käyttämään tunnusta ""eMule_Secure"". Nykyinen tunnus (""%s"") jää voimaan."
     IDS_KADCONTACTSREAD     "Luin %u yhteystietoa tiedostosta."
     IDS_ERR_KADCONTACTS     "En löytänyt yhteystietoja. Bootstrappaa tai lataa tiedosto nodes.dat."
     IDS_METATAGS            "Metatietojen lukumäärä:"
@@ -1568,7 +1565,6 @@ BEGIN
     IDS_KADUDPPORTERR       "Kademlian UDP-portti on sama kuin eMulen laajennetun protokollan UDP-portti tai eMulen palvelin UDP-portti. Vaihdoin portin ja se on nyt %u."
     IDS_CONFIRM_FILEDELETE  "Haluatko varmasti poistaa kaikki valitut tiedostot levyltä?"
     IDS_OPENFOLDER          "Avaa hakemisto"
-    IDS_RUNASUSER           "Suorita eMule turvallisena käyttäjänä"
     IDS_DELETE              "Poista levyltä"
     IDS_BOOTSTRAP           "Bootstrap" //!
     IDS_VIAED2KSQ           "eD2K-palvelimen tai jonon kautta"
