@@ -734,8 +734,8 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 						for (const CKnownFilesMap::CPair *pair = theApp.sharedfiles->m_Files_map.PGetFirstAssoc(); pair != NULL; pair = theApp.sharedfiles->m_Files_map.PGetNextAssoc(pair)) {
 							CKnownFile *cur_file = pair->value;
 							// all files not in shared directories have to be single shared files
-							if (((!bSingleSharedFiles && EqualPaths(strReqDir, cur_file->GetSharedDirectory()))
-								|| (bSingleSharedFiles && !theApp.sharedfiles->ShouldBeShared(cur_file->GetSharedDirectory(), NULL, false))
+							if (((!bSingleSharedFiles && EqualPaths(strReqDir, cur_file->GetPath()))
+								|| (bSingleSharedFiles && !theApp.sharedfiles->ShouldBeShared(cur_file->GetPath(), NULL, false))
 								)
 								&& (!cur_file->IsLargeFile() || client->SupportsLargeFiles()))
 							{

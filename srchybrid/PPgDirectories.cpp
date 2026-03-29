@@ -136,13 +136,8 @@ BOOL CPPgDirectories::OnApply()
 			if (ff.IsDirectory() || ff.IsSystem() || ff.IsTemporary() || ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE)
 				continue;
 
-			// ignore real LNK files
-			if (ExtensionIs(ff.GetFileName(), _T(".lnk"))) {
-				SHFILEINFO info;
-				if (::SHGetFileInfo(ff.GetFilePath(), 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
-					if (!thePrefs.GetResolveSharedShellLinks())
-						continue;
-			}
+			if (ExtensionIs(ff.GetFileName(), _T(".lnk")))
+				continue;
 
 			// ignore real THUMBS.DB files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
 			bExistingFile = (ff.GetFileName().CompareNoCase(_T("thumbs.db")) != 0);

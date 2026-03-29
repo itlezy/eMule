@@ -35,12 +35,6 @@ public:
 	const CString& GetPath() const					{ return m_strDirectory; }
 	void SetPath(LPCTSTR path)						{ m_strDirectory = path; }
 
-	// Shared directory is equal to the path for all shared files, except those following a shell link
-	// in which case the directory of the shell link is returned. Use GetPath to access the file
-	const CString& GetSharedDirectory() const		{ return m_strSharedDirectory.IsEmpty() ? m_strDirectory : m_strSharedDirectory; }
-	void SetSharedDirectory(LPCTSTR path)			{ m_strSharedDirectory = path; }
-	bool IsShellLinked() const						{ return !m_strSharedDirectory.IsEmpty(); }
-
 	const CString& GetFilePath() const				{ return m_strFilePath; }
 	void SetFilePath(LPCTSTR pszFilePath)			{ m_strFilePath = pszFilePath; }
 	virtual CString	GetInfoSummary(bool bNoFormatCommands = false) const;
@@ -48,6 +42,5 @@ public:
 protected:
 	CString		m_strDirectory;
 	CString		m_strFilePath;
-	CString		m_strSharedDirectory;
 	EFileType	m_verifiedFileType;
 };

@@ -374,7 +374,7 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 		case SDI_NO:
 			// some shared directory
 		case SDI_CATINCOMING: // Categories with special incoming dirs
-			if (!EqualPaths(file->GetSharedDirectory(), m_pDirectoryFilter->m_strFullPath))
+			if (!EqualPaths(file->GetPath(), m_pDirectoryFilter->m_strFullPath))
 				return;
 			break;
 		case SDI_TEMP: // only temp files
@@ -386,11 +386,11 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 		case SDI_DIRECTORY: // any user selected shared dir but not incoming or temp
 			if (file->IsPartFile())
 				return;
-			if (EqualPaths(file->GetSharedDirectory(), thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)))
+			if (EqualPaths(file->GetPath(), thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)))
 				return;
 			break;
 		case SDI_INCOMING: // Main incoming directory
-			if (!EqualPaths(file->GetSharedDirectory(), thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)))
+			if (!EqualPaths(file->GetPath(), thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)))
 				return;
 			// Hmm should we show all incoming files dirs or only those from the main incoming dir here?
 			// hard choice, will only show the main for now
@@ -526,13 +526,12 @@ void CSharedFilesCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 					if (CheckBoxesEnabled()) {
 						CHECKBOXSTATES iState;
 						int iNoStyleState;
-						// no interaction with shell linked files or default shared directories
-						if ((file->IsShellLinked() && theApp.sharedfiles->ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), false))
-							|| (theApp.sharedfiles->ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), true)))
+						// No interaction with default shared directories.
+						if (theApp.sharedfiles->ShouldBeShared(file->GetPath(), file->GetFilePath(), true))
 						{
 							iState = CBS_CHECKEDDISABLED;
 							iNoStyleState = DFCS_CHECKED | DFCS_INACTIVE;
-						} else if (theApp.sharedfiles->ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), false)) {
+						} else if (theApp.sharedfiles->ShouldBeShared(file->GetPath(), file->GetFilePath(), false)) {
 							iState = (file == m_pHighlightedItem) ? CBS_CHECKEDHOT : CBS_CHECKEDNORMAL;
 							iNoStyleState = (file == m_pHighlightedItem) ? DFCS_PUSHED | DFCS_CHECKED : DFCS_CHECKED;
 						} else if (!thePrefs.IsShareableDirectory(file->GetPath())) {
@@ -705,8 +704,8 @@ void CSharedFilesCtrl::OnContextMenu(CWnd*, CPoint point)
 		else if (iCompleteFileSelected != iCurCompleteFile)
 			iCompleteFileSelected = -1;
 
-		bContainsUnshareableFile = !pFile->IsShellLinked() && !pFile->IsPartFile() && (bContainsUnshareableFile || (theApp.sharedfiles->ShouldBeShared(pFile->GetSharedDirectory(), pFile->GetFilePath(), false)
-			&& !theApp.sharedfiles->ShouldBeShared(pFile->GetSharedDirectory(), pFile->GetFilePath(), true)));
+		bContainsUnshareableFile = !pFile->IsPartFile() && (bContainsUnshareableFile || (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), false)
+			&& !theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), true)));
 
 		if (pFile->IsKindOf(RUNTIME_CLASS(CKnownFile))) {
 			bContainsOnlyShareableFile = false;
@@ -1521,12 +1520,8 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 
 		FILETIME tFoundFileTime;
 		ff.GetLastWriteTime(&tFoundFileTime);
-		// ignore real(!) LNK files
-		if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
-			SHFILEINFO info;
-			if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
-				continue;
-		}
+		if (ExtensionIs(strFoundFileName, _T(".lnk")))
+			continue;
 
 		// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
 		if (IsThumbsDb(strFoundFilePath, strFoundFileName))
@@ -1598,8 +1593,6 @@ void CSharedFilesCtrl::CheckBoxClicked(int iItem)
 	}
 	// check which state the checkbox (should) currently have
 	const CShareableFile *pFile = reinterpret_cast<CShareableFile*>(GetItemData(iItem));
-	if (pFile->IsShellLinked())
-		return; // no interacting with shell-linked files
 	if (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), false)) {
 		// this is currently shared so unshare it
 		if (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), true))
