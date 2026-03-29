@@ -687,7 +687,6 @@
     <ClInclude Include="URLClient.h" />
     <ClInclude Include="UserMsgs.h" />
     <ClInclude Include="Version.h" />
-    <ClInclude Include="VistaDefines.h" />
     <ClInclude Include="WebServer.h" />
     <ClInclude Include="WebServices.h" />
     <ClInclude Include="WebSocket.h" />

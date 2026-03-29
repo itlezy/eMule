@@ -36,7 +36,6 @@
 #include "Log.h"
 #include "BindAddressResolver.h"
 #include "MuleToolbarCtrl.h"
-#include "VistaDefines.h"
 #include "../../eMule-cryptopp/osrng.h"
 
 #ifdef _DEBUG
