@@ -53,9 +53,7 @@
 #include "CollectionViewDialog.h"
 #include "uploaddiskiothread.h"
 #include "PartFileWriteThread.h"
-#ifndef XP_BUILD
 #include <urlmon.h>
-#endif
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -2762,25 +2760,6 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 
 	::CloseHandle(hFile);
 }
-
-#ifdef XP_BUILD
-#ifndef __IZoneIdentifier_INTERFACE_DEFINED__
-MIDL_INTERFACE("cd45f185-1b21-48e2-967b-ead743a8914e")
-IZoneIdentifier : public IUnknown
-{
-public:
-	virtual HRESULT STDMETHODCALLTYPE GetId(DWORD *pdwZone) = 0;
-	virtual HRESULT STDMETHODCALLTYPE SetId(DWORD dwZone) = 0;
-	virtual HRESULT STDMETHODCALLTYPE Remove() = 0;
-};
-#endif //__IZoneIdentifier_INTERFACE_DEFINED__
-
-#ifdef CLSID_PersistentZoneIdentifier
-EXTERN_C const IID CLSID_PersistentZoneIdentifier;
-#elif _WIN32_WINNT<_WIN32_WINNT_VISTA
-const GUID CLSID_PersistentZoneIdentifier = {0x0968E258, 0x16C7, 0x4DBA, { 0xAA, 0x86, 0x46, 0x2D, 0xD6, 0x1E, 0x31, 0xA3 }};
-#endif
-#endif
 
 void SetZoneIdentifier(LPCTSTR pszFilePath)
 {

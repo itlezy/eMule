@@ -116,10 +116,6 @@
 #endif
 #endif//!defined(_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES) || (_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES==0)
 
-#if defined(XP_BUILD) && !defined(_WIN64) && !defined(_USE_32BIT_TIME_T)
-#define _USE_32BIT_TIME_T
-#endif
-
 // The codebase still uses a few deprecated Winsock APIs which remain available on Windows 10/11.
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS

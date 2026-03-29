@@ -23,15 +23,6 @@
 #include <fcntl.h>
 #ifdef HAVE_WMSDK_H
 #include <wmsdk.h>
-#if !defined(HAVE_VISTA_SDK)
-static const WCHAR g_wszWMPeakBitrate[] = L"WM/PeakBitrate";
-static const WCHAR g_wszWMStreamTypeInfo[] = L"WM/StreamTypeInfo";
-typedef struct
-{
-	GUID	guidMajorType;
-	DWORD	cbFormat;
-} WM_STREAM_TYPE_INFO;
-#endif
 #endif//HAVE_WMSDK_H
 
 #ifdef _DEBUG
