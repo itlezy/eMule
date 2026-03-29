@@ -2,21 +2,20 @@
 
 ## Last Chunk
 
-- Removed the legacy first-start wizard from startup, the hot menu, and the project build.
-- Deleted `srchybrid\PShtWiz1.cpp` so fresh installs now go straight to the main UI.
-- Modernized the remaining connection helper into a `Presets` dialog with generic speed tiers instead of obsolete ISP-era entries.
-- Kept the bandwidth tuning behavior focused on capacities, limits, max connections, and max sources per file.
+- Removed the remaining connection presets dialog from Preferences > Connection, the project, and the resource/icon lists.
+- Deleted `srchybrid\Wizard.cpp`, `srchybrid\Wizard.h`, and `srchybrid\res\Wizard.ico`.
+- Removed the `SetLanguage()` popup that announced fallback to English while keeping language autodetection and silent English fallback intact.
 - Verified with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
 - Fresh installs no longer open a first-run wizard.
-- Preferences > Connection now exposes `Presets...` instead of `Wizard...`.
-- The connection presets dialog starts from the current bandwidth settings, offers generic modern tiers, and still applies the existing tuning heuristics.
-- The build is green, and the only remaining uncommitted change in the worktree is the unrelated existing `AGENTS.md` modification.
+- Preferences > Connection now has no wizard/presets helper at all; users tune settings directly on the page.
+- Falling back to English no longer shows an informational startup messagebox.
+- The build is green, and the only remaining uncommitted changes in the worktree are the unrelated existing `AGENTS.md` and `helpers\POWERSHELL_MISTAKES.md` modifications.
 
 ## Next Chunk
 
-- Manually exercise the new `Presets...` dialog in the UI and confirm preset selection, custom entry, and apply behavior feel right.
-- Decide whether the button/control IDs and internal class naming should also be renamed from `Wizard` to `Presets`, or left as-is to minimize churn.
-- Add localized `IDS_PRESETS` translations if broader language coverage is needed.
+- Manually inspect the Connection page layout after removing the bottom-left button and tighten spacing only if the gap looks bad.
+- Decide whether to prune the remaining first-run wizard string/dialog resources from `emule.rc` and the language files, or leave them as dead localization baggage for now.
+- If desired, replace the `IDS_MB_LANGUAGEINFO` fallback sanity check with a less semantically awkward sentinel string.
