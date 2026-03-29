@@ -1290,84 +1290,6 @@ void CKnownFile::RemoveBrokenUnicodeMetaDataTags()
 	}
 }
 
-CStringA GetED2KAudioCodec(WORD wFormatTag)
-{
-	CStringA strCodec(GetAudioFormatCodecId(wFormatTag));
-	return strCodec.Trim().MakeLower();
-}
-
-CStringA GetED2KVideoCodec(DWORD biCompression)
-{
-	LPCSTR p;
-	switch (biCompression) {
-	case BI_RGB:
-		p = "rgb";
-		break;
-	case BI_RLE8:
-		p = "rle8";
-		break;
-	case BI_RLE4:
-		p = "rle4";
-		break;
-	case BI_BITFIELDS:
-		p = "bitfields";
-		break;
-	case BI_JPEG:
-		p = "jpeg";
-		break;
-	case BI_PNG:
-		p = "png";
-		break;
-	default:
-		p = NULL;
-	}
-	if (p)
-		return CStringA(p);
-
-	LPCSTR pszCompression = (LPCSTR)&biCompression;
-	for (int i = 0; i < 4; ++i)
-		if (!__iscsym(pszCompression[i]) && pszCompression[i] != '.' && pszCompression[i] != ' ')
-			return CStringA();
-
-	CStringA strCodec((char*)&biCompression, 4);
-	if (strCodec.Trim().GetLength() < 2)
-		return CStringA();
-	return strCodec.MakeLower();
-}
-
-SMediaInfo* GetRIFFMediaInfo(LPCTSTR pszFullPath)
-{
-	bool bIsAVI;
-	SMediaInfo *mi = new SMediaInfo;
-	if (!GetRIFFHeaders(pszFullPath, mi, bIsAVI)) {
-		delete mi;
-		return NULL;
-	}
-	return mi;
-}
-
-SMediaInfo* GetRMMediaInfo(LPCTSTR pszFullPath)
-{
-	bool bIsRM;
-	SMediaInfo *mi = new SMediaInfo;
-	if (!GetRMHeaders(pszFullPath, mi, bIsRM)) {
-		delete mi;
-		return NULL;
-	}
-	return mi;
-}
-
-SMediaInfo* GetWMMediaInfo(LPCTSTR pszFullPath)
-{
-	bool bIsWM;
-	SMediaInfo *mi = new SMediaInfo;
-	if (!GetWMHeaders(pszFullPath, mi, bIsWM)) {
-		delete mi;
-		return NULL;
-	}
-	return mi;
-}
-
 // Max. string length which is used for string meta tags like TAG_MEDIA_TITLE, TAG_MEDIA_ARTIST, ...
 #define	MAX_METADATA_STR_LEN	80
 
@@ -1478,30 +1400,37 @@ void CKnownFile::UpdateMetaDataTags()
 			}
 		}
 	} else {
+		const EED2KFileType eFileType = GetED2KFileTypeID(GetFileName());
+		if (eFileType != ED2KFT_AUDIO && eFileType != ED2KFT_VIDEO)
+			return;
+
 		TCHAR szFullPath[MAX_PATH];
 		if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
-			SMediaInfo *mi = NULL;
+			SMediaInfo mi;
+			mi.strFileName = GetFileName();
+			bool bMediaInfoAvailable = false;
 			try {
-				mi = GetRIFFMediaInfo(szFullPath);
-				if (mi == NULL) {
-					mi = GetRMMediaInfo(szFullPath);
-					if (mi == NULL)
-						mi = GetWMMediaInfo(szFullPath);
-				}
-				if (mi) {
-					mi->InitFileLength();
-					UINT uLengthSec = (UINT)mi->fFileLengthSec;
+				if (GetMediaInfoDllInfo(szFullPath, GetFileSize(), &mi, false, true, &bMediaInfoAvailable)) {
+					mi.InitFileLength();
+					UINT uLengthSec = (UINT)mi.fFileLengthSec;
+					CString strCodec;
+					uint32 uBitrate = 0;
 
-					CStringA strCodec;
-					uint32 uBitrate;
-					if (mi->iVideoStreams) {
-						strCodec = GetED2KVideoCodec(mi->video.bmiHeader.biCompression);
-						uBitrate = (mi->video.dwBitRate + SEC2MS(1) / 2) / SEC2MS(1);
-					} else if (mi->iAudioStreams) {
-						strCodec = GetED2KAudioCodec(mi->audio.wFormatTag);
-						uBitrate = (uint32)((mi->audio.nAvgBytesPerSec * 16ull + SEC2MS(1)) / SEC2MS(2));
-					} else
-						uBitrate = 0;
+					if (mi.iVideoStreams > 0) {
+						strCodec = mi.strVideoFormat;
+						if (mi.video.dwBitRate == _UI32_MAX) {
+							if (uLengthSec != 0)
+								uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
+						} else if (mi.video.dwBitRate != 0)
+							uBitrate = (mi.video.dwBitRate + 500) / 1000;
+					} else if (mi.iAudioStreams > 0) {
+						strCodec = mi.strAudioFormat;
+						if (mi.audio.nAvgBytesPerSec == _UI32_MAX) {
+							if (uLengthSec != 0)
+								uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
+						} else if (mi.audio.nAvgBytesPerSec != 0)
+							uBitrate = (uint32)((mi.audio.nAvgBytesPerSec * 8ull + 500) / 1000);
+					}
 
 					if (uLengthSec) {
 						AddTagUnique(new CTag(FT_MEDIA_LENGTH, (uint32)uLengthSec));
@@ -1509,48 +1438,49 @@ void CKnownFile::UpdateMetaDataTags()
 					}
 
 					if (!strCodec.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_CODEC, CString(strCodec)));
+						AddTagUnique(new CTag(FT_MEDIA_CODEC, strCodec));
 						m_uMetaDataVer = META_DATA_VER;
 					}
 
 					if (uBitrate) {
-						AddTagUnique(new CTag(FT_MEDIA_BITRATE, (uint32)uBitrate));
+						AddTagUnique(new CTag(FT_MEDIA_BITRATE, uBitrate));
 						m_uMetaDataVer = META_DATA_VER;
 					}
 
-					TruncateED2KMetaData(mi->strTitle);
-					if (!mi->strTitle.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_TITLE, mi->strTitle));
+					TruncateED2KMetaData(mi.strTitle);
+					if (!mi.strTitle.IsEmpty()) {
+						AddTagUnique(new CTag(FT_MEDIA_TITLE, mi.strTitle));
 						m_uMetaDataVer = META_DATA_VER;
 					}
 
-					TruncateED2KMetaData(mi->strAuthor);
-					if (!mi->strAuthor.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_ARTIST, mi->strAuthor));
+					TruncateED2KMetaData(mi.strAuthor);
+					if (!mi.strAuthor.IsEmpty()) {
+						AddTagUnique(new CTag(FT_MEDIA_ARTIST, mi.strAuthor));
 						m_uMetaDataVer = META_DATA_VER;
 					}
 
-					TruncateED2KMetaData(mi->strAlbum);
-					if (!mi->strAlbum.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi->strAlbum));
+					TruncateED2KMetaData(mi.strAlbum);
+					if (!mi.strAlbum.IsEmpty()) {
+						AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi.strAlbum));
 						m_uMetaDataVer = META_DATA_VER;
 					}
+
 					if (thePrefs.GetVerbose()) {
-						AddDebugLogLine(false, _T("Shared meta extraction: \"%s\" length=%u codec=%hs title=\"%s\" artist=\"%s\" album=\"%s\"")
-							, szFullPath, uLengthSec, (LPCSTR)strCodec
-							, (LPCTSTR)mi->strTitle, (LPCTSTR)mi->strAuthor, (LPCTSTR)mi->strAlbum);
+						AddDebugLogLine(false, _T("Shared meta extraction: \"%s\" length=%u codec=\"%s\" title=\"%s\" artist=\"%s\" album=\"%s\"")
+							, szFullPath, uLengthSec, (LPCTSTR)strCodec
+							, (LPCTSTR)mi.strTitle, (LPCTSTR)mi.strAuthor, (LPCTSTR)mi.strAlbum);
 					}
-					delete mi;
-					mi = NULL;
 				} else if (thePrefs.GetVerbose()) {
-					AddDebugLogLine(false, _T("Shared meta extraction: no native parser matched \"%s\""), szFullPath);
+					if (!bMediaInfoAvailable)
+						AddDebugLogLine(false, _T("Shared meta extraction: MediaInfo.dll missing or incompatible for \"%s\""), szFullPath);
+					else
+						AddDebugLogLine(false, _T("Shared meta extraction: no MediaInfo data found for \"%s\""), szFullPath);
 				}
 			} catch (...) {
 				if (thePrefs.GetVerbose())
-					AddDebugLogLine(false, _T("Unhandled exception while extracting file meta (AVI) data from \"%s\""), szFullPath);
+					AddDebugLogLine(false, _T("Unhandled exception while extracting file meta data from \"%s\""), szFullPath);
 				ASSERT(0);
 			}
-			delete mi;
 		}
 	}
 }

@@ -523,6 +523,14 @@ bool CClientUDPSocket::SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, boo
 
 bool CClientUDPSocket::Create()
 {
+	/// Allow first-start setup to pre-open the UDP socket before the normal startup sequence runs.
+	if (m_hSocket != INVALID_SOCKET) {
+		if (m_port == thePrefs.GetUDPPort())
+			return true;
+		WSASetLastError(WSAEALREADY);
+		return false;
+	}
+
 	if (thePrefs.GetUDPPort()) {
 		if (!CAsyncSocket::Create(thePrefs.GetUDPPort(), SOCK_DGRAM, FD_READ | FD_WRITE, thePrefs.GetBindAddr()))
 			return false;

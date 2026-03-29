@@ -283,9 +283,7 @@
     <ClCompile Include="MetaDataDlg.cpp" />
     <ClCompile Include="MeterIcon.cpp" />
     <ClCompile Include="MiniMule.cpp" />
-    <ClCompile Include="MediaInfo_RIFF.cpp" />
-    <ClCompile Include="MediaInfo_RealMedia.cpp" />
-    <ClCompile Include="MediaInfo_WindowsMedia.cpp" />
+    <ClCompile Include="MediaInfo_DLL.cpp" />
     <ClCompile Include="MuleListCtrl.cpp" />
     <ClCompile Include="MuleStatusBarCtrl.cpp" />
     <ClCompile Include="MuleSystrayDlg.cpp" />

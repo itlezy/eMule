@@ -92,6 +92,7 @@ protected:
 #include <vfw.h>
 #pragma comment(lib, "strmiids.lib") //for uuids.h
 
+CString GetResString(UINT uStringID);
 
 /////////////////////////////////////////////////////////////////////////////
 // SMediaInfo
@@ -207,9 +208,7 @@ struct SMediaInfo
 
 bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType);
 bool GetDRM(LPCTSTR pszFilePath);
-bool GetRIFFHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsAVI, bool bFullInfo = false);
-bool GetRMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsRM, bool bFullInfo = false);
-bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullInfo = false);
+bool GetMediaInfoDllInfo(LPCTSTR pszFilePath, EMFileSize ullFileSize, SMediaInfo *mi, bool bFullInfo = false, bool bSingleFile = true, bool *pbLibraryAvailable = NULL);
 CString GetAudioFormatName(WORD wFormatTag, CString &rstrComment);
 CString GetAudioFormatName(WORD wFormatTag);
 CString GetAudioFormatCodecId(WORD wFormatTag);

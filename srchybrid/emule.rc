@@ -3769,7 +3769,7 @@ BEGIN
     IDS_RESPONSES           "Responses"
     IDS_EXTRACT_META_DATA   "Extract meta data"
     IDS_META_DATA_MEDIADET  "DirectShow (for all other audio/video files)"
-    IDS_META_DATA_ID3LIB    "ID3 Library (only for MPEG audio files)"
+    IDS_META_DATA_ID3LIB    "Enabled (MediaInfo.dll for audio/video, ID3Lib for MPEG audio)"
     IDS_ASREGEXPR           "As Regular Expression"
     IDS_STATIC_REGEXP       "Regular expression for view filter:"
     IDS_CARE4ALL            "Evaluate All Files"
@@ -3916,7 +3916,7 @@ BEGIN
     IDS_SUPPORTED           "Supported"
     IDS_ESTIMATED           "estimated"
     IDS_MEDIAINFO_DLLMISSING
-                            "There is no compatible MediaInfo library installed. eMule requires MediaInfo.dll version 23.00 or newer to show extended audio/video details in this dialog.\r\n\r\nDownload the MediaInfo library from https://mediaarea.net/en/MediaInfo and copy the MediaInfo.dll file into\r\neMule's installation folder ""%s"".\r\n"
+                            "There is no compatible MediaInfo library installed. eMule requires MediaInfo.dll version 23.00 or newer to extract audio/video metadata.\r\n\r\nDownload the MediaInfo library from https://mediaarea.net/en/MediaInfo and copy the MediaInfo.dll file into\r\neMule's installation folder ""%s"".\r\n"
     IDS_WARNING_WRONGFILEEXTENTION
                             "Warning: The file extension of ""%s"" does not match the file extension\r\ntypically used for that file format. You may want to rename the file to\r\nuse one of those file extensions ""%s""\r\nfor properly using or viewing that file format.\r\n"
     IDS_MEDIAINFO_DRMWARNING

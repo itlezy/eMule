@@ -1898,6 +1898,14 @@ bool CListenSocket::Rebind()
 
 bool CListenSocket::StartListening()
 {
+	/// Allow first-start setup to pre-open the listen socket without tripping the normal startup path.
+	if (GetSocketHandle() != INVALID_SOCKET) {
+		if (m_port == thePrefs.GetPort())
+			return true;
+		WSASetLastError(WSAEALREADY);
+		return false;
+	}
+
 	bListening = true;
 
 	// Creating the socket with SO_REUSEADDR may solve LowID issues if emule was restarted
