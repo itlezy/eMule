@@ -3,7 +3,7 @@
 ## Last Chunk
 
 - Added repo policy for resource files in `.editorconfig`:
-  - `*.rc` and `*.rc2` now target `charset = utf-8-bom`
+  - `*.rc` and `*.rc2` now target `charset = utf-8`
   - `*.rc` and `*.rc2` stay on `end_of_line = crlf`
 - Replaced the placeholder `helpers\source-normalizer.py` with a real CLI helper.
 - The helper now supports:
@@ -29,7 +29,7 @@
   - `670` files detected as `utf-8`
   - `2` files detected as `utf-8-bom`
   - `14` files detected as legacy/non-UTF8 (`cp1250`, `cp1251`, `cp775`)
-  - `555` files would change on a normalization pass
+  - `557` files would change on a normalization pass
 - Legacy encoding hotspots from the first audit:
   - `srchybrid\AsyncProxySocketLayer.h`
   - `srchybrid\AsyncSocketExLayer.h`
@@ -48,6 +48,7 @@
 - BOM-bearing files from the first audit:
   - `srchybrid\lang\lang.rc2`
   - `srchybrid\res\emule.rc2`
+- With the current `.editorconfig` policy, those two `.rc2` files are now expected normalization targets because the repo rule is UTF-8 without BOM.
 - Did not run `..\23-build-emule-debug-incremental.cmd` because this chunk only changed helper tooling and `.editorconfig`.
 - WIP commit created in this chunk:
   - `93656d5` `WIP add source normalizer audit reporting`
