@@ -2,10 +2,10 @@
 
 ## Last Chunk
 
-- Fixed defect `D-01` in `srchybrid\Emule.cpp`.
-- Replaced the last remaining unbounded `strcpy` call in `CemuleApp::CopyTextToClipboard`.
-- The ANSI clipboard buffer is still allocated as `strTextA.GetLength() + 1`, but the copy now uses `memcpy` with that exact byte count instead of relying on an unbounded C-string copy.
-- This keeps the existing data flow unchanged while removing the overflow-prone API call from the clipboard export path.
+- Fixed defect `D-02` in `srchybrid\Emule.cpp`.
+- Replaced the startup `srand((unsigned)time(NULL))` seed with a new `GetLegacyRandSeed()` helper.
+- `GetLegacyRandSeed()` now seeds the legacy CRT `rand()` state from `BCryptGenRandom(BCRYPT_USE_SYSTEM_PREFERRED_RNG)` and falls back to a mixed process-local value from `QueryPerformanceCounter`, `GetTickCount`, process ID, and thread ID only if the OS RNG call fails.
+- This keeps the existing `rand()` call sites untouched while removing the predictable time-based seed from the main application startup path.
 - Verified with:
   - `..\23-build-emule-debug-incremental.cmd`
   - confirmed `srchybrid\x64\Debug\Emule.obj` and `srchybrid\x64\Debug\emule.exe` were rebuilt after the edit
@@ -13,10 +13,10 @@
 
 ## Current State
 
-- The clipboard export path no longer contains the remaining unbounded `strcpy` call.
-- The `D-01` fix compiles in the Debug incremental build path.
+- The main application RNG seed is no longer derived from `time(NULL)`.
+- The `D-02` fix compiles in the Debug incremental build path.
 
 ## Next Chunk
 
-- Continue the defect sweep for unsafe legacy string operations that still remain outside this specific `strcpy` item, especially the `_tcscpy` sites that rely on implicit destination sizing.
-- If the defect list is being tracked externally, mark `D-01` resolved against the clipboard ANSI copy site in `Emule.cpp`.
+- Review the remaining `srand(time(NULL))` sites outside `Emule.cpp`, especially `WebSocket.cpp` and `WebServer.cpp`, to decide whether the same stronger seeding helper should replace them too.
+- Continue the defect sweep for other legacy `rand()` and string-copy call sites that are still using weak or implicit safety contracts.
