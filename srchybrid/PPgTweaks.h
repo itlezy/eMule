@@ -87,6 +87,8 @@ protected:
 	HTREEITEM m_htiLogUlDlEvents;
 	HTREEITEM m_htiMaxCon5Sec;
 	HTREEITEM m_htiMaxHalfOpen;
+	HTREEITEM m_htiTCPBigSendBuffer;
+	HTREEITEM m_htiUDPReceiveBuffer;
 	HTREEITEM m_htiMinFreeDiskSpace;
 	HTREEITEM m_htiResolveShellLinks;
 	HTREEITEM m_htiRestoreLastLogPane;
@@ -122,11 +124,13 @@ protected:
 	HTREEITEM m_htiVerboseGroup;
 	HTREEITEM m_htiYourHostname;
 
-	float m_fMinFreeDiskSpaceMB;
+	float m_fMinFreeDiskSpaceGB;
 	float m_fBBLowRatioBonus;
 	float m_fBBLowRatioThreshold;
 	INT_PTR m_iQueueSize;
 	UINT m_uFileBufferSize;
+	UINT m_uTCPBigSendBufferSizeKiB;
+	UINT m_uUDPReceiveBufferSizeKiB;
 	UINT m_uBBSessionMaxTimeMinutes;
 	UINT m_uBBSessionTransAbsoluteMiB;
 	UINT m_uServerKeepAliveTimeout;

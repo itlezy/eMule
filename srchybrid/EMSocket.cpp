@@ -1083,20 +1083,19 @@ CString CEMSocket::GetFullErrorMessage(DWORD dwError) const
 // increases the send buffer to a bigger size
 bool CEMSocket::UseBigSendBuffer()
 {
-#define BIGSIZE (128 * 1024)
-
 	if (!m_bUseBigSendBuffers) {
-		int val = BIGSIZE;
+		const int val = (int)thePrefs.GetBigSendBufferSize();
 		int oldval;
 		int vallen = sizeof oldval;
 		if (GetSockOpt(SO_SNDBUF, &oldval, &vallen))
-			if (BIGSIZE > oldval) {
+			if (val > oldval) {
 				SetSockOpt(SO_SNDBUF, &val, sizeof val);
-				vallen = sizeof val;
-				m_bUseBigSendBuffers = (GetSockOpt(SO_SNDBUF, &val, &vallen) && val >= BIGSIZE);
+				int newval = val;
+				vallen = sizeof newval;
+				m_bUseBigSendBuffers = (GetSockOpt(SO_SNDBUF, &newval, &vallen) && newval >= val);
 #if defined(_DEBUG) || defined(_BETA) || defined(_DEVBUILD)
 				if (m_bUseBigSendBuffers)
-					theApp.QueueDebugLogLine(false, _T("Increased Sendbuffer for uploading socket from %u KiB to %u KiB"), oldval / 1024, val / 1024);
+					theApp.QueueDebugLogLine(false, _T("Increased Sendbuffer for uploading socket from %u KiB to %u KiB"), oldval / 1024, newval / 1024);
 				else
 					theApp.QueueDebugLogLine(false, _T("Failed to increase Sendbuffer for uploading socket, stays at %u KiB"), oldval / 1024);
 #endif

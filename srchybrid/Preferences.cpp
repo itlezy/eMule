@@ -505,6 +505,8 @@ bool	CPreferences::msgsecure;
 bool	CPreferences::m_bUseChatCaptchas;
 UINT	CPreferences::filterlevel;
 UINT	CPreferences::m_uFileBufferSize;
+UINT	CPreferences::m_uUDPReceiveBufferSize;
+UINT	CPreferences::m_uTCPSendBufferSize;
 DWORD	CPreferences::m_uFileBufferTimeLimit;
 INT_PTR	CPreferences::m_iQueueSize;
 int		CPreferences::m_iCommitFiles;
@@ -1834,6 +1836,8 @@ void CPreferences::SavePreferences()
 
 	ini.DeleteKey(_T("FileBufferSizePref")); // delete old 'file buff size' setting
 	ini.WriteInt(_T("FileBufferSize"), m_uFileBufferSize);
+	ini.WriteInt(_T("UDPReceiveBufferSize"), m_uUDPReceiveBufferSize);
+	ini.WriteInt(_T("BigSendBufferSize"), m_uTCPSendBufferSize);
 
 	ini.DeleteKey(_T("QueueSizePref")); // delete old 'queue size' setting
 	ini.WriteInt(_T("QueueSize"), (int)m_iQueueSize);
@@ -2139,14 +2143,14 @@ void CPreferences::LoadPreferences()
 	if (m_maxdownload > maxGraphDownloadRate && m_maxdownload != UNLIMITED)
 		m_maxdownload = maxGraphDownloadRate * 9 / 10;
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
-	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 9);
+	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 50);
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
 
 	// reset max half-open to a default if OS changed to/from XP SP2 or higher
 	int dwSP2OrHigher = ini.GetInt(_T("WinXPSP2OrHigher"), -1);
 	bool dwCurSP2OrHigher = IsRunningXPSP2OrHigher();
 	if (dwSP2OrHigher != static_cast<int>(dwCurSP2OrHigher))
-		maxhalfconnections = dwCurSP2OrHigher ? 9 : 50;
+		maxhalfconnections = 50;
 
 	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
 	m_strBindInterfaceName = ini.GetString(_T("BindInterfaceName")).Trim();
@@ -2262,7 +2266,7 @@ void CPreferences::LoadPreferences()
 	filterserverbyip = ini.GetBool(_T("FilterServersByIP"), false);
 	filterlevel = ini.GetInt(_T("FilterLevel"), 127);
 	checkDiskspace = ini.GetBool(_T("CheckDiskspace"), false);
-	m_uMinFreeDiskSpace = ini.GetInt(_T("MinFreeDiskSpace"), 20 * 1024 * 1024);
+	m_uMinFreeDiskSpace = ini.GetInt(_T("MinFreeDiskSpace"), 5 * 1024 * 1024 * 1024);
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
 	m_bResolveSharedShellLinks = ini.GetBool(_T("ResolveSharedShellLinks"), false);
 	m_bKeepUnavailableFixedSharedDirs = ini.GetBool(_T("KeepUnavailableFixedSharedDirs"), false);
@@ -2386,11 +2390,13 @@ void CPreferences::LoadPreferences()
 	// Get file buffer size (with backward compatibility)
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSizePref"), 0); // old setting
 	if (m_uFileBufferSize == 0)
-		m_uFileBufferSize = 512 * 1024;
+		m_uFileBufferSize = 2 * 1024 * 1024;
 	else
 		m_uFileBufferSize = ((m_uFileBufferSize * 15000 + 512) / 1024) * 1024;
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
-	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 60));
+	m_uUDPReceiveBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("UDPReceiveBufferSize"), 512 * 1024));
+	m_uTCPSendBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("BigSendBufferSize"), 512 * 1024));
+	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
 
 	// Get queue size (with backward compatibility)
 	m_iQueueSize = (INT_PTR)ini.GetInt(_T("QueueSizePref"), 50) * 100; // old setting

@@ -515,6 +515,8 @@ public:
 
 	static UINT		filterlevel;
 	static UINT		m_uFileBufferSize;
+	static UINT		m_uUDPReceiveBufferSize;
+	static UINT		m_uTCPSendBufferSize;
 	static INT_PTR	m_iQueueSize;
 	static int		m_iCommitFiles;
 	static DWORD	m_uFileBufferTimeLimit;
@@ -1124,6 +1126,8 @@ public:
 	static const CString& GetVideoPlayerArgs()			{ return m_strVideoPlayerArgs; }
 
 	static UINT		GetFileBufferSize()					{ return m_uFileBufferSize; }
+	static UINT		GetUDPReceiveBufferSize()			{ return m_uUDPReceiveBufferSize; }
+	static UINT		GetBigSendBufferSize()				{ return m_uTCPSendBufferSize; }
 	static DWORD	GetFileBufferTimeLimit()			{ return m_uFileBufferTimeLimit; }
 	static INT_PTR	GetQueueSize()						{ return m_iQueueSize; }
 	static int		GetCommitFiles()					{ return m_iCommitFiles; }

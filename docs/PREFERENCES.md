@@ -69,6 +69,8 @@ The last two groups are documented because they still live in the same file, but
 | `BindInterfaceName` | `eMule` | `RW` | Yes | empty | Stored display name for the selected P2P bind interface, mainly to keep the UI readable if the adapter is currently missing. |
 | `BindAddr` | `eMule` | `RW` | Yes | empty | Optional IPv4 address for P2P sockets. Empty means all addresses on the selected interface, or all interfaces when no interface is selected. |
 | `ConditionalTCPAccept` | `eMule` | `RW` | Yes | existing app default | Controls conditional TCP accept behavior. This is an advanced network-side knob. |
+| `UDPReceiveBufferSize` | `eMule` | `RW` | Advanced tree | `512 * 1024` | UDP receive socket buffer size in bytes. Exposed in Tweaks as KiB. |
+| `BigSendBufferSize` | `eMule` | `RW` | Advanced tree | `512 * 1024` | Configured large TCP send buffer size in bytes for upload sockets. Exposed in Tweaks as KiB. |
 | `OpenPortsOnStartUp` | `eMule` | `RW` | Yes | `false` | Open port mappings or startup networking paths early on launch. |
 
 ### Server / eD2k / Kad
@@ -102,7 +104,7 @@ The last two groups are documented because they still live in the same file, but
 | `SparsePartFiles` | `eMule` | `RW` | Yes | `false` | Use sparse part-file allocation where supported. |
 | `CommitFiles` | `eMule` | `RW` | Yes | `1` | Controls file commit behavior. Legacy low-level file I/O policy. |
 | `CheckDiskspace` | `eMule` | `RW` | Yes | `false` | Enforce minimum free-disk-space checks. |
-| `MinFreeDiskSpace` | `eMule` | `RW` | Yes | `20 * 1024 * 1024` | Minimum free disk space threshold. |
+| `MinFreeDiskSpace` | `eMule` | `RW` | Yes | `5 * 1024 * 1024 * 1024` | Minimum free disk space threshold. Tweaks now edits this in GB. |
 | `AutoArchivePreviewStart` | `eMule` | `RW` | Yes | `true` | Automatically start archive preview extraction. |
 | `ExtractMetaData` | `eMule` | `RW` | Yes | `1` | Metadata extraction mode. |
 | `ResolveSharedShellLinks` | `eMule` | `RW` | Yes | `false` | Resolve shell links in shared directories. |
@@ -112,7 +114,7 @@ The last two groups are documented because they still live in the same file, but
 | `RememberCancelledFiles` | `eMule` | `RW` | Yes | `true` | Keep memory of cancelled files. |
 | `RememberDownloadedFiles` | `eMule` | `RW` | Yes | `true` | Keep memory of already-downloaded files. |
 | `AutoClearCompleted` | `eMule` | `RW` | Yes | `false` | Automatically clear finished downloads from the list. |
-| `FileBufferSize` | `eMule` | `RW` | Yes | `512 * 1024` | Global file buffer size in bytes. You changed the branch default to 512 KiB. |
+| `FileBufferSize` | `eMule` | `RW` | Yes | `2 * 1024 * 1024` | Global file buffer size in bytes. Exposed via the Tweaks slider. |
 | `QueueSize` | `eMule` | `RW` | Yes | derived from app default | Queue size cap. |
 
 ### Display / UI / Toolbar
@@ -281,7 +283,7 @@ These settings are active and meaningful. They are now exposed in the Advanced t
 | --- | --- | --- | --- | --- | --- |
 | `RestoreLastMainWndDlg` | `eMule` | `RW` | Advanced tree | `false` | Restore the last active main tab on startup. Used in `EmuleDlg.cpp`. |
 | `RestoreLastLogPane` | `eMule` | `RW` | Advanced tree | `false` | Restore the selected log pane. Used in `ServerWnd.cpp`. |
-| `FileBufferTimeLimit` | `eMule` | `RW` | Advanced tree | `60` seconds | Maximum age of buffered part-file data before forced flush. Used in `PartFile.cpp`. |
+| `FileBufferTimeLimit` | `eMule` | `RW` | Advanced tree | `120` seconds | Maximum age of buffered part-file data before forced flush. Used in `PartFile.cpp`. |
 | `DateTimeFormat4Lists` | `eMule` | `RW` | Advanced tree | `%c` | Separate date/time format string for list controls. Used in `DownloadListCtrl.cpp`. |
 | `PreviewCopiedArchives` | `eMule` | `RW` | Advanced tree | `true` | Allow preview/archive-recovery logic on copied archives. Used in archive preview and part-file logic. |
 | `InspectAllFileTypes` | `eMule` | `RW` | Advanced tree | `0` | Force metadata inspection on all file types, not just the obvious media types. |
@@ -359,6 +361,8 @@ This section explains what the more technical settings actually do in runtime te
 | --- | --- |
 | `FileBufferSize` | Caps how much data a part file keeps buffered before flushing. Larger values reduce write frequency and can improve sequential write behavior, but increase memory use and delay flushes. |
 | `FileBufferTimeLimit` | Hidden companion to `FileBufferSize`. Even if the buffer does not fill, `PartFile.cpp` forces a flush once buffered data gets older than this threshold. |
+| `UDPReceiveBufferSize` | Controls the UDP socket receive buffer size. Larger fixed values reduce packet-drop risk during bursts at the cost of some kernel buffer memory. |
+| `BigSendBufferSize` | Controls the larger TCP send buffer target for upload sockets. Larger values can help keep fast upload slots fed without relying on tiny legacy buffers. |
 | `QueueSize` | Caps the upload waiting queue size. It does not directly control upload slots; it limits how many clients can remain queued for service. |
 | `PreviewPrio` | Biases downloads toward preview-relevant chunks first. It changes chunk-request preference, not just UI sorting. |
 | `AllocateFullFile` | Causes destination files to be pre-sized up front. This can reduce fragmentation but increases upfront disk work and space reservation. |

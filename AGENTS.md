@@ -3,6 +3,7 @@
 - dependencies and build scripts are in the parent directory, use `..\23-build-emule-debug-incremental.cmd` to build
 - keep a consistent code-style as the existing code base
 - comment the code that you add so it is clear and easy to identify its purpose
+- use Doxygen-style comments for new code and for existing code that you edit when comments are added or clarified
 - "eMule broadband v0.60d-dev" is at https://github.com/itlezy/eMule/tree/v0.60d-dev
 - "eMule Community v60d" is at https://github.com/irwir/eMule/tree/v0.60d
 - compare the branches to identify changes that were made in "eMule broadband v0.60d-dev" vs "eMule Community v60d"

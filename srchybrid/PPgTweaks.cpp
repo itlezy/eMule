@@ -25,6 +25,7 @@
 #include "Preferences.h"
 #include "TransferDlg.h"
 #include "emuledlg.h"
+#include "ClientUDPSocket.h"
 #include "SharedFilesWnd.h"
 #include "ServerWnd.h"
 #include "HelpIDs.h"
@@ -38,8 +39,8 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-#define	DFLT_MAXCONPERFIVE	20
-#define DFLT_MAXHALFOPEN	9
+#define	DFLT_MAXCONPERFIVE	50
+#define DFLT_MAXHALFOPEN	50
 
 namespace
 {
@@ -138,6 +139,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiLogUlDlEvents()
 	, m_htiMaxCon5Sec()
 	, m_htiMaxHalfOpen()
+	, m_htiTCPBigSendBuffer()
+	, m_htiUDPReceiveBuffer()
 	, m_htiMinFreeDiskSpace()
 	, m_htiDateTimeFormat4Lists()
 	, m_htiPreviewCopiedArchives()
@@ -174,8 +177,10 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiYourHostname()
 	, m_fBBLowRatioBonus()
 	, m_fBBLowRatioThreshold()
-	, m_fMinFreeDiskSpaceMB()
+	, m_fMinFreeDiskSpaceGB()
 	, m_iQueueSize()
+	, m_uTCPBigSendBufferSizeKiB()
+	, m_uUDPReceiveBufferSizeKiB()
 	, m_uBBSessionMaxTimeMinutes()
 	, m_uBBSessionTransAbsoluteMiB()
 	, m_uFileBufferSize()
@@ -288,6 +293,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiMaxCon5Sec, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiMaxHalfOpen = m_ctrlTreeOptions.InsertItem(GetResString(IDS_MAXHALFOPENCONS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiMaxHalfOpen, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiUDPReceiveBuffer = m_ctrlTreeOptions.InsertItem(GetResString(IDS_UDPRECEIVEBUFFERSIZE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiUDPReceiveBuffer, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiTCPBigSendBuffer = m_ctrlTreeOptions.InsertItem(GetResString(IDS_TCPBIGSENDBUFFERSIZE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiTCPBigSendBuffer, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiConditionalTCPAccept = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_CONDTCPACCEPT), m_htiTCPGroup, m_bConditionalTCPAccept);
 		m_htiServerKeepAliveTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_SERVERKEEPALIVETIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiServerKeepAliveTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
@@ -472,8 +481,16 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDV_MinMaxInt(pDX, m_iMaxConnPerFive, 1, INT_MAX);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiMaxHalfOpen, m_iMaxHalfOpen);
 	DDV_MinMaxInt(pDX, m_iMaxHalfOpen, 1, INT_MAX);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiUDPReceiveBuffer, m_uUDPReceiveBufferSizeKiB);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiTCPBigSendBuffer, m_uTCPBigSendBufferSizeKiB);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiConditionalTCPAccept, m_bConditionalTCPAccept);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiServerKeepAliveTimeout, m_uServerKeepAliveTimeout);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_uUDPReceiveBufferSizeKiB < 64)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiUDPReceiveBuffer);
+		if (m_uTCPBigSendBufferSizeKiB < 64)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiTCPBigSendBuffer);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Miscellaneous group
@@ -528,8 +545,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiImportParts, m_bImportParts);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCheckDiskspace, m_bCheckDiskspace);
-	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_fMinFreeDiskSpaceMB);
-	DDV_MinMaxFloat(pDX, m_fMinFreeDiskSpaceMB, 0.0, _UI32_MAX / (1024.0f * 1024.0f));
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_fMinFreeDiskSpaceGB);
+	DDV_MinMaxFloat(pDX, m_fMinFreeDiskSpaceGB, 0.0, _UI32_MAX / (1024.0f * 1024.0f * 1024.0f));
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiExtractMetaData, m_iExtractMetaData);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiResolveShellLinks, m_bResolveShellLinks);
@@ -647,6 +664,8 @@ BOOL CPPgTweaks::OnInitDialog()
 {
 	m_iMaxConnPerFive = thePrefs.GetMaxConperFive();
 	m_iMaxHalfOpen = thePrefs.GetMaxHalfConnections();
+	m_uUDPReceiveBufferSizeKiB = max(64u, thePrefs.GetUDPReceiveBufferSize() / 1024u);
+	m_uTCPBigSendBufferSizeKiB = max(64u, thePrefs.GetBigSendBufferSize() / 1024u);
 	m_bConditionalTCPAccept = thePrefs.GetConditionalTCPAccept();
 	m_bAutoTakeEd2kLinks = thePrefs.AutoTakeED2KLinks();
 	if (thePrefs.GetEnableVerboseOptions()) {
@@ -674,7 +693,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bFullAlloc = thePrefs.m_bAllocFull;
 	m_bCheckDiskspace = thePrefs.checkDiskspace;
 	m_bResolveShellLinks = thePrefs.GetResolveSharedShellLinks();
-	m_fMinFreeDiskSpaceMB = (float)(thePrefs.m_uMinFreeDiskSpace / (1024.0 * 1024.0));
+	m_fMinFreeDiskSpaceGB = (float)(thePrefs.m_uMinFreeDiskSpace / (1024.0 * 1024.0 * 1024.0));
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bFirewallStartup = ((thePrefs.GetWindowsVersion() == _WINVER_XP_) ? thePrefs.m_bOpenPortsOnStartUp : 0);
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
@@ -796,7 +815,11 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : DFLT_MAXCONPERFIVE);
 	theApp.scheduler->original_cons5s = thePrefs.GetMaxConperFive();
 	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : DFLT_MAXHALFOPEN);
+	thePrefs.m_uUDPReceiveBufferSize = m_uUDPReceiveBufferSizeKiB * 1024u;
+	thePrefs.m_uTCPSendBufferSize = m_uTCPBigSendBufferSizeKiB * 1024u;
 	thePrefs.m_bConditionalTCPAccept = m_bConditionalTCPAccept;
+	if (theApp.clientudp != NULL)
+		theApp.clientudp->ApplyReceiveBufferSize();
 
 	if (thePrefs.AutoTakeED2KLinks() != m_bAutoTakeEd2kLinks) {
 		thePrefs.autotakeed2klinks = m_bAutoTakeEd2kLinks;
@@ -871,7 +894,7 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bAllocFull = m_bFullAlloc;
 	thePrefs.checkDiskspace = m_bCheckDiskspace;
 	thePrefs.m_bResolveSharedShellLinks = m_bResolveShellLinks;
-	thePrefs.m_uMinFreeDiskSpace = (UINT)(m_fMinFreeDiskSpaceMB * (1024 * 1024));
+	thePrefs.m_uMinFreeDiskSpace = (UINT)(m_fMinFreeDiskSpaceGB * (1024 * 1024 * 1024));
 	if (thePrefs.GetYourHostname() != m_sYourHostname) {
 		thePrefs.SetYourHostname(m_sYourHostname);
 		theApp.emuledlg->serverwnd->UpdateMyInfo();
@@ -981,6 +1004,8 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
+		LocalizeEditLabel(m_htiUDPReceiveBuffer, IDS_UDPRECEIVEBUFFERSIZE);
+		LocalizeEditLabel(m_htiTCPBigSendBuffer, IDS_TCPBIGSENDBUFFERSIZE);
 		LocalizeEditLabel(m_htiMinFreeDiskSpace, IDS_MINFREEDISKSPACE);
 		LocalizeEditLabel(m_htiServerKeepAliveTimeout, IDS_SERVERKEEPALIVETIMEOUT);
 		LocalizeEditLabel(m_htiYourHostname, IDS_YOURHOSTNAME);	// itsonlyme: hostnameSource
@@ -1089,6 +1114,8 @@ void CPPgTweaks::OnDestroy()
 	m_htiBBLowIDDeboostDivisor = NULL;
 	m_htiMaxCon5Sec = NULL;
 	m_htiMaxHalfOpen = NULL;
+	m_htiTCPBigSendBuffer = NULL;
+	m_htiUDPReceiveBuffer = NULL;
 	m_htiConditionalTCPAccept = NULL;
 	m_htiAutoTakeEd2kLinks = NULL;
 	m_htiVerboseGroup = NULL;

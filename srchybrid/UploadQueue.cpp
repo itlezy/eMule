@@ -64,6 +64,9 @@ namespace
 constexpr DWORD UPLOAD_OVERFLOW_GRACE_TIME = SEC2MS(2);
 constexpr DWORD UPLOAD_SLOW_EVICT_TIME = SEC2MS(15);
 constexpr DWORD UPLOAD_ZERO_RATE_EVICT_TIME = SEC2MS(3);
+// Modern fixed floor for the legacy no-budget upload-slot heuristic.
+// 32 KiB/s corresponds to a 256 kbit/s upstream assumption for a minimally viable slot.
+constexpr uint32 MIN_FALLBACK_UPLOAD_CLIENT_DATARATE = 32u * 1024u;
 
 uint64 ResolveBBSessionMaxTransferLimit(uint64 configuredLimit, const CKnownFile *pUploadingFile)
 {
@@ -514,16 +517,33 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 	return ShouldOpenMoreUploadSlots(curUploadSlots);
 }
 
-// The per-slot target is derived from the broadband budget and the configured steady-state slot target.
+/**
+ * Return the expected upload rate for one healthy upload slot.
+ *
+ * This is a heuristic reference value for upload-queue decisions, not the actual
+ * socket throttle. The throttler still enforces the real upload budget separately.
+ *
+ * Current consumers use this value to decide:
+ * - when an upload slot is too slow and should be replaced
+ * - when to enable the large TCP send buffer
+ * - how aggressively upload data should be prefetched from disk
+ *
+ * There are two paths:
+ * - broadband-budget path: derive the slot target from the current effective upload budget
+ * - legacy fallback path: keep a simple slot-count-based estimate when no budget exists
+ */
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
 	if (!HasEffectiveUploadBudget()) {
+		// Legacy fallback path used only when no explicit upload budget is available.
+		// Keep the old "1 KiB/s per open slot" shape for compatibility with the surrounding
+		// queue heuristics, but clamp it to a modern fixed floor and ceiling so the queue
+		// no longer assumes dial-up-era upload slot speeds.
 		uint32 nOpenSlots = (uint32)GetUploadQueueLength();
-		uint32 nResult;
-		if (nOpenSlots <= 3)
-			nResult = 3 * 1024;
-		else
-			nResult = min(UPLOAD_CLIENT_MAXDATARATE, nOpenSlots * 1024);
+		uint32 nResult = max(MIN_FALLBACK_UPLOAD_CLIENT_DATARATE, nOpenSlots * 1024u);
+		// The cap is still a heuristic ceiling only. It prevents the fallback path from
+		// extrapolating unrealistic per-slot targets when the slot count becomes very large.
+		nResult = min(UPLOAD_CLIENT_MAXDATARATE, nResult);
 		return bMinDatarate ? nResult * 3 / 4 : nResult;
 	}
 

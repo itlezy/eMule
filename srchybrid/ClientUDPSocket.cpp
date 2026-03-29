@@ -527,11 +527,8 @@ bool CClientUDPSocket::Create()
 		if (!CAsyncSocket::Create(thePrefs.GetUDPPort(), SOCK_DGRAM, FD_READ | FD_WRITE, thePrefs.GetBindAddr()))
 			return false;
 		m_port = thePrefs.GetUDPPort();
-		// the default socket size seems to be insufficient for this UDP socket
-		// because we tend to drop packets if several arrived at the same time
-		int val = 64 * 1024;
-		if (!SetSockOpt(SO_RCVBUF, &val, sizeof val))
-			DebugLogError(_T("Failed to increase socket size on UDP socket"));
+		if (!ApplyReceiveBufferSize())
+			DebugLogError(_T("Failed to apply the configured UDP receive buffer size"));
 	} else
 		m_port = 0;
 	return true;
@@ -543,4 +540,11 @@ bool CClientUDPSocket::Rebind()
 		return false;
 	Close();
 	return Create();
+}
+
+bool CClientUDPSocket::ApplyReceiveBufferSize()
+{
+	// Keep the UDP receive buffer explicitly configurable because the old fixed 64 KiB limit is too small on modern links.
+	const int val = (int)thePrefs.GetUDPReceiveBufferSize();
+	return SetSockOpt(SO_RCVBUF, &val, sizeof val) != FALSE;
 }

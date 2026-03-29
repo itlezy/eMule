@@ -43,6 +43,7 @@ public:
 
 	bool	Create();
 	bool	Rebind();
+	bool	ApplyReceiveBufferSize();
 	uint16	GetConnectedPort()		{ return m_port; }
 	bool	SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, bool bEncrypt, const uchar *pachTargetClientHashORKadID, bool bKad, uint32 nReceiverVerifyKey);
 	SocketSentBytes  SendControlData(uint32 maxNumberOfBytesToSend, uint32 /*minFragSize*/); // ZZ:UploadBandWithThrottler (UDP)
