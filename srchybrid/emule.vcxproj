@@ -389,7 +389,6 @@
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="WebServer.cpp" />
     <ClCompile Include="WebSocket.cpp" />
-    <ClCompile Include="Wizard.cpp" />
     <ClCompile Include="ZIPFile.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -673,7 +672,6 @@
     <ClInclude Include="WebServer.h" />
     <ClInclude Include="WebServices.h" />
     <ClInclude Include="WebSocket.h" />
-    <ClInclude Include="Wizard.h" />
     <ClInclude Include="ZIPFile.h" />
   </ItemGroup>
   <ItemGroup>
@@ -932,7 +930,6 @@
     <Image Include="res\UserFiles.ico" />
     <Image Include="res\UserMessage.ico" />
     <Image Include="res\Web.ico" />
-    <Image Include="res\Wizard.ico" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="emule.rc" />

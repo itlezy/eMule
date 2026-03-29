@@ -140,7 +140,6 @@ class CPreferences
 	friend class CPPgSecurity;
 	friend class CPPgServer;
 	friend class CPPgTweaks;
-	friend class Wizard;
 
 	static LPCSTR	m_pszBindAddrA;
 	static LPCWSTR	m_pszBindAddrW;

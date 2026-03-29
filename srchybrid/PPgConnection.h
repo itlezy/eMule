@@ -51,7 +51,6 @@ protected:
 	afx_msg void OnSettingsChange()				{ SetModified(); }
 	afx_msg void OnEnChangeUDPDisable();
 	afx_msg void OnLimiterChange();
-	afx_msg void OnBnClickedWizard();
 //	afx_msg void OnBnClickedNetworkKademlia();
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);

@@ -17,7 +17,6 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "PPgConnection.h"
-#include "wizard.h"
 #include "Scheduler.h"
 #include "emuledlg.h"
 #include "Preferences.h"
@@ -60,7 +59,6 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_AUTOCONNECT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RECONN, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RANDOMIZEPORTSONSTARTUP, OnSettingsChange)
-	ON_BN_CLICKED(IDC_WIZARD, OnBnClickedWizard)
 	ON_BN_CLICKED(IDC_NETWORK_ED2K, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWOVERHEAD, OnSettingsChange)
 	ON_BN_CLICKED(IDC_ULIMIT_LBL, OnLimiterChange)
@@ -503,7 +501,6 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_AUTOCONNECT, GetResString(IDS_PW_AUTOCON));
 		SetDlgItemText(IDC_RECONN, GetResString(IDS_PW_RECON));
 		SetDlgItemText(IDC_MAXSRCHARD_LBL, GetResString(IDS_HARDLIMIT));
-		SetDlgItemText(IDC_WIZARD, GetResString(IDS_PRESETS) + _T("..."));
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
 		SetDlgItemText(IDC_RANDOMIZEPORTSONSTARTUP, GetResString(IDS_RANDOMIZEPORTSONSTARTUP));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
@@ -512,12 +509,6 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS) + _T(':'));
 		ShowLimitValues();
 	}
-}
-
-void CPPgConnection::OnBnClickedWizard()
-{
-	CConnectionWizardDlg conWizard;
-	conWizard.DoModal();
 }
 
 bool CPPgConnection::CheckUp(uint32 mUp, uint32 &mDown)

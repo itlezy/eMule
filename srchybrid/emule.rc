@@ -368,7 +368,6 @@ BEGIN
     CONTROL         "Autoconnect on startup",IDC_AUTOCONNECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,276,138,10
     CONTROL         "Reconnect on loss",IDC_RECONN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,288,140,10
     CONTROL         "Show overhead bandwidth",IDC_SHOWOVERHEAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,8,300,139,10
-    PUSHBUTTON      "Wizard...",IDC_WIZARD,8,318,58,14
     CONTROL         "Kad",IDC_NETWORK_KADEMLIA,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,214,286,57,10
     CONTROL         "eD2K",IDC_NETWORK_ED2K,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,214,298,58,10
     GROUPBOX        "Client Port:",IDC_CLIENTPORT_FRM,4,74,284,132
@@ -388,28 +387,6 @@ BEGIN
     LTEXT           "TCP",IDC_STATIC,11,91,17,8
     GROUPBOX        "Network",IDC_CONNECTION_NETWORK,201,274,87,44
 END
-
-IDD_WIZARD DIALOGEX 0, 0, 257, 223
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Wizard"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "Concurrent Downloads",IDC_WIZ_CONCURENTDOWN_FRAME,7,7,242,25
-    CONTROL         "1-5",IDC_WIZ_LOWDOWN_RADIO,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,14,17,40,10
-    CONTROL         "6-15",IDC_WIZ_MEDIUMDOWN_RADIO,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,107,17,40,10
-    CONTROL         "16+",IDC_WIZ_HIGHDOWN_RADIO,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,200,17,40,10
-    CONTROL         "",IDC_PROVIDERS,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | LVS_NOSORTHEADER | WS_BORDER | WS_GROUP | WS_TABSTOP,14,49,228,112
-    GROUPBOX        "Connection Type",IDC_WIZ_HOTBUTTON_FRAME,7,37,242,161
-    RTEXT           "True Upload Bandwidth",IDC_WIZ_TRUEUPLOAD_TEXT,14,181,116,8
-    EDITTEXT        IDC_WIZ_TRUEDOWNLOAD_BOX,133,166,40,12,ES_AUTOHSCROLL
-    RTEXT           "True Download Bandwidth",IDC_WIZ_TRUEDOWNLOAD_TEXT,14,168,116,8
-    EDITTEXT        IDC_WIZ_TRUEUPLOAD_BOX,133,179,40,12,ES_AUTOHSCROLL
-    CONTROL         "Kbit/s",IDC_KBITS,"Button",BS_AUTORADIOBUTTON | WS_GROUP | WS_TABSTOP,176,168,66,11
-    CONTROL         "KB/s",IDC_KBYTES,"Button",BS_AUTORADIOBUTTON | WS_TABSTOP,176,180,66,11
-    DEFPUSHBUTTON   "Apply",IDC_WIZ_APPLY_BUTTON,136,204,55,14,WS_GROUP
-    PUSHBUTTON      "Cancel",IDC_WIZ_CANCEL_BUTTON,194,204,56,14
-END
-
 
 IDD_FILES DIALOGEX 0, 35, 511, 289
 STYLE DS_LOCALEDIT | DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
@@ -1469,7 +1446,6 @@ CLIENTDETAILS           ICON                    "res\\UserDetails.ico"
 VIEWFILES               ICON                    "res\\UserFiles.ico"
 SENDMESSAGE             ICON                    "res\\UserMessage.ico"
 SCHEDULER               ICON                    "res\\Scheduler.ico"
-WIZARD                  ICON                    "res\\Wizard.ico"
 LISTADD                 ICON                    "res\\ListAdd.ico"
 LISTREMOVE              ICON                    "res\\ListRemove.ico"
 RESTORE                 ICON                    "res\\Restore.ico"
@@ -3957,7 +3933,6 @@ BEGIN
     IDS_DOWNLOADCOMMANDS    "Download Commands"
     IDS_CLOSETOOLBAR        "Close Toolbar"
     IDS_SHOWTOOLBAR         "Show Toolbar"
-    IDS_PRESETS             "Presets"
     IDS_SEARCH_BADOPERATORCOMBINATION
                             "You cannot use the first keyword with an OR operator when searching on Kad!\n\nFor example ""Keyword1 OR Keyword2"" is not possible. Try ""Keyword1 AND (Keyword2 OR Keyword3)"" or do multiple searches instead."
     IDS_DISCOVEREDBY        "Discovered by"
