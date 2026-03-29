@@ -478,6 +478,21 @@ __time64_t FileTimeToUnixTime(const FILETIME &ft);
 int statUTC(LPCTSTR pName, struct _stat64 &ft);
 int statUTC(HANDLE hFile, struct _stat64 &ft);
 
+/**
+ * @brief Prepares an overlong path for Win32 filesystem calls.
+ */
+CString PreparePathForLongPath(const CString &path);
+
+/**
+ * @brief Opens a shared-read CRT stream while bypassing MAX_PATH limitations.
+ */
+FILE* OpenFileStreamSharedReadLongPath(const CString &path, bool bTextMode);
+
+/**
+ * @brief Opens a read-only CRT file descriptor for a potentially long path.
+ */
+int OpenCrtReadOnlyLongPath(LPCTSTR pszFilePath);
+
 ///////////////////////////////////////////////////////////////////////////////
 // Random Numbers
 //

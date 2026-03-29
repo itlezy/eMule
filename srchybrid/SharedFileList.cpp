@@ -50,6 +50,36 @@ static char THIS_FILE[] = __FILE__;
 typedef CSimpleArray<CKnownFile*> CSimpleKnownFileArray;
 #define	SHAREDFILES_FILE	_T("sharedfiles.dat")
 
+static bool GetFileAttributesLongPath(const CString &path, WIN32_FILE_ATTRIBUTE_DATA &attributes)
+{
+	return ::GetFileAttributesEx(PreparePathForLongPath(path), GetFileExInfoStandard, &attributes) != 0;
+}
+
+static CString GetVisitedDirectoryKey(const CString &directory)
+{
+	CString normalized(directory);
+	if (!normalized.IsEmpty() && normalized.Right(1) == _T("\\"))
+		normalized = normalized.Left(normalized.GetLength() - 1);
+
+	const CString preparedPath(PreparePathForLongPath(normalized));
+	HANDLE hDirectory = ::CreateFile(preparedPath, 0, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
+	if (hDirectory != INVALID_HANDLE_VALUE) {
+		BY_HANDLE_FILE_INFORMATION fileInfo = {};
+		if (::GetFileInformationByHandle(hDirectory, &fileInfo)) {
+			CString key;
+			key.Format(_T("ID:%08lX-%08lX%08lX"), fileInfo.dwVolumeSerialNumber, fileInfo.nFileIndexHigh, fileInfo.nFileIndexLow);
+			::CloseHandle(hDirectory);
+			return key;
+		}
+		::CloseHandle(hDirectory);
+	}
+
+	CString fallbackKey(_T("PATH:"));
+	fallbackKey += normalized;
+	fallbackKey.MakeLower();
+	return fallbackKey;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // CPublishKeyword
@@ -292,13 +322,12 @@ CAddFileThread::CAddFileThread()
 {
 }
 
-void CAddFileThread::SetValues(CSharedFileList *pOwner, LPCTSTR directory, LPCTSTR filename, LPCTSTR strSharedDir, CPartFile *partfile)
+void CAddFileThread::SetValues(CSharedFileList *pOwner, LPCTSTR directory, LPCTSTR filename, CPartFile *partfile)
 {
 	m_pOwner = pOwner;
 	m_strDirectory = directory;
 	m_strFilename = filename;
 	m_partfile = partfile;
-	m_strSharedDir = strSharedDir;
 }
 
 // Special case for SR13-ImportParts
@@ -431,7 +460,6 @@ int CAddFileThread::Run()
 	if (!theApp.IsClosing()) {
 		CKnownFile *newKnown = new CKnownFile();
 		if (newKnown->CreateFromFile(m_strDirectory, m_strFilename, m_partfile)) { // SLUGFILLER: SafeHash - in case of shutdown while still hashing
-			newKnown->SetSharedDirectory(m_strSharedDir);
 			if (m_partfile && m_partfile->GetFileOp() == PFOP_HASHING)
 				m_partfile->SetFileOp(PFOP_NONE);
 			if (!theApp.emuledlg->PostMessage(TM_FINISHEDHASHING, (m_pOwner ? 0 : (WPARAM)m_partfile), (LPARAM)newKnown))
@@ -532,10 +560,11 @@ void CSharedFileList::FindSharedFiles()
 		for (POSITION pos = m_Files_map.GetStartPosition(); pos != NULL;) {
 			CKnownFile *cur_file;
 			m_Files_map.GetNextAssoc(pos, key, cur_file);
+			WIN32_FILE_ATTRIBUTE_DATA attributes = {};
 			if (!cur_file->IsKindOf(RUNTIME_CLASS(CPartFile))
 				|| theApp.downloadqueue->IsPartFile(cur_file)
 				|| theApp.knownfiles->IsFilePtrInList(cur_file)
-				|| _taccess(cur_file->GetFilePath(), 0) != 0)
+				|| !GetFileAttributesLongPath(cur_file->GetFilePath(), attributes))
 			{
 				m_UnsharedFiles_map[CSKey(cur_file->GetFileHash())] = true;
 				listlock.Lock();
@@ -594,17 +623,49 @@ void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
 {
 	ASSERT(rstrDirectory.Right(1) == _T("\\"));
 
-	CFileFind ff;
-	BOOL bFound = ff.FindFile(rstrDirectory + _T('*'));
-	if (bFound) {
+	CList<CString, const CString&> pendingDirectories;
+	CMapStringToPtr visitedDirectories;
+	pendingDirectories.AddTail(rstrDirectory);
+	visitedDirectories.SetAt(GetVisitedDirectoryKey(rstrDirectory), reinterpret_cast<void*>(1));
+
+	while (!pendingDirectories.IsEmpty()) {
+		const CString currentDirectory(pendingDirectories.RemoveHead());
+		const CString preparedSearchPath(PreparePathForLongPath(currentDirectory + _T('*')));
+		WIN32_FIND_DATA findData = {};
+		HANDLE hFind = ::FindFirstFile(preparedSearchPath, &findData);
+		if (hFind == INVALID_HANDLE_VALUE) {
+			const DWORD dwError = ::GetLastError();
+			if (dwError != ERROR_FILE_NOT_FOUND)
+				LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)currentDirectory, (LPCTSTR)GetErrorMessage(dwError));
+			continue;
+		}
+
 		do {
-			bFound = ff.FindNextFile();
-			CheckAndAddSingleFile(ff);
-		} while (bFound);
-	} else {
-		DWORD dwError = ::GetLastError();
-		if (dwError != ERROR_FILE_NOT_FOUND)
-			LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrDirectory, (LPCTSTR)GetErrorMessage(dwError));
+			const CString fileName(findData.cFileName);
+			if (fileName == _T(".") || fileName == _T(".."))
+				continue;
+
+			if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0) {
+				if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_SYSTEM)) != 0)
+					continue;
+
+				CString subDirectory(currentDirectory + fileName + _T("\\"));
+				if (!thePrefs.IsShareableDirectory(subDirectory))
+					continue;
+
+				const CString visitKey(GetVisitedDirectoryKey(subDirectory));
+				void *pUnused = NULL;
+				if (!visitedDirectories.Lookup(visitKey, pUnused)) {
+					visitedDirectories.SetAt(visitKey, reinterpret_cast<void*>(1));
+					pendingDirectories.AddTail(subDirectory);
+				}
+				continue;
+			}
+
+			CheckAndAddSingleFile(currentDirectory, findData);
+		} while (::FindNextFile(hFind, &findData));
+
+		::FindClose(hFind);
 	}
 }
 
@@ -634,16 +695,20 @@ bool CSharedFileList::AddSingleSharedFile(const CString &rstrFilePath, bool bNoU
 
 bool CSharedFileList::CheckAndAddSingleFile(const CString &rstrFilePath)
 {
-	CFileFind ff;
-	if (!ff.FindFile(rstrFilePath)) {
-		DWORD dwError = ::GetLastError();
+	WIN32_FIND_DATA findData = {};
+	HANDLE hFind = ::FindFirstFile(PreparePathForLongPath(rstrFilePath), &findData);
+	if (hFind == INVALID_HANDLE_VALUE) {
+		const DWORD dwError = ::GetLastError();
 		if (dwError != ERROR_FILE_NOT_FOUND)
 			LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrFilePath, (LPCTSTR)GetErrorMessage(dwError));
 		return false;
 	}
-	ff.FindNextFile();
-	CheckAndAddSingleFile(ff);
-	ff.Close();
+
+	::FindClose(hFind);
+
+	const int iSlash = rstrFilePath.ReverseFind(_T('\\'));
+	CString strDirectory = (iSlash >= 0) ? rstrFilePath.Left(iSlash + 1) : CString();
+	CheckAndAddSingleFile(strDirectory, findData);
 	HashNextFile();
 	bHaveSingleSharedFiles = true;
 	// GUI update to be done by the caller
@@ -677,7 +742,7 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 {
 	ASSERT(pFile->GetFileIdentifier().HasExpectedMD4HashCount());
 	ASSERT(!pFile->IsKindOf(RUNTIME_CLASS(CPartFile)) || !static_cast<CPartFile*>(pFile)->m_bMD4HashsetNeeded);
-	ASSERT(!pFile->IsShellLinked() || ShouldBeShared(pFile->GetSharedDirectory(), NULL, false));
+	ASSERT(ShouldBeShared(pFile->GetPath(), NULL, false));
 	CCKey key(pFile->GetFileHash());
 	CKnownFile *pFileInMap;
 	if (m_Files_map.Lookup(key, pFileInMap)) {
@@ -736,7 +801,7 @@ void CSharedFileList::FileHashingFinished(CKnownFile *file)
 	CKnownFile *found_file = GetFileByID(file->GetFileHash());
 	if (found_file == NULL) {
 		// check if we still want to actually share this file, the user might have unshared it while hashing
-		if (!ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), false)) {
+		if (!ShouldBeShared(file->GetPath(), file->GetFilePath(), false)) {
 			RemoveFromHashing(file);
 			if (!IsFilePtrInList(file) && !theApp.knownfiles->IsFilePtrInList(file))
 				delete file;
@@ -1174,7 +1239,7 @@ void CSharedFileList::HashNextFile()
 	UnknownFile_Struct *nextfile = waitingforhash_list.RemoveHead();
 	currentlyhashing_list.AddTail(nextfile);	// SLUGFILLER: SafeHash - keep track
 	CAddFileThread *addfilethread = static_cast<CAddFileThread*>(AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
-	addfilethread->SetValues(this, nextfile->strDirectory, nextfile->strName, nextfile->strSharedDirectory);
+	addfilethread->SetValues(this, nextfile->strDirectory, nextfile->strName);
 	addfilethread->ResumeThread();
 	// SLUGFILLER: SafeHash - nextfile deletion is handled elsewhere
 	//delete nextfile;
@@ -1469,64 +1534,29 @@ bool CSharedFileList::ExcludeFile(const CString &strFilePath)
 	return true;
 }
 
-void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
+void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const WIN32_FIND_DATA &findData)
 {
-	if (ff.IsDirectory() || ff.IsSystem() || ff.IsTemporary() || ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE)
+	if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY)) != 0)
 		return;
 
-	CString strFoundFileName(ff.GetFileName());
-	CString strFoundFilePath(ff.GetFilePath());
-	CString strFoundDirectory(strFoundFilePath, ff.GetFilePath().ReverseFind(_T('\\')) + 1); //with backslash
-	CString strShellLinkDir;
-	ULONGLONG ullFoundFileSize = ff.GetLength();
+	const ULONGLONG ullFoundFileSize = (static_cast<ULONGLONG>(findData.nFileSizeHigh) << 32) | findData.nFileSizeLow;
+	if (ullFoundFileSize == 0 || ullFoundFileSize > MAX_EMULE_FILE_SIZE)
+		return;
+
+	CString strFoundDirectory(strDirectory);
+	if (!strFoundDirectory.IsEmpty() && strFoundDirectory.Right(1) != _T("\\"))
+		strFoundDirectory += _T("\\");
+
+	const CString strFoundFileName(findData.cFileName);
+	const CString strFoundFilePath(strFoundDirectory + strFoundFileName);
 
 	// check if this file is explicitly unshared
 	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;)
 		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0)
 			return;
 
-	FILETIME tFoundFileTime;
-	ff.GetLastWriteTime(&tFoundFileTime);
-
-	// ignore real(!) LNK files
-	if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
-		SHFILEINFO info;
-		if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK)) {
-			if (!thePrefs.GetResolveSharedShellLinks()) {
-				TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
-				return;
-			}
-			// Win98: Would need to implement a different code path which is using 'IShellLinkA' on Win9x.
-			CComPtr<IShellLink> pShellLink;
-			if (SUCCEEDED(pShellLink.CoCreateInstance(CLSID_ShellLink))) {
-				CComQIPtr<IPersistFile> pPersistFile(pShellLink);
-				if (pPersistFile && SUCCEEDED(pPersistFile->Load(strFoundFilePath, STGM_READ))) {
-					TCHAR szResolvedPath[MAX_PATH];
-					if (pShellLink->GetPath(szResolvedPath, _countof(szResolvedPath), NULL/*DO NOT USE (read below)*/, 0) == NOERROR) {
-						// WIN32_FIND_DATA provided by "IShellLink::GetPath" contains the file stats which where
-						// taken when the shortcut was created! Thus the file stats which are returned do *not*
-						// reflect the current real file stats. So, do *not* use that data!
-						//
-						// Need to do an explicit 'FindFile' to get the current WIN32_FIND_DATA file stats.
-						//
-						CFileFind ffResolved;
-						if (!ffResolved.FindFile(szResolvedPath))
-							return;
-						VERIFY(!ffResolved.FindNextFile());
-						if (ffResolved.IsDirectory() || ffResolved.IsSystem() || ffResolved.IsTemporary() || ffResolved.GetLength() == 0 || ffResolved.GetLength() > MAX_EMULE_FILE_SIZE)
-							return;
-						strShellLinkDir = strFoundDirectory;
-						strFoundDirectory = ffResolved.GetRoot();
-						strFoundFileName = ffResolved.GetFileName();
-						strFoundFilePath = ffResolved.GetFilePath();
-						ullFoundFileSize = ffResolved.GetLength();
-						ffResolved.GetLastWriteTime(&tFoundFileTime);
-						slosh(strFoundDirectory);
-					}
-				}
-			}
-		}
-	}
+	if (ExtensionIs(strFoundFileName, _T(".lnk")))
+		return;
 
 	// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
 	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {
@@ -1534,6 +1564,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 		return;
 	}
 
+	const FILETIME &tFoundFileTime(findData.ftLastWriteTime);
 	time_t fdate = (time_t)FileTimeToUnixTime(tFoundFileTime);
 	if (fdate <= 0)
 		fdate = (time_t)-1;
@@ -1557,11 +1588,8 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 					DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
 			}
 		} else {
-			if (!strShellLinkDir.IsEmpty())
-				DebugLog(_T("Shared link: %s from %s"), (LPCTSTR)strFoundFilePath, (LPCTSTR)strShellLinkDir);
 			toadd->SetPath(strFoundDirectory);
 			toadd->SetFilePath(strFoundFilePath);
-			toadd->SetSharedDirectory(strShellLinkDir);
 			AddFile(toadd);
 		}
 	} else {
@@ -1571,7 +1599,6 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 			UnknownFile_Struct *tohash = new UnknownFile_Struct;
 			tohash->strDirectory = strFoundDirectory;
 			tohash->strName = strFoundFileName;
-			tohash->strSharedDirectory = strShellLinkDir;
 			waitingforhash_list.AddTail(tohash);
 		} else
 			TRACE(_T("%hs: Did not share file \"%s\" - already hashing or temp. file\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);

@@ -3917,3 +3917,54 @@ HICON ReplaceIconGreyedInImageList(CImageList &rList, int nPos)
 	}
 	return 0;
 }
+
+CString PreparePathForLongPath(const CString &path)
+{
+	if (path.IsEmpty() || path.GetLength() < MAX_PATH)
+		return path;
+	if (path.Left(4).CompareNoCase(_T("\\\\?\\")) == 0)
+		return path;
+	if (path.Left(2) == _T("\\\\"))
+		return _T("\\\\?\\UNC\\") + path.Mid(2);
+	return _T("\\\\?\\") + path;
+}
+
+FILE* OpenFileStreamSharedReadLongPath(const CString &path, bool bTextMode)
+{
+	const CString preparedPath(PreparePathForLongPath(path));
+	const DWORD dwFlags = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN;
+	HANDLE hFile = ::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, dwFlags, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+		return NULL;
+
+	int fd = _open_osfhandle((intptr_t)hFile, _O_RDONLY | (bTextMode ? _O_TEXT : _O_BINARY));
+	if (fd == -1) {
+		::CloseHandle(hFile);
+		return NULL;
+	}
+
+	FILE *pStream = _fdopen(fd, bTextMode ? "r" : "rb");
+	if (pStream == NULL) {
+		_close(fd);
+		return NULL;
+	}
+
+	return pStream;
+}
+
+int OpenCrtReadOnlyLongPath(LPCTSTR pszFilePath)
+{
+	const CString preparedPath(PreparePathForLongPath(pszFilePath));
+	const DWORD dwFlags = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN;
+	HANDLE hFile = ::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, dwFlags, NULL);
+	if (hFile == INVALID_HANDLE_VALUE)
+		return -1;
+
+	int fd = _open_osfhandle((intptr_t)hFile, _O_RDONLY | _O_BINARY);
+	if (fd == -1) {
+		::CloseHandle(hFile);
+		return -1;
+	}
+
+	return fd;
+}

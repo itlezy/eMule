@@ -32,7 +32,6 @@ struct UnknownFile_Struct
 {
 	CString strName;
 	CString strDirectory;
-	CString strSharedDirectory;
 };
 
 class CSharedFileList
@@ -113,7 +112,7 @@ protected:
 	void	RemoveFromHashing(const CKnownFile *hashed);
 	void	LoadSingleSharedFilesList();
 
-	void	CheckAndAddSingleFile(const CFileFind &ff);
+	void	CheckAndAddSingleFile(const CString &strDirectory, const WIN32_FIND_DATA &findData);
 	bool	CheckAndAddSingleFile(const CString &rstrFilePath); // add specific files without editing sharing preferences
 
 private:
@@ -150,7 +149,7 @@ protected:
 public:
 	virtual BOOL InitInstance();
 	virtual int	Run();
-	void	SetValues(CSharedFileList *pOwner, LPCTSTR directory, LPCTSTR filename, LPCTSTR strSharedDir, CPartFile *partfile = NULL);
+	void	SetValues(CSharedFileList *pOwner, LPCTSTR directory, LPCTSTR filename, CPartFile *partfile = NULL);
 	bool	ImportParts();
 	uint16	SetPartToImport(LPCTSTR import);
 private:
@@ -158,7 +157,6 @@ private:
 	CPartFile	*m_partfile;
 	CString		m_strDirectory;
 	CString		m_strFilename;
-	CString		m_strSharedDir;
 	CString		m_strImport;
 	CArray<uint16, uint16>	m_PartsToImport;
 };
