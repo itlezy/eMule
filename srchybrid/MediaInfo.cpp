@@ -503,7 +503,7 @@ CString GetCodecDisplayName(const CString &strCodecId)
 
 bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType)
 {
-	int fd = _topen(pszFilePath, O_RDONLY | O_BINARY);
+	int fd = OpenCrtReadOnlyLongPath(pszFilePath);
 	if (fd != -1) {
 		BYTE buffer[8192];
 		int iRead = _read(fd, buffer, sizeof buffer);

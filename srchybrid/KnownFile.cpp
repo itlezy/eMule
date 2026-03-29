@@ -366,14 +366,12 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	SetFileName(in_filename);
 
 	// open file
-	CString strFilePath;
-	if (!_tmakepathlimit(strFilePath.GetBuffer(MAX_PATH), NULL, in_directory, in_filename, NULL)) {
-		LogError(GetResString(IDS_ERR_FILEOPEN), in_filename, _T(""));
-		return false;
-	}
-	strFilePath.ReleaseBuffer();
+	CString strFilePath(in_directory);
+	if (!strFilePath.IsEmpty() && strFilePath.Right(1) != _T("\\"))
+		strFilePath += _T("\\");
+	strFilePath += in_filename;
 	SetFilePath(strFilePath);
-	FILE *file = _tfsopen(strFilePath, _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
+	FILE *file = OpenFileStreamSharedReadLongPath(strFilePath, false); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), _tcserror(errno));
 		return false;
@@ -507,7 +505,7 @@ bool CKnownFile::CreateAICHHashSetOnly()
 {
 	ASSERT(!IsPartFile());
 
-	FILE *file = _tfsopen(GetFilePath(), _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
+	FILE *file = OpenFileStreamSharedReadLongPath(GetFilePath(), false); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)GetFilePath(), _T(""), _tcserror(errno));
 		return false;
@@ -1313,13 +1311,13 @@ void CKnownFile::UpdateMetaDataTags()
 	if (eFileType != ED2KFT_AUDIO && eFileType != ED2KFT_VIDEO)
 		return;
 
-	TCHAR szFullPath[MAX_PATH];
-	if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
+	const CString strFullPath(GetFilePath());
+	if (!strFullPath.IsEmpty()) {
 		SMediaInfo mi;
 		mi.strFileName = GetFileName();
 		bool bMediaInfoAvailable = false;
 		try {
-			if (GetMediaInfoDllInfo(szFullPath, GetFileSize(), &mi, false, true, &bMediaInfoAvailable)) {
+			if (GetMediaInfoDllInfo(strFullPath, GetFileSize(), &mi, false, true, &bMediaInfoAvailable)) {
 				mi.InitFileLength();
 				UINT uLengthSec = (UINT)mi.fFileLengthSec;
 				CString strCodec;
@@ -1376,18 +1374,18 @@ void CKnownFile::UpdateMetaDataTags()
 
 				if (thePrefs.GetVerbose()) {
 					AddDebugLogLine(false, _T("Shared meta extraction: \"%s\" length=%u codec=\"%s\" title=\"%s\" artist=\"%s\" album=\"%s\"")
-						, szFullPath, uLengthSec, (LPCTSTR)strCodec
+						, (LPCTSTR)strFullPath, uLengthSec, (LPCTSTR)strCodec
 						, (LPCTSTR)mi.strTitle, (LPCTSTR)mi.strAuthor, (LPCTSTR)mi.strAlbum);
 				}
 			} else if (thePrefs.GetVerbose()) {
 				if (!bMediaInfoAvailable)
-					AddDebugLogLine(false, _T("Shared meta extraction: MediaInfo.dll missing or incompatible for \"%s\""), szFullPath);
+					AddDebugLogLine(false, _T("Shared meta extraction: MediaInfo.dll missing or incompatible for \"%s\""), (LPCTSTR)strFullPath);
 				else
-					AddDebugLogLine(false, _T("Shared meta extraction: no MediaInfo data found for \"%s\""), szFullPath);
+					AddDebugLogLine(false, _T("Shared meta extraction: no MediaInfo data found for \"%s\""), (LPCTSTR)strFullPath);
 			}
 		} catch (...) {
 			if (thePrefs.GetVerbose())
-				AddDebugLogLine(false, _T("Unhandled exception while extracting file meta data from \"%s\""), szFullPath);
+				AddDebugLogLine(false, _T("Unhandled exception while extracting file meta data from \"%s\""), (LPCTSTR)strFullPath);
 			ASSERT(0);
 		}
 	}
@@ -1440,6 +1438,9 @@ bool CKnownFile::IsMovie() const
 }
 
 // function assumes that this file is shared and that any needed permission to preview exists. checks have to be done before calling!
+/**
+ * @todo Long-path support for preview and thumbnail generation is intentionally deferred.
+ */
 bool CKnownFile::GrabImage(uint8 nFramesToGrab, double dStartTime, bool bReduceColor, uint16 nMaxWidth, void *pSender)
 {
 	return GrabImage(GetFilePath(), nFramesToGrab, dStartTime, bReduceColor, nMaxWidth, pSender);
@@ -1500,7 +1501,7 @@ bool CKnownFile::ImportParts()
 	if (addfilethread) {
 		const CString &pathName = dlg.GetPathName();
 		partfile->SetFileOpProgress(0);
-		addfilethread->SetValues(theApp.sharedfiles, partfile->GetPath(), partfile->m_hpartfile.GetFileName(), _T(""), partfile);
+		addfilethread->SetValues(theApp.sharedfiles, partfile->GetPath(), partfile->m_hpartfile.GetFileName(), partfile);
 		partfile->SetFileOp(addfilethread->SetPartToImport(pathName) ? PFOP_IMPORTPARTS : PFOP_HASHING);
 		addfilethread->ResumeThread();
 	}

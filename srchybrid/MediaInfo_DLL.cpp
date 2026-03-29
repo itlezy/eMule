@@ -349,7 +349,8 @@ bool GetMediaInfoDllInfo(LPCTSTR pszFilePath, EMFileSize ullFileSize, SMediaInfo
 	if (pbLibraryAvailable != NULL)
 		*pbLibraryAvailable = true;
 
-	void *Handle = theMediaInfoDLL.Open(pszFilePath);
+	const CString preparedPath(PreparePathForLongPath(pszFilePath));
+	void *Handle = theMediaInfoDLL.Open(preparedPath);
 	if (Handle == NULL)
 		return false;
 

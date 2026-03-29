@@ -1132,7 +1132,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 				CAddFileThread *addfilethread = static_cast<CAddFileThread*>(AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
 				if (addfilethread) {
 					SetFileOp(PFOP_HASHING);
-					addfilethread->SetValues(0, GetPath(), m_hpartfile.GetFileName(), _T(""), this);
+					addfilethread->SetValues(0, GetPath(), m_hpartfile.GetFileName(), this);
 					SetFileOpProgress(0);
 					SetStatus(PS_HASHING);
 					addfilethread->ResumeThread();
@@ -2685,7 +2685,7 @@ void CPartFile::CompleteFile(bool bIsHashingDone)
 		CAddFileThread *addfilethread = static_cast<CAddFileThread*>(AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
 		if (addfilethread) {
 			const CString mytemppath(m_fullname, m_fullname.GetLength() - m_partmetfilename.GetLength());
-			addfilethread->SetValues(NULL, mytemppath, RemoveFileExtension(m_partmetfilename), _T(""), this);
+			addfilethread->SetValues(NULL, mytemppath, RemoveFileExtension(m_partmetfilename), this);
 			SetFileOp(PFOP_HASHING);
 			SetFileOpProgress(0);
 			addfilethread->ResumeThread();
@@ -2729,7 +2729,8 @@ UINT CPartFile::CompleteThreadProc(LPVOID pvParams)
 void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 {
 	// check, if it's a compressed file
-	DWORD dwAttr = ::GetFileAttributes(pszFilePath);
+	const CString preparedPath(PreparePathForLongPath(pszFilePath));
+	DWORD dwAttr = ::GetFileAttributes(preparedPath);
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) == 0)
 		return;
 
@@ -2738,11 +2739,11 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 	strDir.ReleaseBuffer();
 
 	// If the directory of the file has the 'Compress' attribute, do not uncompress the file
-	dwAttr = ::GetFileAttributes(strDir);
+	dwAttr = ::GetFileAttributes(PreparePathForLongPath(strDir));
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) != 0)
 		return;
 
-	HANDLE hFile = ::CreateFile(pszFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hFile = ::CreateFile(preparedPath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		if (thePrefs.GetVerbose())
 			theApp.QueueDebugLogLine(true, _T("Failed to open file \"%s\" for decompressing - %s"), pszFilePath, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
@@ -2815,10 +2816,14 @@ BOOL CPartFile::PerformFileComplete()
 	_tcscpy(newfilename, (LPCTSTR)StripInvalidFilenameChars(newfilename));
 
 	CString indir;
-	if (::PathFileExists(thePrefs.GetCategory(GetCategory())->strIncomingPath))
-		indir = thePrefs.GetCategory(GetCategory())->strIncomingPath;
-	else
-		indir = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
+	const CString strCategoryIncoming(thePrefs.GetCategory(GetCategory())->strIncomingPath);
+	bool bUseCategoryIncoming = false;
+	if (!strCategoryIncoming.IsEmpty()) {
+		WIN32_FILE_ATTRIBUTE_DATA attributes = {};
+		bUseCategoryIncoming = ::GetFileAttributesEx(PreparePathForLongPath(strCategoryIncoming), GetFileExInfoStandard, &attributes) != 0
+			&& (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+	}
+	indir = bUseCategoryIncoming ? strCategoryIncoming : thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
 	ASSERT(indir.Right(1) == _T("\\"));
 	// close permanent handle
 	try {
@@ -2831,7 +2836,8 @@ BOOL CPartFile::PerformFileComplete()
 
 	CString strNewname(indir);
 	strNewname += newfilename;
-	bool renamed = ::PathFileExists(strNewname);
+	WIN32_FILE_ATTRIBUTE_DATA newAttributes = {};
+	bool renamed = ::GetFileAttributesEx(PreparePathForLongPath(strNewname), GetFileExInfoStandard, &newAttributes) != 0;
 	if (renamed) {
 		size_t length = _tcslen(newfilename);
 		ASSERT(length); //name should never be empty
@@ -2867,14 +2873,14 @@ BOOL CPartFile::PerformFileComplete()
 		CString strTestName;
 		do
 			strTestName.Format(_T("%s%s(%d).%s"), (LPCTSTR)indir, newfilename, ++namecount, ext);
-		while (::PathFileExists(strTestName));
+		while (::GetFileAttributesEx(PreparePathForLongPath(strTestName), GetFileExInfoStandard, &newAttributes) != 0);
 		strNewname = strTestName;
 	}
 	free(newfilename);
 
 	bNoNewReads = true; //this file is on the move and cannot be read
 	for (bool bFirstTry = true; ;) {
-		if (::MoveFileWithProgress(strPartfilename, strNewname, CopyProgressRoutine, this, MOVEFILE_COPY_ALLOWED))
+		if (::MoveFileWithProgress(PreparePathForLongPath(strPartfilename), PreparePathForLongPath(strNewname), CopyProgressRoutine, this, MOVEFILE_COPY_ALLOWED))
 			break;
 		DWORD dwMoveResult = ::GetLastError();
 		if (dwMoveResult != ERROR_SHARING_VIOLATION || !bFirstTry) {
@@ -2912,14 +2918,14 @@ BOOL CPartFile::PerformFileComplete()
 	// in known.met because of a different file date!
 	ASSERT((HANDLE)m_hpartfile == INVALID_HANDLE_VALUE); // the file must be closed/committed!
 	struct _stat64 st;
-	if (statUTC(strNewname, st) == 0) {
+	if (statUTC(PreparePathForLongPath(strNewname), st) == 0) {
 		m_tUtcLastModified = m_tLastModified = (time_t)st.st_mtime;
 		AdjustNTFSDaylightFileTime(m_tUtcLastModified, strNewname);
 	}
 
 	static LPCTSTR const pszErrfmt = _T(" - %s");
 	// remove part.met file
-	if (!::DeleteFile(m_fullname)) {
+	if (!::DeleteFile(PreparePathForLongPath(m_fullname))) {
 		CString sFmt(GetResString(IDS_ERR_DELETEFAILED));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		theApp.QueueLogLine(true, sFmt, (LPCTSTR)m_fullname);
@@ -2927,14 +2933,14 @@ BOOL CPartFile::PerformFileComplete()
 
 	// remove backup files
 	const CString &BAKName(m_fullname + PARTMET_BAK_EXT);
-	if (!_taccess(BAKName, 0) && !::DeleteFile(BAKName)) {
+	if (!::DeleteFile(PreparePathForLongPath(BAKName)) && ::GetLastError() != ERROR_FILE_NOT_FOUND) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		theApp.QueueLogLine(true, sFmt, (LPCTSTR)BAKName);
 	}
 
 	const CString &TMPName(m_fullname + PARTMET_TMP_EXT);
-	if (!_taccess(TMPName, 0) && !::DeleteFile(TMPName)) {
+	if (!::DeleteFile(PreparePathForLongPath(TMPName)) && ::GetLastError() != ERROR_FILE_NOT_FOUND) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		theApp.QueueLogLine(true, sFmt, (LPCTSTR)TMPName);
