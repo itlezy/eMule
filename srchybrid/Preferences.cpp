@@ -3057,45 +3057,35 @@ uint16 CPreferences::GetRandomUDPPort()
 	return nPort;
 }
 
-// General behavior:
-//
-// WinVer < Vista
-// Default: ApplicationDir if preference.ini exists there.
-//          If not: user specific dirs if preferences.ini exits there.
-//          If not: again ApplicationDir
-// Default overridden by Registry value (see below)
-// Fallback: ApplicationDir
-//
-// WinVer >= Vista:
-// Default: User specific Dir if preferences.ini exists there.
-//          If not: All users dir, if preferences.ini exists there.
-//          If not: User specific Dir again
-// Default overridden by Registry value (see below)
-// Fallback: ApplicationDir
+/**
+ * Resolve the default directory layout for the Windows 10/11-only branch.
+ *
+ * The modern layout still supports the existing three user-selectable storage modes:
+ * multi-user, public-user, and executable-directory. What is gone here is the old
+ * pre-Vista fallback maze which no longer applies to supported systems.
+ */
 CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCreate)
 {
 	if (m_astrDefaultDirs[0].IsEmpty()) { // already have all directories fetched and stored?
 
-		// Get executable starting directory which was our default till Vista
+		// Keep the executable directory available for portable installs and as the final fallback.
 		TCHAR tchBuffer[MAX_PATH];
 		::GetModuleFileName(NULL, tchBuffer, _countof(tchBuffer));
 		LPTSTR pszFileName = _tcsrchr(tchBuffer, _T('\\')) + 1;
 		*pszFileName = _T('\0');
 		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = tchBuffer;
 
-		// set our results to old default / fallback values
-		// those 3 dirs are the base for all others
+		// Start with the executable directory so unsupported or incomplete shell-folder state
+		// still leaves us with a usable configuration instead of a partially initialized path set.
 		CString strSelectedDataBaseDirectory(m_astrDefaultDirs[EMULE_EXECUTABLEDIR]);
 		CString strSelectedConfigBaseDirectory(m_astrDefaultDirs[EMULE_EXECUTABLEDIR]);
 		CString strSelectedExpansionBaseDirectory(m_astrDefaultDirs[EMULE_EXECUTABLEDIR]);
-		m_nCurrentUserDirMode = 2; // To let us know which "mode" we are using in case we want to switch per options
+		m_nCurrentUserDirMode = 2;
 
 		// check if preferences.ini exists already in our default / fallback dir
 		bool bConfigAvailableExecutable = (::PathFileExists(strSelectedConfigBaseDirectory + CONFIGFOLDER _T("preferences.ini")) != FALSE);
 
-		// check if our registry setting is present which forces the single or multiuser directories
-		// and lets us ignore other defaults
-		// 0 = Multiuser, 1 = Publicuser, 2 = ExecutableDir. (on Winver < Vista 1 has the same effect as 2)
+		// 0 = multi-user, 1 = public-user, 2 = executable-directory.
 		DWORD nRegistrySetting = _UI32_MAX;
 		CRegKey rkEMuleRegKey;
 		if (rkEMuleRegKey.Open(HKEY_CURRENT_USER, _T("Software\\eMule"), KEY_READ) == ERROR_SUCCESS) {
@@ -3105,103 +3095,72 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		if (nRegistrySetting > 2)
 			nRegistrySetting = _UI32_MAX;
 
-		// Do we need to get SystemFolders, or do we use our old Default anyway? (Executable Dir)
-		bool bVista = (GetWindowsVersion() >= _WINVER_VISTA_);
-		if (nRegistrySetting == 0
-			|| (nRegistrySetting == 1 && bVista)
-			|| (nRegistrySetting == _UI32_MAX && (!bConfigAvailableExecutable || bVista)))
+		PWSTR pszLocalAppData = NULL;
+		PWSTR pszPersonalDownloads = NULL;
+		PWSTR pszPublicDownloads = NULL;
+		PWSTR pszProgramData = NULL;
+		HRESULT(WINAPI *pfnSHGetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
+		HMODULE hShell32 = ::GetModuleHandle(_T("shell32.dll"));
+		(FARPROC&)pfnSHGetKnownFolderPath = hShell32 ? ::GetProcAddress(hShell32, "SHGetKnownFolderPath") : NULL;
+		if (pfnSHGetKnownFolderPath
+			&& (*pfnSHGetKnownFolderPath)(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
+			&& (*pfnSHGetKnownFolderPath)(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
+			&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
+			&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
 		{
-			if (bVista) {
-				// function unavailable before WinVista
-				HRESULT(WINAPI *pfnSHGetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
-				HMODULE hShell32 = ::GetModuleHandle(_T("shell32.dll"));
-				(FARPROC&)pfnSHGetKnownFolderPath = hShell32 ? ::GetProcAddress(hShell32, "SHGetKnownFolderPath") : NULL;
-				if (pfnSHGetKnownFolderPath) {
-					PWSTR pszLocalAppData = NULL;
-					PWSTR pszPersonalDownloads = NULL;
-					PWSTR pszPublicDownloads = NULL;
-					PWSTR pszProgramData = NULL;
-					if (   (*pfnSHGetKnownFolderPath)(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
-					{
-						if (   _tcsclen(pszLocalAppData) < MAX_PATH - 30
-							&& _tcsclen(pszPersonalDownloads) < MAX_PATH - 40
-							&& _tcsclen(pszProgramData) < MAX_PATH - 30
-							&& _tcsclen(pszPublicDownloads) < MAX_PATH - 40)
-						{
-							CString strLocalAppData(pszLocalAppData);
-							CString strPersonalDownloads(pszPersonalDownloads);
-							CString strPublicDownloads(pszPublicDownloads);
-							CString strProgramData(pszProgramData);
-							slosh(strLocalAppData);
-							slosh(strPersonalDownloads);
-							slosh(strPublicDownloads);
-							slosh(strProgramData);
+			if (   _tcsclen(pszLocalAppData) < MAX_PATH - 30
+				&& _tcsclen(pszPersonalDownloads) < MAX_PATH - 40
+				&& _tcsclen(pszProgramData) < MAX_PATH - 30
+				&& _tcsclen(pszPublicDownloads) < MAX_PATH - 40)
+			{
+				CString strLocalAppData(pszLocalAppData);
+				CString strPersonalDownloads(pszPersonalDownloads);
+				CString strPublicDownloads(pszPublicDownloads);
+				CString strProgramData(pszProgramData);
+				slosh(strLocalAppData);
+				slosh(strPersonalDownloads);
+				slosh(strPublicDownloads);
+				slosh(strProgramData);
 
-							if (nRegistrySetting == _UI32_MAX) {
-								// no registry default, check if we find a preferences.ini to use
-								if (::PathFileExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 0;
-								else if (::PathFileExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 1;
-								else if (bConfigAvailableExecutable)
-									m_nCurrentUserDirMode = 2;
-								else
-									m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
-							} else
-								m_nCurrentUserDirMode = nRegistrySetting;
-
-							switch (m_nCurrentUserDirMode) {
-							case 0: //multiuser
-								strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-								break;
-							case 1: //public user
-								strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-							case 2: //program directory
-								break;
-							default:
-								ASSERT(0);
-							}
-						} else
-							ASSERT(0);
-					}
-					::CoTaskMemFree(pszLocalAppData);
-					::CoTaskMemFree(pszPersonalDownloads);
-					::CoTaskMemFree(pszPublicDownloads);
-					::CoTaskMemFree(pszProgramData);
+				if (nRegistrySetting == _UI32_MAX) {
+					if (::PathFileExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+						m_nCurrentUserDirMode = 0;
+					else if (::PathFileExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+						m_nCurrentUserDirMode = 1;
+					else if (bConfigAvailableExecutable)
+						m_nCurrentUserDirMode = 2;
+					else
+						m_nCurrentUserDirMode = 0;
 				} else {
-					DebugLogError(_T("Unable to retrieve system folders' location with shell32.dll; using fallbacks"));
+					m_nCurrentUserDirMode = nRegistrySetting;
+				}
+
+				switch (m_nCurrentUserDirMode) {
+				case 0:
+					strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
+					strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
+					strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+					break;
+				case 1:
+					strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
+					strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
+					strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+					break;
+				case 2:
+					break;
+				default:
 					ASSERT(0);
 				}
-			} else { //pre-Vista
-				const CString &strAppData(ShellGetFolderPath(CSIDL_APPDATA));
-				const CString &strPersonal(ShellGetFolderPath(CSIDL_PERSONAL));
-				if (!strAppData.IsEmpty() && !strPersonal.IsEmpty()) {
-					if (strAppData.GetLength() < MAX_PATH - 30 && strPersonal.GetLength() < MAX_PATH - 40) {
-						if (nRegistrySetting == 0	// registry setting overwrites, use these folders
-							|| (nRegistrySetting == _UI32_MAX
-								&& !bConfigAvailableExecutable
-								&& ::PathFileExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
-						{
-							slosh(const_cast<CString&>(strAppData));
-							slosh(const_cast<CString&>(strPersonal));
-							strSelectedDataBaseDirectory = strPersonal + _T("eMule Downloads\\");
-							strSelectedConfigBaseDirectory = strAppData + _T("eMule\\");
-							// strSelectedExpansionBaseDirectory stays unchanged
-							m_nCurrentUserDirMode = 0;
-						} else
-							ASSERT(0);
-					} else
-						ASSERT(0);
-				}
+			} else {
+				ASSERT(0);
 			}
+		} else {
+			DebugLogError(_T("Unable to retrieve modern shell folders; using executable-directory fallbacks"));
 		}
+		::CoTaskMemFree(pszLocalAppData);
+		::CoTaskMemFree(pszPersonalDownloads);
+		::CoTaskMemFree(pszPublicDownloads);
+		::CoTaskMemFree(pszProgramData);
 
 		// All the directories (categories also) should have a trailing backslash
 		m_astrDefaultDirs[EMULE_CONFIGDIR] = strSelectedConfigBaseDirectory + CONFIGFOLDER;
@@ -3283,13 +3242,7 @@ void CPreferences::ChangeUserDirMode(int nNewMode)
 {
 	if (m_nCurrentUserDirMode == nNewMode)
 		return;
-	if (nNewMode == 1 && GetWindowsVersion() < _WINVER_VISTA_) {
-		ASSERT(0);
-		return;
-	}
-	// check if our registry setting is present which forces the single or multiuser directories
-	// and lets us ignore other defaults
-	// 0 = Multiuser, 1 = Public user, 2 = ExecutableDir.
+	// 0 = multi-user, 1 = public-user, 2 = executable-directory.
 	CRegKey rkEMuleRegKey;
 	if (rkEMuleRegKey.Create(HKEY_CURRENT_USER, _T("Software\\eMule")) == ERROR_SUCCESS) {
 		if (rkEMuleRegKey.SetDWORDValue(_T("UsePublicUserDirectories"), nNewMode) != ERROR_SUCCESS)
