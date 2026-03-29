@@ -523,6 +523,7 @@ bool CClientUDPSocket::SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, boo
 
 bool CClientUDPSocket::Create()
 {
+	//TODO: is this block needed?
 	/// Allow first-start setup to pre-open the UDP socket before the normal startup sequence runs.
 	if (m_hSocket != INVALID_SOCKET) {
 		if (m_port == thePrefs.GetUDPPort())

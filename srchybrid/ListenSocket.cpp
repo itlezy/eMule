@@ -1898,6 +1898,7 @@ bool CListenSocket::Rebind()
 
 bool CListenSocket::StartListening()
 {
+	//TODO: is this block needed?
 	/// Allow first-start setup to pre-open the listen socket without tripping the normal startup path.
 	if (GetSocketHandle() != INVALID_SOCKET) {
 		if (m_port == thePrefs.GetPort())
