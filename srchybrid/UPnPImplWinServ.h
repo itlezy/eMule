@@ -81,8 +81,9 @@ public:
 		return UPNP_IMPL_WINDOWSERVICE;
 	}
 
-	// No Support for Refreshing in this (fallback) implementation yet - in many cases where it would be needed (router reset etc)
-	// the windows side of the implementation tends to get bugged until reboot anyway. Still might get added later
+	// Refresh is intentionally unsupported for the Windows-service implementation.
+	// In practice the Windows UPnP stack becomes unreliable after router resets until
+	// the service recovers, so pretending refresh is supported would be misleading.
 	virtual bool CheckAndRefresh()
 	{
 		return false;
