@@ -150,9 +150,6 @@ class CPreferences
 	static void		MovePreferences(EDefaultDirectory eSrc, LPCTSTR const sFile, const CString &dst);
 public:
 	static CString	strNick;
-	// ZZ:UploadSpeedSense -->
-	static uint32	m_minupload;
-	// ZZ:UploadSpeedSense <--
 	static uint32	m_maxUpClientsAllowed;
 	static uint64	m_bbSessionMaxTrans;
 	static uint64	m_bbSessionMaxTime;
@@ -572,16 +569,6 @@ public:
 	static bool		m_bPreviewEnabled;
 	static bool		m_bAutomaticArcPreviewStart;
 
-	// ZZ:UploadSpeedSense -->
-	static bool		m_bDynUpEnabled;
-	static int		m_iDynUpPingTolerance;
-	static int		m_iDynUpGoingUpDivider;
-	static int		m_iDynUpGoingDownDivider;
-	static int		m_iDynUpNumberOfPings;
-	static int		m_iDynUpPingToleranceMilliseconds;
-	static bool		m_bDynUpUseMillisecondPingTolerance;
-	// ZZ:UploadSpeedSense <--
-
 	static bool		m_bA4AFSaveCpu; // ZZ:DownloadManager
 
 	static bool		m_bHighresTimer;
@@ -690,9 +677,6 @@ public:
 	static uint16	GetUDPPort()						{ return udpport; }
 	static uint16	GetServerUDPPort()					{ return nServerUDPPort; }
 	static uchar*	GetUserHash()						{ return userhash; }
-	// ZZ:UploadSpeedSense -->
-	static uint32	GetMinUpload()						{ return m_minupload; }
-	// ZZ:UploadSpeedSense <--
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
 	static uint64	GetBBSessionMaxTrans()				{ return m_bbSessionMaxTrans; }
 	static uint64	GetBBSessionMaxTime()				{ return m_bbSessionMaxTime; }
@@ -1269,18 +1253,6 @@ public:
 
 	static int		GetSearchMethod()					{ return m_iSearchMethod; }
 	static void		SetSearchMethod(int iMethod)		{ m_iSearchMethod = iMethod; }
-
-	// ZZ:UploadSpeedSense -->
-	static bool		IsDynUpEnabled();
-	static void		SetDynUpEnabled(bool newValue)		{ m_bDynUpEnabled = newValue; }
-	static int		GetDynUpPingTolerance()				{ return m_iDynUpPingTolerance; }
-	static int		GetDynUpGoingUpDivider()			{ return m_iDynUpGoingUpDivider; }
-	static int		GetDynUpGoingDownDivider()			{ return m_iDynUpGoingDownDivider; }
-	static int		GetDynUpNumberOfPings()				{ return m_iDynUpNumberOfPings; }
-	static bool		IsDynUpUseMillisecondPingTolerance() { return m_bDynUpUseMillisecondPingTolerance; } // EastShare - Added by TAHO, USS limit
-	static int		GetDynUpPingToleranceMilliseconds()	{ return m_iDynUpPingToleranceMilliseconds; } // EastShare - Added by TAHO, USS limit
-	static void		SetDynUpPingToleranceMilliseconds(int in) { m_iDynUpPingToleranceMilliseconds = in; }
-	// ZZ:UploadSpeedSense <--
 
 	static bool		GetA4AFSaveCpu()					{ return m_bA4AFSaveCpu; } // ZZ:DownloadManager
 

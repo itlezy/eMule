@@ -21,7 +21,6 @@
 #include "SafeFile.h"
 #include "OtherFunctions.h"
 #include "IPFilter.h"
-#include "LastCommonRouteFinder.h"
 #include "Statistics.h"
 #include "DownloadQueue.h"
 #include "Preferences.h"
@@ -114,8 +113,6 @@ bool CServerList::Init()
 
 	// insert static servers from text file
 	AddServersFromTextFile(sConfDir + _T("staticservers.dat"));
-
-	theApp.serverlist->GiveServersForTraceRoute();
 
 	return bRes;
 }
@@ -235,11 +232,6 @@ bool CServerList::AddServer(const CServer *pServer, bool bAddTail)
 	else
 		list.AddHead(const_cast<CServer*>(pServer));
 	return true;
-}
-
-bool CServerList::GiveServersForTraceRoute()
-{
-	return theApp.lastCommonRouteFinder->AddHostsToCheck(list);
 }
 
 void CServerList::ServerStats()

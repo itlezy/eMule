@@ -104,17 +104,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiCreditSystem()
 	, m_htiDebug2Disk()
 	, m_htiDebugSourceExchange()
-	, m_htiDynUp()
-	, m_htiDynUpEnabled()
-	, m_htiDynUpGoingDownDivider()
-	, m_htiDynUpGoingUpDivider()
-	, m_htiDynUpMinUpload()
-	, m_htiDynUpNumberOfPings()
-	, m_htiDynUpPingTolerance()
-	, m_htiDynUpPingToleranceGroup()
-	, m_htiDynUpPingToleranceMilliseconds()
-	, m_htiDynUpRadioPingTolerance()
-	, m_htiDynUpRadioPingToleranceMilliseconds()
 	, m_htiExtControls()
 	, m_htiHiddenDisplay()
 	, m_htiHiddenFile()
@@ -188,13 +177,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_iBBSessionTransMode(BBSTM_DISABLED)
 	, m_iBBSessionTransPercent()
 	, m_iCommitFiles()
-	, m_iDynUpGoingDownDivider()
-	, m_iDynUpGoingUpDivider()
-	, m_iDynUpMinUpload()
-	, m_iDynUpNumberOfPings()
-	, m_iDynUpPingTolerance()
-	, m_iDynUpPingToleranceMilliseconds()
-	, m_iDynUpRadioPingTolerance()
 	, m_iExtractMetaData()
 	, m_iInspectAllFileTypes()
 	, m_iLogLevel()
@@ -215,7 +197,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bCreditSystem()
 	, m_bDebug2Disk()
 	, m_bDebugSourceExchange()
-	, m_bDynUpEnabled()
 	, m_bExtControls()
 	, m_bExtraPreviewWithMenu()
 	, m_bFilterLANIPs()
@@ -374,27 +355,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		}
 
 		/////////////////////////////////////////////////////////////////////////////
-		// USS group
-		//
-		m_htiDynUp = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_DYNUP), iImgDynyp, TVI_ROOT);
-		m_htiDynUpEnabled = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DYNUPENABLED), m_htiDynUp, m_bDynUpEnabled);
-		m_htiDynUpMinUpload = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DYNUP_MINUPLOAD), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDynUp);
-		m_ctrlTreeOptions.AddEditBox(m_htiDynUpMinUpload, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiDynUpPingTolerance = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DYNUP_PINGTOLERANCE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDynUp);
-		m_ctrlTreeOptions.AddEditBox(m_htiDynUpPingTolerance, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiDynUpPingToleranceMilliseconds = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DYNUP_PINGTOLERANCE_MS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDynUp);
-		m_ctrlTreeOptions.AddEditBox(m_htiDynUpPingToleranceMilliseconds, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiDynUpPingToleranceGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER), iImgDynyp, m_htiDynUp);
-		m_htiDynUpRadioPingTolerance = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT), m_htiDynUpPingToleranceGroup, m_iDynUpRadioPingTolerance == 0);
-		m_htiDynUpRadioPingToleranceMilliseconds = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DYNUP_RADIO_PINGTOLERANCE_MS), m_htiDynUpPingToleranceGroup, m_iDynUpRadioPingTolerance == 1);
-		m_htiDynUpGoingUpDivider = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DYNUP_GOINGUPDIVIDER), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDynUp);
-		m_ctrlTreeOptions.AddEditBox(m_htiDynUpGoingUpDivider, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiDynUpGoingDownDivider = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DYNUP_GOINGDOWNDIVIDER), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDynUp);
-		m_ctrlTreeOptions.AddEditBox(m_htiDynUpGoingDownDivider, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiDynUpNumberOfPings = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DYNUP_NUMBEROFPINGS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDynUp);
-		m_ctrlTreeOptions.AddEditBox(m_htiDynUpNumberOfPings, RUNTIME_CLASS(CNumTreeOptionsEdit));
-
-		/////////////////////////////////////////////////////////////////////////////
 		// UPnP group
 		//
 		m_htiUPnP = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_UPNP), iImgUPnP, TVI_ROOT);
@@ -455,8 +415,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			m_ctrlTreeOptions.Expand(m_htiVerboseGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiCommit, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiCheckDiskspace, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiDynUp, m_bDynUpEnabled ? TVE_EXPAND : TVE_COLLAPSE);
-		m_ctrlTreeOptions.Expand(m_htiDynUpPingToleranceGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiExtractMetaData, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiHiddenStartup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiHiddenFile, TVE_EXPAND);
@@ -619,24 +577,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
-	// USS group
-	//
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDynUpEnabled, m_bDynUpEnabled);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDynUpMinUpload, m_iDynUpMinUpload);
-	DDV_MinMaxInt(pDX, m_iDynUpMinUpload, 1, INT_MAX);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDynUpPingTolerance, m_iDynUpPingTolerance);
-	DDV_MinMaxInt(pDX, m_iDynUpPingTolerance, 100, INT_MAX);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDynUpPingToleranceMilliseconds, m_iDynUpPingToleranceMilliseconds);
-	DDV_MinMaxInt(pDX, m_iDynUpPingTolerance, 1, INT_MAX);
-	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiDynUpPingToleranceGroup, m_iDynUpRadioPingTolerance);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDynUpGoingUpDivider, m_iDynUpGoingUpDivider);
-	DDV_MinMaxInt(pDX, m_iDynUpGoingUpDivider, 1, INT_MAX);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDynUpGoingDownDivider, m_iDynUpGoingDownDivider);
-	DDV_MinMaxInt(pDX, m_iDynUpGoingDownDivider, 1, INT_MAX);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDynUpNumberOfPings, m_iDynUpNumberOfPings);
-	DDV_MinMaxInt(pDX, m_iDynUpNumberOfPings, 1, INT_MAX);
-
-	/////////////////////////////////////////////////////////////////////////////
 	// UPnP group
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCloseUPnPPorts, m_bCloseUPnPOnExit);
@@ -719,15 +659,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bBBLowRatioBoost = thePrefs.GetBBBoostLowRatioFiles() > 0.0f && thePrefs.GetBBBoostLowRatioFilesBy() > 0.0f;
 	m_iBBLowIDDeboostDivisor = thePrefs.GetBBDeboostLowIDs() > 1 ? static_cast<int>(thePrefs.GetBBDeboostLowIDs()) : 4;
 	m_bBBLowIDDeboost = thePrefs.GetBBDeboostLowIDs() > 1;
-
-	m_bDynUpEnabled = thePrefs.m_bDynUpEnabled;
-	m_iDynUpMinUpload = thePrefs.GetMinUpload();
-	m_iDynUpPingTolerance = thePrefs.GetDynUpPingTolerance();
-	m_iDynUpPingToleranceMilliseconds = thePrefs.GetDynUpPingToleranceMilliseconds();
-	m_iDynUpRadioPingTolerance = static_cast<int>(thePrefs.IsDynUpUseMillisecondPingTolerance());
-	m_iDynUpGoingUpDivider = thePrefs.GetDynUpGoingUpDivider();
-	m_iDynUpGoingDownDivider = thePrefs.GetDynUpGoingDownDivider();
-	m_iDynUpNumberOfPings = thePrefs.GetDynUpNumberOfPings();
 
 	m_bCloseUPnPOnExit = thePrefs.CloseUPnPOnExit();
 	m_bSkipWANIPSetup = thePrefs.GetSkipWANIPSetup();
@@ -887,14 +818,6 @@ BOOL CPPgTweaks::OnApply()
 		thePrefs.SetYourHostname(m_sYourHostname);
 		theApp.emuledlg->serverwnd->UpdateMyInfo();
 	}
-	thePrefs.m_bDynUpEnabled = m_bDynUpEnabled;
-	thePrefs.m_minupload = (uint32)m_iDynUpMinUpload;
-	thePrefs.m_iDynUpPingTolerance = m_iDynUpPingTolerance;
-	thePrefs.m_iDynUpPingToleranceMilliseconds = m_iDynUpPingToleranceMilliseconds;
-	thePrefs.m_bDynUpUseMillisecondPingTolerance = (m_iDynUpRadioPingTolerance == 1);
-	thePrefs.m_iDynUpGoingUpDivider = m_iDynUpGoingUpDivider;
-	thePrefs.m_iDynUpGoingDownDivider = m_iDynUpGoingDownDivider;
-	thePrefs.m_iDynUpNumberOfPings = m_iDynUpNumberOfPings;
 	thePrefs.m_bAutomaticArcPreviewStart = !m_bAutoArchDisable;
 
 	thePrefs.m_bCloseUPnPOnExit = m_bCloseUPnPOnExit;
@@ -971,11 +894,6 @@ void CPPgTweaks::Localize()
 		SetDlgItemText(IDC_PREFINI_STATIC, GetResString(IDS_PW_TWEAK));
 		SetDlgItemText(IDC_OPENPREFINI, GetResString(IDS_OPENPREFINI));
 
-		LocalizeEditLabel(m_htiDynUpGoingDownDivider, IDS_DYNUP_GOINGDOWNDIVIDER);
-		LocalizeEditLabel(m_htiDynUpGoingUpDivider, IDS_DYNUP_GOINGUPDIVIDER);
-		LocalizeEditLabel(m_htiDynUpMinUpload, IDS_DYNUP_MINUPLOAD);
-		LocalizeEditLabel(m_htiDynUpNumberOfPings, IDS_DYNUP_NUMBEROFPINGS);
-		LocalizeEditLabel(m_htiDynUpPingTolerance, IDS_DYNUP_PINGTOLERANCE);
 		LocalizeEditLabel(m_htiBBMaxUpClientsAllowed, IDS_BB_MAX_UPLOAD_CLIENTS);
 		LocalizeEditLabel(m_htiBBSessionTransPercentValue, IDS_PERCENTAGE);
 		LocalizeEditLabel(m_htiBBSessionTransAbsoluteValue, IDS_BB_ABSOLUTE_LIMIT_MIB);
@@ -1015,8 +933,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiCreditSystem, IDS_USECREDITSYSTEM);
 		LocalizeItemText(m_htiDebug2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiDebugSourceExchange, IDS_DEBUG_SOURCE_EXCHANGE);
-		LocalizeItemText(m_htiDynUp, IDS_DYNUP);
-		LocalizeItemText(m_htiDynUpEnabled, IDS_DYNUPENABLED);
 		LocalizeItemText(m_htiExtControls, IDS_SHOWEXTSETTINGS);
 		LocalizeItemText(m_htiExtraPreviewWithMenu, IDS_EXTRAPREVIEWWITHMENU);
 		LocalizeItemText(m_htiExtractMetaData, IDS_EXTRACT_META_DATA);
@@ -1151,17 +1067,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiCheckDiskspace = NULL;
 	m_htiMinFreeDiskSpace = NULL;
 	m_htiYourHostname = NULL;
-	m_htiDynUp = NULL;
-	m_htiDynUpEnabled = NULL;
-	m_htiDynUpMinUpload = NULL;
-	m_htiDynUpPingTolerance = NULL;
-	m_htiDynUpPingToleranceMilliseconds = NULL;
-	m_htiDynUpPingToleranceGroup = NULL;
-	m_htiDynUpRadioPingTolerance = NULL;
-	m_htiDynUpRadioPingToleranceMilliseconds = NULL;
-	m_htiDynUpGoingUpDivider = NULL;
-	m_htiDynUpGoingDownDivider = NULL;
-	m_htiDynUpNumberOfPings = NULL;
 	m_htiA4AFSaveCpu = NULL;
 	m_htiExtractMetaData = NULL;
 	m_htiExtractMetaDataNever = NULL;

@@ -6,7 +6,6 @@ enum EStatusBarPane
 	SBarUsers,
 	SBarUpDown,
 	SBarConnected,
-	SBarUSS,
 	SBarChatMsg
 };
 

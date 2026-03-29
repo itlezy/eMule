@@ -193,7 +193,6 @@ CString	CPreferences::strNick;
 bool	CPreferences::m_abDefaultDirsCreated[13] = {};
 int		CPreferences::m_nCurrentUserDirMode = -1;
 int		CPreferences::m_iDbgHeap;
-uint32	CPreferences::m_minupload;
 uint32	CPreferences::m_maxUpClientsAllowed;
 uint64	CPreferences::m_bbSessionMaxTrans;
 uint64	CPreferences::m_bbSessionMaxTime;
@@ -541,13 +540,6 @@ bool	CPreferences::m_bReBarToolbar;
 CSize	CPreferences::m_sizToolbarIconSize;
 bool	CPreferences::m_bPreviewEnabled;
 bool	CPreferences::m_bAutomaticArcPreviewStart;
-bool	CPreferences::m_bDynUpEnabled;
-int		CPreferences::m_iDynUpPingTolerance;
-int		CPreferences::m_iDynUpGoingUpDivider;
-int		CPreferences::m_iDynUpGoingDownDivider;
-int		CPreferences::m_iDynUpNumberOfPings;
-int		CPreferences::m_iDynUpPingToleranceMilliseconds;
-bool	CPreferences::m_bDynUpUseMillisecondPingTolerance;
 bool    CPreferences::m_bAllocFull;
 bool	CPreferences::m_bShowSharedFilesDetails;
 bool	CPreferences::m_bShowUpDownIconInTaskbar;
@@ -825,11 +817,8 @@ uint32 CPreferences::GetMaxDownload()
 uint64 CPreferences::GetMaxDownloadInBytesPerSec(bool dynamic)
 {
 	//don't be a Lam3r :)
-	uint64 maxup;
-	if (dynamic && thePrefs.IsDynUpEnabled() && theApp.uploadqueue->GetWaitingUserCount() > 0 && theApp.uploadqueue->GetDatarate() > 0)
-		maxup = theApp.uploadqueue->GetDatarate();
-	else
-		maxup = GetMaxUpload() * 1024ull;
+	UNREFERENCED_PARAMETER(dynamic);
+	uint64 maxup = GetMaxUpload() * 1024ull;
 
 	uint64 maxdown = m_maxdownload * 1024ull;
 	if (maxup >= 20 * 1024)
@@ -1648,7 +1637,6 @@ void CPreferences::SavePreferences()
 	ini.WriteFloat(_T("BBBoostLowRatioFiles"), m_bbBoostLowRatioFiles);
 	ini.WriteFloat(_T("BBBoostLowRatioFilesBy"), m_bbBoostLowRatioFilesBy);
 	ini.WriteInt(_T("BBDeboostLowIDs"), m_bbDeboostLowIDs);
-	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
 	ini.WriteInt(_T("MaxConnections"), maxconnections);
@@ -1853,16 +1841,6 @@ void CPreferences::SavePreferences()
 
 	ini.WriteBinary(_T("HyperTextFont"), (LPBYTE)&m_lfHyperText, sizeof m_lfHyperText);
 	ini.WriteBinary(_T("LogTextFont"), (LPBYTE)&m_lfLogText, sizeof m_lfLogText);
-
-	// ZZ:UploadSpeedSense -->
-	ini.WriteBool(_T("USSEnabled"), m_bDynUpEnabled);
-	ini.WriteBool(_T("USSUseMillisecondPingTolerance"), m_bDynUpUseMillisecondPingTolerance);
-	ini.WriteInt(_T("USSPingTolerance"), m_iDynUpPingTolerance);
-	ini.WriteInt(_T("USSPingToleranceMilliseconds"), m_iDynUpPingToleranceMilliseconds); // EastShare - Add by TAHO, USS limit
-	ini.WriteInt(_T("USSGoingUpDivider"), m_iDynUpGoingUpDivider);
-	ini.WriteInt(_T("USSGoingDownDivider"), m_iDynUpGoingDownDivider);
-	ini.WriteInt(_T("USSNumberOfPings"), m_iDynUpNumberOfPings);
-	// ZZ:UploadSpeedSense <--
 
 	ini.WriteBool(_T("A4AFSaveCpu"), m_bA4AFSaveCpu); // ZZ:DownloadManager
 	ini.WriteBool(_T("HighresTimer"), m_bHighresTimer);
@@ -2074,9 +2052,6 @@ void CPreferences::LoadPreferences()
 	m_bbBoostLowRatioFilesBy = max(0.0f, ini.GetFloat(_T("BBBoostLowRatioFilesBy"), 0.0f));
 	// A divisor of 0 or 1 is treated as disabled to avoid surprising no-op math in GetScore.
 	m_bbDeboostLowIDs = max(0, ini.GetInt(_T("BBDeboostLowIDs"), 0));
-	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
-	if (m_minupload < 1)
-		m_minupload = 1;
 	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), 50000);
 	if (m_maxupload > maxGraphUploadRate && m_maxupload != UNLIMITED)
 		m_maxupload = maxGraphUploadRate * 4 / 5;
@@ -2417,16 +2392,6 @@ void CPreferences::LoadPreferences()
 
 	if (statsAverageMinutes < 1)
 		statsAverageMinutes = 5;
-
-	// ZZ:UploadSpeedSense -->
-	m_bDynUpEnabled = ini.GetBool(_T("USSEnabled"), false);
-	m_bDynUpUseMillisecondPingTolerance = ini.GetBool(_T("USSUseMillisecondPingTolerance"), false);
-	m_iDynUpPingTolerance = ini.GetInt(_T("USSPingTolerance"), 500);
-	m_iDynUpPingToleranceMilliseconds = ini.GetInt(_T("USSPingToleranceMilliseconds"), 200);
-	m_iDynUpGoingUpDivider = ini.GetInt(_T("USSGoingUpDivider"), 1000);
-	m_iDynUpGoingDownDivider = ini.GetInt(_T("USSGoingDownDivider"), 1000);
-	m_iDynUpNumberOfPings = ini.GetInt(_T("USSNumberOfPings"), 1);
-	// ZZ:UploadSpeedSense <--
 
 	m_bA4AFSaveCpu = ini.GetBool(_T("A4AFSaveCpu"), false); // ZZ:DownloadManager
 	m_bHighresTimer = ini.GetBool(_T("HighresTimer"), false);
@@ -2869,11 +2834,6 @@ void CPreferences::EstimateMaxUploadCap(uint32 nCurrentUpload)
 void CPreferences::SetMaxGraphUploadRate(uint32 in)
 {
 	maxGraphUploadRate = in ? in : UNLIMITED;
-}
-
-bool CPreferences::IsDynUpEnabled()
-{
-	return m_bDynUpEnabled || maxGraphUploadRate == UNLIMITED;
 }
 
 bool CPreferences::CanFSHandleLargeFiles(int nForCat)

@@ -32,7 +32,6 @@ class CListenSocket;
 class CDownloadQueue;
 class CScheduler;
 class UploadBandwidthThrottler;
-class LastCommonRouteFinder;
 class CemuleDlg;
 class CClientList;
 class CKnownFileList;
@@ -70,11 +69,8 @@ public:
 	bool IsRunning() const	{ return m_app_state == APP_STATE_RUNNING || m_app_state == APP_STATE_ASKCLOSE; }
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
 
-	// ZZ:UploadSpeedSense -->
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
-	LastCommonRouteFinder *lastCommonRouteFinder;
 	CIP2Country			*ip2country;
-	// ZZ:UploadSpeedSense <--
 	CemuleDlg			*emuledlg;
 	CClientList			*clientlist;
 	CKnownFileList		*knownfiles;

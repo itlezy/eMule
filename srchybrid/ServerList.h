@@ -69,8 +69,6 @@ public:
 	void		GetUserFileStatus(uint32 &user, uint32 &file) const;
 	UINT		GetDeletedServerCount() const	{ return delservercount; }
 
-	bool        GiveServersForTraceRoute();
-
 	void		CheckForExpiredUDPKeys();
 #ifdef _DEBUG
 	void		Dump();

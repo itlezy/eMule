@@ -60,7 +60,6 @@
 #include "kademlia/kademlia/kademlia.h"
 #include "PerfLog.h"
 #include "DropTarget.h"
-#include "LastCommonRouteFinder.h"
 #include "WebServer.h"
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
@@ -524,7 +523,6 @@ BOOL CemuleDlg::OnInitDialog()
 	TrayMinimizeToTrayChange();
 
 	ShowTransferRate(true);
-	ShowPing();
 	searchwnd->UpdateCatTabs();
 
 	///////////////////////////////////////////////////////////////////////////
@@ -782,7 +780,6 @@ void CemuleDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	case SC_RESTORE:
 	case SC_MAXIMIZE:
 		ShowTransferRate(true);
-		ShowPing();
 		transferwnd->UpdateCatTabTitles();
 	}
 }
@@ -1115,21 +1112,6 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 		m_pMiniMule->UpdateContent(m_uUpDatarate, m_uDownDatarate);
 }
 
-void CemuleDlg::ShowPing()
-{
-	if (IsWindowVisible() && thePrefs.IsDynUpEnabled()) {
-		CurrentPingStruct lastPing = theApp.lastCommonRouteFinder->GetCurrentPing();
-		CString &strState(lastPing.state);
-		if (strState.IsEmpty()) {
-			if (lastPing.lowest > 0 && !thePrefs.IsDynUpUseMillisecondPingTolerance())
-				strState.Format(_T("%.1f | %ums | %u%%"), lastPing.currentLimit / 1024.0f, lastPing.latency, lastPing.latency * 100 / lastPing.lowest);
-			else
-				strState.Format(_T("%.1f | %ums"), lastPing.currentLimit / 1024.0f, lastPing.latency);
-		}
-		statusbar->SetText(strState, SBarUSS, 0);
-	}
-}
-
 void CemuleDlg::OnOK()
 {
 }
@@ -1149,7 +1131,6 @@ void CemuleDlg::MinimizeWindow()
 		ShowWindow(SW_MINIMIZE);
 
 	ShowTransferRate();
-	ShowPing();
 }
 
 void CemuleDlg::SetActiveDialog(CWnd *dlg)
@@ -1177,17 +1158,11 @@ void CemuleDlg::SetStatusBarPartsSize()
 {
 	RECT rect;
 	statusbar->GetClientRect(&rect);
-	int ussShift;
-	if (thePrefs.IsDynUpEnabled())
-		ussShift = thePrefs.IsDynUpUseMillisecondPingTolerance() ? 65 : 110;
-	else
-		ussShift = 0;
-	int aiWidths[6] =
+	int aiWidths[5] =
 	{
-		rect.right - 695 - ussShift,
-		rect.right - 450 - ussShift,
-		rect.right - 250 - ussShift,
-		rect.right - 25 - ussShift,
+		rect.right - 695,
+		rect.right - 450,
+		rect.right - 250,
 		rect.right - 25,
 		-1
 	};
@@ -1697,7 +1672,6 @@ void CemuleDlg::OnClose()
 	CPartFileConvert::RemoveAllJobs();
 
 	theApp.uploadBandwidthThrottler->EndThread();
-	theApp.lastCommonRouteFinder->EndThread();
 
 	theApp.sharedfiles->DeletePartFileInstances();
 
@@ -1724,7 +1698,6 @@ void CemuleDlg::OnClose()
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
 	delete theApp.webserver;				theApp.webserver = NULL;
 	delete theApp.uploadBandwidthThrottler;	theApp.uploadBandwidthThrottler = NULL;
-	delete theApp.lastCommonRouteFinder;	theApp.lastCommonRouteFinder = NULL;
 	delete theApp.m_pUPnPFinder;			theApp.m_pUPnPFinder = NULL;
 	delete theApp.m_pUploadDiskIOThread;	theApp.m_pUploadDiskIOThread = NULL;
 	delete theApp.m_pPartFileWriteThread;	theApp.m_pPartFileWriteThread = NULL;

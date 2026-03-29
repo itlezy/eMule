@@ -33,7 +33,6 @@
 #include "kademlia/kademlia/Prefs.h"
 #include "kademlia/utils/UInt128.h"
 #include "PerfLog.h"
-#include "LastCommonRouteFinder.h"
 #include "UploadBandwidthThrottler.h"
 #include "ClientList.h"
 #include "FriendList.h"
@@ -550,10 +549,7 @@ BOOL CemuleApp::InitInstance()
 	webserver = new CWebServer(); // Web Server [kuchin]
 	scheduler = new CScheduler();
 
-	// ZZ:UploadSpeedSense -->
-	lastCommonRouteFinder = new LastCommonRouteFinder();
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();
-	// ZZ:UploadSpeedSense <--
 
 	m_pUploadDiskIOThread = new CUploadDiskIOThread();
 	m_pPartFileWriteThread = new CPartFileWriteThread();

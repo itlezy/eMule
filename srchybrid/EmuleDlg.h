@@ -81,7 +81,6 @@ public:
 	void SetActiveDialog(CWnd *dlg);
 	CWnd* GetActiveDialog() const				{ return activewnd; }
 	void ShowTransferRate(bool bForceAll = false);
-	void ShowPing();
 	void Localize();
 
 	void UpdateStatusBarProgress();
