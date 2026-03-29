@@ -40,6 +40,9 @@ BEGIN_MESSAGE_MAP(CPPgDirectories, CPropertyPage)
 	ON_BN_CLICKED(IDC_SELINCDIR, OnBnClickedSelincdir)
 	ON_EN_CHANGE(IDC_INCFILES, OnSettingsChange)
 	ON_EN_CHANGE(IDC_TEMPFILES, OnSettingsChange)
+	ON_BN_CLICKED(IDC_AUTORESCANSHAREDFOLDERS, OnBnClickedAutoRescanSharedFolders)
+	ON_BN_CLICKED(IDC_AUTOSHARENEWSUBDIRS, OnSettingsChange)
+	ON_EN_CHANGE(IDC_AUTORESCANSHAREDINTERVAL, OnSettingsChange)
 	ON_BN_CLICKED(IDC_UNCADD, OnBnClickedAddUNC)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_SELTEMPDIRADD, OnBnClickedSeltempdiradd)
@@ -76,6 +79,7 @@ BOOL CPPgDirectories::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateAutoRescanControls();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -94,6 +98,16 @@ void CPPgDirectories::LoadSettings()
 	SetDlgItemText(IDC_TEMPFILES, tempfolders);
 
 	m_ShareSelector.SetSharedDirectories(thePrefs.shareddir_list);
+	CheckDlgButton(IDC_AUTORESCANSHAREDFOLDERS, thePrefs.IsAutoRescanSharedFolders() ? BST_CHECKED : BST_UNCHECKED);
+	SetDlgItemInt(IDC_AUTORESCANSHAREDINTERVAL, thePrefs.GetAutoRescanSharedFoldersIntervalSec(), FALSE);
+	CheckDlgButton(IDC_AUTOSHARENEWSUBDIRS, thePrefs.IsAutoShareNewSharedSubdirs() ? BST_CHECKED : BST_UNCHECKED);
+}
+
+void CPPgDirectories::UpdateAutoRescanControls()
+{
+	const BOOL bEnableInterval = (IsDlgButtonChecked(IDC_AUTORESCANSHAREDFOLDERS) == BST_CHECKED);
+	GetDlgItem(IDC_AUTORESCANSHAREDINTERVALLBL)->EnableWindow(bEnableInterval);
+	GetDlgItem(IDC_AUTORESCANSHAREDINTERVAL)->EnableWindow(bEnableInterval);
 }
 
 void CPPgDirectories::OnBnClickedSelincdir()
@@ -213,6 +227,18 @@ BOOL CPPgDirectories::OnApply()
 	thePrefs.m_strIncomingDir = strIncomingDir;
 	MakeFoldername(thePrefs.m_strIncomingDir);
 
+	BOOL bTranslated = FALSE;
+	const UINT uAutoRescanInterval = GetDlgItemInt(IDC_AUTORESCANSHAREDINTERVAL, &bTranslated, FALSE);
+	if (IsDlgButtonChecked(IDC_AUTORESCANSHAREDFOLDERS) == BST_CHECKED) {
+		if (!bTranslated || uAutoRescanInterval < 600) {
+			ErrorBalloon(IDC_AUTORESCANSHAREDINTERVAL, IDS_ERR_SHARED_AUTORESCAN_INTERVAL);
+			return FALSE;
+		}
+	}
+	thePrefs.SetAutoRescanSharedFolders(IsDlgButtonChecked(IDC_AUTORESCANSHAREDFOLDERS) == BST_CHECKED);
+	thePrefs.SetAutoRescanSharedFoldersIntervalSec(bTranslated ? uAutoRescanInterval : 1200);
+	thePrefs.SetAutoShareNewSharedSubdirs(IsDlgButtonChecked(IDC_AUTOSHARENEWSUBDIRS) == BST_CHECKED);
+
 	thePrefs.shareddir_list.RemoveAll();
 	m_ShareSelector.GetSharedDirectories(thePrefs.shareddir_list);
 
@@ -262,6 +288,12 @@ BOOL CPPgDirectories::OnCommand(WPARAM wParam, LPARAM lParam)
 	return CPropertyPage::OnCommand(wParam, lParam);
 }
 
+void CPPgDirectories::OnBnClickedAutoRescanSharedFolders()
+{
+	UpdateAutoRescanControls();
+	SetModified();
+}
+
 void CPPgDirectories::Localize()
 {
 	if (m_hWnd) {
@@ -270,6 +302,9 @@ void CPPgDirectories::Localize()
 		SetDlgItemText(IDC_INCOMING_FRM, GetResString(IDS_PW_INCOMING));
 		SetDlgItemText(IDC_TEMP_FRM, GetResString(IDS_PW_TEMP));
 		SetDlgItemText(IDC_SHARED_FRM, GetResString(IDS_PW_SHARED));
+		SetDlgItemText(IDC_AUTORESCANSHAREDFOLDERS, GetResString(IDS_SHARED_AUTORESCAN));
+		SetDlgItemText(IDC_AUTORESCANSHAREDINTERVALLBL, GetResString(IDS_SHARED_AUTORESCAN_INTERVAL));
+		SetDlgItemText(IDC_AUTOSHARENEWSUBDIRS, GetResString(IDS_SHARED_AUTOSUBDIRS));
 	}
 }
 

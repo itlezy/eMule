@@ -334,6 +334,10 @@ BEGIN
     GROUPBOX        "Shared Directories (Ctrl-Click includes subdirectories)",IDC_SHARED_FRM,4,65,223,172
     CONTROL         "",IDC_SHARESELECTOR,"SysTreeView32",TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS | TVS_CHECKBOXES | TVS_INFOTIP | WS_BORDER | WS_TABSTOP,11,77,209,136
     PUSHBUTTON      "Add UNC share",IDC_UNCADD,10,218,64,14,BS_CENTER
+    CONTROL         "Automatically rescan shared folders",IDC_AUTORESCANSHAREDFOLDERS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,239,154,10
+    LTEXT           "Rescan interval [sec]",IDC_AUTORESCANSHAREDINTERVALLBL,24,253,93,8
+    EDITTEXT        IDC_AUTORESCANSHAREDINTERVAL,179,250,40,12,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "Automatically share new subdirectories",IDC_AUTOSHARENEWSUBDIRS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,270,176,10
 END
 
 IDD_PPG_CONNECTION DIALOGEX 0, 0, 300, 350
@@ -2599,6 +2603,10 @@ BEGIN
     IDS_PW_TEMP             "Temporary Files"
     IDS_PW_BROWSE           "Browse..."
     IDS_PW_SHARED           "Shared Directories (Ctrl-Click includes subdirectories)"
+    IDS_SHARED_AUTORESCAN   "Automatically rescan shared folders"
+    IDS_SHARED_AUTORESCAN_INTERVAL "Rescan interval [sec]"
+    IDS_SHARED_AUTOSUBDIRS  "Automatically share new subdirectories"
+    IDS_ERR_SHARED_AUTORESCAN_INTERVAL "Enter a shared-folder rescan interval of at least 600 seconds."
     IDS_CONNECTION          "Connection"
     IDS_PW_DOWNL            "Download limit"
     IDS_PW_UPL              "Upload limit"

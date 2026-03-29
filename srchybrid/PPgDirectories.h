@@ -20,6 +20,7 @@ protected:
 	HICON m_icoBrowse;
 
 	void LoadSettings();
+	void UpdateAutoRescanControls();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
@@ -28,6 +29,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnSettingsChange()			{ SetModified(); }
+	afx_msg void OnBnClickedAutoRescanSharedFolders();
 	afx_msg void OnBnClickedSelincdir();
 	afx_msg void OnBnClickedSeltempdir();
 	afx_msg void OnBnClickedAddUNC();

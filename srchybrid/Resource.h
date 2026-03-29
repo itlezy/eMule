@@ -313,6 +313,10 @@
 #define IDS_PW_TEMP                     394
 #define IDS_PW_BROWSE                   395
 #define IDS_PW_SHARED                   396
+#define IDS_SHARED_AUTORESCAN           61080
+#define IDS_SHARED_AUTORESCAN_INTERVAL  61081
+#define IDS_SHARED_AUTOSUBDIRS          61082
+#define IDS_ERR_SHARED_AUTORESCAN_INTERVAL 61083
 #define IDS_CONNECTION                  397
 #define IDS_PW_DOWNL                    398
 #define IDS_PW_UPL                      399
@@ -2037,6 +2041,10 @@
 #define IDC_STATIC133x                  2743
 #define IDC_CDIDENT                     2744
 #define IDC_UNCADD                      2745
+#define IDC_AUTORESCANSHAREDFOLDERS     2755
+#define IDC_AUTORESCANSHAREDINTERVALLBL 2756
+#define IDC_AUTORESCANSHAREDINTERVAL    2757
+#define IDC_AUTOSHARENEWSUBDIRS         2758
 #define IDC_SEC_MISC                    2747
 #define IDC_SEC_OBFUSCATIONBOX          2748
 #define IDC_MMPASSWORDFIELD             2749
