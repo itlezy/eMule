@@ -226,13 +226,13 @@ create a Windows Defender Firewall allow rule for `emule.exe`. Use the `.cmd`
 launcher so the script always runs through Windows built-in `powershell.exe`:
 
 ```powershell
-.\scripts\network-firewall.cmd -ExePath .\srchybrid\x64\Debug\emule.exe
+.\scripts\network-firewall-opener.cmd -ExePath .\srchybrid\x64\Debug\emule.exe
 ```
 
 To remove that managed rule again:
 
 ```powershell
-.\scripts\network-firewall.cmd -Remove
+.\scripts\network-firewall-opener.cmd -Remove
 ```
 
 Run the script as administrator. If `-ExePath` is omitted, it searches the
