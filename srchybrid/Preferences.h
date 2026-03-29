@@ -573,6 +573,9 @@ public:
 	static bool		m_bHighresTimer;
 
 	static bool		m_bResolveSharedShellLinks;
+	static bool		m_bAutoRescanSharedFolders;
+	static UINT		m_uAutoRescanSharedFoldersIntervalSec;
+	static bool		m_bAutoShareNewSharedSubdirs;
 	static CStringList shareddir_list;
 	static CStringList addresses_list;
 	static bool		m_bKeepUnavailableFixedSharedDirs;
@@ -698,6 +701,12 @@ public:
 	static void		SetStatsInterval(UINT in)			{ statsInterval = in; }
 	static bool		GetFillGraphs()						{ return m_bFillGraphs; }
 	static void		SetFillGraphs(bool bFill)			{ m_bFillGraphs = bFill; }
+	static bool		IsAutoRescanSharedFolders()			{ return m_bAutoRescanSharedFolders; }
+	static void		SetAutoRescanSharedFolders(bool bEnable) { m_bAutoRescanSharedFolders = bEnable; }
+	static UINT		GetAutoRescanSharedFoldersIntervalSec()	{ return m_uAutoRescanSharedFoldersIntervalSec; }
+	static void		SetAutoRescanSharedFoldersIntervalSec(UINT uSeconds) { m_uAutoRescanSharedFoldersIntervalSec = max(600u, uSeconds); }
+	static bool		IsAutoShareNewSharedSubdirs()		{ return m_bAutoShareNewSharedSubdirs; }
+	static void		SetAutoShareNewSharedSubdirs(bool bEnable) { m_bAutoShareNewSharedSubdirs = bEnable; }
 
 	// -khaos--+++> Many, many, many, many methods.
 	static void		SaveStats(int bBackUp = 0);

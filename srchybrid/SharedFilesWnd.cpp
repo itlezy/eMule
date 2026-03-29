@@ -55,6 +55,7 @@ BEGIN_MESSAGE_MAP(CSharedFilesWnd, CResizableDialog)
 	ON_BN_CLICKED(IDC_SF_HIDESHOWDETAILS, OnBnClickedSfHideshowdetails)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SFLIST, OnLvnItemchangedSflist)
 	ON_WM_SHOWWINDOW()
+	ON_MESSAGE(UM_AUTO_RELOAD_SHARED_FILES, OnAutoReloadSharedFiles)
 END_MESSAGE_MAP()
 
 CSharedFilesWnd::CSharedFilesWnd(CWnd *pParent /*=NULL*/)
@@ -213,6 +214,17 @@ void CSharedFilesWnd::OnBnClickedReloadSharedFiles()
 	}
 #endif
 	Reload(true);
+}
+
+LRESULT CSharedFilesWnd::OnAutoReloadSharedFiles(WPARAM, LPARAM)
+{
+	if (!theApp.sharedfiles->BeginAutoReload())
+		return 0;
+
+	CWaitCursor curWait;
+	Reload(true);
+	theApp.sharedfiles->FinishAutoReload();
+	return 0;
 }
 
 void CSharedFilesWnd::OnLvnItemActivateSharedFiles(LPNMHDR, LRESULT*)

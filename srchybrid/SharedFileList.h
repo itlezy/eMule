@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <vector>
 #include "MapKey.h"
 #include "FileIdentifier.h"
 
@@ -95,6 +96,8 @@ public:
 
 	void	HashFailed(UnknownFile_Struct *hashed);	// SLUGFILLER: SafeHash
 	void	FileHashingFinished(CKnownFile *file);
+	bool	BeginAutoReload();
+	void	FinishAutoReload();
 
 	bool	GetPopularityRank(const CKnownFile *pFile, uint32 &rnOutSession, uint32 &rnOutTotal) const;
 
@@ -111,12 +114,26 @@ protected:
 	bool	IsHashing(const CString &rstrDirectory, const CString &rstrName);
 	void	RemoveFromHashing(const CKnownFile *hashed);
 	void	LoadSingleSharedFilesList();
+	void	LoadAutoSharedDirectories();
+	void	SaveAutoSharedDirectories() const;
+	bool	ReconcileAutoSharedDirectories();
+	void	RestartDirectoryWatch();
+	void	StopDirectoryWatch();
+	void	MarkAutoRescanDirty();
+	bool	ShouldScheduleAutoReload(DWORD dwNow) const;
+	void	ScheduleNextAutoReload(DWORD dwNow);
 
 	void	CheckAndAddSingleFile(const CString &strDirectory, const WIN32_FIND_DATA &findData);
 	bool	CheckAndAddSingleFile(const CString &rstrFilePath); // add specific files without editing sharing preferences
 
 private:
+	/** Worker entry point that watches top-level shared roots and only marks the next rescan as dirty. */
+	static UINT AFX_CDECL DirectoryWatchThreadProc(LPVOID pParam);
 	void	AddDirectory(const CString &strDir, CStringList &dirlist);
+	bool	IsAutoSharedDirectory(const CString &strDir) const;
+	bool	IsTrackedSharedSubdirectory(const CString &strDir) const;
+	void	CollectSharedWatcherRoots(std::vector<CString> &roots, bool &bNeedFallbackPolling) const;
+	void	CollectAutoSharedSubdirectoriesForRoot(const CString &strRoot, CMapStringToPtr &collected) const;
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
@@ -128,10 +145,18 @@ private:
 	CSharedFilesCtrl *output;
 	CStringList		 m_liSingleSharedFiles;
 	CStringList		 m_liSingleExcludedFiles;
+	CStringList		 m_liAutoSharedDirectories;
 #if defined(_BETA) || defined(_DEVBUILD)
 	CString			m_strBetaFileName; //beta test file name
 #endif
 
+	CWinThread		*m_pDirectoryWatchThread;
+	HANDLE			m_hDirectoryWatchStopEvent;
+	volatile LONG	m_lAutoRescanDirty;
+	bool			m_bAutoReloadPending;
+	bool			m_bAutoReloadInProgress;
+	bool			m_bDirectoryWatchFallbackPolling;
+	DWORD			m_dwNextAutoReloadTick;
 	INT_PTR	m_currFileSrc;
 	INT_PTR	m_currFileNotes;
 	time_t	m_lastPublishKadSrc;

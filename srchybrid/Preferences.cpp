@@ -553,6 +553,9 @@ bool    CPreferences::m_bA4AFSaveCpu;
 // ZZ:DownloadManager <--
 bool    CPreferences::m_bHighresTimer;
 bool	CPreferences::m_bResolveSharedShellLinks;
+bool	CPreferences::m_bAutoRescanSharedFolders;
+UINT	CPreferences::m_uAutoRescanSharedFoldersIntervalSec;
+bool	CPreferences::m_bAutoShareNewSharedSubdirs;
 bool	CPreferences::m_bKeepUnavailableFixedSharedDirs;
 CStringList CPreferences::shareddir_list;
 CStringList CPreferences::addresses_list;
@@ -1697,6 +1700,9 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("MinFreeDiskSpace"), m_uMinFreeDiskSpace);
 	ini.WriteBool(_T("SparsePartFiles"), m_bSparsePartFiles);
 	ini.WriteBool(_T("ResolveSharedShellLinks"), m_bResolveSharedShellLinks);
+	ini.WriteBool(_T("AutoRescanSharedFolders"), m_bAutoRescanSharedFolders);
+	ini.WriteInt(_T("AutoRescanSharedFoldersIntervalSec"), max(600u, m_uAutoRescanSharedFoldersIntervalSec));
+	ini.WriteBool(_T("AutoShareNewSharedSubdirs"), m_bAutoShareNewSharedSubdirs);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
 	ini.WriteBool(_T("ShowWin7TaskbarGoodies"), m_bShowWin7TaskbarGoodies);
@@ -2168,6 +2174,9 @@ void CPreferences::LoadPreferences()
 	m_uMinFreeDiskSpace = ini.GetInt(_T("MinFreeDiskSpace"), 5 * 1024 * 1024 * 1024);
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
 	m_bResolveSharedShellLinks = ini.GetBool(_T("ResolveSharedShellLinks"), false);
+	m_bAutoRescanSharedFolders = ini.GetBool(_T("AutoRescanSharedFolders"), true);
+	m_uAutoRescanSharedFoldersIntervalSec = max(600, ini.GetInt(_T("AutoRescanSharedFoldersIntervalSec"), 1200));
+	m_bAutoShareNewSharedSubdirs = ini.GetBool(_T("AutoShareNewSharedSubdirs"), true);
 	m_bKeepUnavailableFixedSharedDirs = ini.GetBool(_T("KeepUnavailableFixedSharedDirs"), false);
 	m_strYourHostname = ini.GetString(_T("YourHostname"), _T(""));
 	m_bImportParts = false; //enable on demand for the current session only

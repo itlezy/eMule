@@ -39,6 +39,7 @@
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "ImportParts.h"
 #include "MD5Sum.h"
+#include "UserMsgs.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -49,6 +50,33 @@ static char THIS_FILE[] = __FILE__;
 
 typedef CSimpleArray<CKnownFile*> CSimpleKnownFileArray;
 #define	SHAREDFILES_FILE	_T("sharedfiles.dat")
+#define	AUTOSHAREDDIRS_FILE	_T("autosharesubdirs.dat")
+
+static constexpr UINT k_nAutoSharedWatcherReservedHandles = 1;
+static constexpr UINT k_nAutoSharedWatcherMaxRoots = MAXIMUM_WAIT_OBJECTS - k_nAutoSharedWatcherReservedHandles;
+
+/** Formats a directory path consistently before comparing or persisting it. */
+static CString NormalizeDirectoryPath(const CString &directory)
+{
+	CString normalized(directory);
+	MakeFoldername(normalized);
+	return normalized;
+}
+
+/** Returns true when the tick-based scheduler may treat the target time as elapsed. */
+static bool HasElapsedTick(DWORD dwNow, DWORD dwTarget)
+{
+	return static_cast<LONG>(dwNow - dwTarget) >= 0;
+}
+
+/** Prepares a watched directory for Win32 change notifications, including long-path prefixes. */
+static CString PrepareDirectoryPathForNotification(const CString &directory)
+{
+	CString normalized(NormalizeDirectoryPath(directory));
+	if (normalized.GetLength() > 3 && normalized.Right(1) == _T("\\"))
+		normalized = normalized.Left(normalized.GetLength() - 1);
+	return PreparePathForLongPath(normalized);
+}
 
 static bool GetFileAttributesLongPath(const CString &path, WIN32_FILE_ATTRIBUTE_DATA &attributes)
 {
@@ -504,6 +532,13 @@ void CSharedFileList::AddDirectory(const CString &strDir, CStringList &dirlist)
 CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	: server(in_server)
 	, output()
+	, m_pDirectoryWatchThread()
+	, m_hDirectoryWatchStopEvent(::CreateEvent(NULL, TRUE, FALSE, NULL))
+	, m_lAutoRescanDirty(0)
+	, m_bAutoReloadPending()
+	, m_bAutoReloadInProgress()
+	, m_bDirectoryWatchFallbackPolling()
+	, m_dwNextAutoReloadTick()
 	, m_currFileSrc()
 	, m_currFileNotes()
 	, m_lastPublishKadSrc()
@@ -524,11 +559,15 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	m_strBetaFileName.AppendFormat(_T("%s.txt"), (LPCTSTR)md5.GetHashString().Left(6));
 #endif
 	LoadSingleSharedFilesList();
+	LoadAutoSharedDirectories();
 	FindSharedFiles();
+	ScheduleNextAutoReload(::GetTickCount());
+	RestartDirectoryWatch();
 }
 
 CSharedFileList::~CSharedFileList()
 {
+	StopDirectoryWatch();
 	while (!waitingforhash_list.IsEmpty())
 		delete waitingforhash_list.RemoveHead();
 	// SLUGFILLER: SafeHash
@@ -543,6 +582,268 @@ CSharedFileList::~CSharedFileList()
 	sTest += m_strBetaFileName;
 	::DeleteFile(sTest);
 #endif
+	if (m_hDirectoryWatchStopEvent != NULL)
+		VERIFY(::CloseHandle(m_hDirectoryWatchStopEvent));
+}
+
+bool CSharedFileList::IsAutoSharedDirectory(const CString &strDir) const
+{
+	for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
+		if (EqualPaths(m_liAutoSharedDirectories.GetNext(pos), strDir))
+			return true;
+	}
+	return false;
+}
+
+bool CSharedFileList::IsTrackedSharedSubdirectory(const CString &strDir) const
+{
+	if (thePrefs.IsAutoShareNewSharedSubdirs() && IsAutoSharedDirectory(strDir))
+		return true;
+
+	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;) {
+		if (EqualPaths(thePrefs.shareddir_list.GetNext(pos), strDir))
+			return true;
+	}
+
+	return false;
+}
+
+void CSharedFileList::LoadAutoSharedDirectories()
+{
+	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + AUTOSHAREDDIRS_FILE);
+	const bool bIsUnicodeFile = IsUnicodeFile(strFullPath);
+	CStdioFile file;
+	if (!file.Open(strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0)))
+		return;
+
+	try {
+		if (bIsUnicodeFile)
+			file.Seek(sizeof(WORD), CFile::begin);
+
+		CString toadd;
+		while (file.ReadString(toadd)) {
+			toadd.Trim(_T(" \t\r\n"));
+			if (toadd.IsEmpty())
+				continue;
+
+			toadd = NormalizeDirectoryPath(toadd);
+			if (thePrefs.IsShareableDirectory(toadd) && !IsAutoSharedDirectory(toadd))
+				m_liAutoSharedDirectories.AddTail(toadd);
+		}
+		file.Close();
+	} catch (CFileException *ex) {
+		DebugLogError(_T("Failed to load %s%s"), (LPCTSTR)strFullPath, (LPCTSTR)CExceptionStrDash(*ex));
+		ex->Delete();
+	}
+}
+
+void CSharedFileList::SaveAutoSharedDirectories() const
+{
+	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + AUTOSHAREDDIRS_FILE);
+	CStdioFile file;
+	if (!file.Open(strFullPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
+		DebugLogError(_T("Failed to save %s"), (LPCTSTR)strFullPath);
+		return;
+	}
+
+	try {
+		/** Persist the auto-managed subdirectory list separately from explicit user shares. */
+		static const WORD wBOM = u'\xFEFF';
+		file.Write(&wBOM, sizeof(wBOM));
+		for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
+			file.WriteString(m_liAutoSharedDirectories.GetNext(pos));
+			file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
+		}
+		CommitAndClose(file);
+	} catch (CFileException *ex) {
+		DebugLogError(_T("Failed to save %s%s"), (LPCTSTR)strFullPath, (LPCTSTR)CExceptionStrDash(*ex));
+		ex->Delete();
+	}
+}
+
+void CSharedFileList::MarkAutoRescanDirty()
+{
+	InterlockedExchange(&m_lAutoRescanDirty, 1);
+}
+
+bool CSharedFileList::ShouldScheduleAutoReload(DWORD dwNow) const
+{
+	if (!thePrefs.IsAutoRescanSharedFolders()
+		|| m_bAutoReloadPending
+		|| m_bAutoReloadInProgress
+		|| !HasElapsedTick(dwNow, m_dwNextAutoReloadTick))
+	{
+		return false;
+	}
+
+	return m_bDirectoryWatchFallbackPolling || InterlockedCompareExchange(const_cast<volatile LONG*>(&m_lAutoRescanDirty), 0, 0) != 0;
+}
+
+void CSharedFileList::ScheduleNextAutoReload(DWORD dwNow)
+{
+	m_dwNextAutoReloadTick = dwNow + SEC2MS(thePrefs.GetAutoRescanSharedFoldersIntervalSec());
+}
+
+bool CSharedFileList::BeginAutoReload()
+{
+	if (m_bAutoReloadInProgress)
+		return false;
+
+	m_bAutoReloadPending = false;
+	m_bAutoReloadInProgress = true;
+	return true;
+}
+
+void CSharedFileList::FinishAutoReload()
+{
+	m_bAutoReloadPending = false;
+	m_bAutoReloadInProgress = false;
+}
+
+void CSharedFileList::CollectSharedWatcherRoots(std::vector<CString> &roots, bool &bNeedFallbackPolling) const
+{
+	auto addRoot = [&roots](const CString &path)
+		{
+			CString normalized(NormalizeDirectoryPath(path));
+			if (normalized.IsEmpty())
+				return;
+
+			for (const CString &existing : roots) {
+				if (EqualPaths(existing, normalized))
+					return;
+			}
+			roots.push_back(normalized);
+		};
+
+	addRoot(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
+
+	for (INT_PTR i = 1; i < thePrefs.GetCatCount(); ++i)
+		addRoot(thePrefs.GetCatPath(i));
+
+	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;)
+		addRoot(thePrefs.shareddir_list.GetNext(pos));
+
+	std::vector<CString> topMostRoots;
+	for (const CString &candidate : roots) {
+		bool bCovered = false;
+		for (const CString &other : roots) {
+			if (EqualPaths(candidate, other))
+				continue;
+
+			const int otherLen = other.GetLength();
+			if (candidate.GetLength() > otherLen
+				&& _tcsnicmp(candidate, other, otherLen) == 0
+				&& candidate[otherLen] == _T('\\'))
+			{
+				bCovered = true;
+				break;
+			}
+		}
+
+		if (!bCovered)
+			topMostRoots.push_back(candidate);
+	}
+
+	roots.swap(topMostRoots);
+	if (roots.size() > k_nAutoSharedWatcherMaxRoots) {
+		roots.resize(k_nAutoSharedWatcherMaxRoots);
+		bNeedFallbackPolling = true;
+	}
+}
+
+UINT CSharedFileList::DirectoryWatchThreadProc(LPVOID pParam)
+{
+	CSharedFileList *pOwner = reinterpret_cast<CSharedFileList*>(pParam);
+	ASSERT(pOwner != NULL);
+	if (pOwner == NULL)
+		return 0;
+
+	std::vector<CString> roots;
+	bool bNeedFallbackPolling = false;
+	pOwner->CollectSharedWatcherRoots(roots, bNeedFallbackPolling);
+	pOwner->m_bDirectoryWatchFallbackPolling = bNeedFallbackPolling;
+
+	std::vector<HANDLE> handles;
+	std::vector<HANDLE> notifications;
+	handles.reserve(roots.size() + 1);
+	notifications.reserve(roots.size());
+	handles.push_back(pOwner->m_hDirectoryWatchStopEvent);
+
+	for (const CString &root : roots) {
+		WIN32_FILE_ATTRIBUTE_DATA attributes = {};
+		if (!GetFileAttributesLongPath(root, attributes) || (attributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			pOwner->m_bDirectoryWatchFallbackPolling = true;
+			continue;
+		}
+
+		const HANDLE hChange = ::FindFirstChangeNotification(PrepareDirectoryPathForNotification(root), TRUE,
+			FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_DIR_NAME
+			| FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE | FILE_NOTIFY_CHANGE_ATTRIBUTES);
+		if (hChange == INVALID_HANDLE_VALUE) {
+			pOwner->m_bDirectoryWatchFallbackPolling = true;
+			continue;
+		}
+
+		notifications.push_back(hChange);
+		handles.push_back(hChange);
+	}
+
+	while (!notifications.empty()) {
+		const DWORD dwWait = ::WaitForMultipleObjects(static_cast<DWORD>(handles.size()), handles.data(), FALSE, INFINITE);
+		if (dwWait == WAIT_OBJECT_0)
+			break;
+
+		if (dwWait > WAIT_OBJECT_0 && dwWait < WAIT_OBJECT_0 + handles.size()) {
+			const size_t nIndex = static_cast<size_t>(dwWait - WAIT_OBJECT_0 - 1);
+			pOwner->MarkAutoRescanDirty();
+			if (!::FindNextChangeNotification(notifications[nIndex])) {
+				pOwner->m_bDirectoryWatchFallbackPolling = true;
+				break;
+			}
+			continue;
+		}
+
+		pOwner->m_bDirectoryWatchFallbackPolling = true;
+		break;
+	}
+
+	for (HANDLE hChange : notifications)
+		VERIFY(::FindCloseChangeNotification(hChange));
+
+	return 0;
+}
+
+void CSharedFileList::StopDirectoryWatch()
+{
+	if (m_pDirectoryWatchThread == NULL)
+		return;
+
+	if (m_hDirectoryWatchStopEvent != NULL)
+		VERIFY(::SetEvent(m_hDirectoryWatchStopEvent));
+
+	VERIFY(::WaitForSingleObject(m_pDirectoryWatchThread->m_hThread, INFINITE) == WAIT_OBJECT_0);
+	delete m_pDirectoryWatchThread;
+	m_pDirectoryWatchThread = NULL;
+
+	if (m_hDirectoryWatchStopEvent != NULL)
+		VERIFY(::ResetEvent(m_hDirectoryWatchStopEvent));
+}
+
+void CSharedFileList::RestartDirectoryWatch()
+{
+	StopDirectoryWatch();
+	m_bDirectoryWatchFallbackPolling = false;
+	if (!thePrefs.IsAutoRescanSharedFolders() || m_hDirectoryWatchStopEvent == NULL)
+		return;
+
+	m_pDirectoryWatchThread = AfxBeginThread(&CSharedFileList::DirectoryWatchThreadProc, this, THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED);
+	if (m_pDirectoryWatchThread == NULL) {
+		m_bDirectoryWatchFallbackPolling = true;
+		return;
+	}
+
+	m_pDirectoryWatchThread->m_bAutoDelete = false;
+	m_pDirectoryWatchThread->ResumeThread();
 }
 
 void CSharedFileList::CopySharedFileMap(CKnownFilesMap &Files_Map)
@@ -551,8 +852,96 @@ void CSharedFileList::CopySharedFileMap(CKnownFilesMap &Files_Map)
 		Files_Map[pair->key] = pair->value;
 }
 
+void CSharedFileList::CollectAutoSharedSubdirectoriesForRoot(const CString &strRoot, CMapStringToPtr &collected) const
+{
+	CList<CString, const CString&> pendingDirectories;
+	pendingDirectories.AddTail(NormalizeDirectoryPath(strRoot));
+
+	while (!pendingDirectories.IsEmpty()) {
+		const CString currentDirectory(pendingDirectories.RemoveHead());
+		const CString preparedSearchPath(PreparePathForLongPath(currentDirectory + _T('*')));
+		WIN32_FIND_DATA findData = {};
+		HANDLE hFind = ::FindFirstFile(preparedSearchPath, &findData);
+		if (hFind == INVALID_HANDLE_VALUE)
+			continue;
+
+		do {
+			if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
+				continue;
+			if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_SYSTEM)) != 0)
+				continue;
+			if (_tcscmp(findData.cFileName, _T(".")) == 0 || _tcscmp(findData.cFileName, _T("..")) == 0)
+				continue;
+
+			CString subDirectory(currentDirectory + findData.cFileName + _T("\\"));
+			if (!thePrefs.IsShareableDirectory(subDirectory))
+				continue;
+
+			void *pUnused = NULL;
+			subDirectory = NormalizeDirectoryPath(subDirectory);
+			if (!collected.Lookup(subDirectory, pUnused)) {
+				collected.SetAt(subDirectory, reinterpret_cast<void*>(1));
+				pendingDirectories.AddTail(subDirectory);
+			}
+		} while (::FindNextFile(hFind, &findData));
+
+		::FindClose(hFind);
+	}
+}
+
+bool CSharedFileList::ReconcileAutoSharedDirectories()
+{
+	if (!thePrefs.IsAutoShareNewSharedSubdirs())
+		return false;
+
+	CMapStringToPtr discoveredDirectories;
+	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;)
+		CollectAutoSharedSubdirectoriesForRoot(thePrefs.shareddir_list.GetNext(pos), discoveredDirectories);
+
+	bool bChanged = false;
+	CStringList nextAutoSharedDirectories;
+	CString key;
+	void *pDummy = NULL;
+	for (POSITION pos = discoveredDirectories.GetStartPosition(); pos != NULL;) {
+		discoveredDirectories.GetNextAssoc(pos, key, pDummy);
+		nextAutoSharedDirectories.AddTail(key);
+	}
+
+	for (POSITION pos = nextAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
+		CString normalized(nextAutoSharedDirectories.GetNext(pos));
+		if (!IsAutoSharedDirectory(normalized))
+			bChanged = true;
+	}
+
+	for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
+		const CString &existing = m_liAutoSharedDirectories.GetNext(pos);
+		bool bStillDiscovered = false;
+		for (POSITION posNext = nextAutoSharedDirectories.GetHeadPosition(); posNext != NULL;) {
+			if (EqualPaths(existing, nextAutoSharedDirectories.GetNext(posNext))) {
+				bStillDiscovered = true;
+				break;
+			}
+		}
+		if (!bStillDiscovered) {
+			bChanged = true;
+			break;
+		}
+	}
+
+	if (bChanged) {
+		m_liAutoSharedDirectories.RemoveAll();
+		for (POSITION pos = nextAutoSharedDirectories.GetHeadPosition(); pos != NULL;)
+			m_liAutoSharedDirectories.AddTail(nextAutoSharedDirectories.GetNext(pos));
+		SaveAutoSharedDirectories();
+	}
+
+	return bChanged;
+}
+
 void CSharedFileList::FindSharedFiles()
 {
+	(void)ReconcileAutoSharedDirectories();
+
 	if (!m_Files_map.IsEmpty() && theApp.downloadqueue) {
 		CSingleLock listlock(&m_mutWriteList);
 
@@ -651,6 +1040,8 @@ void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
 
 				CString subDirectory(currentDirectory + fileName + _T("\\"));
 				if (!thePrefs.IsShareableDirectory(subDirectory))
+					continue;
+				if (!thePrefs.IsAutoShareNewSharedSubdirs() && !IsTrackedSharedSubdirectory(subDirectory))
 					continue;
 
 				const CString visitKey(GetVisitedDirectoryKey(subDirectory));
@@ -851,6 +1242,9 @@ void CSharedFileList::Reload()
 	bHaveSingleSharedFiles = false;
 	FindSharedFiles();
 	m_keywords->PurgeUnreferencedKeywords();
+	InterlockedExchange(&m_lAutoRescanDirty, 0);
+	ScheduleNextAutoReload(::GetTickCount());
+	RestartDirectoryWatch();
 	if (output)
 		output->ReloadFileList();
 }
@@ -1302,6 +1696,18 @@ void CSharedFileList::Process()
 		SendListToServer();
 		m_lastPublishED2K = ::GetTickCount();
 	}
+
+	const DWORD dwNow = ::GetTickCount();
+	if (!ShouldScheduleAutoReload(dwNow))
+		return;
+
+	if (theApp.emuledlg != NULL
+		&& theApp.emuledlg->sharedfileswnd != NULL
+		&& ::IsWindow(theApp.emuledlg->sharedfileswnd->m_hWnd))
+	{
+		m_bAutoReloadPending = true;
+		VERIFY(::PostMessage(theApp.emuledlg->sharedfileswnd->m_hWnd, UM_AUTO_RELOAD_SHARED_FILES, 0, 0));
+	}
 }
 
 void CSharedFileList::Publish()
@@ -1483,6 +1889,9 @@ bool CSharedFileList::ShouldBeShared(const CString &sDirPath, LPCTSTR const pFil
 		if (EqualPaths(sDirPath, thePrefs.shareddir_list.GetNext(pos)))
 			return true;
 
+	if (thePrefs.IsAutoShareNewSharedSubdirs() && IsAutoSharedDirectory(sDirPath))
+		return true;
+
 	return false;
 }
 
@@ -1631,6 +2040,8 @@ void CSharedFileList::Save() const
 		}
 	} else
 		DebugLogError(_T("Failed to save %s"), (LPCTSTR)strFullPath);
+
+	SaveAutoSharedDirectories();
 }
 
 void CSharedFileList::LoadSingleSharedFilesList()
@@ -1674,6 +2085,14 @@ bool CSharedFileList::AddSingleSharedDirectory(const CString &rstrFilePath, bool
 	// check if we share this dir already or are not allowed to
 	if (ShouldBeShared(rstrFilePath, NULL, false) || !thePrefs.IsShareableDirectory(rstrFilePath))
 		return false;
+
+	for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
+		POSITION posLast = pos;
+		if (EqualPaths(m_liAutoSharedDirectories.GetNext(pos), rstrFilePath)) {
+			m_liAutoSharedDirectories.RemoveAt(posLast);
+			break;
+		}
+	}
 
 	// add the new directory as shared, GUI update to be done by the caller
 	thePrefs.shareddir_list.AddTail(rstrFilePath);
