@@ -658,60 +658,17 @@ UINT GetMaxWindowsTCPConnections()
 */
 }
 
-#pragma warning(push)
-#pragma warning(disable: 4996) //GetVersionEx()
+/**
+ * The Windows version contract for this branch is intentionally fixed at Windows 10+.
+ *
+ * Older platform probing only existed to preserve unsupported pre-Windows-10 code paths.
+ * Keeping a single modern return value lets the remaining callers collapse naturally as
+ * those obsolete branches get removed.
+ */
 WORD DetectWinVersion()
 {
-	OSVERSIONINFOEX osvi;
-	osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFOEX);
-
-	if (!GetVersionEx((OSVERSIONINFO*)&osvi)) {
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFO);
-		if (!GetVersionEx((OSVERSIONINFO*)&osvi))
-			return 0;
-	}
-
-	switch (osvi.dwPlatformId) {
-	case VER_PLATFORM_WIN32_NT:
-		if (osvi.dwMajorVersion <= 4)
-			return _WINVER_NT4_;
-		if (osvi.dwMajorVersion == 5) {
-			if (osvi.dwMinorVersion == 0)
-				return _WINVER_2K_;
-			if (osvi.dwMinorVersion == 1)
-				return _WINVER_XP_;
-			if (osvi.dwMinorVersion == 2)
-				return _WINVER_2003_;
-		}
-		if (osvi.dwMajorVersion == 6) {
-			if (osvi.dwMinorVersion == 0)
-				return _WINVER_VISTA_;
-			if (osvi.dwMinorVersion == 1)
-				return _WINVER_7_;
-			if (osvi.dwMinorVersion == 2)
-				return _WINVER_8_;
-			if (osvi.dwMinorVersion == 3)
-				return _WINVER_8_1_;
-		}
-		if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
-			return _WINVER_10_; //for Windows 11 - osvi.dwBuildNumber>=22000
-		return _WINVER_7_; // never return Win95 if we get the info about a NT system
-
-	case VER_PLATFORM_WIN32_WINDOWS:
-		if (osvi.dwMajorVersion == 4) {
-			if (osvi.dwMinorVersion == 0)
-				return _WINVER_95_;
-			if (osvi.dwMinorVersion == 10)
-				return _WINVER_98_;
-			if (osvi.dwMinorVersion == 90)
-				return _WINVER_ME_;
-		}
-	}
-
-	return _WINVER_95_;		// there shouldn't be anything lower than this
+	return _WINVER_10_;
 }
-
-#pragma warning(pop)
 
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
 {

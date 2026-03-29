@@ -2638,15 +2638,7 @@ WORD CPreferences::GetWindowsVersion()
 
 UINT CPreferences::GetDefaultMaxConperFive()
 {
-	switch (GetWindowsVersion()) {
-	case _WINVER_98_:
-		return 5;
-	case _WINVER_95_:
-	case _WINVER_ME_:
-		return MAXCON5WIN9X;
-	default:
-		return MAXCONPER5SEC;
-	}
+	return MAXCONPER5SEC;
 }
 
 //////////////////////////////////////////////////////////
