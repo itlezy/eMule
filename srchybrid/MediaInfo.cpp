@@ -596,4 +596,3 @@ bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType)
 	}
 	return false;
 }
-

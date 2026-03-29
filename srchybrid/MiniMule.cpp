@@ -188,7 +188,7 @@ CString CreateFilePathUrl(LPCTSTR pszFilePath, int nProtocol)
 	// an encoded URL. Basically this works, but if the file path contains special characters
 	// like e.g. Umlaute, the IE control can not open the encoded URL.
 	//
-	// The file path "D:\dir_ä#,.-_öäü#'+~´`ß}=])[({&%$!^°\Kopie von ### MiniMule3CyanSnow.htm"
+	// The file path "D:\dir_Ã¤#,.-_Ã¶Ã¤Ã¼#'+~Â´`ÃŸ}=])[({&%$!^Â°\Kopie von ### MiniMule3CyanSnow.htm"
 	// can get opened successfully by the IE control *without* using any URL encoding.
 	//
 	// Though, regardless of using 'AtlCanonicalizeUrl' or not, there is still one special

@@ -188,4 +188,3 @@
 #define	MP_PREVIEW_APP_MIN		11200	// reserve 50 entries for preview apps
 #define	MP_PREVIEW_APP_MAX		(MP_PREVIEW_APP_MIN + 49)
 #define MP_FILTERCOLUMNS		11300	// reserve 50 entries for filter columns
-

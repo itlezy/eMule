@@ -2992,7 +2992,7 @@ void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 		thePrefs.Add2DownSessionCompletedFiles();
 		thePrefs.SaveCompletedDownloadsStat();
 
-		// 05-Jän-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly
+		// 05-JÃ¤n-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly
 		// attached meta data. Take the chance to clean any available meta data tags and provide
 		// only tags which were determined by us.
 		UpdateMetaDataTags();
@@ -4481,7 +4481,7 @@ const CStringA CPartFile::GetProgressString(uint16 size) const
 			}
 		}
 	}
-	
+
 	// yellow pending parts
 	for (POSITION pos = requestedblocks_list.GetHeadPosition(); pos != NULL;) {
 		const Requested_Block_Struct *block = requestedblocks_list.GetNext(pos);
@@ -4603,7 +4603,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender, Requested_Block_Str
 	//      completed before starting to download an other one.
 	//
 	// The frequency criterion defines 4 grades of availability: very rare, rare, almost rare,
-	// and common. Inside each grade, the criteria have a specific ‘weight’, used
+	// and common. Inside each grade, the criteria have a specific â€˜weightâ€™, used
 	// to calculate the priority of chunks. The chunk(s) with the highest
 	// priority (highest=0, lowest=0xffff) is/are selected first.
 	//
