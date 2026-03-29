@@ -19,6 +19,7 @@
 #include "emule.h"
 #include "PPgSecurity.h"
 #include "OtherFunctions.h"
+#include "MediaInfo.h"
 #include "IPFilter.h"
 #include "Preferences.h"
 #include "CustomAutoComplete.h"
@@ -36,8 +37,6 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-
-bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType);
 
 #define	IPFILTERUPDATEURL_STRINGS_PROFILE	_T("AC_IPFilterUpdateURLs.dat")
 #define DEFAULT_IPFILTER_URL				_T("http://upd.emule-security.org/ipfilter.zip")
