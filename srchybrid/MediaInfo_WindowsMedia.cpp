@@ -31,6 +31,13 @@ static char THIS_FILE[] = __FILE__;
 #endif
 #ifdef HAVE_WMSDK_H
 
+/** @brief Returns true if WMFSDK reported that an optional attribute is not exposed for the current stream. */
+bool IsMissingWmAttributeResult(HRESULT hr)
+{
+	return hr == ASF_E_NOTFOUND
+		|| hr == E_INVALIDARG;
+}
+
 template<class T, WMT_ATTR_DATATYPE attrTypeT>
 bool GetAttributeT(IWMHeaderInfo *pIWMHeaderInfo, WORD wStream, LPCWSTR pwszName, T &nValue)
 {
@@ -70,7 +77,7 @@ bool GetAttribute(IWMHeaderInfo *pIWMHeaderInfo, WORD wStream, LPCWSTR pwszName,
 	WORD wValueSize;
 	HRESULT hr = pIWMHeaderInfo->GetAttributeByName(&wStream, pwszName, &attrType, NULL, &wValueSize);
 	if (hr != S_OK || attrType != WMT_TYPE_STRING || wValueSize < sizeof(WCHAR) || (wValueSize % sizeof(WCHAR)) != 0) {
-		ASSERT(hr == ASF_E_NOTFOUND || hr == E_INVALIDARG); //E_INVALIDARG returned if no "WM/Language" tag?
+		ASSERT(IsMissingWmAttributeResult(hr));
 		return false;
 	}
 
@@ -101,16 +108,20 @@ bool GetAttributeIndices(IWMHeaderInfo3 *pIWMHeaderInfo, WORD wStream, LPCWSTR p
 {
 	WORD wIndexCount;
 	HRESULT hr = pIWMHeaderInfo->GetAttributeIndices(wStream, pwszName, &wLangIndex, NULL, &wIndexCount);
-	if (hr != S_OK || wIndexCount == 0) {
-		ASSERT(hr == ASF_E_NOTFOUND);
+	if (hr != S_OK) {
+		ASSERT(IsMissingWmAttributeResult(hr));
 		return false;
 	}
+	if (wIndexCount == 0)
+		return false;
 
 	hr = pIWMHeaderInfo->GetAttributeIndices(wStream, pwszName, &wLangIndex, aIndices.Allocate(wIndexCount), &wIndexCount);
-	if (hr != S_OK || wIndexCount == 0) {
-		ASSERT(0);
+	if (hr != S_OK) {
+		ASSERT(IsMissingWmAttributeResult(hr));
 		return false;
 	}
+	if (wIndexCount == 0)
+		return false;
 
 	return true;
 }

@@ -1535,8 +1535,15 @@ void CKnownFile::UpdateMetaDataTags()
 						AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi->strAlbum));
 						m_uMetaDataVer = META_DATA_VER;
 					}
+					if (thePrefs.GetVerbose()) {
+						AddDebugLogLine(false, _T("Shared meta extraction: \"%s\" length=%u codec=%hs title=\"%s\" artist=\"%s\" album=\"%s\"")
+							, szFullPath, uLengthSec, (LPCSTR)strCodec
+							, (LPCTSTR)mi->strTitle, (LPCTSTR)mi->strAuthor, (LPCTSTR)mi->strAlbum);
+					}
 					delete mi;
 					mi = NULL;
+				} else if (thePrefs.GetVerbose()) {
+					AddDebugLogLine(false, _T("Shared meta extraction: no native parser matched \"%s\""), szFullPath);
 				}
 			} catch (...) {
 				if (thePrefs.GetVerbose())
