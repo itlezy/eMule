@@ -312,7 +312,6 @@
     <ClCompile Include="Preview.cpp" />
     <ClCompile Include="PreviewDlg.cpp" />
     <ClCompile Include="ProgressCtrlX.cpp" />
-    <ClCompile Include="PShtWiz1.cpp" />
     <ClCompile Include="Quantize.cpp" />
     <ClCompile Include="QueueListCtrl.cpp" />
     <ClCompile Include="RARFile.cpp" />

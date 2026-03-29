@@ -103,7 +103,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-extern BOOL FirstTimeWizard();
 
 #define	SYS_TRAY_ICON_COOKIE_FORCE_UPDATE	UINT_MAX
 
@@ -580,12 +579,8 @@ BOOL CemuleDlg::OnInitDialog()
 	if (thePrefs.IsUPnPEnabled())
 		StartUPnP();
 
-	if (thePrefs.IsFirstStart()) {
-		// temporary disable the 'startup minimized' option, otherwise no window will be shown at all
-		m_bStartMinimized = false;
+	if (thePrefs.IsFirstStart())
 		DestroySplash();
-		FirstTimeWizard();
-	}
 
 	VERIFY(m_pDropTarget->Register(this));
 
@@ -2453,9 +2448,6 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 		thePrefs.SetSchedulerEnabled(!thePrefs.IsSchedulerEnabled());
 		theApp.scheduler->Check(true);
 		break;
-	case MP_HM_1STSWIZARD:
-		FirstTimeWizard();
-		break;
 	case MP_HM_IPFILTER:
 		{
 			CIPFilterDlg dlg;
@@ -2548,7 +2540,6 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 
 	menu.AppendMenu(MF_STRING, MP_HM_OPENINC, GetResString(IDS_OPENINC) + _T("..."), _T("INCOMING"));
 	menu.AppendMenu(MF_STRING, MP_HM_CONVERTPF, GetResString(IDS_IMPORTSPLPF) + _T("..."), _T("CONVERT"));
-	menu.AppendMenu(MF_STRING, MP_HM_1STSWIZARD, GetResString(IDS_WIZ1) + _T("..."), _T("WIZARD"));
 	menu.AppendMenu(MF_STRING, MP_HM_IPFILTER, GetResString(IDS_IPFILTER) + _T("..."), _T("IPFILTER"));
 	menu.AppendMenu(MF_STRING, MP_HM_DIRECT_DOWNLOAD, GetResString(IDS_SW_DIRECTDOWNLOAD) + _T("..."), _T("PASTELINK"));
 
