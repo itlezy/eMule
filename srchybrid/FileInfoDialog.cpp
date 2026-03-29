@@ -18,6 +18,7 @@
 #include "eMule.h"
 #include "FileInfoDialog.h"
 #include "OtherFunctions.h"
+#include "Log.h"
 #include "MediaInfo.h"
 #include "PartFile.h"
 #include "Preferences.h"
@@ -73,6 +74,7 @@ public:
 		: m_ullVersion()
 		, m_hLib()
 		, m_bInitialized()
+		, m_strLoadedPath()
 		, m_pfnMediaInfo_New()
 		, m_pfnMediaInfo_Open()
 		, m_pfnMediaInfo_Close()
@@ -92,71 +94,56 @@ public:
 	{
 		if (!m_bInitialized) {
 			m_bInitialized = true;
+			ResetLoadedLibrary();
 
-			CString strPath(theApp.GetProfileString(_T("eMule"), _T("MediaInfo_MediaInfoDllPath"), _T("MEDIAINFO.DLL")));
-			if (strPath == _T("<noload>"))
+			const CString strConfiguredPath(theApp.GetProfileString(_T("eMule"), _T("MediaInfo_MediaInfoDllPath"), _T("MEDIAINFO.DLL")));
+			if (strConfiguredPath.CompareNoCase(_T("<noload>")) == 0)
 				return false;
-			m_hLib = ::LoadLibrary(strPath);
-			if (m_hLib == NULL) {
-				CRegKey key;
-				if (key.Open(HKEY_CURRENT_USER, _T("Software\\MediaInfo"), KEY_READ) == ERROR_SUCCESS) {
-					TCHAR szPath[MAX_PATH];
-					ULONG ulChars = _countof(szPath);
-					if (key.QueryStringValue(_T("Path"), szPath, &ulChars) == ERROR_SUCCESS) {
-						LPTSTR pszResult = ::PathCombine(strPath.GetBuffer(MAX_PATH), szPath, _T("MEDIAINFO.DLL"));
-						strPath.ReleaseBuffer();
-						if (pszResult)
-							m_hLib = ::LoadLibrary(strPath);
-					}
+
+			if (!strConfiguredPath.IsEmpty() && !::PathIsRelative(strConfiguredPath)) {
+				CString strResolvedPath(strConfiguredPath);
+				canonical(strResolvedPath);
+				CString strReason;
+				ULONGLONG ullVersion = 0;
+				HMODULE hConfiguredLib = LoadCompatibleLibrary(strResolvedPath, ullVersion, strReason);
+				if (hConfiguredLib != NULL) {
+					BindLoadedLibrary(hConfiguredLib, ullVersion, strResolvedPath);
+					LogCandidate(strResolvedPath, _T("selected configured path"), ullVersion);
+					return true;
 				}
-			}
-			if (m_hLib == NULL) {
-				const CString &strProgramFiles(ShellGetFolderPath(CSIDL_PROGRAM_FILES));
-				if (!strProgramFiles.IsEmpty()) {
-					LPTSTR pszResult = ::PathCombine(strPath.GetBuffer(MAX_PATH), strProgramFiles, _T("MediaInfo\\MEDIAINFO.DLL"));
-					strPath.ReleaseBuffer();
-					if (pszResult)
-						m_hLib = ::LoadLibrary(strPath);
-				}
+				LogCandidate(strResolvedPath, strReason, ullVersion);
 			}
 
-			// Support of very old versions at some point becomes difficult, and even unreasonable.
-			// For example, in 2020 it was hard to find MediaInfo v0.4.* and v0.5.* in the net.
-			// Currently, the earliest allowed version would be v0.7.13 (released in April, 2009).
-			if (m_hLib != NULL) {
-				// Note from MediaInfo developer
-				// -----------------------------
-				// Note : versioning method, for people who develop with LoadLibrary method
-				// - if one of 2 first numbers change, there is no guaranty that the DLL is compatible with old one
-				// - if one of 2 last numbers change, there is a guaranty that the DLL is compatible with old one.
-				// So you should test the version of the DLL, and if one of the 2 first numbers change, not load it.
-				// -----------------------------
-				// But then MediaInfo adopted YY.MM (year, month) versioning scheme...
-				ULONGLONG ullVersion = GetModuleVersion(m_hLib);
-				// The MediaInfo DLL shipped/used on the Windows 10+ branch is accepted up to
-				// the last known compatible 25.11 line. The older XP-only cap is obsolete here.
-				if (ullVersion >= MAKEDLLVERULL(0, 7, 13, 0)
-					&& ullVersion < MAKEDLLVERULL(25, 11, 0, 0))
-				{
-					(FARPROC &)m_pfnMediaInfo_New = ::GetProcAddress(m_hLib, "MediaInfo_New");
-					(FARPROC &)m_pfnMediaInfo_Delete = ::GetProcAddress(m_hLib, "MediaInfo_Delete");
-					(FARPROC &)m_pfnMediaInfo_Open = ::GetProcAddress(m_hLib, "MediaInfo_Open");
-					(FARPROC &)m_pfnMediaInfo_Close = ::GetProcAddress(m_hLib, "MediaInfo_Close");
-					(FARPROC &)m_pfnMediaInfo_Get = ::GetProcAddress(m_hLib, "MediaInfo_Get");
-					(FARPROC &)m_pfnMediaInfo_GetI = ::GetProcAddress(m_hLib, "MediaInfo_GetI");
-					if (m_pfnMediaInfo_New && m_pfnMediaInfo_Delete && m_pfnMediaInfo_Open && m_pfnMediaInfo_Close && m_pfnMediaInfo_Get)
-						m_ullVersion = ullVersion;
+			CStringArray aCandidatePaths;
+			CollectCandidatePaths(strConfiguredPath, aCandidatePaths);
+
+			HMODULE hBestLib = NULL;
+			ULONGLONG ullBestVersion = 0;
+			CString strBestPath;
+			for (INT_PTR i = 0; i < aCandidatePaths.GetCount(); ++i) {
+				const CString &strCandidatePath = aCandidatePaths[i];
+				CString strReason;
+				ULONGLONG ullVersion = 0;
+				HMODULE hCandidateLib = LoadCompatibleLibrary(strCandidatePath, ullVersion, strReason);
+				if (hCandidateLib == NULL) {
+					LogCandidate(strCandidatePath, strReason, ullVersion);
+					continue;
 				}
-				if (!m_ullVersion) {
-					m_pfnMediaInfo_New = NULL;
-					m_pfnMediaInfo_Delete = NULL;
-					m_pfnMediaInfo_Open = NULL;
-					m_pfnMediaInfo_Close = NULL;
-					m_pfnMediaInfo_Get = NULL;
-					m_pfnMediaInfo_GetI = NULL;
-					::FreeLibrary(m_hLib);
-					m_hLib = NULL;
+				if (ullVersion > ullBestVersion) {
+					if (hBestLib != NULL)
+						::FreeLibrary(hBestLib);
+					hBestLib = hCandidateLib;
+					ullBestVersion = ullVersion;
+					strBestPath = strCandidatePath;
+					continue;
 				}
+				::FreeLibrary(hCandidateLib);
+				LogCandidate(strCandidatePath, _T("older than the currently selected candidate"), ullVersion);
+			}
+
+			if (hBestLib != NULL) {
+				BindLoadedLibrary(hBestLib, ullBestVersion, strBestPath);
+				LogCandidate(strBestPath, _T("selected newest compatible version"), ullBestVersion);
 			}
 		}
 		return m_hLib != NULL;
@@ -194,21 +181,152 @@ public:
 
 	CString GetI(void *Handle, MediaInfo_stream_C StreamKind, size_t StreamNumber, size_t iParameter, MediaInfo_info_C KindOfInfo)
 	{
+		if (!m_pfnMediaInfo_GetI)
+			return CString();
 		return CString((*m_pfnMediaInfo_GetI)(Handle, StreamKind, StreamNumber, iParameter, KindOfInfo));
 	}
 
 protected:
+	static CString CombinePath(LPCTSTR pszBasePath, LPCTSTR pszChildPath)
+	{
+		TCHAR szPath[MAX_PATH];
+		LPTSTR pszResult = ::PathCombine(szPath, pszBasePath, pszChildPath);
+		return pszResult != NULL ? CString(szPath) : CString();
+	}
+
+	static CString GetAppFolder()
+	{
+		TCHAR szModulePath[MAX_PATH];
+		DWORD dwPathLen = ::GetModuleFileName(theApp.m_hInstance, szModulePath, _countof(szModulePath));
+		if (dwPathLen == 0 || dwPathLen == _countof(szModulePath))
+			return CString();
+		CString strFolder(szModulePath);
+		::PathRemoveFileSpec(strFolder.GetBuffer(strFolder.GetLength()));
+		strFolder.ReleaseBuffer();
+		return strFolder;
+	}
+
+	void AddCandidatePath(CStringArray &raCandidatePaths, const CString &strCandidatePath)
+	{
+		if (strCandidatePath.IsEmpty())
+			return;
+		CString strNormalizedPath(strCandidatePath);
+		canonical(strNormalizedPath);
+		if (strNormalizedPath.IsEmpty() || ::PathIsRelative(strNormalizedPath))
+			return;
+		for (INT_PTR i = 0; i < raCandidatePaths.GetCount(); ++i) {
+			if (raCandidatePaths[i].CompareNoCase(strNormalizedPath) == 0)
+				return;
+		}
+		raCandidatePaths.Add(strNormalizedPath);
+	}
+
+	void AddRegistryInstallCandidate(HKEY hRootKey, CStringArray &raCandidatePaths)
+	{
+		CRegKey key;
+		if (key.Open(hRootKey, _T("Software\\MediaInfo"), KEY_READ) != ERROR_SUCCESS)
+			return;
+		TCHAR szInstallPath[MAX_PATH];
+		ULONG ulChars = _countof(szInstallPath);
+		if (key.QueryStringValue(_T("Path"), szInstallPath, &ulChars) != ERROR_SUCCESS)
+			return;
+		AddCandidatePath(raCandidatePaths, CombinePath(szInstallPath, _T("MEDIAINFO.DLL")));
+	}
+
+	void CollectCandidatePaths(const CString &strConfiguredPath, CStringArray &raCandidatePaths)
+	{
+		if (!strConfiguredPath.IsEmpty() && ::PathIsRelative(strConfiguredPath)) {
+			const CString strAppFolder(GetAppFolder());
+			if (!strAppFolder.IsEmpty())
+				AddCandidatePath(raCandidatePaths, CombinePath(strAppFolder, strConfiguredPath));
+		}
+		AddRegistryInstallCandidate(HKEY_CURRENT_USER, raCandidatePaths);
+		AddRegistryInstallCandidate(HKEY_LOCAL_MACHINE, raCandidatePaths);
+		const CString strProgramFiles(ShellGetFolderPath(CSIDL_PROGRAM_FILES));
+		if (!strProgramFiles.IsEmpty())
+			AddCandidatePath(raCandidatePaths, CombinePath(strProgramFiles, _T("MediaInfo\\MEDIAINFO.DLL")));
+	}
+
+	HMODULE LoadCompatibleLibrary(const CString &strPath, ULONGLONG &rullVersion, CString &rstrReason)
+	{
+		rullVersion = 0;
+		if (!::PathFileExists(strPath)) {
+			rstrReason = _T("candidate path missing");
+			return NULL;
+		}
+		rullVersion = GetModuleVersion((LPCTSTR)strPath);
+		if (rullVersion < MAKEDLLVERULL(0, 7, 13, 0)) {
+			rstrReason = _T("version below supported minimum 0.7.13");
+			return NULL;
+		}
+		HMODULE hCandidateLib = ::LoadLibrary(strPath);
+		if (hCandidateLib == NULL) {
+			rstrReason.Format(_T("LoadLibrary failed: %s"), (LPCTSTR)GetErrorMessage(::GetLastError()));
+			return NULL;
+		}
+		if (::GetProcAddress(hCandidateLib, "MediaInfo_New") == NULL
+			|| ::GetProcAddress(hCandidateLib, "MediaInfo_Delete") == NULL
+			|| ::GetProcAddress(hCandidateLib, "MediaInfo_Open") == NULL
+			|| ::GetProcAddress(hCandidateLib, "MediaInfo_Close") == NULL
+			|| ::GetProcAddress(hCandidateLib, "MediaInfo_Get") == NULL)
+		{
+			rstrReason = _T("required MediaInfo exports are missing");
+			::FreeLibrary(hCandidateLib);
+			return NULL;
+		}
+		rstrReason = _T("candidate accepted");
+		return hCandidateLib;
+	}
+
+	void ResetLoadedLibrary()
+	{
+		m_ullVersion = 0;
+		m_hLib = NULL;
+		m_strLoadedPath.Empty();
+		m_pfnMediaInfo_New = NULL;
+		m_pfnMediaInfo_Open = NULL;
+		m_pfnMediaInfo_Close = NULL;
+		m_pfnMediaInfo_Delete = NULL;
+		m_pfnMediaInfo_Get = NULL;
+		m_pfnMediaInfo_GetI = NULL;
+	}
+
+	void BindLoadedLibrary(HMODULE hLib, ULONGLONG ullVersion, const CString &strPath)
+	{
+		m_hLib = hLib;
+		m_ullVersion = ullVersion;
+		m_strLoadedPath = strPath;
+		(FARPROC &)m_pfnMediaInfo_New = ::GetProcAddress(m_hLib, "MediaInfo_New");
+		(FARPROC &)m_pfnMediaInfo_Delete = ::GetProcAddress(m_hLib, "MediaInfo_Delete");
+		(FARPROC &)m_pfnMediaInfo_Open = ::GetProcAddress(m_hLib, "MediaInfo_Open");
+		(FARPROC &)m_pfnMediaInfo_Close = ::GetProcAddress(m_hLib, "MediaInfo_Close");
+		(FARPROC &)m_pfnMediaInfo_Get = ::GetProcAddress(m_hLib, "MediaInfo_Get");
+		(FARPROC &)m_pfnMediaInfo_GetI = ::GetProcAddress(m_hLib, "MediaInfo_GetI");
+	}
+
+	void LogCandidate(const CString &strPath, LPCTSTR pszStatus, ULONGLONG ullVersion) const
+	{
+		if (!thePrefs.GetVerbose())
+			return;
+		if (ullVersion != 0)
+			AddDebugLogLine(false, _T("MediaInfoDLL: %s [%s] version=%u.%u.%u.%u"), (LPCTSTR)strPath, pszStatus
+				, (UINT)HIWORD(HIDWORD(ullVersion)), (UINT)LOWORD(HIDWORD(ullVersion)), (UINT)HIWORD(LODWORD(ullVersion)), (UINT)LOWORD(LODWORD(ullVersion)));
+		else
+			AddDebugLogLine(false, _T("MediaInfoDLL: %s [%s]"), (LPCTSTR)strPath, pszStatus);
+	}
+
 	ULONGLONG m_ullVersion;
 	HINSTANCE m_hLib;
 	bool m_bInitialized;
+	CString m_strLoadedPath;
 
-	// MediaInfoLib: 0.7.13-0.7.99, 17.10-20.08
+	// MediaInfoLib: 0.7.13-0.7.99, 17.10+
 	void* (__stdcall *m_pfnMediaInfo_New)();
 	int(__stdcall *m_pfnMediaInfo_Open)(void *Handle, const wchar_t *File);
 	void(__stdcall *m_pfnMediaInfo_Close)(void *Handle);
 	void(__stdcall *m_pfnMediaInfo_Delete)(void *Handle);
-	const wchar_t*	(__stdcall *m_pfnMediaInfo_Get)(void *Handle, MediaInfo_stream_C StreamKind, size_t StreamNumber, const wchar_t *Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch);
-	const wchar_t*	(__stdcall *m_pfnMediaInfo_GetI)(void *Handle, MediaInfo_stream_C StreamKind, size_t StreamNumber, size_t Parameter, MediaInfo_info_C KindOfInfo);
+	const wchar_t* (__stdcall *m_pfnMediaInfo_Get)(void *Handle, MediaInfo_stream_C StreamKind, size_t StreamNumber, const wchar_t *Parameter, MediaInfo_info_C KindOfInfo, MediaInfo_info_C KindOfSearch);
+	const wchar_t* (__stdcall *m_pfnMediaInfo_GetI)(void *Handle, MediaInfo_stream_C StreamKind, size_t StreamNumber, size_t Parameter, MediaInfo_info_C KindOfInfo);
 };
 
 CMediaInfoDLL theMediaInfoDLL;
@@ -847,7 +965,6 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 	////////////////////////////////////////////////////////////////////////////
 	// Check for WM file
 	//
-#ifdef HAVE_WMSDK_H
 	if (theApp.GetProfileInt(_T("eMule"), _T("MediaInfo_WM"), 1)) {
 		try {
 			bool bIsWM = false;
@@ -870,7 +987,6 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 
 	if (!::IsWindow(hWndOwner))
 		return false;
-#endif//HAVE_WMSDK_H
 
 	////////////////////////////////////////////////////////////////////////////
 	// Check for MPEG Audio file
@@ -1730,7 +1846,6 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 		// Try MediaDet object
 		//
 		// Avoid processing of some file types which are known to crash due to bugged DirectShow filters.
-#ifdef HAVE_QEDIT_H
 		if (theApp.GetProfileInt(_T("eMule"), _T("MediaInfo_MediaDet"), 1)
 			&& (thePrefs.GetInspectAllFileTypes()
 				|| (szExt != _T("ogm") && szExt != _T("ogg") && szExt != _T("mkv"))))
@@ -1921,9 +2036,6 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 				ASSERT(0);
 			}
 		}
-#else//HAVE_QEDIT_H
-#pragma message("WARNING: Missing 'qedit.h' header file - some features will get disabled. See the file 'emule_site_config.h' for more information.")
-#endif//HAVE_QEDIT_H
 	}
 
 	if (!bFoundHeader && bGiveMediaInfoLibHint) {

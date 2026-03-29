@@ -20,11 +20,6 @@
 #include "FrameGrabThread.h"
 #include "OtherFunctions.h"
 #include "quantize.h"
-#ifndef HAVE_QEDIT_H
-// This is a separate feature, required in this module
-// Check emule_site_config.h to fix it
-#error Missing 'qedit.h', see comments in "emule_site_config.h" for further information.
-#endif
 #include <qedit.h>
 
 // DirectShow MediaDet

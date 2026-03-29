@@ -85,8 +85,6 @@ bool CTextToSpeech::Speak(LPCTSTR pwsz)
 CTextToSpeech theTextToSpeech;
 static bool s_bTTSDisabled = false;
 static bool s_bInitialized = false;
-#else//HAVE_SAPI_H
-#pragma message("WARNING: Missing 'sapi.h' header file - some features will get disabled. See the file 'emule_site_config.h' for more information.")
 #endif//HAVE_SAPI_H
 
 bool Speak(LPCTSTR pszSay)

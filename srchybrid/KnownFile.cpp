@@ -1359,7 +1359,6 @@ SMediaInfo* GetRMMediaInfo(LPCTSTR pszFullPath)
 
 SMediaInfo* GetWMMediaInfo(LPCTSTR pszFullPath)
 {
-#ifdef HAVE_WMSDK_H
 	bool bIsWM;
 	SMediaInfo *mi = new SMediaInfo;
 	if (!GetWMHeaders(pszFullPath, mi, bIsWM)) {
@@ -1367,10 +1366,6 @@ SMediaInfo* GetWMMediaInfo(LPCTSTR pszFullPath)
 		return NULL;
 	}
 	return mi;
-#else//HAVE_WMSDK_H
-	UNREFERENCED_PARAMETER(pszFullPath);
-	return NULL;
-#endif//HAVE_WMSDK_H
 }
 
 // Max. string length which is used for string meta tags like TAG_MEDIA_TITLE, TAG_MEDIA_ARTIST, ...

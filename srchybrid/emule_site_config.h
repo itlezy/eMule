@@ -3,9 +3,19 @@
 // Local compiler site configuration for the Windows 10/11 build baseline.
 // The current branch assumes a modern Visual Studio toolchain and Windows SDK.
 
+/**
+ * Detect optional SDK integrations which are not vendored in the tree.
+ * Bundled headers such as "qedit.h" are included directly by the modules that
+ * require them, while SAPI and WMSDK stay feature-gated by real header
+ * availability in the active toolchain.
+ */
+#if defined(__has_include) && __has_include(<sapi.h>)
 #define HAVE_SAPI_H
-#define HAVE_QEDIT_H
+#endif
+
+#if defined(__has_include) && __has_include(<wmsdk.h>)
 #define HAVE_WMSDK_H
+#endif
 
 #if _MSC_VER < 1937 // before VS2022 17.7
 #define NOEXCEPT noexcept

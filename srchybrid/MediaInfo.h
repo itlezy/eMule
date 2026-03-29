@@ -52,7 +52,6 @@ protected:
 };
 
 // DirectShow MediaDet
-#ifdef HAVE_QEDIT_H
 //#define MMNODRV		// mmsystem: Installable driver support
 #define MMNOSOUND		// mmsystem: Sound support
 //#define MMNOWAVE		// mmsystem: Waveform support
@@ -64,12 +63,7 @@ protected:
 #define MMNOMCI			// mmsystem: MCI support
 //#define MMNOMMIO		// mmsystem: Multimedia file I/O support
 #define MMNOMMSYSTEM	// mmsystem: General MMSYSTEM functions
-// NOTE: If you get a compile error due to missing 'qedit.h', look at "emule_site_config.h" for further information.
 #include <qedit.h>
-#else//HAVE_QEDIT_H
-#include <mmsystem.h>
-typedef LONGLONG REFERENCE_TIME;
-#endif//HAVE_QEDIT_H
 
 // Those defines are for 'mmreg.h' which is included by 'vfw.h'
 #define NOMMIDS		 // Multimedia IDs are not defined
@@ -215,9 +209,7 @@ bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType);
 bool GetDRM(LPCTSTR pszFilePath);
 bool GetRIFFHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsAVI, bool bFullInfo = false);
 bool GetRMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsRM, bool bFullInfo = false);
-#ifdef HAVE_WMSDK_H
 bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullInfo = false);
-#endif//HAVE_WMSDK_H
 CString GetAudioFormatName(WORD wFormatTag, CString &rstrComment);
 CString GetAudioFormatName(WORD wFormatTag);
 CString GetAudioFormatCodecId(WORD wFormatTag);
