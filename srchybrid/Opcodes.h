@@ -146,7 +146,6 @@
 
 #define UNLIMITED				_UI32_MAX
 
-//Proxy types deadlake
 #define PROXYTYPE_NOPROXY	0
 #define PROXYTYPE_SOCKS4	1
 #define PROXYTYPE_SOCKS4A	2
@@ -215,7 +214,7 @@
 #define OP_ASKSHAREDFILES		0x4A	// (null)
 #define OP_ASKSHAREDFILESANSWER 0x4B	// <count 4>(<HASH 16><ID 4><PORT 2><1 Tag_set>)[count]
 #define	OP_HELLOANSWER			0x4C	// <HASH 16><ID 4><PORT 2><1 Tag_set><SERVER_IP 4><SERVER_PORT 2>
-#define OP_CHANGE_CLIENT_ID		0x4D	// <ID_old 4><ID_new 4>
+#define OP_CHANGE_CLIENT_ID		0x4D	// <NewID 4><NewServerIP 4>
 #define	OP_MESSAGE				0x4E	// <len 2><Message len>
 #define OP_SETREQFILEID			0x4F	// <HASH 16>
 #define	OP_FILESTATUS			0x50	// <HASH 16><count 2><status(bit array) len:((count+7)/8)>
@@ -260,9 +259,6 @@
 #define OP_PREVIEWANSWER		0x91	// <HASH 16><frames 1>{frames * <len 4><frame len>}
 #define OP_MULTIPACKET			0x92	// *DEPRECATED*
 #define OP_MULTIPACKETANSWER	0x93	// *DEPRECATED*
-#define	OP_PEERCACHE_QUERY		0x94	// *DEFUNCT*
-#define	OP_PEERCACHE_ANSWER		0x95	// *DEFUNCT*
-#define	OP_PEERCACHE_ACK		0x96	// *DEFUNCT*
 #define	OP_PUBLICIP_REQ			0x97
 #define	OP_PUBLICIP_ANSWER		0x98
 #define OP_CALLBACK				0x99	// <HASH 16><HASH 16><uint 16>
