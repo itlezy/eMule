@@ -9,6 +9,7 @@
 - compare the branches to identify changes that were made in "eMule broadband v0.60d-dev" vs "eMule Community v60d"
 - do NOT keep wrappers, unused code, compatibility mapping when refactoring
 - this is a development alpha branch, it is ok to make breaking changes when refactoring
+- ensure to perform WIP commits for each block of edits to offer a granular history of changes
 - save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
 - load and strictly follow the PowerSheel guide from `%G_PRJ%\aidev\specs\POWERSHELL_GUIDE.md`
 - When checking UPNP mapping, ensure to launch `C:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
