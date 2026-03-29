@@ -232,12 +232,6 @@
     <ClCompile Include="IP2Country.cpp" />
     <ClCompile Include="IPFilter.cpp" />
     <ClCompile Include="IPFilterDlg.cpp" />
-    <ClCompile Include="IrcChannelListCtrl.cpp" />
-    <ClCompile Include="IrcChannelTabCtrl.cpp" />
-    <ClCompile Include="IrcMain.cpp" />
-    <ClCompile Include="IrcNickListCtrl.cpp" />
-    <ClCompile Include="IrcSocket.cpp" />
-    <ClCompile Include="IrcWnd.cpp" />
     <ClCompile Include="KadContactHistogramCtrl.cpp" />
     <ClCompile Include="KadContactListCtrl.cpp" />
     <ClCompile Include="kademlia\io\BufferedFileIO.cpp" />
@@ -305,7 +299,6 @@
     <ClCompile Include="PPgDisplay.cpp" />
     <ClCompile Include="PPgFiles.cpp" />
     <ClCompile Include="PPgGeneral.cpp" />
-    <ClCompile Include="PPgIRC.cpp" />
     <ClCompile Include="PPgMessages.cpp" />
     <ClCompile Include="PPgNotify.cpp" />
     <ClCompile Include="PPgProxy.cpp" />
@@ -515,12 +508,6 @@
     <ClInclude Include="IP2Country.h" />
     <ClInclude Include="IPFilter.h" />
     <ClInclude Include="IPFilterDlg.h" />
-    <ClInclude Include="IrcChannelListCtrl.h" />
-    <ClInclude Include="IrcChannelTabCtrl.h" />
-    <ClInclude Include="IrcMain.h" />
-    <ClInclude Include="IrcNickListCtrl.h" />
-    <ClInclude Include="IrcSocket.h" />
-    <ClInclude Include="IrcWnd.h" />
     <ClInclude Include="KadContactHistogramCtrl.h" />
     <ClInclude Include="KadContactListCtrl.h" />
     <ClInclude Include="kademlia\io\BufferedFileIO.h" />
@@ -597,7 +584,6 @@
     <ClInclude Include="PPgDisplay.h" />
     <ClInclude Include="PPgFiles.h" />
     <ClInclude Include="PPgGeneral.h" />
-    <ClInclude Include="PPgIRC.h" />
     <ClInclude Include="PPgMessages.h" />
     <ClInclude Include="PPgNotify.h" />
     <ClInclude Include="PPgProxy.h" />
@@ -827,8 +813,6 @@
     <Image Include="res\incomplete.ico" />
     <Image Include="res\Info.ico" />
     <Image Include="res\IPFilter.ico" />
-    <Image Include="res\IRC.ico" />
-    <Image Include="res\IRCClipboard.ico" />
     <Image Include="res\italic.ico" />
     <Image Include="res\Kad.ico" />
     <Image Include="res\KadBootstrap.ico" />

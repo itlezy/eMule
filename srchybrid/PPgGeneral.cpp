@@ -29,7 +29,6 @@
 #include "ChatWnd.h"
 #include "SharedFilesWnd.h"
 #include "KademliaWnd.h"
-#include "IrcWnd.h"
 #include "WebServices.h"
 #include "HelpIDs.h"
 #include "StringConversion.h"
@@ -212,7 +211,6 @@ BOOL CPPgGeneral::OnApply()
 			theApp.emuledlg->sharedfileswnd->Localize();
 			theApp.emuledlg->chatwnd->Localize();
 			theApp.emuledlg->Localize();
-			theApp.emuledlg->ircwnd->Localize();
 			theApp.emuledlg->kademliawnd->Localize();
 		}
 	}

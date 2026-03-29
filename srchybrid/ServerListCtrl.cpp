@@ -25,7 +25,6 @@
 #include "ServerConnect.h"
 #include "MenuCmds.h"
 #include "ServerWnd.h"
-#include "IrcWnd.h"
 #include "Opcodes.h"
 #include "Log.h"
 #include "IPFilter.h"
@@ -462,14 +461,10 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		return TRUE;
 	case MP_COPYSELECTED:
 	case MP_GETED2KLINK:
-	case Irc_SetSendLink:
 		{
 			const CString &strURLs(CreateSelectedServersURLs());
 			if (!strURLs.IsEmpty())
-				if (wParam == Irc_SetSendLink)
-					theApp.emuledlg->ircwnd->SetSendFileString(strURLs);
-				else
-					theApp.CopyTextToClipboard(strURLs);
+				theApp.CopyTextToClipboard(strURLs);
 		}
 		return TRUE;
 	case MP_PASTE:

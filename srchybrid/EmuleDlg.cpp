@@ -41,7 +41,6 @@
 #include "SearchDlg.h"
 #include "SharedFilesWnd.h"
 #include "ChatWnd.h"
-#include "IrcWnd.h"
 #include "StatisticsDlg.h"
 #include "IP2Country.h"
 #include "CreditsDlg.h"
@@ -247,7 +246,6 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	sharedfileswnd = new CSharedFilesWnd;
 	searchwnd = new CSearchDlg;
 	chatwnd = new CChatWnd;
-	ircwnd = new CIrcWnd;
 	statisticswnd = new CStatisticsDlg;
 	toolbar = new CMuleToolbarCtrl;
 	statusbar = new CMuleStatusBarCtrl;
@@ -314,7 +312,6 @@ CemuleDlg::~CemuleDlg()
 	delete statusbar;
 	delete toolbar;
 	delete statisticswnd;
-	delete ircwnd;
 	delete chatwnd;
 	delete sharedfileswnd;
 	delete kademliawnd;
@@ -445,7 +442,6 @@ BOOL CemuleDlg::OnInitDialog()
 	transferwnd->CreateWnd(this);
 	DialogCreateIndirect(statisticswnd, IDD_STATISTICS);
 	DialogCreateIndirect(kademliawnd, IDD_KADEMLIAWND);
-	DialogCreateIndirect(ircwnd, IDD_IRC);
 
 	// with the top rebar control, some XP themes look better with additional lite borders, some not.
 	//serverwnd->ModifyStyleEx(0, WS_EX_STATICEDGE);
@@ -455,7 +451,6 @@ BOOL CemuleDlg::OnInitDialog()
 	//transferwnd->ModifyStyleEx(0, WS_EX_STATICEDGE);
 	//statisticswnd->ModifyStyleEx(0, WS_EX_STATICEDGE);
 	//kademliawnd->ModifyStyleEx(0, WS_EX_STATICEDGE);
-	//ircwnd->ModifyStyleEx(0, WS_EX_STATICEDGE);
 
 	// optional: restore last used main window dialog
 	if (thePrefs.GetRestoreLastMainWndDlg()) {
@@ -478,9 +473,6 @@ BOOL CemuleDlg::OnInitDialog()
 			break;
 		case IDD_KADEMLIAWND:
 			activate = kademliawnd;
-			break;
-		case IDD_IRC:
-			activate = ircwnd;
 			break;
 		//case IDD_SERVER:
 		default:
@@ -514,7 +506,6 @@ BOOL CemuleDlg::OnInitDialog()
 		sharedfileswnd,
 		searchwnd,
 		chatwnd,
-		ircwnd,
 		statisticswnd
 	};
 	for (unsigned i = 0; i < _countof(apWnds); ++i) {
@@ -1651,8 +1642,6 @@ void CemuleDlg::OnClose()
 			thePrefs.SetLastMainWndDlgID(IDD_STATISTICS);
 		else if (activewnd->IsKindOf(RUNTIME_CLASS(CKademliaWnd)))
 			thePrefs.SetLastMainWndDlgID(IDD_KADEMLIAWND);
-		else if (activewnd->IsKindOf(RUNTIME_CLASS(CIrcWnd)))
-			thePrefs.SetLastMainWndDlgID(IDD_IRC);
 		else {
 			ASSERT(0);
 			thePrefs.SetLastMainWndDlgID(0);
@@ -2456,10 +2445,6 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	case MP_HM_MSGS:
 		SetActiveDialog(chatwnd);
 		break;
-	case TBBTN_IRC:
-	case MP_HM_IRC:
-		SetActiveDialog(ircwnd);
-		break;
 	case TBBTN_STATS:
 	case MP_HM_STATS:
 		SetActiveDialog(statisticswnd);
@@ -2594,7 +2579,6 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 		menu.AppendMenu(MF_STRING, MP_HM_SEARCH, GetResString(IDS_EM_SEARCH), _T("SEARCH"));
 		menu.AppendMenu(MF_STRING, MP_HM_FILES, GetResString(IDS_EM_FILES), _T("SharedFiles"));
 		menu.AppendMenu(MF_STRING, MP_HM_MSGS, GetResString(IDS_EM_MESSAGES), _T("MESSAGES"));
-		menu.AppendMenu(MF_STRING, MP_HM_IRC, GetResString(IDS_IRC), _T("IRC"));
 		menu.AppendMenu(MF_STRING, MP_HM_STATS, GetResString(IDS_EM_STATISTIC), _T("STATISTICS"));
 		menu.AppendMenu(MF_STRING, MP_HM_PREFS, GetResString(IDS_EM_PREFS), _T("PREFERENCES"));
 		menu.AppendMenu(MF_STRING, MP_HM_HELP, GetResString(IDS_EM_HELP), _T("HELP"));
@@ -2629,7 +2613,6 @@ void CemuleDlg::ApplyHyperTextFont(LPLOGFONT pFont)
 		thePrefs.SetHyperTextFont(pFont);
 		serverwnd->servermsgbox->SetFont(&theApp.m_fontHyperText);
 		chatwnd->chatselector.UpdateFonts(&theApp.m_fontHyperText);
-		ircwnd->UpdateFonts(&theApp.m_fontHyperText);
 	}
 }
 
@@ -2892,8 +2875,6 @@ int CemuleDlg::MapWindowToToolbarButton(CWnd *pWnd) const
 		return TBBTN_STATS;
 	if (pWnd == kademliawnd)
 		return TBBTN_KAD;
-	if (pWnd == ircwnd)
-		return TBBTN_IRC;
 	if (pWnd == chatwnd)
 		return TBBTN_MESSAGES;
 	ASSERT(0);
@@ -2915,8 +2896,6 @@ CWnd* CemuleDlg::MapToolbarButtonToWindow(int iButtonID) const
 		return statisticswnd;
 	case TBBTN_KAD:
 		return kademliawnd;
-	case TBBTN_IRC:
-		return ircwnd;
 	case TBBTN_MESSAGES:
 		return chatwnd;
 	}
@@ -2933,7 +2912,6 @@ bool CemuleDlg::IsWindowToolbarButton(int iButtonID) const
 	case TBBTN_SEARCH:
 	case TBBTN_STATS:
 	case TBBTN_KAD:
-	case TBBTN_IRC:
 	case TBBTN_MESSAGES:
 		return true;
 	}
@@ -3078,7 +3056,6 @@ void CemuleDlg::CreateToolbarCmdIconMap()
 	m_mapTbarCmdToIcon[TBBTN_SEARCH] = _T("Search");
 	m_mapTbarCmdToIcon[TBBTN_SHARED] = _T("SharedFiles");
 	m_mapTbarCmdToIcon[TBBTN_MESSAGES] = _T("Messages");
-	m_mapTbarCmdToIcon[TBBTN_IRC] = _T("IRC");
 	m_mapTbarCmdToIcon[TBBTN_STATS] = _T("Statistics");
 	m_mapTbarCmdToIcon[TBBTN_OPTIONS] = _T("Preferences");
 	m_mapTbarCmdToIcon[TBBTN_TOOLS] = _T("Tools");

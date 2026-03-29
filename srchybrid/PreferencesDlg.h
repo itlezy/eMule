@@ -6,7 +6,6 @@
 #include "PPgFiles.h"
 #include "PPgStats.h"
 #include "PPgNotify.h"
-#include "PPgIRC.h"
 #include "PPgTweaks.h"
 #include "PPgDisplay.h"
 #include "PPgSecurity.h"
@@ -36,7 +35,6 @@ public:
 	CPPgFiles		m_wndFiles;
 	CPPgStats		m_wndStats;
 	CPPgNotify		m_wndNotify;
-	CPPgIRC			m_wndIRC;
 	CPPgTweaks		m_wndTweaks;
 	CPPgDisplay		m_wndDisplay;
 	CPPgSecurity	m_wndSecurity;

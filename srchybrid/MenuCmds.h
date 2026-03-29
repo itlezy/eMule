@@ -35,7 +35,6 @@
 #define MP_HM_SEARCH			10212
 #define MP_HM_FILES				10213
 #define MP_HM_MSGS				10214
-#define MP_HM_IRC				10215
 #define MP_HM_STATS				10216
 #define MP_HM_PREFS				10217
 #define MP_HM_OPENINC			10218
@@ -190,17 +189,3 @@
 #define	MP_PREVIEW_APP_MAX		(MP_PREVIEW_APP_MIN + 49)
 #define MP_FILTERCOLUMNS		11300	// reserve 50 entries for filter columns
 
-#define Irc_Join				10240
-#define Irc_Close				10241
-#define Irc_Priv				10242
-#define Irc_AddFriend			10243
-#define	Irc_SendLink			10244
-#define Irc_SetSendLink			10245
-#define Irc_Kick				10246
-#define Irc_Ban					10247
-#define Irc_KB					10248
-#define Irc_Slap				10249
-//Note: reserve at least 50 ID's (Irc_OpCommands - Irc_OpCommands + 49).
-#define Irc_OpCommands			10250
-//Note: reserve at least 100 ID's (Irc_ChanCommands - Irc_ChanCommands + 99).
-#define Irc_ChanCommands		(Irc_OpCommands + 50)

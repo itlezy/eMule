@@ -29,7 +29,6 @@
 #include "TransferDlg.h"
 #include "SharedFilesWnd.h"
 #include "ChatWnd.h"
-#include "IrcWnd.h"
 #include "StatisticsDlg.h"
 
 #ifdef _DEBUG
@@ -38,7 +37,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define	NUM_BUTTON_BITMAPS	14
+#define	NUM_BUTTON_BITMAPS	13
 
 #define	EMULTB_BASEEXT		_T("eMuleToolbar.kad02")
 
@@ -62,12 +61,28 @@ static const int TBStringIDs[] =
 	IDS_EM_SEARCH,
 	IDS_EM_FILES,
 	IDS_EM_MESSAGES,
-	IDS_IRC,
 	IDS_EM_STATISTIC,
 	IDS_EM_PREFS,
 	IDS_TOOLS,
 	IDS_EM_HELP
 };
+
+/**
+ * Drop persisted toolbar layouts which still contain button indices for the removed IRC page.
+ */
+static CString GetValidatedToolbarConfig(const CString &strToolbarConfig)
+{
+	if ((strToolbarConfig.GetLength() & 1) != 0 || strToolbarConfig.IsEmpty())
+		return strDefaultToolbar;
+
+	for (int i = 0; i < strToolbarConfig.GetLength(); i += 2) {
+		const int iIndex = _tstoi(strToolbarConfig.Mid(i, 2));
+		if (iIndex != 99 && (iIndex < 0 || iIndex > _countof(TBStringIDs)))
+			return strDefaultToolbar;
+	}
+
+	return strToolbarConfig;
+}
 
 #define	MAX_TOOLBAR_FILES	100
 #define	MAX_SKIN_FILES		100
@@ -174,7 +189,9 @@ void CMuleToolbarCtrl::Init()
 	sepButton.iString = -1;
 	sepButton.iBitmap = -1;
 
-	const CString &config(thePrefs.GetToolbarSettings());
+	const CString config(GetValidatedToolbarConfig(thePrefs.GetToolbarSettings()));
+	if (config != thePrefs.GetToolbarSettings())
+		thePrefs.SetToolbarSettings(config);
 	for (int i = 0; i < config.GetLength(); i += 2) {
 		int index = _tstoi(config.Mid(i, 2));
 		AddButtons(1, (index == 99) ? &sepButton : &TBButtons[index]);
@@ -552,7 +569,6 @@ void CMuleToolbarCtrl::ChangeToolbarBitmap(const CString &path, bool bRefresh)
 		ImageList.Add(CTempIconLoader(_T("SEARCH"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
 		ImageList.Add(CTempIconLoader(_T("SharedFiles"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
 		ImageList.Add(CTempIconLoader(_T("MESSAGES"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
-		ImageList.Add(CTempIconLoader(_T("IRC"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
 		ImageList.Add(CTempIconLoader(_T("STATISTICS"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
 		ImageList.Add(CTempIconLoader(_T("PREFERENCES"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
 		ImageList.Add(CTempIconLoader(_T("TOOLS"), m_sizBtnBmp.cx, m_sizBtnBmp.cy));
@@ -763,7 +779,6 @@ void CMuleToolbarCtrl::Refresh()
 			theApp.emuledlg->sharedfileswnd,
 			theApp.emuledlg->searchwnd,
 			theApp.emuledlg->chatwnd,
-			theApp.emuledlg->ircwnd,
 			theApp.emuledlg->statisticswnd
 		};
 		for (int i = (int)_countof(wnds); --i >= 0;) {

@@ -70,7 +70,6 @@ CPreferencesDlg::CPreferencesDlg()
 	m_wndDirectories.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndFiles.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndStats.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndIRC.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndWebServer.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndTweaks.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndSecurity.m_psp.dwFlags &= ~PSH_HASHELP;
@@ -90,7 +89,6 @@ CPreferencesDlg::CPreferencesDlg()
 	CTreePropSheet::SetPageIcon(&m_wndFiles, _T("Transfer"));
 	CTreePropSheet::SetPageIcon(&m_wndNotify, _T("NOTIFICATIONS"));
 	CTreePropSheet::SetPageIcon(&m_wndStats, _T("STATISTICS"));
-	CTreePropSheet::SetPageIcon(&m_wndIRC, _T("IRC"));
 	CTreePropSheet::SetPageIcon(&m_wndSecurity, _T("SECURITY"));
 	CTreePropSheet::SetPageIcon(&m_wndScheduler, _T("SCHEDULER"));
 	CTreePropSheet::SetPageIcon(&m_wndWebServer, _T("WEB"));
@@ -109,7 +107,6 @@ CPreferencesDlg::CPreferencesDlg()
 	AddPage(&m_wndFiles);
 	AddPage(&m_wndNotify);
 	AddPage(&m_wndStats);
-	AddPage(&m_wndIRC);
 	AddPage(&m_wndMessages);
 	AddPage(&m_wndSecurity);
 	AddPage(&m_wndScheduler);
@@ -172,7 +169,6 @@ void CPreferencesDlg::Localize()
 	m_wndFiles.Localize();
 	m_wndStats.Localize();
 	m_wndNotify.Localize();
-	m_wndIRC.Localize();
 	m_wndSecurity.Localize();
 	m_wndTweaks.Localize();
 	m_wndWebServer.Localize();
@@ -181,10 +177,10 @@ void CPreferencesDlg::Localize()
 	m_wndMessages.Localize();
 
 	if (GetPageTreeControl()) {
-		static const UINT uids[15] =
+		static const UINT uids[14] =
 		{
 			IDS_PW_GENERAL, IDS_PW_DISPLAY, IDS_CONNECTION, IDS_PW_PROXY, IDS_PW_SERVER,
-			IDS_PW_DIR, IDS_PW_FILES, IDS_PW_EKDEV_OPTIONS, IDS_STATSSETUPINFO, IDS_IRC,
+			IDS_PW_DIR, IDS_PW_FILES, IDS_PW_EKDEV_OPTIONS, IDS_STATSSETUPINFO,
 			IDS_MESSAGESCOMMENTS, IDS_SECURITY, IDS_SCHEDULER, IDS_PW_WS, IDS_PW_TWEAK
 		};
 

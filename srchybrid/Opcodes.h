@@ -242,7 +242,6 @@
 
 // eDonkeyHybrid truncates every received client message to 200 bytes, although it allows to send messages of any(?) size.
 #define	MAX_CLIENT_MSG_LEN		450		// using 200 is just too short
-#define	MAX_IRC_MSG_LEN			450		// 450 = same as in mIRC
 
 // extended prot client <-> extended prot client
 #define	OP_EMULEINFO			0x01	//

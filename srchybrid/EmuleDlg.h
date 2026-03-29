@@ -29,7 +29,6 @@ namespace Kademlia
 };
 
 class CChatWnd;
-class CIrcWnd;
 class CKademliaWnd;
 class CKnownFileList;
 class CMainFrameDropTarget;
@@ -147,7 +146,6 @@ public:
 	CChatWnd		*chatwnd;
 	CMuleStatusBarCtrl *statusbar;
 	CStatisticsDlg	*statisticswnd;
-	CIrcWnd			*ircwnd;
 	CMuleToolbarCtrl *toolbar;
 	CKademliaWnd	*kademliawnd;
 	CSplashScreen	*m_pSplashWnd;

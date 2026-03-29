@@ -33,7 +33,6 @@
 #include "MemDC.h"
 #include "PartFile.h"
 #include "MenuCmds.h"
-#include "IrcWnd.h"
 #include "SharedFilesWnd.h"
 #include "Opcodes.h"
 #include "InputBox.h"
@@ -790,8 +789,6 @@ void CSharedFilesCtrl::OnContextMenu(CWnd*, CPoint point)
 		m_SharedFilesMenu.EnableMenuItem(MP_GETKADSOURCELINK, (bEnable ? MF_ENABLED : MF_GRAYED));
 	}
 #endif
-	m_SharedFilesMenu.EnableMenuItem(Irc_SetSendLink, (!bContainsOnlyShareableFile && iSelectedItems == 1 && theApp.emuledlg->ircwnd->IsConnected()) ? MF_ENABLED : MF_GRAYED);
-
 	CTitledMenu WebMenu;
 	WebMenu.CreateMenu();
 	WebMenu.AddMenuTitle(NULL, true);
@@ -829,10 +826,6 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 			pKnownFile = NULL;
 
 		switch (wParam) {
-		case Irc_SetSendLink:
-			if (pKnownFile != NULL)
-				theApp.emuledlg->ircwnd->SetSendFileString(pKnownFile->GetED2kLink());
-			break;
 		case MP_GETED2KLINK:
 			{
 				CString str;
@@ -1331,8 +1324,6 @@ void CSharedFilesCtrl::CreateMenus()
 	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_RENAME, GetResString(IDS_RENAME) + _T("..."), _T("FILERENAME"));
 	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_REMOVE, GetResString(IDS_DELETE), _T("DELETE"));
 	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_UNSHAREFILE, GetResString(IDS_UNSHARE), _T("KADBOOTSTRAP")); // TODO: better icon
-	if (thePrefs.IsExtControlsEnabled())
-		m_SharedFilesMenu.AppendMenu(MF_STRING, Irc_SetSendLink, GetResString(IDS_IRC_ADDLINKTOIRC), _T("IRCCLIPBOARD"));
 
 	m_SharedFilesMenu.AppendMenu(MF_STRING | MF_SEPARATOR);
 	CString sPrio(GetResString(IDS_PRIORITY));
