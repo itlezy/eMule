@@ -2,20 +2,21 @@
 
 ## Last Chunk
 
-- Simplified the shared-subfolder feature to rely only on explicit shared roots plus the global `AutoShareNewSharedSubdirs` flag.
-- Removed the separate persisted auto-managed descendant-directory state from `srchybrid\SharedFileList.cpp/.h`.
-- Kept the watcher-backed dirty flag, queued auto reload path, and long-path-safe watcher setup intact.
+- Removed the legacy first-start wizard from startup, the hot menu, and the project build.
+- Deleted `srchybrid\PShtWiz1.cpp` so fresh installs now go straight to the main UI.
+- Modernized the remaining connection helper into a `Presets` dialog with generic speed tiers instead of obsolete ISP-era entries.
+- Kept the bandwidth tuning behavior focused on capacities, limits, max connections, and max sources per file.
 - Verified with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- Shared roots are monitored for change notifications without immediate incremental mutation.
-- Auto rescans are coalesced through the existing reload pipeline and honor the configured interval floor of 600 seconds.
-- Subfolder sharing is now recomputed entirely from `shareddir_list` and the global auto-share flag on each reload/startup.
-- The feature build is green, and the worktree only contains the new feature edits plus the unrelated existing `AGENTS.md` change.
+- Fresh installs no longer open a first-run wizard.
+- Preferences > Connection now exposes `Presets...` instead of `Wizard...`.
+- The connection presets dialog starts from the current bandwidth settings, offers generic modern tiers, and still applies the existing tuning heuristics.
+- The build is green, and the only remaining uncommitted change in the worktree is the unrelated existing `AGENTS.md` modification.
 
 ## Next Chunk
 
-- Manually exercise the new sharing options in the UI with a long-path shared root and verify delayed reload behavior end to end.
-- Confirm the descendant-sharing semantics are acceptable for category/incoming folders versus explicit shared roots only.
-- Add translations for the new base resource strings if broader localization coverage is needed.
+- Manually exercise the new `Presets...` dialog in the UI and confirm preset selection, custom entry, and apply behavior feel right.
+- Decide whether the button/control IDs and internal class naming should also be renamed from `Wizard` to `Presets`, or left as-is to minimize churn.
+- Add localized `IDS_PRESETS` translations if broader language coverage is needed.
