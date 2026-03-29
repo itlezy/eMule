@@ -71,7 +71,7 @@ class CMediaInfoDLL
 {
 public:
 	/** @brief Minimum tested MediaInfo DLL version required by this build. */
-	static const ULONGLONG s_ullMinimumVersion = MAKEDLLVERULL(18, 6, 0, 0);
+	static const ULONGLONG s_ullMinimumVersion = MAKEDLLVERULL(23, 0, 0, 0);
 
 	CMediaInfoDLL()
 		: m_ullVersion()
@@ -310,7 +310,7 @@ protected:
 	bool m_bInitialized;
 	CString m_strLoadedPath;
 
-	// MediaInfoLib: requires 18.06 or newer.
+	// MediaInfoLib: requires 23.00 or newer.
 	void* (__stdcall *m_pfnMediaInfo_New)();
 	int(__stdcall *m_pfnMediaInfo_Open)(void *Handle, const wchar_t *File);
 	void(__stdcall *m_pfnMediaInfo_Close)(void *Handle);
