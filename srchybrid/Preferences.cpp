@@ -1925,7 +1925,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("RunAsUnprivilegedUser"), m_bRunAsUser);
 	ini.WriteBool(_T("OpenPortsOnStartUp"), m_bOpenPortsOnStartUp);
 	ini.WriteInt(_T("DebugLogLevel"), m_byLogLevel);
-	ini.WriteInt(_T("WinXPSP2OrHigher"), static_cast<int>(IsRunningXPSP2OrHigher()));
 	ini.WriteBool(_T("RememberCancelledFiles"), m_bRememberCancelledFiles);
 	ini.WriteBool(_T("RememberDownloadedFiles"), m_bRememberDownloadedFiles);
 
@@ -2145,12 +2144,6 @@ void CPreferences::LoadPreferences()
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
 	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 50);
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
-
-	// reset max half-open to a default if OS changed to/from XP SP2 or higher
-	int dwSP2OrHigher = ini.GetInt(_T("WinXPSP2OrHigher"), -1);
-	bool dwCurSP2OrHigher = IsRunningXPSP2OrHigher();
-	if (dwSP2OrHigher != static_cast<int>(dwCurSP2OrHigher))
-		maxhalfconnections = 50;
 
 	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
 	m_strBindInterfaceName = ini.GetString(_T("BindInterfaceName")).Trim();
@@ -2530,7 +2523,7 @@ void CPreferences::LoadPreferences()
 	m_bRememberDownloadedFiles = ini.GetBool(_T("RememberDownloadedFiles"), true);
 	m_bPartiallyPurgeOldKnownFiles = ini.GetBool(_T("PartiallyPurgeOldKnownFiles"), true);
 
-	m_email.bSendMail = IsRunningXPSP2OrHigher() && ini.GetBool(_T("NotifierSendMail"), false);
+	m_email.bSendMail = ini.GetBool(_T("NotifierSendMail"), false);
 	m_email.uAuth = static_cast<SMTPauth>(ini.GetInt(_T("NotifierMailAuth"), 0));
 	m_email.uTLS = static_cast<TLSmode>(ini.GetInt(_T("NotifierMailTLS"), 0));
 	m_email.sFrom = ini.GetString(_T("NotifierMailSender"), _T(""));

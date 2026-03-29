@@ -711,31 +711,7 @@ WORD DetectWinVersion()
 	return _WINVER_95_;		// there shouldn't be anything lower than this
 }
 
-bool IsRunningXPSP2()
-{
-	OSVERSIONINFOEX osvi;
-	osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFOEX);
-
-	if (!GetVersionEx((OSVERSIONINFO*)&osvi)) {
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFO);
-		if (!GetVersionEx((OSVERSIONINFO*)&osvi))
-			return false;
-	}
-
-	return osvi.dwPlatformId == VER_PLATFORM_WIN32_NT
-		&& osvi.dwMajorVersion == 5
-		&& osvi.dwMinorVersion == 1
-		&& osvi.wServicePackMajor >= 2;
-}
 #pragma warning(pop)
-
-bool IsRunningXPSP2OrHigher()
-{
-	WORD wv = thePrefs.GetWindowsVersion();
-	if (wv == _WINVER_XP_)
-		return IsRunningXPSP2();
-	return wv > _WINVER_XP_;
-}
 
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
 {

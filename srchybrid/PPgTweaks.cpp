@@ -495,11 +495,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	/////////////////////////////////////////////////////////////////////////////
 	// Miscellaneous group
 	//
-	WORD wv = thePrefs.GetWindowsVersion();
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoTakeEd2kLinks, m_bAutoTakeEd2kLinks);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCreditSystem, m_bCreditSystem);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFirewallStartup, m_bFirewallStartup);
-	m_ctrlTreeOptions.SetCheckBoxEnable(m_htiFirewallStartup, wv == _WINVER_XP_ && !IsRunningXPSP2());
+	m_ctrlTreeOptions.SetCheckBoxEnable(m_htiFirewallStartup, FALSE);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFilterLANIPs, m_bFilterLANIPs);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtControls, m_bExtControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiA4AFSaveCpu, m_bA4AFSaveCpu);
@@ -541,7 +540,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// File related group
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSparsePartFiles, m_bSparsePartFiles);
-	m_ctrlTreeOptions.SetCheckBoxEnable(m_htiSparsePartFiles, wv != _WINVER_VISTA_ /*only disable on Vista, not later versions*/);
+	m_ctrlTreeOptions.SetCheckBoxEnable(m_htiSparsePartFiles, TRUE);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiImportParts, m_bImportParts);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCheckDiskspace, m_bCheckDiskspace);
@@ -657,7 +656,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// eMule Shared User
 	//
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiShareeMule, m_iShareeMule);
-	m_ctrlTreeOptions.SetRadioButtonEnable(m_htiShareeMulePublicUser, wv >= _WINVER_VISTA_);
+	m_ctrlTreeOptions.SetRadioButtonEnable(m_htiShareeMulePublicUser, TRUE);
 }
 
 BOOL CPPgTweaks::OnInitDialog()
@@ -695,7 +694,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bResolveShellLinks = thePrefs.GetResolveSharedShellLinks();
 	m_fMinFreeDiskSpaceGB = (float)(thePrefs.m_uMinFreeDiskSpace / (1024.0 * 1024.0 * 1024.0));
 	m_sYourHostname = thePrefs.GetYourHostname();
-	m_bFirewallStartup = ((thePrefs.GetWindowsVersion() == _WINVER_XP_) ? thePrefs.m_bOpenPortsOnStartUp : 0);
+	m_bFirewallStartup = FALSE;
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
 	m_iBBMaxUpClientsAllowed = static_cast<int>(thePrefs.GetMaxUpClientsAllowed());
 	const uint64 uBBSessionMaxTrans = thePrefs.GetBBSessionMaxTrans();

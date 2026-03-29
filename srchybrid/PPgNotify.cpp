@@ -103,8 +103,6 @@ BOOL CPPgNotify::OnInitDialog()
 
 	SetDlgItemText(IDC_EDIT_TBN_WAVFILE, thePrefs.notifierSoundFile);
 
-	bool b = IsRunningXPSP2OrHigher();
-	m_mail.bSendMail &= b;
 	CheckDlgButton(IDC_CB_ENABLENOTIFICATIONS, m_mail.bSendMail ? BST_CHECKED : BST_UNCHECKED);
 	SetDlgItemText(IDC_EDIT_RECEIVER, m_mail.sTo);
 	SetDlgItemText(IDC_EDIT_SENDER, m_mail.sFrom);

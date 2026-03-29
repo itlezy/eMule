@@ -39,9 +39,9 @@
 - Socket-buffer preferences are now persisted and exposed in Tweaks.
 - The live UDP socket reapplies the configured receive buffer on Tweaks apply.
 - A manual Windows 10/11 firewall helper script is present at `helpers\\firewall-opener.ps1`.
+- `IsRunningXPSP2*` and the `WinXPSP2OrHigher` migration key have been removed.
 
 ## Next Chunk
 
-- Remove `IsRunningXPSP2*` and the `WinXPSP2OrHigher` migration key.
 - Simplify pre-Windows-10 UI and feature gates.
 - Remove or isolate the legacy XP `CFirewallOpener` product path after the helper-script fallback exists.

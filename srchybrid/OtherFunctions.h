@@ -323,8 +323,6 @@ UINT GetMaxWindowsTCPConnections();
 #define _WINVER_10_		0x0a00	// 10.0
 
 WORD		DetectWinVersion();
-bool		IsRunningXPSP2();
-bool		IsRunningXPSP2OrHigher();
 uint64		GetFreeDiskSpaceX(LPCTSTR pDirectory);
 ULONGLONG	GetDiskFileSize(LPCTSTR pszFilePath);
 int			GetAppImageListColorFlag();

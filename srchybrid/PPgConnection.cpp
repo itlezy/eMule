@@ -338,13 +338,11 @@ void CPPgConnection::LoadSettings()
 		GetDlgItem(IDC_NETWORK_KADEMLIA)->EnableWindow(thePrefs.GetUDPPort() > 0);
 		CheckDlgButton(IDC_NETWORK_ED2K, static_cast<UINT>(thePrefs.networked2k));
 
-		WORD wv = thePrefs.GetWindowsVersion();
-		// don't try on XP SP2 or higher, not needed there any more
-		GetDlgItem(IDC_OPENPORTS)->ShowWindow(
-			(wv == _WINVER_XP_ && !IsRunningXPSP2() && theApp.m_pFirewallOpener->DoesFWConnectionExist())
-			? SW_SHOW : SW_HIDE);
+		// The legacy in-app firewall opener is obsolete on modern Windows and remains hidden
+		// until the Windows 10/11 replacement is wired into the UI.
+		GetDlgItem(IDC_OPENPORTS)->ShowWindow(theApp.m_pFirewallOpener->DoesFWConnectionExist() ? SW_SHOW : SW_HIDE);
 
-		GetDlgItem(IDC_PREF_UPNPONSTART)->EnableWindow(wv != _WINVER_95_ && wv != _WINVER_98_ && wv != _WINVER_NT4_);
+		GetDlgItem(IDC_PREF_UPNPONSTART)->EnableWindow(TRUE);
 
 		CheckDlgButton(IDC_PREF_UPNPONSTART, static_cast<UINT>(thePrefs.IsUPnPEnabled()));
 
