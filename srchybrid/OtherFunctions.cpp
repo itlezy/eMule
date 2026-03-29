@@ -1219,6 +1219,9 @@ struct SED2KFileType
 	{ _T(".aud"),   ED2KFT_AUDIO },		// General Audio File
 	{ _T(".audio"), ED2KFT_AUDIO },		// General Audio File
 	{ _T(".cda"),   ED2KFT_AUDIO },		// CD Audio Track
+	{ _T(".caf"),   ED2KFT_AUDIO },		// Core Audio Format File
+	{ _T(".dff"),   ED2KFT_AUDIO },		// DSD Interchange File Format
+	{ _T(".dsf"),   ED2KFT_AUDIO },		// DSD Stream File
 	{ _T(".dmf"),   ED2KFT_AUDIO },		// Delusion Digital Music File
 	{ _T(".dsm"),   ED2KFT_AUDIO },		// Digital Sound Module
 	{ _T(".dts"),   ED2KFT_AUDIO },		// DTS Encoded Audio File
@@ -1233,6 +1236,8 @@ struct SED2KFileType
 	{ _T(".mid"),   ED2KFT_AUDIO },		// MIDI File
 	{ _T(".midi"),  ED2KFT_AUDIO },		// MIDI File
 	{ _T(".mka"),   ED2KFT_AUDIO },		// Matroska Audio File
+	{ _T(".m4r"),   ED2KFT_AUDIO },		// MPEG-4 Ringtone Audio File
+	{ _T(".m4b"),   ED2KFT_AUDIO },		// MPEG-4 Audiobook File
 	{ _T(".mod"),   ED2KFT_AUDIO },		// Amiga Music Module File
 	{ _T(".mp1"),   ED2KFT_AUDIO },		// MPEG-1 Audio File
 	{ _T(".mp2"),   ED2KFT_AUDIO },		// MPEG-2 Audio File
@@ -1240,17 +1245,23 @@ struct SED2KFileType
 	{ _T(".mpa"),   ED2KFT_AUDIO },		// MPEG Audio File
 	{ _T(".mpc"),   ED2KFT_AUDIO },		// Musepack Compressed Audio File
 	{ _T(".mtm"),   ED2KFT_AUDIO },		// MultiTracker Module
+	{ _T(".oga"),   ED2KFT_AUDIO },		// Ogg Audio File
 	{ _T(".ogg"),   ED2KFT_AUDIO },		// Ogg Vorbis Compressed Audio File
+	{ _T(".opus"),  ED2KFT_AUDIO },		// Opus Audio File
 	{ _T(".psm"),   ED2KFT_AUDIO },		// Protracker Studio Module
 	{ _T(".ptm"),   ED2KFT_AUDIO },		// PolyTracker Module
 	{ _T(".ra"),    ED2KFT_AUDIO },		// Real Audio File
 	{ _T(".rmi"),   ED2KFT_AUDIO },		// MIDI File
 	{ _T(".s3m"),   ED2KFT_AUDIO },		// Scream Tracker 3 Module
 	{ _T(".snd"),   ED2KFT_AUDIO },		// Audio File (Sun, Unix)
+	{ _T(".spx"),   ED2KFT_AUDIO },		// Speex Audio File
 	{ _T(".stm"),   ED2KFT_AUDIO },		// Scream Tracker 2 Module
+	{ _T(".tta"),   ED2KFT_AUDIO },		// True Audio Lossless File
 	{ _T(".umx"),   ED2KFT_AUDIO },		// Unreal Music Package
 	{ _T(".wav"),   ED2KFT_AUDIO },		// WAVE Audio File
+	{ _T(".weba"),  ED2KFT_AUDIO },		// WebM Audio File
 	{ _T(".wma"),   ED2KFT_AUDIO },		// Windows Media Audio File
+	{ _T(".wv"),    ED2KFT_AUDIO },		// WavPack Audio File
 	{ _T(".xm"),    ED2KFT_AUDIO },		// Fasttracker 2 Extended Module
 
 	{ _T(".3g2"),   ED2KFT_VIDEO },		// 3GPP Multimedia File
@@ -1273,7 +1284,6 @@ struct SED2KFileType
 	{ _T(".m2t"),   ED2KFT_VIDEO },		// MPEG-2 Video Transport Stream
 	{ _T(".m2ts"),  ED2KFT_VIDEO },		// MPEG-2 Video Transport Stream
 	{ _T(".m2v"),   ED2KFT_VIDEO },		// MPEG-2 Video File
-	{ _T(".m4b"),   ED2KFT_VIDEO },		// MPEG-4 Video File
 	{ _T(".m4v"),   ED2KFT_VIDEO },		// MPEG-4 Video File
 	{ _T(".mkv"),   ED2KFT_VIDEO },		// Matroska Video File
 	{ _T(".mov"),   ED2KFT_VIDEO },		// QuickTime Movie File
@@ -1287,7 +1297,10 @@ struct SED2KFileType
 	{ _T(".mpv"),   ED2KFT_VIDEO },		// MPEG Video File
 	{ _T(".mpv1"),  ED2KFT_VIDEO },		// MPEG-1 Video File
 	{ _T(".mpv2"),  ED2KFT_VIDEO },		// MPEG-2 Video File
+	{ _T(".mts"),   ED2KFT_VIDEO },		// AVCHD Video Transport Stream
+	{ _T(".mxf"),   ED2KFT_VIDEO },		// Material Exchange Format File
 	{ _T(".ogm"),   ED2KFT_VIDEO },		// Ogg Media File
+	{ _T(".ogv"),   ED2KFT_VIDEO },		// Ogg Video File
 	{ _T(".pva"),   ED2KFT_VIDEO },		// MPEG Video File
 	{ _T(".qt"),    ED2KFT_VIDEO },		// QuickTime Movie
 	{ _T(".ram"),   ED2KFT_VIDEO },		// Real Audio Media
@@ -1305,6 +1318,7 @@ struct SED2KFileType
 	{ _T(".video"), ED2KFT_VIDEO },		// General Video File
 	{ _T(".vob"),   ED2KFT_VIDEO },		// DVD Video Object File
 	{ _T(".vp6"),   ED2KFT_VIDEO },		// TrueMotion VP6 Video File
+	{ _T(".webm"),  ED2KFT_VIDEO },		// WebM Video File
 	{ _T(".wm"),    ED2KFT_VIDEO },		// Windows Media Video File
 	{ _T(".wmv"),   ED2KFT_VIDEO },		// Windows Media Video File
 	{ _T(".xvid"),  ED2KFT_VIDEO },		// Xvid-Encoded Video File
