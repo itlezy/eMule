@@ -192,3 +192,18 @@ It is:
 - keep UI out of core logic
 
 That will make future MediaInfo work, web API work, and general modernization much easier.
+
+---
+
+## Feature Identifier
+
+### PLAN_001: Module Restructuring
+
+This document describes the plan for introducing real module folders under `srchybrid/` and splitting god files into domain-specific units. The recommended sequence is:
+
+1. Split the largest mixed-responsibility files (`PartFile.cpp`, `WebServer.cpp`, `OtherFunctions.cpp`, `EmuleDlg.cpp`, `Preferences.cpp`)
+2. Move clarified files into module folders (`core/`, `net/`, `ui/`, `media/`, `web/`, `platform/`)
+3. Enforce one-way dependency rules between modules
+4. Eliminate junk-drawer files and cross-layer reach-through
+
+**Status:** Planning phase. No moves have been made yet.

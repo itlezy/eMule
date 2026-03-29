@@ -939,3 +939,55 @@ Minor consistency fix — the rest of the codebase uses `_s` variants.
 ---
 
 *End of report.*
+
+---
+
+## Future: IPv6, uTP, and NAT Traversal (from eMuleAI analysis)
+
+> **Note:** None of this is implemented in eMulebb yet; IPv6/uTP are future work.
+> Kad Buddy NAT relay already exists in stock eMule; the items below are extensions.
+
+### FEAT_025: CAddress IPv6 Abstraction Layer
+
+*Origin: eMuleAI, extended from NeoMule*
+
+Full dual-stack IPv4+IPv6 address abstraction. Key design points:
+
+- **CUInt128 Kademlia interop** — seamless conversion between Kad 128-bit node IDs and IPv6 addresses
+- **Byte-order control** — explicit host/network byte order throughout the API
+- **`IsMappedIPv4()`** — detects IPv4-mapped IPv6 addresses (::ffff:0:0/96)
+- **`IsPublicIP()`** — unified public-address check for both address families
+- **`GetAF()`** — returns `AF_INET` or `AF_INET6` for socket creation
+
+### FEAT_026: uTP Transport
+
+*Origin: eMuleAI, based on libutp*
+
+Micro Transport Protocol (uTP) as an alternative to raw UDP for congestion-controlled transfers:
+
+- **Multi-context architecture** with `CCriticalSection` thread safety per uTP context
+- **IPv6 dual-stack** — single socket handles both address families
+- **Expected peer tracking** — associates incoming uTP connections with known peer records
+- **Per-peer dynamic MTU** via Windows IP Helper API (see FEAT_028)
+
+### FEAT_027: NAT Traversal — eServer Buddy Relay
+
+*Origin: eMuleAI only (two LowID clients on the same ed2k server)*
+
+Extension of the existing Kad Buddy relay to work via ed2k servers:
+
+- **`EServerRelayRequest` struct** — encapsulates relay request state
+- **Slot management** — configurable 3-100 buddy slots per relay
+- **Magic proof** — cryptographic proof to prevent relay abuse
+- **Buddy pull** — passive relay establishment initiated by the buddy side
+
+### FEAT_028: Per-Peer Dynamic MTU
+
+*Origin: eMuleAI*
+
+Automatic MTU discovery per peer connection:
+
+- **IPv4 default:** 1402 bytes
+- **IPv6 default:** 1232 bytes (RFC 2460 minimum path MTU)
+- **Discovery method:** `GetBestInterfaceEx()` + `GetIpInterfaceEntry()` via Windows IP Helper API
+- Feeds into uTP (FEAT_026) for optimal packet sizing

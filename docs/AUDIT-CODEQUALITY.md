@@ -871,3 +871,18 @@ clang-include-cleaner -p build\x64-debug eMule\srchybrid\SomeFile.cpp
 # ASAN build
 cmake --preset x64-asan && cmake --build --preset x64-asan
 ```
+
+---
+
+## Feature Identifier
+
+### PLAN_005: Code Quality Toolchain Migration
+
+This document describes the code quality audit findings and the plan for migrating to a modern code quality toolchain, including:
+
+- Static analysis integration (MSVC `/analyze`, clang-tidy)
+- Compiler warning level escalation (`/W4` baseline, `/WX` target)
+- Consistent formatting via `.clang-format`
+- Automated CI checks for code quality regressions
+
+**Status:** Audit findings documented. Toolchain migration is planned as part of the broader modernization effort (PLAN_002).

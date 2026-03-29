@@ -1012,3 +1012,13 @@ Requests that target multiple hashes (pause, resume, delete) proceed best-effort
 - WebSocket (SSE covers the push use case adequately)
 - Pagination (download queues rarely exceed a few hundred items)
 - Rate limiting (local-only deployment assumption)
+
+---
+
+## Feature Identifier
+
+### PLAN_004: Named Pipe + Node.js Sidecar API
+
+This document describes the plan for a modern HTTP API server architecture using a named pipe IPC channel between the eMule core process and a Node.js sidecar process that exposes a REST/WebSocket API.
+
+**Status:** Planning phase. No implementation has been started.

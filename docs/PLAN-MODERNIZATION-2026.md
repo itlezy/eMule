@@ -1887,3 +1887,13 @@ The following changes are **not backward compatible** and would require a protoc
 ---
 
 *This document represents approximately 52 person-weeks of planning. Every item above is grounded in existing source code in eMulebb, eMuleAI, or the mods archive — nothing here is science fiction. The hardest items are B-01 (network thread) and C-01 (IPv6), both because they touch the entire codebase. Everything else can be done incrementally by one or two engineers per sprint.*
+
+---
+
+## Feature Identifier
+
+### PLAN_002: Overall Modernization Roadmap
+
+This document is the master modernization plan for eMulebb, covering C++20 migration, dependency updates, build system changes, and architectural improvements planned for 2026 and beyond.
+
+**Status:** Active planning. Individual items are tracked by their own FEAT_* and PLAN_* identifiers where applicable.

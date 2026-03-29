@@ -687,3 +687,32 @@ Some parts of the current design are correct and should not be touched:
 | DNS → GetAddrInfoExW | Eliminates legacy API warning | None | Low |
 | Network IOCP thread | Eliminates all socket jank from UI | Major at high peer counts | High |
 | CWinThread → std::jthread | None | None | Low |
+
+---
+
+## 12. Feature Identifiers
+
+### FEAT_029: Track B — Worker Thread Hygiene
+
+Covers the Track B improvements described in sections 8.2 (B1-B6) of this document:
+
+- Replace all `volatile bool` cross-thread flags with `std::atomic<bool>` (B1)
+- Replace intra-process `CMutex` with `std::mutex` (B2)
+- Replace `CWinThread` subclasses with `std::jthread` / `std::async` (B3)
+- Fix `WaitForSingleObject(INFINITE)` on the UI thread (B4)
+- Eliminate the 2 MB static `GlobalReadBuffer` (B5)
+- Replace `InterlockedExchange8` with `std::atomic<char>` (B6)
+
+**Status:** Not yet started. These are independent of the network architecture and can be done incrementally.
+
+### FEAT_030: Track A — Network IOCP Migration
+
+Covers the Track A changes described in sections 8.1 (A1-A5) of this document:
+
+- Replace `WSAAsyncSelect` + helper window with a dedicated IOCP network thread (A1)
+- Rewrite `CAsyncSocketEx` backend from message-based to overlapped I/O (A2)
+- Add thread-safe locking to protocol objects (`CDownloadQueue`, `CClientList`, etc.) (A3)
+- Move Kademlia processing to its own `std::jthread` (A4)
+- Replace deprecated `WSAAsyncGetHostByName` with `GetAddrInfoExW` (A5)
+
+**Status:** Not yet started. This is the largest architectural change and depends on FEAT_029 (Track B) being complete first.

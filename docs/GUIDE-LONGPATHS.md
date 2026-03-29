@@ -877,3 +877,17 @@ Similarly, `SharedFileList.cpp` line 328 uses `_tmakepath(strFilePath.GetBuffer(
 | `ZIPFile.cpp` | 2 locations: wrap `CreateFile` | Wraps |
 
 **Totals:** 23 files, ~55 individual change locations, 0 protocol changes, 0 .met format changes.
+
+---
+
+## Feature Identifier
+
+### FEAT_031: Long Path Support Implementation
+
+This document covers the Windows long path support (paths exceeding MAX_PATH / 260 characters) in eMulebb. Implementation involves:
+
+- Enabling the long path aware manifest flag
+- Using `\?\` prefix or wide-character APIs where needed
+- Registry configuration guidance for enabling system-wide long path support on Windows 10+
+
+**Status:** Documentation and guidance complete. Runtime implementation is incremental as path-handling code is modernized.

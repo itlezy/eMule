@@ -1834,3 +1834,13 @@ The vcxproj has `<AdditionalOptions>/D _DEBUG</AdditionalOptions>` for Debug con
 ---
 
 *End of migration plan.*
+
+---
+
+## Feature Identifier
+
+### PLAN_003: CMake Migration
+
+This document describes the plan for migrating the eMulebb build system from Visual Studio `.vcxproj`/`.sln` files to CMake. This enables cross-IDE support, easier dependency management, and integration with modern CI/CD pipelines.
+
+**Status:** Planning phase. The current build remains `.vcxproj`-based.
