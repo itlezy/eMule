@@ -222,20 +222,22 @@ the benefit to help you with privacy.
 ### Windows Firewall Helper
 
 For Windows 10 and Windows 11, this repository also ships a manual helper to
-create a Windows Defender Firewall allow rule for `emule.exe`:
+create a Windows Defender Firewall allow rule for `emule.exe`. Use the `.cmd`
+launcher so the script always runs through Windows built-in `powershell.exe`:
 
 ```powershell
-.\helpers\firewall-opener.ps1 -ExePath .\srchybrid\x64\Debug\emule.exe
+.\scripts\network-firewall.cmd -ExePath .\srchybrid\x64\Debug\emule.exe
 ```
 
 To remove that managed rule again:
 
 ```powershell
-.\helpers\firewall-opener.ps1 -Remove
+.\scripts\network-firewall.cmd -Remove
 ```
 
-Run the script as administrator. It creates one inbound app rule named
-`eMule` for all firewall profiles.
+Run the script as administrator. If `-ExePath` is omitted, it searches the
+repository for `emule.exe` and uses the default build output when it finds one.
+It creates one inbound app rule named `eMule` for all firewall profiles.
 
 ![2022-09-19 09_02_57-Window](https://user-images.githubusercontent.com/24484050/190966620-94fd4903-9358-4891-8f5c-f75dc93bb5f3.png)
 
