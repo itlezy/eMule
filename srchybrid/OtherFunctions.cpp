@@ -597,57 +597,6 @@ void RevertReg()
 UINT GetMaxWindowsTCPConnections()
 {
 	return UNLIMITED;
-/*	OSVERSIONINFOEX osvi;
-	osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFOEX);
-
-	if (!GetVersionEx((OSVERSIONINFO*)&osvi)) {
-		//if OSVERSIONINFOEX doesn't work, try OSVERSIONINFO
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFO);
-		if (!GetVersionEx((OSVERSIONINFO*)&osvi))
-			return UNLIMITED;  //shouldn't ever happen
-	}
-
-	if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT) // Windows NT product family
-		return UNLIMITED;  //no limits
-
-	if (osvi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS) { // Windows 95 product family
-
-		HKEY hKey;
-		if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 0) { //old school 95
-			DWORD dwValue;
-			DWORD dwLength = (DWORD)sizeof dwValue;
-
-			RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("System\\CurrentControlSet\\Services\\VxD\\MSTCP")
-				, 0, KEY_QUERY_VALUE, &hKey);
-			LONG lResult = RegQueryValueEx(hKey, _T("MaxConnections"), NULL, NULL
-				, (LPBYTE)&dwValue, &dwLength);
-			RegCloseKey(hKey);
-
-			if (lResult != ERROR_SUCCESS || dwValue < 1)
-				return 100;  //the default for 95 is 100
-
-			return dwValue;
-
-		}
-		//98 or ME
-		TCHAR szValue[32];
-		DWORD dwLength = (DWORD)sizeof szValue;
-		LONG lResult;
-
-		RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("System\\CurrentControlSet\\Services\\VxD\\MSTCP")
-			, 0, KEY_QUERY_VALUE, &hKey);
-		lResult = RegQueryValueEx(hKey, TEXT("MaxConnections"), NULL, NULL, (LPBYTE)szValue, &dwLength);
-		RegCloseKey(hKey);
-
-		LONG lMaxConnections;
-		if (lResult != ERROR_SUCCESS || (lMaxConnections = _tstoi(szValue)) < 1)
-			return 100;  //the default for 98/ME is 100
-
-		return lMaxConnections;
-	}
-
-	return UNLIMITED;  //give the user the benefit of the doubt, most use NT+ anyway
-*/
 }
 
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)

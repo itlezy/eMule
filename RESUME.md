@@ -2,19 +2,17 @@
 
 ## Last Chunk
 
-- Finished `REFAC_017` from `docs\REFACTOR-TASKS.md`.
-- Replaced the targeted runtime `ASSERT(0)` failure paths in `srchybrid\EncryptedStreamSocket.cpp` with explicit encryption-error handling.
-- Added `CEncryptedStreamSocket::FailEncryptedStream` to centralize the invalid-state logging and `OnError(ERR_ENCRYPTION)` disconnect path.
-- Replaced the `ASSERT(0); // FIXME` branch in `srchybrid\ArchiveRecovery.cpp` so the ZIP central-directory-only path now fails gracefully when called without either an output file or an archive-preview thread context.
+- Finished `REFAC_015` from `docs\REFACTOR-TASKS.md`.
+- Removed the obsolete commented Windows 95 / 98 / ME TCP-connection compatibility block from `srchybrid\OtherFunctions.cpp`.
+- Kept the live behavior unchanged: `GetMaxWindowsTCPConnections()` still returns `UNLIMITED`, and only the dead legacy comment block was deleted.
 - Verified with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- Invalid encryption state-machine transitions in the targeted `EncryptedStreamSocket.cpp` branches now fail closed instead of relying on debug-only assertions.
-- The roadmap-scoped ZIP recovery `FIXME` assert is gone.
-- This chunk intentionally did not touch unrelated `ASSERT(0)` sites in `EncryptedStreamSocket.cpp`, `ArchiveRecovery.cpp`, or elsewhere.
+- The stale Win9x compatibility logic is no longer present in `OtherFunctions.cpp`.
+- The audit-driven cleanup history now includes dead `#if 0` removal, PeerCache cleanup, proxy attribution cleanup, the scoped encryption assert audit, and the Win95 compatibility cleanup.
 
 ## Next Chunk
 
-- Continue the assert audit only if desired, starting with the remaining non-roadmap `ASSERT(0)` sites in `EncryptedStreamSocket.cpp` such as `SendNegotiatingData` and `GetSemiRandomNotProtocolMarker`.
-- Otherwise return to the outstanding dead-code/security queue, with `D-03` in `ClientUDPSocket.cpp` still pending.
+- Continue the one-by-one audit queue with `REFAC_016`: remove the obsolete `FileBufferSizePref` and `QueueSizePref` compatibility reads from `Preferences.cpp`.
+- After that, the next larger pending audit item is `REFAC_013`, the Source Exchange v1 branch removal.
