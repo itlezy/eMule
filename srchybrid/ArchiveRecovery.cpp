@@ -229,8 +229,9 @@ bool CArchiveRecovery::recoverZip(CFile *zipInput, CFile *zipOutput, archiveScan
 				if (aitp) {
 					aitp->ai->bZipCentralDir = true;
 					retVal = true;
-				} else
-					ASSERT(0); // FIXME
+				} else {
+					retVal = false;
+				}
 				goto done;
 			}
 

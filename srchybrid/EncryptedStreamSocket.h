@@ -108,6 +108,8 @@ protected:
 	bool	m_bServerCrypt;
 
 private:
+	/** Reports an invalid encrypted-stream state and triggers disconnect handling. */
+	void	FailEncryptedStream(LPCTSTR pszReason);
 	int		Negotiate(const uchar *pBuffer, int nLen);
 	void	StartNegotiation(bool bOutgoing);
 	int		SendNegotiatingData(const void *lpBuf, int nBufLen, int nStartCryptFromByte = 0, bool bDelaySend = false);
