@@ -307,22 +307,6 @@ ULONGLONG GetModuleVersion(LPCTSTR pszFilePath);
 ULONGLONG GetModuleVersion(HMODULE hModule);
 
 UINT GetMaxWindowsTCPConnections();
-
-#define _WINVER_95_		0x0400	// 4.0
-#define _WINVER_NT4_	0x0401	// 4.1 (baked version)
-#define _WINVER_98_		0x040A	// 4.10
-#define _WINVER_ME_		0x045A	// 4.90
-#define _WINVER_2K_		0x0500	// 5.0
-#define _WINVER_XP_		0x0501	// 5.1
-#define _WINVER_2003_	0x0502	// 5.2
-#define _WINVER_VISTA_	0x0600	// 6.0
-#define _WINVER_7_		0x0601	// 6.1
-#define	_WINVER_S2008_	0x0601	// 6.1
-#define _WINVER_8_		0x0602	// 6.2
-#define _WINVER_8_1_	0x0603	// 6.3
-#define _WINVER_10_		0x0a00	// 10.0
-
-WORD		DetectWinVersion();
 uint64		GetFreeDiskSpaceX(LPCTSTR pDirectory);
 ULONGLONG	GetDiskFileSize(LPCTSTR pszFilePath);
 int			GetAppImageListColorFlag();

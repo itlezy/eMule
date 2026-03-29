@@ -95,12 +95,7 @@ void CPPgGeneral::LoadSettings()
 	CheckDlgButton(IDC_STARTMIN, static_cast<UINT>(thePrefs.startMinimized));
 	CheckDlgButton(IDC_STARTWIN, static_cast<UINT>(thePrefs.m_bAutoStart));
 
-	if (thePrefs.GetWindowsVersion() != _WINVER_95_)
-		CheckDlgButton(IDC_PREVENTSTANDBY, static_cast<UINT>(thePrefs.GetPreventStandby()));
-	else {
-		CheckDlgButton(IDC_PREVENTSTANDBY, 0);
-		GetDlgItem(IDC_PREVENTSTANDBY)->EnableWindow(FALSE);
-	}
+	CheckDlgButton(IDC_PREVENTSTANDBY, static_cast<UINT>(thePrefs.GetPreventStandby()));
 
 	CString strBuffer;
 	strBuffer.Format(_T("%u %s"), thePrefs.versioncheckdays, (LPCTSTR)GetResString(IDS_DAYS2));

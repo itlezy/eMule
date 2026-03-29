@@ -360,19 +360,17 @@ BOOL CemuleDlg::OnInitDialog()
 	theStats.starttime = ::GetTickCount();
 #ifdef HAVE_WIN7_SDK_H
 	// allow the TaskbarButtonCreated- & (tbb-)WM_COMMAND message to be sent to our window if our app is running elevated
-	if (thePrefs.GetWindowsVersion() >= _WINVER_7_) {
-		m_bInitedCOM = SUCCEEDED(::CoInitialize(NULL));
-		if (m_bInitedCOM) {
-			typedef BOOL(WINAPI *PChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
-			PChangeWindowMessageFilter ChangeWindowMessageFilter
-				= (PChangeWindowMessageFilter)(::GetProcAddress(::GetModuleHandle(_T("user32.dll")), "ChangeWindowMessageFilter"));
-			if (ChangeWindowMessageFilter) {
-				ChangeWindowMessageFilter(UWM_TASK_BUTTON_CREATED, 1);
-				ChangeWindowMessageFilter(WM_COMMAND, 1);
-			}
-		} else
-			ASSERT(0);
-	}
+	m_bInitedCOM = SUCCEEDED(::CoInitialize(NULL));
+	if (m_bInitedCOM) {
+		typedef BOOL(WINAPI *PChangeWindowMessageFilter)(UINT message, DWORD dwFlag);
+		PChangeWindowMessageFilter ChangeWindowMessageFilter
+			= (PChangeWindowMessageFilter)(::GetProcAddress(::GetModuleHandle(_T("user32.dll")), "ChangeWindowMessageFilter"));
+		if (ChangeWindowMessageFilter) {
+			ChangeWindowMessageFilter(UWM_TASK_BUTTON_CREATED, 1);
+			ChangeWindowMessageFilter(WM_COMMAND, 1);
+		}
+	} else
+		ASSERT(0);
 #endif
 
 	// temporary disable the 'startup minimized' option, otherwise no window will be shown at all
@@ -3632,8 +3630,7 @@ void CemuleDlg::OnTBBPressed(UINT id)
 // When Windows tells us, the taskbar button was created, it is safe to initialize our taskbar stuff
 LRESULT CemuleDlg::OnTaskbarBtnCreated(WPARAM, LPARAM)
 {
-	// Sanity check that the OS is Win 7 or later
-	if (thePrefs.GetWindowsVersion() >= _WINVER_7_ && !theApp.IsClosing()) {
+	if (!theApp.IsClosing()) {
 		if (m_pTaskbarList)
 			m_pTaskbarList.Release();
 

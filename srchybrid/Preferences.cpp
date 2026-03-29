@@ -591,7 +591,6 @@ CStringList CPreferences::shareddir_list;
 CStringList CPreferences::addresses_list;
 CString CPreferences::m_strFileCommentsFilePath;
 Preferences_Ext_Struct *CPreferences::prefsExt;
-WORD	CPreferences::m_wWinVer;
 CArray<Category_Struct*, Category_Struct*> CPreferences::catArr;
 UINT	CPreferences::m_nWebMirrorAlertLevel;
 bool	CPreferences::m_bUseOldTimeRemaining;
@@ -2620,16 +2619,6 @@ void CPreferences::LoadPreferences()
 	SetLanguage();
 }
 
-WORD CPreferences::GetWindowsVersion()
-{
-	static bool bWinVerAlreadyDetected = false;
-	if (!bWinVerAlreadyDetected) {
-		bWinVerAlreadyDetected = true;
-		m_wWinVer = DetectWinVersion();
-	}
-	return m_wWinVer;
-}
-
 UINT CPreferences::GetDefaultMaxConperFive()
 {
 	return MAXCONPER5SEC;
@@ -3255,18 +3244,9 @@ void CPreferences::ChangeUserDirMode(int nNewMode)
 
 bool CPreferences::GetSparsePartFiles()
 {
-	// Vista's Sparse File implementation seems to be buggy as far as i can see
-	// If a sparse file exceeds a given limit of write I/O operations in a certain order
-	// (or i.e. end to beginning) in its lifetime, it will at some point throw out
-	// a FILE_SYSTEM_LIMITATION error and deny any writing to this file.
-	// It was suggested that Vista might limit the data runs, which would lead to such behaviour,
-	// but wouldn't make much sense for a sparse file implementation nevertheless.
-	// Due to the fact that eMule writes a lot of small blocks into sparse files and flushes them
-	// every 6 seconds, this problem pops up sooner or later for all big files.
-	// I don't see any way to walk around this for now
-	// Update: This problem seems to be fixed on Win7, possibly on earlier Vista ServicePacks too
-	//		   In any case, we allow sparse files for versions earlier and later than Vista
-	return m_bSparsePartFiles && (GetWindowsVersion() != _WINVER_VISTA_);
+	// The old Vista-only sparse-file blacklist is obsolete on the Windows 10/11
+	// baseline used by this branch, so the stored preference can be honored directly.
+	return m_bSparsePartFiles;
 }
 
 bool CPreferences::IsRunningAeroGlassTheme()
@@ -3279,15 +3259,13 @@ bool CPreferences::IsRunningAeroGlassTheme()
 	if (!bAeroAlreadyDetected) {
 		bAeroAlreadyDetected = true;
 		m_bIsRunningAeroGlass = FALSE;
-		if (GetWindowsVersion() >= _WINVER_VISTA_) {
-			HMODULE hDWMAPI = ::LoadLibrary(_T("dwmapi.dll"));
-			if (hDWMAPI) {
-				HRESULT(WINAPI *pfnDwmIsCompositionEnabled)(BOOL*);
-				(FARPROC&)pfnDwmIsCompositionEnabled = ::GetProcAddress(hDWMAPI, "DwmIsCompositionEnabled");
-				if (pfnDwmIsCompositionEnabled != NULL)
-					pfnDwmIsCompositionEnabled(&m_bIsRunningAeroGlass);
-				::FreeLibrary(hDWMAPI);
-			}
+		HMODULE hDWMAPI = ::LoadLibrary(_T("dwmapi.dll"));
+		if (hDWMAPI) {
+			HRESULT(WINAPI *pfnDwmIsCompositionEnabled)(BOOL*);
+			(FARPROC&)pfnDwmIsCompositionEnabled = ::GetProcAddress(hDWMAPI, "DwmIsCompositionEnabled");
+			if (pfnDwmIsCompositionEnabled != NULL)
+				pfnDwmIsCompositionEnabled(&m_bIsRunningAeroGlass);
+			::FreeLibrary(hDWMAPI);
 		}
 	}
 	return m_bIsRunningAeroGlass != FALSE;

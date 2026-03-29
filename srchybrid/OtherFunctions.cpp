@@ -516,7 +516,7 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 		// we actually need to change the registry and write an entry for HKCU
 		if (checkOnly)
 			return true;
-		HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+		HKEY hkeyCR = HKEY_CURRENT_USER;
 		if (regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\shell\\open\\command")) == ERROR_SUCCESS) {
 			if (dontAsk || (LocMessageBox(IDS_ASSIGNED2K, MB_ICONQUESTION | MB_YESNO, 0) == IDYES)) {
 				VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
@@ -546,17 +546,9 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 
 void BackupReg()
 {
-	// TODO: This function needs to be changed in at least 2 regards
-	//	1)	It must follow the rules: reading from HKCR and writing into HKCU. What we are currently doing
-	//		is not consistent with the other registry function which are dealing with the same keys.
-	//
-	//	2)	It behaves quite(!) differently under Win98 due to an obvious change in the Windows API.
-	//		WinXP: Reading a non existent value returns 'key not found' error.
-	//		Win98: Reading a non existent value returns an empty string (which gets saved and restored by our code).
-	//		This means that saving/restoring existent registry keys works completely differently in Win98/XP.
-	//		Actually it works correctly under Win98 and is broken in WinXP+. Though, did someone notice it at all?
-
-	HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+	// This branch now targets Windows 10/11 only, so the protocol/file association
+	// backup is always stored in the per-user Software\Classes hive.
+	HKEY hkeyCR = HKEY_CURRENT_USER;
 	// Look for pre-existing old ed2k links
 	CRegKey regkey;
 	if (regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\shell\\open\\command")) == ERROR_SUCCESS) {
@@ -580,7 +572,7 @@ void BackupReg()
 // Barry - Restore previous values
 void RevertReg()
 {
-	HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+	HKEY hkeyCR = HKEY_CURRENT_USER;
 	// restore previous ed2k links before being assigned to emule
 	CRegKey regkey;
 	if (regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\shell\\open\\command")) == ERROR_SUCCESS) {
@@ -656,18 +648,6 @@ UINT GetMaxWindowsTCPConnections()
 
 	return UNLIMITED;  //give the user the benefit of the doubt, most use NT+ anyway
 */
-}
-
-/**
- * The Windows version contract for this branch is intentionally fixed at Windows 10+.
- *
- * Older platform probing only existed to preserve unsupported pre-Windows-10 code paths.
- * Keeping a single modern return value lets the remaining callers collapse naturally as
- * those obsolete branches get removed.
- */
-WORD DetectWinVersion()
-{
-	return _WINVER_10_;
 }
 
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
@@ -3326,7 +3306,7 @@ bool DoCollectionRegFix(bool checkOnly)
 		// we actually need to change the registry and write an entry for HKCU
 		if (checkOnly)
 			return true;
-		HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+		HKEY hkeyCR = HKEY_CURRENT_USER;
 		if (regkey.Create(hkeyCR, _T("Software\\Classes\\eMule\\shell\\open\\command")) == ERROR_SUCCESS) {
 			VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
 

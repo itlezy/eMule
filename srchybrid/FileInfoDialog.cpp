@@ -133,9 +133,10 @@ public:
 				// -----------------------------
 				// But then MediaInfo adopted YY.MM (year, month) versioning scheme...
 				ULONGLONG ullVersion = GetModuleVersion(m_hLib);
+				// The MediaInfo DLL shipped/used on the Windows 10+ branch is accepted up to
+				// the last known compatible 25.11 line. The older XP-only cap is obsolete here.
 				if (ullVersion >= MAKEDLLVERULL(0, 7, 13, 0)
-					&& (thePrefs.GetWindowsVersion() >= _WINVER_VISTA_ && ullVersion < MAKEDLLVERULL(25, 11, 0, 0)
-						|| ullVersion < MAKEDLLVERULL(21, 4, 0, 0))) //21.03 for Windows XP
+					&& ullVersion < MAKEDLLVERULL(25, 11, 0, 0))
 				{
 					(FARPROC &)m_pfnMediaInfo_New = ::GetProcAddress(m_hLib, "MediaInfo_New");
 					(FARPROC &)m_pfnMediaInfo_Delete = ::GetProcAddress(m_hLib, "MediaInfo_Delete");
