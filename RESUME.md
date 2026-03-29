@@ -20,6 +20,18 @@
   - [`srchybrid/ListenSocket.cpp`](C:/prj/p2p/eMulebb/eMule/srchybrid/ListenSocket.cpp)
   - [`srchybrid/ClientUDPSocket.cpp`](C:/prj/p2p/eMulebb/eMule/srchybrid/ClientUDPSocket.cpp)
 - Rebuilt successfully with `..\23-build-emule-debug-incremental.cmd`.
+- Changed the MediaInfo runtime helper to use only the canonical `Title` field and stop appending `Title_More` in [`srchybrid/MediaInfo_DLL.cpp`](C:/prj/p2p/eMulebb/eMule/srchybrid/MediaInfo_DLL.cpp).
+- Re-ran the MP3 parity sample on 200 random files from `F:\M\H06T01\dldz\MORE_SHR\mp3-albums\!car-selected`:
+  - `title_exact`: `198/200`
+  - `artist_exact`: `200/200`
+  - `album_exact`: `199/200`
+  - `length_exact`: `194/200`
+  - `length_within_1s`: `200/200`
+  - `bitrate_exact`: `200/200`
+- After removing `Title_More`, the remaining mismatches are limited to:
+  - `2` title normalization differences
+  - `1` album punctuation difference
+  - `6` length values off by `+1s`
 
 ## Runtime Verification
 
@@ -42,11 +54,12 @@
 - `MediaInfo.dll` version `23.00+` is a required runtime dependency for non-MP3 audio/video metadata extraction.
 - The non-MP3 shared metadata path is now MediaInfo-only.
 - The MP3 path still uses `id3lib`.
+- The MediaInfo MP3 parity picture is now close enough to justify a targeted replacement plan, but not yet zero-diff versus the current MP3 metadata path.
 - The debug-launch helper remains the preferred way to reproduce runtime issues and collect logs / dumps / config snapshots.
 - Actual runtime logs now show the selected MediaInfo DLL path and version.
 
 ## Next Chunk
 
-- Decide whether to replace the remaining MP3 / `id3lib` path with MediaInfo as well, or intentionally keep `id3lib` for MPEG audio for now.
+- Decide whether to replace the remaining MP3 / `id3lib` path with MediaInfo now that `Title_More` pollution is removed, or first normalize the remaining `title` / `album` string differences and the `+1s` length drift.
 - Runtime-verify the file-details dialog path on representative MP4 / MKV samples, not just the shared-tag extraction path.
 - If needed, tighten user-facing diagnostics for a missing or too-old `MediaInfo.dll` so the failure mode is obvious outside verbose logs.

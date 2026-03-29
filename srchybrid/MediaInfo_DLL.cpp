@@ -392,9 +392,6 @@ bool GetMediaInfoDllInfo(LPCTSTR pszFilePath, EMFileSize ullFileSize, SMediaInfo
 		}
 
 		mi->strTitle = InfoGet(Handle, MediaInfo_Stream_General, 0, _T("Title"));
-		const CString &strTitleMore(InfoGet(Handle, MediaInfo_Stream_General, 0, _T("Title_More")));
-		if (!strTitleMore.IsEmpty() && !mi->strTitle.IsEmpty() && strTitleMore != mi->strTitle)
-			mi->strTitle.AppendFormat(_T("; %s"), (LPCTSTR)strTitleMore);
 		mi->strAuthor = InfoGet(Handle, MediaInfo_Stream_General, 0, _T("Performer"));
 		if (mi->strAuthor.IsEmpty())
 			mi->strAuthor = InfoGet(Handle, MediaInfo_Stream_General, 0, _T("Author"));
