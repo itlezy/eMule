@@ -2,44 +2,50 @@
 
 ## Last Chunk
 
-- Removed Upload SpeedSense end-to-end as a breaking cleanup pass.
-- Deleted the dedicated USS controller and project wiring:
-  - removed `srchybrid\LastCommonRouteFinder.*`
-  - removed app startup/shutdown ownership in `Emule.*`
-  - removed traceroute host feeders from `ClientList` and `ServerList`
-- Removed USS-driven runtime behavior:
-  - removed status-bar USS pane and ping display from `EmuleDlg` and `MuleStatusBarCtrl`
-  - removed queue/throttler integration and slot-veto logic from `UploadQueue` and `UploadBandwidthThrottler`
-  - removed the connection-page fast-reaction hook in `PPgConnection`
-- Removed USS preference state and UI:
-  - deleted USS/`MinUpload` fields, accessors, and INI persistence from `Preferences.h/.cpp`
-  - deleted the USS tree group and settings plumbing from `PPgTweaks.h/.cpp`
-- Removed USS-only resources:
-  - deleted `IDS_DYNUP*` and `IDS_USS_*` from `srchybrid\Resource.h`
-  - deleted the matching entries from `srchybrid\emule.rc` and all `srchybrid\lang\*.rc` files
-- Updated docs so they no longer describe USS or `MinUpload`:
-  - `docs\BROADBAND.md`
-  - `docs\PREFERENCES.md`
-  - `docs\MOVETOCMAKE.md`
-  - `docs\REPONETWO.md`
-  - `docs\THREADING.md`
-- Rebuilt successfully with `..\23-build-emule-debug-incremental.cmd`.
-- WIP commits created:
-  - `6b6c84c` `WIP remove USS runtime and preference plumbing`
-  - `2603066` `WIP purge USS resources and documentation`
+- Moved the two standalone Windows maintenance helpers out of `helpers\` into the new `scripts\` subtree.
+- Added the new directory policy note in `scripts\AGENTS.md`:
+  - all scripts in `scripts\` must stay compatible with Windows built-in `PowerShell.exe` (Windows PowerShell 5.1)
+  - all scripts in `scripts\` must work on Windows 10 and Windows 11
+  - PowerShell and launcher names in this directory must follow `category-purpose.ps1` / `category-purpose.cmd`
+- Added the new script entrypoints:
+  - `scripts\network-firewall.ps1`
+  - `scripts\system-long-paths.ps1`
+  - `scripts\network-firewall.cmd`
+  - `scripts\system-long-paths.cmd`
+- Removed the old legacy paths:
+  - `helpers\firewall-opener.ps1`
+  - `helpers\enable-long-paths.ps1`
+- Upgraded the firewall helper behavior:
+  - still accepts direct command-line parameters
+  - auto-detects `emule.exe` under the parent workspace when `-ExePath` is omitted
+  - prefers `srchybrid\x64\Debug\emule.exe`, then `srchybrid\x64\Release\emule.exe`
+  - prompts for a path only when no repo executable is found
+  - keeps firewall operations app-based and `-WhatIf` safe
+- Upgraded the long-path helper behavior:
+  - added explicit Windows PowerShell 5.1 / Windows 10-11 compatibility notes
+  - kept the registry update idempotent and admin-gated
+- Updated `README.md` to point at `scripts\network-firewall.cmd` and to document the new auto-detection behavior.
+- Verified with Windows built-in `powershell.exe`:
+  - `scripts\network-firewall.cmd -WhatIf`
+  - `scripts\network-firewall.cmd -WhatIf -Remove`
+  - `scripts\system-long-paths.cmd -WhatIf`
+  - direct `powershell.exe -File` invocation for both `.ps1` scripts
+- Did not run `..\23-build-emule-debug-incremental.cmd` because this chunk only changed scripts and docs.
+- WIP commits created in this chunk so far:
+  - `c63893d` `WIP move helper scripts into scripts subtree`
+  - `8656e2d` `WIP replace legacy helper script entrypoints`
 
 ## Current State
 
-- The app no longer builds or ships the USS traceroute/ping worker.
-- The Tweaks page no longer exposes USS settings.
-- The main window status bar no longer reserves or updates a USS pane.
-- Upload budgeting now depends on configured upload capacity and active upload limit, without live USS allowance.
-- A repo-wide search for `LastCommonRouteFinder`, `IDS_DYNUP*`, `IDS_USS_*`, `MinUpload`, and `USS*` config keys in this submodule is clean.
+- The repo now has a dedicated `scripts\` subtree for Windows-maintenance scripts with an explicit compatibility rule.
+- The preferred user entrypoints are the new `.cmd` wrappers, which force execution through Windows built-in `powershell.exe`.
+- `scripts\network-firewall.ps1` auto-discovers the local build output when possible and no longer requires `-ExePath` for the normal repo layout.
+- `README.md` no longer points users at the deleted helper paths.
+- There are unrelated doc deletions/additions already present in the worktree outside this chunk; they were intentionally left untouched.
 
 ## Next Chunk
 
-- Runtime-smoke the debug build and confirm:
-  - no USS section in Tweaks
-  - no extra USS status-bar pane
-  - upload-limit changes still behave sanely with finite and unlimited caps
-- If upload pacing regressed with `MaxUpload = UNLIMITED`, tune the unlimited-path estimator in `UploadBandwidthThrottler` now that USS is gone.
+- If broader docs are stabilized later, sweep remaining old helper-script name mentions in any retained planning docs and rename them to the new `scripts\` paths.
+- Resume the earlier functional follow-up from the USS-removal chunk:
+  - runtime-smoke the debug build
+  - confirm Tweaks and status-bar behavior are still clean after the earlier USS cleanup

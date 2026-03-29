@@ -178,6 +178,7 @@ try {
 
     $existingRules = @(Get-NetFirewallRule -DisplayName $RuleName -ErrorAction SilentlyContinue)
     $existingPrograms = @()
+    $firewallRuleChanged = $false
     if ($existingRules.Count -gt 0) {
         $existingPrograms = @(Get-RulePrograms -Rules $existingRules)
         if ($PSCmdlet.ShouldProcess($RuleName, 'Replace existing Windows Firewall rule')) {
@@ -193,13 +194,16 @@ try {
             -Enabled True `
             -Profile Any `
             -Program $resolvedExePath | Out-Null
+        $firewallRuleChanged = $true
     }
 
-    if ($existingPrograms.Count -eq 0) {
-        Write-Host "Created firewall rule '$RuleName' for '$resolvedExePath'."
-    } else {
-        Write-Host "Replaced firewall rule '$RuleName' for '$resolvedExePath'."
-        Write-Host "Previous rule program paths: $($existingPrograms -join ', ')"
+    if ($firewallRuleChanged) {
+        if ($existingPrograms.Count -eq 0) {
+            Write-Host "Created firewall rule '$RuleName' for '$resolvedExePath'."
+        } else {
+            Write-Host "Replaced firewall rule '$RuleName' for '$resolvedExePath'."
+            Write-Host "Previous rule program paths: $($existingPrograms -join ', ')"
+        }
     }
 } catch {
     Write-Error $_
