@@ -85,7 +85,6 @@ public:
 	void ShowPing();
 	void Localize();
 
-#ifdef HAVE_WIN7_SDK_H
 	void UpdateStatusBarProgress();
 	void UpdateThumbBarButtons(bool initialAddToDlg = false);
 	void OnTBBPressed(UINT id);
@@ -101,7 +100,6 @@ public:
 		TBB_PREFERENCES,
 		TBB_LAST = TBB_PREFERENCES
 	};
-#endif
 
 	// Logging
 	void AddLogText(UINT uFlags, LPCTSTR pszText);
@@ -187,14 +185,12 @@ protected:
 	bool			m_bKadSuspendDisconnect;
 	bool			m_bEd2kSuspendDisconnect;
 	bool			m_bInitedCOM;
-#ifdef HAVE_WIN7_SDK_H
 	CComPtr<ITaskbarList3>	m_pTaskbarList;
 	THUMBBUTTON		m_thbButtons[TBB_LAST + 1];
 
 	TBPFLAG			m_currentTBP_state;
 	float			m_prevProgress;
 	HICON			m_ovlIcon;
-#endif
 
 	// Splash screen
 	DWORD m_dwSplashTime;
@@ -289,9 +285,7 @@ protected:
 
 	afx_msg LRESULT OnAreYouEmule(WPARAM, LPARAM);
 
-#ifdef HAVE_WIN7_SDK_H
 	afx_msg LRESULT OnTaskbarBtnCreated(WPARAM, LPARAM);
-#endif
 
 	//Web Interface
 	afx_msg LRESULT OnWebGUIInteraction(WPARAM wParam, LPARAM lParam);
