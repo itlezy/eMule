@@ -112,6 +112,7 @@ public:
 				if (hConfiguredLib != NULL) {
 					BindLoadedLibrary(hConfiguredLib, ullVersion, strResolvedPath);
 					LogCandidate(strResolvedPath, _T("selected configured path"), ullVersion);
+					LogLoadedLibrary();
 					return true;
 				}
 				LogCandidate(strResolvedPath, strReason, ullVersion);
@@ -131,6 +132,7 @@ public:
 				}
 				BindLoadedLibrary(hCandidateLib, ullVersion, strCandidatePath);
 				LogCandidate(strCandidatePath, _T("selected compatible candidate"), ullVersion);
+				LogLoadedLibrary();
 				break;
 			}
 		}
@@ -303,6 +305,16 @@ protected:
 				, (UINT)HIWORD(HIDWORD(ullVersion)), (UINT)LOWORD(HIDWORD(ullVersion)), (UINT)HIWORD(LODWORD(ullVersion)), (UINT)LOWORD(LODWORD(ullVersion)));
 		else
 			AddDebugLogLine(false, _T("MediaInfoDLL: %s [%s]"), (LPCTSTR)strPath, pszStatus);
+	}
+
+	/** @brief Writes the selected MediaInfo DLL path and version to the regular log. */
+	void LogLoadedLibrary() const
+	{
+		if (m_hLib == NULL || m_strLoadedPath.IsEmpty())
+			return;
+		AddLogLine(false, _T("MediaInfoDLL loaded: %s version=%u.%u.%u.%u"), (LPCTSTR)m_strLoadedPath
+			, (UINT)HIWORD(HIDWORD(m_ullVersion)), (UINT)LOWORD(HIDWORD(m_ullVersion))
+			, (UINT)HIWORD(LODWORD(m_ullVersion)), (UINT)LOWORD(LODWORD(m_ullVersion)));
 	}
 
 	ULONGLONG m_ullVersion;

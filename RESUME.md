@@ -6,6 +6,7 @@
 - Kept explicit absolute-path overrides and deterministic candidate probing, but now stop at the first acceptable candidate instead of preferring the newest installed version.
 - Removed the old pre-18.06 MediaInfo field-name compatibility branch from `FileInfoDialog.cpp` and now use only the modern `Format*`/`Language_More` keys.
 - Updated the MediaInfo missing-library hint so it clearly tells users that `MediaInfo.dll` 23.00 or newer is required and points them to install it.
+- Added a regular log entry for the selected MediaInfo DLL so the loaded path and version are visible without enabling verbose candidate logging.
 - Split the old `srchybrid\MediaInfo.cpp` monolith into shared helpers plus `MediaInfo_RIFF.cpp`, `MediaInfo_RealMedia.cpp`, and `MediaInfo_WindowsMedia.cpp`.
 - Removed the dead `HAVE_QEDIT_H` compatibility path and kept `qedit.h` as the bundled required header.
 - Kept `HAVE_WMSDK_H` and `HAVE_SAPI_H` as real optional-dependency checks driven by `emule_site_config.h`.
