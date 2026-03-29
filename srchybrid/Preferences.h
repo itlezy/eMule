@@ -624,8 +624,6 @@ public:
 
 	static bool		m_bUseOldTimeRemaining;
 
-	// Firewall settings
-	static bool		m_bOpenPortsOnStartUp;
 	static bool		m_bRandomizePortsOnStartup;
 
 	//AICH Options
@@ -1395,8 +1393,6 @@ public:
 #endif
 
 
-	// Firewall settings
-	static bool		IsOpenPortsOnStartupEnabled()		{ return m_bOpenPortsOnStartUp; }
 	static bool		IsRandomizePortsOnStartupEnabled()	{ return m_bRandomizePortsOnStartup; }
 
 	//AICH Hash

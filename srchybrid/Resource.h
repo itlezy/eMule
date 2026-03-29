@@ -1192,15 +1192,6 @@
 #define IDS_INSTALL_SKIN_PKG_ERROR      1252
 #define IDS_NEXT_REASK                  1253
 #define IDS_A4AF_FILES                  1254
-#define IDS_FO_TEMPTCP_S                1255
-#define IDS_FO_TEMPTCP_F                1256
-#define IDS_FO_TEMPUDP_S                1257
-#define IDS_FO_TEMPUDP_F                1258
-#define IDS_FO_PREFBUTTON               1259
-#define IDS_FO_PREF_SUCCCEEDED          1260
-#define IDS_FO_PREF_EXISTED             1261
-#define IDS_FO_PREF_FAILED              1262
-#define IDS_FO_PREF_STARTUP             1263
 #define IDS_LOG_LEVEL                   1264
 #define IDS_NEWMSG                      1266
 #define IDS_PREF_STARTNEXTFILECATONLY   1267
@@ -1463,7 +1454,6 @@
 #define IDS_UPNPSETUP                   1521
 #define IDS_UPNPFAILED                  1522
 #define IDS_UPNPSUCCESS                 1523
-#define IDS_FO_PREFBUTTON_NEW           1524
 #define IDS_UPNP_NOSERVICE              1525
 #define IDS_DELAYEDBYUPNP               1526
 #define IDS_DELAYEDBYUPNP2              1527
@@ -2216,7 +2206,6 @@
 #define IDC_CATS                        2841
 #define IDC_STATICFI                    2842
 #define IDC_RESET                       2843
-#define IDC_OPENPORTS                   2844
 #define IDC_SMILEY                      2844
 #define IDC_TCP                         2845
 #define IDC_UDP                         2846

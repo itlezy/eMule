@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ua_UA.h"
@@ -812,9 +812,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule визначив вбудований брандмауер на необхідні порти. Вимкнення брандмауера можливе.\nДане повідомлення не поширюється на зовнішні брандмауери чи роутери"
-    IDS_FO_PREF_FAILED      "Не вдалося сконфігурувати необхідні порти брандмауераWinXP"
-    IDS_FO_PREF_STARTUP     "Відкрити/Закрити порти брандмауера WinXP при запуску/виході eMule"
     IDS_LOG_LEVEL           "Рівень лоґу"
     IDS_NEWMSG              "Нове Повідомлення від '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Тільки в тій же категорії"
@@ -1585,12 +1582,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Це хибний пакет файлів eMule обгорток."
     IDS_NEXT_REASK          "Наступний запит"
     IDS_A4AF_FILES          "Файли ЗДФ"
-    IDS_FO_TEMPTCP_S        "Порт %u (TCP) брандмауера WinXP відкрито на дану сесію"
-    IDS_FO_TEMPTCP_F        "Неможливо відкрити порт %u (TCP) брандмауера WinXP на дану сесію"
-    IDS_FO_TEMPUDP_S        "Порт %u (UDP) брандмауера WinXP відкрито на дану сесію"
-    IDS_FO_TEMPUDP_F        "Неможливо відкрити порт %u (UDP) брандмауера WinXP на дану сесію"
-    IDS_FO_PREFBUTTON       "Відкрити ці порти брандмауера WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Відкривання портів брандмауера WinXP відбулося успішно.\nДане повідомлення не поширюється на зовнішні брандмауери чи роутери!"
 END
 
 STRINGTABLE
@@ -1895,7 +1886,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "Please wait some seconds, eMule will connect as soon as UPnP finished."

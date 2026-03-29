@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "zh_CN.h"
@@ -893,15 +893,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "这不是一个有效的 eMule 外观文件包."
     IDS_NEXT_REASK          "下次查询这个客户端"
     IDS_A4AF_FILES          "A4AF 文件"
-    IDS_FO_TEMPTCP_S        "在本次eMule运行时,成功地在WinXP内置防火墙中打开 %u (TCP) 端口"
-    IDS_FO_TEMPTCP_F        "在本次eMule运行时,无法在WinXP内置防火墙中打开 %u (TCP) 端口"
-    IDS_FO_TEMPUDP_S        "在本次eMule运行时,成功地在WinXP内置防火墙中打开 %u (UDP) 端口"
-    IDS_FO_TEMPUDP_F        "在本次eMule运行时,无法在WinXP内置防火墙中打开 %u (UDP) 端口"
-    IDS_FO_PREFBUTTON       "在WinXP内置防火墙中打开这些端口"
-    IDS_FO_PREF_SUCCCEEDED  "成功地在WinXP内置防火墙中打开所选择的端口.\n请注意,其他第三方防火墙或者路由器不会受此选项影响!"
-    IDS_FO_PREF_EXISTED     "eMule检测到被选端口的防火墙规则并没有被改写或者替代.原来未添加的规则已经被成功添加.\n请注意,其他第三方防火墙或者路由器不会受此选项影响!"
-    IDS_FO_PREF_FAILED      "无法为被选端口配置WinXP内置防火墙规则!"
-    IDS_FO_PREF_STARTUP     "在启动/退出eMule时,打开/关闭WinXP内置防火墙中的对应端口"
 END
 
 STRINGTABLE
@@ -1876,7 +1867,6 @@ BEGIN
     IDS_UPNPSETUP           "正在尝试通过UPnP建立端口映射..."  //"Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP端口映射设置,如果需要的话请自行设置这些端口映射!"  //"UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP成功建立了端口%u(TCP) 和 %u(UDP)的端口映射"  //"UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "打开WinXP SP1防火墙的端口"  //"Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host服务未运行,跳过UPnP设置"  //"UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "由于UPnP正在配置端口映射,网络连接已被延迟."  //"Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "请等候数秒,eMule将在UPnP设置完毕时开始连接."  //"Please wait some seconds, eMule will connect as soon as UPnP finished."

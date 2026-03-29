@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "sl_SI.h"
@@ -1523,16 +1523,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule je zaznal obstoječa pravila za izbrana vrata, katera niso bila prepisana ali zamenjana. Odsotna pravila so bila uspešno dodana.\nOpomba: Te nastavitve nimajo vpliva na tretjeosebne požarne zidove in usmerjevalnike!"
-    IDS_FO_PREF_FAILED      "Ni bilo mogoče nastaviti internega WinXP požarnega zidu za izbrana vrata!"
-    IDS_FO_PREF_STARTUP     "Ob zagonu/izhodu eMule odpri/zapri vrata v internem WinXP požarnem zidu"
     IDS_LOG_LEVEL           "Stopnja beleženja"
-    IDS_FO_TEMPTCP_S        "Odprta vrata %u (TCP) v internem WinXP požarnem zidu za to sejo"
-    IDS_FO_TEMPTCP_F        "Ni bilo mogoče odpreti vrat %u (TCP) v internem WinXP požarnem zidu"
-    IDS_FO_TEMPUDP_S        "Odprta vrata %u (UDP) v internem WinXP požarni zidu za to sejo"
-    IDS_FO_TEMPUDP_F        "Ni bilo mogoče odpreti vrat %u (UDP) v internem WinXP požarni zidu"
-    IDS_FO_PREFBUTTON       "Odpri ta vrata v internem WinXP požarnem zidu"
-    IDS_FO_PREF_SUCCCEEDED  "Odpiranje izbranih vrat v internem WinXP požarnem zidu uspelo.\nOpomba: Te nastavitve nimajo vpliva na tretjeosebne požarne zidove in usmerjevalnike!"
     IDS_SOURCESWAPBLOCKED   "Zamenjava blokirana"
     IDS_A4AF_CHECK_THIS_NOW "Preveri ta vir zdaj (razhroščevanje)"
     IDS_NEWMSG              "Novo sporočilo od '%s' (IP:%s)"
@@ -1900,7 +1891,6 @@ BEGIN
     IDS_UPNPSETUP           "Poskus nastavitve preusmerjanja vrat z UPnP..."
     IDS_UPNPFAILED          "Ni bilo mogoče nastaviti preusmerjanja vrat z UPnP, prosim, ročno preusmerite vrata, če je to potrebno!"
     IDS_UPNPSUCCESS         "UPnP je uspešno nastavil preusmerjanje za vrata %u (TCP) in %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Odpri vrata v WinXP SP1 požarnem zidu"
     IDS_UPNP_NOSERVICE      "Storitev UPnP Device Host ne teče, UPnP ne bo nastavljen"
     IDS_DELAYEDBYUPNP       "Povezovanje z omrežjem je zakasnjeno, ker UPnP še vedno nastavlja preusmerjanje vrat."
     IDS_DELAYEDBYUPNP2      "Prosim, počakajte nekaj sekund, eMule se bo povezal takoj ko bo UPnP končal nastavitev."

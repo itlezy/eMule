@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ug_CN.h"
@@ -890,15 +890,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "بۇ ئىناۋەتلىك‫ eMule  ئۇسلۇب ھۆججىتى ئەمەس.‬"
     IDS_NEXT_REASK          "كېيىنكى قېتىم بۇ خېرىدارنى سۈرۈشتۈر"
     IDS_A4AF_FILES          "‫A4AF ھۆججەت‬"
-    IDS_FO_TEMPTCP_S        "‫بۇ قېتىم eMule  ئىجرا بولغاندا WinXP مۇداپىئە تېمىدىن %u‎ (TCP) ئېغىزنى مۇۋەپپەقىيەتلىك ئاچتى‬"
-    IDS_FO_TEMPTCP_F        "‫بۇ قېتىم eMule  ئىجرا بولغاندا WinXP مۇداپىئە تېمىدىن %u (TCP) ‎ئېغىزنى ئاچالمىدى‬"
-    IDS_FO_TEMPUDP_S        "‫بۇ قېتىم eMule  ئىجرا بولغاندا WinXP مۇداپىئە تېمىدىن %u (UDP) ئېغىزنى مۇۋەپپەقىيەتلىك ئاچتى‬"
-    IDS_FO_TEMPUDP_F        "‫بۇ قېتىم eMule  ئىجرا بولغاندا WinXP مۇداپىئە تېمىدىن %u (UDP) ئېغىزنى ئاچالمىدى‬"
-    IDS_FO_PREFBUTTON       "‫WinXP مۇداپىئە تېمىدىن بۇ ئېغىزلارنى ئاچ‬"
-    IDS_FO_PREF_SUCCCEEDED  "‫WinXP مۇداپىئە تېمىدىن تاللىغان ئېغىزنى مۇۋەپپەقىيەتلىك ئاچتى.\nدىققەت: باشقا ئۈچىنچى تەرەپ مۇداپىئە تېمى ياكى يول تاللىغۇچ بۇ تاللانمىنىڭ تەسىرىگە ئۇچرىمايدۇ!‬"
-    IDS_FO_PREF_EXISTED     "‫eMule تاللىغان ئېغىزنىڭ مۇداپىئە تېمى قائىدىسى ئۆزگەرتىلمىگەن ياكى ئالماشتۇرۇلمىغانلىقىنى بايقىدى. بۇرۇن قوشۇلمىغان قائىدە مۇۋەپپەقىيەتلىك قوشۇلدى.‬\n"
-    IDS_FO_PREF_FAILED      "‫تاللىغان ئېغىز ئۈچۈن WinXP مۇداپىئە تېمى قائىدىسىنى سەپلىيەلمىدى!‬"
-    IDS_FO_PREF_STARTUP     "‫eMule قوزغالغان/چېكىنگەندە WinXP مۇداپىئە تېمىنىڭ مۇناسىپ ئېغىزىنى ئاچ/تاقا‬"
 END
 
 STRINGTABLE
@@ -1866,7 +1857,6 @@ BEGIN
     IDS_UPNPSETUP           "‫…UPnP ئارقىلىق ئېغىزنى ئەۋەتىپ قاچىلاشنى سىناۋاتىدۇ…‬"
     IDS_UPNPFAILED          "‫UPnP ئېغىزنى ئەۋەتىپ قاچىلاش مەغلۇپ بولدى، ئەگەر زۆرۈر بولسا ئۇ ئېغىزلارنى ئۆزىڭىز ئەۋەتىڭ!‬"
     IDS_UPNPSUCCESS         "‫UPnP مۇۋەپپەقىيەتلىك ھالدا  %u (TCP)‎ ۋە %u (UDP)‎ ئېغىزنى تەڭشىدى.‬"
-    IDS_FO_PREFBUTTON_NEW   "‫WinXP SP1 مۇداپىئە تېمىدىن ئېغىزنى مۇۋەپپەقىيەتلىك ئاچتى‬"
     IDS_UPNP_NOSERVICE      "‫UPnP ئۈسكۈنە مۇلازىمېتىر مۇلازىمىتى قوزغىتىلمىغان، UPnP تەڭشەشتىن ئاتلا‬"
     IDS_DELAYEDBYUPNP       "‫تورغا ئۇلىنىش كېچىكتۈرۈلدى چۈنكى UPnP ئېغىز تەڭشەش بىلەن ئالدىراش‬"
     IDS_DELAYEDBYUPNP2      "سەل ساقلاڭ‫، UPnP نى تاماملاپ  eMule ناھايىتى تېزلا ئۇلىنىدۇ.‬"

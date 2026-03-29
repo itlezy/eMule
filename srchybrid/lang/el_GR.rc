@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "el_GR.h"
@@ -1497,16 +1497,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "Το eMule εντόπισε κανόνες που υπάρχουν για τα επιλεγμένα ports και δεν άλλαξαν/αντικαταστάθηκαν. Οι κανόνες που έλειπαν προστέθηκαν επιτυχώς.\nΠαρακαλώ σημειώστε πως firewalls τρίτων κατασκευαστών ή routers δεν επηρεάζονται από αυτό!"
-    IDS_FO_PREF_FAILED      "Αποτυχία κατά τη ρύθμιση του firewall των WinXP για τα επιλεγμένα ports!"
-    IDS_FO_PREF_STARTUP     "Άνοιγμα/κλείσιμο των ports του firewall των WinXP όταν ξεκινά/τερματίζει το eMule"
     IDS_LOG_LEVEL           "Επίπεδο καταγραφής"
-    IDS_FO_TEMPTCP_S        "Άνοιξε το port %u (TCP) στο firewall των WinXP, για αυτήν την περίοδο του eMule"
-    IDS_FO_TEMPTCP_F        "Αποτυχία κατά το άνοιγμα του port %u (TCP) στο firewall των WinXP, για αυτήν την περίοδο του eMule"
-    IDS_FO_TEMPUDP_S        "Άνοιξε το port %u (UDP) στο firewall των WinXP, για αυτήν την περίοδο του eMule"
-    IDS_FO_TEMPUDP_F        "Αποτυχία κατά το άνοιγμα του port %u (UDP) στο firewall των WinXP, για αυτήν την περίοδο του eMule"
-    IDS_FO_PREFBUTTON       "Άνοιγμα αυτών των ports στο firewall των WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Τα επιλεγμένα ports άνοιξαν επιτυχώς στο firewall των WinXP.\nΠαρακαλώ σημειώστε πως firewalls τρίτων κατασκευαστών ή routers δεν επηρεάζονται από αυτό!"
     IDS_SOURCESWAPBLOCKED   "Αδύνατη ανταλλαγή"
     IDS_A4AF_CHECK_THIS_NOW "Άμεσος έλεγχος αυτής της πηγής (debug)"
     IDS_NEWMSG              "Νέο μήνυμα από '%s' (IP:%s)"
@@ -1845,7 +1836,6 @@ BEGIN
     IDS_UPNPSETUP           "Προσπάθεια ρύθμισης της προώθησης των ports με UPnP..."
     IDS_UPNPFAILED          "Το UPnP απέτυχε να ρυθμίσει την προώθηση των ports, παρακαλώ προωθήστε αυτά τα ports χειροκίνητα αν είναι απαραίτητο!"
     IDS_UPNPSUCCESS         "Το UPnP ρύθμισε την προώθηση επιτυχώς, των ports %u (TCP) και %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Άνοιγμα των ports στο firewall των WinXP SP1 "
     IDS_UPNP_NOSERVICE      "Η υπηρεσία UPnP Device Host δεν είναι ενεργή, εγκατάλειψη της ρύθμισης UPnP"
     IDS_DELAYEDBYUPNP       "Η σύνδεση με το δίκτυο καθυστερεί, επειδή το UPnP είναι απασχολημένο με τη ρύθμιση των προωθήσεων των ports."
     IDS_DELAYEDBYUPNP2      "Παρακαλώ περιμένετε μερικά δευτερόλεπτα, το eMule θα συνδεθεί αμέσως μετά τη ρύθμιση του UPnP."

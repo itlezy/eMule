@@ -58,7 +58,6 @@
 #include "SafeFile.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
-#include "FirewallOpener.h"
 #include "StringConversion.h"
 #include "Log.h"
 #include "Collection.h"
@@ -444,25 +443,9 @@ BOOL CemuleApp::InitInstance()
 	///////////////////////////////////////////////////////////////////////////
 	// Common Controls initialization
 	//
-	//						Mjr Min
-	// ----------------------------
-	// W98 SE, IE5			5	8
-	// W2K SP4, IE6 SP1		5	81
-	// XP SP2				6   0
-	// XP SP3				6   0
-	// Vista SP1			6   16
 	InitCommonControls();
-	switch (thePrefs.GetWindowsVersion()) {
-	case _WINVER_2K_:
-		m_ullComCtrlVer = MAKEDLLVERULL(5, 81, 0, 0);
-		break;
-	case _WINVER_XP_:
-	case _WINVER_2003_:
-		m_ullComCtrlVer = MAKEDLLVERULL(6, 0, 0, 0);
-		break;
-	default:  //Vista .. Win11
-		m_ullComCtrlVer = MAKEDLLVERULL(6, 16, 0, 0);
-	};
+	// Windows 10/11 always provide the modern common-controls path used by this branch.
+	m_ullComCtrlVer = MAKEDLLVERULL(6, 16, 0, 0);
 
 	m_sizSmallSystemIcon.cx = ::GetSystemMetrics(SM_CXSMICON);
 	m_sizSmallSystemIcon.cy = ::GetSystemMetrics(SM_CYSMICON);
@@ -537,30 +520,6 @@ BOOL CemuleApp::InitInstance()
 		Ask4RegFix(false, true, false);
 
 	SetAutoStart(thePrefs.GetAutoStart());
-
-	m_pFirewallOpener = new CFirewallOpener();
-	m_pFirewallOpener->Init(true); // we need to init it now (even if we may not use it yet) because of CoInitializeSecurity - which kinda ruins the sense of the class interface but ooohh well :P
-	// Open WinXP firewall ports if set in preferences and possible
-	if (thePrefs.IsOpenPortsOnStartupEnabled()) {
-		if (m_pFirewallOpener->DoesFWConnectionExist()) {
-			// delete old rules added by eMule
-			m_pFirewallOpener->RemoveRule(EMULE_DEFAULTRULENAME_UDP);
-			m_pFirewallOpener->RemoveRule(EMULE_DEFAULTRULENAME_TCP);
-			// open port for this session
-			if (m_pFirewallOpener->OpenPort(thePrefs.GetPort(), NAT_PROTOCOL_TCP, EMULE_DEFAULTRULENAME_TCP, true))
-				QueueLogLine(false, GetResString(IDS_FO_TEMPTCP_S), thePrefs.GetPort());
-			else
-				QueueLogLine(false, GetResString(IDS_FO_TEMPTCP_F), thePrefs.GetPort());
-
-			if (thePrefs.GetUDPPort()) {
-				// open port for this session
-				if (m_pFirewallOpener->OpenPort(thePrefs.GetUDPPort(), NAT_PROTOCOL_UDP, EMULE_DEFAULTRULENAME_UDP, true))
-					QueueLogLine(false, GetResString(IDS_FO_TEMPUDP_S), thePrefs.GetUDPPort());
-				else
-					QueueLogLine(false, GetResString(IDS_FO_TEMPUDP_F), thePrefs.GetUDPPort());
-			}
-		}
-	}
 
 	// UPnP Port forwarding
 	m_pUPnPFinder = new CUPnPImplWrapper();

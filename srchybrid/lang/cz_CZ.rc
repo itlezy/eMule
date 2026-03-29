@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "cz_CZ.h"
@@ -1525,19 +1525,10 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Tento soubor není platný pack eMule Skinu."
     IDS_NEXT_REASK          "Příští požadavek tomuto klientovi"
     IDS_A4AF_FILES          "A4AF soubory"
-    IDS_FO_TEMPTCP_S        "Otevřen port %u (TCP) v interním WinXP firewallu pro tuto etapu běhu eMule"
-    IDS_FO_TEMPTCP_F        "Nepodařilo se otevřít port %u (TCP) v interním WinXP firewallu pro tuto etapu běhu eMule"
-    IDS_FO_TEMPUDP_S        "Otevřen port %u (UDP) v interním WinXP firewallu pro tuto etapu běhu eMule"
-    IDS_FO_TEMPUDP_F        "Nepodařilo se otevřít port %u (UDP) v interním WinXP firewallu pro tuto etapu běhu eMule"
-    IDS_FO_PREFBUTTON       "Otevřít tyto porty v interním WinXP firewallu"
-    IDS_FO_PREF_SUCCCEEDED  "Podařilo se otevřít vybrané porty v interním WinXP firewallu.\nZkontrolujte prosím, jestli to nemá vliv na firewally třetích stran nebo routery!"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule detekoval existující pravidla pro vybrané porty, která nebyla přepsána či nahrazena. Chybějící pravidla byla úspěšně přidána.\nZkontrolujte prosím, jestli to nemá vliv na firewally třetích stran nebo routery!"
-    IDS_FO_PREF_FAILED      "Nepodařilo se nastavit interní WinXP firewall pro vybrané porty!"
-    IDS_FO_PREF_STARTUP     "Otevřít/zavřít porty WinXP firewallu během spouštění/ukončování eMule"
     IDS_LOG_LEVEL           "Úroveň Logu"
     IDS_NEWMSG              "Zpráva od '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "pouze ve stejné kategorii"
@@ -1901,7 +1892,6 @@ BEGIN
     IDS_UPNPSETUP           "Nastavuje se přesměrování portů pomocí UPnP..."
     IDS_UPNPFAILED          "UPnP nastavení se nezdařilo. Pokud je to třeba, nastavte prosím přesměrování manuálně!"
     IDS_UPNPSUCCESS         "Pomocí UPnP bylo úspěšně nastaveno přesměrování portů %u (TCP) a %u (UDP)."
-    IDS_FO_PREFBUTTON_NEW   "Otevřít porty ve WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "Služba UPnP Device Host naní spuštěna. Nelze pokračovat v nastavení pomocí UPnP."
     IDS_DELAYEDBYUPNP       "Připojení k síti je zpožděno, nebo? UPnP je zaneprázdněno nastavováním přesměrování portů."
     IDS_DELAYEDBYUPNP2      "Vyčkejte prosím několik sekund, eMule se připojí, jakmile skončí nastavování pomocí UPnP."

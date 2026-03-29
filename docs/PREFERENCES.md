@@ -71,7 +71,6 @@ The last two groups are documented because they still live in the same file, but
 | `ConditionalTCPAccept` | `eMule` | `RW` | Yes | existing app default | Controls conditional TCP accept behavior. This is an advanced network-side knob. |
 | `UDPReceiveBufferSize` | `eMule` | `RW` | Advanced tree | `512 * 1024` | UDP receive socket buffer size in bytes. Exposed in Tweaks as KiB. |
 | `BigSendBufferSize` | `eMule` | `RW` | Advanced tree | `512 * 1024` | Configured large TCP send buffer size in bytes for upload sockets. Exposed in Tweaks as KiB. |
-| `OpenPortsOnStartUp` | `eMule` | `RW` | Yes | `false` | Open port mappings or startup networking paths early on launch. |
 
 ### Server / eD2k / Kad
 
@@ -340,7 +339,6 @@ This section explains what the more technical settings actually do in runtime te
 | `MaxHalfConnections` | Caps not-yet-fully-open TCP connections. This mainly affects connect burst behavior and old Windows TCP stack sensitivity. |
 | `MaxConnectionsPerFiveSeconds` | Burst limiter for new outbound connections. It smooths connection churn and protects both the local stack and remote peers from aggressive connect storms. |
 | `ConditionalTCPAccept` | A lower-level network acceptance policy. It affects when the app accepts inbound TCP work under load instead of being a simple UI convenience setting. |
-| `OpenPortsOnStartUp` | Triggers early network setup/port-opening behavior at startup. This is operational plumbing, not a peer-policy knob. |
 
 ### Server / Kad Behavior
 

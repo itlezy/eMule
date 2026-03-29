@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "hu_HU.h"
@@ -1534,16 +1534,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "Észrevettem, hogy már léteznek szabályok a kiválasztott portokhoz, így azokat nem írtam felül. A hiányzó szabályokat azonban hozzáadtam.\nMegjegyzem, ez nincs hatással más tűzfalprogramodra vagy útvonalválasztódra!"
-    IDS_FO_PREF_FAILED      "Nem sikerült konfigurálni a Windows XP belső tűzfalát a kiválasztott portokhoz!"
-    IDS_FO_PREF_STARTUP     "Portok megnyitása/zárása a Windows XP tűzfalban, amikor elindítom/bezárom az eMule-t"
     IDS_LOG_LEVEL           "Napló részletesség"
-    IDS_FO_TEMPTCP_S        "A(z) %u (TCP) portot megnyitottam az eMule számára a Windows XP belső tűzfalában"
-    IDS_FO_TEMPTCP_F        "Nem sikerült megnyitni a(z) %u (TCP) portot az eMule számára a Windows XP belső tűzfalában"
-    IDS_FO_TEMPUDP_S        "A(z) %u (UDP) portot megnyitottam az eMule számára a Windows XP belső tűzfalában"
-    IDS_FO_TEMPUDP_F        "Nem sikerült megnyitni a(z) %u (UDP) portot az eMule számára a Windows XP belső tűzfalában"
-    IDS_FO_PREFBUTTON       "Portok megnyitása a belső Windows XP tűzfalban"
-    IDS_FO_PREF_SUCCCEEDED  "Sikerült megnyitnom a kiválasztott portokat a Windows XP belső tűzfalában.\nMegjegyzem, ez nincs hatással más tűzfalprogramodra vagy útvonalválasztódra!"
     IDS_SOURCESWAPBLOCKED   "Csere blokkolva"
     IDS_A4AF_CHECK_THIS_NOW "Ellenőrizd ezt a forrást (hibakeresés)"
     IDS_NEWMSG              "'%s' új üzenetet küldött (IP:%s)"
@@ -1905,7 +1896,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "Please wait some seconds, eMule will connect as soon as UPnP finished."

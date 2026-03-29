@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "tr_TR.h"
@@ -1549,19 +1549,10 @@ BEGIN
                             "Bu geçerli bir eMule Kaplama paket dosyası değil."
     IDS_NEXT_REASK          "Sonraki yeniden sorma"
     IDS_A4AF_FILES          "A4AF dosyaları"
-    IDS_FO_TEMPTCP_S        "Bu eMule oturumu için dahili WinXP güvenlik duvarında açılmış bağlantı noktası %u (TCP)"
-    IDS_FO_TEMPTCP_F        "Bu eMule oturumu için dahili WinXP güvenlik duvarında %u (TCP) nolu bağlantı noktasını açma başarısız"
-    IDS_FO_TEMPUDP_S        "Bu eMule oturumu için dahili WinXP güvenlik duvarında açılmış bağlantı noktası %u (UDP)"
-    IDS_FO_TEMPUDP_F        "Bu eMule oturumu için dahili WinXP güvenlik duvarında %u (UDP) nolu bağlantı noktasını açma başarısız"
-    IDS_FO_PREFBUTTON       "Dahili WinXP Güvenlik Duvarında Bu Bağlantı Noktalarını Aç"
-    IDS_FO_PREF_SUCCCEEDED  "Dahili WinXP güvenlik duvarında seçili bağlantı noktalarının açılması başarılı.\nLütfen not edin, üçüncü-parti masaüstü güvenlik duvarları ya da yönlendiriciler (router) bundan etkilenmez!"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule, seçili bağlantı noktaları için üzerine yazılamaz yada değiştirilemez mevcut kurallar algıladı. Eksik kurallar başarıyla eklendi.\nLütfen not edin, üçüncü-parti masaüstü güvenlik duvarları yada yönlendiriciler (router) bundan etkilenmez!"
-    IDS_FO_PREF_FAILED      "Seçili bağlantı noktaları için dahili WinXP güvenlik duvarının yapılandırılması başarısız!"
-    IDS_FO_PREF_STARTUP     "eMule başlatıldığında/çıkıldığında WinXP güvenlik duvarında bağlantı noktalarını aç/kapat"
     IDS_LOG_LEVEL           "Günlük seviyesi"
     IDS_NEWMSG              "'%s' kullanıcısından Yeni Mesaj (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Sadece aynı kategori içindeki"
@@ -1901,7 +1892,6 @@ BEGIN
     IDS_UPNPSETUP           "UPnP ile bağlantı noktası yönlendirme ayarlamaları deneniyor..."
     IDS_UPNPFAILED          "Bağlantı noktası yönlendirme ayarlaması için UPnP başarısız oldu, eğer gerekliyse lütfen bağlantı noktalarını elle yönlendirin!"
     IDS_UPNPSUCCESS         "UPnP, %u (TCP) ve %u (UDP) nolu bağlantı noktaları için yönlendirmeyi başarılı olarak ayarladı"
-    IDS_FO_PREFBUTTON_NEW   "WinXP SP1 güvenlik duvarında bağlantı noktalarını aç"
     IDS_UPNP_NOSERVICE      "UPnP Aygıtı Anamakine hizmeti çalışmıyor, UPnP ayarlaması atlanıyor"
     IDS_DELAYEDBYUPNP       "Ağa bağlantı gecikiyor çünkü UPnP bağlantı noktası yönlendirmelerini yapılandırırken hala meşgul."
     IDS_DELAYEDBYUPNP2      "Lütfen biraz bekleyin, UPnP biter bitmez eMule bağlanacaktır."

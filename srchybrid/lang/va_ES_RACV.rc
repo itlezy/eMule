@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "va_ES_RACV.h"
@@ -1539,15 +1539,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_TEMPTCP_S        "Port %u (TCP) obert en el tallafocs intern de WinXP per a esta sessió de l'eMule"
-    IDS_FO_TEMPTCP_F        "Erro a l'obrir el port %u (TCP) en el tallafocs intern de WinXP per a esta sessió de l'eMule"
-    IDS_FO_TEMPUDP_S        "Port %u (UDP) obert en el tallafocs intern de WinXP per a esta sessio de l'eMule"
-    IDS_FO_TEMPUDP_F        "Erro a l'intentar obrir el port %u (UDP) en el tallafocs intern de WinXP per a esta sessió de l'eMule"
-    IDS_FO_PREFBUTTON       "Obrir estos ports en el tallafocs intern de WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Ports oberts en èxit en el tallafocs intern de WinXP.\n¡Tin en conte que açò no afecta als routers o tallafocs d'atres!"
-    IDS_FO_PREF_EXISTED     "L'eMule ha detectat que existixen regles per als ports seleccionats, les quals no poden ser reemplaçades. S'han afegit les regles que falten.\n¡Tin en conte que açò no afecta als routers o tallafocs d'atres!"
-    IDS_FO_PREF_FAILED      "¡Erro al configurar el tallafocs intern de WinXP per als ports seleccionats!"
-    IDS_FO_PREF_STARTUP     "Obrir/tancar ports en el tallafocs de WinXP quan s'inicia i tanca l'eMule"
     IDS_LOG_LEVEL           "Nivell de registre"
     IDS_SOURCESWAPBLOCKED   "Intercanvi bloquejat"
     IDS_A4AF_CHECK_THIS_NOW "Comprovar esta font ara (debug)"
@@ -1906,7 +1897,6 @@ BEGIN
     IDS_UPNPSETUP           "Intentant redirigir els ports mijan UPnP"
     IDS_UPNPFAILED          "No s'han pogut redirigir els ports mijan UPnP, per favor, ¡obri estos ports manualment si es necessari!"
     IDS_UPNPSUCCESS         "S'han redirigit correctament els ports %u (TCP) i %u (UDP) mijan UPnP"
-    IDS_FO_PREFBUTTON_NEW   "Obrir els ports en el tallafocs de WinXP SP1"
     IDS_UPNP_NOSERVICE      "El servici Host del Dispositiu Plug and Play universal no està eixecutant-se, no es finalisarà la configuració de UPnP"
     IDS_DELAYEDBYUPNP       "La conexió a la ret encara no s'ha realisat perque UPnP encara està sent redirigit als ports"
     IDS_DELAYEDBYUPNP2      "Per favor, espera uns segons, eMule es conectarà a la ret quan UPnP finalise."

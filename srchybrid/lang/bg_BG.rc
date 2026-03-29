@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "bg_BG.h"
@@ -812,9 +812,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule откри съществуващи настройки за избраните портове, които не могат да бъдат променени. Липсващите настройки бяха добавени успешно.\nЗабележете че това не влияе на други защитни стени или рутери!"
-    IDS_FO_PREF_FAILED      "Не можах да конфигурирам вградената защ. стена на WinXP за избраните портове!"
-    IDS_FO_PREF_STARTUP     "Отвори/Затвори портовете на защ. стена на WinXP когато стартирам/затварям eMule"
     IDS_LOG_LEVEL           "Ниво на отчета"
     IDS_NEWMSG              "Съобщение от '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "само в същата категория"
@@ -1568,12 +1565,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Това не е валиден пакет с облик за eMule."
     IDS_NEXT_REASK          "Следващо запитване на клиента след"
     IDS_A4AF_FILES          "A4AF файлове"
-    IDS_FO_TEMPTCP_S        "Отворен е порт %u (TCP) на вградената защ. стена на WinXP за тази сесия на eMule"
-    IDS_FO_TEMPTCP_F        "Не може да се отвори порт %u (TCP) на вградената защ. стена на WinXP за тази сесия на eMule"
-    IDS_FO_TEMPUDP_S        "Отворен е порт %u (UDP) на вградената защ. стена на WinXP за тази сесия на eMule"
-    IDS_FO_TEMPUDP_F        "Не може да се отвори порт %u (UDP) на вградената защ. стена на WinXP за тази сесия на eMule"
-    IDS_FO_PREFBUTTON       "Отвори тези портове на вградената защ. стена на WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Избраните портове на вградената защ. стена на WinXP са успешно отворени.\nЗабележете че това не влияе на други защитни стени или рутери!"
 END
 
 STRINGTABLE
@@ -1879,7 +1870,6 @@ BEGIN
     IDS_UPNPSETUP           "Опит за UPnP пренасочване на портовете..."
     IDS_UPNPFAILED          "Неуспешно UPnP пренасочване на портовете. Моля, направете това ръчно!"
     IDS_UPNPSUCCESS         "Успешно UPnP пренасочване за портове %u (TCP) и %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Отвори портовете на защ. стена на WinXP SP1"
     IDS_UPNP_NOSERVICE      "Услугата UPnP Device Host не е стартирана, пропускане на UPnP настройките"
     IDS_DELAYEDBYUPNP       "Свързването към мрежата е отложено, защото UPnP все още конфигурира пренасочването на портовете."
     IDS_DELAYEDBYUPNP2      "Изчакайте няколко секунди, eMule ще се свърже веднага след завършване на UPnP настройките."

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "nb_NO.h"
@@ -738,9 +738,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule har oppdaget eksisterende regler for portene, derfor er de ikke overskrevet eller skiftet ut. Manglende regler ble vellykket føyd til.\nBemerk at 3. parter brannmurer eller routerere ikke er omfattet av dette!"
-    IDS_FO_PREF_FAILED      "Kunne ikke konfigurere den interne WinXP brannmuren for de valgte portene!"
-    IDS_FO_PREF_STARTUP     "Åpne/Lukke portene på WinXP brannmuren ved start/lukking av eMule"
     IDS_LOG_LEVEL           "Logg Nivå"
     IDS_NEWMSG              "Ny melding fra '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "kun i samme kategori"
@@ -1534,12 +1531,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Dette er ikke en gyldig eMule Skall arkivfil."
     IDS_NEXT_REASK          "Neste forspørsel til denne klient"
     IDS_A4AF_FILES          "A4AF filer"
-    IDS_FO_TEMPTCP_S        "Åpne portene %u (TCP) på den interne WinXP brannmuren for denne eMule session"
-    IDS_FO_TEMPTCP_F        "Klarte ikke å åpne port %u (TCP) på den interne WinXP brannmuren for denne eMule session"
-    IDS_FO_TEMPUDP_S        "Åpnet port %u (UDP) på den interne WinXP brannmuren for denne eMule session"
-    IDS_FO_TEMPUDP_F        "Klarte ikke å åpne port %u (UDP) på den interne WinXP brannmuren for denne eMule session"
-    IDS_FO_PREFBUTTON       "Åpne disse portene på den interne WinXP brannmuren"
-    IDS_FO_PREF_SUCCCEEDED  "Klarte å åpne den valgte port på den interne WinXP brannmuren.\nBemerk at 3. parts brannmurer eller routere ikke er omfattet av dette!"
 END
 
 STRINGTABLE
@@ -1902,7 +1893,6 @@ BEGIN
     IDS_UPNPSETUP           "Prøver å sette opp videresending av port med UPnP..."
     IDS_UPNPFAILED          "UPnP klarte ikke å sette opp videresending av port, vennligst videresend disse portene manuelt hvis nødvendig!"
     IDS_UPNPSUCCESS         "UPnP klarte å sette opp videresending for portene %u (TCP) og %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Åpne porter på WinXP SP1 brannmur"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service kjører ikke, hopper over UPnP oppsett"
     IDS_DELAYEDBYUPNP       "Tilkoblingen til nettverket er forsinket, fordi UPnP fremdeles er opptatt med å konfigurere videresending av port."
     IDS_DELAYEDBYUPNP2      "Vennligst vent noen sekunder, eMule vil koble til så snart UPnP er ferdig."

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "nl_NL.h"
@@ -1531,16 +1531,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule detecteerde bestaande regels voor de geselecteerde poorten, en deze zijn niet overschreven of vervangen. Missende regels zijn toegevoegd.\nLet op dat andere (bureaublad)firewalls of routers hierdoor niet beïnvloed zijn!"
-    IDS_FO_PREF_FAILED      "Configuren van de interne Windows XP-firewall mislukt voor de geselcteerde poorten!"
-    IDS_FO_PREF_STARTUP     "Open/sluit poorten in de Windows XP-firewall tijdens het starten/verlaten van eMule"
     IDS_LOG_LEVEL           "Logniveau"
-    IDS_FO_TEMPTCP_S        "Poort %u (TCP) is geopend in de interne Windows XP-firewall voor deze eMule-sessie"
-    IDS_FO_TEMPTCP_F        "Openen van poort %u (TCP) mislukt in de interne Windows XP-firewall voor deze eMule-sessie"
-    IDS_FO_TEMPUDP_S        "Poort %u (UDP) geopend in de interne Windows XP-firewall voor deze eMule-sessie"
-    IDS_FO_TEMPUDP_F        "Openen van poort %u (UDP) mislukt in de interne Windows XP-firewall voor deze eMule-sessie"
-    IDS_FO_PREFBUTTON       "Open deze poorten in de interne Windows XP-firewall"
-    IDS_FO_PREF_SUCCCEEDED  "De geselecteerde poorten openen in de interne Windows XP-firewall.\nLet op dat andere (bureaublad)firewalls of routers hierdoor niet beïnvloed zijn!"
     IDS_SOURCESWAPBLOCKED   "Wisselen geblokkeerd"
     IDS_A4AF_CHECK_THIS_NOW "Controleer deze bron nu (debug)"
     IDS_NEWMSG              "Nieuw bericht van '%s' (IP:%s)"
@@ -1898,7 +1889,6 @@ BEGIN
     IDS_UPNPSETUP           "Probeert om poortdoorverwijzingen met UPnP in te stellen..."
     IDS_UPNPFAILED          "UPnP heeft gefaald met het instellen van poortdoorverwijzingen, verwijs deze poorten a.u.b. zelf door als dit nodig is!"
     IDS_UPNPSUCCESS         "UPnP heeft de doorverwijzingen voor de poorten %u (TCP) en %u (UDP) succesvol ingesteld"
-    IDS_FO_PREFBUTTON_NEW   "Open poorten op een WinXP SP1-firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host-service is niet uitvoerend, slaat instellen van UPnP over"
     IDS_DELAYEDBYUPNP       "Verbinden met het netwerk is vertraagd omdat UPnP nog steeds bezig is met het configureren van de poortdoorverwijzingen."
     IDS_DELAYEDBYUPNP2      "Wacht a.u.b. enkele seconden, eMule zal meteen verbinden als UPnP klaar is."

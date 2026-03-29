@@ -1,4 +1,4 @@
-﻿#include "nn_NO.h"
+#include "nn_NO.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -721,9 +721,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule har oppdaga eksisterande reglar for portane. Difor er dei ikkje overskrivne eller skifta ut. Manglande reglar vart med hell lagd til.\nMerk at andre sine brannmurar eller ruterar ikkje er omfatta av dette!"
-    IDS_FO_PREF_FAILED      "Kunne ikkje konfigurere den interne WinXP brannmuren for dei valte portane!"
-    IDS_FO_PREF_STARTUP     "Opne/stenge portane på WinXP brannmuren ved start/avslutting av eMule"
     IDS_LOG_LEVEL           "Loggnivå"
     IDS_NEWMSG              "Ny melding frå '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "berre i same kategori"
@@ -1499,12 +1496,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Dette er ikkje ei gyldig eMuleskinnfil."
     IDS_NEXT_REASK          "Neste førespurnad til denne klienten"
     IDS_A4AF_FILES          "A4AF filer"
-    IDS_FO_TEMPTCP_S        "Opne portane %u (TCP) på den interne WinXP brannmuren for denne eMulesesjonen"
-    IDS_FO_TEMPTCP_F        "Klarte ikkje å opne port %u (TCP) på den interne WinXP brannmuren for denne eMulesesjonen"
-    IDS_FO_TEMPUDP_S        "Opna port %u (UDP) på den interne WinXP brannmuren for denne eMule sesjonen"
-    IDS_FO_TEMPUDP_F        "Klarte ikkje å opne port %u (UDP) på den interne WinXP brannmuren for denne eMulesesjonen"
-    IDS_FO_PREFBUTTON       "Opne desse portane på den interne WinXP brannmuren"
-    IDS_FO_PREF_SUCCCEEDED  "Klarte å opne valte port på den interne WinXP brannmuren.\nMerk at tredjepartar sine brannmurar eller ruterar ikkje er omfatta av dette!"
 END
 
 STRINGTABLE
@@ -1853,7 +1844,6 @@ BEGIN
     IDS_UPNPSETUP           "Freistar å sette opp portar med UPnP..."
     IDS_UPNPFAILED          "UPnP feila i å sette opp portane; set opp portane manuelt dersom naudsynt!"
     IDS_UPNPSUCCESS         "UPnP greidde å sette opp portane %u (TCP) og %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Opne portar i WinXP SP1 brannmur"
     IDS_UPNP_NOSERVICE      "UPnP Device Host tenesta køyrer ikkje; hoppar over UPnP oppsett"
     IDS_DELAYEDBYUPNP       "Tilkopling til nettverket er forseinka fordi UPnP framleis er oppteke med å sette opp portane."
     IDS_DELAYEDBYUPNP2      "Vent nokre sekund; eMule koplar til så snart UPnP er ferdig."

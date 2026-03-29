@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "vi_VN.h"
@@ -813,9 +813,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule phát hiện đã có quy tắc cho cổng này, không thể đè lên hay thay thế. Quy tắc thất lạc này đã được thêm vào thành công.\nTường lửa và bộ định tuyến không bị ảnh hưởng bởi điều này!"
-    IDS_FO_PREF_FAILED      "Không thể cấu hình tường lửa WinXP cho các cổng được chọn!"
-    IDS_FO_PREF_STARTUP     "Mở/đóng cổng trên tường lửa WinXP khi mở/tắt eMule"
     IDS_LOG_LEVEL           "Mức Bản ghi"
     IDS_NEWMSG              "Tin nhắn mới từ '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Chỉ các Tập tin cùng Danh mục"
@@ -1586,12 +1583,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Đây không phải là tập tin gói Giao diện eMule hợp lệ."
     IDS_NEXT_REASK          "Các yêu cầu lại tiếp theo"
     IDS_A4AF_FILES          "tập tin A4AF"
-    IDS_FO_TEMPTCP_S        "Đã mở cổng %u (TCP) trong hệ thống tường lửa WinXP cho phiên eMule này"
-    IDS_FO_TEMPTCP_F        "Không thể mở cổng %u (TCP) trong hệ thống tường lửa WinXP cho phiên eMule này"
-    IDS_FO_TEMPUDP_S        "Đã mở cổng %u (UDP) trong hệ thống tường lửa WinXP cho phiên eMule này"
-    IDS_FO_TEMPUDP_F        "Không thể mở cổng %u (UDP) trong hệ thống tường lửa WinXP cho phiên eMule này"
-    IDS_FO_PREFBUTTON       "Mở các cổng này trong Hệ thống tường lửa WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Thành công mở các cổng đã chọn trong hệ thống tường lửa WinXP.\nCác hệ thống tường lửa và bộ định tuyến khác không bị ảnh hưởng!"
 END
 
 STRINGTABLE
@@ -1896,7 +1887,6 @@ BEGIN
     IDS_UPNPSETUP           "Cố gắng thiết lập cổng chuyển tiếp với UPnP..."
     IDS_UPNPFAILED          "UPnP không thể thiết lập cổng chuyển tiếp, vui lòng tự chuyển tiếp các cổng này nếu cần!"
     IDS_UPNPSUCCESS         "UPnP đã thiết lập cổng chuyển tiếp thành công cho các cổng %u (TCP) và %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Mở các cổng trên tường lửa WinXP SP1"
     IDS_UPNP_NOSERVICE      "Dịch vụ - UPnP Device Host - không chạy, bỏ qua thiết lập UPnP"
     IDS_DELAYEDBYUPNP       "Kết nối bị hoãn lại, vì UPnP đang thiết lập cổng chuyển tiếp."
     IDS_DELAYEDBYUPNP2      "Vui lòng đợi, eMule sẽ kết nối ngay khi UPnP hoàn tất."

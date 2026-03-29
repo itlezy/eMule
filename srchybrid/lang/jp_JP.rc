@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "jp_JP.h"
@@ -817,9 +817,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMuleは選択されたポート用の既存規則を検出し、これを上書き又は置換できませんでした。\n不足していた規則の追加には成功しています。\nサードパーティ製のデスクトップ用ファイアーウォールやルータがこれを妨げることのないように注意して下さい!"
-    IDS_FO_PREF_FAILED      "選択されたポート用のWinXP内蔵ファイアーウォールの構成に失敗しました!"
-    IDS_FO_PREF_STARTUP     "eMuleの開始/終了時にWinXPのファイアーウォール上のポートを開く/閉じる"
     IDS_LOG_LEVEL           "ログレベル"
     IDS_NEWMSG              "'%s' (IP:%s)からの新しいメッセージ"
     IDS_PREF_STARTNEXTFILECATONLY "同じカテゴリ内のみ"
@@ -1564,12 +1561,6 @@ BEGIN
                             "これは有効なeMuleスキンのパッケージではありません"
     IDS_NEXT_REASK          "次の再問い合わせ"
     IDS_A4AF_FILES          "A4AF ファイル"
-    IDS_FO_TEMPTCP_S        "このeMuleのセッション用にWinXP内蔵ファイアーウォール上のポート %u (TCP) を開きました"
-    IDS_FO_TEMPTCP_F        "このeMuleのセッション用にWinXP内蔵ファイアーウォール上のポート %u (TCP) のオープンに失敗しました"
-    IDS_FO_TEMPUDP_S        "このeMuleのセッション用にWinXP内蔵ファイアーウォール上のポート %u (UDP) を開きました"
-    IDS_FO_TEMPUDP_F        "このeMuleのセッション用にWinXP内蔵ファイアーウォール上のポート %u (UDP) のオープンに失敗しました"
-    IDS_FO_PREFBUTTON       "WinXP内蔵ファイアーウォール上でこれらのポートを開く"
-    IDS_FO_PREF_SUCCCEEDED  "WinXP内蔵ファイアーウォール上で選択されたポートを開くことに成功しました。\nサードパーティ製のデスクトップ用ファイアーウォールやルータがこれをブロックしないように注意して下さい!"
 END
 
 STRINGTABLE
@@ -1905,7 +1896,6 @@ BEGIN
     IDS_UPNPSETUP           "UPnPを使用してポート設定を行っています..."
     IDS_UPNPFAILED          "UPnPを利用したポート設定に失敗しました。必要ならこれらのポートを手動で設定してください!"
     IDS_UPNPSUCCESS         "UPnPはポート %u (TCP) と %u (UDP) の設定に成功しました"
-    IDS_FO_PREFBUTTON_NEW   "WinXP SP1 ファイアーウォール上のポートを開く"
     IDS_UPNP_NOSERVICE      "UPnPデバイスホストサービスが起動されていません。UPnP設定をスキップします"
     IDS_DELAYEDBYUPNP       "UPnPがポート設定を構成しているため、ネットワーク接続が遅延されます。"
     IDS_DELAYEDBYUPNP2      "数秒間お待ち下さい、UPnP設定が終了するとすぐに接続が開始されます。"

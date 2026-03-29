@@ -218,7 +218,6 @@
     <ClCompile Include="FileDetailDlgStatistics.cpp" />
     <ClCompile Include="FileIdentifier.cpp" />
     <ClCompile Include="FileInfoDialog.cpp" />
-    <ClCompile Include="FirewallOpener.cpp" />
     <ClCompile Include="FrameGrabThread.cpp" />
     <ClCompile Include="Friend.cpp" />
     <ClCompile Include="FriendList.cpp" />
@@ -500,7 +499,6 @@
     <ClInclude Include="FileDetailDlgStatistics.h" />
     <ClInclude Include="FileIdentifier.h" />
     <ClInclude Include="FileInfoDialog.h" />
-    <ClInclude Include="FirewallOpener.h" />
     <ClInclude Include="FrameGrabThread.h" />
     <ClInclude Include="Friend.h" />
     <ClInclude Include="FriendList.h" />

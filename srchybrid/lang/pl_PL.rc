@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "pl_PL.h"
@@ -895,15 +895,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "To nie jest prawidłowy pakiet ze skórką eMule."
     IDS_NEXT_REASK          "Następne zapytanie do tego klienta"
     IDS_A4AF_FILES          "pliki A4AF"
-    IDS_FO_TEMPTCP_S        "Otwarto port %u (TCP) w wewnętrznym firewallu WinXP na czas trwania sesji eMule"
-    IDS_FO_TEMPTCP_F        "Nie udało się otwarcie portu %u (TCP) w wewnętrznym firewallu WinXP na czas trwania sesji eMule"
-    IDS_FO_TEMPUDP_S        "Otwarto port %u (UDP) w wewnętrznym firewallu WinXP na czas trwania sesji eMule"
-    IDS_FO_TEMPUDP_F        "Nie udało się otwarcie portu %u (UDP) w wewnętrznym firewallu WinXP na czas trwania sesji eMule"
-    IDS_FO_PREFBUTTON       "Otwórz te porty w wewnętrznym firewallu WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Udało sie otworzyć wybarne porty w wewnętrznym firewallu WinXP.\nZauważ, że inne (doinstalowne) firewalle i routery nie podlegają zmianą!"
-    IDS_FO_PREF_EXISTED     "eMule wykrył istniejące zasady dla  portów, które nie zostały nadpisane lub wymienione. Brakujące zasady zostały utworzone.\nZauważ, że inne (doinstalowne) firewalle i routery nie podlegają zmianą!"
-    IDS_FO_PREF_FAILED      "Nie udało się przekonfigurować wewnętrznego firewalla WinXP dla wybranych portów!"
-    IDS_FO_PREF_STARTUP     "Otwieraj i zamykaj porty w wewnętrznym firewallu WinXP podczas uruchamiania/zamykania eMule"
 END
 
 STRINGTABLE
@@ -1872,7 +1863,6 @@ BEGIN
     IDS_UPNPSETUP           "Próbuj przekierowywać porty za pomocą UPnP..."
     IDS_UPNPFAILED          "Błąd UPnP przy przekierowywaniu portów, wymagane jest ich ręczne przekierowanie!"
     IDS_UPNPSUCCESS         "UPnP szczęśliwie przekierowało porty %u (TCP) i %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Otwórz porty w firewallu WinXP SP1"
     IDS_UPNP_NOSERVICE      "Usługa UPnP Host Device nie jest uruchomiona, pominięto konfigurację UPnP."
     IDS_DELAYEDBYUPNP       "Podłączanie do sieci jest wstrzymane, ponieważ UPnP nadal przekierowywuje porty."
     IDS_DELAYEDBYUPNP2      "Poczekaj kilka sekund, eMule zaraz się podłączy, gdyż UPnP zakończyło już działanie."

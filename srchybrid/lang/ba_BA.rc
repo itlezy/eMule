@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ba_BA.h"
@@ -1537,15 +1537,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_TEMPTCP_S        "%u (TCP) portua ireki da WinXP-ren suhesian sesio honetarako"
-    IDS_FO_TEMPTCP_F        "Errorea WinXP-ren suhesian %u (TCP) portua irekitzerakoan sesio honetarako"
-    IDS_FO_TEMPUDP_S        "%u (UDP) portua ireki da WinXP-ren suhesian sesio honetarako"
-    IDS_FO_TEMPUDP_F        "Errorea WinXP-ren suhesian %u (UDP) portua irekitzerakoan sesio honetarako"
-    IDS_FO_PREFBUTTON       "WinXP-ren suhesian portu hauek ireki"
-    IDS_FO_PREF_SUCCCEEDED  "Portuak ireki egin dira WinXP-ren suhesian.\nKontuan izan honek ez duela hirugarren pertsona baten router edo suhesian eragiten!"
-    IDS_FO_PREF_EXISTED     "eMulek arau aldaezin batzuk antzeman ditu aukeratutako portuetan. Falta diren arauak gehitu dira.\nKontuan izan honek ez duela hirugarren pertsona baten router edo suhesian eragiten!"
-    IDS_FO_PREF_FAILED      "Errorea WinXP-ren suhesian aukeratutako portuak konfiguratzerakoan!"
-    IDS_FO_PREF_STARTUP     "WinXP-ko suhesian portuak ireki/itxi eMule ireki/ixterakoan"
     IDS_LOG_LEVEL           "Log maila"
     IDS_SOURCESWAPBLOCKED   "Iturrien trukea blokeatuta"
     IDS_A4AF_CHECK_THIS_NOW "Iturri hau aztertu orain (debug)"
@@ -1900,7 +1891,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "Please wait some seconds, eMule will connect as soon as UPnP finished."

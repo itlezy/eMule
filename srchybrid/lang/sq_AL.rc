@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "sq_AL.h"
@@ -811,9 +811,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule diktoi rregulla ekzistues për portin e zgjedhur, të cilët nuk ishin mbishkruar ose zëvendësuar. Rregullat që mungonin u shtuan me sukses.\nJu lutemi vini re se fajruollet në desktop dhe routerat si palë e tretë nuk preken nga kjo!"
-    IDS_FO_PREF_FAILED      "Në WinXP dështoi kofigurimi i fajruollit të brendshëm për portin e zgjedhur!"
-    IDS_FO_PREF_STARTUP     "Kur hyn/del nga eMule, hap/mbyll portet e fajruollit të WinXP"
     IDS_LOG_LEVEL           "Niveli i ditarit"
     IDS_NEWMSG              "Mesazh i Ri nga '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Vetëm në të njëjtën kategori"
@@ -1581,12 +1578,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Kjo paketë-skedë nuk vlen për Lëvoret e eMule!"
     IDS_NEXT_REASK          "Do pyetet sërish për"
     IDS_A4AF_FILES          "Skeda A4AF"
-    IDS_FO_TEMPTCP_S        "Për këtë sesion në eMule u hap porti %u (TCP) në fajruollin e brendshëm të WinXP"
-    IDS_FO_TEMPTCP_F        "Për këtë sesion në eMule dështoi hapja e portit %u (TCP) në fajruollin e brendshëm të WinXP"
-    IDS_FO_TEMPUDP_S        "Për këtë sesion në eMule u hap porti %u (UDP) në fajruollin e brendshëm të WinXP"
-    IDS_FO_TEMPUDP_F        "Për këtë sesion në eMule dështoi hapja e portit %u (UDP) në fajruollin e brendshëm të WinXP"
-    IDS_FO_PREFBUTTON       "Hapi këto porte në fajruollin e brendshëm të WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Hapja e porteve të zgjedhura në fajruollin e brendshëm të WinXP pati sukses.\nJu lutemi vini re se fajruollet në desktop dhe routerat si palë e tretë nuk preken nga kjo!"
 END
 
 STRINGTABLE
@@ -1895,7 +1886,6 @@ BEGIN
     IDS_UPNPSETUP           "Provim i sistemimit të përparimit të portit me UPnP..."
     IDS_UPNPFAILED          "UPnP nuk arriti të sistemojë përparimet e portit, ju lutemi kryeni këtë vetë nëse mundeni"
     IDS_UPNPSUCCESS         "UPnP sistemoi me sukses përparimet për portet %u (TCP) dhe %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Hapi portet në fajruollin e WinXP SP1"
     IDS_UPNP_NOSERVICE      "Shërbimi UPnP Device Host nuk vepron, kalohet sistemimi UPnP"
     IDS_DELAYEDBYUPNP       "Lidhja në rrjet vonohet, kjo pasi UPnP është i zënë me konfigurimin e përparimeve të portit."
     IDS_DELAYEDBYUPNP2      "Ju lutemi prisni disa sekonda, eMule do të lidhet sapo UPnP të përfundojë."

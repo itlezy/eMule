@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "it_IT.h"
@@ -891,15 +891,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Questa non è un tema valido per eMule."
     IDS_NEXT_REASK          "Richiesta successiva"
     IDS_A4AF_FILES          "File con fonti in comune a questo"
-    IDS_FO_TEMPTCP_S        "Porta %u (TCP) aperta sul firewall interno di Windows XP per questa sessione di eMule"
-    IDS_FO_TEMPTCP_F        "Tentativo di aprire la porta %u (TCP) sul firewall interno di Windows XP fallito per questa sessione di eMule"
-    IDS_FO_TEMPUDP_S        "Porta %u (UDP) aperta sul firewall interno di Windows XP per questa sessione di eMule"
-    IDS_FO_TEMPUDP_F        "Tentativo di aprire la porta %u (UDP) sul firewall interno di Windows XP fallito per questa sessione di eMule"
-    IDS_FO_PREFBUTTON       "Apri queste porte sul firewall interno di Windows XP"
-    IDS_FO_PREF_SUCCCEEDED  "Le porte selezionate sono state aperte sul firewall interno di Windows XP.\nDa notare che i firewall di terze parti o i router non sono influenzati da queste modifiche!"
-    IDS_FO_PREF_EXISTED     "eMule ha rilevato l'esistenza di regole per le porte selezionate che non saranno sovrascritte o sostituite. Le regole mancanti sono state aggiunte con successo.\nNota che i firewall di terze parti o i router non sono influenzati da queste modifiche!"
-    IDS_FO_PREF_FAILED      "Impossibile configurare il firewall interno di Windows XP per le porte selezionate!"
-    IDS_FO_PREF_STARTUP     "Apri e chiudi le porte sul firewall di Windows XP (solo fino al service pack 1) quando avvii o chiudi eMule."
 END
 
 STRINGTABLE
@@ -1867,7 +1858,6 @@ BEGIN
     IDS_UPNPSETUP           "Sto provando a configurare automaticamente il router con l'UPnP..."
     IDS_UPNPFAILED          "L'UPnP non è riuscito a configurare automaticamente il router per eMule, provare a configurarlo manualmente se necessario!"
     IDS_UPNPSUCCESS         "L'UPnP ha configurato il router con le porte %u (TCP) e %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Apri le porte sul firewall di Windows XP Service Pack 1"
     IDS_UPNP_NOSERVICE      "Il servizio host dell'UPnP non è in esecuzione, l'UPnP non verrà utilizzato"
     IDS_DELAYEDBYUPNP       "La connessione alla rete è stata ritardata poiché l'UPnP è occupato nel configurare il router."
     IDS_DELAYEDBYUPNP2      "Attendere alcuni secondi, eMule si connetterà non appena l'UPnP avrà terminato."

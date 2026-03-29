@@ -1,4 +1,4 @@
-﻿//Microsoft Developer Studio generated resource script.
+//Microsoft Developer Studio generated resource script.
 //
 #include "fr_BR.h"
 
@@ -1505,19 +1505,10 @@ BEGIN
 	IDS_INSTALL_SKIN_PKG_ERROR	"N'eo ket ar restr-mañ ur gwiskadur reizh evit an etrefas eMule."
 	IDS_NEXT_REASK	"Goulenn o tont gant an ostiz-mañ"
 	IDS_A4AF_FILES	"Restroù A4AF"
-	IDS_FO_TEMPTCP_S	"Porzh %u (TCP) digor en harz-tan XP evit an estez eMule-mañ"
-	IDS_FO_TEMPTCP_F	"Fazi o tigeriñ ar porzh %u (TCP) en harz-tan XP evit an estez eMule-mañ"
-	IDS_FO_TEMPUDP_S	"Porzh %u (UDP) digor en harz-tan XP evit an estez eMule-mañ"
-	IDS_FO_TEMPUDP_F	"Fazi o tigeriñ ar porzh %u (UDP) en harz-tan XP evit an estez eMule-mañ"
-	IDS_FO_PREFBUTTON	"Digeriñ ar porzhioù-mañ en harz-tan XP"
-	IDS_FO_PREF_SUCCCEEDED	"Kaset eo bet a-benn digoradur ar porzhioù diuzet evit an harz-tan XP.\nDiwall: ne zalc'h ket kont an harzoù-tan hag ar proksioù staliet eus ar c'hemmoù-mañ"
 END
 
 STRINGTABLE FIXED IMPURE
 BEGIN
-	IDS_FO_PREF_EXISTED	"Dizoloet eo bet gant eMule reolennoù oberiant en harz-tan Windows XP evit ar porzh diuzet, ha n'int ket bet kemmet gantañ. Ouzhpennet eo bet digudenn ar reolennoù o vankañ.\nHa dalc'hit soñj ha ne zalc'h ket kont an harzoù-tan pe ar routeurioù staliet eus ar c'hemmoù-mañ !"
-	IDS_FO_PREF_FAILED	"Fazi gant kefluniañ an harz-tan XP evit ar porzhioù diuzet!"
-	IDS_FO_PREF_STARTUP	"Digeriñ/Serriñ porzhioù an harz-tan XP e-ser loc'hañ/serriñ eMule"
 	IDS_LOG_LEVEL	"Live enskrivañ"
 	IDS_NEWMSG	"Kemennadenn nevez a-berzh '%s' (IP:%s)"
 	IDS_PREF_STARTNEXTFILECATONLY	"Nemet er memes rummad"
@@ -1862,7 +1853,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "Please wait some seconds, eMule will connect as soon as UPnP finished."

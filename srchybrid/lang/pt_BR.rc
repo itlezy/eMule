@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "pt_BR.h"
@@ -1528,15 +1528,6 @@ BEGIN
                             "Este não é um arquivo de tema válido para o eMule."
     IDS_NEXT_REASK          "Perguntar novamente em"
     IDS_A4AF_FILES          "Arquivos A4AF"
-    IDS_FO_TEMPTCP_S        "Aberta a porta %u (TCP) no firewall interno do WinXP para esta sessão do eMule"
-    IDS_FO_TEMPTCP_F        "Falha ao abrir a porta %u (TCP) no firewall interno do WinXP para esta sessão do eMule"
-    IDS_FO_TEMPUDP_S        "Aberta a porta %u (UDP) no firewall interno do WinXP para esta sessão do eMule"
-    IDS_FO_TEMPUDP_F        "Falha ao abrir a porta %u (UDP) no firewall interno do WinXP para esta sessão do eMule"
-    IDS_FO_PREFBUTTON       "Abrir estas portas no firewall interno do WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Portas selecionadas no firewall interno do WinXp abertas com êxito.\nNote que firewalls externos ou roteadores não são afetados por isto!"
-    IDS_FO_PREF_EXISTED     "O eMule detectou que existem regras para as portas selecionadas, as quais não foram sobrescritas ou substituídas. As regras restantes foram adicionadas com sucesso.\nNote que firewalls externos ou roteadores não são afetados por isto!"
-    IDS_FO_PREF_FAILED      "Falha ao configurar o firewall interno do WinXP para as portas selecionadas!"
-    IDS_FO_PREF_STARTUP     "Abrir/fechar portas no firewall interno do WinXP quando iniciar/sair do eMule"
 END
 
 STRINGTABLE
@@ -1880,7 +1871,6 @@ BEGIN
     IDS_UPNPSETUP           "Tentando configurar o redirecionamento de portas por UPnP..."
     IDS_UPNPFAILED          "UPnP falhou ao configurar o redirecionamento de portas, por favor redirecione estas portas manualmente se necessário!"
     IDS_UPNPSUCCESS         "UPnP configurou com sucesso o redirecionamento para as portas %u (TCP) e %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Abrir portas no firewall do WinXP SP1"
     IDS_UPNP_NOSERVICE      "Dispositivo UPnP não está funcionando, pulando configuração UPnP"
     IDS_DELAYEDBYUPNP       "A conexão com a rede está atrasada, porque o UPnP está ocupado configurando o redirecionamento de portas."
     IDS_DELAYEDBYUPNP2      "Por favor aguarde alguns segundos, o eMule irá conectar quando finalizar UPnP."

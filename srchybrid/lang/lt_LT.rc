@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "lt_LT.h"
@@ -1531,16 +1531,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMue aptiko, kad pasirinktiems portams jau yra nustatytos t.t. taisyklės, kurios negali buti perrašytos ar pakeistos. Trūkstamos taisyklės pridėtos sekmingai.\nAtkrepkit dėmesį, kad kitos ugniasienės ar routeriai nėra liečiami!"
-    IDS_FO_PREF_FAILED      "Nepavyko sukonfiguruoti vidinio WinXP ugniasienės pasirinktiems portams!"
-    IDS_FO_PREF_STARTUP     "Atidaryti/uždaryti portus WinXP ugniasienėje kai startuoja/uždaroma eMule"
     IDS_LOG_LEVEL           "Loginimo lygis"
-    IDS_FO_TEMPTCP_S        "Atidarytas %u portas (TCP) vidinėje WinXP ugniasienėje šiai eMule sesijai"
-    IDS_FO_TEMPTCP_F        "Nepavyko atidaryti %u portao (TCP) vidinėje WinXP ugniasienėje šiai eMule sesijai"
-    IDS_FO_TEMPUDP_S        "Atidarytas %u portas (UDP) vidinėje WinXP ugniasienėje šiai eMule sesijai"
-    IDS_FO_TEMPUDP_F        "Nepavyko atidaryti %u portao (UDP) vidinėje WinXP ugniasienėje šiai eMule sesijai"
-    IDS_FO_PREFBUTTON       "Atidaryti šiuos portus vidinėje WinXP ugniasienėje"
-    IDS_FO_PREF_SUCCCEEDED  "Sekmingai atidaryti pasirinkti portai vidinėje WinXP ugniasienėje.\nAtkrepkit dėmesį, kad kitos ugniasienės ar routeriai nėra liečiami!"
     IDS_SOURCESWAPBLOCKED   "Pakeisti blokuotus"
     IDS_A4AF_CHECK_THIS_NOW "Patikrinti dabar šį šaltinį (debug)"
     IDS_NEWMSG              "Naujas pranešimas iš '%s' (IP:%s)"
@@ -1902,7 +1893,6 @@ BEGIN
     IDS_UPNPSETUP           "Bandoma nustatyti portus nukreipimus UPnP pagalba..."
     IDS_UPNPFAILED          "UPnP nepavyko nustatyti portų nukreipimus, nustatykite juos rankiniu būdu jei reikia!"
     IDS_UPNPSUCCESS         "UPnP sekmingai nustatė nukreipimus šiem portams %u (TCP) ir %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Atidaryti portus WinXP SP1 ugniasienėje"
     IDS_UPNP_NOSERVICE      "UPnP įrenginys neveikia, praleidžiamas UPnP nustatymas"
     IDS_DELAYEDBYUPNP       "Prisijungimas prie tinklo užlaikomas, nes UPnP vis dar konfiguruoja portų nukreipimus."
     IDS_DELAYEDBYUPNP2      "Prašom palaukti kelias sekundes, eMule prisijungs kai tik UPnP baigs savo darbą."

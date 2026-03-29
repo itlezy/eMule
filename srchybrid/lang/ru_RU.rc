@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ru_RU.h"
@@ -813,9 +813,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule определил наличие правил, которые не были заменены или переписаны для выбранных портов. Недостающие правила успешно добавлены.\nПожалуйста, обратите внимание, что это не затрагивает другие файрволы и роутеры!"
-    IDS_FO_PREF_FAILED      "Не удалось настроить встроенный файрвол WinXP для выбранных портов!"
-    IDS_FO_PREF_STARTUP     "Открыть/Закрыть порты в файрволе WinXP при вкл./выкл. eMule"
     IDS_LOG_LEVEL           "Уровень лога"
     IDS_NEWMSG              "Новое сообщение от '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Только в той же категории"
@@ -1577,12 +1574,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Это неправильный пакет оформлений для eMule."
     IDS_NEXT_REASK          "Следующий запрос"
     IDS_A4AF_FILES          "Файлы ЗДФ"
-    IDS_FO_TEMPTCP_S        "Открыт порт %u (TCP) в файрволе WinXP для данной сессии eMule"
-    IDS_FO_TEMPTCP_F        "Не удалось открыть порт %u (TCP) в файрволе WinXP для данной сессии eMule"
-    IDS_FO_TEMPUDP_S        "Открыт порт %u (UDP) в файрволе WinXP для данной сессии eMule"
-    IDS_FO_TEMPUDP_F        "Не удалось открыть порт %u (UDP) в файрволе WinXP для данной сессии eMule"
-    IDS_FO_PREFBUTTON       "Открыть эти порты в файрволе WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Открытие портов во встроенном файрволе WinXP прошло успешно.\nПожалуйста, обратите внимание, что это не затрагивает другие файрволы и роутеры!"
 END
 
 STRINGTABLE
@@ -1893,7 +1884,6 @@ BEGIN
     IDS_UPNPSETUP           "Попытка UPnP настроить перенаправление портов..."
     IDS_UPNPFAILED          "UPnP не удалось перенаправление. Пожалуйста, перенаправьте порты вручную!"
     IDS_UPNPSUCCESS         "UPnP успешно настроил перенаправление портов %u (TCP) и %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Открыть порты в файрволе WinXP SP1"
     IDS_UPNP_NOSERVICE      "Сервис UPnP Device Host не запущен, UPnP настройка пропускается"
     IDS_DELAYEDBYUPNP       "Соединение с сетью приостановлено, потому что UPnP по-прежнему занят настройкой перенаправления портов."
     IDS_DELAYEDBYUPNP2      "Пожалуйста, подождите несколько секунд. eMule соединится, как только закончит UPnP."

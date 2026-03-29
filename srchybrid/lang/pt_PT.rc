@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "pt_PT.h"
@@ -1534,16 +1534,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "O eMule detectou que já existem regras para as portas seleccionadas, cujas não foram substituídas ou alteradas. As regras em omissão foram adicionadas com sucesso.\nPor favor tenha em atenção que outras firewalls ou routers não serão afectados por esta medida!"
-    IDS_FO_PREF_FAILED      "Não foi possível configurar as portas seleccionadas na firewall interna do WinXP!"
-    IDS_FO_PREF_STARTUP     "Abrir/fechar as portas na firewall interna do Windows XP durante o arranque/fecho do eMule"
     IDS_LOG_LEVEL           "Nível do Registo"
-    IDS_FO_TEMPTCP_S        "Foi aberta a porta %u (TCP) na firewall interna do Windows XP, para a duração desta sessão do eMule"
-    IDS_FO_TEMPTCP_F        "Não foi possível abrir a porta %u (TCP) na firewall interna do Windows XP, para a duração desta sessão do eMule"
-    IDS_FO_TEMPUDP_S        "Foi aberta a porta %u (UDP) na firewall interna do Windows XP, para a duração desta sessão do eMule"
-    IDS_FO_TEMPUDP_F        "Não foi possível abrir a porta %u (UDP) na firewall interna do Windows XP, para a duração desta sessão do eMule"
-    IDS_FO_PREFBUTTON       "Abrir estas portas na firewall interna do Windows XP"
-    IDS_FO_PREF_SUCCCEEDED  "Foram abertas as portas na firewall interna do Windows XP.\nPor favor tenha em atenção que outras firewalls ou routers não serão afectados por esta medida!"
     IDS_SOURCESWAPBLOCKED   "Permuta bloqueada"
     IDS_A4AF_CHECK_THIS_NOW "Verificar agora esta fonte (depurar)"
     IDS_NEWMSG              "Nova mensagem de '%s' (IP:%s)"
@@ -1909,7 +1900,6 @@ BEGIN
     IDS_UPNPSETUP           "A tentar configurar o redireccionamento das portas por UPnP..."
     IDS_UPNPFAILED          "Não foi possível configurar o redireccionamento das portas por UPnP, se necessário por favor redireccione estas portas manualmente!"
     IDS_UPNPSUCCESS         "As portas %u (TCP) e %u (UDP) foram correctamente redireccionadas por UPnP"
-    IDS_FO_PREFBUTTON_NEW   "Abrir as portas na firewall do WinXP SP1"
     IDS_UPNP_NOSERVICE      "Não se encontra activo o serviço de Anfitrião para Dispositivos UPnP, a ignorar a configuração de UPnP"
     IDS_DELAYEDBYUPNP       "A ligação à rede foi posta em espera, porque o UPnP ainda está ocupado a configurar os redireccionamentos das portas."
     IDS_DELAYEDBYUPNP2      "Por favor aguarde alguns segundos, o eMule ligar-se-á assim que o UPnP terminar."

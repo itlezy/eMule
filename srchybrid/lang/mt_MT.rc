@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "mt_MT.h"
@@ -812,9 +812,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule sab regoli eżistenti għal dawn il-ports, li ma kinux sostitwiti. Ir-regoli neqsin kienu miżjuda mingħajr problemi.\nJekk jogħġbok innota li ċertu 'desktopfirewalls' u 'routers' ma jiġux affetwati!"
-    IDS_FO_PREF_FAILED      "Il-firewall intern tal-WinXP ma setax jiġi issetjat fuq dawn il-ports!"
-    IDS_FO_PREF_STARTUP     "Iftaħ/agħlaq il-ports fuq il-firewall tal-WinXP meta niftaħ/nagħlaq l-eMule"
     IDS_LOG_LEVEL           "Il-livell tal-Log"
     IDS_NEWMSG              "Messaġġ ġdid mingħand '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Fl-istess kategorija biss"
@@ -1585,12 +1582,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Din mhix eMule Skin valida."
     IDS_NEXT_REASK          "Ir-reask li jmiss"
     IDS_A4AF_FILES          "Il-files A4AF"
-    IDS_FO_TEMPTCP_S        "Il-port %u (TCP) ġie miftuh fil-firewall intern tal-WinXP għal din is-sessjoni tal-eMule"
-    IDS_FO_TEMPTCP_F        "Il-port %u (TCP) ma jistax jiġi miftuh fil-firewall intern tal-WinXP għal din is-sessjoni tal-eMule"
-    IDS_FO_TEMPUDP_S        "Il-port %u (UDP) ġie miftuh fil-firewall intern tal-WinXP għal din is-sessjoni tal-eMule"
-    IDS_FO_TEMPUDP_F        "Il-port %u (UDP) ma jistax jiġi miftuh fil-firewall intern tal-WinXP għal din is-sessjoni tal-eMule"
-    IDS_FO_PREFBUTTON       "Iftaħ dawn il-ports fil-firewall intern tal-WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Il-ports magħżulin infetħu mingħajr problemi fil-firewall intern tal-WinXP.\nJekk jogħġbok ħu ħsieb li firewalls oħra u routers ma jiġux affetwati b'dan!"
 END
 
 STRINGTABLE
@@ -1892,7 +1883,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "Please wait some seconds, eMule will connect as soon as UPnP finished."

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ko_KR.h"
@@ -889,15 +889,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "잘못된 eMule 스킨 패키지 파일입니다."
     IDS_NEXT_REASK          "다음 요청"
     IDS_A4AF_FILES          "A4AF 파일"
-    IDS_FO_TEMPTCP_S        "eMule 세션에서 WinXP 내부 방화벽의 %u (TCP) 포트를 열었음"
-    IDS_FO_TEMPTCP_F        "eMule 세션에서 WinXP 내부 방화벽의 %u (TCP) 포트를 여는 데 실패함"
-    IDS_FO_TEMPUDP_S        "eMule 세션에서 WinXP 내부 방화벽의 %u (UDP) 포트를 열었음"
-    IDS_FO_TEMPUDP_F        "eMule 세션에서 WinXP 내부 방화벽의 %u (UDP) 포트를 여는 데 실패함"
-    IDS_FO_PREFBUTTON       "WinXP 내부 방화벽에서 포트 열기"
-    IDS_FO_PREF_SUCCCEEDED  "WinXP 내부 방화벽에서 선택된 포트를 성공적으로 열었음.\n다른 데스크탑 방화벽이나 라우터는 영향을 받지 않음을 유의하십시오!"
-    IDS_FO_PREF_EXISTED     "선택된 포트에는 이미 규칙이 설정되어 있으며 성공적으로 재조정 됨.\n다른 데스크탑 방화벽이나 라우터는 영향을 받지 않음을 유의하십시오!"
-    IDS_FO_PREF_FAILED      "선택된 포트에 대한 WinXP 내부 방화벽 설정에 실패함!"
-    IDS_FO_PREF_STARTUP     "eMule 시작/종료 시 WinXP 방화벽의 포트 열기/닫기"
 END
 
 STRINGTABLE
@@ -1865,7 +1856,6 @@ BEGIN
     IDS_UPNPSETUP           "UPnP를 사용하여 포트 전송 설정 시도 중..."
     IDS_UPNPFAILED          "UPnP 포트 전송 설정 실패. 필요하다면 수동으로 이 포트들을 전송하십시오!"
     IDS_UPNPSUCCESS         "UPnP가 성공적으로 %u (TCP) 및 %u (UDP) 포트의 전송 설정을 완료했습니다."
-    IDS_FO_PREFBUTTON_NEW   "WinXP SP1 방화벽에서 포트 열기"
     IDS_UPNP_NOSERVICE      "UPnP 장치 호스트 서비스가 실행 중이 아닙니다. UPnP 설정 취소"
     IDS_DELAYEDBYUPNP       "UPnP가 포트 전송 설정 중이기 때문에 네트워크 접속이 지연됨."
     IDS_DELAYEDBYUPNP2      "잠시만 기다려 주십시오. UPnP가 완료되는대로 eMule이 접속됩니다."

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "es_ES_T.h"
@@ -1537,15 +1537,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_TEMPTCP_S        "Puerto %u (TCP) abierto en el cortafuegos interno de WinXP para esta sesión de eMule"
-    IDS_FO_TEMPTCP_F        "Error al abrir el puerto %u (TCP) en el cortafuegos interno de WinXP para esta sesión de eMule"
-    IDS_FO_TEMPUDP_S        "Puerto %u (UDP) abierto en el cortafuegos interno de WinXP para esta sesión de eMule"
-    IDS_FO_TEMPUDP_F        "Error al abrir el puerto %u (UDP) en el cortafuegos interno de WinXP para esta sesión de eMule"
-    IDS_FO_PREFBUTTON       "Abrir estos puertos en el cortafuegos interno de WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Puertos abiertos con éxito en el cortafuegos interno de WinXP.\n¡Nótese que esto no afecta a los routers o cortafuegos de terceros!"
-    IDS_FO_PREF_EXISTED     "eMule ha detectado que existen reglas para los puertos seleccionados, las cuales no pueden ser reemplazadas. Se han añadido las reglas que faltan.\n¡Ten en cuenta que esto no afecta a los routers o cortafuegos de terceros!"
-    IDS_FO_PREF_FAILED      "¡Error al configurar el cortafuegos interno de WinXP para los puertos seleccionados!"
-    IDS_FO_PREF_STARTUP     "Abrir/cerrar puertos en el cortafuegos de WinXP cuando se inicia/cierra eMule"
     IDS_LOG_LEVEL           "Nivel de registro"
     IDS_SOURCESWAPBLOCKED   "Intercambio bloqueado"
     IDS_A4AF_CHECK_THIS_NOW "Comprobar esta fuente ahora (debug)"
@@ -1904,7 +1895,6 @@ BEGIN
     IDS_UPNPSETUP           "Intentando redirigir los puertos mediante UPnP"
     IDS_UPNPFAILED          "No se han podido redirigir los puertos mediante UPnP, por favor, ¡abre estos puertos manualmente si es necesario!"
     IDS_UPNPSUCCESS         "Se han redirigido correctamente los puertos %u (TCP) y %u (UDP) mediante UPnP"
-    IDS_FO_PREFBUTTON_NEW   "Abrir los puertos en el cortafuegos de WinXP SP1"
     IDS_UPNP_NOSERVICE      "El servicio Host de Dispositivo Plug and Play universal no está ejecutándose, no se llevará a cabo la configuración de UPnP"
     IDS_DELAYEDBYUPNP       "La conexión a la red aún no se ha realizado porque UPnP todavía está redirigiendo los puertos"
     IDS_DELAYEDBYUPNP2      "Por favor, espera unos segundos, eMule se conectará a la red cuando UPnP termine."

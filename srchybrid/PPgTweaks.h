@@ -72,7 +72,6 @@ protected:
 	//HTREEITEM m_htiExtractMetaDataMediaDet;
 	HTREEITEM m_htiExtractMetaDataNever;
 	HTREEITEM m_htiFilterLANIPs;
-	HTREEITEM m_htiFirewallStartup;
 	HTREEITEM m_htiFullAlloc;
 	HTREEITEM m_htiImportParts;
 	HTREEITEM m_htiInspectAllFileTypes;
@@ -168,7 +167,6 @@ protected:
 	bool m_bDynUpEnabled;
 	bool m_bExtControls;
 	bool m_bFilterLANIPs;
-	bool m_bFirewallStartup;
 	bool m_bFullAlloc;
 	bool m_bImportParts;
 	bool m_bInitializedTreeOpts;

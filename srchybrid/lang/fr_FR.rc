@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "fr_FR.h"
@@ -1528,16 +1528,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED    "eMule a détecté des règles existantes dans le pare-feu de Windows XP pour les ports sélectionnés, et ne les a pas modifiées. Les règles manquantes ont été ajoutées avec succès.\nVeuillez noter que les routeurs et les autres pare-feu éventuellement installés ne sont pas concernés !"
-    IDS_FO_PREF_FAILED      "La configuration du pare-feu XP pour les ports sélectionnés a échoué !"
-    IDS_FO_PREF_STARTUP    "Ouverture/Fermeture des ports du pare-feu XP lors du lancement/fermeture d'eMule"
     IDS_LOG_LEVEL          "Niveau de consignation"
-    IDS_FO_TEMPTCP_S        "Port %u (TCP) ouvert dans le pare-feu XP pour cette session eMule"
-    IDS_FO_TEMPTCP_F        "Echec de l'ouverture du port %u (TCP) dans le pare-feu XP pour cette session eMule"
-    IDS_FO_TEMPUDP_S        "Port %u (UDP) ouvert dans le pare-feu XP pour cette session eMule"
-    IDS_FO_TEMPUDP_F        "Echec de l'ouverture du port %u (UDP) dans le pare-feu XP pour cette session eMule"
-    IDS_FO_PREFBUTTON      "Ouvrir ces ports dans le pare-feu XP"
-    IDS_FO_PREF_SUCCCEEDED  "L'ouverture des ports sélectionnés pour le pare-feu XP a réussi.\nAttention: les autres pare-feu ou routeurs installés ne sont pas affectés par ces changements"
     IDS_SOURCESWAPBLOCKED  "Echange bloqué"
     IDS_A4AF_CHECK_THIS_NOW "Vérifiez cette source maintenant (debug)"
     IDS_NEWMSG              "Nouveau message de '%s' (IP:%s)"
@@ -1900,7 +1891,6 @@ BEGIN
     IDS_UPNPSETUP           "Tentative de mappage des ports avec l'UPnP..."
     IDS_UPNPFAILED          "Echec du mappage des ports avec l'UPnP, veuillez paramétrer le mappage manuellement !"
     IDS_UPNPSUCCESS         "L'UPnP a effectué avec succès le mappage des ports %u (TCP) et %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Ouvrir les ports dans le Pare-feu de WinXP SP1"
     IDS_UPNP_NOSERVICE      "Le service système UPnP n'est pas activé, paramétrage UPnP ignoré"
     IDS_DELAYEDBYUPNP       "La connexion au réseau est retardée car l'UPnP est toujours occupé à configurer le mappage des ports."
     IDS_DELAYEDBYUPNP2      "Veuillez patienter, eMule se connectera dès que l'UPnP aura terminé."

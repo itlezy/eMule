@@ -55,7 +55,6 @@ protected:
 //	afx_msg void OnBnClickedNetworkKademlia();
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
-	afx_msg void OnBnClickedOpenports();
 	afx_msg void OnStartPortTest();
 	afx_msg void OnEnKillFocusTCP();
 	afx_msg void OnEnKillFocusUDP();

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "va_ES.h"
@@ -1529,15 +1529,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_TEMPTCP_S        "S'ha obert el port %u (TCP) al tallafocs intern del Windows XP per a esta sessió de l'eMule"
-    IDS_FO_TEMPTCP_F        "No s'ha pogut obrir el port %u (TCP) al tallafocs intern del Windows XP per a esta sessió de l'eMule"
-    IDS_FO_TEMPUDP_S        "S'ha obert el port %u (UDP) al tallafocs intern del Windows XP per a esta sessió de l'eMule"
-    IDS_FO_TEMPUDP_F        "No s'ha pogut obrir el port %u (UDP) al tallafocs intern del Windows XP per a esta sessió de l'eMule"
-    IDS_FO_PREFBUTTON       "Obri estos ports al tallafocs intern del Windows XP"
-    IDS_FO_PREF_SUCCCEEDED  "Els ports seleccionats al tallafocs intern de Windows XP s'han obert amb èxit.\nTingueu en compte que això no afecta als tallafocs aliens ni als encaminadors (routers)."
-    IDS_FO_PREF_EXISTED     "L'eMule ha detectat regles existents per als ports seleccionats, les quals no han estat sobreescrites ni reemplaçades. Les regles que hi falten s'han afegit amb èxit.\nTingueu en compte que això no afecta als tallafocs aliens ni als encaminadors (routers)."
-    IDS_FO_PREF_FAILED      "No s'ha pogut configurar el tallafocs intern del Windows XP per als ports seleccionats."
-    IDS_FO_PREF_STARTUP     "Obri/tanca els ports al tallafocs del Windows XP quan l'eMule s'inici/isca"
     IDS_LOG_LEVEL           "Nivell de registre"
     IDS_SOURCESWAPBLOCKED   "S'ha blocat l'intercanvi"
     IDS_A4AF_CHECK_THIS_NOW "Comprova esta font ara (depuració)"
@@ -1905,7 +1896,6 @@ BEGIN
     IDS_UPNPSETUP           "S'està intentant configurar les redireccions de ports amb UPnP..."
     IDS_UPNPFAILED          "L'UPnP no ha pogut configurar les redireccions de ports, torneu a dirigir estos ports manualment si cal."
     IDS_UPNPSUCCESS         "L'UPnP ha configurat amb èxit les redireccions pels ports %u (TCP) i %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Obri els ports en el tallafocs del Windows XP SP1."
     IDS_UPNP_NOSERVICE      "El servici d'hoste del dispositiu UPnP no s'està executant; s'ometrà la configuració de l'UPnP"
     IDS_DELAYEDBYUPNP       "La connexió a la xarxa s'ha endarreritdegut al fet que l'UPnP encara està ocupat configurant les redireccions dels ports."
     IDS_DELAYEDBYUPNP2      "Espereu-vos uns segons, l'eMule es connectarà així que l'UPnP haja acabat."

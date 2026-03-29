@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "zh_TW.h"
@@ -1519,19 +1519,10 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "這不是一個有效的 eMule 面板封裝檔案."
     IDS_NEXT_REASK          "下次要求這個客戶端"
     IDS_A4AF_FILES          "A4AF 檔案"
-    IDS_FO_TEMPTCP_S        "已開啟連接埠 %u (TCP) 在 WinXP 內部防火牆於這個 eMule 工作階段"
-    IDS_FO_TEMPTCP_F        "開啟連接埠 %u (TCP) 失敗在 WinXP 內部防火牆於這個 eMule 工作階段"
-    IDS_FO_TEMPUDP_S        "已開啟連接埠 %u (UDP) 在 WinXP 內部防火牆於這個 eMule 工作階段"
-    IDS_FO_TEMPUDP_F        "開啟連接埠 %u (UDP) 失敗在 WinXP 內部防火牆於這個 eMule 工作階段"
-    IDS_FO_PREFBUTTON       "在 WinXP 內建防火牆開啟這些連接埠"
-    IDS_FO_PREF_SUCCCEEDED  "已成功開啟已選擇連接埠在 WinXP 內部防火牆.\n請注意第三方個人電腦防火牆(一般另外加裝的防火牆軟體)或路由器不會受這個影響!"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule 偵測到選擇的連接埠已有存在的規則, 將不會覆寫或取代它. 缺少的規則已被成功的加入.\n請注意第三方個人電腦防火牆(一般另外加裝的防火牆軟體)或路由器不會受這個影響!"
-    IDS_FO_PREF_FAILED      "在 WinXP 內部防火牆設定已選擇的連接埠失敗!"
-    IDS_FO_PREF_STARTUP     "當 啟動/離開 eMule 時 開啟/關閉 在 WinXP 防火牆的連接埠"
     IDS_LOG_LEVEL           "記錄標準"
     IDS_NEWMSG              "新的訊息來自 '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "只在相同的類別"
@@ -1876,7 +1867,6 @@ BEGIN
     IDS_UPNPSETUP           "嘗試以 UPnP 設定連接埠轉向..."
     IDS_UPNPFAILED          "UPnP 連接埠轉向設定失敗, 假如需要請手動轉向那些連接埠!"
     IDS_UPNPSUCCESS         "UPnP 設定連接埠 %u (TCP) 及 %u (UDP) 轉向成功"
-    IDS_FO_PREFBUTTON_NEW   "在 WinXP SP1 防火牆開啟連接埠"
     IDS_UPNP_NOSERVICE      "UPnP 裝置主機服務沒有執行, 略過 UPnP 設定"
     IDS_DELAYEDBYUPNP       "連線到網路有點延遲, 因為 UPnP 仍然忙於連接埠轉向的設定."
     IDS_DELAYEDBYUPNP2      "請稍候, eMule 將儘快完成 UPnP 連線."

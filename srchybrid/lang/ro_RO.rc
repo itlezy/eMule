@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ro_RO.h"
@@ -1531,19 +1531,10 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Acesta nu e un pachet valid de Skin eMule."
     IDS_NEXT_REASK          "Cererea următoare către acest client"
     IDS_A4AF_FILES          "Fişiere A4AF"
-    IDS_FO_TEMPTCP_S        "Am deschis portul %u (TCP) în firewall-ul intern al WinXP pentru această sesiune eMule"
-    IDS_FO_TEMPTCP_F        "Nu pot deschide portul %u (TCP) în firewall-ul intern al WinXP pentru această sesiune eMule"
-    IDS_FO_TEMPUDP_S        "Am deschis portul %u (UDP) în firewall-ul intern al WinXP pentru această sesiune eMule"
-    IDS_FO_TEMPUDP_F        "Nu pot deschide portul %u (UDP) în firewall-ul intern al WinXP pentru această sesiune eMule"
-    IDS_FO_PREFBUTTON       "Deschide aceste porturi în firewall-ul intern al WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "Am deschis porturile selectate, în firewall-ul intern al WinXP.\nReţine că firewall-urile adiţionale sau router-ele nu sînt afectate de asta!"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule a detectat reguli existente ptr. porturile selectate, care n-au fost înlocuite/modificate. Regulile lipsă au fost adăugate.\nReţine că firewall-urile adiţionale sau router-ele nu sînt afectate de asta!"
-    IDS_FO_PREF_FAILED      "Nu pot configura firewall-ul intern al WinXP pentru porturile selectate!"
-    IDS_FO_PREF_STARTUP     "Deschid/închid porturile din firewall-ul WinXP la pornirea/oprirea eMule"
     IDS_LOG_LEVEL           "Nivel Log"
     IDS_NEWMSG              "Mesaj nou de la '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "doar din aceeaşi categorie"
@@ -1904,7 +1895,6 @@ BEGIN
     IDS_UPNPSETUP           "Încerc să setez porturile (forwarding) folosind UPnP..."
     IDS_UPNPFAILED          "UPnP a eşuat la setarea porturilor (forwarding), efectuaţi manual această operaţiune, la nevoie!"
     IDS_UPNPSUCCESS         "UPnP a efectuat cu succes forwarding la porturile %u (TCP) şi %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Deschide porturi în firewall-ul WinXP SP1"
     IDS_UPNP_NOSERVICE      "Serviciul UPnP Device Host nu rulează, renunţ la această setare"
     IDS_DELAYEDBYUPNP       "Conectarea la reţea întîrzie deoarece UPnP lucrează la configurarea porturilor (forwarding)."
     IDS_DELAYEDBYUPNP2      "Aşteptaţi cîteva secunde, vă rog, eMule se va conecta imediat ce termină UPnP."

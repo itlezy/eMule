@@ -40,8 +40,9 @@
 - The live UDP socket reapplies the configured receive buffer on Tweaks apply.
 - A manual Windows 10/11 firewall helper script is present at `helpers\\firewall-opener.ps1`.
 - `IsRunningXPSP2*` and the `WinXPSP2OrHigher` migration key have been removed.
+- The in-app firewall opener has been removed completely from the codebase; firewall setup now lives only in `helpers\\firewall-opener.ps1`.
 
 ## Next Chunk
 
-- Simplify pre-Windows-10 UI and feature gates.
-- Remove or isolate the legacy XP `CFirewallOpener` product path after the helper-script fallback exists.
+- Simplify the remaining pre-Windows-10 UI and feature gates now that the firewall opener path is gone.
+- Collapse obsolete Windows-version branches toward an explicit Windows 10/11 baseline.

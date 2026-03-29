@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "he_IL.h"
@@ -1526,16 +1526,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "אימיול איתר חוקים קיימים לפורטים שנבחרו, שלא הוחלפו או נכתב עליהם. חוקים חסרים נוספו בהצלחה.\nלידיעתך, חומת אש ונתבים של צד שלישי לא מושפעים מפעולה זו!"
-    IDS_FO_PREF_FAILED      "נכשל בהגדרת חומת האש הפנימית של WinXP לפורטים שנבחרו!"
-    IDS_FO_PREF_STARTUP     "פתח/סגור פורטים בחומת האש הפנימית של WinXP בעת הפעלה/סגירה של אימיול"
     IDS_LOG_LEVEL           "רמת יומן"
-    IDS_FO_TEMPTCP_S        "נפתח הפורט %u (TCP) בחומת האש הפנימית של WinXP עבור ההפעלה הנוכחית של אימיול"
-    IDS_FO_TEMPTCP_F        "נכשל בפתיחת פורט %u (TCP) בחומת האש הפנימית של WinXP עבור ההפעלה הנוכחית של אימיול"
-    IDS_FO_TEMPUDP_S        "נפתח הפורט %u (UDP) בחומת האש הפנימית של WinXP עבור ההפעלה הנוכחית של אימיול"
-    IDS_FO_TEMPUDP_F        "נכשל בפתיחת פורט %u (UDP) בחומת האש הפנימית של WinXP עבור ההפעלה הנוכחית של אימיול"
-    IDS_FO_PREFBUTTON       "פתח פורטים אלה בחומת האש הפנימית של WinXP"
-    IDS_FO_PREF_SUCCCEEDED  "פתיחת הפורטים שנבחרו בוצעה בהצלחה בחומת האש הפנימית של WinXP.\nלידיעתך, חומות אש ונתבים של צד שלישי לא מושפעים מפעולה זו!"
     IDS_SOURCESWAPBLOCKED   "החלף חסום"
     IDS_A4AF_CHECK_THIS_NOW "בדוק מקור זה עכשיו (דיבוג)"
     IDS_NEWMSG              "הודעה חדשה מ-'%s' (איי פי:%s)"
@@ -1891,7 +1882,6 @@ BEGIN
     IDS_UPNPSETUP           "מנסה לפתוח פורטים באמצעות UPnP..."
     IDS_UPNPFAILED          "UPnP נכשל בפתיחת פורטים, אנא פתח את הפורטים ידנית אם צריך!"
     IDS_UPNPSUCCESS         "UPnP פתח בהצלחה את הפורטים %u (TCP) ו-%u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "פתח פורטים בחומת אש של WinXP SP1"
     IDS_UPNP_NOSERVICE      "שירות התקן מארח של UPnP לא פעיל, מדלג על הגדרת UPnP"
     IDS_DELAYEDBYUPNP       "החיבור לרשת מתעקב בגלל ש-UPnP עדיין עסוק בפתיחת הפורטים."
     IDS_DELAYEDBYUPNP2      "אנא המתן מספר שניות, אימיול יתחבר ברגע ש-UPnP יסיים."

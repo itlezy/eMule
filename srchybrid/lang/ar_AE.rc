@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ar_AE.h"
@@ -812,9 +812,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "ايمول قد وجد قانون ل البورت المعين و الذي لايمكن الكتابة فوقه او استبداله . القانون الناقص تم اضافته بنجاح\n  نرجو الانتباه الى انه الجدار الناري و الروتير لم يتعرض لشئ جراء هذا التغيير"
-    IDS_FO_PREF_FAILED      "فشل في اعادة اعاداة الجدار الناري لنظام اكس بي ل البورتات المعينة!"
-    IDS_FO_PREF_STARTUP     "افتح/اغلق بورتات في نظام اكس بي فير وال يبداء/يخرج ايمول"
     IDS_LOG_LEVEL           "المستوى"
     IDS_NEWMSG              "رسالة جديدة من '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "فقط في نفس الجدول"
@@ -1566,12 +1563,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "هذا ملف غير صالح."
     IDS_NEXT_REASK          "السؤال التالي للعميل التالي"
     IDS_A4AF_FILES          "ملفات A4AF"
-    IDS_FO_TEMPTCP_S        "فتح بورت %u (TCP) داخل ويندوز ايكس بي لاجل ايمول"
-    IDS_FO_TEMPTCP_F        "الفشل في فتحل بورت %u (TCP) داخل ويندوز ايكس بي لاجل ايمول"
-    IDS_FO_TEMPUDP_S        "فتح بورت %u (UDP) داخل ويندوز ايكس بي لاجل ايمول"
-    IDS_FO_TEMPUDP_F        "الفشل في فتحل بورت %u (UDP) داخل ويندوز ايكس بي لاجل ايمول"
-    IDS_FO_PREFBUTTON       "افتح هذه البورتات داخل ويندوز ايكس بي"
-    IDS_FO_PREF_SUCCCEEDED  "النجاح في فتح البورتات المختارة داخل وندوز ايكس بي.\nالرجاء الانتباه الى انه الجدار الناري من جهة ثالثة غير مفعلة بهذا الاختيار!"
 END
 
 STRINGTABLE
@@ -1893,7 +1884,6 @@ BEGIN
     IDS_UPNPSETUP           "تنصيب البورتات مع UPnP..."
     IDS_UPNPFAILED          "UPnP فضل في تنصيب البورتات, الرجاء تفعيل هذه البروتات يدويا اذا لزم!"
     IDS_UPNPSUCCESS         "UPnP نجح في تنصيب البروتات %u (TCP) و %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "افتح بورتات في WinXP SP1 الجدار الناري"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service لا يشتغل, اقفز تنصيب UPnP"
     IDS_DELAYEDBYUPNP       "الاتصال بالشبكة تأخر, لان UPnP في طور اعداد البروتات"
     IDS_DELAYEDBYUPNP2      "الرجاء الانتظار بعض الدقائق, ايمول سوف يتصل بعد انتهاء UPnP."

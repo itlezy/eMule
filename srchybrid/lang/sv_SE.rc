@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "sv_SE.h"
@@ -1528,16 +1528,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule hittade existerande regler för dom valda portarna, dessa kommer inte att skrivas över eller ändras. Regler som saknas har lagts till.\nKom ihåg att andra brandväggar eller routers inte har något med detta att göra!"
-    IDS_FO_PREF_FAILED      "Misslyckades att konfigurera den interna brandväggen i WinXP för dom valda portarna!"
-    IDS_FO_PREF_STARTUP     "Öppna/stäng portar i WinXP:s brandvägg när eMule startar/stängs av"
     IDS_LOG_LEVEL           "Logga grad"
-    IDS_FO_TEMPTCP_S        "Öppnade port %u (TCP) i WinXP:s interna brandvägg för denna eMule session"
-    IDS_FO_TEMPTCP_F        "Misslyckades att öppna port %u (TCP) i WinXP interna brandvägg för denna eMule session"
-    IDS_FO_TEMPUDP_S        "Öppnade port %u (UDP) i WinXP:s interna brandvägg för denna eMule session"
-    IDS_FO_TEMPUDP_F        "Misslyckades att öppna port %u (UDP) i WinXP interna brandvägg för denna eMule session"
-    IDS_FO_PREFBUTTON       "Öppna dessa portar i WinXP:s interna brandvägg"
-    IDS_FO_PREF_SUCCCEEDED  "Lyckades att öppna valda portar i WinXP:s interna brandvägg.\nKom ihåg att inte andra brandväggar eller routers har något med detta att göra!"
     IDS_SOURCESWAPBLOCKED   "Byt blockerade"
     IDS_A4AF_CHECK_THIS_NOW "Kolla denna källa nu (debug)"
     IDS_NEWMSG              "Nytt meddelande från '%s' (IP:%s)"
@@ -1902,7 +1893,6 @@ BEGIN
     IDS_UPNPSETUP           "Försöker att ställa in portar med hjälp av UPNP..."
     IDS_UPNPFAILED          "UPnP misslyckades att ställa in port-vidarebefordring, du måste vidarebefordra dessa portar manuellt!"
     IDS_UPNPSUCCESS         "UPnP lyckades med att vidarebefodra portarna %u (TCP) och %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Öppna portar i WinXP SP1 brandvägg"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service körs inte, hoppar över UPnP-inställning"
     IDS_DELAYEDBYUPNP       "Anslutning till nätverket är fördröjt på grund av att UPnP är upptagen med att ställa in vidarebefordringar av portar."
     IDS_DELAYEDBYUPNP2      "Var god vänta ett par sekunder, eMule kommer att ansluta när UPnP är färdig."

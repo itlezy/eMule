@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "et_EE.h"
@@ -1523,16 +1523,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule detected existing rules for the selected ports, which were not overwritten or replaced. Missing rules have been added successfully.\nPlease note that third-party desktopfirewalls or routers are not effected by this!"
-    IDS_FO_PREF_FAILED      "Luhtund seadsitamine WinXP tulemüüri valitud portidele!"
-    IDS_FO_PREF_STARTUP     "Ava/sulge portid WinXP tulemüüris kui käivtub/sulgub eMule"
     IDS_LOG_LEVEL           "Logi tasand"
-    IDS_FO_TEMPTCP_S        "Avatud port %u (TCP) on sisend WinXP tulemüüris selle eMule seansiks"
-    IDS_FO_TEMPTCP_F        "Luhtunud pordi avmine %u (TCP) on sisend WinXP tulemüüris selle eMule seansiks"
-    IDS_FO_TEMPUDP_S        "Avatud port %u (UDP) on sisend WinXP tulemüüris selle eMule seansiks"
-    IDS_FO_TEMPUDP_F        "Luhtunud pordi avamine %u (UDP)oon sisend WinXP tulemüüris selle eMule seansiks"
-    IDS_FO_PREFBUTTON       "Ava vajalikud pordid WinXP enda tulemüüris"
-    IDS_FO_PREF_SUCCCEEDED  "Edukalt avatu märgitud pordid WinXP tulemüüris.\nPalun jäta meelde et lõikelauatulemüüris või ruuteris ei ole need efektiivsed!"
     IDS_NEWMSG              "Uus teade '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Ainult sama kategooriast"
     IDS_SOURCESWAPBLOCKED   "Vahetus blokitud"
@@ -1895,7 +1886,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwardings with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwardings, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwardings for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Ava pordid WinXP SP1 tulemüüris"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwardings."
     IDS_DELAYEDBYUPNP2      "Palun oota mõned sekundit, eMule ühendaub niipea kui UPnP lõpetab."

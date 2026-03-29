@@ -383,7 +383,6 @@ BEGIN
     LTEXT           "Max. connections",IDC_MAXCONLABEL,155,227,86,8
     LTEXT           "TCP",IDC_STATIC,11,91,17,8
     GROUPBOX        "Network",IDC_CONNECTION_NETWORK,201,274,87,44
-    PUSHBUTTON      "Setup ports on WinXP SP1 firewall",IDC_OPENPORTS,96,88,185,12,WS_DISABLED
 END
 
 IDD_WIZARD DIALOGEX 0, 0, 257, 223
@@ -3000,15 +2999,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "This is not a valid eMule Skin package file."
     IDS_NEXT_REASK          "Next re-ask"
     IDS_A4AF_FILES          "A4AF files"
-    IDS_FO_TEMPTCP_S        "Opened port %u (TCP) on internal WinXP firewall for this eMule session"
-    IDS_FO_TEMPTCP_F        "Failed to open port %u (TCP) on internal WinXP firewall for this eMule session"
-    IDS_FO_TEMPUDP_S        "Opened port %u (UDP) on internal WinXP firewall for this eMule session"
-    IDS_FO_TEMPUDP_F        "Failed to open port %u (UDP) on internal WinXP firewall for this eMule session"
-    IDS_FO_PREFBUTTON       "Open these ports on internal WinXP firewall"
-    IDS_FO_PREF_SUCCCEEDED  "Succeeded to open selected ports on the internal WinXP firewall.\nPlease note that third-party desktop firewalls and routers are not affected by this!"
-    IDS_FO_PREF_EXISTED     "eMule detected existing rules for the selected ports, which were not overwritten or replaced. Missing rules have been added successfully.\nPlease note that third-party desktop firewalls and routers are not affected by this!"
-    IDS_FO_PREF_FAILED      "Failed to configure the internal WinXP firewall for the selected ports!"
-    IDS_FO_PREF_STARTUP     "Open/close ports on WinXP firewall when starting/exiting eMule"
 END
 
 STRINGTABLE
@@ -4005,7 +3995,6 @@ BEGIN
     IDS_UPNPSETUP           "Trying to setup port forwarding with UPnP..."
     IDS_UPNPFAILED          "UPnP failed to setup port forwarding, please forward those ports manually if necessary!"
     IDS_UPNPSUCCESS         "UPnP successfully set up forwarding for ports %u (TCP) and %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Open ports on WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service is not running, skipping UPnP setup"
     IDS_DELAYEDBYUPNP       "Connecting to the network is delayed, because UPnP is still busy configuring the port forwarding."
     IDS_DELAYEDBYUPNP2      "Please wait some seconds, eMule will connect as soon as UPnP finished."

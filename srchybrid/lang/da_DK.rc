@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "da_DK.h"
@@ -744,9 +744,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_FO_PREF_EXISTED     "eMule har opdaget eksisterende regler for de valgte porte, som ikke er overskrevet eller udskiftet. Manglende regler blev vellykket tilføjet.\nBemærk venligst at 3. part firewalls eller routere ikke er omfattet af dette!"
-    IDS_FO_PREF_FAILED      "Mislykkedes at konfigurere den interne WinXP firewall for de valgte porte!"
-    IDS_FO_PREF_STARTUP     "Åben/Luk porte på WinXP firewall ved start/lukning af eMule"
     IDS_LOG_LEVEL           "Log Niveau"
     IDS_NEWMSG              "Ny besked fra '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "kun i samme kategori"
@@ -1540,12 +1537,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Dette er ikke en gyldig eMule Skin arkivfil."
     IDS_NEXT_REASK          "Næste forspørgsel til denne klient"
     IDS_A4AF_FILES          "A4AF filer"
-    IDS_FO_TEMPTCP_S        "Åbnede port %u (TCP) på den interne WinXP firewall for denne eMule session"
-    IDS_FO_TEMPTCP_F        "Mislykkedes at åbne port %u (TCP) på den interne WinXP firewall for denne eMule session"
-    IDS_FO_TEMPUDP_S        "Åbnede port %u (UDP) på den interne WinXP firewall for denne eMule session"
-    IDS_FO_TEMPUDP_F        "Mislykkedes at åbne port %u (UDP) på den interne WinXP firewall for denne eMule session"
-    IDS_FO_PREFBUTTON       "Åben disse porte på den interne WinXP firewall"
-    IDS_FO_PREF_SUCCCEEDED  "Lykkedes at åbne valgte porte på den interne WinXP firewall.\nBemærk venligst at 3. parts firewalls eller routere ikke er omfattet af dette!"
 END
 
 STRINGTABLE
@@ -1909,7 +1900,6 @@ BEGIN
     IDS_UPNPSETUP           "Forsøger at sætte port forwarding op med UPnP..."
     IDS_UPNPFAILED          "UPnP mislykkedes at lave port forwarding. Forward venligst disse porte manuelt, hvis det er nødvendigt!"
     IDS_UPNPSUCCESS         "UPnP har med succes forwarded porte %u (TCP) og %u (UDP)"
-    IDS_FO_PREFBUTTON_NEW   "Åben porte på WinXP SP1 firewall"
     IDS_UPNP_NOSERVICE      "UPnP Device Host service kører ikke, springer over UPnP opsætning"
     IDS_DELAYEDBYUPNP       "Forbindelsen til netværket er forsinket da UPnP stadig er ved at konfigurere dine porte."
     IDS_DELAYEDBYUPNP2      "Vent venligst nogle sekunder. eMule forbinder så snart UPnP er afsluttet."

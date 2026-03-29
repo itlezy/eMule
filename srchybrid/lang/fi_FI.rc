@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "fi_FI.h"
@@ -891,15 +891,6 @@ BEGIN
     IDS_INSTALL_SKIN_PKG_ERROR "Tämä ei ole kelvollinen eMule-ulkoasupaketti."
     IDS_NEXT_REASK          "Kysy seuraavaksi tältä käyttäjältä"
     IDS_A4AF_FILES          "A4AF-tiedostot"
-    IDS_FO_TEMPTCP_S        "Avasin portin %u (TCP) WinXP:n palomuurista tämä session ajaksi"
-    IDS_FO_TEMPTCP_F        "En kyennyt avaamaan porttia %u (TCP) a WinXP:n palomuurista"
-    IDS_FO_TEMPUDP_S        "Avasin portin %u (UDP) WinXP:n palomuurista tämä session ajaksi"
-    IDS_FO_TEMPUDP_F        "En kyennyt avaamaan porttia %u (UDP)  WinXP:n palomuurista"
-    IDS_FO_PREFBUTTON       "Avaa nämä portit WinXP:n palomuurista"
-    IDS_FO_PREF_SUCCCEEDED  "Avasin valitut portit WinXP:n palomuurista.\nMuista, että tämä ei vaikuta muihin palomuureihin tai reitittimiin!"
-    IDS_FO_PREF_EXISTED     "eMule havaitsi olemassa olevia sääntöjä valituille porteille, joita ei korvattu. Puuttuvat säännöt lisättiin onnistuneesti.\nMuista, että tämä ei vaikuta muihin palomuureihin tai reitittimiin!"
-    IDS_FO_PREF_FAILED      "WinXP:n sisäänrakennetun palomuurin säätö valituille porteille epäonnistui!"
-    IDS_FO_PREF_STARTUP     "Avaa ja sulje portit WinXP-palomuurista kun eMule käynnistetään tai sammutetaan"
 END
 
 STRINGTABLE
@@ -1868,7 +1859,6 @@ BEGIN
     IDS_UPNPSETUP           "Yritetään asettaa portit käyttäen uPnP:tä..."
     IDS_UPNPFAILED          "En pystynyt asettamaan portteja uPnP:n avulla, ole hyvä ja salli porttien liikenne manuaalisesti jos tarpeen!"
     IDS_UPNPSUCCESS         "UPnP on avannut portit %u (TCP) ja %u (UDP) onnistuneesti"
-    IDS_FO_PREFBUTTON_NEW   "Avaa portit WinXP SP1 :n palomuurissa"
     IDS_UPNP_NOSERVICE      "UPnP -palvelu ei ole käynnissä, ohitetaan uPnP:n käyttö."
     IDS_DELAYEDBYUPNP       "Yhteydenmuodostus verkkoon on viivästynyt, koska uPnP avaa yhä portteja..."
     IDS_DELAYEDBYUPNP2      "Ole hyvä ja odota hetkinen, eMule avaa yhteyden heti kun uPnP on päättänyt työnsä"
