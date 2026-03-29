@@ -5,6 +5,9 @@
 - Added repo policy for resource files in `.editorconfig`:
   - `*.rc` and `*.rc2` now target `charset = utf-8`
   - `*.rc` and `*.rc2` stay on `end_of_line = crlf`
+- Confirmed the Git policy in `.gitattributes` matches that decision:
+  - `*.rc` and `*.rc2` stay as normal text with `eol=crlf`
+  - no `working-tree-encoding` override is used for resource files
 - Replaced the placeholder `helpers\source-normalizer.py` with a real CLI helper.
 - The helper now supports:
   - repo-wide scanning of the `.editorconfig` text file families

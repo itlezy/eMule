@@ -9,8 +9,12 @@
 *.hpp text eol=crlf
 *.hxx text eol=crlf
 *.inl text eol=crlf
+
+# Resource files are stored as normal UTF-8 text in this repo.
+# Keep Git newline normalization, but do not add any encoding transcoding rule.
 *.rc text eol=crlf
 *.rc2 text eol=crlf
+
 *.idl text eol=crlf
 *.def text eol=crlf
 *.sln text eol=crlf
