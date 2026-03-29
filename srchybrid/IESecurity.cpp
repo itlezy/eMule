@@ -210,18 +210,9 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::ProcessUrlAction
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
 	TRACE(_T("%s: URL=%ls, Action=%lu, Flags=0x%lx, Reserved=%lu\n"), _T("ProcessUrlAction"), pwszUrl, dwAction, dwFlags, dwReserved);
 
-#if 0
-	DWORD dwPolicy = URLPOLICY_DISALLOW;
-	if (cbPolicy >= sizeof(DWORD)) {
-		*(DWORD*)pPolicy = dwPolicy;
-		return S_OK;
-	}
-	return S_FALSE;
-#else
 	// Use the policy for the zone which was specified with 'MapUrlToZone'
 	// If that particular policy setting is specified as 'Ask User', the control *WILL OPEN* a message box!
 	return INET_E_DEFAULT_ACTION;
-#endif
 }
 
 STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::QueryCustomPolicy(

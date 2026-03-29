@@ -22,10 +22,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#if 0
-// define this to use that source file as template
-#define	TEMPLATE	template <class BASE>
-#else
 // define this to instantiate functions for class 'BASE' right in this CPP module
 #if _MSC_VER >= 1310
 #define	TEMPLATE	template <>
@@ -33,7 +29,6 @@ static char THIS_FILE[] = __FILE__;
 #define	TEMPLATE
 #endif
 #define BASE		CResizableDialog
-#endif
 
 // ------------------------------
 //  constants

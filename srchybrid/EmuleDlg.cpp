@@ -330,19 +330,7 @@ LRESULT CemuleDlg::OnAreYouEmule(WPARAM, LPARAM)
 
 static void DialogCreateIndirect(CDialog *pWnd, UINT uID)
 {
-#if 0
-	// This could be a nice way to change the font size of the main windows without needing
-	// to re-design the dialog resources. However, that technique does not work for the
-	// SearchWnd and it also introduces new glitches (which would need to get resolved)
-	// in almost all of the main windows.
-	CDialogTemplate dlgTempl;
-	dlgTempl.Load(MAKEINTRESOURCE(uID));
-	dlgTempl.SetFont(_T("MS Shell Dlg"), 8);
-	pWnd->CreateIndirect(dlgTempl.m_hTemplate);
-	FreeResource(dlgTempl.Detach());
-#else
 	pWnd->Create(uID);
-#endif
 }
 
 BOOL CemuleDlg::OnInitDialog()

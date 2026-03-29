@@ -19,26 +19,6 @@ static BOOL CALLBACK EnumResNameProc(HMODULE hModule, LPCTSTR lpszType, LPTSTR l
 		uSize = SizeofResource(hModule, hResInfo);
 		g_uTotalSize += uSize;
 	}
-#if 0
-	TRACE(_T("%3u: "), g_uResNumber);
-	if (IS_INTRESOURCE(lpszType)) {
-		if ((DWORD)lpszType == (DWORD)RT_GROUP_ICON)
-			TRACE(_T("RT_GROUP_ICON"));
-		else if ((DWORD)lpszType == (DWORD)RT_ICON)
-			TRACE(_T("RT_ICON"));
-		else if ((DWORD)lpszType == (DWORD)RT_BITMAP)
-			TRACE(_T("RT_BITMAP"));
-		else
-			TRACE(_T("type=%u"), (UINT)lpszType);
-	} else
-		TRACE(_T("type=\"%s\""), lpszType);
-	TRACE(_T("  size=%5u"), uSize);
-	if (IS_INTRESOURCE(lpszName))
-		TRACE(_T("  name=*%u"), (UINT)lpszName);
-	else
-		TRACE(_T("  name=\"%s\""), lpszName);
-	TRACE(_T("\n"));
-#endif
 	return TRUE;
 }
 

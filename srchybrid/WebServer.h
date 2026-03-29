@@ -373,8 +373,6 @@ private:
 	static CString	_GetMyInfo(const ThreadData &Data);
 	static void		_GetClientversionImage(const CUpDownClient &client, TCHAR pSoft[2]);
 
-	bool			_GetIsTempDisabled() const	{ return m_bIsTempDisabled; } //never used
-
 	//comparators for quick sort
 	static int AFX_CDECL _DownloadCmp(void *prm, void const *pv1, void const *pv2);
 	static int AFX_CDECL _ServerCmp(void *prm, void const *pv1, void const *pv2);

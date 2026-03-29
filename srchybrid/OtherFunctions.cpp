@@ -3125,25 +3125,12 @@ int FontPointSizeToLogUnits(int nPointSize)
 	HDC hDC = ::GetDC(HWND_DESKTOP);
 	if (hDC) {
 		POINT pt;
-#if 0
-		// This is the same math which is performed by "CFont::CreatePointFont",
-		// which is flawed because it does not perform any rounding. But without
-		// performing the correct rounding one can not get the correct LOGFONT-height
-		// for an 8pt font!
-		//
-		// PointSize	Result
-		// -------------------
-		// 8*10			10.666 -> 10 (cut down and thus wrong result)
-		pt.y = ::GetDeviceCaps(hDC, LOGPIXELSY) * nPointSize;
-		pt.y /= 720;
-#else
 		// This math accounts for proper rounding and thus we will get the correct results.
 		//
 		// PointSize	Result
 		// -------------------
 		// 8*10			10.666 -> 11 (rounded up and thus correct result)
 		pt.y = ::MulDiv(::GetDeviceCaps(hDC, LOGPIXELSY), nPointSize, 720);
-#endif
 		pt.x = 0;
 		::DPtoLP(hDC, &pt, 1);
 		POINT ptOrg{};
