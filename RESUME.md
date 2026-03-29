@@ -2,6 +2,16 @@
 
 ## Last Chunk
 
+- Added a debug launch helper workflow under `helpers`:
+  - `debug-launch.ps1` orchestrates build, process cleanup, optional LocalAppData config reset/patching, timed launch, and artifact bundling under `..\logs\<timestamp>-debug-launch`
+  - `debug_launch_helper.py` writes the debug-focused `preferences.ini` preset used by the launcher
+- Implemented three preference modes for the helper:
+  - `clean` resets `%LOCALAPPDATA%\eMule\config` and writes a debug preset
+  - `patch` preserves the config directory but patches `preferences.ini` with the same debug preset
+  - `none` performs a non-destructive launch path for smoke-testing
+- The helper archives config/log snapshots before and after launch, records a JSON session manifest, and collects the CRT debug log when present.
+- Verified the helper end to end with a non-destructive `PrefsMode=none` timed launch that produced a real artifact bundle in `..\logs`.
+- Verified the Python INI helper on a temporary `preferences.ini` to ensure the debug preset is written correctly.
 - Changed the MediaInfo DLL contract from "pick the newest compatible installed DLL" to "require MediaInfo.dll version 23.00 or newer".
 - Kept explicit absolute-path overrides and deterministic candidate probing, but now stop at the first acceptable candidate instead of preferring the newest installed version.
 - Removed the old pre-18.06 MediaInfo field-name compatibility branch from `FileInfoDialog.cpp` and now use only the modern `Format*`/`Language_More` keys.
@@ -21,6 +31,7 @@
 
 ## Current State
 
+- A reproducible debug-launch path now exists under `helpers` and can collect launch-session artifacts without requiring a live debugger.
 - Media parsing is now split by backend instead of living in one 2600-line translation unit.
 - The MediaInfo DLL loader now requires `MediaInfo.dll` 23.00 or newer and selects the first acceptable deterministic candidate, with explicit absolute configuration still taking precedence when valid.
 - `GetWMHeaders` is now a stable helper interface; callers do not need compile-time `HAVE_WMSDK_H` branches.
@@ -29,6 +40,8 @@
 
 ## Next Chunk
 
+- Use the new debug-launch helper on a failing startup/repro sequence and inspect the generated manifest/log bundle to determine the next concrete bugfix target.
+- If needed after first real use, add a second-stage debugger-oriented mode to the helper without changing the default script-first workflow.
 - Runtime-verify the MediaInfo DLL selection logic with real candidate layouts:
   - configured absolute DLL path
   - invalid configured DLL path with fallback to an installed compatible copy
