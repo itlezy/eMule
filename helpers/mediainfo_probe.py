@@ -386,7 +386,7 @@ def classify_emule_backend(file_path: Path) -> str:
     if extension in {".asf", ".wm", ".wma", ".wmv", ".dvr-ms"}:
         return "native_windows_media"
     if extension in {".mp3", ".mp2", ".mp1", ".mpa"}:
-        return "native_id3lib"
+        return "mediainfo_dll"
     return "mediainfo_dll"
 
 

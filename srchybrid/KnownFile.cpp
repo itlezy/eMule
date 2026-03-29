@@ -44,9 +44,7 @@
 #include "emuledlg.h"
 #include "SharedFilesWnd.h"
 #include "MediaInfo.h"
-#include "id3/tag.h"
 #include "uploaddiskiothread.h"
-extern wchar_t* ID3_GetStringW(const ID3_Frame *frame, ID3_FieldID fldName);
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1311,176 +1309,86 @@ void CKnownFile::UpdateMetaDataTags()
 	if (thePrefs.GetExtractMetaData() == 0)
 		return;
 
-	LPCTSTR pszExt = ::PathFindExtension(GetFileName());
-	pszExt += static_cast<int>(*pszExt != _T('\0'));
-	if (!_tcsicmp(pszExt, _T("mp3")) || !_tcsicmp(pszExt, _T("mp2")) || !_tcsicmp(pszExt, _T("mp1")) || !_tcsicmp(pszExt, _T("mpa"))) {
-		TCHAR szFullPath[MAX_PATH];
-		if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
-			wchar_t *pszText = NULL;
-			try {
-				// ID3LIB BUG: If there are ID3v2 _and_ ID3v1 tags available, id3lib
-				// destroys (actually corrupts) the Unicode strings from ID3v2 tags due to
-				// converting Unicode to ASCII and then conversion back from ASCII to Unicode.
-				// To prevent this, we force the reading of ID3v2 tags only, in case there are
-				// also ID3v1 tags available.
-				ID3_Tag myTag;
-				CStringA strFilePathA(szFullPath);
-				size_t id3Size = myTag.Link(strFilePathA, ID3TT_ID3V2);
-				if (id3Size == 0) {
-					myTag.Clear();
-					myTag.Link(strFilePathA, ID3TT_ID3V1);
+	const EED2KFileType eFileType = GetED2KFileTypeID(GetFileName());
+	if (eFileType != ED2KFT_AUDIO && eFileType != ED2KFT_VIDEO)
+		return;
+
+	TCHAR szFullPath[MAX_PATH];
+	if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
+		SMediaInfo mi;
+		mi.strFileName = GetFileName();
+		bool bMediaInfoAvailable = false;
+		try {
+			if (GetMediaInfoDllInfo(szFullPath, GetFileSize(), &mi, false, true, &bMediaInfoAvailable)) {
+				mi.InitFileLength();
+				UINT uLengthSec = (UINT)mi.fFileLengthSec;
+				CString strCodec;
+				uint32 uBitrate = 0;
+
+				if (mi.iVideoStreams > 0) {
+					strCodec = mi.strVideoFormat;
+					if (mi.video.dwBitRate == _UI32_MAX) {
+						if (uLengthSec != 0)
+							uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
+					} else if (mi.video.dwBitRate != 0)
+						uBitrate = (mi.video.dwBitRate + 500) / 1000;
+				} else if (mi.iAudioStreams > 0) {
+					strCodec = mi.strAudioFormat;
+					if (mi.audio.nAvgBytesPerSec == _UI32_MAX) {
+						if (uLengthSec != 0)
+							uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
+					} else if (mi.audio.nAvgBytesPerSec != 0)
+						uBitrate = (uint32)((mi.audio.nAvgBytesPerSec * 8ull + 500) / 1000);
 				}
 
-				const Mp3_Headerinfo *mp3info;
-				mp3info = myTag.GetMp3HeaderInfo();
-				if (mp3info) {
-					// length
-					if (mp3info->time) {
-						AddTagUnique(new CTag(FT_MEDIA_LENGTH, (uint32)mp3info->time));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					// here we could also create a "codec" ed2k meta tag. Though it probably would not
-					// worth the extra bytes which would have to be sent to the servers.
-
-					// bit rate
-//no vbr bit rate	UINT uBitrate = (mp3info->vbr_bitrate ? mp3info->vbr_bitrate : mp3info->bitrate) / 1000;
-					UINT uBitrate = mp3info->bitrate / 1000;
-					if (uBitrate) {
-						AddTagUnique(new CTag(FT_MEDIA_BITRATE, (uint32)uBitrate));
-						m_uMetaDataVer = META_DATA_VER;
-					}
+				if (uLengthSec) {
+					AddTagUnique(new CTag(FT_MEDIA_LENGTH, (uint32)uLengthSec));
+					m_uMetaDataVer = META_DATA_VER;
 				}
 
-				ID3_Tag::Iterator *iter = myTag.CreateIterator();
-				const ID3_Frame *frame;
-				CString strText;
-				while ((frame = iter->GetNext()) != NULL) {
-					ID3_FrameID eFrameID = frame->GetID();
-					switch (eFrameID) {
-					case ID3FID_LEADARTIST:
-						pszText = ID3_GetStringW(frame, ID3FN_TEXT);
-						strText = pszText;
-						TruncateED2KMetaData(strText);
-						if (!strText.IsEmpty()) {
-							AddTagUnique(new CTag(FT_MEDIA_ARTIST, strText));
-							m_uMetaDataVer = META_DATA_VER;
-						}
-						break;
-					case ID3FID_ALBUM:
-						pszText = ID3_GetStringW(frame, ID3FN_TEXT);
-						strText = pszText;
-						TruncateED2KMetaData(strText);
-						if (!strText.IsEmpty()) {
-							AddTagUnique(new CTag(FT_MEDIA_ALBUM, strText));
-							m_uMetaDataVer = META_DATA_VER;
-						}
-						break;
-					case ID3FID_TITLE:
-						pszText = ID3_GetStringW(frame, ID3FN_TEXT);
-						strText = pszText;
-						TruncateED2KMetaData(strText);
-						if (!strText.IsEmpty()) {
-							AddTagUnique(new CTag(FT_MEDIA_TITLE, strText));
-							m_uMetaDataVer = META_DATA_VER;
-						}
-						break;
-					default:
-						continue;
-					}
-					delete[] pszText;
-					pszText = NULL;
+				if (!strCodec.IsEmpty()) {
+					AddTagUnique(new CTag(FT_MEDIA_CODEC, strCodec));
+					m_uMetaDataVer = META_DATA_VER;
 				}
-				delete iter;
-			} catch (...) {
-				if (thePrefs.GetVerbose())
-					AddDebugLogLine(false, _T("Unhandled exception while extracting MP3 file meta data from \"%s\""), szFullPath);
-				delete[] pszText;
-				ASSERT(0);
+
+				if (uBitrate) {
+					AddTagUnique(new CTag(FT_MEDIA_BITRATE, uBitrate));
+					m_uMetaDataVer = META_DATA_VER;
+				}
+
+				TruncateED2KMetaData(mi.strTitle);
+				if (!mi.strTitle.IsEmpty()) {
+					AddTagUnique(new CTag(FT_MEDIA_TITLE, mi.strTitle));
+					m_uMetaDataVer = META_DATA_VER;
+				}
+
+				TruncateED2KMetaData(mi.strAuthor);
+				if (!mi.strAuthor.IsEmpty()) {
+					AddTagUnique(new CTag(FT_MEDIA_ARTIST, mi.strAuthor));
+					m_uMetaDataVer = META_DATA_VER;
+				}
+
+				TruncateED2KMetaData(mi.strAlbum);
+				if (!mi.strAlbum.IsEmpty()) {
+					AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi.strAlbum));
+					m_uMetaDataVer = META_DATA_VER;
+				}
+
+				if (thePrefs.GetVerbose()) {
+					AddDebugLogLine(false, _T("Shared meta extraction: \"%s\" length=%u codec=\"%s\" title=\"%s\" artist=\"%s\" album=\"%s\"")
+						, szFullPath, uLengthSec, (LPCTSTR)strCodec
+						, (LPCTSTR)mi.strTitle, (LPCTSTR)mi.strAuthor, (LPCTSTR)mi.strAlbum);
+				}
+			} else if (thePrefs.GetVerbose()) {
+				if (!bMediaInfoAvailable)
+					AddDebugLogLine(false, _T("Shared meta extraction: MediaInfo.dll missing or incompatible for \"%s\""), szFullPath);
+				else
+					AddDebugLogLine(false, _T("Shared meta extraction: no MediaInfo data found for \"%s\""), szFullPath);
 			}
-		}
-	} else {
-		const EED2KFileType eFileType = GetED2KFileTypeID(GetFileName());
-		if (eFileType != ED2KFT_AUDIO && eFileType != ED2KFT_VIDEO)
-			return;
-
-		TCHAR szFullPath[MAX_PATH];
-		if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
-			SMediaInfo mi;
-			mi.strFileName = GetFileName();
-			bool bMediaInfoAvailable = false;
-			try {
-				if (GetMediaInfoDllInfo(szFullPath, GetFileSize(), &mi, false, true, &bMediaInfoAvailable)) {
-					mi.InitFileLength();
-					UINT uLengthSec = (UINT)mi.fFileLengthSec;
-					CString strCodec;
-					uint32 uBitrate = 0;
-
-					if (mi.iVideoStreams > 0) {
-						strCodec = mi.strVideoFormat;
-						if (mi.video.dwBitRate == _UI32_MAX) {
-							if (uLengthSec != 0)
-								uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
-						} else if (mi.video.dwBitRate != 0)
-							uBitrate = (mi.video.dwBitRate + 500) / 1000;
-					} else if (mi.iAudioStreams > 0) {
-						strCodec = mi.strAudioFormat;
-						if (mi.audio.nAvgBytesPerSec == _UI32_MAX) {
-							if (uLengthSec != 0)
-								uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
-						} else if (mi.audio.nAvgBytesPerSec != 0)
-							uBitrate = (uint32)((mi.audio.nAvgBytesPerSec * 8ull + 500) / 1000);
-					}
-
-					if (uLengthSec) {
-						AddTagUnique(new CTag(FT_MEDIA_LENGTH, (uint32)uLengthSec));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					if (!strCodec.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_CODEC, strCodec));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					if (uBitrate) {
-						AddTagUnique(new CTag(FT_MEDIA_BITRATE, uBitrate));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					TruncateED2KMetaData(mi.strTitle);
-					if (!mi.strTitle.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_TITLE, mi.strTitle));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					TruncateED2KMetaData(mi.strAuthor);
-					if (!mi.strAuthor.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_ARTIST, mi.strAuthor));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					TruncateED2KMetaData(mi.strAlbum);
-					if (!mi.strAlbum.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi.strAlbum));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					if (thePrefs.GetVerbose()) {
-						AddDebugLogLine(false, _T("Shared meta extraction: \"%s\" length=%u codec=\"%s\" title=\"%s\" artist=\"%s\" album=\"%s\"")
-							, szFullPath, uLengthSec, (LPCTSTR)strCodec
-							, (LPCTSTR)mi.strTitle, (LPCTSTR)mi.strAuthor, (LPCTSTR)mi.strAlbum);
-					}
-				} else if (thePrefs.GetVerbose()) {
-					if (!bMediaInfoAvailable)
-						AddDebugLogLine(false, _T("Shared meta extraction: MediaInfo.dll missing or incompatible for \"%s\""), szFullPath);
-					else
-						AddDebugLogLine(false, _T("Shared meta extraction: no MediaInfo data found for \"%s\""), szFullPath);
-				}
-			} catch (...) {
-				if (thePrefs.GetVerbose())
-					AddDebugLogLine(false, _T("Unhandled exception while extracting file meta data from \"%s\""), szFullPath);
-				ASSERT(0);
-			}
+		} catch (...) {
+			if (thePrefs.GetVerbose())
+				AddDebugLogLine(false, _T("Unhandled exception while extracting file meta data from \"%s\""), szFullPath);
+			ASSERT(0);
 		}
 	}
 }

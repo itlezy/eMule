@@ -3769,7 +3769,7 @@ BEGIN
     IDS_RESPONSES           "Responses"
     IDS_EXTRACT_META_DATA   "Extract meta data"
     IDS_META_DATA_MEDIADET  "DirectShow (for all other audio/video files)"
-    IDS_META_DATA_ID3LIB    "Enabled (MediaInfo.dll for audio/video, ID3Lib for MPEG audio)"
+    IDS_META_DATA_ID3LIB    "Enabled (MediaInfo.dll)"
     IDS_ASREGEXPR           "As Regular Expression"
     IDS_STATIC_REGEXP       "Regular expression for view filter:"
     IDS_CARE4ALL            "Evaluate All Files"
