@@ -29,10 +29,8 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-// _WIN32_WINNT >= 0x0501 (XP only)
-#define _WM_THEMECHANGED		0x031A
 #define _ON_WM_THEMECHANGED()													\
-	{	_WM_THEMECHANGED, 0, 0, 0, AfxSig_l,									\
+	{	WM_THEMECHANGED, 0, 0, 0, AfxSig_l,									\
 		(AFX_PMSG)(AFX_PMSGW)													\
 		(static_cast<LRESULT (AFX_MSG_CALL CWnd::*)(void)>(_OnThemeChanged))	\
 	},
