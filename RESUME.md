@@ -2,55 +2,41 @@
 
 ## Last Chunk
 
-- Moved the two standalone Windows maintenance helpers out of `helpers\` into the new `scripts\` subtree.
-- Added the new directory policy note in `scripts\AGENTS.md`:
-  - all scripts in `scripts\` must stay compatible with Windows built-in `PowerShell.exe` (Windows PowerShell 5.1)
-  - all scripts in `scripts\` must work on Windows 10 and Windows 11
-  - PowerShell and launcher names in this directory must follow `category-purpose-action.ps1` / `category-purpose-action.cmd`
-- Added the new script entrypoints:
-  - `scripts\network-firewall-opener.ps1`
-  - `scripts\system-long-paths-enabler.ps1`
-  - `scripts\network-firewall-opener.cmd`
-  - `scripts\system-long-paths-enabler.cmd`
-- Removed the old legacy paths:
-  - `helpers\firewall-opener.ps1`
-  - `helpers\enable-long-paths.ps1`
-- Upgraded the firewall helper behavior:
-  - still accepts direct command-line parameters
-  - auto-detects `emule.exe` under the parent workspace when `-ExePath` is omitted
-  - prefers `srchybrid\x64\Debug\emule.exe`, then `srchybrid\x64\Release\emule.exe`
-  - prompts for a path only when no repo executable is found
-  - keeps firewall operations app-based and `-WhatIf` safe
-- Upgraded the long-path helper behavior:
-  - added explicit Windows PowerShell 5.1 / Windows 10-11 compatibility notes
-  - kept the registry update idempotent and admin-gated
-- Updated `README.md` to point at `scripts\network-firewall-opener.cmd` and to document the new auto-detection behavior.
-- Renamed the script entrypoints to clearer action-oriented names:
-  - `network-firewall-opener`
-  - `system-long-paths-enabler`
-- Verified with Windows built-in `powershell.exe`:
-  - `scripts\network-firewall-opener.cmd -WhatIf`
-  - `scripts\network-firewall-opener.cmd -WhatIf -Remove`
-  - `scripts\system-long-paths-enabler.cmd -WhatIf`
-  - direct `powershell.exe -File` invocation for both `.ps1` scripts
-- Did not run `..\23-build-emule-debug-incremental.cmd` because this chunk only changed scripts and docs.
-- WIP commits created in this chunk so far:
-  - `c63893d` `WIP move helper scripts into scripts subtree`
-  - `8656e2d` `WIP replace legacy helper script entrypoints`
-  - `f896992` `WIP finalize script migration verification notes`
-  - `c40417c` `WIP rename script entrypoints for clarity`
+- Implemented the minimal long-path support surface for:
+  - actual usable sharing of long-path files and directories
+  - recursive shared-directory scans
+  - junction and symlink traversal with loop protection
+  - shared hashing, AICH rebuild, upload reads, and media metadata extraction
+  - final completed-download moves into long incoming paths
+- Added long-path-aware helper functions in `srchybrid\OtherFunctions.*`.
+- Updated `srchybrid\SharedFileList.*` to use long-path-safe enumeration and to reject `.lnk` files instead of resolving them.
+- Updated manifests under `srchybrid\res\` to declare `longPathAware`.
+- Updated `srchybrid\KnownFile.cpp`, `srchybrid\MediaInfo.cpp`, `srchybrid\MediaInfo_DLL.cpp`, `srchybrid\UploadDiskIOThread.cpp`, and `srchybrid\PartFile.cpp` for the narrowed long-path runtime paths.
+- Removed dead shell-link sharing state from `CShareableFile` and cleaned the remaining shortcut-sharing UI paths.
+- Added a new scoped guide:
+  - `docs\GUIDE-LONGPATHS-MINIMAL.md`
+- Added a code `TODO` for deferred preview / thumbnail long-path work near `CKnownFile::GrabImage`.
+- Verified the tree builds with:
+  - `..\23-build-emule-debug-incremental.cmd`
+- WIP commits created in this chunk:
+  - `ea009a3` `WIP add long-path shared-file discovery`
+  - `f3781f8` `WIP add long-path handling for shared use and completion`
+  - `4beb5ae` `WIP remove shell-link sharing paths`
 
 ## Current State
 
-- The repo now has a dedicated `scripts\` subtree for Windows-maintenance scripts with an explicit compatibility rule.
-- The preferred user entrypoints are the new `.cmd` wrappers, which force execution through Windows built-in `powershell.exe`.
-- `scripts\network-firewall-opener.ps1` auto-discovers the local build output when possible and no longer requires `-ExePath` for the normal repo layout.
-- `README.md` no longer points users at the deleted helper paths.
-- There are unrelated doc deletions/additions already present in the worktree outside this chunk; they were intentionally left untouched.
+- The implemented long-path scope is intentionally narrow and does not extend into temp-path handling or general path cleanup.
+- `.lnk` entries are no longer part of the share flow.
+- Shared preview / thumbnails are still deferred and explicitly marked with a `TODO`.
+- The existing `docs\*.md` worktree churn was left untouched; only the new long-path guide file should be added from this chunk.
 
 ## Next Chunk
 
-- If broader docs are stabilized later, sweep remaining old helper-script name mentions in any retained planning docs and rename them to the new `scripts\` paths.
-- Resume the earlier functional follow-up from the USS-removal chunk:
-  - runtime-smoke the debug build
-  - confirm Tweaks and status-bar behavior are still clean after the earlier USS cleanup
+- Manually runtime-smoke the long-path scenarios:
+  - share a deep single file
+  - share a deep recursive directory
+  - verify junction / symlink recursion does not loop
+  - verify shared upload reads work for a long-path file
+  - verify media metadata extraction on a long-path media file
+  - verify final download completion into a deep incoming path
+- Revisit preview / thumbnail handling later as a separate task.
