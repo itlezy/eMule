@@ -390,7 +390,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Résultats de recherche"
     IDS_SW_DOWNLOAD         "Télécharger sélection"
     IDS_SV_SERVERLIST       "Liste des serveurs"
@@ -657,9 +656,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Liens eD2K"
     IDS_RECONNECT           "La connexion au serveur sera tentée à nouveau dans %u secondes"
     IDS_SERVERADDED         "Serveur ajouté: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignorer les messages Join"
     IDS_STATS_SUCCUPCOUNT   "Sessions réussies au total: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignorer les messages Part"
     IDS_STATS_FAILUPCOUNT   "Sessions échouées au total: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Durée moyenne d'un envoi: %s"
     IDS_SEARCHMINSIZE       "Taille min."
@@ -681,9 +678,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Durée pour le graphe de moyenne : %u mins"
     IDS_GRAPHS              "Graphiques"
     IDS_STREE               "Arbre de statistique"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignorer les messages Quit"
     IDS_STATSSETUPINFO      "Statistiques"
-    IDS_IRC_SOUNDEVENTS     "Evènements sonores"
 END
 
 STRINGTABLE
@@ -727,50 +722,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Capacités"
-    IDS_IRC_PRIVATECHANSTART "*** Démarrage d'une session privée de Chat : "
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish !"
-    IDS_IRC_PRIVMESSAGE     "Message privé"
-    IDS_IRC_KICK            "Kick" //!
-    IDS_IRC_SLAP            "Slap" //!
-    IDS_IRC_JOIN            "Join" //!
-    IDS_IRC_CHANNELLIST     "Liste des salons"
     IDS_IRC_CONNECT         "Connecter"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Déconnecter"
-    IDS_IRC_HASJOINED       "* %s a rejoint %s"
-    IDS_IRC_HASPARTED       "* %s est sorti de %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s a été kické par %s (%s)"
-    IDS_IRC_HASQUIT         "* %s est déconnecté (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s s'appelle maintenant %s"
-    IDS_IRC_SETSMODE        "* %s a effectué un changement de mode : %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Des modes ont été changés et ils ne sont pas supportés. Vous devez sortir puis revenir dans le salon pour mettre à jour votre liste de surnoms.."
-    IDS_IRC_CHANNEL         "Salon"
-    IDS_IRC_NICK            "Surnom"
-    IDS_IRC_SEND            "Envoyer"
-    IDS_IRC_NAME            "Nom"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001" //!
-    IDS_IRC_ADDTIMESTAMP    "Ajouter l'heure au début des messages"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Utiliser un filtre pour la liste de salons"
     IDS_IRC_PERFORM         "Exécution"
-    IDS_IRC_USEPERFORM      "Exécuter un script à la connexion"
     IDS_IRC_ADDTOFRIENDLIST "Ajouter à la liste des amis"
-    IDS_IRC_LOADCHANNELLISTONCON "Charger la liste des salons à la connexion"
-    IDS_IRC_ADDASFRIEND     "vous a ajouté comme ami !"
     IDS_PW_WARNING          "La valeur choisie ""%s"" est trop importante pour être supportée par votre système d'exploitation :  %u\nCeci peut rendre votre système instable.\n\nEtes-vous sûrs de vouloir faire cela ?"
     IDS_TAKEOVER            "Remplacer"
     IDS_CLEANUP             "Nettoyer"
     IDS_RENAME              "Renommer"
-    IDS_IRC_ADDLINKTOIRC    "Copier dans le presse-papiers IRC"
-    IDS_IRC_SENDLINK        "Envoyer à un ami : "
-    IDS_IRC_RECIEVEDLINK    "%s a envoyé (%s), il va être lancé automatiquement."
-    IDS_IRC_ACCEPTLINKS     "Accepter les liens eD2K dans IRC (Faites attention à son utilisation !)"
     IDS_SHARED              "Partagés"
     IDS_DOWNLOADED          "Téléchargés"
 END
@@ -800,7 +767,6 @@ BEGIN
     IDS_PW_MINREC           "Minimum recommandé\t%u "
     IDS_PW_UA               "Fixer limites E/R au maxi"
     IDS_PW_PA               "Réduire vitesses E/R au mini"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignorer les messages d'info"
     IDS_CONNECTIONLOST      "Connexion perdue"
     IDS_WIZ_OS_FRAME        "Système d'exploitation"
     IDS_HASHINGFILE         "Hachage du fichier :"
@@ -847,7 +813,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Meilleure vitesse de réception: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND "Ignorer les messages d'ajout d'ami"
     IDS_PW_FASTSRVCON       "Connexion serveur respectueuse"
     IDS_SOURCELINKFAILED    "Vous devez avoir un HighID pour créer un Lien avec IP source valide"
     IDS_ERR_LOADSERVERMET   "Echec du chargement server.met !"
@@ -910,7 +875,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignorer les messages eMule Proto"
     IDS_SMARTLOWIDCHECK     "Contrôle futé des LowId à la connexion"
     IDS_SF_SRVOCC           "Occupation serveur : %.2f%%"
     IDS_3DDEP               "Barre de progression"
@@ -929,7 +893,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Commentaire du fichier '%s' : %s"
     IDS_WEBSERVICES         "Services Web"
     IDS_WEBSVEDIT           "Editer les services Web"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK "Ignorer les messages d'envoi de lien"
     IDS_CHECK4UPDATE        "Vérifier si nouvelle version tous les"
     IDS_STARTUP             "Démarrage"
     IDS_NEWVERSIONAVL       "Une nouvelle version d'eMule est disponible. Regardez sur https://emule-project.net pour plus d'infos."
@@ -1323,9 +1286,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dates" //!
     IDS_FILEINFORMATION     "Infos fichier"
     IDS_STATS_FREESPACE     "Espace libre"
-    IDS_IRC_HELPCHANNEL     "Se connecter aux canaux d'aide."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-french"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Venant d'amis seulement"
     IDS_COMPLSOURCES        "Complets"
     IDS_CHECKNOENDTIME      "pas de fin"
     IDS_FD_DOWNLOADSTARTED  "Téléchargement ajouté :"
@@ -1489,9 +1449,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Vous n'êtes pas connecté au réseau Kad !"
-    IDS_IRC_NOSFS           "Aucun fichier partagé n'est sélectionné"
     IDS_RESETLABEL          "Saisie semi-automatique (historique)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignorer les messages d'infos diverses"
     IDS_KNOWN               "Connu"
     IDS_KADCONTACTSREAD     "Lu %u contacts à partir du fichier."
     IDS_ERR_KADCONTACTS     "Aucun contact trouvé, veuillez amorcer ou téléchargez un fichier nodes.dat."
@@ -1531,7 +1489,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Uniquement dans la même catégorie"
     IDS_LOG_ULDL_EVENTS     "Consigner les évènements d'émission/réception"
 //    IDS_PEERCACHE_ENABLED   "Votre FAI supporte la technologie PeerCache, cache activé !"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Autoriser l'utilisateur à vous ajouter à sa liste d'amis."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Priorité aux parties nécessaires à l'aperçu"
 END
 
@@ -1644,8 +1601,6 @@ BEGIN
     IDS_SOURCECLIENT        "Client Source"
     IDS_USERSIP             "IP Utilisateurs"
     IDS_FEATURES            "Fonctions"
-    IDS_IRC_NEWNICK         "Choisir un pseudo IRC"
-    IDS_IRC_NEWNICKDESC     "Devrait être un mot de moins de 20 caractères contenant (A-Z, 0-9). Il peut être changé dans Préférences->IRC"
 END
 
 STRINGTABLE

@@ -405,7 +405,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "So&hbet (IRC)"
     IDS_SW_RESULT           "Arama Sonuçları"
     IDS_SW_DOWNLOAD         "İndir"
     IDS_SV_SERVERLIST       "Sunucular"
@@ -672,9 +671,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K Bağlantılarını Al"
     IDS_RECONNECT           "Sunucuya otomatik olarak bağlanmayı %u saniye içinde deneyecek"
     IDS_SERVERADDED         "Eklenen sunucu: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Katılım bilgi mesajlarını yoksay"
     IDS_STATS_SUCCUPCOUNT   "Toplam Başarılı Gönderme Oturumu: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Parça bilgi mesajlarını yoksay"
     IDS_STATS_FAILUPCOUNT   "Toplam Başarısız Gönderme Oturumu: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Ortalama Gönderme Süresi: %s"
     IDS_SEARCHMINSIZE       "En Az Boyut [MB]"
@@ -695,9 +692,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Ortalama çizelgesi için süre: %u dak"
     IDS_GRAPHS              "Çizelgeler"
     IDS_STREE               "İstatistik Ağacı"
-    IDS_IRC_IGNOREQUITMESSAGE "Çıkış bilgi mesajlarını yoksay"
     IDS_STATSSETUPINFO      "İstatistikler"
-    IDS_IRC_SOUNDEVENTS     "Olay sesi çal"
 END
 
 STRINGTABLE
@@ -741,55 +736,27 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapasiteler"
-    IDS_IRC_PRIVATECHANSTART "* Özel sohbet oturumu başladı"
-    IDS_IRC_SLAPMSG         "* %s, %s adlı kişiyi büyük bir balıkla tokatlıyor!"
-    IDS_IRC_PRIVMESSAGE     "Özel Mesaj"
     IDS_WEB_REMOTE_LINK_ADDED "Bağlantı eklendi: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Bağlantı Eklenemedi! Yanlış Parola."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS
                             "İlk Önizlemek için Gerekli Parçaları İndir"
-    IDS_IRC_KICK            "Tekmele"
-    IDS_IRC_SLAP            "Tokatla"
-    IDS_IRC_JOIN            "Katıl"
-    IDS_IRC_CHANNELLIST     "Kanal Listesi"
     IDS_IRC_CONNECT         "Bağlan"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Bağlantıyı Kes"
-    IDS_IRC_HASJOINED       "* %s , %s odasına katıldı"
-    IDS_IRC_HASPARTED       "* %s , %s (%s) 'a ayrıldı"
-    IDS_IRC_WASKICKEDBY     "* %s , %s (%s) tarafından tekmelendi"
     IDS_DOWNLOAD_ALPHABETICAL "Alfabetik Sırada İndir"
-    IDS_IRC_HASQUIT         "* %s çıktı (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s artık %s olarak biliniyor"
-    IDS_IRC_SETSMODE        "* %s kipi ayarlıyor: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Bazı desteklenmeyen kipler ayarlandı. Kullanıcı listesini yenilemek için kanaldan çıkıp yeniden girmeniz gerekebilir."
-    IDS_IRC_CHANNEL         "Kanal"
-    IDS_IRC_NICK            "Takma Ad"
-    IDS_IRC_SEND            "Gönder"
-    IDS_IRC_NAME            "İsim"
-    IDS_IRC_SLAPMSGSEND     "ÖZELMSJ %s, :\001EYLEM tokat, %s adlı kişiyi büyük bir balıkla tokatlıyor!\001"
-    IDS_IRC_ADDTIMESTAMP    "Mesajlara tarih bilgisi ekle"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Kanal listesi süzgeci kullan"
     IDS_IRC_PERFORM         "Gerçekleştir"
-    IDS_IRC_USEPERFORM      "Bağlantıda gerçekleştirme dizgisi kullan."
     IDS_IRC_ADDTOFRIENDLIST "Arkadaş listesine ekle"
-    IDS_IRC_LOADCHANNELLISTONCON "Bağlandığında sunucu kanal listesini yükle"
-    IDS_IRC_ADDASFRIEND     "seni arkadaş olarak ekledi!"
     IDS_PW_WARNING          """%s"" için seçtiğiniz sayı İS'nizin desteklediğinden çok büyük:  %u\nBu bilgisayarınızın kararsız çalışmasına neden olabilir.\n\nBunu yapmak istediğinize emin misiniz?"
     IDS_TAKEOVER            "Devral"
     IDS_CLEANUP             "Temizle"
     IDS_RENAME              "Yen. Adlandır"
-    IDS_IRC_ADDLINKTOIRC    "IRC Panosuna Ekle"
-    IDS_IRC_SENDLINK        "Bunu arkadaşa gönder: "
-    IDS_IRC_RECIEVEDLINK    "%s gönderildi (%s) otomatik başlatıldı."
-    IDS_IRC_ACCEPTLINKS     "IRC'de eD2K bağlantılarını kabul et. (Bunu dikkatli kullanınız!)"
     IDS_SHARED              "Paylaşılmış"
     IDS_DOWNLOADED          "İndirilmiş"
 END
@@ -819,7 +786,6 @@ BEGIN
     IDS_PW_MINREC           "En Azı Önerilir\t%u "
     IDS_PW_UA               "Tam Gön/İnd-Hızına Ayarla"
     IDS_PW_PA               "Gön/İnd-Hızını Kıs"
-    IDS_IRC_IGNOREINFOMESSAGE "Bilgi Mesajlarını Yoksay"
     IDS_CONNECTIONLOST      "Bağlantı Koptu!"
     IDS_WIZ_OS_FRAME        "İşletim Sistemi"
     IDS_HASHINGFILE         "Adreslenen dosya:"
@@ -866,8 +832,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Azami İndirme Hızı: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "eMule arkadaş ekle protokol mesajlarını yoksay"
     IDS_PW_FASTSRVCON       "Güvenli bağlantı etkin"
     IDS_SOURCELINKFAILED    "Geçerli kaynak bağlantısı oluşturmak için YüksekID'ye ihtiyacınız var"
     IDS_ERR_LOADSERVERMET   "server.met dosyasını yükleme başarısız!"
@@ -929,7 +893,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "eMule Protokol Mesajlarını Yoksay"
     IDS_SMARTLOWIDCHECK     "Bağlantıda akıllı DüşükID kontrolü kullan"
     IDS_SF_SRVOCC           "Sunucu Doluluğu: %.2f%%"
     IDS_3DDEP               "İlerleme çubuğu biçemi"
@@ -948,8 +911,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' dosyası için alınan açıklama: %s"
     IDS_WEBSERVICES         "&Web Hizmeti"
     IDS_WEBSVEDIT           "Web Hizmetini Düzenle..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "eMule bağlantı gönder protokol mesajlarını yoksay"
     IDS_CHECK4UPDATE        "Yeni sürümü kontrol et"
     IDS_STARTUP             "Başlangıç"
     IDS_NEWVERSIONAVL       "eMule'un yeni sürümü mevcut! Daha fazla bilgi için proje ana sayfamızı kontrol edin."
@@ -1350,9 +1311,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Tarihler"
     IDS_FILEINFORMATION     "Dosya Bilgisi"
     IDS_STATS_FREESPACE     "Boş Alan"
-    IDS_IRC_HELPCHANNEL     "Yardım kanallarına bağlan"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-turkish"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Sadece arkadaşlardan"
     IDS_COMPLSOURCES        "Tam Kaynak"
     IDS_CHECKNOENDTIME      "Bitiş zamanı yok"
     IDS_FD_DOWNLOADSTARTED  "İndirme Eklendi:"
@@ -1515,9 +1473,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Şu an Kad Ağına bağlı değilsiniz!"
-    IDS_IRC_NOSFS           "Paylaşılan Dosyalar Seçili Değil"
     IDS_RESETLABEL          "Otomatik tamamlama (geçmiş işlevi)"
-    IDS_IRC_IGNOREMISCMESSAGE "Diğer bilgi mesajlarını yoksay"
     IDS_KNOWN               "Bilinen"
     IDS_KADCONTACTSREAD     "Dosyadan %u adet bağlantı okundu."
     IDS_ERR_KADCONTACTS     "Bağlantı bulunamadı, lütfen önyükleme yapın veya nodes.dat dosyasını indirin."
@@ -1554,8 +1510,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Sadece aynı kategori içindeki"
     IDS_LOG_ULDL_EVENTS     "Gönderme/İndirme olaylarını günlükle"
 //    IDS_PEERCACHE_ENABLED   "ISS'niz PeerCache teknolojisini destekliyor, önbellek indirmeler etkinleştiriliyor!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND
-                            "Sizi arkadaş olarak eklemesi için kullanıcıya izin ver."
     IDS_SOURCESWAPBLOCKED   "Geçiş Engellendi!"
     IDS_TRICKLING           "Askıda"
     IDS_A4AF_CHECK_THIS_NOW "Bu kaynağı şimdi kontrol et (hata ayıkla)"
@@ -1659,8 +1613,6 @@ BEGIN
     IDS_SOURCECLIENT        "Kaynak İstemci"
     IDS_USERSIP             "Kullanıcı IP"
     IDS_FEATURES            "Özellikler"
-    IDS_IRC_NEWNICK         "IRC takma adı seçin."
-    IDS_IRC_NEWNICKDESC     "(A-Z, 0-9) içeren 20 karakterden az, bir kelime olmalı. Tekrar Seçenekler->Sohbet 'ten değiştirilebilir."
 END
 
 STRINGTABLE

@@ -191,33 +191,6 @@ The last two groups are documented because they still live in the same file, but
 | `NotifierMailLogin` | `eMule` | `RW` | Yes | empty | SMTP login. |
 | `NotifierMailPassword` | `eMule` | `RW` | Yes | empty | SMTP password. |
 
-### IRC
-
-| INI key | Section | Mode | UI | Default | Explanation |
-| --- | --- | --- | --- | --- | --- |
-| `DefaultIRCServerNew` | `eMule` | `RW` | Yes | `ircchat.emule-project.net` | Default IRC server. |
-| `IRCNick` | `eMule` | `RW` | Yes | empty | IRC nickname. |
-| `IRCAddTimestamp` | `eMule` | `RW` | Yes | `true` | Timestamp IRC lines. |
-| `IRCUseFilter` | `eMule` | `RW` | Yes | `true` | Enable IRC channel filtering. |
-| `IRCFilterName` | `eMule` | `RW` | Yes | empty | IRC channel-name filter string. |
-| `IRCFilterUser` | `eMule` | `RW` | Yes | `0` | IRC user-count filter threshold. |
-| `IRCPerformString` | `eMule` | `RW` | Yes | empty | Commands to execute on IRC connect. |
-| `IRCUsePerform` | `eMule` | `RW` | Yes | `false` | Enable perform commands. |
-| `IRCListOnConnect` | `eMule` | `RW` | Yes | `true` | List channels after connect. |
-| `IRCAcceptLink` | `eMule` | `RW` | Yes | `true` | Accept IRC link handling. |
-| `IRCAcceptLinkFriends` | `eMule` | `RW` | Yes | `true` | Restrict IRC links to friends. |
-| `IRCSoundEvents` | `eMule` | `RW` | Yes | `false` | Play sounds on IRC events. |
-| `IRCIgnoreMiscMessages` | `eMule` | `RW` | Yes | `false` | Ignore miscellaneous IRC messages. |
-| `IRCIgnoreJoinMessages` | `eMule` | `RW` | Yes | `true` | Ignore join messages. |
-| `IRCIgnorePartMessages` | `eMule` | `RW` | Yes | `true` | Ignore part messages. |
-| `IRCIgnoreQuitMessages` | `eMule` | `RW` | Yes | `true` | Ignore quit messages. |
-| `IRCIgnorePingPongMessages` | `eMule` | `RW` | Yes | `false` | Ignore ping/pong chatter. |
-| `IRCIgnoreEmuleAddFriendMsgs` | `eMule` | `RW` | Yes | `false` | Ignore add-friend requests over IRC. |
-| `IRCAllowEmuleAddFriend` | `eMule` | `RW` | Yes | `true` | Allow add-friend requests over IRC. |
-| `IRCIgnoreEmuleSendLinkMsgs` | `eMule` | `RW` | Yes | `false` | Ignore send-link requests over IRC. |
-| `IRCHelpChannel` | `eMule` | `RW` | Yes | `true` | Join the help channel automatically. |
-| `IRCEnableSmileys` | `eMule` | `RW` | Yes | `true` | Enable smiley rendering in IRC. |
-| `IRCEnableUTF8` | `eMule` | `RW` | Yes | `true` | Enable UTF-8 IRC handling. |
 
 ### Web Server
 

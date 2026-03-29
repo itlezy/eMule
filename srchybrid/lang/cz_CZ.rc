@@ -432,7 +432,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Výsledky hledání"
     IDS_SW_DOWNLOAD         "Stáhnout vybrané"
     IDS_SV_SERVERLIST       "Seznam serverů"
@@ -699,9 +698,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2K odkazy"
     IDS_RECONNECT           "Automatické připojení k serveru se bude opakovat za  %u sekund"
     IDS_SERVERADDED         "Server přidán: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignorovat Join info zprávy"
     IDS_STATS_SUCCUPCOUNT   "Celkem úspěšných uploadových etap: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignorovat Part info zprávy"
     IDS_STATS_FAILUPCOUNT   "Celkem neúspěšných uploadových etap: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Průměrný čas stahování: %s"
     IDS_SEARCHMINSIZE       "Min. velikost"
@@ -723,9 +720,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Období průměrného grafu: %u minut"
     IDS_GRAPHS              "Grafy"
     IDS_STREE               "Statistický strom"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignorovat Quit info zprávy"
     IDS_STATSSETUPINFO      "Statistika"
-    IDS_IRC_SOUNDEVENTS     "Přehrávat zvukové události"
 END
 
 STRINGTABLE
@@ -769,52 +764,24 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapacita"
-    IDS_IRC_PRIVATECHANSTART "* Začal soukromý chat"
-    IDS_IRC_SLAPMSG         "* %s praštil %s velkou babylonskou rybkou!"
-    IDS_IRC_PRIVMESSAGE     "Soukromá zpráva"
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Stáhnout nejprve části potřebné k ukázce"
-    IDS_IRC_KICK            "Kopnout"
-    IDS_IRC_SLAP            "Praštit"
-    IDS_IRC_JOIN            "Připojit"
-    IDS_IRC_CHANNELLIST     "Seznam kanálů"
     IDS_IRC_CONNECT         "Připojit"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Odpojit"
-    IDS_IRC_HASJOINED       "* %s připojil %s"
-    IDS_IRC_HASPARTED       "* %s odloučil %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s byl kopnut %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Stáhnout v abecedním pořadí"
-    IDS_IRC_HASQUIT         "* %s odešel (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s je známý jako %s"
-    IDS_IRC_SETSMODE        "* %s režimy setů: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Některé režimy byly nastaveny jako nepodporované. Bude potřeba opustit a znovu vstoupit do kanálu pro obnovu seznamu přezdívek."
-    IDS_IRC_CHANNEL         "Kanál"
-    IDS_IRC_NICK            "Přezdívka"
-    IDS_IRC_SEND            "Poslat"
-    IDS_IRC_NAME            "Jméno"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION praštil %s velkou babylonskou rybkou!\001"
-    IDS_IRC_ADDTIMESTAMP    "Přidávat aktuální čas ke zprávám"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Používat filtr seznamu kanálů"
     IDS_IRC_PERFORM         "Prováděcí řetězec"
-    IDS_IRC_USEPERFORM      "Použít prováděcí řetězec po připojení"
     IDS_IRC_ADDTOFRIENDLIST "Přidat přátele do seznamu"
-    IDS_IRC_LOADCHANNELLISTONCON "Načíst seznam kanálu serveru po připojení"
-    IDS_IRC_ADDASFRIEND     "Vás přidal jako přítele!"
     IDS_PW_WARNING          "Vámi vybrané číslo ""%s"" je větší než podporuje Váš OS:  %u\nTo může způsobit nestabilitu systému.\n\nJste si jisti, že to vyžadujete?"
     IDS_TAKEOVER            "Převzít"
     IDS_CLEANUP             "Vyčistit"
     IDS_RENAME              "Přejmenovat"
-    IDS_IRC_ADDLINKTOIRC    "Přidat odkaz do IRC schránky pro odeslání přátelům"
-    IDS_IRC_SENDLINK        "Poslat odkaz příteli: "
-    IDS_IRC_RECIEVEDLINK    "%s poslal (%s) pro automatické spuštění."
-    IDS_IRC_ACCEPTLINKS     "Přijímat eD2K odkaz z IRC (Používejte opatrně!)"
     IDS_SHARED              "Sdílené"
     IDS_DOWNLOADED          "Stažené"
 END
@@ -844,7 +811,6 @@ BEGIN
     IDS_PW_MINREC           "doporučené minimum\t%u "
     IDS_PW_UA               "Nastavit plnou up/down-rychlost"
     IDS_PW_PA               "Potlačit up/down-rychlost"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignorovat informační zprávy"
     IDS_CONNECTIONLOST      "Připojení ztraceno"
     IDS_WIZ_OS_FRAME        "Operační systém"
     IDS_HASHINGFILE         "Hashuji soubor:"
@@ -891,8 +857,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Max. rychlost stahování: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignorovat zprávy protokolu eMule o přidávání přátel"
     IDS_PW_FASTSRVCON       "Bezpečné připojení"
     IDS_SOURCELINKFAILED    "K vytvoření spojení se zdrojem potřebujete HighID"
     IDS_ERR_LOADSERVERMET   "Nepodařilo se načíst server.met!"
@@ -955,7 +919,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignorovat eMule protokolové zprávy"
     IDS_SMARTLOWIDCHECK     "Použít inteligentní zjištění LowID po připojení"
     IDS_SF_SRVOCC           "Obsazení serveru: %.2f%%"
     IDS_3DDEP               "Styl progressbaru"
@@ -974,8 +937,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Popis pro soubor '%s' přijat: %s"
     IDS_WEBSERVICES         "&Webové služby"
     IDS_WEBSVEDIT           "Upravit webové služby"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignorovat zprávy protokolu o zasílání odkazů eMule"
     IDS_CHECK4UPDATE        "Zjisti novou verzi"
     IDS_STARTUP             "Po spuštění"
     IDS_NEWVERSIONAVL       "Nová verze eMule je k dispozici! Pro více informací se podívejte na domovskou stránku eMule projektu."
@@ -1327,9 +1288,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Časové údaje"
     IDS_FILEINFORMATION     "Informace o souboru"
     IDS_STATS_FREESPACE     "Volné místo"
-    IDS_IRC_HELPCHANNEL     "Připojit ke kanálu Nápovědy"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-czech"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Pouze od přátel"
     IDS_COMPLSOURCES        "Kompletní zdroje"
     IDS_CHECKNOENDTIME      "bez ukončení"
     IDS_FD_DOWNLOADSTARTED  "Download přidán:"
@@ -1492,9 +1450,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Současně nejste připojeni na Kademlia Network!"
-    IDS_IRC_NOSFS           "Nebyly vybrány žádné sdílené soubory"
     IDS_RESETLABEL          "Automatické dokončení (funkce historie)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignorovat různé info zprávy"
     IDS_KNOWN               "Známí"
     IDS_KADCONTACTSREAD     "Načteno %u kontaktů ze souboru."
     IDS_ERR_KADCONTACTS     "Žádné kontakty nenalezeny, prosím spus?te bootstrap nebo stáhněte soubor nodes.dat."
@@ -1530,7 +1486,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "pouze ve stejné kategorii"
     IDS_LOG_ULDL_EVENTS     "Logovat události uploadu/downloadu"
 //    IDS_PEERCACHE_ENABLED   "Váš ISP podporuje technologii PeerCache, která umožňuje cashovat downloady!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Povolit uživateli, aby si Vás přidal mezi přítele."
     IDS_SOURCESWAPBLOCKED   "Výměna zdrojů zablokována"
     IDS_A4AF_CHECK_THIS_NOW "Zkontrolujte tento zdroj (debug)"
     IDS_STATS_FRATIO        "Poměr UL:DL za etapu (přátelské UL vynechány):"
@@ -1646,8 +1601,6 @@ BEGIN
     IDS_SOURCECLIENT        "Zdrojový klient"
     IDS_USERSIP             "IP uživatelů"
     IDS_FEATURES            "Vlastnosti"
-    IDS_IRC_NEWNICK         "Vyberte si přezdívku pro IRC."
-    IDS_IRC_NEWNICKDESC     "Měla by sestávat z jednoho slova kratšího 20 znaků obsahujících jenom (A-Z, 0-9). Později může být změněna v nabídce Možnosti -> Irc."
 END
 
 STRINGTABLE

@@ -393,7 +393,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Resultats"
     IDS_SW_DOWNLOAD         "Baixa"
     IDS_SV_SERVERLIST       "Llista dels servidors"
@@ -660,9 +659,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Enllaços eD2K"
     IDS_RECONNECT           "La connexió automàtica al servidor es tornarà a intentar en %u segons"
     IDS_SERVERADDED         "S'ha afegit el servidor: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignora els missatges sobre entrades"
     IDS_STATS_SUCCUPCOUNT   "Total de sessions de pujada amb èxit: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignora els missatges sobre eixides"
     IDS_STATS_FAILUPCOUNT   "Total de sessions de pujada fallades: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Mitjana de temps de pujada: %s"
     IDS_SEARCHMINSIZE       "Mida mín."
@@ -684,9 +681,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Temps mitjà per gràfic: %u mins"
     IDS_GRAPHS              "Gràfics"
     IDS_STREE               "Arbre d'estadístiques"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignora els missatges d'informarció en eixir"
     IDS_STATSSETUPINFO      "Estadístiques"
-    IDS_IRC_SOUNDEVENTS     "So en esdeveniments"
 END
 
 STRINGTABLE
@@ -729,50 +724,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Capacitat"
-    IDS_IRC_PRIVATECHANSTART "* S'ha iniciat una sessió privada de xat"
-    IDS_IRC_SLAPMSG         "* %s bufeteja a %s amb un gran tros de tonyina."
-    IDS_IRC_PRIVMESSAGE     "Missatge privat"
-    IDS_IRC_KICK            "Expulsa"
-    IDS_IRC_SLAP            "Bufeteja"
-    IDS_IRC_JOIN            "Entra al canal"
-    IDS_IRC_CHANNELLIST     "Llista de canals"
     IDS_IRC_CONNECT         "Connecta"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Desconnecta"
-    IDS_IRC_HASJOINED       "* %s ha entrat a %s"
-    IDS_IRC_HASPARTED       "* %s ha eixit de %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s ha estat expulsat per %s (%s)"
-    IDS_IRC_HASQUIT         "* %s s'ha desconnectat (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s és ara %s"
-    IDS_IRC_SETSMODE        "* %s estableix el mode: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Alguns dels modes seleccionats no compten encara amb assistència. Pot ser que vos calga eixir i entrar de nou al canal per a actualitzar la llista de sobrenoms..."
-    IDS_IRC_CHANNEL         "Canal"
-    IDS_IRC_NICK            "Sobrenom"
-    IDS_IRC_SEND            "Envia"
-    IDS_IRC_NAME            "Nom"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION bufeteja a %s amb un gran tros de tonyina.\001"
-    IDS_IRC_ADDTIMESTAMP    "Afig l'hora/data als missatges."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Empra un filtre de canals"
     IDS_IRC_PERFORM         "Executa"
-    IDS_IRC_USEPERFORM      "En connectar."
     IDS_IRC_ADDTOFRIENDLIST "Afig a la llista d'amics"
-    IDS_IRC_LOADCHANNELLISTONCON "Carrega la llista de canals en connectar."
-    IDS_IRC_ADDASFRIEND     "T'han afegit com a amic."
     IDS_PW_WARNING          "El nombre seleccionat per a «%s» és major del que admet el SOTA: %u\nAixò pot causar inestabilitat en el sistema.\n\nSegur que ho voleu fer?"
     IDS_TAKEOVER            "Pren"
     IDS_CLEANUP             "Neteja"
     IDS_RENAME              "Canvia el nom"
-    IDS_IRC_ADDLINKTOIRC    "Afig-ho al porta-retalls de l'IRC per a enviar-ho als amics."
-    IDS_IRC_SENDLINK        "Envia a l'amic: "
-    IDS_IRC_RECIEVEDLINK    "%s enviat (%s) perquè comence automàticament."
-    IDS_IRC_ACCEPTLINKS     "enllaços eD2K a l'IRC (utilitzeu-ho amb precaució.)"
     IDS_SHARED              "Compartit"
     IDS_DOWNLOADED          "Baixat"
 END
@@ -802,7 +769,6 @@ BEGIN
     IDS_PW_MINREC           "Mínim recomanat\t%u "
     IDS_PW_UA               "Velocitat màx. de pujada/baixada"
     IDS_PW_PA               "Velocitat mín. pujada/baixada"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignora els missatges d'informació."
     IDS_CONNECTIONLOST      "Connexió perduda"
     IDS_WIZ_OS_FRAME        "Sistema operatiu"
     IDS_HASHINGFILE         "S'està codificant el resum del fitxer:"
@@ -849,8 +815,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Velocitat màxima de baixada (sessió): %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignora els missatges del protocol per a afegir amics de l'eMule"
     IDS_PW_FASTSRVCON       "Connexió segura."
     IDS_SOURCELINKFAILED    "Necessiteu un identificador alt per a crear un enllaç de font vàlid"
     IDS_ERR_LOADSERVERMET   "S'ha produït una fallada en carregar el fitxer server.met."
@@ -913,8 +877,6 @@ BEGIN
     IDS_MEGA                "M"//.
     IDS_GIGA                "G"//.
     IDS_TERA                "T"//.
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE
-                            "Ignora els missatges de l'eMule"
     IDS_SMARTLOWIDCHECK     "Control intel·ligent d'identificador baix en connectar."
     IDS_SF_SRVOCC           "Ocupació dels servidors: %.2f%%"
     IDS_3DDEP               "Estil de la barra de progrés"
@@ -933,8 +895,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descripció del fitxer «%s» rebuda: %s"
     IDS_WEBSERVICES         "Servicis &web"
     IDS_WEBSVEDIT           "Edita els servicis web"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignora els missatges en enviar un enllaç de l'eMule"
     IDS_CHECK4UPDATE        "Comprova si hi ha una nova versió"
     IDS_STARTUP             "A l'inici"
     IDS_NEWVERSIONAVL       "Hi ha una nova versió de l'eMule disponible. Aneu a la pàgina web del projecte per a obtindre més informació."
@@ -1327,9 +1287,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dates"//.
     IDS_FILEINFORMATION     "Informació de fitxer"
     IDS_STATS_FREESPACE     "Espai lliure"
-    IDS_IRC_HELPCHANNEL     "Connecta't al canal d'ajuda"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-catalan"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Només d'amics."
     IDS_COMPLSOURCES        "Fonts completes"
     IDS_CHECKNOENDTIME      "sense temps de finalització"
     IDS_FD_DOWNLOADSTARTED  "Baixada afegida:"
@@ -1492,9 +1449,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Actualment no esteu connectat a la xarxa Kad"
-    IDS_IRC_NOSFS           "No hi ha fitxers compartits seleccionats"
     IDS_RESETLABEL          "Compleció automàtica (funció història)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignora missatges diversos d'informació"
     IDS_KNOWN               "Coneguts"
     IDS_KADCONTACTSREAD     "Llig %u contactes del fitxer."
     IDS_ERR_KADCONTACTS     "No es troben contactes. Hauríeu de tornar a iniciar o bé baixar el fitxer nodes.dat"
@@ -1532,7 +1487,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "només a la mateixa categoria"
     IDS_LOG_ULDL_EVENTS     "Registra els esdeveniments de pujada/baixada"
 //    IDS_PEERCACHE_ENABLED   "El vostre proveïdor d'Internet admet la tecnologia de cau-entre-iguals (PeerCache). S'activarà la cau de baixades"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Permet a l'usuari que vos afegisca com a amic."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Baixa primer les parts que calen per a la previsualització"
 END
 
@@ -1645,8 +1599,6 @@ BEGIN
     IDS_SOURCECLIENT        "Font del client"
     IDS_USERSIP             "IP dels usuaris"
     IDS_FEATURES            "Funcions"
-    IDS_IRC_NEWNICK         "Seleccioneu un sobrenom d'IRC."
-    IDS_IRC_NEWNICKDESC     "Ha de ser una paraula de menys de 20 caràcters, formada per (A-Z, 0-9). Podeu canviar-ho més tard al menú Preferències->Irc."
 END
 
 STRINGTABLE

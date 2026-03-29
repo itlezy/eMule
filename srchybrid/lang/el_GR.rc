@@ -377,7 +377,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&ΙRC"
     IDS_SW_RESULT           "Αποτελέσματα αναζήτησης"
     IDS_SW_DOWNLOAD         "Κατέβασμα επιλεγμένων"
     IDS_SV_SERVERLIST       "Εξυπηρετητές"
@@ -644,9 +643,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2K Links"
     IDS_RECONNECT           "Η αυτόματη σύνδεση με τον εξυπηρετητή θα δοκιμαστεί ξανά σε %u δευτερόλεπτα..."
     IDS_SERVERADDED         "Εξυπηρετητής που προστέθηκε: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Εισόδου"
     IDS_STATS_SUCCUPCOUNT   "επιτυχημένες περίοδοι: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Αποχώρησης"
     IDS_STATS_FAILUPCOUNT   "αποτυχημένες περίοδοι: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "μέσος χρόνος ανεβάσματος: %s"
     IDS_SEARCHMINSIZE       "Μεγαλύτερο από"
@@ -667,9 +664,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Χρόνος για μέσο όρο γραφήματος: %u λεπτά"
     IDS_GRAPHS              "Γραφήματα"
     IDS_STREE               "Δέντρο στατιστικών"
-    IDS_IRC_IGNOREQUITMESSAGE "Εγκατάλειψης"
     IDS_STATSSETUPINFO      "Προβολή στατιστικών"
-    IDS_IRC_SOUNDEVENTS     "Αναπαραγωγή ηχητικών γεγονότων"
 END
 
 STRINGTABLE
@@ -712,50 +707,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Χωρητικότητες"
-    IDS_IRC_PRIVATECHANSTART "* Ξεκίνησε προσωπική περίοδος συνομιλίας"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!" //!
-    IDS_IRC_PRIVMESSAGE     "Προσωπικό μήνυμα"
-    IDS_IRC_KICK            "Kick" //!
-    IDS_IRC_SLAP            "Slap" //!
-    IDS_IRC_JOIN            "Είσοδος"
-    IDS_IRC_CHANNELLIST     "Λίστα καναλιών"
     IDS_IRC_CONNECT         "Σύνδεση"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Αποσύνδεση"
-    IDS_IRC_HASJOINED       "* %s συνδέθηκε στο %s"
-    IDS_IRC_HASPARTED       "* %s έφυγε από το %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s διώχθηκε από %s (%s)"
-    IDS_IRC_HASQUIT         "* %s εγκατέλειψε (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s είναι γνωστός τώρα σαν %s"
-    IDS_IRC_SETSMODE        "* %s θέτει κατάσταση: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Κάποιες καταστάσεις που έχουν οριστεί δεν υποστηρίζονται ακόμα. Ίσως χρειαστεί να βγείτε και να ξαναμπείτε στο κανάλι ώστε να ανανεωθεί η λίστα ψευδωνύμων."
-    IDS_IRC_CHANNEL         "Κανάλι"
-    IDS_IRC_NICK            "Ψευδώνυμο"
-    IDS_IRC_SEND            "Αποστολή"
-    IDS_IRC_NAME            "Όνομα"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001" //!
-    IDS_IRC_ADDTIMESTAMP    "Προσθήκη ώρας στα μηνύματα"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Χρήση φιλτραρίσματος της λίστας καναλιών"
     IDS_IRC_PERFORM         "Εκτέλεση"
-    IDS_IRC_USEPERFORM      "Σε σύνδεση, εκτέλεση της εντολής"
     IDS_IRC_ADDTOFRIENDLIST "Προσθήκη στους φίλους"
-    IDS_IRC_LOADCHANNELLISTONCON "Φόρτωμα της λίστας καναλιών"
-    IDS_IRC_ADDASFRIEND     "σε πρόσθεσε σαν φίλο!"
     IDS_PW_WARNING          "Ο αριθμός που επιλέξατε για ""%s"" είναι μεγαλύτερος από αυτόν που υποστηρίζει το λειτουργικό σας:  %u\nΑυτό μπορεί να κάνει το σύστημά σας λιγότερο σταθερό.\n\nΕίναι σίγουρο ότι θέλετε να το κάνετε;"
     IDS_TAKEOVER            "Αλλαγή"
     IDS_CLEANUP             "Καθάρισμα"
     IDS_RENAME              "Μετονομασία"
-    IDS_IRC_ADDLINKTOIRC    "Πρόσθεση στο πρόχειρο του IRC"
-    IDS_IRC_SENDLINK        "Αποστολή σε φίλο: "
-    IDS_IRC_RECIEVEDLINK    "Ο %s έστειλε (%s) για να ξεκινήσει αυτόματα"
-    IDS_IRC_ACCEPTLINKS     "Αποδοχή eD2K links από το IRC. (Με προσοχή!)"
     IDS_SHARED              "Κοινόχρηστο"
     IDS_DOWNLOADED          "Κατέβηκε"
 END
@@ -785,7 +752,6 @@ BEGIN
     IDS_PW_MINREC           "συνιστώμενο ελάχιστο\t%u "
     IDS_PW_UA               "Μέγιστη ταχύτητα"
     IDS_PW_PA               "Περιορισμός ταχύτητας"
-    IDS_IRC_IGNOREINFOMESSAGE "Αγνόηση μηνυμάτων πληροφοριών"
     IDS_CONNECTIONLOST      "Χάθηκε η σύνδεση"
     IDS_WIZ_OS_FRAME        "Λειτουργικό σύστημα"
     IDS_HASHINGFILE         "Υπογράφεται το αρχείο:"
@@ -832,7 +798,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Μέγιστος ρυθμός κατεβάσματος: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND "Μηνύματα για πρόσθεση φίλου"
     IDS_PW_FASTSRVCON       "Γρήγορη σύνδεση με εξυπηρετητή"
     IDS_SOURCELINKFAILED    "Χρειάζεστε υψηλό κωδικό χρήστη για τη δημιουργία έγκυρου link πηγής"
     IDS_ERR_LOADSERVERMET   "Αποτυχία κατά το φόρτωμα του server.met!"
@@ -894,7 +859,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Παράβλεψη πρωτοκόλλου eMule"
     IDS_SMARTLOWIDCHECK     "Χρήση έξυπνου ελέγχου χαμηλού ID, κατά τη σύνδεση"
     IDS_SF_SRVOCC           "Κατάληψη εξυπηρετητών: %.2f%%"
     IDS_3DDEP               "Στυλ μπάρας προόδου"
@@ -913,7 +877,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Λήψη περιγραφής για το αρχείο '%s': %s"
     IDS_WEBSERVICES         "Υπηρεσίες Web"
     IDS_WEBSVEDIT           "Αλλαγή υπηρεσιών Web..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK "Μηνύματα για αποστολή link"
     IDS_CHECK4UPDATE        "Έλεγχος νέας έκδοσης"
     IDS_STARTUP             "Εκκίνηση"
     IDS_NEWVERSIONAVL       "Μια νέα έκδοση του eMule είναι διαθέσιμη! Ελέγξτε την κεντρική σελίδα του προγράμματος για περισσότερες πληροφορίες."
@@ -1296,9 +1259,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Ημερομηνίες"
     IDS_FILEINFORMATION     "Πληροφορίες αρχείου"
     IDS_STATS_FREESPACE     "Ελεύθερος χώρος"
-    IDS_IRC_HELPCHANNEL     "Σύνδεση σε κανάλια βοήθειας"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-greek"
-    IDS_IRC_ACCEPTLINKSFRIENDS "μόνο από φίλους"
     IDS_COMPLSOURCES        "Πλήρεις πηγές"
     IDS_CHECKNOENDTIME      "χωρίς τέλος"
     IDS_FD_DOWNLOADSTARTED  "Προστέθηκε:"
@@ -1459,9 +1419,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Προς το παρόν δεν είστε σε σύνδεση με το δίκτυο Kademlia!"
-    IDS_IRC_NOSFS           "Δεν έχουν επιλεγεί κοινόχρηστα αρχεία"
     IDS_RESETLABEL          "Αυτόματη συμπλήρωση (λειτουργία ιστορικού)"
-    IDS_IRC_IGNOREMISCMESSAGE "Γενικών πληροφοριών"
     IDS_KNOWN               "Γνωστό"
     IDS_KADCONTACTSREAD     "Διαβάστηκαν %u επαφές από το αρχείο"
     IDS_ERR_KADCONTACTS     "Δεν βρέθηκαν επαφές, παρακαλώ εκκινήστε ή κατεβάστε ένα αρχείο nodes.dat"
@@ -1500,7 +1458,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "μόνο από την ίδια κατηγορία"
     IDS_LOG_ULDL_EVENTS     "Καταγραφή ενεργειών ανεβάσματος/κατεβάσματος"
 //    IDS_PEERCACHE_ENABLED   "Ο ISP σας υποστηρίζει την τεχνολογία PeerCache, ενεργοποιείται η λήψη μέσω αυτής!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Επιτρέπεται να σας προσθέσουν σαν φίλο"
 END
 
 STRINGTABLE
@@ -1610,8 +1567,6 @@ BEGIN
     IDS_SOURCECLIENT        "Πηγή χρήστη"
     IDS_USERSIP             "IP χρηστών"
     IDS_FEATURES            "Χαρακτηριστικά"
-    IDS_IRC_NEWNICK         "Επιλέξτε ένα ψευδώνυμο για το IRC"
-    IDS_IRC_NEWNICKDESC     "Πρέπει να είναι μία λέξη μικρότερη των 20 χαρακτήρων μεταξύ των (A-Z, 0-9). Μπορείτε να το αλλάξετε ξανά στις Προτιμήσεις->IRC."
 END
 
 STRINGTABLE

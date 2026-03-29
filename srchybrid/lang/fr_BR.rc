@@ -388,7 +388,6 @@ END
 
 STRINGTABLE FIXED IMPURE
 BEGIN
-	IDS_IRC	"IRC"
 	IDS_SW_RESULT	"Disoc'hoù ar c'hlask"
 	IDS_SW_DOWNLOAD	"Pellgargañ an diuzad"
 	IDS_SV_SERVERLIST	"Roll ar servijerioù"
@@ -621,9 +620,7 @@ BEGIN
 	IDS_ED2KLINKFIX	"Ereoù ED2K"
 	IDS_RECONNECT	"Adc'hraet e vo ar c'hennaskañ diouzh ar servijer a-benn %u eilenn"
 	IDS_SERVERADDED	"Servijer ouzhpennet : %s"
-	IDS_IRC_IGNOREJOINMESSAGE	"Leuskel a-gostez ar c'hemennadoù Join"
 	IDS_STATS_SUCCUPCOUNT	"Hollad an estezioù kaset a-benn mat : %u (%.2f%%)"
-	IDS_IRC_IGNOREPARTMESSAGE	"Leuskel a-gostez ar c'hemennadoù Part"
 	IDS_STATS_FAILUPCOUNT	"Hollad an estezioù faziet : %u (%.2f%%)"
 	IDS_STATS_AVEUPTIME	"Amzer geitad ur c'has : %s"
 	IDS_SEARCHMINSIZE	"Ment izelañ"
@@ -644,9 +641,7 @@ BEGIN
 	IDS_STATS_AVGLABEL	"Amzer evit ar gevregenn eus keitad : %u mun"
 	IDS_GRAPHS	"Kevregañ"
 	IDS_STREE	"Gwezenn feurioù"
-	IDS_IRC_IGNOREQUITMESSAGE	"Leuskel a-gostez ar gemennadennoù Kuitaat"
 	IDS_STATSSETUPINFO	"Feurioù"
-	IDS_IRC_SOUNDEVENTS	"Darvoudoù son"
 END
 
 STRINGTABLE FIXED IMPURE
@@ -670,54 +665,26 @@ END
 STRINGTABLE FIXED IMPURE
 BEGIN
 	IDS_PW_CON_CAPFRM	"Stlennvarr"
-	IDS_IRC_PRIVATECHANSTART	"*** Loc'hañ un estez brivez Chat : "
-	IDS_IRC_SLAPMSG	"* %s slaps %s around with a large Babelfish!"
-	IDS_IRC_PRIVMESSAGE	"Kemennadenn brevez"
 	IDS_WEB_REMOTE_LINK_ADDED			"Ere ouzhpennet"
 	IDS_WEB_REMOTE_LINK_NOT_ADDED			"Ere ket ouzhpennet. Ger tremen direizh"
 	IDS_DL_TRY_TO_GET_PREVIEW_PARTS	"Tevet war al lodennoù rekis evit an alberz"
-	IDS_IRC_KICK	"Kick"
-	IDS_IRC_SLAP	"Slap"
-	IDS_IRC_JOIN	"Join"
-	IDS_IRC_CHANNELLIST	"Roll ar saloñsoù"
 	IDS_IRC_CONNECT	"Kennaskañ"
 END
 
 STRINGTABLE FIXED IMPURE
 BEGIN
 	IDS_IRC_DISCONNECT	"Digennaskañ"
-	IDS_IRC_HASJOINED	"* %s a zo deuet war %s"
-	IDS_IRC_HASPARTED	"* %s a zo deuet er-maez eus %s (%s)"
-	IDS_IRC_WASKICKEDBY	"* %s a zo bet lakaet er-maez gant %s (%s)"
 	IDS_DOWNLOAD_ALPHABETICAL	"Pellgargañ diouzh an urzh lizherenneg"
-	IDS_IRC_HASQUIT 				"* %s a zo aet"
-	IDS_IRC_NOWKNOWNAS	"* %s a zo graet %s anezhañ bremañ"
-	IDS_IRC_SETSMODE	"* %s en deus kemmet ar mod gantañ : %s %s"
-	IDS_IRC_NOTSUPPORTED	"** Modoù zo a zo bet kemmet ha n'int ket skoret. Ret eo deoc'h mont er-maez ha dont en-dro er saloñs a-benn nevesaat ho rollad moranvioù.."
-	IDS_IRC_CHANNEL	"Saloñs"
-	IDS_IRC_NICK	"Moranv"
-	IDS_IRC_SEND	"Kas"
-	IDS_IRC_NAME	"Anv"
-	IDS_IRC_SLAPMSGSEND	"PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001"
-	IDS_IRC_ADDTIMESTAMP	"Stagañ an eur ouzh ar c'hemennadennoù"
 END
 
 STRINGTABLE FIXED IMPURE
 BEGIN
-	IDS_IRC_USEFILTER	"Implijout ur sil evit rollad ar saloñs"
 	IDS_IRC_PERFORM	"Erounit"
-	IDS_IRC_USEPERFORM	"Erounit ur skrid pa vez kennasket."
 	IDS_IRC_ADDTOFRIENDLIST	"Ouzhpennañ d'ar roll mignoned"
-	IDS_IRC_LOADCHANNELLISTONCON	"Kargañ ar rollad saloñsoù pa vez kennasket"
-	IDS_IRC_ADDASFRIEND	"en deus ouzhpennet ac'hanoc'h evel mignon !"
   	IDS_PW_WARNING	"Re vras eo ar werzhiad ho peus dibabet ""%s"" evit bezañ skoret gant ho reizhiad korvoiñ : %u\nGallout a ra lakaat ho   \nreizhiad da vezañ distabil.\n\nHa fellout a ra deoc'h ober an dra-mañ evelkent ?"
 	IDS_TAKEOVER	"Adgolloiñ"
 	IDS_CLEANUP	"Naetaat"
 	IDS_RENAME	"Adenvel"
-	IDS_IRC_ADDLINKTOIRC	"Kopiañ er glover IRC."
-	IDS_IRC_SENDLINK	"Kas d'ur mignon : "
-	IDS_IRC_RECIEVEDLINK	"%s en deus kaset (%s), emañ o paouez da vezañ kaset ent-emgefre."
-	IDS_IRC_ACCEPTLINKS	"Degemer ereoù ED2K e-barzh IRC (Diwallit gant ec'h implij !)"
 	IDS_SHARED	"Eskemmet"
 	IDS_DOWNLOADED	"Pellgarget"
 END
@@ -747,7 +714,6 @@ BEGIN
 	IDS_PW_MINREC	"Gwerzhiad bihanañ erbediet\t%u "
 	IDS_PW_UA	"Spisaat harz E/R d'an uhelañ"
 	IDS_PW_PA	"Reoliñ tizh E/R"
-	IDS_IRC_IGNOREINFOMESSAGE	"Leuskel a-gostez ar c'hemennadennoù titouroù"
 	IDS_CONNECTIONLOST	"Kennaskañ kollet"
 	IDS_WIZ_OS_FRAME	"Reizhiad korvoiñ"
 	IDS_HASHINGFILE	"Drailherezh ar restr :"
@@ -794,7 +760,6 @@ END
 STRINGTABLE FIXED IMPURE
 BEGIN
 	IDS_STATS_MAXDL	"Tizh degemer gwellañ : %s"
-	IDS_IRC_EMULEPROTO_IGNOREADDFRIEND	"Leuskel a-gostez ar c'hemennadennoù ouzhpennañ a-berzh mignoned"
 	IDS_PW_FASTSRVCON	"Kennaskañ doujus ouzh ar servijer"
 	IDS_SOURCELINKFAILED	"Dav eo deoc'h kaout un HighID a-benn sevel un ere gant un orin IP reizh"
 	IDS_ERR_LOADSERVERMET	"Fazi o kargañ server.met !"
@@ -856,7 +821,6 @@ BEGIN
 	IDS_MEGA	"M"
 	IDS_GIGA	"G"
 	IDS_TERA 	"T"
-	IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE	"Leuskel a-gostez ar c'hemennadennoù eMule Proto"
 	IDS_SMARTLOWIDCHECK	"Reoliñ speredek al LowId e-pad ar c'hennaskañ"
 	IDS_SF_SRVOCC	"Trevell ar servijer : %.2f%%"
 	IDS_3DDEP	"Barrenn greskaat"
@@ -894,7 +858,6 @@ BEGIN
 	IDS_DESCRIPTIONRECV	"Evezhiadenn ar restr '%s' : %s"
 	IDS_WEBSERVICES	"WebServices"
 	IDS_WEBSVEDIT	"Aozañ WebServices"
-	IDS_IRC_EMULEPROTO_IGNORESENDLINK	"Leuskel a-gostez ar c'hemennadennoù kas eus ereoù"
 	IDS_CHECK4UPDATE	"Gwiriañ stumm nevez"
 	IDS_STARTUP	"Loc'hañ"
 	IDS_NEWVERSIONAVL	"Prest eo ur stumm nevez eus eMule da vezañ pellgarget. Sellit ouzh https://emule-project.net evit lenn muioc'h a ditouroù."
@@ -1311,9 +1274,6 @@ BEGIN
 	IDS_FD_TIMEDATE	"Deiziadoù"
 	IDS_FILEINFORMATION	"Titouroù restr"
 	IDS_STATS_FREESPACE	"Egor vak"
-	IDS_IRC_HELPCHANNEL	"Kennaskañ ouzh ar c'hanolioù skoazell."
-	IDS_IRC_HELPCHANNELPERFORM	"/join #emule-french"
-	IDS_IRC_ACCEPTLINKSFRIENDS	"Nemet o tont deus mignoned."
 	IDS_COMPLSOURCES	"Klok"
 	IDS_CHECKNOENDTIME	"dibenn ebet"
 	IDS_FD_DOWNLOADSTARTED	"Pellgargañ ouzhpennet :"
@@ -1474,9 +1434,7 @@ END
 STRINGTABLE FIXED IMPURE
 BEGIN
 	IDS_ERR_NOTCONNECTEDKAD	"N'oc'h ket kennasket ouzh ar rouedad Kad !"
-	IDS_IRC_NOSFS	"N'eus restr eskemmet ebet a zo diuzet"
 	IDS_RESETLABEL	"Euvriñ hanter-emgefre (istorel)"
-	IDS_IRC_IGNOREMISCMESSAGE	"Leuskel a-gostez ar c'hemennadennoù titouroù a-bep seurt"
 	IDS_KNOWN	"Anav"
 	IDS_KADCONTACTSREAD	"lennet %u stok adalek ar restr."
 	IDS_ERR_KADCONTACTS	"Stok ebet kavet, trugarez da loc'hañ pe pellgargañ ar restr nodes.dat."
@@ -1510,7 +1468,6 @@ BEGIN
 	IDS_PREF_STARTNEXTFILECATONLY	"Nemet er memes rummad"
 	IDS_LOG_ULDL_EVENTS	"Enskrivañ an darvoudoù kas/degemer"
 //    IDS_PEERCACHE_ENABLED	"Skorañ a ra ho pourchaser Internet an deknologiezh PeerCache, krubuilh gweredekaet !"
-	IDS_IRC_EMULEPROTO_ALLOWADDFRIEND	"Aotreañ an implijour d'ho lakaat en e roll mignoned."
 	IDS_SOURCESWAPBLOCKED	"Eskemm harpet"
 	IDS_TRICKLING	"A-gostez"
 	IDS_A4AF_CHECK_THIS_NOW	"Gwiriañ an orin-mañ diouzhtu (dilastezañ)"
@@ -1612,8 +1569,6 @@ BEGIN
 	IDS_SOURCECLIENT	"Ostiz orin"
 	IDS_USERSIP	"IP implijourien"
 	IDS_FEATURES	"Arc'hwelioù"
-	IDS_IRC_NEWNICK	"Dibab ur moranv IRC."
-	IDS_IRC_NEWNICKDESC	"Hennezh a zlefe bezañ ur ger gant neubeutoc'h a 20 arouezenn (A-Z, 0-9) ennañ. Gallout a rit e gemmañ er voest Dibaboù gwellañ->IRC."
 END
 
 STRINGTABLE FIXED IMPURE

@@ -392,7 +392,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "Csevegés"
     IDS_SW_RESULT           "Keresési eredmény"
     IDS_SW_DOWNLOAD         "Kijelölt letöltése"
     IDS_SV_SERVERLIST       "Kiszolgálólista"
@@ -660,9 +659,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K hivatkozás"
     IDS_RECONNECT           "Automatikus kapcsolódás megismétlése %u másodperc múlva"
     IDS_SERVERADDED         "Kiszolgáló hozzáadva: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Belépések megjelenítésének mellőzése"
     IDS_STATS_SUCCUPCOUNT   "Összes sikeres feltöltési próbálkozás: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Távozások megjelenítésének mellőzése"
     IDS_STATS_FAILUPCOUNT   "Összes sikertelen feltöltési próbálkozás: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Átlagos feltöltési idő: %s"
     IDS_SEARCHMINSIZE       "min. méret"
@@ -684,9 +681,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Az átlag grafikon ideje: %u perc"
     IDS_GRAPHS              "Grafikonok"
     IDS_STREE               "Statisztika fa"
-    IDS_IRC_IGNOREQUITMESSAGE "Kilépési üzenetek mellőzése"
     IDS_STATSSETUPINFO      "A statisztika kijelző beállítása"
-    IDS_IRC_SOUNDEVENTS     "Hangjelzés, ha esemény van"
 END
 
 STRINGTABLE
@@ -730,50 +725,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapacitások"
-    IDS_IRC_PRIVATECHANSTART "* Privát csevegés kezdődik"
-    IDS_IRC_SLAPMSG         "* %s jól pofánvágja %s gyereket egy bazinagy furkósbottal!"
-    IDS_IRC_PRIVMESSAGE     "Privát üzenet"
-    IDS_IRC_KICK            "Kirúg"
-    IDS_IRC_SLAP            "Csap"
-    IDS_IRC_JOIN            "Belépés"
-    IDS_IRC_CHANNELLIST     "Szobák listája"
     IDS_IRC_CONNECT         "Kapcsolódás"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Megszakítás"
-    IDS_IRC_HASJOINED       "* %s belépett %s"
-    IDS_IRC_HASPARTED       "* %s elhagyta %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s ki lett rúgva %s által (%s)"
-    IDS_IRC_HASQUIT         "* %s kilépett (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s most már %s lett"
-    IDS_IRC_SETSMODE        "* %s operátorkodik: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Némely beállítás még nem teljesen támogatott. Hagyd el a szobát és lépj be újra, hogy a becenevek listája frissüljön..."
-    IDS_IRC_CHANNEL         "Szoba"
-    IDS_IRC_NICK            "Becenév"
-    IDS_IRC_SEND            "Küldés"
-    IDS_IRC_NAME            "Név"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION jól pofánvágja %s gyereket egy bazinagy furkósbottal!\001"
-    IDS_IRC_ADDTIMESTAMP    "Időbélyeg használata"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Szobalista szűrő használata"
     IDS_IRC_PERFORM         "Végrehajtás"
-    IDS_IRC_USEPERFORM      "Kapcsolódás után automatikusan hajtsa végre"
     IDS_IRC_ADDTOFRIENDLIST "Barátok hozzáadása"
-    IDS_IRC_LOADCHANNELLISTONCON "Kapcsolódáskor szobalista letöltése"
-    IDS_IRC_ADDASFRIEND     "hozzáadott barátaihoz!"
     IDS_PW_WARNING          "Az a szám amit megadtál (""%s"") nagyobb, mint amit az Operációs Rendszered támogatni képes:  %u\nEttől a rendszered instabillá válhat.\n\nBiztos vagy benne, hogy ezt akarod?"
     IDS_TAKEOVER            "Átvesz"
     IDS_CLEANUP             "Takarítás"
     IDS_RENAME              "Átnevez"
-    IDS_IRC_ADDLINKTOIRC    "IRC vágólapra másolás, így bemásolhatom majd a barátaimnak."
-    IDS_IRC_SENDLINK        "Ajánld barátaidnak is: "
-    IDS_IRC_RECIEVEDLINK    "%s elküldve (%s) automatikusan elindítva."
-    IDS_IRC_ACCEPTLINKS     "ED2K hivatkozások fogadása IRC-en. (Légy óvatos!)"
     IDS_SHARED              "Megosztva"
     IDS_DOWNLOADED          "Letöltve"
 END
@@ -803,7 +770,6 @@ BEGIN
     IDS_PW_MINREC           "ajánlott legalább \t%u "
     IDS_PW_UA               "Korlátlan sebesség (fel/le)"
     IDS_PW_PA               "Sebesség növelése (fel/le)"
-    IDS_IRC_IGNOREINFOMESSAGE "Infó üzenetek szűrése"
     IDS_CONNECTIONLOST      "Kapcsolat megszakadt"
     IDS_WIZ_OS_FRAME        "Operációs rendszer"
     IDS_HASHINGFILE         "Fájl hash-elése:"
@@ -850,8 +816,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Maximális letöltési arány (most): %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "eMule baráthozzáadás üzenetek mellőzése"
     IDS_PW_FASTSRVCON       "Biztonságos kapcsolódás."
     IDS_SOURCELINKFAILED    "Érvényes forráshivatkozáshoz magas azonosító (HighID) kell"
     IDS_ERR_LOADSERVERMET   "Nem sikerült letölteni: server.met"
@@ -914,7 +878,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "eMule Proto üzenetek tiltása"
     IDS_SMARTLOWIDCHECK     "Kapcsolódáskor alacsony azonosító ellenőrzése"
     IDS_SF_SRVOCC           "Kiszolgáló foglaltsága: %.2f%%"
     IDS_3DDEP               "Folyamatmutató (hőmérő)"
@@ -933,8 +896,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' fájlhoz megjegyzés érkezett: %s"
     IDS_WEBSERVICES         "Webszolgáltatások"
     IDS_WEBSVEDIT           "Webszolgáltatás módosítása"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "eMule hivatkozásküldés üzenetek mellőzése"
     IDS_CHECK4UPDATE        "Új verzió keresése"
     IDS_STARTUP             "Indításkor"
     IDS_NEWVERSIONAVL       "Új eMule verzió érhető el! Látogass el a honlapra tovább információért."
@@ -1328,9 +1289,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dátum"
     IDS_FILEINFORMATION     "Fájlinformáció"
     IDS_STATS_FREESPACE     "Szabad hely"
-    IDS_IRC_HELPCHANNEL     "Csatlakozás a segélykérő szobához."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-hungarian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Csak barátoktól."
     IDS_COMPLSOURCES        "Források befejezése"
     IDS_CHECKNOENDTIME      "nincs vége"
     IDS_FD_DOWNLOADSTARTED  "Letöltés hozzáadva:"
@@ -1494,9 +1452,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Jelenleg nem kapcsolódsz a Kad Hálózathoz!"
-    IDS_IRC_NOSFS           "Nincsenek kijelölve megosztott fájlok"
     IDS_RESETLABEL          "Automatikus kiegészítés (előzmények)"
-    IDS_IRC_IGNOREMISCMESSAGE "Egyéb infoüzenetek mellőzése"
     IDS_KNOWN               "Ismert"
     IDS_KADCONTACTSREAD     "%u partner beolvasása fájlból."
     IDS_ERR_KADCONTACTS     "Nem találtam partnert, kérlek bootstrap-elj vagy tölts le egy nodes.dat fájlt."
@@ -1537,7 +1493,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "csak azonos kategóriában"
     IDS_LOG_ULDL_EVENTS     "Fel/letöltések naplózása"
 //    IDS_PEERCACHE_ENABLED   "Az internetszolgáltatód támogatja a PeerCache-t, engedélyezem a gyorsítótáras letöltést!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Megengedem a felhasználónak hogy barátnak felvegyen."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Az előnézethez szükséges részeket töltse le hamarébb"
 END
 
@@ -1650,8 +1605,6 @@ BEGIN
     IDS_SOURCECLIENT        "Forráskliens"
     IDS_USERSIP             "Felhasználók IP-je"
     IDS_FEATURES            "Tulajdonságok"
-    IDS_IRC_NEWNICK         "Válassz egy IRC becenevet"
-    IDS_IRC_NEWNICKDESC     "Egy szóból állhat, 20 betűnél legyen rövidebb, ezeket használhatod: (A-Z, 0-9). Megváltoztatni később a Beállítások->Irc-ben lehet."
 END
 
 STRINGTABLE

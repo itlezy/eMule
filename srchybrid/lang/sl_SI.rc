@@ -392,7 +392,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&IRC" //!
     IDS_SW_RESULT           "Rezultati iskanja"
     IDS_SW_DOWNLOAD         "Prenesi izbrane"
     IDS_SV_SERVERLIST       "Seznam strežnikov"
@@ -659,9 +658,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Povezave eD2K"
     IDS_RECONNECT           "Samodejen poskus povezovanja s strežnikom se bo izvedel čez %u sekund"
     IDS_SERVERADDED         "Dodan strežnik: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignoriraj sporočila ob prijavi"
     IDS_STATS_SUCCUPCOUNT   "Skupno št. uspelih prenosov gor: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignoriraj sporočila ob odjavi"
     IDS_STATS_FAILUPCOUNT   "Skupno št. neuspelih prenosov gor: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Povprečen čas prenosov gor: %s"
     IDS_SEARCHMINSIZE       "Min. velikost [MB]"
@@ -682,9 +679,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Čas za graf trenutnega povprečja: %u min"
     IDS_GRAPHS              "Grafi"
     IDS_STREE               "Statistično drevo"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignoriraj sporočila ob odhodu"
     IDS_STATSSETUPINFO      "Statistika"
-    IDS_IRC_SOUNDEVENTS     "Predvajaj zvočne efekte"
 END
 
 STRINGTABLE
@@ -728,50 +723,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Zmogljivost"
-    IDS_IRC_PRIVATECHANSTART "* Začetek zasebne pogovorne seje"
-    IDS_IRC_SLAPMSG         "* %s udari %s z veliko mastno in debelo ribico!"
-    IDS_IRC_PRIVMESSAGE     "Zasebno sporočilo"
-    IDS_IRC_KICK            "Vrzi ven"
-    IDS_IRC_SLAP            "Udari"
-    IDS_IRC_JOIN            "Pridruži se"
-    IDS_IRC_CHANNELLIST     "Seznam kanalov"
     IDS_IRC_CONNECT         "Poveži"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Prekini povezavo"
-    IDS_IRC_HASJOINED       "* %s se je pridružil %s"
-    IDS_IRC_HASPARTED       "* %s je odšel z %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s je vrgel ven %s (%s)"
-    IDS_IRC_HASQUIT         "* %s je zapustil IRC (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s se je preimenoval v %s"
-    IDS_IRC_SETSMODE        "* %s je nastavil: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Kanal ne podpira nekaterih načinov, ki so nastavljeni. Obstaja možnost, da boste za posodobitev seznama vzdevkov morali zapustiti kanal in se ponovno pridružiti."
-    IDS_IRC_CHANNEL         "Kanal"
-    IDS_IRC_NICK            "Vzdevek"
-    IDS_IRC_SEND            "Pošlji"
-    IDS_IRC_NAME            "Ime"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION udari %s z veliko mastno in debelo ribico!\001"
-    IDS_IRC_ADDTIMESTAMP    "Sporočilom dodaj časovni žig"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Filtriraj seznam kanalov"
     IDS_IRC_PERFORM         "Dodatni ukazi"
-    IDS_IRC_USEPERFORM      "Ob povezavi izvedi naslednje ukaze:"
     IDS_IRC_ADDTOFRIENDLIST "Dodaj med prijatelje"
-    IDS_IRC_LOADCHANNELLISTONCON "Ob priklopu naloži seznam kanalov"
-    IDS_IRC_ADDASFRIEND     "vas je dodal med prijatelje!"
     IDS_PW_WARNING          "Število, ki ste ga izbrali za ""%s"" je večje kot ga podpira vaš sistem:  %u\nTo lahko povzroči nestabilnost sistema.\n\nSte prepričani da želite nadaljevati?"
     IDS_TAKEOVER            "Prevzemi"
     IDS_CLEANUP             "Počisti"
     IDS_RENAME              "Preimenuj"
-    IDS_IRC_ADDLINKTOIRC    "Dodaj v odložišče IRC-a."
-    IDS_IRC_SENDLINK        "Pošlji prijatelju: "
-    IDS_IRC_RECIEVEDLINK    "%s je poslal (%s)."
-    IDS_IRC_ACCEPTLINKS     "Sprejmi eD2K povezave iz IRC-a (Previdno!)"
     IDS_SHARED              "Deljeno"
     IDS_DOWNLOADED          "Preneseno"
 END
@@ -801,7 +768,6 @@ BEGIN
     IDS_PW_MINREC           "Min. priporočeno\t%u "
     IDS_PW_UA               "Hitrost gor/dol na maks."
     IDS_PW_PA               "Zmanjšaj hitrost gor/dol"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignoriraj informativna sporočila"
     IDS_CONNECTIONLOST      "Povezava zgubljena"
     IDS_WIZ_OS_FRAME        "Operacijski sistem"
     IDS_HASHINGFILE         "Ustvarjanje hasha za datoteko:"
@@ -910,7 +876,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignoriraj sporočila protokola eMule"
     IDS_SMARTLOWIDCHECK     "Uporabi preverjanje za Nizek ID ob povezavi"
     IDS_SF_SRVOCC           "Zasedenost strežnika: %.2f%%"
     IDS_3DDEP               "Slog vrstice napredka"
@@ -1318,9 +1283,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Datumi"
     IDS_FILEINFORMATION     "Info. o datoteki"
     IDS_STATS_FREESPACE     "Prazen prostor na disku"
-    IDS_IRC_HELPCHANNEL     "Poveži s kanalom za pomoč"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-slovenian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Samo od prijateljev"
     IDS_COMPLSOURCES        "Celotnih virov"
     IDS_CHECKNOENDTIME      "Ni končnega časa"
     IDS_FD_DOWNLOADSTARTED  "Prenos dodan:"
@@ -1483,9 +1445,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Trenutno niste povezani v Kad omrežje!"
-    IDS_IRC_NOSFS           "Izbrana ni nobena deljena datoteka"
     IDS_RESETLABEL          "Samodejno dopolnjevanje (funkcija zgodovine)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignoriraj razna info. sporočila"
     IDS_KNOWN               "Znano"
     IDS_KADCONTACTSREAD     "Prebranih %u kontaktov iz datoteke."
     IDS_ERR_KADCONTACTS     "Ni najdenih kontaktov. Prosim, naložite vozlišča od znanih odjemalcev ali pa iz spleta prenesite datoteko nodes.dat."
@@ -1526,7 +1486,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "samo v isti kategoriji"
     IDS_LOG_ULDL_EVENTS     "Beleži dogodke prenosov gor/dol"
 //    IDS_PEERCACHE_ENABLED   "Vaš ponudnik interneta podpira PeerCache tehnologijo, omogočanje prenosov iz predpomnilnika!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Dovolite uporabnikom, da vas dodajo na seznam prijateljev."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Najprej prenesi dele, ki so potrebni za predogled"
 END
 
@@ -1639,8 +1598,6 @@ BEGIN
     IDS_SOURCECLIENT        "Odjemalec vira"
     IDS_USERSIP             "IP uporabnika"
     IDS_FEATURES            "Značilnosti"
-    IDS_IRC_NEWNICK         "Izberi vzdevek za IRC."
-    IDS_IRC_NEWNICKDESC     "Vzdevek mora biti ena beseda, z manj kot 20 znaki in vsebovati (A-Z, 0-9). Vzdevek lahko spremenite v Nastavitve->IRC."
 END
 
 STRINGTABLE
@@ -1845,10 +1802,6 @@ BEGIN
     IDS_OPTIONS             "Nastavitve"
     IDS_ERR_FAILEDTOLOAD    "Ni bilo mogoče naložiti %s: %s "
     IDS_RUNNINGRESTRICTED   "eMule teče v načinu z nizkimi pravicami"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignoriraj sporočila protokola eMule za dodajanje prijatelja"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignoriraj sporočila protokola eMule za pošiljanje povezav"
     IDS_DL_ACTIVE_TIME      "Čas prenosa"
     IDS_ERR_BADFOLDER       "Neveljavna mapa.\nNi mogoče ustvariti mape. Prosim, preverite ime in lokacijo."
     IDS_ARCHPREV_ATTRIBINFO "Atributi datoteke lahko vsebujejo:\r\n\r\nP\tdatoteka je zaščitena z geslom\r\nD\tje mapa\r\nC\tKomentar\r\nLx\tStopnja kompresije x\r\nM\tkompresirani podatki še niso v celoti preneseni\r\n<\tdatoteka se nadaljuje iz prejšnjega nosilca\r\n>\tdatoteka se nadaljuje na naslednjem nosilcu\r\n"

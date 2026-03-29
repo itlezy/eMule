@@ -452,7 +452,6 @@ BEGIN
     IDS_SW_LINK             "لينكهاي ايدانكي"
     IDS_SW_START            "شروع"
     IDS_SCHEDULER           "زمان بندي"
-    IDS_IRC                 "&سرويس چت"
     IDS_SW_RESULT           "نتيجه جستجو"
     IDS_SW_DOWNLOAD         "دانلود"
     IDS_SV_SERVERLIST       "سرويس دهنده ها"
@@ -725,9 +724,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "بطور خودكار به سرويس دهنده  وصل ميشود و سعي دوباره ميكند در %u ثانيه ديگر"
     IDS_SERVERADDED         "سرويس دهنده  اضافه شد: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "پيغام هاي دعوت را ناديده بگير"
     IDS_STATS_SUCCUPCOUNT   "مجموع آپلود هاي موفقيت آميز اين دوره: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "پيغام هاي درباره اطلاعات قسمتها را ناديده بگير"
     IDS_STATS_FAILUPCOUNT   "مجموع خطاهاي آپلودهاي اين دوره: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "ميانگين مدت زمان آپلود: %s"
     IDS_SEARCHMINSIZE       "كمترين. حجم [MB]"
@@ -748,9 +745,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "مدت زمان براي ميانگين گرفتن نمودارها: %u دقيقه"
     IDS_GRAPHS              "نمودارها"
     IDS_STREE               "شاخه هاي آمار و ارقام"
-    IDS_IRC_IGNOREQUITMESSAGE "پيغام هاي اطلاعاتي رها شده را ناديده بگير"
     IDS_STATSSETUPINFO      "آمارها"
-    IDS_IRC_SOUNDEVENTS     "پخش صدا بر روي اتفاقات"
     IDS_HARDLIMIT           "بيشترين حد منبع"
     IDS_COL_MORECOLORS      "بيشتر..."
     IDS_TOOMANYCONNS        "اتصالات  خيلي بيشتر از حد رفته  "
@@ -776,13 +771,11 @@ BEGIN
     IDS_IP_HITS             "برخوردها"
     IDS_IP_RULES            "IP فيلتر:"
     IDS_ERR_NOTCONNECTEDKAD "شما به شبكه اتصال كاربر به كاربر(كد)متصل نشديد Kad!"
-    IDS_IRC_NOSFS           "هيچ فايل اشتراكي انتخاب نشده"
     IDS_RESETLABEL          "بصورت خودكار كلمات جستجو شده قبلي را بياد آور (عمليات استفاده از تاريخچه)َ"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "پيغام هاي مخلوط شده را ناديده بگير"
     IDS_KNOWN               "آشنا"
     IDS_KADCONTACTSREAD     "بخوان %u تماس ها را از فايل"
     IDS_ERR_KADCONTACTS     "تماسي پيدا نشد, لطفا بصورت خودكار راه اندازي را فعال كنيد, يا دانلود كنيد nodes.dat اين فايل را"
@@ -809,7 +802,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "پيغامهاي دستوري ايمول را ناديده بگير"
     IDS_SMARTLOWIDCHECK     "از عمليات تست کاربر سطح پايين براي اتصال به سرور استفاده كن"
     IDS_SF_SRVOCC           "اشغال بودن سرويس دهنده : %.2f%%"
     IDS_3DDEP               "تغيير رنگ نمودار وضعيت"
@@ -846,35 +838,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "زمان پايين رفتن پاپ آپ"
     IDS_TBN_NEWCHATMSG      "پيغام از طرف"
     IDS_PW_CON_CAPFRM       "مقدار پهناي باند"
-    IDS_IRC_PRIVATECHANSTART "* گفتگوي خصوصي آغاز شد"
-    IDS_IRC_SLAPMSG         "* %s در زدن %s كسي هست!َ"
-    IDS_IRC_PRIVMESSAGE     "پيغام خصوصي"
     IDS_WEB_REMOTE_LINK_ADDED "لينك اضافه شد: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "لينك اضافه نشد.رمز عبور اشتباه است."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "در ابتدا قسمتهايي از فايل را كه براي پيش نمايش لازم است دانلود كن"
-    IDS_IRC_KICK            "بيرون انداختن"
-    IDS_IRC_SLAP            "چَك ميخواي!؟"
-    IDS_IRC_JOIN            "پيوستن"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "ليست كانال ها"
     IDS_IRC_CONNECT         "اتصال"
     IDS_IRC_DISCONNECT      "قطع اتصال"
-    IDS_IRC_HASJOINED       "* %s پيوست %s"
-    IDS_IRC_HASPARTED       "* %s جدا شد %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s بيرون انداخته شد توسط %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "دانلود ها را به ترتيب الفبا بچين"
-    IDS_IRC_HASQUIT         "* %s خارج شد (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s الان با اين نام شناخته مي شود %s"
-    IDS_IRC_SETSMODE        "* %s تنظيم حالت: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** بعضي از حالتهاي تنظيم هنوز پشتيباني نمي شوند. شما براي گرفتن نام هاي مستعار جديد بايد اين ليست را ترك كنيد  و دوباره وارد شويد ..َ"
-    IDS_IRC_CHANNEL         "كانال"
-    IDS_IRC_NICK            "نام مستعار"
-    IDS_IRC_SEND            "فرستادن"
-    IDS_IRC_NAME            "نام"
-    IDS_IRC_SLAPMSGSEND     "كسي كه پيغام شخصي فرستاد %s :\001ACTION چك خورد %s خارج شد بخاطر فرا قانوني عمل كردن!\001"
 END
 
 STRINGTABLE
@@ -897,7 +870,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "فقط در قفسه دسته بندي شده يكسان"
     IDS_LOG_ULDL_EVENTS     "گزارش  آپلود/دانلود تغييرات"
 //    IDS_PEERCACHE_ENABLED   "آي اس پي شما فضاي نگهداري موقت در سرويس دهنده ها را پشتيباني ميكند, در حال فعال كردن فضاي موقتي سرويس دهنده ها!َ"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "به كاربران ديگر اجازه بده كه تو را به عنوان دوست به ليست خود اضافه كنند."
     IDS_SOURCESWAPBLOCKED   "از مبادله جلوگيري شد"
     IDS_TRICKLING           "آماده باش"
     IDS_A4AF_CHECK_THIS_NOW "اين منبع را همين الان چك كن (رفع اشكال)َ"
@@ -911,21 +883,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "بر چسب تعيين زمان را به پيغام بزن"
-    IDS_IRC_USEFILTER       " در ليست كانال ها از فيلتر استفاده كن "
     IDS_IRC_PERFORM         "اجرا كردن"
-    IDS_IRC_USEPERFORM      "از رشته هاي اجرايي براي اتصال استفاده كن"
     IDS_IRC_ADDTOFRIENDLIST "به ليست دوستانم اضافه كن"
-    IDS_IRC_LOADCHANNELLISTONCON "ليست كانال هاي سرويس دهنده(سرور)را هنگام اتصال بارگذاري كن"
-    IDS_IRC_ADDASFRIEND     "شما به عنوان دوست انتخاب شديد!"
     IDS_PW_WARNING          "عددي كه شما انتخاب كرديد ""%s"" بزرگ تر از آن هست كه سيستم عامل شما پشتيباني ميكند:  %u\nاين باعث ميشود كه سيستم شما بي ثبات شود.\n\nآيا شما مي خواهيد اين كار را انجام دهيد؟"
     IDS_TAKEOVER            "بيشتر برو"
     IDS_CLEANUP             "پاك كردن"
     IDS_RENAME              "نام گذاري مجدد"
-    IDS_IRC_ADDLINKTOIRC    "به پنجره اعلانات (کليپ بورد)صفحه گپ و گفتگو اضافه شود"
-    IDS_IRC_SENDLINK        "اينو بفرست براي دوستت: "
-    IDS_IRC_RECIEVEDLINK    "%s فرستاده شد (%s) تا اينكه دوباره آغاز بشه."
-    IDS_IRC_ACCEPTLINKS     "پذيرفتن لينكهاي ايدانكي در  چت عمومي (با احتياط استفاده كنيد!)َ"
     IDS_SHARED              "اشتراكي"
 END
 
@@ -955,7 +918,6 @@ BEGIN
     IDS_PW_MINREC           "كمترين تنظيم پيشنهادي\t%u "
     IDS_PW_UA               "بطور كامل  آپلود/دانلود-سرعت"
     IDS_PW_PA               "بطور متوسط  آپلود/دانلود-سرعت"
-    IDS_IRC_IGNOREINFOMESSAGE "پيغام هاي حاوي اطلاعات بي اهميت را ناديده بگير"
     IDS_CONNECTIONLOST      "اتصال قطع شد"
     IDS_WIZ_OS_FRAME        "سيستم عامل"
     IDS_HASHINGFILE         "فايل در حال كد گذاري:"
@@ -998,8 +960,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(ورودي كمتر از)"
     IDS_STATS_MAXAVGDL      "ميانگين بالاترين سرعت دريافتي: %s"
     IDS_STATS_MAXDL         "بالاترين سرعت دريافتي: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "ايمول پيغام هاي درخواست دوستي را ناديده بگيرد "
     IDS_PW_FASTSRVCON       "اتصال مطمئن"
     IDS_SOURCELINKFAILED    "شما براي ساختن يك منبع لينك صحيح بايد يك كاربر سطح بالا (هاي آي دي)باشيد"
     IDS_ERR_LOADSERVERMET   "نمي توان اين فايل را بارگذاري كرد server.met!"
@@ -1061,8 +1021,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "توضيحات درباره فايل '%s' دريافت شده: %s"
     IDS_WEBSERVICES         "&سرويس وب"
     IDS_WEBSVEDIT           "ويرايش سرويس وب...َ"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "ايمول پيغام هاي دستوري كه در آنها لينك فرستاده شده را ناديده بگيرد"
     IDS_CHECK4UPDATE        "چک کردن براي نسخه جديد"
     IDS_STARTUP             "شروع به كار"
     IDS_NEWVERSIONAVL       "يك نسخه جديد از ايمول موجود است! به سايت اصلي ايمول براي جزئيات بيشتر مراجعه كنيد.َ"
@@ -1431,9 +1389,6 @@ BEGIN
     IDS_FD_TIMEDATE         "تاريخ ها"
     IDS_FILEINFORMATION     "اطلاعات فايل"
     IDS_STATS_FREESPACE     "فضاي آزاد"
-    IDS_IRC_HELPCHANNEL     "متصل شدن به پنل راهنما"
-    IDS_IRC_HELPCHANNELPERFORM "/پيوستن #ايمول | /پيوستن #ايمول-انگليسي"
-    IDS_IRC_ACCEPTLINKSFRIENDS "فقط از دوستان"
     IDS_COMPLSOURCES        "منابع کامل شده"
     IDS_CHECKNOENDTIME      "بدون محدوديت"
 END
@@ -1669,8 +1624,6 @@ BEGIN
     IDS_SOURCECLIENT        "منبع کلاينت"
     IDS_USERSIP             "کاربران IP"
     IDS_FEATURES            "خصوصيات"
-    IDS_IRC_NEWNICK         "انتخاب کنيد. IRC  يک اسم مستعار "
-    IDS_IRC_NEWNICKDESC     " باشد.(A-Z, 0-9)بايد يک کلمه کمتر از 20 کاراکتر شامل.تغيير کند Preferences->Irc ميتواند در"
     IDS_SPARSEPARTFILES     "('sparse')فايل هاي جديد قسمتي به صورت پراکنده ايجاد کنيد(NTFS فقط)"
     IDS_ASPECTRATIO         "نسبت اندازه تصوير"
     IDS_NEGATEFILTER        "فيلتر معکوس"

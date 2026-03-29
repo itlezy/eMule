@@ -441,7 +441,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&IRC"
     IDS_SW_RESULT           "Resultaos de la busca"
     IDS_SW_DOWNLOAD         "Descargar"
     IDS_SV_SERVERLIST       "Llista de servidores"
@@ -708,9 +707,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Enllaces eD2K"
     IDS_RECONNECT           "Intentaráse la conexón automática al servidor en %u segundos"
     IDS_SERVERADDED         "Servidor añedíu: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Inorar mensaxes d’información d’Unión"
     IDS_STATS_SUCCUPCOUNT   "Total de subíes satisfactories: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Inorar mensaxes d’información de Partes"
     IDS_STATS_FAILUPCOUNT   "Total de subíes errónees: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Tiempu mediu de subida: %s"
     IDS_SEARCHMINSIZE       "Tamañu mín. [MB]"
@@ -731,17 +728,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Tiempu de promediu del gráficu: %u minutos"
     IDS_GRAPHS              "Gráfiques"
     IDS_STREE               "Árbol d’estadístiques"
-    IDS_IRC_IGNOREQUITMESSAGE "Inorar mensaxes d’información al colar"
     IDS_STATSSETUPINFO      "Estadístiques"
-    IDS_IRC_SOUNDEVENTS     "Reproducir soníu n’eventos"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "¡Agora mesmo nun tas conectáu a la rede Kademlia!"
-    IDS_IRC_NOSFS           "Nengún archivu compartíu seleccionáu"
     IDS_RESETLABEL          "Auto-completar (función rexistru)"
-    IDS_IRC_IGNOREMISCMESSAGE "Inorar otros mensaxes d’información"
     IDS_KNOWN               "Conocío"
     IDS_KADCONTACTSREAD     "Lleíos %u contautos d’archivu."
     IDS_ERR_KADCONTACTS     "Nun s’alcontraron contactos, Autoarranca, ó, descarga un archivu nodes.dat."
@@ -794,16 +787,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Capacidá"
-    IDS_IRC_PRIVATECHANSTART "* Entamóse la sesión de chat privada"
-	IDS_IRC_SLAPMSG         "* %s da una xostrada a %s around with a large Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "Mensaxe priváu"
     IDS_WEB_REMOTE_LINK_ADDED "Enllaz añedíu: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Enllaz non añedíu. Contraseña incorrecta."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Baxar delles partes necesita una prevista"
-    IDS_IRC_KICK            "Zapatiar"
-    IDS_IRC_SLAP            "Xostrada"
-    IDS_IRC_JOIN            "Xunise"
-    IDS_IRC_CHANNELLIST     "Llista de canales"
     IDS_IRC_CONNECT         "Conectar"
 END
 
@@ -814,7 +800,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Namás na mesma categoría"
     IDS_LOG_ULDL_EVENTS     "Rexistrar eventos de subida/baxada"
 //    IDS_PEERCACHE_ENABLED   "El to proveedor d’accesu a Internet (ISP) soporta PeerCache, caché habilitáu!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Permitir al usuariu añedite como collaciu."
     IDS_SOURCESWAPBLOCKED   "Intercambiu bloqueáu"
     IDS_TRICKLING           "Aguardando"
     IDS_A4AF_CHECK_THIS_NOW "Comprobar esta fonte agora (debug)"
@@ -825,38 +810,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Desconectar"
-    IDS_IRC_HASJOINED       "* %s unióse %s"
-    IDS_IRC_HASPARTED       "* %s coló %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s desanicióse por %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Descargar n’orde alfabéticu"
-    IDS_IRC_HASQUIT         "* %s coló (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s agora ye %s"
-    IDS_IRC_SETSMODE        "* %s pon mou: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Dellos moos que seleccionasti inda nun tan soportaos. Quiciabes necesites colar y reentrar na canal p’actualizar la llista de nicks."
-    IDS_IRC_CHANNEL         "Canal"
-    IDS_IRC_NICK            "Usuariu"
-    IDS_IRC_SEND            "Unviar"
-    IDS_IRC_NAME            "Nome"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION da una xostrada a %s around with a large Babelfish!\001"
-    IDS_IRC_ADDTIMESTAMP    "Añedir data/hora nos mensaxes"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Emplegar filtru Llista de canales"
     IDS_IRC_PERFORM         "Al conectar"
-    IDS_IRC_USEPERFORM      "Emplegar cadena personalizada"
     IDS_IRC_ADDTOFRIENDLIST "Añedir a la llista de collacios"
-    IDS_IRC_LOADCHANNELLISTONCON "Cargar llista de canales al conectar"
-    IDS_IRC_ADDASFRIEND     "¡añedíu como collaciu!"
     IDS_PW_WARNING          "El númberu que seleccionasti pa ""%s"" ye mayor que’l que soporta’l OS:  %u\nEsto pue causar inestabilidá nel sistema.\n\n¿De xuru que lo quies facer?"
     IDS_TAKEOVER            "Coyer"
     IDS_CLEANUP             "Llimpiar"
     IDS_RENAME              "Renomar"
-    IDS_IRC_ADDLINKTOIRC    "Añedir al portapapeles del IRC pa unviar a collacios"
-    IDS_IRC_SENDLINK        "Unviar esto a un collaciu: "
-    IDS_IRC_RECIEVEDLINK    "%s unviáu (%s) pa qu’entame automáticamente."
-    IDS_IRC_ACCEPTLINKS     "Aceptar enllaces n’IRC (¡Emplegar con procuru!)"
     IDS_SHARED              "Compartío"
     IDS_DOWNLOADED          "Descargao"
 END
@@ -886,7 +850,6 @@ BEGIN
     IDS_PW_MINREC           "Mínimu recomendáu\t%u "
     IDS_PW_UA               "Velocidá máxima de subida/baxada"
     IDS_PW_PA               "Velocidá mínima de subida/baxada"
-    IDS_IRC_IGNOREINFOMESSAGE "Inorar mensaxes d’información"
     IDS_CONNECTIONLOST      "Conexón perdida"
     IDS_WIZ_OS_FRAME        "Sistema operativu"
     IDS_HASHINGFILE         "Codificando hash d’archivu:"
@@ -933,8 +896,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Baxada máxima: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Inorar mensaxes del collaciu añedíu d’eMule"
     IDS_PW_FASTSRVCON       "Conexón segura"
     IDS_SOURCELINKFAILED    "Necesites una ID alta pa crear un enllaz de fonte válidu"
     IDS_ERR_LOADSERVERMET   "Error al cargar server.met!"
@@ -997,7 +958,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Inorar mensaxes de protocolu d’eMule"
     IDS_SMARTLOWIDCHECK     "Control intelixente de LowID al conectar"
     IDS_SF_SRVOCC           "Ocupación de servidores: %.2f%%"
     IDS_3DDEP               "Estilu de la barra progresu"
@@ -1016,8 +976,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descripción pal archivu '%s' recibíu: %s"
     IDS_WEBSERVICES         "Servicios &Web"
     IDS_WEBSVEDIT           "Editar servicios web"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Inorar mensaxes unviar enllaz d’eMule"
     IDS_CHECK4UPDATE        "Comprobar si hai una nueva versión"
     IDS_STARTUP             "Al entamar"
     IDS_NEWVERSIONAVL       "¡Una nueva versión d’eMule ta disponible! Pa más información visita la web d’emule-project."
@@ -1401,9 +1359,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dates"
     IDS_FILEINFORMATION     "Información d’archivu"
     IDS_STATS_FREESPACE     "Espaciu llibre"
-    IDS_IRC_HELPCHANNEL     "Conectase a la canal d’ayuda"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-english"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Namás de collacios"
     IDS_COMPLSOURCES        "Fontes completes"
     IDS_CHECKNOENDTIME      "Ensin caducidá"
     IDS_FD_DOWNLOADSTARTED  "Descarga añedida:"
@@ -1675,8 +1630,6 @@ BEGIN
     IDS_SOURCECLIENT        "Fonte veceru"
     IDS_USERSIP             "IP usuariu"
     IDS_FEATURES            "Característiques"
-    IDS_IRC_NEWNICK         "Seleccionar un nomatu IRC."
-    IDS_IRC_NEWNICKDESC     "Habría ser una pallabra que caltenga menos de 20 caracteres (A-Z, 0-9). Esto pue camudase otra vegada en Preferencies ->Irc."
 END
 
 STRINGTABLE

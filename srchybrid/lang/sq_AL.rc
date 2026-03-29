@@ -441,7 +441,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&IRC"//!
     IDS_SW_RESULT           "Rezultate"
     IDS_SW_DOWNLOAD         "Shkarkoje..."
     IDS_SV_SERVERLIST       "Serverat"
@@ -708,9 +707,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Linku eD2K"
     IDS_RECONNECT           "Lidhja automatike në server do të kryhet për %u sekonda"
     IDS_SERVERADDED         "Serveri i shtuar: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Përbuz mesazhet mbi informacionin Anëtarësues"
     IDS_STATS_SUCCUPCOUNT   "Sesione totale të ngarkimeve me sukses: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Përbuz mesazhet mbi informacionin e Pjesës"
     IDS_STATS_FAILUPCOUNT   "Sesione totale të ngarkimeve me dështim: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Koha mesatare e ngarkimit: %s"
     IDS_SEARCHMINSIZE       "Përmasë min. [MB]"
@@ -731,17 +728,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Kohë mesatare e grafikut: %u min"
     IDS_GRAPHS              "Grafikët"
     IDS_STREE               "Pemë statistikore"
-    IDS_IRC_IGNOREQUITMESSAGE "Përbuz mesazhet informuese të daljes"
     IDS_STATSSETUPINFO      "Statistikë"
-    IDS_IRC_SOUNDEVENTS     "Tingëllo gjatë ngjarjeve"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Nuk jeni i lidhur në rrjetin Kad!"
-    IDS_IRC_NOSFS           "Nuk u zgjodh asnjë Skedë e Shpërndarë"
     IDS_RESETLABEL          "Autoplotësimi (funksion historik)"
-    IDS_IRC_IGNOREMISCMESSAGE "Përbuz mesazhet informuese të përziera"
     IDS_KNOWN               "Njohur"
     IDS_KADCONTACTSREAD     "Nga skeda lexohen %u kontakte."
     IDS_ERR_KADCONTACTS     "Nuk gjetët asnjë kontakt. Ju lutemi mpriheni nisjen ose shkarkoni skedën 'nodes.dat'."
@@ -794,16 +787,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapacitete"
-    IDS_IRC_PRIVATECHANSTART "* Filloi sesioni i chat-it privat"
-    IDS_IRC_SLAPMSG         "* %s dacka %s aneqark me një Rrëmujaxhi të stërmadh!"
-    IDS_IRC_PRIVMESSAGE     "Mesazh Privat"
     IDS_WEB_REMOTE_LINK_ADDED "U shtua linku: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Linku nuk u shtua. Fjalëkalimi i gabuar."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Shkarko më përpara pjesët që nevojiten për parashikim"
-    IDS_IRC_KICK            "Shkelm"
-    IDS_IRC_SLAP            "Dackë"
-    IDS_IRC_JOIN            "HYR"
-    IDS_IRC_CHANNELLIST     "Listë e kanaleve"
     IDS_IRC_CONNECT         "Lidhu"
 END
 
@@ -814,7 +800,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Vetëm në të njëjtën kategori"
     IDS_LOG_ULDL_EVENTS     "Trego ngjarje mbi ngarkesën/shkarkesën"
 //    IDS_PEERCACHE_ENABLED   "ISPja juaj e përkrah teknologjinë 'PeerCache', merret leje shkarkimi nga depo e fshehtë!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Lejo përdoruesin që t'ju shtojë si shok"
     IDS_SOURCESWAPBLOCKED   "Tramba u bllokua"
     IDS_TRICKLING           "Në mbështetje"
     IDS_A4AF_CHECK_THIS_NOW "Verifiko tani këtë burim ('debug')"
@@ -825,38 +810,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Shkëputu"
-    IDS_IRC_HASJOINED       "* %s hyn në %s"
-    IDS_IRC_HASPARTED       "* %s merr pjesë në %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s dëbohet nga %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Shkarko Sipas Rendit Alfabetik"
-    IDS_IRC_HASQUIT         "* %s del (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s njihet si %s"
-    IDS_IRC_SETSMODE        "* %s vendoset mënyra: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Janë vënë disa mënyra që ende nuk përkrahen. Ju duhet të largoheni e të rihyni në kanal që lista e nofkave të ridatohet."
-    IDS_IRC_CHANNEL         "Kanali"
-    IDS_IRC_NICK            "Nofka"
-    IDS_IRC_SEND            "Dërgo"
-    IDS_IRC_NAME            "Emri"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION jepi dacka %s aneqark me një Rrëmujaxhi të stërmadh!\001"
-    IDS_IRC_ADDTIMESTAMP    "Shto kohën për shtypjen e mesazheve"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Përdor filtër për listën e kanalit"
     IDS_IRC_PERFORM         "Shfaqësi"
-    IDS_IRC_USEPERFORM      "Kur lidhesh, përdor një spango shfaqëse"
     IDS_IRC_ADDTOFRIENDLIST "Shto te listë e shokëve"
-    IDS_IRC_LOADCHANNELLISTONCON "Kur të lidhesh, hap një listë në kanalin e serverit"
-    IDS_IRC_ADDASFRIEND     "ju shtoi si shok!"
     IDS_PW_WARNING          "Numri që ju zgjodhët për ""%s"" është më i madh sesa ai që duron OS-ja juaj:  %u\nKjo mund ta bëjë të paqëndrueshëm sistemin tuaj.\n\nA jeni i sigurt për këtë?"
     IDS_TAKEOVER            "Merre përsipër"
     IDS_CLEANUP             "Pastro"
     IDS_RENAME              "Riemërto"
-    IDS_IRC_ADDLINKTOIRC    "Shto te Fushëkapje IRC"
-    IDS_IRC_SENDLINK        "Dërgoja këtë një shoku: "
-    IDS_IRC_RECIEVEDLINK    "%s dërgoi (%s) për t'u autonisur."
-    IDS_IRC_ACCEPTLINKS     "Prano në IRC linket eD2K (Kujdes me këtë!)"
     IDS_SHARED              "Të shpërndarë"
     IDS_DOWNLOADED          "Të shkarkuar"
 END
@@ -886,7 +850,6 @@ BEGIN
     IDS_PW_MINREC           "Minimumi i Rekomanduar\t%u "
     IDS_PW_UA               "Rrite Shpejtësinë nga Poshtë-Sipër"
     IDS_PW_PA               "Ule Shpejtësinë nga Sipër-Poshtë"
-    IDS_IRC_IGNOREINFOMESSAGE "Përbuz mesazhet informuese"
     IDS_CONNECTIONLOST      "Lidhja humbi"
     IDS_WIZ_OS_FRAME        "Sistemi Operativ"
     IDS_HASHINGFILE         "Skedë e grirë:"
@@ -933,8 +896,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Vlerë maks. e shkarkimit: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Për shtimin e shokëve"
     IDS_PW_FASTSRVCON       "Lidhje e Sigurt"
     IDS_SOURCELINKFAILED    "Ju keni nevojë për një 'HighID' që të krijoni një burim-link të vlefshëm"
     IDS_ERR_LOADSERVERMET   "Hapja e 'server.met' dështoi!"
@@ -997,7 +958,6 @@ BEGIN
     IDS_MEGA                "M"//!
     IDS_GIGA                "G"//!
     IDS_TERA                "T"//!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Përbuz mesazhet e protokollit të eMule"
     IDS_SMARTLOWIDCHECK     "Në lidhje, përdor verifikim të zgjuar 'LowID'"
     IDS_SF_SRVOCC           "Zënie e Serverit: %.2f%%"
     IDS_3DDEP               "Stili i progresit"
@@ -1016,8 +976,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Përshkrimi për skedën '%s' mori: %s"
     IDS_WEBSERVICES         "&Shërbimet e Rrjetit"
     IDS_WEBSVEDIT           "Shërbimet e Rrjetit..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Për dërgimin e linkeve"
     IDS_CHECK4UPDATE        "Verifiko versionin më të ri"
     IDS_STARTUP             "Në nisje"
     IDS_NEWVERSIONAVL       "Për eMule ka një version të ri! Për më tepër informacion verifikoni faqen kryesore të projektit."
@@ -1398,9 +1356,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Data"
     IDS_FILEINFORMATION     "Informacion mbi Skedën"
     IDS_STATS_FREESPACE     "Hapësirë e Lirë"
-    IDS_IRC_HELPCHANNEL     "Lidhu për të ndihmuar kanalin"
-    IDS_IRC_HELPCHANNELPERFORM "/hyr në #emule-english"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Vetëm shokët"
     IDS_COMPLSOURCES        "Burimet e Plota"
     IDS_CHECKNOENDTIME      "Pa kufi kohe"
     IDS_FD_DOWNLOADSTARTED  "Shtimi i shkarkesës:"
@@ -1672,8 +1627,6 @@ BEGIN
     IDS_SOURCECLIENT        "Klienti-Burim"
     IDS_USERSIP             "IP i Përdoruesve"
     IDS_FEATURES            "Veçori"
-    IDS_IRC_NEWNICK         "Zgjidheni nofkën që do përdorni në IRC"
-    IDS_IRC_NEWNICKDESC     "Fjala duhet të ketë më pak se 20 shkronja, ku futen (A-Z, 0-9). Kjo mund të ndryshohet edhe te Mundësi->Irc."
 END
 
 STRINGTABLE

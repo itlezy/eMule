@@ -451,7 +451,6 @@ BEGIN
     IDS_SW_LINK             "eD2K ئۇلىنىشى"
     IDS_SW_START            "باشلا"
     IDS_SCHEDULER           "پىلان ۋەزىپە"
-    IDS_IRC                 "&IRC" //!
     IDS_SW_RESULT           "ئىزدەش نەتىجىسى"
     IDS_SW_DOWNLOAD         "تاللىغاننى چۈشۈر"
     IDS_SV_SERVERLIST       "مۇلازىمېتىر"
@@ -724,9 +723,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "‫%u سېكۇنت ئىچىدە مۇلازىمېتىرغا ئۆزلۈكىدىن قايتا ئۇلىنىدۇ‬"
     IDS_SERVERADDED         "مۇلازىمېتىر قۇشۇلدى: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "قۇشۇش ئۇچۇرىغا پەرۋا قىلما"
     IDS_STATS_SUCCUPCOUNT   "مۇۋەپپەقىيەتلىك يوللىغان ئومۇمىي قېتىم سانى: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "بۆلەك ئۇچۇرىغا پەرۋا قىلما"
     IDS_STATS_FAILUPCOUNT   "مەغلۇپ بولغان يوللاش ئومۇمىي قېتىم سانى: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "ئوتتۇرىچە يوللاش سۈرئىتى: %s"
     IDS_SEARCHMINSIZE       "ئەڭ كىچىك ھۆججەت چوڭلۇقى [MB]"
@@ -747,9 +744,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "‫ئوتتۇرىچە ۋاقىت ئارىلىقى : %u مىنۇت‬"
     IDS_GRAPHS              "گرافىك"
     IDS_STREE               "ستاتىستىكا ئۇچۇر دەرىخى"
-    IDS_IRC_IGNOREQUITMESSAGE "چېكىنىش ئۇچۇرىغا پەرۋا قىلما"
     IDS_STATSSETUPINFO      "ستاتىستىكا"
-    IDS_IRC_SOUNDEVENTS     "ھادىسە ئاۋازىنى قوي"
     IDS_HARDLIMIT           "قاتتىق چەكلىمە"
     IDS_COL_MORECOLORS      "تېخىمۇ كۆپ…‏"
     IDS_TOOMANYCONNS        "ئۇلىنىش سانى بەك كۆپ"
@@ -775,13 +770,11 @@ BEGIN
     IDS_IP_HITS             "نىشانغا تېگىش سانى"
     IDS_IP_RULES            "‫IP سۈزگۈچ:‬"
     IDS_ERR_NOTCONNECTEDKAD "‫ھازىر Kad تورىغا ئۇلانمىغان!‬"
-    IDS_IRC_NOSFS           "ھەمبەھىر ھۆججەت تاللانمىدى"
     IDS_RESETLABEL          "ئاپتوماتىك تاماملاش(تارىخ ئىقتىدارى)‏"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "باشقا ئۇچۇرغا پەرۋا قىلما"
     IDS_KNOWN               "مەلۇملۇم"
     IDS_KADCONTACTSREAD     "‫ھۆججەتتىن %u ئالاقىلاشقۇچىنى ئوقۇ.‬"
     IDS_ERR_KADCONTACTS     "‫ئالاقىلاشقۇچى بايقالمىدى، nodes.dat ھۆججەتنى يېتەكلەڭ ياكى چۈشۈرۈڭ.‬"
@@ -808,7 +801,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "‫eMule كېلىشىم ئۇچۇرىغا پەرۋا قىلما‬"
     IDS_SMARTLOWIDCHECK     "‫ئۇلانغاندا ئەقلىي ئىقتىدارلىق LowID تەكشۈرۈشنى قوزغات‬"
     IDS_SF_SRVOCC           "مۇلازىمېتىر ئىگەللىگىنى: %.2f%%"
     IDS_3DDEP               "سۈرئەت تالچىسى ئۇسلۇبى"
@@ -845,35 +837,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "ئۇچۇر كۆرسەتمىسى"
     IDS_TBN_NEWCHATMSG      "ئۇچۇر مەنبەسى"
     IDS_PW_CON_CAPFRM       "ئىقتىدار"
-    IDS_IRC_PRIVATECHANSTART "‫* شەخسىي سۆزلىشىشنى قوزغات‬"
-    IDS_IRC_SLAPMSG         "‫* %s نى %s بىر كاچات سالدى!‬"
-    IDS_IRC_PRIVMESSAGE     "شەخسىي ئۇچۇر"
     IDS_WEB_REMOTE_LINK_ADDED "ئۇلىنىش قوشۇلدى"
     IDS_WEB_REMOTE_LINK_NOT_ADDED "ئۇلىنىش قوشۇلمىدى. ئىم خاتا"
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "ئالدىن كۆزىتىشكە تېگىشلىك ھۆججەت بولىكىنى ئالدىن چۈشۈر"
-    IDS_IRC_KICK            "تەپ"
-    IDS_IRC_SLAP            "كاچاتلا"
-    IDS_IRC_JOIN            "قوشۇل"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     " قانال تىزىملىكى"
     IDS_IRC_CONNECT         "ئۇلان"
     IDS_IRC_DISCONNECT      "ئۇلىنىشنى ئۈز"
-    IDS_IRC_HASJOINED       "* %s - %s غا كىردى"
-    IDS_IRC_HASPARTED       "* %s - %s (%s) دىن ئايرىلدى"
-    IDS_IRC_WASKICKEDBY     "* %s نى %s تېپىۋەتتى (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "ئېلىپبە تەرتىپى بويىچە چۈشۈر"
-    IDS_IRC_HASQUIT         "* %s چېكىندى (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s نامىنى %s غا ئۆزگەرتتى"
-    IDS_IRC_SETSMODE        "* %s تەڭشەك شەكلى: %s %s"
-    IDS_IRC_NOTSUPPORTED    "**  قوللىمايدىغان شەكىلگە تەڭشەلدى، ئايرىلىپ، قايتىدىن قانالغا كىرىپ تىزىملىكنى يېڭىلىشىڭىز لازىمدۇ."
-    IDS_IRC_CHANNEL         "قانال"
-    IDS_IRC_NICK            "تەخەللۇس"
-    IDS_IRC_SEND            "يوللا"
-    IDS_IRC_NAME            "نامى"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s كاچات سالدى!\001"
 END
 
 STRINGTABLE
@@ -896,7 +869,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "پەقەت ئوخشاش تۈردىلا"
     IDS_LOG_ULDL_EVENTS     "يوللاش چۈشۈرۈش ھادىسىنى خاتىرىلە"
 //    IDS_PEERCACHE_ENABLED   "‫ISP ئىنتېرنېت ئۇلىنىش مۇلازىمىتى تەمىنلىگۈچىڭىز PeerCache تېخنىكىسىنى قوللايدۇ، PeerCache نى قوزغىتىپ چۈشۈر!‬"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "باشقىلارنىڭ سىزنى دوست قاتارىغا قوشۇشىغا يول قوي"
     IDS_SOURCESWAPBLOCKED   "ئالماشتۇرۇش چەكلەندى"
     IDS_TRICKLING           "كۈتۈش"
     IDS_A4AF_CHECK_THIS_NOW "بۇ مەنبەنى دەرھال ئىزدە (debug)"
@@ -910,21 +882,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "ئۇچۇرغا ۋاقىت تامغىسى قوش"
-    IDS_IRC_USEFILTER       "قانال تىزىملىكى سۈزگۈچى ئىشلەت"
     IDS_IRC_PERFORM         "ھەرىكەت"
-    IDS_IRC_USEPERFORM      "ئۇلانغاندا ئىجرا قىلىدىغان بۇيرۇق"
     IDS_IRC_ADDTOFRIENDLIST "دوستلار تىزىملىكىگە قوش"
-    IDS_IRC_LOADCHANNELLISTONCON "ئۇلانغاندا مۇلازىمېتىر قانال تىزىملىكىنى يۈكلە"
-    IDS_IRC_ADDASFRIEND     "سىزنى دوستقا قوشۇش!‏"
     IDS_PW_WARNING          "‫سىز «%s» ئۈچۈن تاللىغان قىممەت مەشغۇلات سىستېمىسى قوللايدىغان دائىرىدىن ئېشىپ كەتتى:  %u\nبۇ سىستېمىنىڭ مۇقىمسىزلىقىنى كەلتۈرۈپ چىقىرىشى مۇمكىن.\n\nراستىنلا تەڭشەمسىز؟‬"
     IDS_TAKEOVER            "ئالماشتۇر"
     IDS_CLEANUP             "تازىلا"
     IDS_RENAME              "ئات ئۆزگەرت"
-    IDS_IRC_ADDLINKTOIRC    "‫بۇنى IRC چاپلاش تاختىسىغا قىستۇرۇپ‬"
-    IDS_IRC_SENDLINK        "دوستلارغا يوللا:"
-    IDS_IRC_RECIEVEDLINK    "‫%s يوللىسا (%s)ئۆزلۈكىدىن قوزغىلىدۇ‬"
-    IDS_IRC_ACCEPTLINKS     "‫IRC دا eD2K ئۇلىنىشىنى قوبۇل قىلىش (بۇ ئىقتىدارنى ئىشلىتىشتە ئېھتىيات قىلىڭ!)‬"
     IDS_SHARED              "ھەمبەھىر"
 END
 
@@ -954,7 +917,6 @@ BEGIN
     IDS_PW_MINREC           "ئەڭ كىچىك تەۋسىيە قىممەت \t%u "
     IDS_PW_UA               "ئەڭ چوڭ يوللاش/چۈشۈرۈش سۈرئىتىنى تەڭشەش"
     IDS_PW_PA               "ئەڭ چوڭ يوللاش/چۈشۈرۈش ئېقىمىنى تەڭشەش"
-    IDS_IRC_IGNOREINFOMESSAGE "ئۇچۇرنى ئىتىبارغا ئالماسلىق"
     IDS_CONNECTIONLOST      "ئۇلىنىش ئۈزۈلدى"
     IDS_WIZ_OS_FRAME        "مەشغۇلات سىستېمىسى"
     IDS_HASHINGFILE         "ھۆججەت Hashing:"
@@ -997,8 +959,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(تۆۋەندە كىرگۈزۈڭ)"
     IDS_STATS_MAXAVGDL      "ئەڭ يۇقىرى ئوتتۇرىچە چۈشۈرۈش سۈرئىتى: %s"
     IDS_STATS_MAXDL         "ئەڭ يۇقىرى چۈشۈرۈش سۈرئىتى: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "‫eMule دوست كېلىشىم ئۇچۇرى قوشۇشقا پەرۋا قىلما‬"
     IDS_PW_FASTSRVCON       "بىخەتەر ئۇلىنىش"
     IDS_SOURCELINKFAILED    "‫سىز HighID بىلەن قانۇنلۇق ئۇلىنىش مەنبەسى قۇرۇشىڭىز لازىم‬"
     IDS_ERR_LOADSERVERMET   "‫server.met يۈكلەش مەغلۇپ بولدى!‬"
@@ -1060,8 +1020,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "‫قوبۇللىغان «%s» ھۆججەتنىڭ چۈشەندۈرۈشى: %s‬"
     IDS_WEBSERVICES         "‫Web مۇلازىمىتى‬"
     IDS_WEBSVEDIT           "‫Web مۇلازىمىتى تەھرىر…‬"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "‫eMule يوللىغان ئۇلىنىش كېلىشىم ئۇچۇرىغا پەرۋا قىلما‬"
     IDS_CHECK4UPDATE        "يېڭى نەشرىنى تەكشۈر"
     IDS_STARTUP             "قوزغات"
     IDS_NEWVERSIONAVL       "‫يېڭى نەشرىدىكى eMule نى چۈشۈرگىلى بولىدۇ! باش بەتتىكى تەپسىلى ئۇچۇرنى كۆرۈڭ.‬"
@@ -1430,9 +1388,6 @@ BEGIN
     IDS_FD_TIMEDATE         "ۋاقىت"
     IDS_FILEINFORMATION     "ھۆججەت ئۇچۇرى"
     IDS_STATS_FREESPACE     "ئىشلىتىلىشچان بوشلۇق"
-    IDS_IRC_HELPCHANNEL     "ياردەم قانىلىغا ئۇلان"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-english" //!
-    IDS_IRC_ACCEPTLINKSFRIENDS "دوستتىنلا"
     IDS_COMPLSOURCES        "مەنبە تامام"
     IDS_CHECKNOENDTIME      "ئاخىرلىشىش ۋاقتى يوق"
 END
@@ -1668,8 +1623,6 @@ BEGIN
     IDS_SOURCECLIENT        "خېرىدار مەنبەسى"
     IDS_USERSIP             "‫ئىشلەتكۈچى IP‬"
     IDS_FEATURES            "ئالاھىدىلىك"
-    IDS_IRC_NEWNICK         "‫IRC تەخەللۇسىدىن بىرنى تاللاڭ‬"
-    IDS_IRC_NEWNICKDESC     "‫ئات ئاز دېگەندە 20 ھەرپ بولۇشى، (A-Z, 0-9) ئىشلىتىشكە بولىدۇ. سىز تەڭشەش->Ircدىن ئۇنى ئۆزگەرتەلەيسىز‬"
     IDS_SPARSEPARTFILES     "‫يېڭىدىن قۇرۇلغان Part ھۆججىتى «ئاز ئۇچرايدىغان ھۆججەت» (NTFS تىلا ئىشلەيدۇ)‬"
     IDS_ASPECTRATIO         "چەكلەش نىسبىتى"
     IDS_NEGATEFILTER        "سۈزۈشنى بىكار قىل"

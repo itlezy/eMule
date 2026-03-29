@@ -406,19 +406,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDC_WIZ_CANCEL_BUTTON,194,204,56,14
 END
 
-IDD_IRC DIALOGEX 0, 35, 511, 289
-STYLE DS_LOCALEDIT | DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    CONTROL         "",IDC_NICKLIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_OWNERDRAWFIXED | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,5,5,105,264
-    CONTROL         "",IDC_TAB2,"SysTabControl32",WS_TABSTOP,113,4,393,16
-    CONTROL         "",IDC_SERVERCHANNELLIST,"SysListView32",LVS_REPORT | LVS_OWNERDRAWFIXED | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,113,19,393,250
-    PUSHBUTTON      "Connect",IDC_BN_IRCCONNECT,5,272,54,14
-    PUSHBUTTON      "Close",IDC_CLOSECHAT,59,272,50,14
-    EDITTEXT        IDC_INPUTWINDOW,215,273,241,12,ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "Send",IDC_CHATSEND,459,272,47,14
-    CONTROL         "TextFormatToolbar",IDC_TEXT_FORMAT,"ToolbarWindow32",WS_TABSTOP | 0x994e,114,272,79,12
-END
 
 IDD_FILES DIALOGEX 0, 35, 511, 289
 STYLE DS_LOCALEDIT | DS_SETFONT | DS_FIXEDSYS | DS_CONTROL | WS_CHILD | WS_SYSMENU
@@ -490,27 +477,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,175,139,50,14
 END
 
-IDD_PPG_IRC DIALOGEX 0, 0, 300, 350
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "IRC"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "Server",IDC_IRC_SERVER_FRM,4,2,223,26
-    EDITTEXT        IDC_IRC_SERVER_BOX,10,11,211,12,ES_AUTOHSCROLL
-    GROUPBOX        "Nick",IDC_IRC_NICK_FRM,4,29,223,26
-    EDITTEXT        IDC_IRC_NICK_BOX,10,38,211,12,ES_AUTOHSCROLL
-    GROUPBOX        "Channel list",IDC_IRC_FILTER_FRM,4,57,223,45
-    CONTROL         "Use channel list filter",IDC_IRC_USECHANFILTER,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,67,211,10
-    LTEXT           "Name",IDC_IRC_NAME_TEXT,10,77,73,8
-    EDITTEXT        IDC_IRC_NAME_BOX,10,86,114,12,ES_AUTOHSCROLL
-    LTEXT           "Min users",IDC_IRC_MINUSER_TEXT,152,77,69,8
-    EDITTEXT        IDC_IRC_MINUSER_BOX,152,86,69,12,ES_AUTOHSCROLL | ES_NUMBER
-    GROUPBOX        "Perform",IDC_IRC_PERFORM_FRM,4,104,223,37
-    CONTROL         "Use perform string on connect",IDC_IRC_USEPERFORM,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,113,202,10
-    EDITTEXT        IDC_IRC_PERFORM_BOX,10,123,211,12,ES_AUTOHSCROLL
-    GROUPBOX        "Miscellaneous",IDC_IRC_MISC_FRM,4,142,223,96
-    CONTROL         "",IDC_MISC_IRC,"SysTreeView32",TVS_SHOWSELALWAYS | TVS_INFOTIP | WS_BORDER | WS_TABSTOP,10,152,211,81
-END
 
 IDD_FILEINFO DIALOGEX 0, 0, 402, 186
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
@@ -1361,8 +1327,6 @@ TRANSFER                ICON                    "res\\Transfer.ico"
 SHAREDFILES             ICON                    "res\\SharedFiles.ico"
 STATISTICS              ICON                    "res\\Statistics.ico"
 MESSAGES                ICON                    "res\\Messages.ico"
-IRC                     ICON                    "res\\IRC.ico"
-IRCCLIPBOARD            ICON                    "res\\IRCClipboard.ico"
 PREFERENCES             ICON                    "res\\Preferences.ico"
 TOOLS                   ICON                    "res\\Tools.ico"
 HELP                    ICON                    "res\\Help.ico"
@@ -2148,9 +2112,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dates"
     IDS_FILEINFORMATION     "File Information"
     IDS_STATS_FREESPACE     "Free Space"
-    IDS_IRC_HELPCHANNEL     "Connect to help channel"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-english"
-    IDS_IRC_ACCEPTLINKSFRIENDS "From friends only"
     IDS_COMPLSOURCES        "Complete Sources"
     IDS_CHECKNOENDTIME      "No end time"
 END
@@ -2536,7 +2497,6 @@ BEGIN
     IDS_SW_LINK             "eD2K Links"
     IDS_SW_START            "Start"
     IDS_SCHEDULER           "Scheduler"
-    IDS_IRC                 "&IRC"
     IDS_SW_RESULT           "Search Results"
     IDS_SW_DOWNLOAD         "Download"
     IDS_SV_SERVERLIST       "Servers"
@@ -2831,9 +2791,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "Automatic connection to server will retry in %u seconds"
     IDS_SERVERADDED         "Server added: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignore Join info messages"
     IDS_STATS_SUCCUPCOUNT   "Total successful upload sessions: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignore Part info messages"
     IDS_STATS_FAILUPCOUNT   "Total failed upload sessions: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Average upload time: %s"
     IDS_SEARCHMINSIZE       "Min. Size [MB]"
@@ -2854,9 +2812,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Time for average graph: %u mins"
     IDS_GRAPHS              "Graphs"
     IDS_STREE               "Statistics Tree"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignore Quit info messages"
     IDS_STATSSETUPINFO      "Statistics"
-    IDS_IRC_SOUNDEVENTS     "Play sound events"
     IDS_HARDLIMIT           "Hard limit"
     IDS_COL_MORECOLORS      "more..."
     IDS_TOOMANYCONNS        "Too many connections"
@@ -2882,13 +2838,11 @@ BEGIN
     IDS_IP_HITS             "Hits"
     IDS_IP_RULES            "IP Filters:"
     IDS_ERR_NOTCONNECTEDKAD "You are not connected to the Kad network!"
-    IDS_IRC_NOSFS           "No Shared File Selected"
     IDS_RESETLABEL          "Auto completion (history function)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "Ignore misc. info messages"
     IDS_KNOWN               "Known"
     IDS_KADCONTACTSREAD     "Read %u contacts from file."
     IDS_ERR_KADCONTACTS     "No contacts found, please bootstrap, or download nodes.dat file."
@@ -2915,7 +2869,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignore eMule protocol messages"
     IDS_SMARTLOWIDCHECK     "Use smart LowID check on connect"
     IDS_SF_SRVOCC           "Server Occupation: %.2f%%"
     IDS_3DDEP               "Progressbar style"
@@ -2953,35 +2906,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "Pop-up when"
     IDS_TBN_NEWCHATMSG      "Message from"
     IDS_PW_CON_CAPFRM       "Capacities"
-    IDS_IRC_PRIVATECHANSTART "* Private chat session started"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "Private Message"
     IDS_WEB_REMOTE_LINK_ADDED "Link added: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Link not added. Wrong password."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Increase priority for preview parts"
-    IDS_IRC_KICK            "Kick"
-    IDS_IRC_SLAP            "Slap"
-    IDS_IRC_JOIN            "Join"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "Channels"
     IDS_IRC_CONNECT         "Connect"
     IDS_IRC_DISCONNECT      "Disconnect"
-    IDS_IRC_HASJOINED       "* %s has joined %s"
-    IDS_IRC_HASPARTED       "* %s has parted %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s was kicked by %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Download In Alphabetical Order"
-    IDS_IRC_HASQUIT         "* %s has quit (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s is now known as %s"
-    IDS_IRC_SETSMODE        "* %s sets mode: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Some modes have been set that is not supported yet. You may need to leave and reenter channel to update nick list.."
-    IDS_IRC_CHANNEL         "Channel"
-    IDS_IRC_NICK            "Nick"
-    IDS_IRC_SEND            "Send"
-    IDS_IRC_NAME            "Name"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001"
 END
 
 STRINGTABLE
@@ -3003,7 +2937,6 @@ BEGIN
     IDS_NEWMSG              "New Message from '%s' (IP:%s)"
     IDS_PREF_STARTNEXTFILECATONLY "Only in same category"
     IDS_LOG_ULDL_EVENTS     "Log upload/download events"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Allow others to add you as a friend"
     IDS_SOURCESWAPBLOCKED   "Swap blocked"
     IDS_TRICKLING           "Standby"
     IDS_A4AF_CHECK_THIS_NOW "Check this source now (debug)"
@@ -3028,29 +2961,17 @@ BEGIN
     IDS_CERTIFICATE         "Certificate"
     IDS_CERT_NOT_FOUND      "Certificate file not found"
     IDS_KEY_NOT_FOUND       "Key file not found"
-    IDS_IRC_IGNOREPINGPONGMESSAGE "Ignore Ping? Pong! messages"
-    IDS_IRC_ENABLEUTF8      "Enable UTF-8"
     IDS_ITALIC              "Toggles italicized text"
-    IDS_IRC_BAN             "Ban"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "Add timestamp to messages"
-    IDS_IRC_USEFILTER       "Use channel list filter"
     IDS_IRC_PERFORM         "Perform"
-    IDS_IRC_USEPERFORM      "Use perform string on connect"
     IDS_IRC_ADDTOFRIENDLIST "Add to friends list"
-    IDS_IRC_LOADCHANNELLISTONCON "Load server channel list on connect"
-    IDS_IRC_ADDASFRIEND     "added you as friend!"
     IDS_PW_WARNING          "The number you have selected for ""%s"" is larger than your OS supports:  %u\nThis may cause your system to become unstable.\n\nAre you sure you want to do this?"
     IDS_TAKEOVER            "Take over"
     IDS_CLEANUP             "Cleanup"
     IDS_RENAME              "Rename"
-    IDS_IRC_ADDLINKTOIRC    "Add To IRC Clipboard"
-    IDS_IRC_SENDLINK        "Send this to friend: "
-    IDS_IRC_RECIEVEDLINK    "%s sent (%s) to be auto started."
-    IDS_IRC_ACCEPTLINKS     "Accept eD2K links in IRC (Use only with caution!)"
     IDS_SHARED              "Shared"
 END
 
@@ -3080,7 +3001,6 @@ BEGIN
     IDS_PW_MINREC           "Minimum Recommended\t%u "
     IDS_PW_UA               "Set Full Up/Down-Speed"
     IDS_PW_PA               "Throttle Up/Down-Speed"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignore info messages"
     IDS_CONNECTIONLOST      "Connection lost"
     IDS_WIZ_OS_FRAME        "Operating System"
     IDS_HASHINGFILE         "Hashing file:"
@@ -3123,8 +3043,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(enter below)"
     IDS_STATS_MAXAVGDL      "Max Downloadrate Average: %s"
     IDS_STATS_MAXDL         "max. Downloadrate: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignore eMule add friend protocol messages"
     IDS_PW_FASTSRVCON       "Safe Connect"
     IDS_SOURCELINKFAILED    "You need a high ID to create a valid source link"
     IDS_ERR_LOADSERVERMET   "Failed to load server.met!"
@@ -3186,8 +3104,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Description for file '%s' received: %s"
     IDS_WEBSERVICES         "&Web Services"
     IDS_WEBSVEDIT           "Edit Web Services..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignore eMule send link protocol messages"
     IDS_CHECK4UPDATE        "Check for new version"
     IDS_STARTUP             "Startup"
     IDS_NEWVERSIONAVL       "A new version of eMule is available! Check the project-homepage for more information."
@@ -3748,8 +3664,6 @@ BEGIN
     IDS_SOURCECLIENT        "Source Client"
     IDS_USERSIP             "User's IP"
     IDS_FEATURES            "Features"
-    IDS_IRC_NEWNICK         "Select an IRC nick."
-    IDS_IRC_NEWNICKDESC     "Should be no longer than 20 characters: letters, digits or symbols [\]`_{|}-\rNick can be changed again in Options->IRC."
     IDS_SPARSEPARTFILES     "Create new part files as 'sparse' (NTFS only)"
     IDS_ASPECTRATIO         "Aspect Ratio"
     IDS_NEGATEFILTER        "Negate Filter"
@@ -4093,5 +4007,4 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "res\\emule.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-
 

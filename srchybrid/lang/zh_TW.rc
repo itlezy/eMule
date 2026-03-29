@@ -395,7 +395,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "搜尋結果"
     IDS_SW_DOWNLOAD         "下載已選擇"
     IDS_SV_SERVERLIST       "伺服器清單"
@@ -628,9 +627,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2K 連結"
     IDS_RECONNECT           "自動連線到伺服器將於 %u 秒後重試"
     IDS_SERVERADDED         "已增加伺服器: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "忽略加入資訊之訊息"
     IDS_STATS_SUCCUPCOUNT   "上載成功工作階段總計: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "忽略告別資訊之訊息"
     IDS_STATS_FAILUPCOUNT   "上載失敗工作階段總計: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "平均上載時間: %s"
     IDS_SEARCHMINSIZE       "最小大小 [MB]"
@@ -651,9 +648,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "圖形平均時間: %u 分"
     IDS_GRAPHS              "圖形"
     IDS_STREE               "樹狀統計"
-    IDS_IRC_IGNOREQUITMESSAGE "忽略離開資訊之訊息"
     IDS_STATSSETUPINFO      "統計"
-    IDS_IRC_SOUNDEVENTS     "播放聲音事件"
 END
 
 STRINGTABLE
@@ -677,54 +672,26 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "能力"
-    IDS_IRC_PRIVATECHANSTART "* 私人的聊天會議已開始"
-    IDS_IRC_SLAPMSG         "* %s 用大隻的巴別魚打了 %s 一巴掌!"
-    IDS_IRC_PRIVMESSAGE     "私人訊息"
     IDS_WEB_REMOTE_LINK_ADDED "連結已被加入: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "連結未被加入. 不正確的密碼."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "下載時預覽必需的部分優先"
-    IDS_IRC_KICK            "踢人"
-    IDS_IRC_SLAP            "打人"
-    IDS_IRC_JOIN            "加入"
-    IDS_IRC_CHANNELLIST     "頻道清單"
     IDS_IRC_CONNECT         "連線"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "斷線"
-    IDS_IRC_HASJOINED       "* %s 已經加入 %s"
-    IDS_IRC_HASPARTED       "* %s 已經離開 %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s 已被 %s (%s) 踢出"
     IDS_DOWNLOAD_ALPHABETICAL "依字母次序下載"
-    IDS_IRC_HASQUIT         "* %s 已經離開 (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s 已改變暱稱為 %s"
-    IDS_IRC_SETSMODE        "* %s 設定模式: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** 一些已經設定的模式尚未支援. 您必須離開並重新進入頻道來更新暱稱清單.."
-    IDS_IRC_CHANNEL         "頻道"
-    IDS_IRC_NICK            "暱稱"
-    IDS_IRC_SEND            "送出"
-    IDS_IRC_NAME            "名稱"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION 用大隻的巴別魚掌了 %s!\001"
-    IDS_IRC_ADDTIMESTAMP    "在訊息上加時間標籤"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "使用頻道清單過濾器"
     IDS_IRC_PERFORM         "執行"
-    IDS_IRC_USEPERFORM      "在連線時使用執行字串"
     IDS_IRC_ADDTOFRIENDLIST "增加到好友清單"
-    IDS_IRC_LOADCHANNELLISTONCON "在連線時載入伺服器頻道"
-    IDS_IRC_ADDASFRIEND     "已增加您成好友!"
     IDS_PW_WARNING          "您選擇的這個數字 ""%s"" 是大於您系統所支援的:  %u\n這也許造成您系統的不穩定.\n\n您確定您要這麼做?"
     IDS_TAKEOVER            "抓取檔名"
     IDS_CLEANUP             "清理"
     IDS_RENAME              "重新命名"
-    IDS_IRC_ADDLINKTOIRC    "增加這個到 IRC 剪貼簿"
-    IDS_IRC_SENDLINK        "傳送這個給好友: "
-    IDS_IRC_RECIEVEDLINK    "%s 傳送 (%s) 已經自動開始下載."
-    IDS_IRC_ACCEPTLINKS     "接受 eD2K 連結在 IRC (使用這個要小心!)"
     IDS_SHARED              "已分享"
     IDS_DOWNLOADED          "已下載"
 END
@@ -754,7 +721,6 @@ BEGIN
     IDS_PW_MINREC           "最小建議\t%u "
     IDS_PW_UA               "設成全速 上載/下載-速度"
     IDS_PW_PA               "調節 上載/下載-速度"
-    IDS_IRC_IGNOREINFOMESSAGE "忽略通知訊息"
     IDS_CONNECTIONLOST      "失去連線"
     IDS_WIZ_OS_FRAME        "作業系統"
     IDS_HASHINGFILE         "檔案切細中:"
@@ -801,7 +767,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "最大下載速率: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND "忽略 eMule 加入好友的協定訊息"
     IDS_PW_FASTSRVCON       "安全的連線"
     IDS_SOURCELINKFAILED    "您需要一個 高-ID 來建立一個有效來源連結"
     IDS_ERR_LOADSERVERMET   "載入失敗 server.met!"
@@ -863,7 +828,6 @@ BEGIN
     IDS_MEGA                "M"//!
     IDS_GIGA                "G"//!
     IDS_TERA                "T"//!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "忽略 eMule 協定訊息"
     IDS_SMARTLOWIDCHECK     "在連線時使用智慧型 低-ID 檢查"
     IDS_SF_SRVOCC           "伺服器佔有期間: %.2f%%"
     IDS_3DDEP               "進度條樣式"
@@ -901,7 +865,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' 檔案描述已接收: %s"
     IDS_WEBSERVICES         "Web 服務"
     IDS_WEBSVEDIT           "編輯 Web 服務..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK "忽略 eMule 送出連結的協定訊息"
     IDS_CHECK4UPDATE        "檢查是否有新版本"
     IDS_STARTUP             "啟動"
     IDS_NEWVERSIONAVL       "一個新版的 eMule 已可取得! 按這裡到 專案-首頁 取得更多資訊."
@@ -1323,9 +1286,6 @@ BEGIN
     IDS_FD_TIMEDATE         "日期"
     IDS_FILEINFORMATION     "檔案資訊"
     IDS_STATS_FREESPACE     "可用空間"
-    IDS_IRC_HELPCHANNEL     "連線到幫助頻道"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-chinese"
-    IDS_IRC_ACCEPTLINKSFRIENDS "只有來自好友"
     IDS_COMPLSOURCES        "完成的來源數"
     IDS_CHECKNOENDTIME      "沒有結束時間"
     IDS_FD_DOWNLOADSTARTED  "下載已經開始:"
@@ -1487,9 +1447,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "您目前尚未連線到 Kad 網路!"
-    IDS_IRC_NOSFS           "沒有選擇已分享檔案"
     IDS_RESETLABEL          "自動完成 (記錄輸入過的文字)"
-    IDS_IRC_IGNOREMISCMESSAGE "忽略雜項資訊之訊息"
     IDS_KNOWN               "已知的"
     IDS_KADCONTACTSREAD     "從檔案讀取 %u 個聯繫."
     IDS_ERR_KADCONTACTS     "找不到聯繫, 請設啟動節點, 或下載一個 nodes.dat 檔案."
@@ -1524,7 +1482,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "只在相同的類別"
     IDS_LOG_ULDL_EVENTS     "記錄 上載/下載 事件"
 //    IDS_PEERCACHE_ENABLED   "您的 ISP 支援 PeerCache 技術, 啟用快取下載!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "允許使用者將您加入成為好友"
     IDS_SOURCESWAPBLOCKED   "置換被封鎖"
     IDS_TRICKLING           "待命"
     IDS_A4AF_CHECK_THIS_NOW "立即檢查這個來源 (除錯)"
@@ -1628,8 +1585,6 @@ BEGIN
     IDS_SOURCECLIENT        "來源客戶端"
     IDS_USERSIP             "使用者 IP"
     IDS_FEATURES            "特徵"
-    IDS_IRC_NEWNICK         "選擇一個 IRC 暱稱."
-    IDS_IRC_NEWNICKDESC     "一個暱稱應該少於 20 個字元包含 (A-Z, 0-9). 能在 選項->IRC 再次改變它."
 END
 
 STRINGTABLE

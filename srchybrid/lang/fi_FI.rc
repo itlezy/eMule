@@ -452,7 +452,6 @@ BEGIN
     IDS_SW_LINK             "eD2K-linkit"
     IDS_SW_START            "Aloita"
     IDS_SCHEDULER           "Ajastin"
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Haun tulokset"
     IDS_SW_DOWNLOAD         "Lataa valitut"
     IDS_SV_SERVERLIST       "Palvelinlista"
@@ -725,9 +724,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "Yritän yhdistää palvelimelle uudestaan %u sekunnin kuluttua."
     IDS_SERVERADDED         "Palvelin lisätty: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Suodata liittymisviestit"
     IDS_STATS_SUCCUPCOUNT   "Virheettömiä lähetyssessioita: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Suodata poistumisviestit"
     IDS_STATS_FAILUPCOUNT   "Epäonnistuneita lähetyssessioita: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Keskimääräinen lähetysaika: %s"
     IDS_SEARCHMINSIZE       "Vähimmäiskoko (Mt)"
@@ -748,9 +745,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Keskiarvokuvaajan ajanjakso: %u min"
     IDS_GRAPHS              "Kuvaajat"
     IDS_STREE               "Tilastot"
-    IDS_IRC_IGNOREQUITMESSAGE "Suodata lähtemisviestit"
     IDS_STATSSETUPINFO      "Tilastot"
-    IDS_IRC_SOUNDEVENTS     "Soita äänet"
     IDS_HARDLIMIT           "Kova rajoitus"
     IDS_COL_MORECOLORS      "Lisää..."
     IDS_TOOMANYCONNS        "Liian monta yhteyttä"
@@ -776,13 +771,11 @@ BEGIN
     IDS_IP_HITS             "Osumia"
     IDS_IP_RULES            "IP-suodattimet:"
     IDS_ERR_NOTCONNECTEDKAD "Yhteyttä kademliaverkkoon ei ole tällä hetkellä!"
-    IDS_IRC_NOSFS           "Yhtään jaettua tiedostoa ei ole valittu"
     IDS_RESETLABEL          "Automaattinen täydennys hakuhistoriasta"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "Suodata muut viestit"
     IDS_KNOWN               "Tunnettu"
     IDS_KADCONTACTSREAD     "Luin %u yhteystietoa tiedostosta."
     IDS_ERR_KADCONTACTS     "En löytänyt yhteystietoja. Bootstrappaa tai lataa tiedosto nodes.dat."
@@ -809,7 +802,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Suodata eMule-protokollan viestit"
     IDS_SMARTLOWIDCHECK     "Tarkista saatko matalan tunnisteen palvelimelle yhdistettäessä"
     IDS_SF_SRVOCC           "Palvelimien käyttöaste: %.2f%%"
     IDS_3DDEP               "Edistymispalkin tyyli"
@@ -846,35 +838,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "Näytä ilmoitus kun"
     IDS_TBN_NEWCHATMSG      "Viesti"
     IDS_PW_CON_CAPFRM       "Kapasiteetit"
-    IDS_IRC_PRIVATECHANSTART "-!- Yksityinen keskustelu"
-    IDS_IRC_SLAPMSG         "-!- %s slaps %s around with Finnish bath whisk!"
-    IDS_IRC_PRIVMESSAGE     "Yksityinen viesti"
     IDS_WEB_REMOTE_LINK_ADDED "Linkki lisätty: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Linkkiä ei lisätty, salasana on virheellinen."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Lataa esikatseluun tarvittavat osat ensimmäiseksi"
-    IDS_IRC_KICK            "Potkaise pois"
-    IDS_IRC_SLAP            "Lyö"
-    IDS_IRC_JOIN            "Liity kanavalle"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "Kanavalista"
     IDS_IRC_CONNECT         "Yhdistä"
 	IDS_IRC_DISCONNECT      "Katkaise yhteys"
-    IDS_IRC_HASJOINED       "-!- %s liittyi kanavalle %s"
-    IDS_IRC_HASPARTED       "-!- %s parted %s (%s)"
-    IDS_IRC_WASKICKEDBY     "-!- %s lähti, monoa antoi %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Lataa aakkosjärjestyksessä"
-    IDS_IRC_HASQUIT         "-!- %s lopetti (%s)"
-    IDS_IRC_NOWKNOWNAS      "-!- %s on nyt %s"
-    IDS_IRC_SETSMODE        "-!- %s asettaa: %s %s"
-    IDS_IRC_NOTSUPPORTED    "-!- Jokin tila laitettiin päälle, jota en osaa vielä käsitellä. Sinun täytyy ehkä poistua ja liittyä uudelleen kanavalle päivittääksesi nimilistan."
-    IDS_IRC_CHANNEL         "Kanava"
-    IDS_IRC_NICK            "Nimimerkki"
-    IDS_IRC_SEND            "Lähetä"
-    IDS_IRC_NAME            "Nimi"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with Finnish bath whisk!\001"
 END
 
 STRINGTABLE
@@ -897,7 +870,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "vain samassa kategoriassa"
     IDS_LOG_ULDL_EVENTS     "Kirjoita lähetys- ja lataustapahtumat lokiin"
 //    IDS_PEERCACHE_ENABLED   "Internetyhteydentarjoajasi tukee PeerCache-teknologiaa. Otan teknologian käyttöön!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Salli käyttäjien lisätä minut kaverikseen."
     IDS_SOURCESWAPBLOCKED   "Vaihto estetty"
     IDS_TRICKLING           "Valmiustila"
     IDS_A4AF_CHECK_THIS_NOW "Tarkista tämä lähde nyt heti! (debug)"
@@ -911,21 +883,12 @@ BEGIN
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "Lisää aikamerkintä viesteihin"
-    IDS_IRC_USEFILTER       "Suodata kanavat"
     IDS_IRC_PERFORM         "Palvelimelle yhdistettäessä"
-    IDS_IRC_USEPERFORM      "Suorita palvelimelle yhdistettäessä"
     IDS_IRC_ADDTOFRIENDLIST "Lisää kaverilistaan"
-    IDS_IRC_LOADCHANNELLISTONCON "Näytä kanavaluettelo palvelimelle yhdistettäessä"
-    IDS_IRC_ADDASFRIEND     "lisäsi sinut ystäväkseen!"
     IDS_PW_WARNING          "Valitsemasi arvo ""%s"" on suurempi kuin mitä käyttöjärjestelmäsi tukee:  %u\nKäyttöjärjestelmäsi voi muuttua epävakaaksi.\n\nHaluatko varmasti tehdä tämän?"
     IDS_TAKEOVER            "Vaihda"
     IDS_CLEANUP             "Siisti"
     IDS_RENAME              "Nimeä"
-    IDS_IRC_ADDLINKTOIRC    "Lisää tämä IRC-leikepöydälle"
-    IDS_IRC_SENDLINK        "Lähetä tämä kaverille: "
-    IDS_IRC_RECIEVEDLINK    "%s lähetti tiedoston (%s) ladattavaksi"
-    IDS_IRC_ACCEPTLINKS     "Hyväksy eD2K-linkit IRC:ssä. (Käytä varauksella!)"
     IDS_SHARED              "Jaettu"
 END
 
@@ -955,7 +918,6 @@ BEGIN
     IDS_PW_MINREC           "Alin suositeltu\t%u "
     IDS_PW_UA               "Aseta suurin lähetys- ja latausnopeus"
     IDS_PW_PA               "Rajoita lähetys- ja latausnopeutta"
-    IDS_IRC_IGNOREINFOMESSAGE "Hylkää infoviestit"
     IDS_CONNECTIONLOST      "Yhteys katosi"
     IDS_WIZ_OS_FRAME        "Käyttöjärjestelmä"
     IDS_HASHINGFILE         "Muodoston hashia tiedostolle:"
@@ -998,8 +960,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(aseta alle!)"
     IDS_STATS_MAXAVGDL      "Suurin keskim. latausnopeus: %s"
     IDS_STATS_MAXDL         "Suurin latausnopeus: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Suodata eMulen kaverinlisäysprotokollan viestit"
     IDS_PW_FASTSRVCON       "Nopea yhdistäminen palvelimelle"
     IDS_SOURCELINKFAILED    "Sinulla pitää olla korkea tunniste, jotta voit tehdä lähdelinkin!"
     IDS_ERR_LOADSERVERMET   "En voi ladata tiedostoa server.met!"
@@ -1061,8 +1021,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Vastaanotin kuvauksen tiedostolle '%s': %s."
     IDS_WEBSERVICES         "Verkkopalvelut"
     IDS_WEBSVEDIT           "Muokkaa verkkopalveluita"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Suodata eMulen linkinlähetysprotokollan viestit"
     IDS_CHECK4UPDATE        "Tarkista uuden version saatavuus"
     IDS_STARTUP             "Käynnistys"
     IDS_NEWVERSIONAVL       "Uusi versio on saatavilla! Projektin kotisivuilta saat lisätietoja."
@@ -1432,9 +1390,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Päivämäärät"
     IDS_FILEINFORMATION     "Tiedoston tiedot"
     IDS_STATS_FREESPACE     "Vapaata tilaa"
-    IDS_IRC_HELPCHANNEL     "Yhdistä apukanaville."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-finland"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Vain kavereilta"
     IDS_COMPLSOURCES        "Kokonaisia lähteitä"
     IDS_CHECKNOENDTIME      "ei päättymisajankohtaa"
 END
@@ -1670,8 +1625,6 @@ BEGIN
     IDS_SOURCECLIENT        "Lähdeohjelma"
     IDS_USERSIP             "Käyttäjän IP-osoite"
     IDS_FEATURES            "Ominaisuudet"
-    IDS_IRC_NEWNICK         "Valitse IRC-nimimerkki."
-    IDS_IRC_NEWNICKDESC     "Nimimerkin tulee olla yksi sana, joka on alle 20 merkkiä pitkä ja sisältää vain merkkejä A-Z ja 0-9. Sen voi vaihtaa asetuksista IRC-välilehdellä."
     IDS_SPARSEPARTFILES     "Luo uudet tiedostot lennosta (vain NTFS)"
     IDS_ASPECTRATIO         "Kuvasuhde"
     IDS_NEGATEFILTER        "käännä suotimen merkitys"

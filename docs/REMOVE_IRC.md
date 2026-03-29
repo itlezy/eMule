@@ -314,7 +314,18 @@ Remove these control IDs (only if not shared with non-IRC dialogs -- verify each
 
 ## Step 9: Remove String Resources
 
-Remove all `IDS_IRC*` string resources from both `Resource.h` (the `#define` lines) and `emule.rc` (the `STRINGTABLE` entries). Full list:
+Remove all IRC-only `IDS_IRC*` string resources from both `Resource.h` (the `#define` lines) and `emule.rc` (the `STRINGTABLE` entries).
+
+Keep these four shared IDs for existing non-IRC consumers in `WebServer.cpp` and `ChatSelector.cpp`:
+
+```
+IDS_IRC_CONNECT
+IDS_IRC_DISCONNECT
+IDS_IRC_PERFORM
+IDS_IRC_ADDTOFRIENDLIST
+```
+
+Remove the remaining IDs from this list:
 
 ```
 IDS_IRC                 360     "&IRC"
@@ -325,8 +336,6 @@ IDS_IRC_KICK            589
 IDS_IRC_SLAP            590
 IDS_IRC_JOIN            591
 IDS_IRC_CHANNELLIST     592
-IDS_IRC_CONNECT         593
-IDS_IRC_DISCONNECT      594
 IDS_IRC_HASJOINED       595
 IDS_IRC_HASPARTED       596
 IDS_IRC_WASKICKEDBY     597
@@ -341,9 +350,7 @@ IDS_IRC_NAME            606
 IDS_IRC_SLAPMSGSEND     607
 IDS_IRC_ADDTIMESTAMP    608
 IDS_IRC_USEFILTER       609
-IDS_IRC_PERFORM         610
 IDS_IRC_USEPERFORM      611
-IDS_IRC_ADDTOFRIENDLIST 612
 IDS_IRC_LOADCHANNELLISTONCON 613
 IDS_IRC_ADDASFRIEND     614
 IDS_IRC_SENDLINK        620
@@ -371,7 +378,7 @@ IDS_IRC_NEWNICKDESC     1353
 IDS_IRC_BAN             1599
 ```
 
-> **Note:** Also check for `IDS_IRC_ADDTOFRIENDLIST` usage in `ChatSelector.cpp`. If it is the only consumer, remove it. If another feature also references it, either keep it or rename it to a non-IRC identifier.
+> **Note:** `IDS_IRC_ADDTOFRIENDLIST` is still used by `ChatSelector.cpp`, and `IDS_IRC_CONNECT`, `IDS_IRC_DISCONNECT`, and `IDS_IRC_PERFORM` are still used by `WebServer.cpp`. Keep those four IDs until they are renamed to neutral resource names in a separate pass.
 
 ---
 
@@ -427,7 +434,7 @@ Remove these defines:
 - If the project ships separate language resource DLLs, the same `IDD_IRC`, `IDD_PPG_IRC`, and `IDS_IRC*` entries must be removed from each language `.rc` file. Grep across `srchybrid/langs/` or equivalent.
 
 ### WebServer (if applicable)
-- Check `WebServer.cpp`/`WebInterface` templates for IRC references. Some eMule web interfaces expose an IRC connect/status indicator.
+- Check `WebServer.cpp`/`WebInterface` templates for IRC references. In the current tree, the web UI still reuses `IDS_IRC_CONNECT`, `IDS_IRC_DISCONNECT`, and `IDS_IRC_PERFORM` as generic labels, so those string IDs must stay for now.
 
 ### INI file keys
 - No code changes needed. Leftover `[eMule]` section keys (`DefaultIRCServerNew`, `IRCNick`, etc.) in user INI files are harmlessly ignored when no code reads them.
@@ -449,6 +456,11 @@ After completing all steps:
   grep -ri "IDS_IRC" srchybrid/ --include="*.cpp" --include="*.h" --include="*.rc"
   grep -ri "m_strIRC\|m_bIRC\|m_uIRC\|GetIRC\|SetIRC" srchybrid/ --include="*.cpp" --include="*.h"
   ```
+- [ ] **Shared string exception** -- the `IDS_IRC` grep is allowed to report only:
+  - `IDS_IRC_CONNECT`
+  - `IDS_IRC_DISCONNECT`
+  - `IDS_IRC_PERFORM`
+  - `IDS_IRC_ADDTOFRIENDLIST`
 - [ ] **Run the application** -- verify:
   - Main window opens without the IRC tab/button
   - Toolbar renders correctly (no gaps, no shifted icons)

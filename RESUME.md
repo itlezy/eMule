@@ -2,44 +2,41 @@
 
 ## Last Chunk
 
-- Removed the last `id3lib`-based metadata extraction code from:
-  - [`srchybrid/KnownFile.cpp`](C:/prj/p2p/eMulebb/eMule/srchybrid/KnownFile.cpp)
-  - [`srchybrid/FileInfoDialog.cpp`](C:/prj/p2p/eMulebb/eMule/srchybrid/FileInfoDialog.cpp)
-- Non-image audio/video metadata now goes through the required runtime `MediaInfo.dll` path only.
-- Kept the existing metadata toggle UI contract, but the enabled mode now means `MediaInfo.dll` only.
-- Removed the `id3lib` build dependency from the app project files:
-  - [`srchybrid/emule.vcxproj`](C:/prj/p2p/eMulebb/eMule/srchybrid/emule.vcxproj)
-  - [`srchybrid/emule.sln`](C:/prj/p2p/eMulebb/eMule/srchybrid/emule.sln)
-  - [`srchybrid/emule.slnx`](C:/prj/p2p/eMulebb/eMule/srchybrid/emule.slnx)
-- Runtime-verified the real debug app against one MP3 repro directory:
-  - artifact bundle: `..\logs\20260329-154950-debug-launch`
-  - shared file: `C:\tmp\videodupez-repro-mp3\Tina Moore - Never Gonna Let You Go.mp3`
-  - actual verbose log shows MediaInfo-backed MP3 extraction with title, artist, album, length, and codec
-- Expanded the extension-driven media classifier in [`srchybrid/OtherFunctions.cpp`](C:/prj/p2p/eMulebb/eMule/srchybrid/OtherFunctions.cpp) so more files actually reach the MediaInfo metadata path.
-- Added new audio classifications for:
-  - `.caf`, `.dff`, `.dsf`, `.m4b`, `.m4r`, `.oga`, `.opus`, `.spx`, `.tta`, `.weba`, `.wv`
-- Added new video classifications for:
-  - `.mts`, `.mxf`, `.ogv`, `.webm`
-- Added missing classification-only extensions for UI/search grouping:
-  - images: `.avif`, `.arw`, `.cr2`, `.dng`, `.heic`, `.heif`, `.jxl`, `.nef`, `.raw`, `.svg`, `.webp`
-  - archives: `.001`, `.apk`, `.jar`, `.lz4`, `.lzma`, `.r00`, `.war`, `.xz`, `.zst`
-  - documents: `.csv`, `.docx`, `.epub`, `.json`, `.odp`, `.ods`, `.odt`, `.pptx`, `.xlsx`
-- Fixed the obvious misclassification of `.m4b` from video to audio.
+- Removed the built-in IRC module from the app project and source tree:
+  - deleted `IrcMain*`, `IrcSocket*`, `IrcWnd*`, `IrcChannelTabCtrl*`, `IrcChannelListCtrl*`, `IrcNickListCtrl*`, `PPgIRC*`
+  - deleted `srchybrid\res\IRC.ico` and `srchybrid\res\IRCClipboard.ico`
+- Detached IRC from the main UI and navigation:
+  - removed the IRC page from `EmuleDlg`
+  - removed the IRC toolbar button and hot-menu entry
+  - removed the IRC preferences page from `PreferencesDlg`
+  - removed shared-file/server-list IRC send-link hooks
+- Removed IRC-only preference state and INI persistence from `Preferences.h/.cpp`.
+- Collapsed chat-session timestamping to unconditional behavior instead of keeping the orphaned IRC timestamp preference.
+- Removed IRC dialogs, control IDs, menu command IDs, help IDs, and IRC-only string resources from:
+  - `srchybrid\Resource.h`
+  - `srchybrid\emule.rc`
+  - `srchybrid\lang\*.rc`
+- Kept the four currently shared string IDs because non-IRC code still uses them:
+  - `IDS_IRC_CONNECT`
+  - `IDS_IRC_DISCONNECT`
+  - `IDS_IRC_PERFORM`
+  - `IDS_IRC_ADDTOFRIENDLIST`
+- Updated `docs\PREFERENCES.md` to remove the IRC INI section.
+- Updated `docs\REMOVE_IRC.md` to document the shared-string exception.
 - Rebuilt successfully with `..\23-build-emule-debug-incremental.cmd`.
-- Ran a static mapping check after the build confirming the new entries resolve to the intended ED2K file types.
 
 ## Current State
 
-- `id3lib` is no longer used by the app code or linked by the app project.
-- `MediaInfo.dll` version `23.00+` is the required runtime dependency for audio/video metadata extraction, including MP3.
-- Shared metadata extraction for MP3, MP4, MKV, and other supported audio/video formats is unified on the MediaInfo DLL path.
-- Media metadata eligibility is still determined by the extension-based ED2K file type table, but that table now covers a broader set of common modern audio/video formats.
-- Archives like `.rar` remain classified as archives and do not go through the audio/video metadata path.
-- Image/document/archive classification was broadened for grouping and search labeling only; no new metadata extraction path was added for those categories.
+- The app no longer builds or ships the IRC module.
+- The main window, toolbar, preferences dialog, menus, and resources no longer expose IRC UI.
+- The remaining `IDS_IRC_*` references are intentional shared labels in `WebServer.cpp`, `ChatSelector.cpp`, `Resource.h`, `emule.rc`, and the language `.rc` files.
+- `docs\REMOVE_IRC.md` now matches the implemented removal approach more closely than the original draft.
 
 ## Next Chunk
 
-- Runtime-verify one or more newly added extensions such as `.webm`, `.opus`, `.oga`, `.m4b`, `.mts`, or `.mxf` when suitable local sample files are available.
-- Decide whether to simplify the metadata settings UI now that there is no second backend behind the old option naming.
-- Tighten the missing-`MediaInfo.dll` user-facing diagnostics if the current log-only plus dialog-path hint is not sufficient.
-- Keep the `MAYBE-20260329-WINDOWS-PROPERTY-STORE-METADATA` note in mind if non-audio/video metadata extraction becomes a near-term priority.
+- Runtime-smoke the debug build and confirm:
+  - no IRC tab/button/menu entry
+  - no IRC preferences page
+  - no shared-files/server-list IRC actions
+  - toolbar ordering/icons still match the remaining pages
+- If desired, do a follow-up rename pass to replace the four shared `IDS_IRC_*` resource IDs with neutral names in `WebServer.cpp`, `ChatSelector.cpp`, and all language resources.

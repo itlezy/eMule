@@ -391,7 +391,6 @@ BEGIN
     IDS_SW_LINK             "eD2K Link(s)"
     IDS_SW_START            "Sta&rt"
     IDS_SCHEDULER           "Zeitplaner"
-    IDS_IRC                 "&IRC" //!
     IDS_SW_RESULT           "Ergebnisse"
     IDS_SW_DOWNLOAD         "Auswahl downloaden"
     IDS_SV_SERVERLIST       "Serverliste"
@@ -663,9 +662,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "Automatischer Verbindungsversuch wird in %u Sekunden gestartet..."
     IDS_SERVERADDED         "Server hinzugefügt: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignoriere Raum-betreten-Infonachrichten (Join)"
     IDS_STATS_SUCCUPCOUNT   "Erfolgreiche Upload-Sessions: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignoriere Raum-verlassen-Nachrichten (Part)"
     IDS_STATS_FAILUPCOUNT   "Fehlgeschlagene Upload-Sessions: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Durchschnittliche Upload-Dauer: %s"
     IDS_SEARCHMINSIZE       "Min. Größe (MB)"
@@ -687,9 +684,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Durchschnittsgraphen über %u mins errechnen"
     IDS_GRAPHS              "Graphen"
     IDS_STREE               "Statistik-Baum"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignoriere Chat-verlassen-Nachrichten (Quit)"
     IDS_STATSSETUPINFO      "Statistikanzeige"
-    IDS_IRC_SOUNDEVENTS     "Klänge für Ereignisse wiedergeben"
     IDS_HARDLIMIT           "Hard Limit"
     IDS_COL_MORECOLORS      "Weitere Farben"
     IDS_TOOMANYCONNS        "Zu viele Verbindungen"
@@ -711,8 +706,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE
-                            "Ignoriere Emule-IRC-Protokoll-Nachrichten"
     IDS_SMARTLOWIDCHECK     "Benutze Smart-LowID-Prüfung beim Verbinden"
     IDS_SF_SRVOCC           "Server Auslastung: %.2f%%"
     IDS_3DDEP               "Statusbalken Stil"
@@ -750,56 +743,27 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "Einblenden wenn"
     IDS_TBN_NEWCHATMSG      "Nachricht von"
     IDS_PW_CON_CAPFRM       "Kapazitäten"
-    IDS_IRC_PRIVATECHANSTART "* Private Unterhaltung gestartet"
-    IDS_IRC_SLAPMSG         "* %s schlägt %s mit einem großen Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "Private Nachricht"
     IDS_WEB_REMOTE_LINK_ADDED "Link hinzugefügt: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Link nicht hinzugefügt. Falsches Passwort."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS
                             "Zuerst Teile für eine Vorschau downloaden"
-    IDS_IRC_KICK            "Kick" //!
-    IDS_IRC_SLAP            "Slap" //!
-    IDS_IRC_JOIN            "Betreten"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "Raumliste"
     IDS_IRC_CONNECT         "Verbinden"
     IDS_IRC_DISCONNECT      "Trennen"
-    IDS_IRC_HASJOINED       "* %s betrat %s"
-    IDS_IRC_HASPARTED       "* %s verließ Raum %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s wurde gekickt von %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Download in alphabetischer Reihenfolge"
-    IDS_IRC_HASQUIT         "* %s hat den Chat verlassen (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s heißt jetzt %s"
-    IDS_IRC_SETSMODE        "* %s setzt mode: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Einige Modes wurden gesetzt, welche noch nicht unterstützt werden.. Es kann nötig sein, den Raum zu verlassen und erneut zu betreten um die Nick-Liste zu aktualisieren."
-    IDS_IRC_CHANNEL         "Raum"
-    IDS_IRC_NICK            "Nick" //!
-    IDS_IRC_SEND            "Senden"
-    IDS_IRC_NAME            "Name" //!
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION schlägt %s mit einem großen Babelfish!\001"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "Stelle Zeitstempel den Nachrichten voran"
-    IDS_IRC_USEFILTER       "Benutze Raumlisten-Filter"
     IDS_IRC_PERFORM         "Ausführen"
-    IDS_IRC_USEPERFORM      "Führe die Zeichenkette beim Verbinden aus"
     IDS_IRC_ADDTOFRIENDLIST "Zur Freunde-Liste hinzufügen"
-    IDS_IRC_LOADCHANNELLISTONCON
-                            "Lade beim Verbinden die Raumliste vom Server"
-    IDS_IRC_ADDASFRIEND     "Fügte dich als Freund hinzu!"
     IDS_PW_WARNING          "Die Anzahl für ""%s"" ist größer als es dein Betriebssystem unterstützt:  %u\nDies könnte das System instabil machen!\n\nWillst Du dennoch fortfahren?"
     IDS_TAKEOVER            "Ü&bernehmen"
     IDS_CLEANUP             "&Bereinigen"
     IDS_RENAME              "Umbenenne&n"
-    IDS_IRC_ADDLINKTOIRC    "In IRC-Zwischenablage kopieren"
-    IDS_IRC_SENDLINK        "Sende dies an Freunde:"
-    IDS_IRC_RECIEVEDLINK    "%s sendete (%s) um automatisch gestartet zu werden."
-    IDS_IRC_ACCEPTLINKS     "Akzeptiere eD2K-Links in IRC. (Vorsicht!)"
     IDS_SHARED              "Freigegeben"
 END
 
@@ -829,7 +793,6 @@ BEGIN
     IDS_PW_MINREC           "Empfohlenes Minimum\t%u "
     IDS_PW_UA               "Limits deaktivieren"
     IDS_PW_PA               "Up/Down-Limits auf 1kB/s"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignoriere Info-Nachrichten"
     IDS_CONNECTIONLOST      "Serververbindung verloren"
     IDS_WIZ_OS_FRAME        "Betriebssystem"
     IDS_HASHINGFILE         "Hashe Datei:"
@@ -872,8 +835,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(Eingabe unten)"
     IDS_STATS_MAXAVGDL      "Max. Downloadrate Durchschnitt: %s"
     IDS_STATS_MAXDL         "Max. Downloadrate: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignoriere eMule Protokollnachrichten für Freunde hinzufügen"
     IDS_PW_FASTSRVCON       "Sicheres / langsameres Verbinden zu Servern"
     IDS_SOURCELINKFAILED    "Eine hohe ID ist notwendig, um gültige Quellenlinks zu erstellen."
     IDS_ERR_LOADSERVERMET   "Server.met konnte nicht geladen werden!"
@@ -936,8 +897,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Datei-Beschreibung für '%s' empfangen: %s"
     IDS_WEBSERVICES         "Web Dienste"
     IDS_WEBSVEDIT           "Webdienste ändern"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignoriere eMule Protokollnachrichten für Link-Senden"
     IDS_CHECK4UPDATE        "Auf neuere Version prüfen"
     IDS_STARTUP             "Programmstart"
     IDS_NEWVERSIONAVL       "Eine neuere Version von eMule ist verfügbar. Besuche die Projekt-Homepage um mehr Informationen zu erhalten."
@@ -1324,9 +1283,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Zeit"
     IDS_FILEINFORMATION     "Datei Informationen"
     IDS_STATS_FREESPACE     "Freier Speicherplatz"
-    IDS_IRC_HELPCHANNEL     "Verbinde zu Hilfe-Räume."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-german"
-    IDS_IRC_ACCEPTLINKSFRIENDS "...nur von Freunden."
     IDS_COMPLSOURCES        "Vollständige Quellen"
     IDS_CHECKNOENDTIME      "Keine Endzeit"
 END
@@ -1485,13 +1441,11 @@ BEGIN
     IDS_IP_HITS             "Treffer"
     IDS_IP_RULES            "IP Filter Einträge:"
     IDS_ERR_NOTCONNECTEDKAD "Du bist derzeit nicht mit dem Kad-Netzwerk verbunden!"
-    IDS_IRC_NOSFS           "Keine freigegebenen Dateien ausgewählt"
     IDS_RESETLABEL          "Autovervollständigung (History-Funktion)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "Ignoriere verschiedene Info-Nachrichten"
     IDS_KNOWN               "Bekannt"
     IDS_KADCONTACTSREAD     "%u Kontakte aus Datei eingelesen."
     IDS_ERR_KADCONTACTS     "Keine Kad Kontakte gefunden. Bitte Bootstrappe oder downloade eine nodes.dat -Datei!"
@@ -1528,8 +1482,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Nur aus gleicher Kategorie"
     IDS_LOG_ULDL_EVENTS     "Logge Upload/Download Ereignisse"
 //    IDS_PEERCACHE_ENABLED   "Dein ISP unterstützt die PeerCache Technologie. Cache Downloads aktiviert."
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND
-                            "Erlaube dem Benutzer, dich als Freund aufzunehmen."
     IDS_SOURCESWAPBLOCKED   "Swap blockiert"
     IDS_TRICKLING           "Wartend"
     IDS_A4AF_CHECK_THIS_NOW "Jetzt diese Quelle prüfen (debug)"
@@ -1633,8 +1585,6 @@ BEGIN
     IDS_SOURCECLIENT        "Quell-Client"
     IDS_USERSIP             "Nutzers IP"
     IDS_FEATURES            "Features"	//!
-    IDS_IRC_NEWNICK         "Wähle einen IRC Nutzernamen"
-    IDS_IRC_NEWNICKDESC     "Der Nutzername sollte nur ein Wort mit weniger als 20 Zeichen sein, mit den Zeichen (A-Z, 0-9). Der Name kann auch in den Einstellungen (->IRC) geändert werden."
     IDS_SPARSEPARTFILES     "Erstelle neue Tempdateien als 'sparse' (nur NTFS)"
     IDS_ASPECTRATIO         "Bildratio"
     IDS_NEGATEFILTER        "Negiere Filter"

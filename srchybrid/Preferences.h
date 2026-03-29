@@ -136,7 +136,6 @@ class CPreferences
 	friend class CPPgDisplay;
 	friend class CPPgFiles;
 	friend class CPPgGeneral;
-	friend class CPPgIRC;
 	friend class CPPgNotify;
 	friend class CPPgScheduler;
 	friend class CPPgSecurity;
@@ -387,7 +386,6 @@ public:
 	static UINT		splitterbarPositionStat_HL;
 	static UINT		splitterbarPositionStat_HR;
 	static UINT		splitterbarPositionFriend;
-	static UINT		splitterbarPositionIRC;
 	static UINT		splitterbarPositionShared;
 	//MORPH END - Added by SiRoB, Splitting Bar [O²]
 	static UINT		m_uDeadServerRetries;
@@ -407,31 +405,7 @@ public:
 	static bool		notifierOnNewVersion;
 	static ENotifierSoundType notifierSoundType;
 	static CString	notifierSoundFile;
-
-	static CString	m_strIRCServer;
-	static CString	m_strIRCNick;
-	static CString	m_strIRCChannelFilter;
-	static bool		m_bIRCAddTimeStamp;
-	static bool		m_bIRCUseChannelFilter;
-	static UINT		m_uIRCChannelUserFilter;
-	static CString	m_strIRCPerformString;
-	static bool		m_bIRCUsePerform;
-	static bool		m_bIRCGetChannelsOnConnect;
-	static bool		m_bIRCAcceptLinks;
-	static bool		m_bIRCAcceptLinksFriendsOnly;
-	static bool		m_bIRCPlaySoundEvents;
-	static bool		m_bIRCIgnoreMiscMessages;
-	static bool		m_bIRCIgnoreJoinMessages;
-	static bool		m_bIRCIgnorePartMessages;
-	static bool		m_bIRCIgnoreQuitMessages;
-	static bool		m_bIRCIgnorePingPongMessages;
-	static bool		m_bIRCIgnoreEmuleAddFriendMsgs;
-	static bool		m_bIRCAllowEmuleAddFriend;
-	static bool		m_bIRCIgnoreEmuleSendLinkMsgs;
-	static bool		m_bIRCJoinHelpChannel;
-	static bool		m_bIRCEnableSmileys;
 	static bool		m_bMessageEnableSmileys;
-	static bool		m_bIRCEnableUTF8;
 
 	static bool		m_bRemove2bin;
 	static bool		m_bShowCopyEd2kLinkCmd;
@@ -668,8 +642,6 @@ public:
 		tableServer,
 		tableClientList,
 		tableFilenames,
-		tableIrcMain,
-		tableIrcChannels,
 		tableDownloadClients
 	};
 
@@ -1020,8 +992,6 @@ public:
 	static void		SetSplitterbarPositionStat_HR(UINT pos)	{ splitterbarPositionStat_HR = pos; }
 	static UINT		GetSplitterbarPositionFriend()		{ return splitterbarPositionFriend; }
 	static void		SetSplitterbarPositionFriend(UINT pos)	{ splitterbarPositionFriend = pos; }
-	static UINT		GetSplitterbarPositionIRC()			{ return splitterbarPositionIRC; }
-	static void		SetSplitterbarPositionIRC(UINT pos)	{ splitterbarPositionIRC = pos; }
 	static UINT		GetSplitterbarPositionShared()		{ return splitterbarPositionShared; }
 	static void		SetSplitterbarPositionShared(UINT pos)	{ splitterbarPositionShared = pos; }
 	//MORPH END   - Added by SiRoB, Splitting Bar [O²]
@@ -1052,32 +1022,7 @@ public:
 
 	static bool		GetEnableMiniMule()					{ return m_bEnableMiniMule; }
 	static bool		GetRTLWindowsLayout()				{ return m_bRTLWindowsLayout; }
-
-	static const CString& GetIRCNick()					{ return m_strIRCNick; }
-	static void		SetIRCNick(LPCTSTR pszNick)			{ m_strIRCNick = pszNick; }
-	static const CString& GetIRCServer()				{ return m_strIRCServer; }
-	static bool		GetIRCAddTimeStamp()				{ return m_bIRCAddTimeStamp; }
-	static bool		GetIRCUseChannelFilter()			{ return m_bIRCUseChannelFilter; }
-	static const CString& GetIRCChannelFilter()			{ return m_strIRCChannelFilter; }
-	static UINT		GetIRCChannelUserFilter()			{ return m_uIRCChannelUserFilter; }
-	static bool		GetIRCUsePerform()					{ return m_bIRCUsePerform; }
-	static const CString& GetIRCPerformString()			{ return m_strIRCPerformString; }
-	static bool		GetIRCJoinHelpChannel()				{ return m_bIRCJoinHelpChannel; }
-	static bool		GetIRCGetChannelsOnConnect()		{ return m_bIRCGetChannelsOnConnect; }
-	static bool		GetIRCPlaySoundEvents()				{ return m_bIRCPlaySoundEvents; }
-	static bool		GetIRCIgnoreMiscMessages()			{ return m_bIRCIgnoreMiscMessages; }
-	static bool		GetIRCIgnoreJoinMessages()			{ return m_bIRCIgnoreJoinMessages; }
-	static bool		GetIRCIgnorePartMessages()			{ return m_bIRCIgnorePartMessages; }
-	static bool		GetIRCIgnoreQuitMessages()			{ return m_bIRCIgnoreQuitMessages; }
-	static bool		GetIRCIgnorePingPongMessages()		{ return m_bIRCIgnorePingPongMessages; }
-	static bool		GetIRCIgnoreEmuleAddFriendMsgs()	{ return m_bIRCIgnoreEmuleAddFriendMsgs; }
-	static bool		GetIRCIgnoreEmuleSendLinkMsgs()		{ return m_bIRCIgnoreEmuleSendLinkMsgs; }
-	static bool		GetIRCAllowEmuleAddFriend()			{ return m_bIRCAllowEmuleAddFriend; }
-	static bool		GetIRCAcceptLinks()					{ return m_bIRCAcceptLinks; }
-	static bool		GetIRCAcceptLinksFriendsOnly()		{ return m_bIRCAcceptLinksFriendsOnly; }
-	static bool		GetIRCEnableSmileys()				{ return m_bIRCEnableSmileys; }
 	static bool		GetMessageEnableSmileys()			{ return m_bMessageEnableSmileys; }
-	static bool		GetIRCEnableUTF8()					{ return m_bIRCEnableUTF8; }
 
 	static bool		IsRunningAeroGlassTheme();
 	static bool		GetStartMinimized()					{ return startMinimized; }

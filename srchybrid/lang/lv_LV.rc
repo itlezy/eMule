@@ -443,7 +443,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&IRC"
     IDS_SW_RESULT           "Meklēšanas rezultāti"
     IDS_SW_DOWNLOAD         "Lejupielādēt"
     IDS_SV_SERVERLIST       "Serveri"
@@ -710,9 +709,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2K Links"
     IDS_RECONNECT           "Automatic connection to server will retry in %u seconds"
     IDS_SERVERADDED         "Server added: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignore Join info messages"
     IDS_STATS_SUCCUPCOUNT   "Total successful upload sessions: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignore Part info messages"
     IDS_STATS_FAILUPCOUNT   "Total failed upload sessions: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Average upload time: %s"
     IDS_SEARCHMINSIZE       "Min. Size [MB]"
@@ -733,17 +730,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Time for average graph: %u mins"
     IDS_GRAPHS              "Graphs"
     IDS_STREE               "Statistics tree"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignore Quit info messages"
     IDS_STATSSETUPINFO      "Statistics"
-    IDS_IRC_SOUNDEVENTS     "Play sound events"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "You are currently not connected to the Kad network!"
-    IDS_IRC_NOSFS           "No Shared File Selected"
     IDS_RESETLABEL          "Auto completion (history function)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignore Misc info messages"
     IDS_KNOWN               "Known"
     IDS_KADCONTACTSREAD     "Read %u contacts from file."
     IDS_ERR_KADCONTACTS     "No contacts found, please bootstrap, or download a nodes.dat file."
@@ -796,16 +789,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Capacities"
-    IDS_IRC_PRIVATECHANSTART "* Private chat session started"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "Private Message"
     IDS_WEB_REMOTE_LINK_ADDED "Link added: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Link not added. Wrong password."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Download parts needed for preview first"
-    IDS_IRC_KICK            "Kick"
-    IDS_IRC_SLAP            "Slap"
-    IDS_IRC_JOIN            "Join"
-    IDS_IRC_CHANNELLIST     "Channel list"
     IDS_IRC_CONNECT         "Connect"
 END
 
@@ -816,7 +802,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Only in same category"
     IDS_LOG_ULDL_EVENTS     "Log upload/download events"
 //    IDS_PEERCACHE_ENABLED   "Your ISP supports the PeerCache technology, enabling cache downloads!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Allow user to add you as a friend."
     IDS_SOURCESWAPBLOCKED   "Swap blocked"
     IDS_TRICKLING           "Standby"
     IDS_A4AF_CHECK_THIS_NOW "Check this source now (debug)"
@@ -827,38 +812,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Disconnect"
-    IDS_IRC_HASJOINED       "* %s has joined %s"
-    IDS_IRC_HASPARTED       "* %s has parted %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s was kicked by %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Download In Alphabetical Order"
-    IDS_IRC_HASQUIT         "* %s has quit (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s is now known as %s"
-    IDS_IRC_SETSMODE        "* %s sets mode: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Some modes have been set that is not supported yet. You may need to leave and reenter channel to update nicklist.."
-    IDS_IRC_CHANNEL         "Channel"
-    IDS_IRC_NICK            "Nick"
-    IDS_IRC_SEND            "Send"
-    IDS_IRC_NAME            "Name"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001"
-    IDS_IRC_ADDTIMESTAMP    "Add timestamp to messages"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Use channel list filter"
     IDS_IRC_PERFORM         "Perform"
-    IDS_IRC_USEPERFORM      "Use perform string on connect"
     IDS_IRC_ADDTOFRIENDLIST "Add to friends list"
-    IDS_IRC_LOADCHANNELLISTONCON "Load server channel list on connect"
-    IDS_IRC_ADDASFRIEND     "added you as friend!"
     IDS_PW_WARNING          "The number you have selected for ""%s"" is larger than your OS supports:  %u\nThis may cause your system to become unstable.\n\nAre you sure you want to do this?"
     IDS_TAKEOVER            "Take over"
     IDS_CLEANUP             "Cleanup"
     IDS_RENAME              "Rename"
-    IDS_IRC_ADDLINKTOIRC    "Add To IRC Clipboard"
-    IDS_IRC_SENDLINK        "Send this to friend: "
-    IDS_IRC_RECIEVEDLINK    "%s sent (%s) to be auto started."
-    IDS_IRC_ACCEPTLINKS     "Accept eD2K links in IRC (Use only with caution!)"
     IDS_SHARED              "Shared"
     IDS_DOWNLOADED          "Downloaded"
 END
@@ -888,7 +852,6 @@ BEGIN
     IDS_PW_MINREC           "Minimum Recommended\t%u "
     IDS_PW_UA               "Set Full Up/Down-Speed"
     IDS_PW_PA               "Throttle Up/Down-Speed"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignore info messages"
     IDS_CONNECTIONLOST      "Connection lost"
     IDS_WIZ_OS_FRAME        "Operating System"
     IDS_HASHINGFILE         "Hashing file:"
@@ -935,8 +898,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "max. Downloadrate: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignore eMule add friend protocol messages"
     IDS_PW_FASTSRVCON       "Safe Connect"
     IDS_SOURCELINKFAILED    "You need a HighID to create a valid sourcelink"
     IDS_ERR_LOADSERVERMET   "Failed to load server.met!"
@@ -999,7 +960,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignore eMule protocol messages"
     IDS_SMARTLOWIDCHECK     "Use smart LowID check on connect"
     IDS_SF_SRVOCC           "Server Occupation: %.2f%%"
     IDS_3DDEP               "Progressbar style"
@@ -1018,8 +978,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Description for file '%s' received: %s"
     IDS_WEBSERVICES         "&Web Services"
     IDS_WEBSVEDIT           "Edit Web Services..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignore eMule send link protocol messages"
     IDS_CHECK4UPDATE        "Check for new version"
     IDS_STARTUP             "Startup"
     IDS_NEWVERSIONAVL       "A new version of eMule is available! Check the project-homepage for more information."
@@ -1397,9 +1355,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dates"
     IDS_FILEINFORMATION     "File Information"
     IDS_STATS_FREESPACE     "Free Space"
-    IDS_IRC_HELPCHANNEL     "Connect to help channel"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-latvian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "From friends only"
     IDS_COMPLSOURCES        "Complete Sources"
     IDS_CHECKNOENDTIME      "No end time"
     IDS_FD_DOWNLOADSTARTED  "Download added:"
@@ -1671,8 +1626,6 @@ BEGIN
     IDS_SOURCECLIENT        "Source Client"
     IDS_USERSIP             "Users IP"
     IDS_FEATURES            "Features"
-    IDS_IRC_NEWNICK         "Select a IRC nick."
-    IDS_IRC_NEWNICKDESC     "Should be one word less than 20 characters containing (A-Z, 0-9). It can be changed again in Preferences->Irc."
 END
 
 STRINGTABLE

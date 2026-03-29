@@ -450,7 +450,6 @@ BEGIN
     IDS_SW_LINK             "eD2K 링크"
     IDS_SW_START            "시작"
     IDS_SCHEDULER           "시간표"
-    IDS_IRC                 "&IRC"
     IDS_SW_RESULT           "검색 결과"
     IDS_SW_DOWNLOAD         "다운로드"
     IDS_SV_SERVERLIST       "서버"
@@ -723,9 +722,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "%u초 후 서버로의 자동 접속 재시도"
     IDS_SERVERADDED         "추가된 서버: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "참가 정보 메시지 무시"
     IDS_STATS_SUCCUPCOUNT   "성공한 전체 업로드 세션: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Part 정보 메시지 무시"
     IDS_STATS_FAILUPCOUNT   "실패한 전체 업로드 세션: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "평균 업로드 시간: %s"
     IDS_SEARCHMINSIZE       "최소 크기 [MB]"
@@ -746,9 +743,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "평균 그래프 산출 기간: %u분"
     IDS_GRAPHS              "그래프"
     IDS_STREE               "통계 트리"
-    IDS_IRC_IGNOREQUITMESSAGE "종료 정보 메시지 무시"
     IDS_STATSSETUPINFO      "통계"
-    IDS_IRC_SOUNDEVENTS     "소리 이벤트 재생"
     IDS_HARDLIMIT           "엄격한 제한"
     IDS_COL_MORECOLORS      "자세히..."
     IDS_TOOMANYCONNS        "접속이 너무 많음"
@@ -774,13 +769,11 @@ BEGIN
     IDS_IP_HITS             "적중"
     IDS_IP_RULES            "IP 필터:"
     IDS_ERR_NOTCONNECTEDKAD "현재 Kad 네트워크에 접속되어 있지 않습니다!"
-    IDS_IRC_NOSFS           "선택된 공유 파일 없음"
     IDS_RESETLABEL          "자동 완성 (히스토리 기능)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "기타 정보 메시지 무시"
     IDS_KNOWN               "알고 있음"
     IDS_KADCONTACTSREAD     "파일에서 %u개의 연락처를 찾음"
     IDS_ERR_KADCONTACTS     "연락처를 찾을 수 없음. 부트스트랩을 다시 하거나 nodes.dat 파일을 다운로드하십시오."
@@ -807,7 +800,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "eMule 프로토콜 메시지 무시"
     IDS_SMARTLOWIDCHECK     "서버에 접속 시 스마트 로우 ID 검사 사용"
     IDS_SF_SRVOCC           "서버 점유율: %.2f%%"
     IDS_3DDEP               "진행바 형식"
@@ -844,35 +836,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "팝업 알림:"
     IDS_TBN_NEWCHATMSG      "메시지 수신"
     IDS_PW_CON_CAPFRM       "전체 용량"
-    IDS_IRC_PRIVATECHANSTART "* 비공개 채팅 세션이 시작됨"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "비공개 메시지"
     IDS_WEB_REMOTE_LINK_ADDED "추가된 링크: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "링크가 추가되지 않음. 잘못된 비밀번호."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "미리 보기에 필요한 부분부터 다운로드"
-    IDS_IRC_KICK            "추방"
-    IDS_IRC_SLAP            "Slap"
-    IDS_IRC_JOIN            "입장"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "채널 목록"
     IDS_IRC_CONNECT         "접속"
     IDS_IRC_DISCONNECT      "끊기"
-    IDS_IRC_HASJOINED       "* %s님이 %s에 입장했습니다."
-    IDS_IRC_HASPARTED       "* %s님이 %s (%s)에서 퇴장했습니다."
-    IDS_IRC_WASKICKEDBY     "* %s님이 %s (%s)님으로부터 추방당했습니다."
     IDS_DOWNLOAD_ALPHABETICAL "알파벳 순으로 다운로드"
-    IDS_IRC_HASQUIT         "* %s님이 (%s)을(를) 종료했습니다."
-    IDS_IRC_NOWKNOWNAS      "* %s님이 대화명을 %s(으)로 변경했습니다."
-    IDS_IRC_SETSMODE        "* %s님이 모드 설정: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** 아직 지원되지 않는 모드가 설정되어 있습니다. 대화명 목록을 업데이트하려면 채널을 나갔다가 다시 들어오십시오."
-    IDS_IRC_CHANNEL         "채널"
-    IDS_IRC_NICK            "대화명"
-    IDS_IRC_SEND            "보내기"
-    IDS_IRC_NAME            "이름"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001"
 END
 
 STRINGTABLE
@@ -895,7 +868,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "같은 카테고리에서만"
     IDS_LOG_ULDL_EVENTS     "업/다운 이벤트 기록"
 //    IDS_PEERCACHE_ENABLED   "ISP가 PeerCache 기술을 지원하므로 캐시 다운로드를 활성화 함!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "다른 사용자가 친구로 추가할 수 있게 허용"
     IDS_SOURCESWAPBLOCKED   "스왑 차단됨"
     IDS_TRICKLING           "대기"
     IDS_A4AF_CHECK_THIS_NOW "지금 이 소스 확인 (디버그)"
@@ -909,21 +881,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "메시지에 시간 표시"
-    IDS_IRC_USEFILTER       "채널 목록 필터 사용"
     IDS_IRC_PERFORM         "자동 실행"
-    IDS_IRC_USEPERFORM      "접속 시 자동 실행 문자열 사용"
     IDS_IRC_ADDTOFRIENDLIST "친구 목록에 추가"
-    IDS_IRC_LOADCHANNELLISTONCON "접속 시 서버 채널 목록 가져오기"
-    IDS_IRC_ADDASFRIEND     "친구로 추가됨!"
     IDS_PW_WARNING          """%s""에 선택한 값이 OS가 지원하는 값보다 큽니다:  %u\n시스템이 불안정해질 수 있습니다.\n\n그래도 계속하시겠습니까?"
     IDS_TAKEOVER            "받기"
     IDS_CLEANUP             "정리"
     IDS_RENAME              "이름 바꾸기"
-    IDS_IRC_ADDLINKTOIRC    "IRC 클립보드에 추가"
-    IDS_IRC_SENDLINK        "친구에게 보내기: "
-    IDS_IRC_RECIEVEDLINK    "%s이(가) (%s) 보냄. 자동 시작됨."
-    IDS_IRC_ACCEPTLINKS     "IRC에서 eD2K 링크 허용 (주의!)"
     IDS_SHARED              "공유됨"
 END
 
@@ -953,7 +916,6 @@ BEGIN
     IDS_PW_MINREC           "최소 권장치\t%u "
     IDS_PW_UA               "최대 업/다운 속도로 설정"
     IDS_PW_PA               "업/다운 속도 제한"
-    IDS_IRC_IGNOREINFOMESSAGE "정보 메시지 무시"
     IDS_CONNECTIONLOST      "접속 끊김"
     IDS_WIZ_OS_FRAME        "운영 체제"
     IDS_HASHINGFILE         "파일 해싱:"
@@ -996,8 +958,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(아래에 입력)"
     IDS_STATS_MAXAVGDL      "최대 평균 다운로드 속도: %s"
     IDS_STATS_MAXDL         "최대 다운로드 속도: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-														"eMule 친구 추가 프로토콜 메시지 무시"
     IDS_PW_FASTSRVCON       "안전 접속"
     IDS_SOURCELINKFAILED    "유효한 소스 링크를 생성하려면 하이 ID가 필요함"
     IDS_ERR_LOADSERVERMET   "server.met 열기 실패!"
@@ -1059,8 +1019,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' 파일의 설명 수신: %s"
     IDS_WEBSERVICES         "웹 서비스(&W)"
     IDS_WEBSVEDIT           "웹 서비스 편집..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-														"eMule 링크 전송 프로토콜 메시지 무시"
     IDS_CHECK4UPDATE        "새로운 버전 확인"
     IDS_STARTUP             "시작"
     IDS_NEWVERSIONAVL       "eMule의 새로운 버전이 나왔습니다! 프로젝트 홈페이지에서 자세한 내용을 확인하십시오."
@@ -1429,9 +1387,6 @@ BEGIN
     IDS_FD_TIMEDATE         "날짜"
     IDS_FILEINFORMATION     "파일 정보"
     IDS_STATS_FREESPACE     "남은 공간"
-    IDS_IRC_HELPCHANNEL     "도움 채널로 접속"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-korean"
-    IDS_IRC_ACCEPTLINKSFRIENDS "친구로부터만"
     IDS_COMPLSOURCES        "완전체 소스"
     IDS_CHECKNOENDTIME      "종료 시간 없음"
 END
@@ -1667,8 +1622,6 @@ BEGIN
     IDS_SOURCECLIENT        "소스 클라이언트"
     IDS_USERSIP             "사용자 IP"
     IDS_FEATURES            "기능"
-    IDS_IRC_NEWNICK         "IRC 대화명 선택."
-    IDS_IRC_NEWNICKDESC     "20자 이내의 (A-Z, 0-9)만을 포함한 한 단어이어야 합니다. 설정->IRC 에서 변경할 수 있습니다."
     IDS_SPARSEPARTFILES     "새 Part 파일을 'sparse'로 생성 (NFTS에서만 가능)"
     IDS_ASPECTRATIO         "화면 비율"
     IDS_NEGATEFILTER        "부전 필터"

@@ -454,7 +454,6 @@ BEGIN
     IDS_SW_LINK             "文件链接"
     IDS_SW_START            "开始"
     IDS_SCHEDULER           "计划任务"
-    IDS_IRC                 "&IRC" //!
     IDS_SW_RESULT           "搜索结果"
     IDS_SW_DOWNLOAD         "下载所选文件"
     IDS_SV_SERVERLIST       "服务器列表"
@@ -727,9 +726,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "%u秒内将会重试自动连接到服务器"
     IDS_SERVERADDED         "服务器已被添加: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "忽略‘加入信息’消息"
     IDS_STATS_SUCCUPCOUNT   "总成功上传次数:%u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "忽略‘Part信息’消息"
     IDS_STATS_FAILUPCOUNT   "总失败上传次数:%u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "平均上传时间: %s"
     IDS_SEARCHMINSIZE       "最小文件(段)大小(MB)"
@@ -750,9 +747,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "图形平均时间间隔: %u 分钟"
     IDS_GRAPHS              "图形"
     IDS_STREE               "统计信息树"
-    IDS_IRC_IGNOREQUITMESSAGE "忽略‘退出信息’消息"
     IDS_STATSSETUPINFO      "设置统计信息显示"
-    IDS_IRC_SOUNDEVENTS     "播放声音事件"
     IDS_HARDLIMIT           "硬性限制"
     IDS_COL_MORECOLORS      "更多 ..."
     IDS_TOOMANYCONNS        "连接数太多"
@@ -778,13 +773,11 @@ BEGIN
     IDS_IP_HITS             "命中数"
     IDS_IP_RULES            "IP过滤:"
     IDS_ERR_NOTCONNECTEDKAD "当前没有连接到Kad网络!"
-    IDS_IRC_NOSFS           "未选定共享文件"
     IDS_RESETLABEL          "自动完成(历史功能)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "忽略杂信息消息"
     IDS_KNOWN               "已知"
     IDS_KADCONTACTSREAD     "从文件读取%u联系人."
     IDS_ERR_KADCONTACTS     "未发现联系人,请引导或下载nodes.dat文件."
@@ -811,7 +804,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "忽略eMule协议消息"
     IDS_SMARTLOWIDCHECK     "连接时启用智能LowID检测"
     IDS_SF_SRVOCC           "服务器占用:%.2f%%"
     IDS_3DDEP               "进度条样式"
@@ -848,35 +840,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "弹出消息当"
     IDS_TBN_NEWCHATMSG      "消息来自"
     IDS_PW_CON_CAPFRM       "能力"
-    IDS_IRC_PRIVATECHANSTART "* 私人对话开启"
-    IDS_IRC_SLAPMSG         "* %s打了%s一巴掌!"
-    IDS_IRC_PRIVMESSAGE     "私人消息"
     IDS_WEB_REMOTE_LINK_ADDED "链接已添加:"
     IDS_WEB_REMOTE_LINK_NOT_ADDED "链接未添加.密码错误."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "优先下载预览所需要的文件块"
-    IDS_IRC_KICK            "踢"
-    IDS_IRC_SLAP            "打巴掌"
-    IDS_IRC_JOIN            "加入"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "频道列表"
     IDS_IRC_CONNECT         "连接"
     IDS_IRC_DISCONNECT      "断开"
-    IDS_IRC_HASJOINED       "* %s已经加入了%s"
-    IDS_IRC_HASPARTED       "* %s已经离开了%s(%s)"
-    IDS_IRC_WASKICKEDBY     "* %s被%s踢了(%s)"
     IDS_DOWNLOAD_ALPHABETICAL "按照字母表顺序下载"
-    IDS_IRC_HASQUIT         "* %s已经退出(%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s改名为%s"
-    IDS_IRC_SETSMODE        "* %s设置模式:%s %s"
-    IDS_IRC_NOTSUPPORTED    "** 设置了未被支持的模式,你可能需要离开并重新加入频道以更新列表 ..."
-    IDS_IRC_CHANNEL         "频道"
-    IDS_IRC_NICK            "昵称"
-    IDS_IRC_SEND            "发送"
-    IDS_IRC_NAME            "名字"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION 打了%s一巴掌!\001"
 END
 
 STRINGTABLE
@@ -899,7 +872,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "仅在相同的分类中"
     IDS_LOG_ULDL_EVENTS     "记录上传/下载事件"
 //    IDS_PEERCACHE_ENABLED   "你的 ISP 支持 PeerCache 技术,启用 PeerCache 下载!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "允许其他用户添加你为好友"
     IDS_SOURCESWAPBLOCKED   "已禁止置换"
     IDS_TRICKLING           "阻塞"
     IDS_A4AF_CHECK_THIS_NOW "立即检查这个来源 (debug)"
@@ -913,21 +885,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "在消息中加入时间戳"
-    IDS_IRC_USEFILTER       "使用频道列表过滤"
     IDS_IRC_PERFORM         "动作"
-    IDS_IRC_USEPERFORM      "连接时执行的命令"
     IDS_IRC_ADDTOFRIENDLIST "加入好友列表"
-    IDS_IRC_LOADCHANNELLISTONCON "连接时加载服务器频道列表"
-    IDS_IRC_ADDASFRIEND     "把你加为好友!"
     IDS_PW_WARNING          "你为""%s""选定的数值超过了操作系统的支持范围: %u\n这可能导致系统不稳定.\n\n确认要设置吗?"
     IDS_TAKEOVER            "替换"
     IDS_CLEANUP             "清除"
     IDS_RENAME              "改名"
-    IDS_IRC_ADDLINKTOIRC    "将此加入IRC剪贴板以发送给好友"
-    IDS_IRC_SENDLINK        "发送给好友:"
-    IDS_IRC_RECIEVEDLINK    "%s发送(%s)将自动开启"
-    IDS_IRC_ACCEPTLINKS     "在IRC中接受ED2K链接(请谨慎使用此功能!)"
     IDS_SHARED              "共享的"
 END
 
@@ -957,7 +920,6 @@ BEGIN
     IDS_PW_MINREC           "最小推荐值\t%u "
     IDS_PW_UA               "设置最大上下载速度"
     IDS_PW_PA               "节流调整上下载速度"
-    IDS_IRC_IGNOREINFOMESSAGE "忽略信息消息"
     IDS_CONNECTIONLOST      "失去连接"
     IDS_WIZ_OS_FRAME        "操作系统"
     IDS_HASHINGFILE         "Hashing文件:"
@@ -1000,8 +962,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(下方输入!)"
     IDS_STATS_MAXAVGDL      "最大平均下载速度(本次会话): %s"
     IDS_STATS_MAXDL         "最大下载速度: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "忽略eMule添加朋友协议消息"
     IDS_PW_FASTSRVCON       "安全连接"
     IDS_SOURCELINKFAILED    "你需要有HighID来建立合法的带源链接"
     IDS_ERR_LOADSERVERMET   "加载server.met失败!"
@@ -1063,8 +1023,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "收到文件'%s'的描述: %s"
     IDS_WEBSERVICES         "&Web服务"
     IDS_WEBSVEDIT           "编辑Web服务"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "忽略eMule发送链接协议消息"
     IDS_CHECK4UPDATE        "检查新版本"
     IDS_STARTUP             "启动"
     IDS_NEWVERSIONAVL       "已有新版本的eMule可下载!查看主页上的详细信息."
@@ -1433,9 +1391,6 @@ BEGIN
     IDS_FD_TIMEDATE         "日期"
     IDS_FILEINFORMATION     "文件信息"
     IDS_STATS_FREESPACE     "临时目录分区上的可用空间"
-    IDS_IRC_HELPCHANNEL     "连接到帮助频道."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-chinese"
-    IDS_IRC_ACCEPTLINKSFRIENDS "仅从朋友."
     IDS_COMPLSOURCES        "完成来源"
     IDS_CHECKNOENDTIME      "没有结束时间"
 END
@@ -1671,8 +1626,6 @@ BEGIN
     IDS_SOURCECLIENT        "客户端来源"
     IDS_USERSIP             "用户 IP"
     IDS_FEATURES            "特性"
-    IDS_IRC_NEWNICK         "选择一个 IRC 昵称."
-    IDS_IRC_NEWNICKDESC     "一个昵称应该少于20个字符,可以使用(A-Z,0-9).你可以在 设置->IRC 中更改它."
     IDS_SPARSEPARTFILES     "建立新的Part文件为""稀疏文件""(仅限 NTFS 使用)"
     IDS_ASPECTRATIO         "约束比例"
     IDS_NEGATEFILTER        "取消过滤"

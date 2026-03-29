@@ -399,7 +399,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Bilaketaren emaitzak"
     IDS_SW_DOWNLOAD         "Hautatutakoa jaitsi"
     IDS_SV_SERVERLIST       "Zerbitzari zerrenda"
@@ -666,9 +665,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K loturak"
     IDS_RECONNECT           "%u segundu barru birkonektatzen saiatuko da"
     IDS_SERVERADDED         "Zerbitzaria gehitu da: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Bateratze informazio mezuak baztertu"
     IDS_STATS_SUCCUPCOUNT   "Igoera arrakastatsuak guztira: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Zatien informazio mezuak baztertu"
     IDS_STATS_FAILUPCOUNT   "Huts egindako igoerak guztira: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Batez besteko igoera denbora: %s"
     IDS_SEARCHMINSIZE       "Tamaina min. (MB)"
@@ -689,9 +686,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Grafikaren denbora tartea: %u minutu"
     IDS_GRAPHS              "Grafikak"
     IDS_STREE               "Estatistiken zuhaitza"
-    IDS_IRC_IGNOREQUITMESSAGE "Irtetzerakoan, informazio mezuak baztertu"
     IDS_STATSSETUPINFO      "Estatistikak konfiguratu"
-    IDS_IRC_SOUNDEVENTS     "Soinuak"
 END
 
 STRINGTABLE
@@ -735,50 +730,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Gaitasuna"
-    IDS_IRC_PRIVATECHANSTART "* txat sesio pribatua hasi da"
-    IDS_IRC_SLAPMSG         "* %s -k zaplasteko bat eman dio %s-ri!"
-    IDS_IRC_PRIVMESSAGE     "Mezu pribatua"
-    IDS_IRC_KICK            "Kaleratu"
-    IDS_IRC_SLAP            "Zaplastekoa"
-    IDS_IRC_JOIN            "Kanalera sartu"
-    IDS_IRC_CHANNELLIST     "Kanal zerrenda"
     IDS_IRC_CONNECT         "Konektatu"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Deskonektatu"
-    IDS_IRC_HASJOINED       "* %s %s-n sartu da"
-    IDS_IRC_HASPARTED       "* %s %s (%s)-tik irten da"
-    IDS_IRC_WASKICKEDBY     "* %s, %s (%s)-k bota du"
-    IDS_IRC_HASQUIT         "* %s irten egin da (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s-ren ezizen berria %s da"
-    IDS_IRC_SETSMODE        "* %s-ren modu aldaketa: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Aukeratutako modu batzuk ezin dira ezarri. Baliteke beharrezkoa izatea irten eta berriz sartzea nick zerrenda eguneratzeko..."
-    IDS_IRC_CHANNEL         "Kanala"
-    IDS_IRC_NICK            "Erabiltzailea"
-    IDS_IRC_SEND            "Bidali"
-    IDS_IRC_NAME            "Izena"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION -k zaplasteko bat eman dio %s-ri!\001"
-    IDS_IRC_ADDTIMESTAMP    "Mezuei data eta ordua gehitu."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Kanalen zerrenda iragazkia erabili"
     IDS_IRC_PERFORM         "Burutu"
-    IDS_IRC_USEPERFORM      "Konektatzerakoan burututako katea erabili"
     IDS_IRC_ADDTOFRIENDLIST "Lagunen zerrendara gehitu"
-    IDS_IRC_LOADCHANNELLISTONCON "Kanal zerrenda kargatu konektatzerakoan"
-    IDS_IRC_ADDASFRIEND     "Lagun bezala gehitu zaituzte!"
     IDS_PW_WARNING          """%s""rentzako aukeratutako zenbakia sistema eragileak onartzen duena baino altuagoa da:  %u\nHonek ezegonkor bihur dezake sistema.\n\nZiur zaude egin nahi duzuna?"
     IDS_TAKEOVER            "Jaso"
     IDS_CLEANUP             "Garbitu"
     IDS_RENAME              "Izena aldatu"
-    IDS_IRC_ADDLINKTOIRC    "IRC-n kopiatu lagunei bidaltzeko."
-    IDS_IRC_SENDLINK        "Lagun bati bidali: "
-    IDS_IRC_RECIEVEDLINK    "%s bidali da (%s) automatikoki hasteko."
-    IDS_IRC_ACCEPTLINKS     "eD2K loturak onartu IRC-n. (Arretaz erabili!)"
     IDS_SHARED              "Konpartituta"
     IDS_DOWNLOADED          "Jaitsita"
 END
@@ -808,7 +775,6 @@ BEGIN
     IDS_PW_MINREC           "gomendatutako minimoa\t%u "
     IDS_PW_UA               "Igo/jaitsi abiadura muga ezarri"
     IDS_PW_PA               "Igo/jaitsi abiadura erregulatu"
-    IDS_IRC_IGNOREINFOMESSAGE "Informazio mezuak baztertu"
     IDS_CONNECTIONLOST      "Konexioa galdu da"
     IDS_WIZ_OS_FRAME        "Sistema eragilea"
     IDS_HASHINGFILE         "Fitxategiaren hash-a kodetzen:"
@@ -855,8 +821,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Jaitsiera abiadura max.: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Laguna gehitzerakoan, ohar mezua baztertu"
     IDS_PW_FASTSRVCON       "Konexio segurua"
     IDS_SOURCELINKFAILED    "Iturri baten lotura sortzeko ID altua izan behar duzu"
     IDS_ERR_LOADSERVERMET   "Errorea server.met kargatzerakoan!"
@@ -920,7 +884,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "eMule protokoloaren mezuak baztertu"
     IDS_SMARTLOWIDCHECK     "ID baxuaren kontrola konektatzerakoan"
     IDS_SF_SRVOCC           "Zerbitzarien karga: %.2f%%"
     IDS_3DDEP               "Aurrerapen-barra estiloa"
@@ -939,8 +902,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' fitxategiaren deskribapena jaso da: %s"
     IDS_WEBSERVICES         "Web zerbitzuak"
     IDS_WEBSVEDIT           "Web zerbitzuak editatu"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "eMule loturak bidaltzean, protokolo mezuak baztertu"
     IDS_CHECK4UPDATE        "Bertsio berririk dagoen begiratu"
     IDS_STARTUP             "Hasieran"
     IDS_NEWVERSIONAVL       "eMule bertsio berri bat dago. Informazio gehiago jasotzeko emule-project webgunea bisitatu"
@@ -1331,9 +1292,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Datak"
     IDS_FILEINFORMATION     "Fitxategi informazioa"
     IDS_STATS_FREESPACE     "Leku librea"
-    IDS_IRC_HELPCHANNEL     "Laguntza kanaletara konektatu."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-spanish"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Lagunengandik bakarrik onartu loturak"
     IDS_COMPLSOURCES        "Iturri osoak"
     IDS_CHECKNOENDTIME      "iraungipenik ez"
     IDS_FD_DOWNLOADSTARTED  "Jaitsiera gehituta:"
@@ -1497,9 +1455,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Une honetan ez zaude Kademlia sarera konektatuta!"
-    IDS_IRC_NOSFS           "Ez da konpartitutako fitxategirik aukeratu"
     IDS_RESETLABEL          "AutoOsatu (erregistro funtzioa)"
-    IDS_IRC_IGNOREMISCMESSAGE "Hainbat informazio mezu baztertu"
     IDS_KNOWN               "Ezaguna"
     IDS_KADCONTACTSREAD     "Fitxategitik %u kontaktu irakurri dira."
     IDS_ERR_KADCONTACTS     "Ez da kontakturik aurkitu, autoarrankatu edo nodes.dat fitxategi bat jaitsi ezazu."
@@ -1540,7 +1496,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "kategoria berdinean soilik"
     IDS_LOG_ULDL_EVENTS     "Igoera/Jaitsiera gertaerak log fitxategian gorde"
 //    IDS_PEERCACHE_ENABLED   "Zure Interneterako Zerbitzu Hornitzaileak (ISP) PeerCache onartzen du, cache-a aktibatuta!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Erabiltzaileak baimendu lagun bezala gehitu zaitzaten."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Lehenik eta behin, aurrikuspenerako beharrezko zatiak jaitsi"
 END
 
@@ -1653,8 +1608,6 @@ BEGIN
     IDS_SOURCECLIENT        "Bezero iturria"
     IDS_USERSIP             "Erabiltzaileen IP-ak"
     IDS_FEATURES            "Ezaugarriak"
-    IDS_IRC_NEWNICK         "IRC ezizen bat aukeratu."
-    IDS_IRC_NEWNICKDESC     "20 karaktere (A-Z, 0-9) baina gutxiago dituen hitz bat izan beharko litzateke. Hau 'Hobespenak->IRC'-n alda daiteke."
 END
 
 STRINGTABLE

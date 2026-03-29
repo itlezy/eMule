@@ -442,7 +442,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&IRC"
     IDS_SW_RESULT           "Riżultati tat-Tfittxija"
     IDS_SW_DOWNLOAD         "Niżżel"
     IDS_SV_SERVERLIST       "Servers"
@@ -709,9 +708,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Links tal-eD2K"
     IDS_RECONNECT           "Attentat ieħor għall-konnessjoni mas-server se jibda f' %u sekondi"
     IDS_SERVERADDED         "Server miżjud: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Injora messaġġi rigward informazzjoni ta' sħubija"
     IDS_STATS_SUCCUPCOUNT   "L-ammont total ta' sessjonijiet ta' upload: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Injora messaġġi rigward 'parts'"
     IDS_STATS_FAILUPCOUNT   "L-ammont total ta' sessjonijiet falluti ta' upload: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Medja ta' ħin ta' upload: %s"
     IDS_SEARCHMINSIZE       "Daqs Minimu [MB]"
@@ -732,17 +729,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Ħin medju ghall-graph: %u minuti"
     IDS_GRAPHS              "Graphs"
     IDS_STREE               "'Statistics tree'"
-    IDS_IRC_IGNOREQUITMESSAGE "Injora messaġġi rigward egħluq ta' konnessjoni"
     IDS_STATSSETUPINFO      "Statistiċi"
-    IDS_IRC_SOUNDEVENTS     "Semmagħni ħoss waqt xi avveniment partikolari"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Bħaslissa mintix imqabbad man-network Kad!"
-    IDS_IRC_NOSFS           "M'hemm l'ebda file ixxerjat magħżul"
     IDS_RESETLABEL          "'Auto completion' (funzjoni tal-'history')"
-    IDS_IRC_IGNOREMISCMESSAGE "Injorja messaġġi ġenerali"
     IDS_KNOWN               "Magħruf"
     IDS_KADCONTACTSREAD     "Inqraw %u kuntatti mill-file."
     IDS_ERR_KADCONTACTS     "Ma nstabu l-ebda kuntatti. Jekk jogħġbok agħmel 'bootstrap', jew iddawnlowdja il-file nodes.dat."
@@ -795,16 +788,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapaċitajiet"
-    IDS_IRC_PRIVATECHANSTART "* Inbdiet konverżazzjoni privata"
-    IDS_IRC_SLAPMSG         "* %s jagħti xebgħa njama lill %s!"
-    IDS_IRC_PRIVMESSAGE     "Messaġġ Privat"
     IDS_WEB_REMOTE_LINK_ADDED "Link miżjuda: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Il-link ma ġietx miżjuda. Password ħazina."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Hemm bżonn il-partijiet tal-'preview' l-ewwel"
-    IDS_IRC_KICK            "Ixxutja"
-    IDS_IRC_SLAP            "Fajjarlu daqqa"
-    IDS_IRC_JOIN            "Issieħeb"
-    IDS_IRC_CHANNELLIST     "Lista ta' 'channels'"
     IDS_IRC_CONNECT         "Aqbad"
 END
 
@@ -815,7 +801,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Fl-istess kategorija biss"
     IDS_LOG_ULDL_EVENTS     "Żomm Log tal-attivita tal-uploads/downloads"
 //    IDS_PEERCACHE_ENABLED   "L-ISP tiegħek jippermetti it-teknoloġija 'PeerCache', il-'cache downloads' ġew attivati!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Ippermetti li user iżidek bħala ħabib."
     IDS_SOURCESWAPBLOCKED   "Tpartit mhux permess"
     IDS_TRICKLING           "Stenna"
     IDS_A4AF_CHECK_THIS_NOW "Iċċekja dan is-sors (debug)"
@@ -826,38 +811,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Aqta"
-    IDS_IRC_HASJOINED       "* %s issieħeb/issieħbet %s"
-    IDS_IRC_HASPARTED       "* %s telaq/telqet %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s kien ixxutjat minn %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Iddawnlowdja f'ordni alfabetika"
-    IDS_IRC_HASQUIT         "* %s ħareġ (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s issa huwa magħruf bħala %s"
-    IDS_IRC_SETSMODE        "* %s jissetja il-'mode': %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Ċertu modes ma kinux issetjati kullimkien. Jista jkun li għandek bżonn toħroġ u terġa tidħol fiċ-channel biex taġġorna il-lista ta laqmijiet.."
-    IDS_IRC_CHANNEL         "Channel"
-    IDS_IRC_NICK            "Laqam"
-    IDS_IRC_SEND            "Ibgħat"
-    IDS_IRC_NAME            "Isem"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION jagħti daqqa ta' njama lill %s!\001"
-    IDS_IRC_ADDTIMESTAMP    "Żid il-ħin mal-messaġġ"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Uża il-filter tal-lista ta' channels"
     IDS_IRC_PERFORM         "Esegwixxi"
-    IDS_IRC_USEPERFORM      "Uża l-istring tal-'perform' waqt li tkun qiegħed taqbad"
     IDS_IRC_ADDTOFRIENDLIST "Żid mal-lista ta' ħbieb"
-    IDS_IRC_LOADCHANNELLISTONCON "Illowdja il-lista ta' channels fuq dan is-server meta tikkonnektja"
-    IDS_IRC_ADDASFRIEND     "miżjud bħala ħabibek!"
     IDS_PW_WARNING          "In-numru li għażilt għal ""%s"" huwa ikbar milli l-OS tiegħek jiflah:  %u\nDan jista jikkawża instabbilta' fis-sistema tiegħek.\n\nŻgur li tixtieq tkompli?"
     IDS_TAKEOVER            "Ħu kontroll"
     IDS_CLEANUP             "Naddaf kollox"
     IDS_RENAME              "Biddel l-isem"
-    IDS_IRC_ADDLINKTOIRC    "Żid mal-clipboard tal-IRC"
-    IDS_IRC_SENDLINK        "Ibgħat lill ħabib(a): "
-    IDS_IRC_RECIEVEDLINK    "%s bgħat/bgħatet (%s) biex jibda awtomatikament."
-    IDS_IRC_ACCEPTLINKS     "Aċċetta links tal-eD2K fuq IRC (Uża b'attenzjoni!)"
     IDS_SHARED              "Ixxerjat"
     IDS_DOWNLOADED          "Iddawnlowdjat"
 END
@@ -887,7 +851,6 @@ BEGIN
     IDS_PW_MINREC           "Il-minimu rikomandat\t%u "
     IDS_PW_UA               "Uża il-massimu tal-veloċita tal-Up/Down"
     IDS_PW_PA               "Agħmel 'throttle' tal-veloċita tal-Up/Down"
-    IDS_IRC_IGNOREINFOMESSAGE "Injora messaġġi ta' informazzjoni"
     IDS_CONNECTIONLOST      "Konnessjoni mwaqqa'"
     IDS_WIZ_OS_FRAME        "Sistema Operattiva"
     IDS_HASHINGFILE         "Il-file tal-Hashing:"
@@ -935,8 +898,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Masimu tal-veloċita' tad-download: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Injora il-messaġġi tal-eMule rigward l-'add friend protocol'"
     IDS_PW_FASTSRVCON       "Uża is-'Safe Connect'"
     IDS_SOURCELINKFAILED    "Għandek bżonn 'HighID' biex tagħmel 'sourcelink' validu"
     IDS_ERR_LOADSERVERMET   "Il-server.met ma jistax jiġi llowdjat!"
@@ -998,7 +959,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Injora messaġġi dwar l-'eMule protocol'"
     IDS_SMARTLOWIDCHECK     "Uża l-i'smart LowID check' meta tikkonnektja"
     IDS_SF_SRVOCC           "Okkupazzjoni tas-Server: %.2f%%"
     IDS_3DDEP               "Stil tal-Progressbar"
@@ -1017,8 +977,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Id-deskrizzjoni tal-file '%s' irċevuta: %s"
     IDS_WEBSERVICES         "Servizzi fuq il-Web"
     IDS_WEBSVEDIT           "Is-Servizzi tal-Web..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Injora il-messaġġi tal-'eMule send link protocol'"
     IDS_CHECK4UPDATE        "Iċċekja għall-verżjonijiet ġodda"
     IDS_STARTUP             "Ftuħ tal-programm"
     IDS_NEWVERSIONAVL       "Ħarġet verżjoni ġdida tal-eMule! Iċċekja il-website għal aktar informazzjoni."
@@ -1402,9 +1360,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Dati"
     IDS_FILEINFORMATION     "Informazzjoni fuq il-file"
     IDS_STATS_FREESPACE     "Spazju disponibbli"
-    IDS_IRC_HELPCHANNEL     "Ikkonnektja ma' channel tal-għajnuna"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-english"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Mingħand il-ħbieb biss"
     IDS_COMPLSOURCES        "Sorsi Kompluti"
     IDS_CHECKNOENDTIME      "Mhux magħruf il-ħin għat-tmiem"
     IDS_FD_DOWNLOADSTARTED  "Download miżjuda:"
@@ -1676,8 +1631,6 @@ BEGIN
     IDS_SOURCECLIENT        "Il-klijent"
     IDS_USERSIP             "IP tal-users"
     IDS_FEATURES            "Għamla"
-    IDS_IRC_NEWNICK         "Agħżel laqam għall-IRC."
-    IDS_IRC_NEWNICKDESC     "Irid ikun kelma waħda inqas minn 20 ittra magħmula minn (A-Z, 0-9). Tista tiġi mibdula mill-Preferenzi>IRC."
 END
 
 STRINGTABLE

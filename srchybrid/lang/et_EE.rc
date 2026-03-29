@@ -386,7 +386,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Otsingutulemused"
     IDS_SW_DOWNLOAD         "Tõmba valitud"
     IDS_SV_SERVERLIST       "Serverid"
@@ -652,9 +651,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ed2k viited"
     IDS_RECONNECT           "Uus ühenduskatse serveriga toimub %u sekundi pärast"
     IDS_SERVERADDED         "Server lisatud: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignoreeri Join infosõnumeid"
     IDS_STATS_SUCCUPCOUNT   "Õnnestunud saatmisi kokku: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignoreeri Part info teateid"
     IDS_STATS_FAILUPCOUNT   "Ebaõnnestunud saatmisi kokku: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Keskmine saatmise kestus: %s"
     IDS_SEARCHMINSIZE       "Min. suurus [MB]"
@@ -676,7 +673,6 @@ BEGIN
     IDS_STATS_AVGLABEL      "Graafikute kestus: %u min"
     IDS_GRAPHS              "Graafikud"
     IDS_STREE               "Statistikapuu"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignoreeri Quit infosõnumeid"
     IDS_STATSSETUPINFO      "Statistika"
 END
 
@@ -721,50 +717,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kiirus"
-    IDS_IRC_PRIVATECHANSTART "* Privaatsessioon alustatud"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "Privaatsõnum"
-    IDS_IRC_KICK            "Kicki"
-    IDS_IRC_SLAP            "Slap"
-    IDS_IRC_JOIN            "Ühine"
-    IDS_IRC_CHANNELLIST     "Kanalite loend"
     IDS_IRC_CONNECT         "Ühenda"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Katkesta"
-    IDS_IRC_HASJOINED       "* %s ühines kanaliga %s"
-    IDS_IRC_HASPARTED       "* %s lahkus kanalilt %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s kickis kasutaja %s (%s)"
-    IDS_IRC_HASQUIT         "* %s väljus (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s on nüüd nimega %s"
-    IDS_IRC_SETSMODE        "* %s seab mode: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Seati moded, mida eMule veel ei toeta. Võibolla peate te korraks kanalist lahkuma nicklisti uuendamiseks.."
-    IDS_IRC_CHANNEL         "Kanal"
-    IDS_IRC_NICK            "Nimi"
-    IDS_IRC_SEND            "Saada"
-    IDS_IRC_NAME            "Nimi"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001"
-    IDS_IRC_ADDTIMESTAMP    "Lisa sõnumitele kellaaeg."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Kasuta kanalite loendi filtrit"
     IDS_IRC_PERFORM         "Käivita"
-    IDS_IRC_USEPERFORM      "Kasuta automaatset käivitust"
     IDS_IRC_ADDTOFRIENDLIST "Lisa sõprade loendisse"
-    IDS_IRC_LOADCHANNELLISTONCON "Lae serveri kanalite loend ühendmisel"
-    IDS_IRC_ADDASFRIEND     "lisas Sind oma sõbraks!"
     IDS_PW_WARNING          "Number, mille te valisite ""%s"" on suurem kui teie OS toetab:  %u\nSee võib teie süsteemi ebastabiilseks muuta.\n\nKas olete kindel, et tahate seda teha?"
     IDS_TAKEOVER            "Asenda"
     IDS_CLEANUP             "Korrasta"
     IDS_RENAME              "Nimeta ümber"
-    IDS_IRC_ADDLINKTOIRC    "Lisa see IRC mällu sõpradele saatmiseks"
-    IDS_IRC_SENDLINK        "Saada see sõbrale: "
-    IDS_IRC_RECIEVEDLINK    "%s saatis (%s) automaatselt alustamiseks."
-    IDS_IRC_ACCEPTLINKS     "Aktsepteeri ed2k viiteid IRCis. (Kasuta ettevaatlikult!)"
     IDS_SHARED              "Jagatud"
     IDS_DOWNLOADED          "Tõmmatud"
 END
@@ -794,7 +762,6 @@ BEGIN
     IDS_PW_MINREC           "Vähim soovitatud\t%u "
     IDS_PW_UA               "Luba suurim üles/alla-kiirus"
     IDS_PW_PA               "Vähenda üles/alla-kiirust"
-    IDS_IRC_IGNOREINFOMESSAGE "Eira infosõnumeid"
     IDS_CONNECTIONLOST      "Ühendus kadunud"
     IDS_WIZ_OS_FRAME        "Operatsioonisüsteem"
     IDS_HASHINGFILE         "Hashin faili:"
@@ -841,8 +808,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Suurim tõmbamiskiirus: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignoreeeri eMule protokolli sõbralisamise teateid"
     IDS_PW_FASTSRVCON       "Turvaline ühendamine"
     IDS_SOURCELINKFAILED    "Korrektse allikviite loomiseks peab Sul olema HighID"
     IDS_ERR_LOADSERVERMET   "Ei suutnud laadida server.met!"
@@ -904,7 +869,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignoreeri eMule protokollisõnumeid"
     IDS_SMARTLOWIDCHECK     "Kasuta nutikat LowID kontrolli ühendamisel"
     IDS_SF_SRVOCC           "Serveri hõivatus: %.2f%%"
     IDS_3DDEP               "Progressiriba stiil"
@@ -923,8 +887,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Kirjeldus failile '%s' saabus: %s"
     IDS_WEBSERVICES         "Veebiteenused"
     IDS_WEBSVEDIT           "Muuda veebiteenuseid"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignoreeri eMule viite saatmise protokollisõnumeid"
     IDS_CHECK4UPDATE        "Kontrolli uue versiooni saadavust"
     IDS_STARTUP             "Käivitamine"
     IDS_NEWVERSIONAVL       "Uus eMule versioon on saadaval! Vaata projekti kodulehte täiendava info saamiseks."
@@ -1313,9 +1275,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Kuupäevad"
     IDS_FILEINFORMATION     "Failiinfo"
     IDS_STATS_FREESPACE     "Free Space"
-    IDS_IRC_HELPCHANNEL     "Ühine 'help' kanaliga."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-estonian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Vaid sõpradelt."
     IDS_COMPLSOURCES        "Tervikfaili allikaid"
     IDS_CHECKNOENDTIME      "Lõpp määramata"
     IDS_FD_DOWNLOADSTARTED  "Tõmbamine lisatud:"
@@ -1477,15 +1436,12 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Sa pole hetkel Kad võrguga ühenduses!"
-    IDS_IRC_NOSFS           "Ühtegi jagatud faili pole valitud"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignoreeri erinevaid infosõnumeid"
     IDS_KNOWN               "Tuntud"
     IDS_DL_ACTIVE_TIME      "Tõmbamise aeg"
     IDS_RESETLABEL          "Otsingusõnade ajalugu"
     IDS_PASTE               "Kleebi"
     IDS_UNDO                "Taasta"
     IDS_CUT                 "Lõika"
-    IDS_IRC_SOUNDEVENTS     "Kasuta soundi"
     IDS_KADCONTACTSREAD     "Failist loeti %u kontakti."
     IDS_ERR_KADCONTACTS     "Kontakte pole, palun bootstrap'i või tõmba sobiv nodes.dat fail."
     IDS_SEARCHPARAMS        "Otsingutingimused"
@@ -1526,7 +1482,6 @@ BEGIN
     IDS_A4AF_CHECK_THIS_NOW "Kontrolli seda allikad kohe (silu)"
     IDS_LOG_ULDL_EVENTS     "Üles/allalaadimiste sündmuste logi"
 //    IDS_PEERCACHE_ENABLED   "Sinu ISP toed PeerCache tehnoloogia, võimalda vahemälu allalaadimised!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Luba kasutajal sind lisada sõprade nimekirja."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Allalaetud osad vajalikud emase eelvaatluseks"
 END
 
@@ -1639,8 +1594,6 @@ BEGIN
     IDS_SOURCECLIENT        "Algallika klient"
     IDS_USERSIP             "Kasutaja IP"
     IDS_FEATURES            "Eriomadused"
-    IDS_IRC_NEWNICK         "Vali IRC signatuur."
-    IDS_IRC_NEWNICKDESC     "Should be one word less then 20 characters containing (A-Z, 0-9). It can be changed again in Preferences->Irc."
 END
 
 STRINGTABLE

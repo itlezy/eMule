@@ -159,8 +159,7 @@ CChatItem* CChatSelector::StartSession(CUpDownClient *client, bool show)
 	pf.dxOffset = 150;
 	chatitem->log->SetParaFormat(pf);
 
-	if (thePrefs.GetIRCAddTimeStamp())
-		AddTimeStamp(chatitem);
+	AddTimeStamp(chatitem);
 	CString name;
 	name.Format(_T("%s%s\n"), (LPCTSTR)GetResString(IDS_CHAT_START), (LPCTSTR)client->GetUserName());
 	chatitem->log->AppendKeyWord(name, STATUS_MSG_COLOR);
@@ -231,8 +230,7 @@ void CChatSelector::ProcessMessage(CUpDownClient *sender, const CString &message
 			return;
 		ci = StartSession(sender, false);
 	}
-	if (thePrefs.GetIRCAddTimeStamp())
-		AddTimeStamp(ci);
+	AddTimeStamp(ci);
 	ci->log->AppendKeyWord(sender->GetUserName(), RECV_SOURCE_MSG_COLOR);
 	CString s;
 	s.Format(_T(": %s\n"), (LPCTSTR)message);
@@ -252,8 +250,7 @@ void CChatSelector::ShowCaptchaRequest(CUpDownClient *sender, HBITMAP bmpCaptcha
 {
 	CChatItem *ci = GetItemByClient(sender);
 	if (ci != NULL) {
-		if (thePrefs.GetIRCAddTimeStamp())
-			AddTimeStamp(ci);
+		AddTimeStamp(ci);
 		CString s;
 		s.Format(_T("*** %s"), (LPCTSTR)GetResString(IDS_CAPTCHAREQUEST));
 		ci->log->AppendKeyWord(s, STATUS_MSG_COLOR);
@@ -266,8 +263,7 @@ void CChatSelector::ShowCaptchaResult(CUpDownClient *sender, const CString &strR
 {
 	CChatItem *ci = GetItemByClient(sender);
 	if (ci != NULL) {
-		if (thePrefs.GetIRCAddTimeStamp())
-			AddTimeStamp(ci);
+		AddTimeStamp(ci);
 		CString s;
 		s.Format(_T("*** %s\n"), (LPCTSTR)strResult);
 		ci->log->AppendKeyWord(s, STATUS_MSG_COLOR);
@@ -302,8 +298,7 @@ bool CChatSelector::SendText(const CString &rstrText)
 	if (ci->client->socket && ci->client->socket->IsConnected()) {
 		// 1. the client is connected already - this is simple, just send
 		ci->client->SendChatMessage(rstrText);
-		if (thePrefs.GetIRCAddTimeStamp())
-			AddTimeStamp(ci);
+		AddTimeStamp(ci);
 		ci->log->AppendKeyWord(thePrefs.GetUserNick(), SENT_TARGET_MSG_COLOR);
 		CString s;
 		s.Format(_T(": %s\n"), (LPCTSTR)rstrText);
@@ -317,8 +312,7 @@ bool CChatSelector::SendText(const CString &rstrText)
 	} else {
 		// 3. This is a normal client, who is not connected right now. Just try to
 		// connect to the given IP without any additional checks or searches.
-		if (thePrefs.GetIRCAddTimeStamp())
-			AddTimeStamp(ci);
+		AddTimeStamp(ci);
 		CString s;
 		s.Format(_T("*** %s"), (LPCTSTR)GetResString(IDS_CONNECTING));
 		ci->log->AppendKeyWord(s, STATUS_MSG_COLOR);
@@ -338,8 +332,7 @@ void CChatSelector::ConnectingResult(CUpDownClient *sender, bool success)
 	ci->client->SetChatState(MS_CHATTING);
 	if (success)
 		if (ci->strMessagePending.IsEmpty()) {
-			if (thePrefs.GetIRCAddTimeStamp())
-				AddTimeStamp(ci);
+			AddTimeStamp(ci);
 			ci->log->AppendKeyWord(_T("*** Connected\n"), STATUS_MSG_COLOR);
 		} else {
 			CString s;
@@ -347,8 +340,7 @@ void CChatSelector::ConnectingResult(CUpDownClient *sender, bool success)
 			ci->log->AppendKeyWord(s, STATUS_MSG_COLOR);
 			ci->client->SendChatMessage(ci->strMessagePending);
 
-			if (thePrefs.GetIRCAddTimeStamp())
-				AddTimeStamp(ci);
+			AddTimeStamp(ci);
 			ci->log->AppendKeyWord(thePrefs.GetUserNick(), SENT_TARGET_MSG_COLOR);
 			s.Format(_T(": %s\n"), (LPCTSTR)ci->strMessagePending);
 			ci->log->AppendText(s);
@@ -357,8 +349,7 @@ void CChatSelector::ConnectingResult(CUpDownClient *sender, bool success)
 		}
 	else
 		if (ci->strMessagePending.IsEmpty()) {
-			if (thePrefs.GetIRCAddTimeStamp())
-				AddTimeStamp(ci);
+			AddTimeStamp(ci);
 			ci->log->AppendKeyWord(GetResString(IDS_CHATDISCONNECTED) + _T('\n'), STATUS_MSG_COLOR);
 		} else {
 			CString s;
@@ -631,7 +622,7 @@ void CChatSelector::ReportConnectionProgress(CUpDownClient *pClient, const CStri
 	CChatItem *ci = GetItemByClient(pClient);
 	if (!ci)
 		return;
-	if (thePrefs.GetIRCAddTimeStamp() && !bNoTimeStamp)
+	if (!bNoTimeStamp)
 		AddTimeStamp(ci);
 	ci->log->AppendKeyWord(strProgressDesc, STATUS_MSG_COLOR);
 }

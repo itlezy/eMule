@@ -452,7 +452,6 @@ BEGIN
     IDS_SW_LINK             "Indirizzo eD2K"
     IDS_SW_START            "Inizia"
     IDS_SCHEDULER           "Pianificatore"
-    IDS_IRC                 "&IRC"
     IDS_SW_RESULT           "Risultati ricerche"
     IDS_SW_DOWNLOAD         "Scarica i file selezionati"
     IDS_SV_SERVERLIST       "Lista server"
@@ -725,9 +724,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "La connessione automatica ad un server sarà ripetuta tra %u secondi"
     IDS_SERVERADDED         "Server aggiunto: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignora le notifiche di nuovi ingressi in canale"
     IDS_STATS_SUCCUPCOUNT   "Invii totali riusciti: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignora i messaggi di uscita dal canale"
     IDS_STATS_FAILUPCOUNT   "Invii totali falliti: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Durata media invio: %s"
     IDS_SEARCHMINSIZE       "Dimensione minima [MB]"
@@ -748,9 +745,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Durata media grafico: %u min"
     IDS_GRAPHS              "Grafici"
     IDS_STREE               "Statistiche"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignora i messaggi di disconnessione dalla rete"
     IDS_STATSSETUPINFO      "Statistiche"
-    IDS_IRC_SOUNDEVENTS     "Attiva i suoni di sistema"
     IDS_HARDLIMIT           "Limite massimo"
     IDS_COL_MORECOLORS      "Altri..."
     IDS_TOOMANYCONNS        "Troppe connessioni"
@@ -776,13 +771,11 @@ BEGIN
     IDS_IP_HITS             "Contatti"
     IDS_IP_RULES            "Filtri IP:"
     IDS_ERR_NOTCONNECTEDKAD "Non sei connesso alla rete Kad!"
-    IDS_IRC_NOSFS           "Nessun file condiviso selezionato"
     IDS_RESETLABEL          "Completamento automatico (funzione cronologia)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "Ignora i messaggi di informazioni varie"
     IDS_KNOWN               "Conosciuto"
     IDS_KADCONTACTSREAD     "Letti %u contatti dal file."
     IDS_ERR_KADCONTACTS     "Nessun contatto trovato, clicca su Bootstrap in Kad o scarica un file ""nodes.dat"""
@@ -809,7 +802,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignora i messaggi del protocollo IRC di eMule"
     IDS_SMARTLOWIDCHECK     "Controllo ID basso alla connessione"
     IDS_SF_SRVOCC           "Occupazione server: %.2f%%"
     IDS_3DDEP               "Stile barra del progresso"
@@ -846,35 +838,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "Avvertimi quando:"
     IDS_TBN_NEWCHATMSG      "Messaggio da"
     IDS_PW_CON_CAPFRM       "Capacità"
-    IDS_IRC_PRIVATECHANSTART "* Inizio della conversazione privata"
-    IDS_IRC_SLAPMSG         "* %s colpisce %s con un grosso e puzzolente tonno!"
-    IDS_IRC_PRIVMESSAGE     "Messaggio privato"
     IDS_WEB_REMOTE_LINK_ADDED "Indirizzo aggiunto: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Indirizzo non aggiunto. Parola chiave errata."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Scarica prima le parti necessarie all'anteprima"
-    IDS_IRC_KICK            "Butta fuori"
-    IDS_IRC_SLAP            "Colpisci"
-    IDS_IRC_JOIN            "Entra"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "Lista canali"
     IDS_IRC_CONNECT         "Connetti"
     IDS_IRC_DISCONNECT      "Disconnetti"
-    IDS_IRC_HASJOINED       "* %s è entrato in %s"
-    IDS_IRC_HASPARTED       "* %s è uscito da %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s è stato buttato fuori da %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Scarica in ordine alfabetico"
-    IDS_IRC_HASQUIT         "* %s è uscito (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s è adesso conosciuto come %s"
-    IDS_IRC_SETSMODE        "* %s imposta la modalità: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Alcune modalità che sono state impostate non sono ancora presenti. Dovresti uscire e rientrare nel canale per aggiornare la lista utenti..."
-    IDS_IRC_CHANNEL         "Canale"
-    IDS_IRC_NICK            "Nick"
-    IDS_IRC_SEND            "Invia"
-    IDS_IRC_NAME            "Nome"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION colpisce %s con un grosso e puzzolente tonno!\001"
 END
 
 STRINGTABLE
@@ -897,7 +870,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Solo nella stessa categoria"
     IDS_LOG_ULDL_EVENTS     "Registra gli eventi di invio e recezione di dati"
 //    IDS_PEERCACHE_ENABLED   "Il tuo gestore supporta la tecnologia PeerCache, abilitata per gli scaricamenti!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Consenti agli altri di aggiungerti alla lista degli amici"
     IDS_SOURCESWAPBLOCKED   "Scambio bloccato"
     IDS_TRICKLING           "In attesa"
     IDS_A4AF_CHECK_THIS_NOW "Vedi ora la fonte (correzione errori)"
@@ -911,21 +883,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "Aggiungi l'orario ai messaggi"
-    IDS_IRC_USEFILTER       "Usa filtro per la lista dei canali"
     IDS_IRC_PERFORM         "Esegui"
-    IDS_IRC_USEPERFORM      "Usa la stringa di esecuzione alla connessione"
     IDS_IRC_ADDTOFRIENDLIST "Aggiungi agli amici"
-    IDS_IRC_LOADCHANNELLISTONCON "Carica la lista dei canali alla connessione"
-    IDS_IRC_ADDASFRIEND     "ti ha aggiunto tra gli amici!"
     IDS_PW_WARNING          "Il numero selezionato di ""%s"" è più grande di quanto il tuo sistema operativo ne supporti: %u\nQuesto potrebbe rendere il tuo sistema instabile.\n\nSei sicuro di volerlo fare?"
     IDS_TAKEOVER            "Modifica"
     IDS_CLEANUP             "Pulisci"
     IDS_RENAME              "Rinomina"
-    IDS_IRC_ADDLINKTOIRC    "Aggiungi questo indirizzo eD2K agli appunti IRC"
-    IDS_IRC_SENDLINK        "Invia questo indirizzo eD2K all'amico: "
-    IDS_IRC_RECIEVEDLINK    "%s inviato (%s) per essere avviato automaticamente."
-    IDS_IRC_ACCEPTLINKS     "Accetta gli indirizzi eD2K in IRC (usa con attenzione!)"
     IDS_SHARED              "Condiviso"
 END
 
@@ -955,7 +918,6 @@ BEGIN
     IDS_PW_MINREC           "Minima raccomandata\t%u "
     IDS_PW_UA               "Invio e ricezione pari alle capacità"//to coders: please check this
     IDS_PW_PA               "Invio e ricezione pari a 1"//as the line above
-    IDS_IRC_IGNOREINFOMESSAGE "Ignora messaggi di informazioni"
     IDS_CONNECTIONLOST      "Connessione persa"
     IDS_WIZ_OS_FRAME        "Sistema operativo"
     IDS_HASHINGFILE         "File in hashing:"
@@ -998,8 +960,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(inserire sotto)"
     IDS_STATS_MAXAVGDL      "Massima velocità di scaricamento media: %s"
     IDS_STATS_MAXDL         "Velocità di scaricamento massima: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignora i messaggi eMule di aggiunta amici"
     IDS_PW_FASTSRVCON       "Connessione sicura"
     IDS_SOURCELINKFAILED    "Devi avere un ID alto per poter crare un indirizzo eD2K con fonti"
     IDS_ERR_LOADSERVERMET   "Si è verificato un errore nel caricare il file ""server.met""!"
@@ -1061,8 +1021,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descrizione per il file ricevuto ""%s"": %s"
     IDS_WEBSERVICES         "Risorse in rete"
     IDS_WEBSVEDIT           "Modifica risorse in rete..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignora i messaggi di indirizzi eD2K"
     IDS_CHECK4UPDATE        "Controlla aggiornamenti"
     IDS_STARTUP             "Avvio"
     IDS_NEWVERSIONAVL       "È disponibile una nuova versione di eMule! Per maggiori informazioni vai sul sito di eMule."
@@ -1431,9 +1389,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Data"
     IDS_FILEINFORMATION     "Informazioni sul file"
     IDS_STATS_FREESPACE     "Spazio libero su disco"
-    IDS_IRC_HELPCHANNEL     "Connettiti ai canali di aiuto"
-    IDS_IRC_HELPCHANNELPERFORM "/join #eMule-Italian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Solo dagli amici"
     IDS_COMPLSOURCES        "Fonti complete"
     IDS_CHECKNOENDTIME      "Nessuna fine"
 END
@@ -1669,8 +1624,6 @@ BEGIN
     IDS_SOURCECLIENT        "Utente"
     IDS_USERSIP             "Indirizzo IP"
     IDS_FEATURES            "Caratteristiche"
-    IDS_IRC_NEWNICK         "Seleziona un nick per IRC."
-    IDS_IRC_NEWNICKDESC     "Deve essere una sola parola, puoi cambiarla da Opzioni - IRC - Nick. Spesso esistono delle restrizioni sui nick usabili"
     IDS_SPARSEPARTFILES     "Crea i nuovi file .part come file sparsi (solo NTFS)"
     IDS_ASPECTRATIO         "Formato"
     IDS_NEGATEFILTER        "Inverti"

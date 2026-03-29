@@ -391,7 +391,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&IRC"//!
     IDS_SW_RESULT           "Paieškos rezultatai"
     IDS_SW_DOWNLOAD         "Gauti pasirinktus"
     IDS_SV_SERVERLIST       "Serverių sąrašas"
@@ -658,9 +657,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2k nuorodos"
     IDS_RECONNECT           "Automatinis pakartotinas jungimasis prie serverio vyks po %u sekundžių"
     IDS_SERVERADDED         "Pridėtas serveris: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignoruoti prisijungimo informacinius pranešimus"
     IDS_STATS_SUCCUPCOUNT   "Viso sėkmingų išsiuntimo sesijų: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignoruoti Išėjimo info pranešimus"
     IDS_STATS_FAILUPCOUNT   "Viso nepavykusių išsiuntimo sesijų: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Vidutinis išsiuntimų laikas: %s"
     IDS_SEARCHMINSIZE       "Min dydis"
@@ -682,9 +679,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Vidutinis grafiko laikas: %u min"
     IDS_GRAPHS              "Grafikai"
     IDS_STREE               "Statistikos medis"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignoruoti Uždarymo info pranešimus"
     IDS_STATSSETUPINFO      "Statistikos langas"
-    IDS_IRC_SOUNDEVENTS     "Leisti garsą esant įvykiams"
 END
 
 STRINGTABLE
@@ -728,50 +723,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Ribos"
-    IDS_IRC_PRIVATECHANSTART "* Privati pokalbio sesija startavo"
-    IDS_IRC_SLAPMSG         "* %s trinkteli su didele kepta žuvim %s per makaulę!"
-    IDS_IRC_PRIVMESSAGE     "Privati žinutė"
-    IDS_IRC_KICK            "Išspirt"
-    IDS_IRC_SLAP            "Trinktelt"
-    IDS_IRC_JOIN            "Pasijungti"
-    IDS_IRC_CHANNELLIST     "Kanalų sąrašas"
     IDS_IRC_CONNECT         "Prisijungti"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Atsijungti"
-    IDS_IRC_HASJOINED       "* %s pasijungė prie %s"
-    IDS_IRC_HASPARTED       "* %s išėjo iš %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s išspyrė %s (%s)"
-    IDS_IRC_HASQUIT         "* %s išėjo (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s žinomas kaip %s"
-    IDS_IRC_SETSMODE        "* %s nustatė būseną: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Nustatytos tokios būsenos, kurios dar nepalaikomos. Jūs turite persijungti į kanalą iš naujo tam, kad atnaujinti nikų sąrašą..."
-    IDS_IRC_CHANNEL         "Kanalas"
-    IDS_IRC_NICK            "Nikas"
-    IDS_IRC_SEND            "Siųsti"
-    IDS_IRC_NAME            "Pavadinimas"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION trinkteli %s per makaulę!\001"
-    IDS_IRC_ADDTIMESTAMP    "Pridėti laiko rodymą prie žinučių."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Naudoti kanalų sąrašo filtrą"
     IDS_IRC_PERFORM         "Vykdyti"
-    IDS_IRC_USEPERFORM      "Jungiantis vykdyti komandą"
     IDS_IRC_ADDTOFRIENDLIST "Pridėti prie draugų sąrašo"
-    IDS_IRC_LOADCHANNELLISTONCON "Gauti serverio kanalų sąrašą prisijungiant."
-    IDS_IRC_ADDASFRIEND     "jūs pridėjo kaip draugą!"
     IDS_PW_WARNING          "Jūsų pasirinktas ""%s"" skaičius yra didesnis negu palaiko jūsų OS: %u\nKo pasekoje jūsų OS gali pradėt veikti nestabiliai.\n\nAr tikrai norite tai daryti?"
     IDS_TAKEOVER            "Perimti"
     IDS_CLEANUP             "Tvarkyti"
     IDS_RENAME              "Pervardinti"
-    IDS_IRC_ADDLINKTOIRC    "Pridėti į IRC atmintinę."
-    IDS_IRC_SENDLINK        "Išsiųsti tai draugam: "
-    IDS_IRC_RECIEVEDLINK    "%s išsiuntė (%s) ir tai automatiškai startuos."
-    IDS_IRC_ACCEPTLINKS     "Priimti eD2k nuorodas IRC lange (atsargiai!)."
     IDS_SHARED              "Šarinta"
     IDS_DOWNLOADED          "Gauta"
 END
@@ -801,7 +768,6 @@ BEGIN
     IDS_PW_MINREC           "Rekomenduojamas minimumas\t%u "
     IDS_PW_UA               "Nustatyti pilną Iš/Gav greitį"
     IDS_PW_PA               "Mažinti Iš/Gav greitį"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignoruoti informacinius pranešimus."
     IDS_CONNECTIONLOST      "Susijungimas nutrūko"
     IDS_WIZ_OS_FRAME        "Operacinė sistema"
     IDS_HASHINGFILE         "Hašinamas failas:"
@@ -848,8 +814,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Max gavimų greitis (sesija): %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignoruoti eMule draugų pridėjimo protokolo pranešimus"
     IDS_PW_FASTSRVCON       "Saugus prisijungimas"
     IDS_SOURCELINKFAILED    "Jūs turite turėti Aukštą ID jei norite sukurti teisingą šaltinių nuorodą"
     IDS_ERR_LOADSERVERMET   "Nepavyko įkrauti server.met!"
@@ -912,8 +876,6 @@ BEGIN
     IDS_MEGA                "M"//!
     IDS_GIGA                "G"//!
     IDS_TERA                "T"//!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE
-                            "Ignoruoti eMule protokolo pranešimus."
     IDS_SMARTLOWIDCHECK     "Naudoti gudrų Žemo ID patikrinimą jungiantis"
     IDS_SF_SRVOCC           "Serverio užimtumas: %.2f%%"
     IDS_3DDEP               "Progreso juostos stilius"
@@ -932,8 +894,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Failui '%s' gautas aprašymas: %s"
     IDS_WEBSERVICES         "Web servisai"
     IDS_WEBSVEDIT           "Redaguot Web servisus"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignoruoti eMule nuorodų siuntimo protokolo pranešimus"
     IDS_CHECK4UPDATE        "Tikrinti ar yra nauja versija kas"
     IDS_STARTUP             "Startuojant"
     IDS_NEWVERSIONAVL       "Išleista nauja eMule versija! Patikrinkite eMule projekto puslapį norėdami gauti daugiau informacijos."
@@ -1325,9 +1285,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Datos"
     IDS_FILEINFORMATION     "Failo informacija"
     IDS_STATS_FREESPACE     "Laisva vieta"
-    IDS_IRC_HELPCHANNEL     "Jungtis prie pagalbos kanalų."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-lithuanian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Tik iš draugų."
     IDS_COMPLSOURCES        "Pilni šaltiniai"
     IDS_CHECKNOENDTIME      "be pabaig. laiko"
     IDS_FD_DOWNLOADSTARTED  "Pridėtas gavimas:"
@@ -1491,9 +1448,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Šiuo metu esate neprisijungę prie Kad tinklo!"
-    IDS_IRC_NOSFS           "Neištinkti jokie šarinti failai"
     IDS_RESETLABEL          "Auto užbaigimas (istorijos funkcija)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignoruoti įvairius info pranešimus"
     IDS_KNOWN               "Žinomas"
     IDS_KADCONTACTSREAD     "Nuskaityra %u kontaktų iš failo."
     IDS_ERR_KADCONTACTS     "Nerasta jokių kontaktų, prašom panaudokite bootstrap, ar įkelkite nodes.dat failą."
@@ -1534,7 +1489,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "tik toje pačioje kategorijoje"
     IDS_LOG_ULDL_EVENTS     "Loginti išsiuntimo/gavimo įvykius"
 //    IDS_PEERCACHE_ENABLED   "Jūsų ISP palaiko PeerCache technologiją, įjungiu gavimą iš kešo!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Leisti vartotojam pridėti jus kaip draugą."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Pirma gauti dalis reikalingas peržiūrai"
 END
 
@@ -1647,8 +1601,6 @@ BEGIN
     IDS_SOURCECLIENT        "Šaltinio klientas"
     IDS_USERSIP             "Vartotojo IP"
     IDS_FEATURES            "Ypatybės"
-    IDS_IRC_NEWNICK         "Pasirinkite IRC niką."
-    IDS_IRC_NEWNICKDESC     "Turėtu būti vienas žodis, neilgesnis nei 20 simbolių (A-Z, 0-9). Vėliau niką galite pasikeisti Nustatymai > IRC."
 END
 
 STRINGTABLE

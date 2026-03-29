@@ -442,7 +442,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "&أي أر سي"
     IDS_SW_RESULT           "نتائج البحث"
     IDS_SW_DOWNLOAD         "حمل المختارين"
     IDS_SV_SERVERLIST       "الخدام"
@@ -709,9 +708,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2K وصلات"
     IDS_RECONNECT           "اتصال اوتوماتيكي عند اعادة المحاولة بعد in %u ثواني"
     IDS_SERVERADDED         "الخادم اضيف: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "تجاهل رسالة الالتحاق"
     IDS_STATS_SUCCUPCOUNT   "اجمالي الرفع الناجح: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "تجاهل رسالة البارت"
     IDS_STATS_FAILUPCOUNT   "اجمالي الرفع الغير ناجح: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "متوسط وقت الرفع: %s"
     IDS_SEARCHMINSIZE       "الحد الادنى. حجم [MB]"
@@ -732,17 +729,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "متوسط الوقت : %u دقائق"
     IDS_GRAPHS              "رسوم بيانية"
     IDS_STREE               "شجرة الاحصائيات"
-    IDS_IRC_IGNOREQUITMESSAGE "تجاهل رسائل الخروج"
     IDS_STATSSETUPINFO      "الاحصائيات"
-    IDS_IRC_SOUNDEVENTS     "اعزف صوت عند حدوث شئ"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "انت لست متصل بشبكة الكاد!"
-    IDS_IRC_NOSFS           "لا ملفات مشتركة معينه"
     IDS_RESETLABEL          "تكميل ذاتي (history function)"
-    IDS_IRC_IGNOREMISCMESSAGE "تجاهل الرسائل"
     IDS_KNOWN               "معروف"
     IDS_KADCONTACTSREAD     "اقرأ %u اتصال من الملف."
     IDS_ERR_KADCONTACTS     "لا اتصال موجود الرجاء تحميل  nodes.dat ملف."
@@ -795,16 +788,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "قابلية"
-    IDS_IRC_PRIVATECHANSTART "* دردشة خاصة قد بدأت"
-    IDS_IRC_SLAPMSG         "* %s تبب %s حول مع سمكة كبيرة!"
-    IDS_IRC_PRIVMESSAGE     "دردشة خاصة"
     IDS_WEB_REMOTE_LINK_ADDED "الوصلة اضيفت: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "الوصلة لم تضاف, كلمة سر خاطئة."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "ملفات البارت تحتاج الى اظهار اولا"
-    IDS_IRC_KICK            "اطرد"
-    IDS_IRC_SLAP            "تبب"
-    IDS_IRC_JOIN            "التحق"
-    IDS_IRC_CHANNELLIST     "قائمة القنوات"
     IDS_IRC_CONNECT         "اتصل"
 END
 
@@ -815,7 +801,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "فقط في نفس الجدول"
     IDS_LOG_ULDL_EVENTS     "رفع\تحميل حدث"
 //    IDS_PEERCACHE_ENABLED   "شركة الانترنت الخاصة بك تدعم تقنية البييركاشي, السماح بتحميل الكاشي!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "اسمح للمستخدم باضافتك كصديق."
     IDS_SOURCESWAPBLOCKED   "التبادل  حجز"
     IDS_TRICKLING           "الوقوف دون حدث"
     IDS_A4AF_CHECK_THIS_NOW "فحص المصدر الان (debug)"
@@ -826,38 +811,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "مقطوع الاتصال"
-    IDS_IRC_HASJOINED       "* %s التحق %s"
-    IDS_IRC_HASPARTED       "* %s جزء %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s طرد بواسطة %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "حمل بتسلل الابجدي"
-    IDS_IRC_HASQUIT         "* %s خرج (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s الان معروف بــ %s"
-    IDS_IRC_SETSMODE        "* %s يعطي الحالة: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** بعض التقنيات لم تضاف بعد, تحتاج الى المغادرة و اعادة الدخول"
-    IDS_IRC_CHANNEL         "القناة"
-    IDS_IRC_NICK            "اسم"
-    IDS_IRC_SEND            "ارسل"
-    IDS_IRC_NAME            "اسم"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s حول بسمكة كبيرة!\001"
-    IDS_IRC_ADDTIMESTAMP    "اضف توقيت الرسائل"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "استخدم فلتر القائمة"
     IDS_IRC_PERFORM         "نفذ"
-    IDS_IRC_USEPERFORM      "نفذ عند الاتصال"
     IDS_IRC_ADDTOFRIENDLIST "اضف الى قائمة الاصدقاء"
-    IDS_IRC_LOADCHANNELLISTONCON "حمل قائمة القنوات عند الاتصال"
-    IDS_IRC_ADDASFRIEND     "اضافك كصديق!"
     IDS_PW_WARNING          "الرقم الذي اخترته ل ""%s"" اكبر من دعم نظامك:  %u\nهذا يسبب عدم الموازنة.\n\nهل انت متأكد بانك تريد الاضافة؟"
     IDS_TAKEOVER            "سيطر"
     IDS_CLEANUP             "نضف"
     IDS_RENAME              "اعادة تسمية"
-    IDS_IRC_ADDLINKTOIRC    "اضيف الى ار اي سي كليب بورد"
-    IDS_IRC_SENDLINK        "ارسل هاذ لصديق: "
-    IDS_IRC_RECIEVEDLINK    "%s ارسل (%s) ليكون تلقائي البدأ."
-    IDS_IRC_ACCEPTLINKS     "اقبل  eD2K وصلات في ار اي سي (استخدم فقط مع التحديد!)"
     IDS_SHARED              "مشتركة"
     IDS_DOWNLOADED          "خمل"
 END
@@ -887,7 +851,6 @@ BEGIN
     IDS_PW_MINREC           "الحد الادنى ينصح \t%u "
     IDS_PW_UA               "حدد كامل رفع\تحميل السرعة"
     IDS_PW_PA               " سرع رفع\تحميل السرعة"
-    IDS_IRC_IGNOREINFOMESSAGE "تجاهل رساءل المعلومات"
     IDS_CONNECTIONLOST      "فقد الاتصال"
     IDS_WIZ_OS_FRAME        "نطام التشغيل"
     IDS_HASHINGFILE         "تحشيش الملف:"
@@ -934,8 +897,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "الحد الاعلى للتحميل: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "تجاهل رسائل ايمول عند اضافة صديق"
     IDS_PW_FASTSRVCON       "اتصال سالم"
     IDS_SOURCELINKFAILED    "تحتاج ال خاصية عالية لبناء مصدر وصلة فعال"
     IDS_ERR_LOADSERVERMET   "فشل في تحميل server.met!"
@@ -997,7 +958,6 @@ BEGIN
     IDS_MEGA                "م"
     IDS_GIGA                "ج"
     IDS_TERA                "ت"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "تجاهل رسائل بروتوكول ايمول"
     IDS_SMARTLOWIDCHECK     "استعل هوية منخفضة جرب اثناء الاتصال"
     IDS_SF_SRVOCC           "وضع الخادم: %.2f%%"
     IDS_3DDEP               "الشكل"
@@ -1016,8 +976,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "وصف الملف '%s' استلم: %s"
     IDS_WEBSERVICES         "&خدمة الموقع"
     IDS_WEBSVEDIT           "عدل خدمة الموقع..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "تجاهل وصلات بروتوكول ايمول"
     IDS_CHECK4UPDATE        "افحص هل هاك اصدار جديد"
     IDS_STARTUP             "البدأ"
     IDS_NEWVERSIONAVL       "اصدار جديد من ايمول متوفر! افحص موقعنا لمزيد من المعلومات."
@@ -1383,9 +1341,6 @@ BEGIN
     IDS_FD_TIMEDATE         "تواريخ"
     IDS_FILEINFORMATION     "معلومات الملف"
     IDS_STATS_FREESPACE     "مساحة مفتوحة"
-    IDS_IRC_HELPCHANNEL     "اتصل بقناة المساعدة"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-arabic"
-    IDS_IRC_ACCEPTLINKSFRIENDS "من الاصدقاء فقط"
     IDS_COMPLSOURCES        "اكمل المصادر"
     IDS_CHECKNOENDTIME      "لا وقت نهاية"
     IDS_FD_DOWNLOADSTARTED  "اضيف التحميل:"
@@ -1657,8 +1612,6 @@ BEGIN
     IDS_SOURCECLIENT        "مصدر العميل"
     IDS_USERSIP             "ايبي المستخدم"
     IDS_FEATURES            "ميزات"
-    IDS_IRC_NEWNICK         "اختر اسم للدردشة."
-    IDS_IRC_NEWNICKDESC     "يجب ان تكون كلمة واحدة اقل من 20 حرف يتضمن (A-Z, 0-9). يمكن تغييرها لاحقا من  اّفضليات->Irc."
 END
 
 STRINGTABLE

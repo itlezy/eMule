@@ -374,7 +374,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Søkjeresultat"
     IDS_SW_DOWNLOAD         "Nedlasting valt"
     IDS_SV_SERVERLIST       "Tenarliste"
@@ -641,9 +640,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K-lenker"
     IDS_RECONNECT           "Automatisk kopling til tenarar vert freista om %u sekund"
     IDS_SERVERADDED         "Tenarar lagt til: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignorer velkomstmeldingar"
     IDS_STATS_SUCCUPCOUNT   "Totalt tal på vellukka opplastingssesjonar: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignorer delmeldingar"
     IDS_STATS_FAILUPCOUNT   "Totalt tal på feila opplastingssesjonar: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Gjennomsnittleg opplastingstid: %s"
     IDS_SEARCHMINSIZE       "Min. storleik [MB]"
@@ -664,9 +661,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Tid for gjennomsnittleg graf: %u min"
     IDS_GRAPHS              "Graf"
     IDS_STREE               "Statistikk tre"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignorer avsluttingsmeldingar"
     IDS_STATSSETUPINFO      "Statistikksyning"
-    IDS_IRC_SOUNDEVENTS     "Spel lyd ved hendingar"
 END
 
 STRINGTABLE
@@ -709,13 +704,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapasitet"
-    IDS_IRC_PRIVATECHANSTART "* Privat meldingsøkt starta"
-    IDS_IRC_SLAPMSG         "* %s slår %s med ein stor, feit laks!"
-    IDS_IRC_PRIVMESSAGE     "Privat melding"
-    IDS_IRC_KICK            "Spark"
-    IDS_IRC_SLAP            "Slå"
-    IDS_IRC_JOIN            "Ta del"
-    IDS_IRC_CHANNELLIST     "Kanalliste"
     IDS_IRC_CONNECT         "Kople til"
 END
 
@@ -726,43 +714,21 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "berre i same kategori"
     IDS_LOG_ULDL_EVENTS     "Logg opplasting/nedlastingshendingar"
 //    IDS_PEERCACHE_ENABLED   "Internettleverandøren din støttar PeerCache teknologien; aktiverer cachenedlastingar!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Tillat brukarar å leggje deg til som ven"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Kople frå"
-    IDS_IRC_HASJOINED       "* %s har kome inn i %s"
-    IDS_IRC_HASPARTED       "* %s har reist frå %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s vart kasta ut av %s (%s)"
-    IDS_IRC_HASQUIT         "* %s har avslutta (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s har endra namn til %s"
-    IDS_IRC_SETSMODE        "* %s set modus: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Nokre innstillingar er lagra, men vert enno ikkje støtta. Kanskje må du gå ut av og deretter inn i kanalen att for å oppdatere kallenamnlista."
-    IDS_IRC_CHANNEL         "Kanal"
-    IDS_IRC_NICK            "Kallenamn"
-    IDS_IRC_SEND            "Send"
-    IDS_IRC_NAME            "Namn"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slår %s med ein stor, feit laks!\001"
-    IDS_IRC_ADDTIMESTAMP    "Legg tidsstempel til meldingar"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Bruk kanallistefilter"
     IDS_IRC_PERFORM         "Iverksetje"
-    IDS_IRC_USEPERFORM      "Iverksetje ved oppstart"
     IDS_IRC_ADDTOFRIENDLIST "Leggje til i venelista"
-    IDS_IRC_LOADCHANNELLISTONCON "Last inn tenarkanalliste ved oppstart"
-    IDS_IRC_ADDASFRIEND     "la deg til som ven!"
     IDS_PW_WARNING          "Talet du har valt for ""%s"" er høgare enn operativsystemet ditt støttar: %u\nDette kan føre til at systemet ditt vert ustabilt.\n\nVil du halde fram?"
     IDS_TAKEOVER            "Ta over"
     IDS_CLEANUP             "Rydd opp"
     IDS_RENAME              "Døype om"
-    IDS_IRC_ADDLINKTOIRC    "Legg til IRC utklippstavle for å sende til ein ven"
-    IDS_IRC_SENDLINK        "Send dette til ein ven: "
-    IDS_IRC_RECIEVEDLINK    "%s send (%s) for å verte starta automatisk"
-    IDS_IRC_ACCEPTLINKS     "Ta imot ED2K-lenker i IRC. (Ver varsam med dette!)"
     IDS_SHARED              "Delt"
     IDS_DOWNLOADED          "Lasta ned"
 END
@@ -792,7 +758,6 @@ BEGIN
     IDS_PW_MINREC           "Minimum tilrådd\t%u "
     IDS_PW_UA               "Full opp/ned fart"
     IDS_PW_PA               "Opp/ned fart på 1kB/s"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignorer infomeldingar"
     IDS_CONNECTIONLOST      "Tapt kopling"
     IDS_WIZ_OS_FRAME        "Operativsystem"
     IDS_HASHINGFILE         "Hashar fil:"
@@ -839,7 +804,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Maks. nedlastingsfart: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND "Ignorer ´legg-til-ven´ protokollmelding i emule"
     IDS_PW_FASTSRVCON       "Snøggtilkopling til tenarar"
     IDS_SOURCELINKFAILED    "Du treng ein høg ID for å lage ei ED2K-lenke (kjelde)"
     IDS_ERR_LOADSERVERMET   "Kunne ikkje lese inn server.met!"
@@ -901,7 +865,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignorer eMule protomeldingar"
     IDS_SMARTLOWIDCHECK     "Bruk smart låg-id kontroll ved kopling"
     IDS_SF_SRVOCC           "Tenarbelasting: %.2f%%"
     IDS_3DDEP               "Framdriftsbar stil"
@@ -920,7 +883,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Filskildring av '%s' motteken: %s"
     IDS_WEBSERVICES         "Vevtenester"
     IDS_WEBSVEDIT           "Rediger vevtenester"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK "Ignorer eMule protokollmelding om send lenke "
     IDS_CHECK4UPDATE        "Sjå etter ny utgåve"
     IDS_STARTUP             "Oppstart"
     IDS_NEWVERSIONAVL       "Det er ei ny utgåve av eMule tilgjengeleg! Sjå eMule si heimeside for meir informasjon."
@@ -1302,9 +1264,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Datoar"
     IDS_FILEINFORMATION     "Filinformasjon"
     IDS_STATS_FREESPACE     "Friplass"
-    IDS_IRC_HELPCHANNEL     "Kople til hjelpekanalane"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-norwegian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Kun fra venar"
     IDS_COMPLSOURCES        "Komplette kjelder"
     IDS_CHECKNOENDTIME      "Inga slutttid"
     IDS_FD_DOWNLOADSTARTED  "Nedlasting lagt til: "
@@ -1465,9 +1424,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Du er i augneblinken ikkje tilkopla Kad-nettverket!"
-    IDS_IRC_NOSFS           "Ingen delte filer Valt"
     IDS_RESETLABEL          "Autokomplettering"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignorer ymse infomeldingar"
     IDS_KNOWN               "Kjende"
     IDS_KADCONTACTSREAD     "Les %u kontaktar frå fil"
     IDS_ERR_KADCONTACTS     "Ingen kontaktar funne; køyr oppstart, eller last ned ei nodes.dat fil."
@@ -1608,8 +1565,6 @@ BEGIN
     IDS_SOURCECLIENT        "Kjeldeklient"
     IDS_USERSIP             "Brukerane sin IP"
     IDS_FEATURES            "Eigenskapar"
-    IDS_IRC_NEWNICK         "Oppgje eit IRC kallenamn"
-    IDS_IRC_NEWNICKDESC     "Skal være eit ord på færre enn 20 karakterar innehaldande (A-Z, 0-9). Det kan endrast att i eMule sine innstillingar - Irc."
 END
 
 STRINGTABLE

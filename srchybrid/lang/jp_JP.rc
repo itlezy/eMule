@@ -444,7 +444,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "検索結果"
     IDS_SW_DOWNLOAD         "ダウンロード"
     IDS_SV_SERVERLIST       "サーバー"
@@ -711,9 +710,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2Kリンク"
     IDS_RECONNECT           "%u秒でサーバーへの自動接続を再試行します"
     IDS_SERVERADDED         "追加サーバー: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "参加情報メッセージを無視"
     IDS_STATS_SUCCUPCOUNT   "成功したアップロードの合計: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "部品情報メッセージを無視"
     IDS_STATS_FAILUPCOUNT   "失敗したアップロードの合計: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "平均アップロード時間: %s"
     IDS_SEARCHMINSIZE       "最小サイズ(MB)"
@@ -735,17 +732,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "平均グラフの間隔: %u分"
     IDS_GRAPHS              "グラフ"
     IDS_STREE               "統計ツリー"
-    IDS_IRC_IGNOREQUITMESSAGE "終了情報メッセージを無視する"
     IDS_STATSSETUPINFO      "統計"
-    IDS_IRC_SOUNDEVENTS     "イベント時に音を鳴らす"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Kadネットワークに未接続です!"
-    IDS_IRC_NOSFS           "共有ファイルが選択されていません"
     IDS_RESETLABEL          "自動補完 (履歴機能)"
-    IDS_IRC_IGNOREMISCMESSAGE "雑多な情報メッセージを無視"
     IDS_KNOWN               "既知"
     IDS_KADCONTACTSREAD     "ファイルから %u 個の接触先を読み込みました"
     IDS_ERR_KADCONTACTS     "接触先が見つかりません、ブートストラップするかnodes.datファイルをダウンロードして下さい。"
@@ -798,18 +791,11 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "容量"
-    IDS_IRC_PRIVATECHANSTART "* プライベートチャット開始"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!"
-    IDS_IRC_PRIVMESSAGE     "プライベートメッセージ"
     IDS_WEB_REMOTE_LINK_ADDED "リンク追加: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED
                             "リンクを追加できません。パスワードが間違っています"
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS
                             "プレビューに必要な部品を最初にダウンロード"
-    IDS_IRC_KICK            "キック"
-    IDS_IRC_SLAP            "スラップ"
-    IDS_IRC_JOIN            "参加"
-    IDS_IRC_CHANNELLIST     "チャンネルリスト"
     IDS_IRC_CONNECT         "接続"
 END
 
@@ -820,8 +806,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "同じカテゴリ内のみ"
     IDS_LOG_ULDL_EVENTS     "アップロード/ダウンロードイベントのログを採る"
 //    IDS_PEERCACHE_ENABLED   "あなたのISPはキャッシュダウンロードを有効にすることで、PeerCache技術をサポートしています!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND
-                            "ユーザーが友達としてあなたを加えることを許可"
     IDS_SOURCESWAPBLOCKED   "スワップがブロックされました"
     IDS_TRICKLING           "待機"
     IDS_A4AF_CHECK_THIS_NOW "このソースを今すぐチェック (デバッグ)"
@@ -832,38 +816,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "切断"
-    IDS_IRC_HASJOINED       "* %sが%sに参加しました"
-    IDS_IRC_HASPARTED       "* %sが%sから退出しました(%s)"
-    IDS_IRC_WASKICKEDBY     "* %sが%sにキックされました(%s)"
     IDS_DOWNLOAD_ALPHABETICAL "ｱﾙﾌｧﾍﾞｯﾄ順でダウンロード"
-    IDS_IRC_HASQUIT         "* %sは退席しました(%s)"
-    IDS_IRC_NOWKNOWNAS      "* %sは%sとして知られています"
-    IDS_IRC_SETSMODE        "*  %sはモードを%s %sにセットしました"
-    IDS_IRC_NOTSUPPORTED    "** まだサポートされていないモードが設定されました。チャンネルに最入室してニックネームリストを更新する必要があります.."
-    IDS_IRC_CHANNEL         "チャンネル"
-    IDS_IRC_NICK            "Nick"
-    IDS_IRC_SEND            "送信"
-    IDS_IRC_NAME            "名前"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001"
-    IDS_IRC_ADDTIMESTAMP    "メッセージに時刻を表記する"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "チャンネルリストフィルタを使用する"
     IDS_IRC_PERFORM         "自動処理"
-    IDS_IRC_USEPERFORM      "接続時に自動処理を使用する"
     IDS_IRC_ADDTOFRIENDLIST "友達リストへ追加"
-    IDS_IRC_LOADCHANNELLISTONCON "接続時にサーバーチャンネルリストを読み込む"
-    IDS_IRC_ADDASFRIEND     "友達リストへ追加しました!"
     IDS_PW_WARNING          "入力された数値""%s""はOSがサポートする範囲を超えています: %u\nシステムが不安定になる可能性があります。\n\nこのまま続けてよろしいですか?"
     IDS_TAKEOVER            "引き継ぐ"
     IDS_CLEANUP             "クリーンアップ"
     IDS_RENAME              "リネーム"
-    IDS_IRC_ADDLINKTOIRC    "IRCクリップボードへ追加"
-    IDS_IRC_SENDLINK        "友達に送信:"
-    IDS_IRC_RECIEVEDLINK    "%sは(%s)に送信され、自動的に開始されます"
-    IDS_IRC_ACCEPTLINKS     "IRCでeD2Kリンクを受け付ける(慎重に使用して下さい!)"
     IDS_SHARED              "共有済み"
     IDS_DOWNLOADED          "ダウンロード済み"
 END
@@ -893,7 +856,6 @@ BEGIN
     IDS_PW_MINREC           "推奨最小値\t%u "
     IDS_PW_UA               "Up/Down速度を最大に設定"
     IDS_PW_PA               "Up/Down速度を制限する"
-    IDS_IRC_IGNOREINFOMESSAGE "情報メッセージを無視する"
     IDS_CONNECTIONLOST      "接続損失"
     IDS_WIZ_OS_FRAME        "OS"
     IDS_HASHINGFILE         "ファイルハッシュ中:"
@@ -940,8 +902,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "最大ダウンロード速度: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "eMuleの add friend プロトコルメッセージを無視"
     IDS_PW_FASTSRVCON       "安全接続"
     IDS_SOURCELINKFAILED    "有効なソースリンクを作成するにはHighIDが必要になります"
     IDS_ERR_LOADSERVERMET   "server.metの読み込みに失敗しました!"
@@ -1003,8 +963,6 @@ BEGIN
     IDS_MEGA                "M"
     IDS_GIGA                "G"
     IDS_TERA                "T"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE
-                            "eMuleのプロトコルメッセージを無視する"
     IDS_SMARTLOWIDCHECK     "接続時にスマートLowIDチェックを使用する"
     IDS_SF_SRVOCC           "サーバー占有率: %.2f%%"
     IDS_3DDEP               "進行バーのスタイル"
@@ -1023,8 +981,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'ファイル'%s'の説明を受信しました: %s"
     IDS_WEBSERVICES         "ウェブサービス(&W)"
     IDS_WEBSVEDIT           "ウェブサービスを編集..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "eMuleの send link プロトコルメッセージを無視"
     IDS_CHECK4UPDATE        "新しいバージョンをチェック"
     IDS_STARTUP             "起動時"
     IDS_NEWVERSIONAVL       "新しいバージョンのeMuleが利用可能になりました! プロジェクトホームページで詳細情報を確認できます"
@@ -1380,9 +1336,6 @@ BEGIN
     IDS_FD_TIMEDATE         "日付"
     IDS_FILEINFORMATION     "ファイル情報"
     IDS_STATS_FREESPACE     "空き容量"
-    IDS_IRC_HELPCHANNEL     "ヘルプチャンネルに接続"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-japanese"
-    IDS_IRC_ACCEPTLINKSFRIENDS "友達のみ"
     IDS_COMPLSOURCES        "完全ソース"
     IDS_CHECKNOENDTIME      "終了時間無し"
     IDS_FD_DOWNLOADSTARTED  "ダウンロード追加:"
@@ -1656,8 +1609,6 @@ BEGIN
     IDS_SOURCECLIENT        "ソースクライアント"
     IDS_USERSIP             "ユーザーIP"
     IDS_FEATURES            "機能"
-    IDS_IRC_NEWNICK         "IRCニックネームを選択"
-    IDS_IRC_NEWNICKDESC     "ニックネームは英数字(A-Z, 0-9)で20文字以下でなければなりません。 設定→IRCでこの設定を変更することができます。"
 END
 
 STRINGTABLE

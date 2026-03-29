@@ -393,7 +393,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Zoekresultaten"
     IDS_SW_DOWNLOAD         "Selectie downloaden"
     IDS_SV_SERVERLIST       "Serverlijst"
@@ -660,9 +659,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K-verwijzingen"
     IDS_RECONNECT           "Nieuwe automatische verbindingspoging met de server in %u seconden"
     IDS_SERVERADDED         "Server %s toegevoegd"
-    IDS_IRC_IGNOREJOINMESSAGE "Negeer toetreed-infoberichten"
     IDS_STATS_SUCCUPCOUNT   "Totaal aan succesvolle uploadsessies: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Negeer deel-infoberichten"
     IDS_STATS_FAILUPCOUNT   "Totaal aan mislukte uploadsessies: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Gemiddelde verzendingstijd: %s"
     IDS_SEARCHMINSIZE       "Min. grootte"
@@ -684,9 +681,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Gemiddelde grafiektijd: %u min."
     IDS_GRAPHS              "Grafieken"
     IDS_STREE               "Totaaloverzichtsstatistiek"
-    IDS_IRC_IGNOREQUITMESSAGE "Negeer afsluitinfoberichten"
     IDS_STATSSETUPINFO      "Statistiekinstellingen"
-    IDS_IRC_SOUNDEVENTS     "Geluiden afspelen"
 END
 
 STRINGTABLE
@@ -730,50 +725,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Capaciteit"
-    IDS_IRC_PRIVATECHANSTART "* Privéchatsessie is begonnen"
-    IDS_IRC_SLAPMSG         "* %s slaat %s rond met een grote Babelvis!"
-    IDS_IRC_PRIVMESSAGE     "Privébericht"
-    IDS_IRC_KICK            "Kicken"
-    IDS_IRC_SLAP            "Slaan"
-    IDS_IRC_JOIN            "Toetreden"
-    IDS_IRC_CHANNELLIST     "Kanalenlijst"
     IDS_IRC_CONNECT         "Verbinden"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Verbinding verbreken"
-    IDS_IRC_HASJOINED       "* %s is toegetreden tot %s"
-    IDS_IRC_HASPARTED       "* %s verliet %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s is gekicked door %s (%s)"
-    IDS_IRC_HASQUIT         "* %s is gestopt (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s is bekend als %s"
-    IDS_IRC_SETSMODE        "* %s zet modus: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Sommige gezette modi worden nog niet ondersteund. Het kan zijn dat u het kanaal moet verlaten en weer opniew moet toetreden voor een update van de schuilnamenlijst.."
-    IDS_IRC_CHANNEL         "Kanaal"
-    IDS_IRC_NICK            "Schuilnaam"
-    IDS_IRC_SEND            "Versturen"
-    IDS_IRC_NAME            "Naam"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaat %s rond met een grote Babelvis!\001"
-    IDS_IRC_ADDTIMESTAMP    "Tijdsaanduiding toevoegen aan berichten."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Kanalenlijstfilter gebruiken"
     IDS_IRC_PERFORM         "Uitvoeren"
-    IDS_IRC_USEPERFORM      "Gebruik de uitvoerregel bij het verbinden."
     IDS_IRC_ADDTOFRIENDLIST "Toevoegen aan vriendenlijst"
-    IDS_IRC_LOADCHANNELLISTONCON "Serverkanalenlijst laden bij het verbinden."
-    IDS_IRC_ADDASFRIEND     "heeft u toegevoegd als vriend!"
     IDS_PW_WARNING          "Het nummer dat u heeft gekozen voor ""%s"" is groter dan uw OS ondersteunt:  %u\nDit kan er toe leiden dat uw systeem instabiel wordt.\n\nWeet u zeker dat u dit wilt doen?"
     IDS_TAKEOVER            "Overnemen"
     IDS_CLEANUP             "Opschonen"
     IDS_RENAME              "Hernoemen"
-    IDS_IRC_ADDLINKTOIRC    "Dit toevoegen aan het IRC-klembord om naar vrienden te sturen."
-    IDS_IRC_SENDLINK        "Stuur dit naar vriend: "
-    IDS_IRC_RECIEVEDLINK    "%s stuurde (%s) om automatisch gestart te worden."
-    IDS_IRC_ACCEPTLINKS     "Accepteer ED2K-verwijzingen binnen IRC (voorzichtig!)."
     IDS_SHARED              "Gedeeld"
     IDS_DOWNLOADED          "Gedownload"
 END
@@ -803,7 +770,6 @@ BEGIN
     IDS_PW_MINREC           "Aanbevolen minimum\t%u "
     IDS_PW_UA               "Zet download-/uploadsnelheid maximaal"
     IDS_PW_PA               "Wijzig download-/uploadsnelheid"
-    IDS_IRC_IGNOREINFOMESSAGE "Negeer infobericht."
     IDS_CONNECTIONLOST      "Verbinding verloren"
     IDS_WIZ_OS_FRAME        "Besturingssysteem"
     IDS_HASHINGFILE         "Hasht bestand:"
@@ -850,8 +816,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Max. downloadratio (sessie): %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Negeer vriend toevoegen-protocolberichten van eMule"
     IDS_PW_FASTSRVCON       "Snel met de server verbinden"
     IDS_SOURCELINKFAILED    "U heeft een hoge-ID nodig voor het maken van een geldige bronverwijzing"
     IDS_ERR_LOADSERVERMET   "Onmogelijk om het bestand server.met te laden!"
@@ -914,7 +878,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Negeer eMule-protoberichten"
     IDS_SMARTLOWIDCHECK     "Gebruik slimme lage-ID-controle bij verbinden"
     IDS_SF_SRVOCC           "Serverbezetting: %.2f%%"
     IDS_3DDEP               "Voortgangsbalkstijl"
@@ -933,8 +896,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Waardering voor bestand '%s' ontvangen: %s"
     IDS_WEBSERVICES         "Webservices"
     IDS_WEBSVEDIT           "Webservices bewerken"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Negeer eMule-linkverzendingsprotocolberichten"
     IDS_CHECK4UPDATE        "Controleren voor nieuwe versie"
     IDS_STARTUP             "Opstarten"
     IDS_NEWVERSIONAVL       "Een nieuwe eMule-versie is beschikbaar! Kijk op de projectpagina voor meer informatie."
@@ -1326,9 +1287,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Datums"
     IDS_FILEINFORMATION     "Informatiebestand"
     IDS_STATS_FREESPACE     "Vrije ruimte"
-    IDS_IRC_HELPCHANNEL     "Verbinden met hulpkanalen."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-dutch"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Alleen van vrienden."
     IDS_COMPLSOURCES        "Volledige bronnen"
     IDS_CHECKNOENDTIME      "Geen eindtijd"
     IDS_FD_DOWNLOADSTARTED  "Download toegevoegd:"
@@ -1491,9 +1449,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Niet verbonden met het Kad-netwerk!"
-    IDS_IRC_NOSFS           "Geen gedeelde bestanden geselecteerd"
     IDS_RESETLABEL          "Automatich aanvullen (geschiedenis)"
-    IDS_IRC_IGNOREMISCMESSAGE "Negeer overige infoberichten"
     IDS_KNOWN               "Bekend"
     IDS_KADCONTACTSREAD     "%u contacten gelezen van bestand."
     IDS_ERR_KADCONTACTS     "Geen contacten gevonden, gebruik Kad-bootstrap of download een nodes.dat-bestand."
@@ -1534,7 +1490,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Alleen in dezelfde categorie"
     IDS_LOG_ULDL_EVENTS     "Upload-/downloadgebeurtenissen loggen"
 //    IDS_PEERCACHE_ENABLED   "ISP ondersteunt de PeerCache-technologie, activeer downloads van PeerCache-buffer!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Gebruiker toestaan u als vriend toe te voegen."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Downloaddelen nodig voor voorvertoning"
 END
 
@@ -1647,8 +1602,6 @@ BEGIN
     IDS_SOURCECLIENT        "Broncliënt"
     IDS_USERSIP             "Gebruikers-IP"
     IDS_FEATURES            "Functies"
-    IDS_IRC_NEWNICK         "Selecteer een IRC-bijnaam."
-    IDS_IRC_NEWNICKDESC     "Het moet een woord zijn van minder dan 20 karakters en kan (A-Z, 0-9) bevatten. Het kan weer aangepast worden via Instellingen -> IRC."
 END
 
 STRINGTABLE

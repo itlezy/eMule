@@ -442,7 +442,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC" //!
     IDS_SW_RESULT           "Резултат от търсенето"
     IDS_SW_DOWNLOAD         "Свали избраното"
     IDS_SV_SERVERLIST       "Списък със сървъри"
@@ -709,9 +708,7 @@ BEGIN
     IDS_ED2KLINKFIX         "eD2K линкове"
     IDS_RECONNECT           "Автоматично свързване със сървъра след %u секунди"
     IDS_SERVERADDED         "Сървъра е добавен като: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Игнорирай съобщения с покана за чат"
     IDS_STATS_SUCCUPCOUNT   "Общо успешни сесии за качване: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Игнорирай съобщения с информация за частите"
     IDS_STATS_FAILUPCOUNT   "Общо провалени сесии за качване: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Средно време за качване: %s"
     IDS_SEARCHMINSIZE       "Мин. размер [МБ]"
@@ -732,17 +729,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Средно време за графика: %u мин."
     IDS_GRAPHS              "Графика"
     IDS_STREE               "Дърво на статистиката"
-    IDS_IRC_IGNOREQUITMESSAGE "Игнорирай съобщения за изход"
     IDS_STATSSETUPINFO      "Статистика"
-    IDS_IRC_SOUNDEVENTS     "Звук при събитие"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "В момента не сте свързани към Kad мрежата"
-    IDS_IRC_NOSFS           "Не са избрани споделени файлове"
     IDS_RESETLABEL          "Автодовършване (хронология)"
-    IDS_IRC_IGNOREMISCMESSAGE "Игнорирай съобщения от типа 'Разни'"
     IDS_KNOWN               "Известни"
     IDS_KADCONTACTSREAD     "Прочетени %u контакта от файла"
     IDS_ERR_KADCONTACTS     "Не е намерен контакт, моля свържете се самостоятелно или свалете файла nodes.dat"
@@ -795,16 +788,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Капацитет"
-    IDS_IRC_PRIVATECHANSTART "* Стартиране на лична чат сесия"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!" //!
-    IDS_IRC_PRIVMESSAGE     "Лично съобщение"
     IDS_WEB_REMOTE_LINK_ADDED "Добавен линк:"
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Линка не е добавен. Грешна парола."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Сваляй първо частите за преглед"
-    IDS_IRC_KICK            "Ритни"
-    IDS_IRC_SLAP            "Зашливи"
-    IDS_IRC_JOIN            "Влез"
-    IDS_IRC_CHANNELLIST     "Списък с канали"
     IDS_IRC_CONNECT         "Свързване"
 END
 
@@ -815,7 +801,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "само в същата категория"
     IDS_LOG_ULDL_EVENTS     "Отчет за качване/сваляне"
 //    IDS_PEERCACHE_ENABLED   "Вашият ISP поддържа технологията PeerCache, разрешете сваляне от кеша!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Разрешавам потребителите да ме добавят като приятел"
     IDS_SOURCESWAPBLOCKED   "Прехвърли блокираните"
     IDS_TRICKLING           "В готовност"
     IDS_A4AF_CHECK_THIS_NOW "Провери този източник сега (debug)"
@@ -826,38 +811,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Изключване"
-    IDS_IRC_HASJOINED       "* %s е влязъл %s"
-    IDS_IRC_HASPARTED       "* %s е част от %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s е изритан от %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Сваляй по азбучен ред"
-    IDS_IRC_HASQUIT         "* %s е излязъл (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s вече е %s"
-    IDS_IRC_SETSMODE        "* %s е задал режим: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Някой нови промени, които са направени не се поддържат в момента. Вие трябва да излезете и да влезете отново в канала, за да се обнови списъка с прякори."
-    IDS_IRC_CHANNEL         "Канал"
-    IDS_IRC_NICK            "Прякор"
-    IDS_IRC_SEND            "Изпрати"
-    IDS_IRC_NAME            "Име"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001" //!
-    IDS_IRC_ADDTIMESTAMP    "Добави време към съобщенията"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Използвай филтър за списъка с канали"
     IDS_IRC_PERFORM         "Изпълнение"
-    IDS_IRC_USEPERFORM      "Използвай изпълним низ при свързване"
     IDS_IRC_ADDTOFRIENDLIST "Добави към списъка с приятели"
-    IDS_IRC_LOADCHANNELLISTONCON "Зареди списъка с канали на сървъра при свързване"
-    IDS_IRC_ADDASFRIEND     "ви добави като приятел!"
     IDS_PW_WARNING          "Числото избрано от вас за ""%s"" е по-голямо от това което поддържа вашата ОС:  %u\nТова може да дестабилизира системата.\n\nСигурни ли сте, че искате това?"
     IDS_TAKEOVER            "Вземи"
     IDS_CLEANUP             "Изчисти"
     IDS_RENAME              "Преименувай"
-    IDS_IRC_ADDLINKTOIRC    "Добави към буфера на IRC за да го изпратя на приятели"
-    IDS_IRC_SENDLINK        "Изпрати го на приятел: "
-    IDS_IRC_RECIEVEDLINK    "%s е изпратил (%s) за автостартиране"
-    IDS_IRC_ACCEPTLINKS     "Приемай eD2K линкове в IRC (Използвайте с повишено внимание!)"
     IDS_SHARED              "Споделени"
     IDS_DOWNLOADED          "Свалени"
 END
@@ -887,7 +851,6 @@ BEGIN
     IDS_PW_MINREC           "Препоръчителен минимум\t%u "
     IDS_PW_UA               "Пълна скорост на качване/сваляне"
     IDS_PW_PA               "Намали скоростта на качване/сваляне"
-    IDS_IRC_IGNOREINFOMESSAGE "Игнорирай информационни съобщения"
     IDS_CONNECTIONLOST      "Връзката загубена"
     IDS_WIZ_OS_FRAME        "Операционна система"
     IDS_HASHINGFILE         "Хеширане на файл:"
@@ -934,8 +897,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Макс. скорост на сваляне: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Игнорирай съобщения за добавяне на приятели"
     IDS_PW_FASTSRVCON       "Защитена връзка"
     IDS_SOURCELINKFAILED    "Нуждаете се от HighID за да създадете валиден линк с източник"
     IDS_ERR_LOADSERVERMET   "Не може да се зареди 'server.met'!"
@@ -997,7 +958,6 @@ BEGIN
     IDS_MEGA                "М"
     IDS_GIGA                "Г"
     IDS_TERA                "Т"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Игнорирай първични съобщения"
     IDS_SMARTLOWIDCHECK     "Използвай 'умна' проверка за LowID при свързване"
     IDS_SF_SRVOCC           "Заетост на сървъра: %.2f%%"
     IDS_3DDEP               "Лента с напредъка"
@@ -1016,8 +976,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Описанието за файла '%s' е получено: %s"
     IDS_WEBSERVICES         "Уеб услуги"
     IDS_WEBSVEDIT           "Редактор за Уеб услуги..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Игнорирай съобщения за изпращане на протокол"
     IDS_CHECK4UPDATE        "Проверка за нова версия"
     IDS_STARTUP             "Стартиране"
     IDS_NEWVERSIONAVL       "Налична е нова версия на eMule! За повече информация посетете домашната страница на eMule."
@@ -1387,9 +1345,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Дати"
     IDS_FILEINFORMATION     "Информация за файла"
     IDS_STATS_FREESPACE     "Своб. пространство"
-    IDS_IRC_HELPCHANNEL     "Свържи се с канали за помощ"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-bulgarian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Само от приятели"
     IDS_COMPLSOURCES        "Пълни източници"
     IDS_CHECKNOENDTIME      "Без край"
     IDS_FD_DOWNLOADSTARTED  "Добавен за сваляне на:"
@@ -1658,8 +1613,6 @@ BEGIN
     IDS_SOURCECLIENT        "Източник"
     IDS_USERSIP             "IP на потр."
     IDS_FEATURES            "Характеристики"
-    IDS_IRC_NEWNICK         "Изберете прякор за IRC"
-    IDS_IRC_NEWNICKDESC     "Трябва да бъде една дума с не повече от 20 символа, включващи (A-Z, 0-9). Тя може да бъде променена отново в Настройки->IRC."
 END
 
 STRINGTABLE

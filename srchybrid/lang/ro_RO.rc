@@ -435,7 +435,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Rezultate căutare"
     IDS_SW_DOWNLOAD         "Descarcă selecţia"
     IDS_SV_SERVERLIST       "Servere"
@@ -702,9 +701,7 @@ BEGIN
     IDS_ED2KLINKFIX         "link-uri eD2k"
     IDS_RECONNECT           "Conectarea automată la server se va repeta în %u secunde"
     IDS_SERVERADDED         "Servere adăugate: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignoră mesaje informative Join"
     IDS_STATS_SUCCUPCOUNT   "Total trimiteri reuşite: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignoră mesaje informative Part"
     IDS_STATS_FAILUPCOUNT   "Total trimiteri eşuate: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Durată medie trimitere: %s"
     IDS_SEARCHMINSIZE       "Minim Mb"
@@ -726,17 +723,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Durată grafic medie: %u min"
     IDS_GRAPHS              "Grafice"
     IDS_STREE               "Statistici"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignoră mesaje informative Quit"
     IDS_STATSSETUPINFO      "Aspect statistici"
-    IDS_IRC_SOUNDEVENTS     "Redă sunete la evenimente"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Momentan nu eşti conectat la reţeaua Kad!"
-    IDS_IRC_NOSFS           "Nici un fişier share selectat"
     IDS_RESETLABEL          "Completare automată (funcţia Istoric)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignoră mesajele de informaţii Diverse"
     IDS_KNOWN               "Cunoscut"
     IDS_KADCONTACTSREAD     "Citesc %u contacte din fişier."
     IDS_ERR_KADCONTACTS     "N-am găsit contacte; execută bootstrap, sau descarcă un nodes.dat."
@@ -789,53 +782,25 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Capacităţi"
-    IDS_IRC_PRIVATECHANSTART "* Am început un chat privat"
-    IDS_IRC_SLAPMSG         "* %s îl face din vorbe pe %s!"
-    IDS_IRC_PRIVMESSAGE     "Mesaj privat"
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS
                             "Descarc întîi părţi necesare pre-vizualizării"
-    IDS_IRC_KICK            "Alungă"
-    IDS_IRC_SLAP            "Slap" //!
-    IDS_IRC_JOIN            "Intră"
-    IDS_IRC_CHANNELLIST     "Listă canale"
     IDS_IRC_CONNECT         "Conectare"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Deconectare"
-    IDS_IRC_HASJOINED       "* %s a intrat în %s"
-    IDS_IRC_HASPARTED       "* %s a ieşit din %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s a fost alungat din %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Descarcă în ordine alfabetică"
-    IDS_IRC_HASQUIT         "* %s a ieşit din (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s şi-a schimbat numele în %s"
-    IDS_IRC_SETSMODE        "* %s a impus modul: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Anumite moduri puse nu sînt încă prezente. Ieşi şi reintră pe canal pentru actualizare listă utilizatori..."
-    IDS_IRC_CHANNEL         "Canal"
-    IDS_IRC_NICK            "Poreclă"
-    IDS_IRC_SEND            "Trimite"
-    IDS_IRC_NAME            "Nume"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION îl face din vorbe pe %s!\001"
-    IDS_IRC_ADDTIMESTAMP    "Adaugă ora la mesaje."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Foloseşte filtrul ptr. lista de canale"
     IDS_IRC_PERFORM         "Execuţie"
-    IDS_IRC_USEPERFORM      "Execută comanda la conectare."
     IDS_IRC_ADDTOFRIENDLIST "Adaugă la prieteni"
-    IDS_IRC_LOADCHANNELLISTONCON "Încarcă lista de canale la conectare."
-    IDS_IRC_ADDASFRIEND     "te-a adăugat la prieteni!"
     IDS_PW_WARNING          "Numărul ales de ""%s"" e mai mare decît suportă sistemul tău de operare:  %u\nComputerul ar putea deveni instabil.\n\nSigur vrei să faci asta?"
     IDS_TAKEOVER            "Modifică"
     IDS_CLEANUP             "Curăţă"
     IDS_RENAME              "Redenumeşte"
-    IDS_IRC_ADDLINKTOIRC    "Adaugă în agenda IRC."
-    IDS_IRC_SENDLINK        "Trimite-l prietenului: "
-    IDS_IRC_RECIEVEDLINK    "%s a trimis (%s) pentru pornire automată."
-    IDS_IRC_ACCEPTLINKS     "Acceptă link-uri eD2k în IRC. (Ai grijă ce faci!)"
     IDS_SHARED              "Partajat(e)"
     IDS_DOWNLOADED          "Descărcat"
 END
@@ -865,7 +830,6 @@ BEGIN
     IDS_PW_MINREC           "minimă recomandată\t%u "
     IDS_PW_UA               "Dă viteza max. Up/Down"
     IDS_PW_PA               "Micşorează viteza Up/Down"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignoră mesajele de informare"
     IDS_CONNECTIONLOST      "Am pierdut conexiunea"
     IDS_WIZ_OS_FRAME        "Sistem de operare"
     IDS_HASHINGFILE         "Fac hash la fişierul:"
@@ -912,8 +876,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Viteză maximă descărcare: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignoră mesajele protocol eMule Adăugare prieten"
     IDS_PW_FASTSRVCON       "Safe Connect (conectare sigură la server)"
     IDS_SOURCELINKFAILED    "E necesar IDmare pentru a crea link sursă"
     IDS_ERR_LOADSERVERMET   "Nu pot încărca fişierul 'server.met'!"
@@ -976,7 +938,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignoră mesajele de protocol eMule"
     IDS_SMARTLOWIDCHECK     "Verific atent IDmic la conectare"
     IDS_SF_SRVOCC           "Ocupare server: %.2f%%"
     IDS_3DDEP               "Stilul barei de progres"
@@ -995,8 +956,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descrierea fişierului '%s' primit: %s"
     IDS_WEBSERVICES         "Servicii Web"
     IDS_WEBSVEDIT           "Modifică serviciile Web"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignoră mesaje protocol eMule Trimitere link"
     IDS_CHECK4UPDATE        "Caută o nouă versiune"
     IDS_STARTUP             "La pornire"
     IDS_NEWVERSIONAVL       "E disponibilă o nouă versiune de eMule! Pentru alte informaţii intră pe site-ul eMule."
@@ -1350,9 +1309,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Date"
     IDS_FILEINFORMATION     "Informaţii fişier"
     IDS_STATS_FREESPACE     "Spaţiu liber"
-    IDS_IRC_HELPCHANNEL     "Conectare la canalele de Help."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-romanian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Doar de la prieteni."
     IDS_COMPLSOURCES        "Surse complete"
     IDS_CHECKNOENDTIME      "fără oră sfîrşit"
     IDS_FD_DOWNLOADSTARTED  "Descărcare adăugată:"
@@ -1536,8 +1492,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "doar din aceeaşi categorie"
     IDS_LOG_ULDL_EVENTS     "Loghez evenimentele upload/download"
 //    IDS_PEERCACHE_ENABLED   "ISP-ul tău permite tehnologia PeerCache, activez descărcarea cache!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND
-                            "Permit utilizatorului să te adauge la Prieteni."
     IDS_SOURCESWAPBLOCKED   "Swap blocat"
     IDS_A4AF_CHECK_THIS_NOW "Verifică sursa asta acum (depanare)"
     IDS_STATS_FRATIO        "Raport UL:DL al sesiunii (fără UL Prieteni):"
@@ -1653,8 +1607,6 @@ BEGIN
     IDS_SOURCECLIENT        "Client sursă"
     IDS_USERSIP             "IP useri"
     IDS_FEATURES            "Opţiuni"
-    IDS_IRC_NEWNICK         "Alege o poreclă  ptr. IRC."
-    IDS_IRC_NEWNICKDESC     "Trebuie să fie un cuvînt pînă în 20 de caractere, conţinînd (A-Z, 0-9). Poate fi oricînd schimbat din Preferinţe->IRC."
 END
 
 STRINGTABLE

@@ -348,8 +348,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "תיאור לקובץ-'%s' התקבל ע""י: %s"
     IDS_WEBSERVICES         "שירותי אינטרנט"
     IDS_WEBSVEDIT           "ערוך שירותי נט"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "התעלם מהודעות פרוטוקול שליחת קישורים של אימיול"
     IDS_CHECK4UPDATE        "בדוק אם קיימת גירסה חדשה"
     IDS_STARTUP             "הפעלה"
     IDS_NEWVERSIONAVL       "גירסה חדשה של אימיול זמינה! בדוק את אתר הפרוייקט למידע נוסף."
@@ -369,7 +367,6 @@ BEGIN
     IDS_MEGA                "מגה"
     IDS_GIGA                "ג'יגה"
     IDS_TERA                "טארה"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "התעלם מהודעות של אימיול"
     IDS_SMARTLOWIDCHECK     "השתמש בבדיקה חכמה למזהה נמוך בעת התחברות"
     IDS_SF_SRVOCC           "תפוסת שרת: %.2f%%"
     IDS_3DDEP               "סגנון בר התקדמות"
@@ -431,8 +428,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "מקס' קצב הורדה: %s ק""ב לשנייה"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "התעלם מהודעות פרוטוקול הוסף חבר של אימיול"
     IDS_PW_FASTSRVCON       "התחברות בטוחה"
     IDS_SOURCELINKFAILED    "אתה צריך מזהה גבוה כדי ליצור קישור-מקור"
     IDS_ERR_LOADSERVERMET   "נכשל בטעינת server.met!"
@@ -471,7 +466,6 @@ BEGIN
     IDS_PW_MINREC           "מינימום מומלץ\t%u "
     IDS_PW_UA               "הגדר קצבי העלאה/הורדה מקסימלים"
     IDS_PW_PA               "Throttle up/down-speed"
-    IDS_IRC_IGNOREINFOMESSAGE "התעלם מהודעות מידע"
     IDS_CONNECTIONLOST      "אבדה התחברות"
     IDS_WIZ_OS_FRAME        "מערכת הפעלה"
     IDS_HASHINGFILE         "מבצע האשינג לקובץ:"
@@ -502,20 +496,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "השתמש בסינון רשימת ערוצים"
     IDS_IRC_PERFORM         "ביצוע"
-    IDS_IRC_USEPERFORM      "השתמש במחרוזת ביצוע בעת התחברות"
     IDS_IRC_ADDTOFRIENDLIST "הוסף לרשימת חברים"
-    IDS_IRC_LOADCHANNELLISTONCON "טען רשימת ערוצים של שרת בעת התחברות"
-    IDS_IRC_ADDASFRIEND     "הוסיף אותך כחבר!"
     IDS_PW_WARNING          "המספר שבחרת עבור ""%s"" גדול מידי מתמיכת מערכת ההפעלה:  %u\nהדבר יכול לגרום לאי-יציבות של המערכת.\n\nהאם אתה בטוח שברצונך לשנות?"
     IDS_TAKEOVER            "השתלט"
     IDS_CLEANUP             "נקה"
     IDS_RENAME              "שנה שם"
-    IDS_IRC_ADDLINKTOIRC    "הוסף לקליפבורד IRC"
-    IDS_IRC_SENDLINK        "שלח לחבר: "
-    IDS_IRC_RECIEVEDLINK    "%s שלח (%s) שיתחיל אוטומטית."
-    IDS_IRC_ACCEPTLINKS     "קבל קישורי ED2K ב-IRC (השתמש באפשרות זו בזהירות!)"
     IDS_SHARED              "משותף"
     IDS_DOWNLOADED          "הורד"
 END
@@ -523,33 +509,13 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "התנתק"
-    IDS_IRC_HASJOINED       "* %s הצטרף ל-%s"
-    IDS_IRC_HASPARTED       "* %s יצא מ-%s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s נזרק ע""י %s (%s)"
-    IDS_IRC_HASQUIT         "* %s עזב (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s עכשיו ידוע כ-%s"
-    IDS_IRC_SETSMODE        "* %s הגדיר מצב: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** כמה מצבים הוגדרו שעדיין לא נתמכים. ייתכן ותצטרך לעזוב להיכנס מחדש לערוץ לעדכון רשימת כינויים..."
-    IDS_IRC_CHANNEL         "ערוץ"
-    IDS_IRC_NICK            "כינוי"
-    IDS_IRC_SEND            "שלח"
-    IDS_IRC_NAME            "שם"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION סטר ל-%s עם דג טונה מסריח!\001"
-    IDS_IRC_ADDTIMESTAMP    "הוסף זמנים להודעות"
 END
 
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "יכולות"
-    IDS_IRC_PRIVATECHANSTART "* צ'אט פרטי התחיל"
-    IDS_IRC_SLAPMSG         "* %s סטר ל-%s עם דג טונה מסריח!"
-    IDS_IRC_PRIVMESSAGE     "הודעה פרטית"
     IDS_WEB_REMOTE_LINK_ADDED "קישור נוסף: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "קישור לא נוסף. סיסמה שגוייה."
-    IDS_IRC_KICK            "זרוק"
-    IDS_IRC_SLAP            "כפכף"
-    IDS_IRC_JOIN            "הצטרף"
-    IDS_IRC_CHANNELLIST     "רשימת ערוצים"
     IDS_IRC_CONNECT         "התחבר"
 END
 
@@ -585,9 +551,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "זמן ממוצע של גרף: %u דקות"
     IDS_GRAPHS              "גרפים"
     IDS_STREE               "עץ סטטי"
-    IDS_IRC_IGNOREQUITMESSAGE "התעלם מהודעות מידע יציאה"
     IDS_STATSSETUPINFO      "סטטיסטיקות"
-    IDS_IRC_SOUNDEVENTS     "הפעל צליל אירוע"
 END
 
 STRINGTABLE
@@ -620,9 +584,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K קישורי"
     IDS_RECONNECT           "התקשרות אוטומטית לשרת תתבצע בעוד %u שניות"
     IDS_SERVERADDED         "נוסף שרת: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "התעלם מהודעות מידע הצטרפות"
     IDS_STATS_SUCCUPCOUNT   "סה""כ העלאות שהצליחו: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "התעלם מהודעות מידע חלק"
     IDS_STATS_FAILUPCOUNT   "סה""כ העלאות שנכשלו: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "ממוצע זמן העלאה: %s"
     IDS_SEARCHMINSIZE       "גודל מינימלי"
@@ -835,7 +797,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "תוצאות חיפוש"
     IDS_SW_DOWNLOAD         "הורדת מסומן"
     IDS_SV_SERVERLIST       "רשימת שרתים"
@@ -1321,9 +1282,6 @@ BEGIN
     IDS_FD_TIMEDATE         "תאריכים"
     IDS_FILEINFORMATION     "מידע קובץ"
     IDS_STATS_FREESPACE     "מקום פנוי"
-    IDS_IRC_HELPCHANNEL     "התחבר לערוצי עזרה"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-hebrew"
-    IDS_IRC_ACCEPTLINKSFRIENDS "מחברים בלבד."
     IDS_COMPLSOURCES        "מקורות שלמים"
     IDS_CHECKNOENDTIME      "ללא זמן סיום"
     IDS_FD_DOWNLOADSTARTED  "הורדה נוספה:"
@@ -1486,9 +1444,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "אינך מחובר כרגע לרשת קדמליה!"
-    IDS_IRC_NOSFS           "לא נבחרו קבצים משותפים"
     IDS_RESETLABEL          "השלמה אוטומטית (היסטוריה)"
-    IDS_IRC_IGNOREMISCMESSAGE "התעלם מהודעות מידע כלליות"
     IDS_KNOWN               "ידוע"
     IDS_KADCONTACTSREAD     "נקראו %u אנשי קשר מקובץ."
     IDS_ERR_KADCONTACTS     "לא נמצאו אנשי קשר, אנא התחבר, או הורד קובץ nodes.dat."
@@ -1529,7 +1485,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "רק מאותה קטגוריה"
     IDS_LOG_ULDL_EVENTS     "שמור ביומן אירועי העלאה/הורדה"
 //    IDS_PEERCACHE_ENABLED   "ספק האינטרנט שלך תומך בטכנולוגיית PeerCache, מפעיל הורדות מטמון!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "אפשר למשתמש להוסיף אותך כחבר"
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "הורד ראשונים חלקים המשמשים לתצוגה מקדימה"
 END
 
@@ -1642,8 +1597,6 @@ BEGIN
     IDS_SOURCECLIENT        "מקור קליינט"
     IDS_USERSIP             "איי פי משתמשים"
     IDS_FEATURES            "אפשרויות"
-    IDS_IRC_NEWNICK         "בחר כינוי IRC."
-    IDS_IRC_NEWNICKDESC     "צריך להיות מילה אחת עם פחות מ-20 תווים המכילים (A-Z, 0-9). ניתן לשנותו שוב בהעדפות -> IRC."
 END
 
 STRINGTABLE

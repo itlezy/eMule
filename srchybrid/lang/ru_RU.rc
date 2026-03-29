@@ -443,7 +443,6 @@ END
 
 STRINGTABLE
 BEGIN
-    //IDS_IRC                 "&IRC" //!
     IDS_SW_RESULT           "Результаты поиска"
     IDS_SW_DOWNLOAD         "Приём"
     IDS_SV_SERVERLIST       "Серверы"
@@ -710,9 +709,7 @@ BEGIN
     IDS_ED2KLINKFIX         "Контроль eD2K ссылок"
     IDS_RECONNECT           "Автосоединение с сервером через %u секунд"
     IDS_SERVERADDED         "Сервер добавлен: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Игнорировать сообщения о входе"
     IDS_STATS_SUCCUPCOUNT   "Успешные сеансы отдачи: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Игнорировать сообщения о выходе"
     IDS_STATS_FAILUPCOUNT   "Неуспешные сеансы отдачи: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Среднее время отдачи: %s"
     IDS_SEARCHMINSIZE       "Мин. размер [Мб]"
@@ -733,17 +730,13 @@ BEGIN
     IDS_STATS_AVGLABEL      "Время для среднестатистического графика: %u мин."
     IDS_GRAPHS              "Графики"
     IDS_STREE               "Дерево статистики"
-    IDS_IRC_IGNOREQUITMESSAGE "Игнорировать сообщения об уходе"
     IDS_STATSSETUPINFO      "Статистика"
-    IDS_IRC_SOUNDEVENTS     "Звуковой сигнал"
 END
 
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "В настоящее время Вы не соединены с сетью Kad!"
-    IDS_IRC_NOSFS           "Файл обмена не выбран"
     IDS_RESETLABEL          "Автозаполнение (функция истории)"
-    IDS_IRC_IGNOREMISCMESSAGE "Игнорировать различные информ. сообщения"
     IDS_KNOWN               "Известные"
     IDS_KADCONTACTSREAD     "Чтение %u контактов из файла."
     IDS_ERR_KADCONTACTS     "Контакты не найдены. Пожалуйста, запустите Самонастройку или загрузите файл nodes.dat."
@@ -796,16 +789,9 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Предел линии"
-    IDS_IRC_PRIVATECHANSTART "* Начало сессии приватного чата"
-    //IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!" //!
-    IDS_IRC_PRIVMESSAGE     "Приватное сообщение"
     IDS_WEB_REMOTE_LINK_ADDED "Добавлена ссылка:"
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Ссылка не добавлена. Неверный пароль."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Скачать части для предпросмотра"
-    IDS_IRC_KICK            "Кикнуть"
-    IDS_IRC_SLAP            "Шлёпнуть"
-    IDS_IRC_JOIN            "Посетить"
-    IDS_IRC_CHANNELLIST     "Список каналов"
     IDS_IRC_CONNECT         "Соединение"
 END
 
@@ -816,7 +802,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Только в той же категории"
     IDS_LOG_ULDL_EVENTS     "Лог событий отдачи/приёма"
 //    IDS_PEERCACHE_ENABLED   "Ваш провайдер поддерживает технологию PeerCache, включение кэша для передач!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Разрешать добавление Вас в список друзей"
     IDS_SOURCESWAPBLOCKED   "Обмен заблокирован"
     IDS_TRICKLING           "Резерв"
     IDS_A4AF_CHECK_THIS_NOW "Проверить этот источник сейчас (отладка)"
@@ -827,38 +812,17 @@ END
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Отключение"
-    IDS_IRC_HASJOINED       "* %s присоединился %s"
-    IDS_IRC_HASPARTED       "* %s отсоединился %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s кикнут %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Загружать в алфавитном порядке"
-    IDS_IRC_HASQUIT         "* %s вышел (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s теперь известен как %s"
-    IDS_IRC_SETSMODE        "* %s установил режим: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Установлен неподдерживаемый режим. Вам необходимо выйти и войти обратно для обновления списка имён."
-    IDS_IRC_CHANNEL         "Канал"
-    IDS_IRC_NICK            "Имя"
-    IDS_IRC_SEND            "Послать"
-    IDS_IRC_NAME            "Имя"
-    //IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001" //!
-    IDS_IRC_ADDTIMESTAMP    "Добавлять время в сообщения"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Использовать фильтр списка каналов"
     IDS_IRC_PERFORM         "Выполнение"
-    IDS_IRC_USEPERFORM      "Использовать строку выполнения при соединении"
     IDS_IRC_ADDTOFRIENDLIST "Добавить в список друзей"
-    IDS_IRC_LOADCHANNELLISTONCON "Загружать список каналов при соединении"
-    IDS_IRC_ADDASFRIEND     "добавил вас в список друзей!"
     IDS_PW_WARNING          "Число, выбранное вами для ""%s"" не поддерживается вашей ОС:  %u\nСистема может стать нестабильной.\n\nВы уверены, что стоит это делать?"
     IDS_TAKEOVER            "Принять"
     IDS_CLEANUP             "Очистить"
     IDS_RENAME              "Переименовать"
-    IDS_IRC_ADDLINKTOIRC    "Добавить в буфер обмена IRC"
-    IDS_IRC_SENDLINK        "Отправить это другу: "
-    IDS_IRC_RECIEVEDLINK    "%s послал (%s) для автозапуска."
-    IDS_IRC_ACCEPTLINKS     "Принимать eD2K ссылки в IRC (Будьте внимательны!)"
     IDS_SHARED              "Отдача"
     IDS_DOWNLOADED          "Принят"
 END
@@ -888,7 +852,6 @@ BEGIN
     IDS_PW_MINREC           "Рекомендуемый минимум\t%u "
     IDS_PW_UA               "Уст. полную скорость Отдачи/Приёма"
     IDS_PW_PA               "Уменьшить скорость Отдачи/Приёма"
-    IDS_IRC_IGNOREINFOMESSAGE "Игнорировать информационные сообщения"
     IDS_CONNECTIONLOST      "Соединение потеряно"
     IDS_WIZ_OS_FRAME        "Операционная система"
     IDS_HASHINGFILE         "Хеширование файла:"
@@ -935,8 +898,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "макс. скорость приёма: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                             "Игнорировать сообщения о друзьях"
     IDS_PW_FASTSRVCON       "Безопасное соединение"
     IDS_SOURCELINKFAILED    "Для создания ссылки с источником Вы должны иметь HighID"
     IDS_ERR_LOADSERVERMET   "Не удалось загрузить server.met!"
@@ -998,7 +959,6 @@ BEGIN
     IDS_MEGA                "М"
     IDS_GIGA                "Г"
     IDS_TERA                "Т"
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Игнорировать сообщения протокола eMule"
     IDS_SMARTLOWIDCHECK     "Использовать 'умную' проверку LowID при соединении"
     IDS_SF_SRVOCC           "Заполненность серверов: %.2f%%"
     IDS_3DDEP               "Вид колонки 'Прогресс'"
@@ -1017,8 +977,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Описание файла '%s' получено: %s"
     IDS_WEBSERVICES         "&Web сервисы"
     IDS_WEBSVEDIT           "Редактор Web сервисов..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Игнорировать сообщения о ссылках"
     IDS_CHECK4UPDATE        "Проверка наличия новой версии"
     IDS_STARTUP             "При запуске"
     IDS_NEWVERSIONAVL       "Вышла новая версия eMule! Посетите сайт eMule для получения более полной информации."
@@ -1394,9 +1352,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Даты"
     IDS_FILEINFORMATION     "Информация"
     IDS_STATS_FREESPACE     "Свободное место"
-    IDS_IRC_HELPCHANNEL     "Соединиться с каналом помощи"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-russian"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Только от друзей"
     IDS_COMPLSOURCES        "Полные источники"
     IDS_CHECKNOENDTIME      "Бесконечно"
     IDS_FD_DOWNLOADSTARTED  "Добавлен:"
@@ -1668,8 +1623,6 @@ BEGIN
     IDS_SOURCECLIENT        "Клиент"
     IDS_USERSIP             "IP клиента"
     IDS_FEATURES            "поддерживает"
-    IDS_IRC_NEWNICK         "Выберите имя для IRC."
-    IDS_IRC_NEWNICKDESC     "Слово должно содержать не более 20 символов из диапазона (A-Z,0-9). Имя можно менять в Настройки->IRC."
 END
 
 STRINGTABLE
@@ -1977,8 +1930,6 @@ BEGIN
     IDS_CERTIFICATE         "Сертификат"
     IDS_CERT_NOT_FOUND      "Файл сертификата не найден"
     IDS_KEY_NOT_FOUND       "Файл ключа не найден"
-    IDS_IRC_IGNOREPINGPONGMESSAGE "Игнорировать сообщения Ping? Pong!"
-    IDS_IRC_ENABLEUTF8      "Включить UTF-8"
     IDS_ITALIC              "Курсив"
 END
 

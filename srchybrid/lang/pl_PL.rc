@@ -454,7 +454,6 @@ BEGIN
     IDS_SW_LINK             "Link eD2K"
     IDS_SW_START            "Start" //!
     IDS_SCHEDULER           "Harmonogram"
-    IDS_IRC                 "&IRC" //!
     IDS_SW_RESULT           "Wynik wyszukiwania"
     IDS_SW_DOWNLOAD         "Pobierz wybrany plik"
     IDS_SV_SERVERLIST       "Lista serwerów"
@@ -727,9 +726,7 @@ STRINGTABLE
 BEGIN
     IDS_RECONNECT           "Ponowna próba automatycznego podłączenia do serwera nastąpi za %u sekund."
     IDS_SERVERADDED         "Serwer dodany: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignoruj info wchodzenia"
     IDS_STATS_SUCCUPCOUNT   "Całkowita liczba udanych sesji wysyłania: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignoruj info wychodzenia"
     IDS_STATS_FAILUPCOUNT   "Całkowita liczba nieudanych sesji wysyłania: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Średni czas wysyłania: %s"
     IDS_SEARCHMINSIZE       "Min. rozmiar"
@@ -751,9 +748,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Czas dla uśrednionego wykresu: %u mins"
     IDS_GRAPHS              "Wykresy"
     IDS_STREE               "Drzewo statystyk"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignoruj wiadomości informacyjne ""Quit"""
     IDS_STATSSETUPINFO      "Wyświetlanie statystyk"
-    IDS_IRC_SOUNDEVENTS     "Odtwarzaj dzwięki przy zdarzeniach"
     IDS_HARDLIMIT           "Ostateczny limit"
     IDS_COL_MORECOLORS      "więcej..."
     IDS_TOOMANYCONNS        "Zbyt wiele połączeń"
@@ -779,13 +774,11 @@ BEGIN
     IDS_IP_HITS             "Trafień"
     IDS_IP_RULES            "Filtry IP:"
     IDS_ERR_NOTCONNECTEDKAD "Nie jesteś podłączony do sieci Kad!"
-    IDS_IRC_NOSFS           "Brak wybranych udostępnianych plików"
     IDS_RESETLABEL          "Automatyczne uzupełnianie (funkcja historyczna)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_IGNOREMISCMESSAGE "Ignoruj różne wiadomości informacyjne"
     IDS_KNOWN               "Znane"
     IDS_KADCONTACTSREAD     "Wczytano %u kontaktów z pliku."
     IDS_ERR_KADCONTACTS     "Nie odnaleziono kontatktów, użyj bootstrap'a, lub pobierz plik nodes.dat."
@@ -812,7 +805,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignoruj wiadomości protokołu eMule"
     IDS_SMARTLOWIDCHECK     "Użyj inteligentnego sprawdzania niskiego ID przy podłączaniu."
     IDS_SF_SRVOCC           "Populacja serwera: %.2f%%"
     IDS_3DDEP               "Styl paska pobierania"
@@ -850,35 +842,16 @@ BEGIN
     IDS_PW_TBN_OPTIONS      "Pokaż kiedy"
     IDS_TBN_NEWCHATMSG      "Wiadomość od"
     IDS_PW_CON_CAPFRM       "Możliwości"
-    IDS_IRC_PRIVATECHANSTART "* Rozpoczęto prywatną rozmowę"
-    IDS_IRC_SLAPMSG         "* %s przywalił %s z bejsbola!"
-    IDS_IRC_PRIVMESSAGE     "Wiadomość prywatna"
     IDS_WEB_REMOTE_LINK_ADDED "Dodano link: "
     IDS_WEB_REMOTE_LINK_NOT_ADDED "Link nie dodany. Złe hasło."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Części potrzebne do podglądu"
-    IDS_IRC_KICK            "Kopnij"
-    IDS_IRC_SLAP            "Walnij"
-    IDS_IRC_JOIN            "Podłącz"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_CHANNELLIST     "Lista kanałów"
     IDS_IRC_CONNECT         "Podłącz"
     IDS_IRC_DISCONNECT      "Odłącz"
-    IDS_IRC_HASJOINED       "* %s przyszedł na %s"
-    IDS_IRC_HASPARTED       "* %s poszedł z %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s został wykopany przez %s (%s)"
     IDS_DOWNLOAD_ALPHABETICAL "Pobieraj w porządku alfabetycznym"
-    IDS_IRC_HASQUIT         "* %s wyłączył się (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s zmienił nicka na %s"
-    IDS_IRC_SETSMODE        "* %s ustawił tryb: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Niektóre tryby są jeszcze niedostępne. Moze być konieczne ponowne wejście na kanal w celu odświeżenia listy osób."
-    IDS_IRC_CHANNEL         "Kanał"
-    IDS_IRC_NICK            "Nick" //!
-    IDS_IRC_SEND            "Wyślij"
-    IDS_IRC_NAME            "Nazwa"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION przywalił %s z bejsbola!\001"
 END
 
 STRINGTABLE
@@ -901,7 +874,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "Tylko w tej samej kategorii"
     IDS_LOG_ULDL_EVENTS     "Loguj zdarzenia pobierania/wysyłania"
 //    IDS_PEERCACHE_ENABLED   "Twój dostawca ISP wspiera technologie PeerCache, umożliwiając szybsze pobieranie!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Pozwól użytkownikowi dodać cię do listy znajomych"
     IDS_SOURCESWAPBLOCKED   "Wymiana zablokowana"
     IDS_TRICKLING           "Gotowy"
     IDS_A4AF_CHECK_THIS_NOW "Sprawdź to źródło (debuguj)"
@@ -915,22 +887,12 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_ADDTIMESTAMP    "Dodaj znacznik czasu do wiadomości"
-    IDS_IRC_USEFILTER       "Użyj filtra listy kanałów"
     IDS_IRC_PERFORM         "Wykonaj"
-    IDS_IRC_USEPERFORM      "Korzystaj z polecenia 'wykonaj' przy podłączeniu"
     IDS_IRC_ADDTOFRIENDLIST "Dodaj do listy znajomych"
-    IDS_IRC_LOADCHANNELLISTONCON
-                            "Załaduj liste kanałów z serwera przy podłączeniu"
-    IDS_IRC_ADDASFRIEND     "dodał cię do listy znajomych!"
     IDS_PW_WARNING          "Liczba połączeń którą wybrałes dla ""%s"" jest większa niż udostępniana przez system operacyjny.%u\nMoże to spowodować niestabilność systemu.\n\nCzy jesteś pewnien ze chcesz zaakceptować tą liczbę?"
     IDS_TAKEOVER            "Przejmij"
     IDS_CLEANUP             "Wyczyść"
     IDS_RENAME              "Zmień nazwe"
-    IDS_IRC_ADDLINKTOIRC    "Dodaj do schowka IRC, aby wysłać do znajomych."
-    IDS_IRC_SENDLINK        "Wyślij do znajomego: "
-    IDS_IRC_RECIEVEDLINK    "%s wysłął (%s), zostanie automatycznie wystartowane."
-    IDS_IRC_ACCEPTLINKS     "Akceptuj linki eD2K w IRC (Uwaga!)"
     IDS_SHARED              "Udostępniane"
 END
 
@@ -960,7 +922,6 @@ BEGIN
     IDS_PW_MINREC           "rekomendowane minimum\t%u "
     IDS_PW_UA               "Pełna prędkość przesyłania"
     IDS_PW_PA               "Reguluj prędkość przesyłania"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignoruj wiadomości"
     IDS_CONNECTIONLOST      "Utracono połączenie"
     IDS_WIZ_OS_FRAME        "System operacyjny"
     IDS_HASHINGFILE         "Hashowanie pliku:"
@@ -1003,8 +964,6 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(wpisz poniżej!)"
     IDS_STATS_MAXAVGDL      "Maksymalna średnia prędkość pobierania dla sesji: %s"
     IDS_STATS_MAXDL         "Maksymalna prędkość pobierania dla sesji: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignoruj protokół eMula dodawania do znajomych"
     IDS_PW_FASTSRVCON       "Bezpieczne podłączanie"
     IDS_SOURCELINKFAILED    "Musisz mieć wysokie ID aby utworzyć link źródła"
     IDS_ERR_LOADSERVERMET   "Nie udało się załadować pliku server.met!"
@@ -1066,8 +1025,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Opis dla pliku '%s' otrzymany: %s"
     IDS_WEBSERVICES         "Usługi &Web"
     IDS_WEBSVEDIT           "Usługi edycji Web..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignoruj wiadmomości protokołu eMule (wysyłanie linków)"
     IDS_CHECK4UPDATE        "Sprawdź czy jest nowa wersja"
     IDS_STARTUP             "Uruchamianie"
     IDS_NEWVERSIONAVL       "Nowe werjsa eMule jest dostępna! Szczególy na stronie domowej projektu."
@@ -1434,9 +1391,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Daty"
     IDS_FILEINFORMATION     "Informacja o pliku"
     IDS_STATS_FREESPACE     "Wolne miejsce"
-    IDS_IRC_HELPCHANNEL     "Podłącz się do kanałów pomocy"
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-polish"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Tylko od znajomych"
     IDS_COMPLSOURCES        "Zakończone źródła"
     IDS_CHECKNOENDTIME      "Brak czasu zak."
 END
@@ -1674,8 +1628,6 @@ BEGIN
     IDS_SOURCECLIENT        "Klient źródłowy"
     IDS_USERSIP             "IP Użytkownika"
     IDS_FEATURES            "Opcje"
-    IDS_IRC_NEWNICK         "Wybierz nick IRC."
-    IDS_IRC_NEWNICKDESC     "Powinno być jedno słowo krótsze niż 20 znaków zawierające (A-Z, 0-9). Możesz zmienić w Ustawienia->IRC."
     IDS_SPARSEPARTFILES     "Twórz pliki temp jako 'rozrastające' (tylko NTFS)"
     IDS_ASPECTRATIO         "Aspekt ratio"
     IDS_NEGATEFILTER        "zaneguj filtr"

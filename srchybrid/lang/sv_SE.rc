@@ -389,7 +389,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC                 "IRC"
     IDS_SW_RESULT           "Sökresultat"
     IDS_SW_DOWNLOAD         "Ladda hem markerade"
     IDS_SV_SERVERLIST       "Serverlista"
@@ -656,9 +655,7 @@ BEGIN
     IDS_ED2KLINKFIX         "ED2K-länkar"
     IDS_RECONNECT           "Automatisk återanslutning till server kommer att ske om %u sekunder"
     IDS_SERVERADDED         "Tillagda servrar: %s"
-    IDS_IRC_IGNOREJOINMESSAGE "Ignorera anslutningsmeddelanden"
     IDS_STATS_SUCCUPCOUNT   "Totalt antal lyckade uppladdningssessioner: %u (%.2f%%)"
-    IDS_IRC_IGNOREPARTMESSAGE "Ignorera ifrånkopplingsmeddelanden"
     IDS_STATS_FAILUPCOUNT   "Totalt antal misslyckade uppladdningssessioner: %u (%.2f%%)"
     IDS_STATS_AVEUPTIME     "Genomsnittlig uppladdningstid: %s"
     IDS_SEARCHMINSIZE       "Min. storlek"
@@ -680,9 +677,7 @@ BEGIN
     IDS_STATS_AVGLABEL      "Tid för genomsnittlig kurva: %u min"
     IDS_GRAPHS              "Diagram"
     IDS_STREE               "Statistikträd"
-    IDS_IRC_IGNOREQUITMESSAGE "Ignorera avslutningsmeddelanden"
     IDS_STATSSETUPINFO      "Statistikdiagram"
-    IDS_IRC_SOUNDEVENTS     "Spela ljud"
 END
 
 STRINGTABLE
@@ -726,50 +721,22 @@ END
 STRINGTABLE
 BEGIN
     IDS_PW_CON_CAPFRM       "Kapacitet"
-    IDS_IRC_PRIVATECHANSTART "* Privatchat startad"
-    IDS_IRC_SLAPMSG         "* %s slaps %s around with a large Babelfish!" //!
-    IDS_IRC_PRIVMESSAGE     "Privatmeddelande"
-    IDS_IRC_KICK            "Sparka ut"
-    IDS_IRC_SLAP            "Slap" //!
-    IDS_IRC_JOIN            "Anslut"
-    IDS_IRC_CHANNELLIST     "Kanallista"
     IDS_IRC_CONNECT         "Anslut"
 END
 
 STRINGTABLE
 BEGIN
     IDS_IRC_DISCONNECT      "Koppla ner"
-    IDS_IRC_HASJOINED       "* %s har anslöt sig till %s"
-    IDS_IRC_HASPARTED       "* %s har lämnat %s (%s)"
-    IDS_IRC_WASKICKEDBY     "* %s sparkades ut av %s (%s)"
-    IDS_IRC_HASQUIT         "* %s har brytit förbindelsen (%s)"
-    IDS_IRC_NOWKNOWNAS      "* %s bytade användarnamn till %s"
-    IDS_IRC_SETSMODE        "* %s gav: %s %s"
-    IDS_IRC_NOTSUPPORTED    "** Vissa modes har använts som inte stöds ännu. Du kanske behöver lämna och joina kanalen för att uppdatera användarlistan.."
-    IDS_IRC_CHANNEL         "Kanal"
-    IDS_IRC_NICK            "Användarnamn"
-    IDS_IRC_SEND            "Skicka"
-    IDS_IRC_NAME            "Namn"
-    IDS_IRC_SLAPMSGSEND     "PRIVMSG %s :\001ACTION slaps %s around with a large Babelfish!\001" //!
-    IDS_IRC_ADDTIMESTAMP    "Visa tidsmarkering vid meddelanden."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_IRC_USEFILTER       "Använd filter för kanallistning."
     IDS_IRC_PERFORM         "Utför"
-    IDS_IRC_USEPERFORM      "Använd utför vid anslutning."
     IDS_IRC_ADDTOFRIENDLIST "Lägg till i kompislistan"
-    IDS_IRC_LOADCHANNELLISTONCON "Visa serverkanallista vid anslutning."
-    IDS_IRC_ADDASFRIEND     "lade till dig som kompis!"
     IDS_PW_WARNING          "Numret som du har valt ""%s"" är högre än vad ditt OS kan hantera:  %u\nDetta kan göra ditt system ostabilt.\n\nÄr du säker på att du vill göra detta?"
     IDS_TAKEOVER            "Ta över"
     IDS_CLEANUP             "Rensa"
     IDS_RENAME              "Byt namn"
-    IDS_IRC_ADDLINKTOIRC    "Lägg till detta i IRC urklipp för att skicka till kompisar."
-    IDS_IRC_SENDLINK        "Skicka detta till en kompis: "
-    IDS_IRC_RECIEVEDLINK    "%s skickade (%s) för att autostarta."
-    IDS_IRC_ACCEPTLINKS     "Acceptera ED2K-länkar i IRC. (Använd försiktigt!)"
     IDS_SHARED              "Utdelad"
     IDS_DOWNLOADED          "Nedladdad"
 END
@@ -799,7 +766,6 @@ BEGIN
     IDS_PW_MINREC           "Minimum rekommenderat\t%u "
     IDS_PW_UA               "Sätt full upp/ned-hastighet"
     IDS_PW_PA               "Stryp upp/ned-hastighet"
-    IDS_IRC_IGNOREINFOMESSAGE "Ignorera informationsmeddelanden."
     IDS_CONNECTIONLOST      "Tappade anslutningen"
     IDS_WIZ_OS_FRAME        "Operativsystem"
     IDS_HASHINGFILE         "Hashar fil:"
@@ -846,8 +812,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_STATS_MAXDL         "Max nedladdningshastighet: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
-                            "Ignorera eMule lägg till kompis protokollmeddelanden"
     IDS_PW_FASTSRVCON       "Snabb anslutning till servrar"
     IDS_SOURCELINKFAILED    "Du behöver ett högt ID för att länka till källan"
     IDS_ERR_LOADSERVERMET   "Misslyckades att ladda server.met!"
@@ -910,7 +874,6 @@ BEGIN
     IDS_MEGA                "M" //!
     IDS_GIGA                "G" //!
     IDS_TERA                "T" //!
-    IDS_IRC_EMULEPROTO_IGNOREINFOMESSAGE "Ignorera eMule proto meddelanden."
     IDS_SMARTLOWIDCHECK     "Använd smart låg-ID kontroll vid anslutning"
     IDS_SF_SRVOCC           "Serververksamhet: %.2f%%"
     IDS_3DDEP               "Progressmätar-stil"
@@ -929,8 +892,6 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Beskrivning till fil '%s' mottaget: %s"
     IDS_WEBSERVICES         "Webtjänster"
     IDS_WEBSVEDIT           "Ändra webtjänster"
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK
-                            "Ignorera eMule skicka länk protokollmeddelanden"
     IDS_CHECK4UPDATE        "Kolla efter ny version"
     IDS_STARTUP             "Start av eMule"
     IDS_NEWVERSIONAVL       "En ny version av eMule är tillgänglig! Kolla hemsidan för mer information."
@@ -1322,9 +1283,6 @@ BEGIN
     IDS_FD_TIMEDATE         "Datum"
     IDS_FILEINFORMATION     "Överföringsinformation"
     IDS_STATS_FREESPACE     "Ledigt utrymme"
-    IDS_IRC_HELPCHANNEL     "Anslut till hjälpkanaler."
-    IDS_IRC_HELPCHANNELPERFORM "/join #emule-swedish"
-    IDS_IRC_ACCEPTLINKSFRIENDS "Bara från kompisar."
     IDS_COMPLSOURCES        "Hela källor"
     IDS_CHECKNOENDTIME      "ingen sluttid"
     IDS_FD_DOWNLOADSTARTED  "Nedladdning tillagd:"
@@ -1488,9 +1446,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_NOTCONNECTEDKAD "Du är inte ansluten till Kad-nätverketk!"
-    IDS_IRC_NOSFS           "Inga utdelade filer valda"
     IDS_RESETLABEL          "Automatisk färdigställning (historiefunktion)"
-    IDS_IRC_IGNOREMISCMESSAGE "Ignorera allmäna meddelanden"
     IDS_KNOWN               "Känd"
     IDS_KADCONTACTSREAD     "Läs %u kontakter från fil."
     IDS_ERR_KADCONTACTS     "Inga kontakter hittade, gör en bootstrap, eller ladda hem en nodes.dat fil."
@@ -1531,7 +1487,6 @@ BEGIN
     IDS_PREF_STARTNEXTFILECATONLY "bara i samma kategori"
     IDS_LOG_ULDL_EVENTS     "Logga uppladdnings-/nedladdningshändelser"
 //    IDS_PEERCACHE_ENABLED   "Din ISP stöder PeerCache teknologin, aktiverar cachade nedladdningar!"
-    IDS_IRC_EMULEPROTO_ALLOWADDFRIEND "Tillåt användare att lägga till dig som kompis."
     IDS_DL_TRY_TO_GET_PREVIEW_PARTS "Ladda hem de delar som behövs för förhandsvisning först"
 END
 
@@ -1644,8 +1599,6 @@ BEGIN
     IDS_SOURCECLIENT        "Källklient"
     IDS_USERSIP             "Användares IP"
     IDS_FEATURES            "Finesser"
-    IDS_IRC_NEWNICK         "Välj ett IRC-användarnamn."
-    IDS_IRC_NEWNICKDESC     "Skall vara ett ord under 20 tecken som innehåller (A-Z, 0-9). Det kan ändras senare i Inställningar->IRC."
 END
 
 STRINGTABLE
