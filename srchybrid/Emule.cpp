@@ -20,7 +20,6 @@
 #include <crtdbg.h>
 #endif */
 #include <atlimage.h>
-#include <bcrypt.h>
 #include <sockimpl.h> //for *m_pfnSockTerm()
 #include <timeapi.h>
 #include <uxtheme.h>
@@ -234,22 +233,6 @@ static void InitHeapCorruptionDetection()
 		(*pfnHeapSetInformation)(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 }
 
-/** \brief Creates a stronger seed for the legacy CRT `rand()` generator.
- *
- * The code base still depends on `rand()`, so this only upgrades the startup
- * seed source without changing the downstream generator behavior.
- */
-static unsigned GetLegacyRandSeed()
-{
-	unsigned uSeed = 0;
-	if (BCRYPT_SUCCESS(BCryptGenRandom(NULL, (PUCHAR)&uSeed, sizeof uSeed, BCRYPT_USE_SYSTEM_PREFERRED_RNG)))
-		return uSeed;
-
-	LARGE_INTEGER liCounter;
-	::QueryPerformanceCounter(&liCounter);
-	return (unsigned)(::GetTickCount() ^ liCounter.LowPart ^ liCounter.HighPart ^ ::GetCurrentProcessId() ^ ::GetCurrentThreadId());
-}
-
 
 struct SLogItem
 {
@@ -315,7 +298,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	// This does not seem to work well with multithreading, although there is no reason why it should not.
 	//_set_sbh_threshold(768);
 
-	srand(GetLegacyRandSeed());
+	srand((unsigned)time(NULL));
 
 // MOD Note: Do not change this part - Merkur
 
