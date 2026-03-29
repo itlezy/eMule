@@ -1590,19 +1590,10 @@ void CPreferences::CreateUserHash()
 	userhash[14] = 111;	//0x6f
 }
 
+/** Modern Windows no longer imposes a practical OS TCP cap for this preference UI. */
 UINT CPreferences::GetRecommendedMaxConnections()
 {
-	UINT iRealMax = GetMaxWindowsTCPConnections();
-	if (iRealMax == UNLIMITED || iRealMax > 520)
-		return 500;
-
-	if (iRealMax < 20)
-		return iRealMax;
-
-	if (iRealMax <= 256)
-		return iRealMax - 10;
-
-	return iRealMax - 20;
+	return 500;
 }
 
 void CPreferences::SavePreferences()

@@ -594,11 +594,6 @@ void RevertReg()
 		ASSERT(0);
 }
 
-UINT GetMaxWindowsTCPConnections()
-{
-	return UNLIMITED;
-}
-
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
 {
 	ULARGE_INTEGER nFreeDiskSpace;

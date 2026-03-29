@@ -455,17 +455,6 @@ BOOL CPPgConnection::OnApply()
 		tempcon = thePrefs.maxconnections;
 	else
 		tempcon = (u >= INT_MAX ? CPreferences::GetRecommendedMaxConnections() : u);
-
-	if (tempcon > GetMaxWindowsTCPConnections()) {
-		CString strMessage;
-		strMessage.Format(GetResString(IDS_PW_WARNING), (LPCTSTR)GetResString(IDS_PW_MAXC), GetMaxWindowsTCPConnections());
-		int iResult = AfxMessageBox(strMessage, MB_ICONWARNING | MB_YESNO);
-		if (iResult != IDYES) {
-			//TODO: set focus to max connection?
-			SetDlgItemInt(IDC_MAXCON, thePrefs.maxconnections);
-			tempcon = GetMaxWindowsTCPConnections();
-		}
-	}
 	thePrefs.maxconnections = tempcon;
 
 	if (thePrefs.IsUPnPEnabled() != (IsDlgButtonChecked(IDC_PREF_UPNPONSTART) != 0)) {

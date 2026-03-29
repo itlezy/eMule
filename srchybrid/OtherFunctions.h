@@ -306,7 +306,6 @@ void SetAutoStart(bool bOn);
 ULONGLONG GetModuleVersion(LPCTSTR pszFilePath);
 ULONGLONG GetModuleVersion(HMODULE hModule);
 
-UINT GetMaxWindowsTCPConnections();
 uint64		GetFreeDiskSpaceX(LPCTSTR pDirectory);
 ULONGLONG	GetDiskFileSize(LPCTSTR pszFilePath);
 int			GetAppImageListColorFlag();
