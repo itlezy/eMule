@@ -2,22 +2,20 @@
 
 ## Last Chunk
 
-- Implemented periodic shared-folder rescanning with a watcher-backed dirty flag in `srchybrid\SharedFileList.cpp/.h`.
-- Added persisted preferences for auto rescanning and auto sharing new subdirectories in `srchybrid\Preferences.cpp/.h`.
-- Added the queued auto-reload window message and handler in `srchybrid\UserMsgs.h` and `srchybrid\SharedFilesWnd.cpp/.h`.
-- Added Directories-page controls and validation for the new sharing options in `srchybrid\PPgDirectories.cpp/.h`, `srchybrid\emule.rc`, and `srchybrid\Resource.h`.
-- Ensured the watcher path uses long-path-safe preparation before opening change notifications.
+- Simplified the shared-subfolder feature to rely only on explicit shared roots plus the global `AutoShareNewSharedSubdirs` flag.
+- Removed the separate persisted auto-managed descendant-directory state from `srchybrid\SharedFileList.cpp/.h`.
+- Kept the watcher-backed dirty flag, queued auto reload path, and long-path-safe watcher setup intact.
 - Verified with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- Shared roots can now be monitored for change notifications without doing immediate incremental updates.
+- Shared roots are monitored for change notifications without immediate incremental mutation.
 - Auto rescans are coalesced through the existing reload pipeline and honor the configured interval floor of 600 seconds.
-- Auto-managed shared subdirectories are persisted separately from explicit shared roots.
+- Subfolder sharing is now recomputed entirely from `shareddir_list` and the global auto-share flag on each reload/startup.
 - The feature build is green, and the worktree only contains the new feature edits plus the unrelated existing `AGENTS.md` change.
 
 ## Next Chunk
 
 - Manually exercise the new sharing options in the UI with a long-path shared root and verify delayed reload behavior end to end.
-- Decide whether to expose the auto-managed subdirectory list more explicitly in the directories UI or keep it implicit.
+- Confirm the descendant-sharing semantics are acceptable for category/incoming folders versus explicit shared roots only.
 - Add translations for the new base resource strings if broader localization coverage is needed.

@@ -50,7 +50,6 @@ static char THIS_FILE[] = __FILE__;
 
 typedef CSimpleArray<CKnownFile*> CSimpleKnownFileArray;
 #define	SHAREDFILES_FILE	_T("sharedfiles.dat")
-#define	AUTOSHAREDDIRS_FILE	_T("autosharesubdirs.dat")
 
 static constexpr UINT k_nAutoSharedWatcherReservedHandles = 1;
 static constexpr UINT k_nAutoSharedWatcherMaxRoots = MAXIMUM_WAIT_OBJECTS - k_nAutoSharedWatcherReservedHandles;
@@ -559,7 +558,6 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	m_strBetaFileName.AppendFormat(_T("%s.txt"), (LPCTSTR)md5.GetHashString().Left(6));
 #endif
 	LoadSingleSharedFilesList();
-	LoadAutoSharedDirectories();
 	FindSharedFiles();
 	ScheduleNextAutoReload(::GetTickCount());
 	RestartDirectoryWatch();
@@ -586,79 +584,20 @@ CSharedFileList::~CSharedFileList()
 		VERIFY(::CloseHandle(m_hDirectoryWatchStopEvent));
 }
 
-bool CSharedFileList::IsAutoSharedDirectory(const CString &strDir) const
+bool CSharedFileList::IsSharedDescendantOfRoot(const CString &strDir) const
 {
-	for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
-		if (EqualPaths(m_liAutoSharedDirectories.GetNext(pos), strDir))
-			return true;
-	}
-	return false;
-}
-
-bool CSharedFileList::IsTrackedSharedSubdirectory(const CString &strDir) const
-{
-	if (thePrefs.IsAutoShareNewSharedSubdirs() && IsAutoSharedDirectory(strDir))
-		return true;
-
 	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;) {
-		if (EqualPaths(thePrefs.shareddir_list.GetNext(pos), strDir))
+		const CString &root = thePrefs.shareddir_list.GetNext(pos);
+		const int nRootLength = root.GetLength();
+		if (strDir.GetLength() > nRootLength
+			&& _tcsnicmp(strDir, root, nRootLength) == 0
+			&& strDir[nRootLength] == _T('\\'))
+		{
 			return true;
+		}
 	}
 
 	return false;
-}
-
-void CSharedFileList::LoadAutoSharedDirectories()
-{
-	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + AUTOSHAREDDIRS_FILE);
-	const bool bIsUnicodeFile = IsUnicodeFile(strFullPath);
-	CStdioFile file;
-	if (!file.Open(strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0)))
-		return;
-
-	try {
-		if (bIsUnicodeFile)
-			file.Seek(sizeof(WORD), CFile::begin);
-
-		CString toadd;
-		while (file.ReadString(toadd)) {
-			toadd.Trim(_T(" \t\r\n"));
-			if (toadd.IsEmpty())
-				continue;
-
-			toadd = NormalizeDirectoryPath(toadd);
-			if (thePrefs.IsShareableDirectory(toadd) && !IsAutoSharedDirectory(toadd))
-				m_liAutoSharedDirectories.AddTail(toadd);
-		}
-		file.Close();
-	} catch (CFileException *ex) {
-		DebugLogError(_T("Failed to load %s%s"), (LPCTSTR)strFullPath, (LPCTSTR)CExceptionStrDash(*ex));
-		ex->Delete();
-	}
-}
-
-void CSharedFileList::SaveAutoSharedDirectories() const
-{
-	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + AUTOSHAREDDIRS_FILE);
-	CStdioFile file;
-	if (!file.Open(strFullPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
-		DebugLogError(_T("Failed to save %s"), (LPCTSTR)strFullPath);
-		return;
-	}
-
-	try {
-		/** Persist the auto-managed subdirectory list separately from explicit user shares. */
-		static const WORD wBOM = u'\xFEFF';
-		file.Write(&wBOM, sizeof(wBOM));
-		for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
-			file.WriteString(m_liAutoSharedDirectories.GetNext(pos));
-			file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
-		}
-		CommitAndClose(file);
-	} catch (CFileException *ex) {
-		DebugLogError(_T("Failed to save %s%s"), (LPCTSTR)strFullPath, (LPCTSTR)CExceptionStrDash(*ex));
-		ex->Delete();
-	}
 }
 
 void CSharedFileList::MarkAutoRescanDirty()
@@ -852,96 +791,8 @@ void CSharedFileList::CopySharedFileMap(CKnownFilesMap &Files_Map)
 		Files_Map[pair->key] = pair->value;
 }
 
-void CSharedFileList::CollectAutoSharedSubdirectoriesForRoot(const CString &strRoot, CMapStringToPtr &collected) const
-{
-	CList<CString, const CString&> pendingDirectories;
-	pendingDirectories.AddTail(NormalizeDirectoryPath(strRoot));
-
-	while (!pendingDirectories.IsEmpty()) {
-		const CString currentDirectory(pendingDirectories.RemoveHead());
-		const CString preparedSearchPath(PreparePathForLongPath(currentDirectory + _T('*')));
-		WIN32_FIND_DATA findData = {};
-		HANDLE hFind = ::FindFirstFile(preparedSearchPath, &findData);
-		if (hFind == INVALID_HANDLE_VALUE)
-			continue;
-
-		do {
-			if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0)
-				continue;
-			if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_OFFLINE | FILE_ATTRIBUTE_SYSTEM)) != 0)
-				continue;
-			if (_tcscmp(findData.cFileName, _T(".")) == 0 || _tcscmp(findData.cFileName, _T("..")) == 0)
-				continue;
-
-			CString subDirectory(currentDirectory + findData.cFileName + _T("\\"));
-			if (!thePrefs.IsShareableDirectory(subDirectory))
-				continue;
-
-			void *pUnused = NULL;
-			subDirectory = NormalizeDirectoryPath(subDirectory);
-			if (!collected.Lookup(subDirectory, pUnused)) {
-				collected.SetAt(subDirectory, reinterpret_cast<void*>(1));
-				pendingDirectories.AddTail(subDirectory);
-			}
-		} while (::FindNextFile(hFind, &findData));
-
-		::FindClose(hFind);
-	}
-}
-
-bool CSharedFileList::ReconcileAutoSharedDirectories()
-{
-	if (!thePrefs.IsAutoShareNewSharedSubdirs())
-		return false;
-
-	CMapStringToPtr discoveredDirectories;
-	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;)
-		CollectAutoSharedSubdirectoriesForRoot(thePrefs.shareddir_list.GetNext(pos), discoveredDirectories);
-
-	bool bChanged = false;
-	CStringList nextAutoSharedDirectories;
-	CString key;
-	void *pDummy = NULL;
-	for (POSITION pos = discoveredDirectories.GetStartPosition(); pos != NULL;) {
-		discoveredDirectories.GetNextAssoc(pos, key, pDummy);
-		nextAutoSharedDirectories.AddTail(key);
-	}
-
-	for (POSITION pos = nextAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
-		CString normalized(nextAutoSharedDirectories.GetNext(pos));
-		if (!IsAutoSharedDirectory(normalized))
-			bChanged = true;
-	}
-
-	for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
-		const CString &existing = m_liAutoSharedDirectories.GetNext(pos);
-		bool bStillDiscovered = false;
-		for (POSITION posNext = nextAutoSharedDirectories.GetHeadPosition(); posNext != NULL;) {
-			if (EqualPaths(existing, nextAutoSharedDirectories.GetNext(posNext))) {
-				bStillDiscovered = true;
-				break;
-			}
-		}
-		if (!bStillDiscovered) {
-			bChanged = true;
-			break;
-		}
-	}
-
-	if (bChanged) {
-		m_liAutoSharedDirectories.RemoveAll();
-		for (POSITION pos = nextAutoSharedDirectories.GetHeadPosition(); pos != NULL;)
-			m_liAutoSharedDirectories.AddTail(nextAutoSharedDirectories.GetNext(pos));
-		SaveAutoSharedDirectories();
-	}
-
-	return bChanged;
-}
-
 void CSharedFileList::FindSharedFiles()
 {
-	(void)ReconcileAutoSharedDirectories();
-
 	if (!m_Files_map.IsEmpty() && theApp.downloadqueue) {
 		CSingleLock listlock(&m_mutWriteList);
 
@@ -1041,7 +892,7 @@ void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
 				CString subDirectory(currentDirectory + fileName + _T("\\"));
 				if (!thePrefs.IsShareableDirectory(subDirectory))
 					continue;
-				if (!thePrefs.IsAutoShareNewSharedSubdirs() && !IsTrackedSharedSubdirectory(subDirectory))
+				if (!thePrefs.IsAutoShareNewSharedSubdirs() || !IsSharedDescendantOfRoot(subDirectory))
 					continue;
 
 				const CString visitKey(GetVisitedDirectoryKey(subDirectory));
@@ -1889,7 +1740,7 @@ bool CSharedFileList::ShouldBeShared(const CString &sDirPath, LPCTSTR const pFil
 		if (EqualPaths(sDirPath, thePrefs.shareddir_list.GetNext(pos)))
 			return true;
 
-	if (thePrefs.IsAutoShareNewSharedSubdirs() && IsAutoSharedDirectory(sDirPath))
+	if (thePrefs.IsAutoShareNewSharedSubdirs() && IsSharedDescendantOfRoot(sDirPath))
 		return true;
 
 	return false;
@@ -2041,7 +1892,6 @@ void CSharedFileList::Save() const
 	} else
 		DebugLogError(_T("Failed to save %s"), (LPCTSTR)strFullPath);
 
-	SaveAutoSharedDirectories();
 }
 
 void CSharedFileList::LoadSingleSharedFilesList()
@@ -2085,14 +1935,6 @@ bool CSharedFileList::AddSingleSharedDirectory(const CString &rstrFilePath, bool
 	// check if we share this dir already or are not allowed to
 	if (ShouldBeShared(rstrFilePath, NULL, false) || !thePrefs.IsShareableDirectory(rstrFilePath))
 		return false;
-
-	for (POSITION pos = m_liAutoSharedDirectories.GetHeadPosition(); pos != NULL;) {
-		POSITION posLast = pos;
-		if (EqualPaths(m_liAutoSharedDirectories.GetNext(pos), rstrFilePath)) {
-			m_liAutoSharedDirectories.RemoveAt(posLast);
-			break;
-		}
-	}
 
 	// add the new directory as shared, GUI update to be done by the caller
 	thePrefs.shareddir_list.AddTail(rstrFilePath);

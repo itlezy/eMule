@@ -114,9 +114,6 @@ protected:
 	bool	IsHashing(const CString &rstrDirectory, const CString &rstrName);
 	void	RemoveFromHashing(const CKnownFile *hashed);
 	void	LoadSingleSharedFilesList();
-	void	LoadAutoSharedDirectories();
-	void	SaveAutoSharedDirectories() const;
-	bool	ReconcileAutoSharedDirectories();
 	void	RestartDirectoryWatch();
 	void	StopDirectoryWatch();
 	void	MarkAutoRescanDirty();
@@ -130,10 +127,8 @@ private:
 	/** Worker entry point that watches top-level shared roots and only marks the next rescan as dirty. */
 	static UINT AFX_CDECL DirectoryWatchThreadProc(LPVOID pParam);
 	void	AddDirectory(const CString &strDir, CStringList &dirlist);
-	bool	IsAutoSharedDirectory(const CString &strDir) const;
-	bool	IsTrackedSharedSubdirectory(const CString &strDir) const;
+	bool	IsSharedDescendantOfRoot(const CString &strDir) const;
 	void	CollectSharedWatcherRoots(std::vector<CString> &roots, bool &bNeedFallbackPolling) const;
-	void	CollectAutoSharedSubdirectoriesForRoot(const CString &strRoot, CMapStringToPtr &collected) const;
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
@@ -145,7 +140,6 @@ private:
 	CSharedFilesCtrl *output;
 	CStringList		 m_liSingleSharedFiles;
 	CStringList		 m_liSingleExcludedFiles;
-	CStringList		 m_liAutoSharedDirectories;
 #if defined(_BETA) || defined(_DEVBUILD)
 	CString			m_strBetaFileName; //beta test file name
 #endif
