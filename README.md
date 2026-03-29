@@ -219,6 +219,24 @@ a very good option would be to get a VPN service that supports port mapping.
 Some do support UPnP, do a google search _vpn with port forwarding_. This has
 the benefit to help you with privacy.
 
+### Windows Firewall Helper
+
+For Windows 10 and Windows 11, this repository also ships a manual helper to
+create a Windows Defender Firewall allow rule for `emule.exe`:
+
+```powershell
+.\helpers\firewall-opener.ps1 -ExePath .\srchybrid\x64\Debug\emule.exe
+```
+
+To remove that managed rule again:
+
+```powershell
+.\helpers\firewall-opener.ps1 -Remove
+```
+
+Run the script as administrator. It creates one inbound app rule named
+`eMule` for all firewall profiles.
+
 ![2022-09-19 09_02_57-Window](https://user-images.githubusercontent.com/24484050/190966620-94fd4903-9358-4891-8f5c-f75dc93bb5f3.png)
 
 Once you are setup you can check the port forwarding status with

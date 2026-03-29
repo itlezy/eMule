@@ -38,13 +38,10 @@
 - The legacy per-client upload target cap is now `8 MiB/s` instead of `1 MiB/s`.
 - Socket-buffer preferences are now persisted and exposed in Tweaks.
 - The live UDP socket reapplies the configured receive buffer on Tweaks apply.
+- A manual Windows 10/11 firewall helper script is present at `helpers\\firewall-opener.ps1`.
 
 ## Next Chunk
 
-- Runtime-test the taller Options dialog on the main pages, especially `Connection`, `Web Interface`, and `Tweaks`.
-- Check whether the `Connection` page still needs another pass after the screenshot-driven width redistribution.
-- Verify active-monitor centering on single-monitor and multi-monitor setups.
-- Runtime-test the new bind selectors with multiple network adapters and confirm the expected P2P vs Web UI separation.
-- When ready, start Phase 1 from `docs\\MODERN_LIMITS.md` as a separate implementation chunk.
-- Runtime-test the new Tweaks entries for UDP receive buffer, TCP big send buffer, and `Min. free disk space [GB]`.
-- Continue the next `MODERN_LIMITS` chunk with higher defaults such as `MaxConnections`, if still desired.
+- Remove `IsRunningXPSP2*` and the `WinXPSP2OrHigher` migration key.
+- Simplify pre-Windows-10 UI and feature gates.
+- Remove or isolate the legacy XP `CFirewallOpener` product path after the helper-script fallback exists.
