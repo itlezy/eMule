@@ -1330,6 +1330,7 @@ struct SED2KFileType
 	{ _T(".jfif"),  ED2KFT_IMAGE },		// JPEG File Interchange Format
 	{ _T(".jpe"),   ED2KFT_IMAGE },		// JPEG Image File
 	{ _T(".jpeg"),  ED2KFT_IMAGE },		// JPEG Image File
+	{ _T(".jxl"),   ED2KFT_IMAGE },		// JPEG XL Image File
 	{ _T(".jpg"),   ED2KFT_IMAGE },		// JPEG Image File
 	{ _T(".pct"),   ED2KFT_IMAGE },		// PICT Picture File
 	{ _T(".pcx"),   ED2KFT_IMAGE },		// Paintbrush Bitmap Image File
@@ -1338,15 +1339,27 @@ struct SED2KFileType
 	{ _T(".png"),   ED2KFT_IMAGE },		// Portable Network Graphic
 	{ _T(".psd"),   ED2KFT_IMAGE },		// Photoshop Document
 	{ _T(".psp"),   ED2KFT_IMAGE },		// Paint Shop Pro Image File
+	{ _T(".svg"),   ED2KFT_IMAGE },		// Scalable Vector Graphics File
 	{ _T(".tga"),   ED2KFT_IMAGE },		// Targa Graphic
 	{ _T(".tif"),   ED2KFT_IMAGE },		// Tagged Image File
 	{ _T(".tiff"),  ED2KFT_IMAGE },		// Tagged Image File
+	{ _T(".avif"),  ED2KFT_IMAGE },		// AV1 Image File Format
+	{ _T(".arw"),   ED2KFT_IMAGE },		// Sony RAW Image File
+	{ _T(".cr2"),   ED2KFT_IMAGE },		// Canon RAW Image File
+	{ _T(".dng"),   ED2KFT_IMAGE },		// Digital Negative RAW Image File
+	{ _T(".heic"),  ED2KFT_IMAGE },		// High Efficiency Image Container
+	{ _T(".heif"),  ED2KFT_IMAGE },		// High Efficiency Image File
+	{ _T(".nef"),   ED2KFT_IMAGE },		// Nikon RAW Image File
+	{ _T(".raw"),   ED2KFT_IMAGE },		// Raw Image File
+	{ _T(".webp"),  ED2KFT_IMAGE },		// WebP Image File
 	{ _T(".wmf"),   ED2KFT_IMAGE },		// Windows Metafile
 	{ _T(".wmp"),   ED2KFT_IMAGE },		// Windows Media Photo File
 	{ _T(".xif"),   ED2KFT_IMAGE },		// ScanSoft Pagis Extended Image Format File
 
+	{ _T(".001"),   ED2KFT_ARCHIVE },	// Split Archive Part
 	{ _T(".7z"),    ED2KFT_ARCHIVE },	// 7-Zip Compressed File
 	{ _T(".ace"),   ED2KFT_ARCHIVE },	// WinAce Compressed File
+	{ _T(".apk"),   ED2KFT_ARCHIVE },	// Android Package Archive
 	{ _T(".alz"),   ED2KFT_ARCHIVE },	// ALZip Archive
 	{ _T(".arc"),   ED2KFT_ARCHIVE },	// Compressed File Archive
 	{ _T(".arj"),   ED2KFT_ARCHIVE },	// ARJ Compressed File Archive
@@ -1356,20 +1369,27 @@ struct SED2KFileType
 	{ _T(".cbz"),   ED2KFT_ARCHIVE },	// Comic Book ZIP Archive
 	{ _T(".gz"),    ED2KFT_ARCHIVE },	// Gnu Zipped File
 	{ _T(".hqx"),   ED2KFT_ARCHIVE },	// BinHex 4.0 Encoded File
+	{ _T(".jar"),   ED2KFT_ARCHIVE },	// Java Archive File
 	{ _T(".lha"),   ED2KFT_ARCHIVE },	// LHARC Compressed Archive
 	{ _T(".lzh"),   ED2KFT_ARCHIVE },	// LZH Compressed File
+	{ _T(".lz4"),   ED2KFT_ARCHIVE },	// LZ4 Compressed File
+	{ _T(".lzma"),  ED2KFT_ARCHIVE },	// LZMA Compressed File
 	{ _T(".msi"),   ED2KFT_ARCHIVE },	// Microsoft Installer File
 	{ _T(".pak"),   ED2KFT_ARCHIVE },	// PAK (Packed) File
 	{ _T(".par"),   ED2KFT_ARCHIVE },	// Parchive Index File
 	{ _T(".par2"),  ED2KFT_ARCHIVE },	// Parchive 2 Index File
 	{ _T(".rar"),   ED2KFT_ARCHIVE },	// WinRAR Compressed Archive
+	{ _T(".r00"),   ED2KFT_ARCHIVE },	// Multi-part RAR Archive Segment
 	{ _T(".sit"),   ED2KFT_ARCHIVE },	// Stuffit Archive
 	{ _T(".sitx"),  ED2KFT_ARCHIVE },	// Stuffit X Archive
 	{ _T(".tar"),   ED2KFT_ARCHIVE },	// Consolidated Unix File Archive
 	{ _T(".tbz2"),  ED2KFT_ARCHIVE },	// Tar BZip 2 Compressed File
 	{ _T(".tgz"),   ED2KFT_ARCHIVE },	// Gzipped Tar File
+	{ _T(".war"),   ED2KFT_ARCHIVE },	// Web Application Archive
 	{ _T(".xpi"),   ED2KFT_ARCHIVE },	// Mozilla Installer Package
+	{ _T(".xz"),    ED2KFT_ARCHIVE },	// XZ Compressed File
 	{ _T(".z"),     ED2KFT_ARCHIVE },	// Unix Compressed File
+	{ _T(".zst"),   ED2KFT_ARCHIVE },	// Zstandard Compressed File
 	{ _T(".zip"),   ED2KFT_ARCHIVE },	// Zipped File
 
 	{ _T(".bat"),   ED2KFT_PROGRAM },	// Batch File
@@ -1403,22 +1423,31 @@ struct SED2KFileType
 
 	{ _T(".chm"),   ED2KFT_DOCUMENT },	// Compiled HTML Help File
 	{ _T(".css"),   ED2KFT_DOCUMENT },	// Cascading Style Sheet
+	{ _T(".csv"),   ED2KFT_DOCUMENT },	// Comma-Separated Values File
 	{ _T(".diz"),   ED2KFT_DOCUMENT },	// Description in Zip File
 	{ _T(".doc"),   ED2KFT_DOCUMENT },	// Document File
+	{ _T(".docx"),  ED2KFT_DOCUMENT },	// Word Open XML Document
 	{ _T(".dot"),   ED2KFT_DOCUMENT },	// Document Template File
+	{ _T(".epub"),  ED2KFT_DOCUMENT },	// Electronic Publication File
 	{ _T(".hlp"),   ED2KFT_DOCUMENT },	// Help File
 	{ _T(".htm"),   ED2KFT_DOCUMENT },	// HTML File
 	{ _T(".html"),  ED2KFT_DOCUMENT },	// HTML File
+	{ _T(".json"),  ED2KFT_DOCUMENT },	// JSON Text File
 	{ _T(".nfo"),   ED2KFT_DOCUMENT },	// Warez Information File
+	{ _T(".odp"),   ED2KFT_DOCUMENT },	// OpenDocument Presentation
+	{ _T(".ods"),   ED2KFT_DOCUMENT },	// OpenDocument Spreadsheet
+	{ _T(".odt"),   ED2KFT_DOCUMENT },	// OpenDocument Text Document
 	{ _T(".pdf"),   ED2KFT_DOCUMENT },	// Portable Document Format File
 	{ _T(".pps"),   ED2KFT_DOCUMENT },	// PowerPoint Slide Show
 	{ _T(".ppt"),   ED2KFT_DOCUMENT },	// PowerPoint Presentation
+	{ _T(".pptx"),  ED2KFT_DOCUMENT },	// PowerPoint Open XML Presentation
 	{ _T(".ps"),    ED2KFT_DOCUMENT },	// PostScript File
 	{ _T(".rtf"),   ED2KFT_DOCUMENT },	// Rich Text Format File
 	{ _T(".text"),  ED2KFT_DOCUMENT },	// General Text File
 	{ _T(".txt"),   ED2KFT_DOCUMENT },	// Text File
 	{ _T(".wri"),   ED2KFT_DOCUMENT },	// Windows Write Document
 	{ _T(".xls"),   ED2KFT_DOCUMENT },	// Microsoft Excel Spreadsheet
+	{ _T(".xlsx"),  ED2KFT_DOCUMENT },	// Excel Open XML Spreadsheet
 	{ _T(".xml"),   ED2KFT_DOCUMENT },	// XML File
 
 	{ _T(".emulecollection"), ED2KFT_EMULECOLLECTION }
