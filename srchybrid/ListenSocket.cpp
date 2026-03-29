@@ -197,7 +197,7 @@ void CClientReqSocket::Safe_Delete()
 	CEMSocket::SetConState(EMS_DISCONNECTED);
 	AsyncSelect(FD_CLOSE);
 	deltimer = ::GetTickCount();
-	if (m_SocketData.hSocket != INVALID_SOCKET) // deadlake PROXYSUPPORT - changed to AsyncSocketEx
+	if (m_SocketData.hSocket != INVALID_SOCKET)
 		ShutDown(CAsyncSocket::both);
 	if (client) {
 		client->socket = NULL;

@@ -99,7 +99,6 @@ struct EmailSettings
 };
 
 
-// deadlake PROXYSUPPORT
 struct ProxySettings
 {
 	CString	host;
@@ -528,7 +527,7 @@ public:
 	static int		m_iWebTimeoutMins;
 	static int		m_iWebFileUploadSizeLimitMB;
 	static CString	m_strTemplateFile;
-	static ProxySettings proxy; // deadlake PROXYSUPPORT
+	static ProxySettings proxy;
 	static bool		m_bAllowAdminHiLevFunc;
 	static CUIntArray m_aAllowedRemoteAccessIPs;
 	static bool		m_bWebUseHttps;
@@ -1206,7 +1205,6 @@ public:
 	static bool		GetNetworkED2K()					{ return networked2k; }
 	static void		SetNetworkED2K(bool val)			{ networked2k = val; }
 
-	// deadlake PROXYSUPPORT
 	static const ProxySettings& GetProxySettings()		{ return proxy; }
 	static void		SetProxySettings(const ProxySettings &proxysettings) { proxy = proxysettings; }
 

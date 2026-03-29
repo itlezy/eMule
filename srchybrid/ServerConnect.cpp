@@ -511,7 +511,7 @@ void CServerConnect::DestroySocket(CServerSocket *pSock)
 	POSITION pos = m_lstOpenSockets.Find(pSock);
 	if (pos != NULL)
 		m_lstOpenSockets.RemoveAt(pos);
-	if (pSock->m_SocketData.hSocket != INVALID_SOCKET) { // deadlake PROXYSUPPORT - changed to AsyncSocketEx
+	if (pSock->m_SocketData.hSocket != INVALID_SOCKET) {
 		pSock->AsyncSelect(FD_CLOSE);
 		pSock->ShutDown(CAsyncSocket::both);
 		pSock->Close();

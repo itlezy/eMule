@@ -133,27 +133,23 @@ CEMSocket::~CEMSocket()
 	theApp.uploadBandwidthThrottler->RemoveFromAllQueues(this);
 
 	ClearQueues();
-	CEMSocket::RemoveAllLayers(); // deadlake PROXYSUPPORT
+	CEMSocket::RemoveAllLayers();
 	AsyncSelect(0);
 }
 
-// deadlake PROXYSUPPORT
-// By Maverick: Connection initialization is done by class itself
+// Connection initialization is handled by the socket class itself.
 bool CEMSocket::Connect(const CString &sHostAddress, UINT nHostPort)
 {
 	InitProxySupport();
 	return CEncryptedStreamSocket::Connect(sHostAddress, nHostPort);
 }
-// end deadlake
 
-// deadlake PROXYSUPPORT
-// By Maverick: Connection initialization is done by class itself
+// Connection initialization is handled by the socket class itself.
 BOOL CEMSocket::Connect(const LPSOCKADDR pSockAddr, int iSockAddrLen)
 {
 	InitProxySupport();
 	return CEncryptedStreamSocket::Connect(pSockAddr, iSockAddrLen);
 }
-// end deadlake
 
 void CEMSocket::InitProxySupport()
 {
@@ -233,8 +229,8 @@ void CEMSocket::OnClose(int nErrorCode)
 	// we can remove ourself from the queue
 	theApp.uploadBandwidthThrottler->RemoveFromAllQueues(this);
 
-	CEncryptedStreamSocket::OnClose(nErrorCode); // deadlake changed socket to PROXYSUPPORT ( AsyncSocketEx )
-	RemoveAllLayers(); // deadlake PROXYSUPPORT
+	CEncryptedStreamSocket::OnClose(nErrorCode);
+	RemoveAllLayers();
 	ClearQueues();
 }
 
@@ -248,7 +244,6 @@ BOOL CEMSocket::AsyncSelect(long lEvent)
 	if (lEvent & FD_WRITE)
 		EMTrace("  FD_WRITE");
 #endif
-	// deadlake changed to AsyncSocketEx PROXYSUPPORT
 	return (m_SocketData.hSocket == INVALID_SOCKET) || CEncryptedStreamSocket::AsyncSelect(lEvent);
 }
 
@@ -626,7 +621,7 @@ SocketSentBytes CEMSocket::SendStd(uint32 maxNumberOfBytesToSend, uint32 minFrag
 
 				lastSent = timeGetTime();
 
-				uint32 result = CEncryptedStreamSocket::Send(sendbuffer + sent, tosend); // deadlake PROXYSUPPORT - changed to AsyncSocketEx
+				uint32 result = CEncryptedStreamSocket::Send(sendbuffer + sent, tosend);
 				if (result == (uint32)SOCKET_ERROR) {
 					uint32 error = (uint32)CAsyncSocket::GetLastError();
 					if (error == WSAEWOULDBLOCK) {
@@ -901,7 +896,7 @@ uint32 CEMSocket::GetNeededBytes()
 int CEMSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 {
 	//EMTrace("CEMSocket::Receive on %u, maxSize=%d", (SOCKET)this, nBufLen);
-	int recvRetCode = CEncryptedStreamSocket::Receive(lpBuf, nBufLen, nFlags); // deadlake PROXYSUPPORT - changed to AsyncSocketEx
+	int recvRetCode = CEncryptedStreamSocket::Receive(lpBuf, nBufLen, nFlags);
 	switch (recvRetCode) {
 	case 0:
 		if (GetRealReceivedBytes() <= 0) { // we received data but it was for the underlying encryption layer - all fine

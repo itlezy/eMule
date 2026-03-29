@@ -2,29 +2,26 @@
 
 ## Last Chunk
 
-- Started the safe mechanical cleanup pass from `docs\AUDIT-DEADCODE.md`.
-- Deleted the 10 verified `#if 0` blocks from:
-  - `srchybrid\EmuleDlg.cpp`
-  - `srchybrid\DialogMinTrayBtn.cpp`
-  - `srchybrid\IESecurity.cpp`
-  - `srchybrid\MiniMule.cpp` (2 blocks)
-  - `srchybrid\MuleListCtrl.cpp` (2 blocks)
-  - `srchybrid\OtherFunctions.cpp`
-  - `srchybrid\SelfTest.cpp`
-  - `srchybrid\kademlia\io\DataIO.cpp`
-- Removed the commented-out radio handler declarations from `srchybrid\AddSourceDlg.h`.
-- Removed the self-marked unused `_GetIsTempDisabled()` inline accessor from `srchybrid\WebServer.h`.
+- Finished the second safe cleanup block from `docs\AUDIT-DEADCODE.md`.
+- Removed the `deadlake PROXYSUPPORT` attribution comments from:
+  - `srchybrid\EMSocket.cpp`
+  - `srchybrid\Preferences.h`
+  - `srchybrid\ServerConnect.h`
+  - `srchybrid\ServerConnect.cpp`
+  - `srchybrid\ListenSocket.cpp`
+- Kept the live proxy-support logic intact and only removed or neutralized the historical attribution text.
+- Reworded the two `CEMSocket::Connect` comments to a neutral description so they still explain why the socket initializes proxy support locally.
 - Verified with:
   - `..\23-build-emule-debug-incremental.cmd`
-  - confirmed `srchybrid\x64\Debug\EmuleDlg.obj`, `srchybrid\x64\Debug\MiniMule.obj`, `srchybrid\x64\Debug\MuleListCtrl.obj`, `srchybrid\x64\Debug\OtherFunctions.obj`, and `srchybrid\x64\Debug\emule.exe` were rebuilt after the edit
+  - confirmed by grep that the targeted `deadlake PROXYSUPPORT` comments are gone from the touched files
+  - the build wrapper returned cleanly, but this comment-only chunk did not produce newer timestamps for `EMSocket.obj`, `ServerConnect.obj`, `ListenSocket.obj`, or `emule.exe`, so a fresh object rebuild was not independently observed
 
 ## Current State
 
-- The verified `#if 0` blocks from the audit are gone.
-- The obviously dead declarations in `AddSourceDlg.h` and `WebServer.h` are gone.
-- The first mechanical cleanup block compiles in the Debug incremental build path.
+- The `deadlake PROXYSUPPORT` attribution noise is gone from the targeted files while the proxy code remains unchanged.
+- The safe mechanical cleanup slice from the audit is now split into two WIP commits: dead disabled code first, comment-only cleanup second.
 
 ## Next Chunk
 
-- Remove the remaining `deadlake PROXYSUPPORT` attribution comments from `EMSocket.cpp`, `ServerConnect.h`, `Preferences.h`, `ServerConnect.cpp`, and `ListenSocket.cpp` as a separate WIP cleanup commit.
-- After the comment-only cleanup, re-run the incremental build and refresh `RESUME.md` to reflect the completed audit slice.
+- Consider correcting the stale parts of `docs\AUDIT-DEADCODE.md` itself so it reflects the already-completed PeerCache cleanup and the completed mechanical cleanup chunks.
+- If continuing with the audit, the next likely block is the Windows 95 / obsolete compatibility cleanup in `OtherFunctions.cpp` and related low-risk legacy reads in `Preferences.cpp`.
