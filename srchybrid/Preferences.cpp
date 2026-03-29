@@ -1759,12 +1759,10 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("VideoPreviewBackupped"), m_bMoviePreviewBackup);
 	ini.WriteInt(_T("StartNextFile"), m_istartnextfile);
 
-	ini.DeleteKey(_T("FileBufferSizePref")); // delete old 'file buff size' setting
 	ini.WriteInt(_T("FileBufferSize"), m_uFileBufferSize);
 	ini.WriteInt(_T("UDPReceiveBufferSize"), m_uUDPReceiveBufferSize);
 	ini.WriteInt(_T("BigSendBufferSize"), m_uTCPSendBufferSize);
 
-	ini.DeleteKey(_T("QueueSizePref")); // delete old 'queue size' setting
 	ini.WriteInt(_T("QueueSize"), (int)m_iQueueSize);
 
 	ini.WriteInt(_T("CommitFiles"), m_iCommitFiles);
@@ -2262,19 +2260,15 @@ void CPreferences::LoadPreferences()
 	m_bForceSpeedsToKB = ini.GetBool(_T("ForceSpeedsToKB"), false);
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);
 
-	// Get file buffer size (with backward compatibility)
-	m_uFileBufferSize = ini.GetInt(_T("FileBufferSizePref"), 0); // old setting
-	if (m_uFileBufferSize == 0)
-		m_uFileBufferSize = 2 * 1024 * 1024;
-	else
-		m_uFileBufferSize = ((m_uFileBufferSize * 15000 + 512) / 1024) * 1024;
+	// Get file buffer size.
+	m_uFileBufferSize = 2 * 1024 * 1024;
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
 	m_uUDPReceiveBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("UDPReceiveBufferSize"), 512 * 1024));
 	m_uTCPSendBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("BigSendBufferSize"), 512 * 1024));
 	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
 
-	// Get queue size (with backward compatibility)
-	m_iQueueSize = (INT_PTR)ini.GetInt(_T("QueueSizePref"), 50) * 100; // old setting
+	// Get queue size.
+	m_iQueueSize = 50 * 100;
 	m_iQueueSize = ini.GetInt(_T("QueueSize"), (int)m_iQueueSize);
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving

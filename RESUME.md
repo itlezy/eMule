@@ -2,18 +2,19 @@
 
 ## Last Chunk
 
-- Removed the obsolete `GetMaxWindowsTCPConnections()` helper and its dead UI warning path.
-- Simplified `CPreferences::GetRecommendedMaxConnections()` to return the explicit eMule-side default of `500`.
-- Removed the old "OS supports" max-connections warning logic from `srchybrid\PPgConnection.cpp`.
+- Finished `REFAC_016` from `docs\REFACTOR-TASKS.md`.
+- Removed the obsolete `FileBufferSizePref` and `QueueSizePref` compatibility keys from `srchybrid\Preferences.cpp`.
+- Simplified preference loading to use the current defaults directly before reading the canonical `FileBufferSize` and `QueueSize` keys.
+- Removed the old `ini.DeleteKey(...)` cleanup calls for those deprecated keys from `SavePreferences()`.
 - Verified with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- The code no longer pretends to query a Windows TCP connection limit on modern systems.
-- The `MaxConnections` preference still exists unchanged, but its default is now clearly app policy rather than a fake OS-derived value.
-- The old warning resource strings remain in resources only; the runtime code path using them is gone.
+- The code no longer reads, migrates, or deletes the legacy `FileBufferSizePref` and `QueueSizePref` keys.
+- The canonical preference keys `FileBufferSize` and `QueueSize` remain unchanged.
+- The recent one-by-one cleanup chain now covers the Win95 comment-block removal, the fake Windows TCP-limit helper removal, and the legacy INI key removal.
 
 ## Next Chunk
 
-- Continue the one-by-one audit queue with `REFAC_016`: remove the obsolete `FileBufferSizePref` and `QueueSizePref` compatibility reads from `Preferences.cpp`.
-- After that, the next larger pending audit item remains `REFAC_013`, the Source Exchange v1 branch removal.
+- Continue with `REFAC_013`: remove the remaining Source Exchange v1 compatibility branches from the client/source-exchange path.
+- After that, revisit the stale docs (`docs\AUDIT-DEADCODE.md` and `docs\REFACTOR-TASKS.md`) so completed chunks stop showing as planned.
