@@ -70,6 +70,9 @@ static char THIS_FILE[] = __FILE__;
 class CMediaInfoDLL
 {
 public:
+	/** @brief Minimum tested MediaInfo DLL version required by this build. */
+	static const ULONGLONG s_ullMinimumVersion = MAKEDLLVERULL(18, 6, 0, 0);
+
 	CMediaInfoDLL()
 		: m_ullVersion()
 		, m_hLib()
@@ -117,9 +120,6 @@ public:
 			CStringArray aCandidatePaths;
 			CollectCandidatePaths(strConfiguredPath, aCandidatePaths);
 
-			HMODULE hBestLib = NULL;
-			ULONGLONG ullBestVersion = 0;
-			CString strBestPath;
 			for (INT_PTR i = 0; i < aCandidatePaths.GetCount(); ++i) {
 				const CString &strCandidatePath = aCandidatePaths[i];
 				CString strReason;
@@ -129,21 +129,9 @@ public:
 					LogCandidate(strCandidatePath, strReason, ullVersion);
 					continue;
 				}
-				if (ullVersion > ullBestVersion) {
-					if (hBestLib != NULL)
-						::FreeLibrary(hBestLib);
-					hBestLib = hCandidateLib;
-					ullBestVersion = ullVersion;
-					strBestPath = strCandidatePath;
-					continue;
-				}
-				::FreeLibrary(hCandidateLib);
-				LogCandidate(strCandidatePath, _T("older than the currently selected candidate"), ullVersion);
-			}
-
-			if (hBestLib != NULL) {
-				BindLoadedLibrary(hBestLib, ullBestVersion, strBestPath);
-				LogCandidate(strBestPath, _T("selected newest compatible version"), ullBestVersion);
+				BindLoadedLibrary(hCandidateLib, ullVersion, strCandidatePath);
+				LogCandidate(strCandidatePath, _T("selected compatible candidate"), ullVersion);
+				break;
 			}
 		}
 		return m_hLib != NULL;
@@ -255,8 +243,10 @@ protected:
 			return NULL;
 		}
 		rullVersion = GetModuleVersion((LPCTSTR)strPath);
-		if (rullVersion < MAKEDLLVERULL(0, 7, 13, 0)) {
-			rstrReason = _T("version below supported minimum 0.7.13");
+		if (rullVersion < s_ullMinimumVersion) {
+			rstrReason.Format(_T("version below required minimum %u.%u.%u.%u")
+				, (UINT)HIWORD(HIDWORD(s_ullMinimumVersion)), (UINT)LOWORD(HIDWORD(s_ullMinimumVersion))
+				, (UINT)HIWORD(LODWORD(s_ullMinimumVersion)), (UINT)LOWORD(LODWORD(s_ullMinimumVersion)));
 			return NULL;
 		}
 		HMODULE hCandidateLib = ::LoadLibrary(strPath);
@@ -320,7 +310,7 @@ protected:
 	bool m_bInitialized;
 	CString m_strLoadedPath;
 
-	// MediaInfoLib: 0.7.13-0.7.99, 17.10+
+	// MediaInfoLib: requires 18.06 or newer.
 	void* (__stdcall *m_pfnMediaInfo_New)();
 	int(__stdcall *m_pfnMediaInfo_Open)(void *Handle, const wchar_t *File);
 	void(__stdcall *m_pfnMediaInfo_Close)(void *Handle);
@@ -1441,18 +1431,10 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 				if (theMediaInfoDLL.Initialize()) {
 					m_handle = theMediaInfoDLL.Open(pFile->GetFilePath());
 					if (m_handle) {
-						LPCTSTR pCodec, pCodecInfo, pCodecString, pLanguageInfo;
-						if (theMediaInfoDLL.GetVersion() < MAKEDLLVERULL(18, 6, 0, 0)) {
-							pCodec = _T("Codec"); //deprecated
-							pCodecInfo = _T("Codec/Info");
-							pCodecString = _T("Codec/String");
-							pLanguageInfo = _T("Language/Info");
-						} else {
-							pCodec = _T("Format");
-							pCodecInfo = _T("Format/Info");
-							pCodecString = _T("Format/String");
-							pLanguageInfo = _T("Language_More");
-						}
+						LPCTSTR pCodec = _T("Format");
+						LPCTSTR pCodecInfo = _T("Format/Info");
+						LPCTSTR pCodecString = _T("Format/String");
+						LPCTSTR pLanguageInfo = _T("Language_More");
 						mi->strFileFormat = InfoGet(MediaInfo_Stream_General, 0, _T("Format"));
 						CString str(InfoGet(MediaInfo_Stream_General, 0, _T("Format/String")));
 						if (!str.IsEmpty() && str != mi->strFileFormat)

@@ -3916,7 +3916,7 @@ BEGIN
     IDS_SUPPORTED           "Supported"
     IDS_ESTIMATED           "estimated"
     IDS_MEDIAINFO_DLLMISSING
-                            "There is no MediaInfo library installed. If you want to get more information about audio/video files in this dialog,\r\ndownload the MediaInfo library from https://mediaarea.net/en/MediaInfo and copy the MediaInfo.dll file into\r\neMule's installation folder ""%s"".\r\n"
+                            "There is no compatible MediaInfo library installed. eMule requires MediaInfo.dll version 18.06 or newer to show extended audio/video details in this dialog.\r\n\r\nDownload the MediaInfo library from https://mediaarea.net/en/MediaInfo and copy the MediaInfo.dll file into\r\neMule's installation folder ""%s"".\r\n"
     IDS_WARNING_WRONGFILEEXTENTION
                             "Warning: The file extension of ""%s"" does not match the file extension\r\ntypically used for that file format. You may want to rename the file to\r\nuse one of those file extensions ""%s""\r\nfor properly using or viewing that file format.\r\n"
     IDS_MEDIAINFO_DRMWARNING
