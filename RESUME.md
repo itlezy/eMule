@@ -25,6 +25,9 @@
   - added explicit Windows PowerShell 5.1 / Windows 10-11 compatibility notes
   - kept the registry update idempotent and admin-gated
 - Updated `README.md` to point at `scripts\network-firewall-opener.cmd` and to document the new auto-detection behavior.
+- Renamed the script entrypoints to clearer action-oriented names:
+  - `network-firewall-opener`
+  - `system-long-paths-enabler`
 - Verified with Windows built-in `powershell.exe`:
   - `scripts\network-firewall-opener.cmd -WhatIf`
   - `scripts\network-firewall-opener.cmd -WhatIf -Remove`
@@ -34,6 +37,8 @@
 - WIP commits created in this chunk so far:
   - `c63893d` `WIP move helper scripts into scripts subtree`
   - `8656e2d` `WIP replace legacy helper script entrypoints`
+  - `f896992` `WIP finalize script migration verification notes`
+  - `c40417c` `WIP rename script entrypoints for clarity`
 
 ## Current State
 
