@@ -19,6 +19,7 @@
 #include "resource.h"
 #include "Log.h"
 #include "MediaInfo.h"
+#include "Opcodes.h"
 #include "OtherFunctions.h"
 #include "Preferences.h"
 
