@@ -78,7 +78,7 @@ Where we have proven implementations to port from, we say so. Where we are propo
 | D-01 | `strcpy()` (single remaining unbounded call) | `Emule.cpp:844` | HIGH |
 | D-02 | `srand(time(NULL))` weak RNG seed | `Emule.cpp` | HIGH |
 | D-03 | `rand()` for crypto challenge value | `ClientUDPSocket.cpp` | HIGH |
-| D-04 | `inet_addr()` deprecated | 2 socket files | MEDIUM |
+| D-04 | `inet_addr()` deprecated **[DONE]** | 2 socket files | MEDIUM |
 | D-05 | Upload overhead counters don't persist (INI key mismatch) | `Preferences.cpp` | MEDIUM |
 | D-06 | Web server allowed IPs not saved back | `PPgWebServer.cpp` | MEDIUM |
 | D-07 | 19+ hidden prefs loaded but not saved | `Preferences.cpp` | MEDIUM |
@@ -1180,7 +1180,7 @@ This is non-negotiable. Do this in the first sprint.
 | D-01: `strcpy()` | Replace with `strcpy_s()` |
 | D-02: `srand(time(NULL))` | Replace with `AutoSeededRandomPool` (Crypto++) |
 | D-03: `rand()` for challenge | Replace with `AutoSeededRandomPool::GenerateWord32()` |
-| D-04: `inet_addr()` | Replace with `InetPton()` + `InetNtop()` |
+| D-04: `inet_addr()` | Replace with `InetPton()` in the two socket files **[DONE: `768559c`]** |
 
 **Effort:** S
 **Dependency:** none

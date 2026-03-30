@@ -16,7 +16,7 @@ This eMule P2P application implements custom obfuscation/encryption, protocol ha
 - No externally-authenticated session or login mechanism exposed to the network
 - Local web server uses modern TLS (mbedTLS) with self-signed certs — acceptable for private use
 - Several fixable issues existed: weak RNG for crypto values, one unguarded `strcpy`, deprecated socket API
-- **Update 2026-03-30:** BUG_001 (strcpy) fixed in commit `0cb4d1e`; BUG_003 (srand) fix attempted and intentionally reverted — accepted as low-priority legacy risk
+- **Update 2026-03-30:** BUG_001 (strcpy) fixed in commit `0cb4d1e`; GAP_002 (`inet_addr`) fixed in commit `768559c`; BUG_003 (srand) fix attempted and intentionally reverted — accepted as low-priority legacy risk
 
 ---
 
@@ -276,6 +276,8 @@ struct Header_Struct {
 sockAddr.sin_addr.s_addr = inet_addr(sAscii);
 ```
 
+**Status:** **[DONE]** in commit `768559c` — replaced with `InetPtonA()` in the two D-04 socket paths while preserving the existing hostname-resolution fallback.
+
 - `inet_addr()` is deprecated (POSIX.1-2008)
 - Returns `-1` (0xffffffff) on error — ambiguous since `255.255.255.255` is a valid address that maps to the same value
 - Should be replaced with `InetPton()` (Windows) or `inet_pton()` (POSIX)
@@ -495,7 +497,7 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 | 7 | **GAP_004** | **MEDIUM** | DH | 768-bit DH parameters (weak) | `srchybrid/EncryptedStreamSocket.cpp:101-110` |
 | 8 | — | **MEDIUM** | Cipher | RC4 deprecated cipher for obfuscation | `srchybrid/EncryptedDatagramSocket.cpp` |
 | 9 | **GAP_001** | **MEDIUM** | Crypto | 3DES (DES3-CBC) in SMTP | `srchybrid/SendMail.cpp` |
-| 10 | **GAP_002** | **MEDIUM** | Network | `inet_addr()` deprecated API | `srchybrid/AsyncProxySocketLayer.cpp:732`, `AsyncSocketEx.cpp:897` |
+| 10 | **GAP_002** **[DONE]** | **MEDIUM** | Network | `inet_addr()` deprecated API | `srchybrid/AsyncProxySocketLayer.cpp:732`, `AsyncSocketEx.cpp:897` |
 | 11 | **GAP_003** | **MEDIUM** | Web | Potential XSS in web server templates | `srchybrid/WebServer.cpp` |
 | 12 | — | **LOW** | TLS | Self-signed cert for local web server | `srchybrid/PPgWebServer.cpp` |
 | 13 | — | **LOW** | RNG | `rand()` for timing jitter (non-crypto) | `srchybrid/BaseClient.cpp:237` |
@@ -518,7 +520,7 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 
 4. **`GAP_001`** **`srchybrid/SendMail.cpp`** — Replace 3DES (DES3-CBC) with AES-128-CBC or AES-256-GCM.
 
-5. **`GAP_002`** **`srchybrid/AsyncProxySocketLayer.cpp:732`**, **`srchybrid/AsyncSocketEx.cpp:897`** — Replace `inet_addr()` with `InetPton()` (Windows) or `inet_pton()` (POSIX).
+5. **`GAP_002`** **[DONE]** (commit `768559c`) — `inet_addr()` replaced with `InetPtonA()` in `srchybrid/AsyncProxySocketLayer.cpp` and `srchybrid/AsyncSocketEx.cpp`.
 
 6. **`GAP_003`** **`srchybrid/WebServer.cpp`** — Audit all template variable insertions to ensure HTML encoding is applied to peer-supplied strings (file names, search results, IP addresses rendered in HTML context).
 

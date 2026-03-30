@@ -59,3 +59,10 @@
   I passed multiple filter values to `-Filter`, which accepts only a single string.
 - Fix:
   use `Where-Object` with `$_ .Extension` / `$_ .Name`, or run separate `Get-ChildItem` calls when matching several filename patterns.
+
+- Error:
+  `rg` again returned `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed wildcard paths such as `.\\srchybrid\\*.h` and `.\\srchybrid\\*.cpp`.
+- Cause:
+  I slipped back into shell-style wildcard path arguments instead of using `rg` globs against a concrete directory.
+- Fix:
+  pass `.\\srchybrid` as the search root and add `--glob '*.h' --glob '*.cpp'` when filtering by extension.
