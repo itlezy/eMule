@@ -2,19 +2,22 @@
 
 ## Last Chunk
 
-- Created the shared sibling `eMulebb-tests` git repo and wired it into both the current workspace and the new oracle workspace as a `tests` submodule.
-- Tagged the parent pre-refactor baseline, branched both parent and pinned `eMule` checkouts as `v0.72a-oracle`, cloned `C:\prj\p2p\eMulebb-oracle`, and added parent-level wrappers to build and run the shared test project.
-- Removed the duplicated in-tree `srchybrid/tests` harness from the current `eMule` tree, verified the parent-level wrappers still work, and confirmed that the live diff still reports the first observed behavior difference between the modern branch and the oracle branch.
+- Added `srchybrid/ProtocolGuards.h` on the current branch and routed the live parser guards through it for packet payload sizing, TCP receive-buffer bounds, sane tag counts, and server UDP header-length checks.
+- Added the matching oracle-side `srchybrid/ProtocolGuards.h` seam on `v0.72a-oracle` so the shared tests can compile the same guard API against both workspaces while preserving the legacy oracle semantics.
+- Expanded the shared `tests` repo into parity and divergence suites, switched the live diff from raw text comparison to doctest XML parsing, and stabilized the shared runner with `/FS` plus stricter suite filtering.
 
 ## Current State
 
-- `C:\prj\p2p\eMulebb\tests` and `C:\prj\p2p\eMulebb-oracle\tests` now point at the same shared test repository content.
-- The current `eMule` tree no longer carries `srchybrid/tests`, `srchybrid/emule-tests.vcxproj`, or the old local helper script; the shared parent-level `tests` submodule is now the only supported test location.
-- `tests\scripts\run-live-diff.ps1` already exercises both workspaces end to end and records advisory output diffs.
-- The current shared suite is still small and ring-focused; it proves the cross-worktree harness but does not yet cover the socket / packet / protocol audit targets.
+- `C:\prj\p2p\eMulebb\tests` and `C:\prj\p2p\eMulebb-oracle\tests` are both on shared-tests commit `9ece132b3525aae3ad315099490a4b59af1808b7`.
+- The current `eMule` tree is on `d29e8629455b66a19c6df15afdc055e7c963f640`, and the oracle `eMule` tree is on `3b5147acf0dc2ac8edb0e58c6aab7e71ddc5fd79`.
+- `36-run-emule-tests-debug.cmd` passes on the current workspace with 12 test cases / 28 assertions.
+- `37-run-emule-tests-live-diff.cmd` now reports case-level results:
+  parity cases pass in both workspaces, and divergence cases pass on dev while failing on oracle as expected.
+- The live harness now covers the ring behavior split plus the first parser-guard slice:
+  TCP payload length gates, hostile tag counts, and short server UDP payload handling.
 
 ## Next Chunk
 
-- Expand the shared tests repo from the ring smoke test into real protocol coverage, starting with packet/header framing and malformed-length boundary cases that can run against both workspaces.
-- Add a normalized machine-readable result format to the live diff path so branch differences are easier to review than raw doctest console text.
-- Decide which observed oracle differences are intentional and which should become actionable regressions before tightening any failure policy.
+- Extend the guard-level protocol coverage into real packet and tag fixture replay so more of `Packets`, `SafeFile`, and parser entry behavior is exercised directly rather than only through the seam helpers.
+- Decide whether to keep the divergence lane as advisory-only or begin failing on unexpected oracle convergence once the expected-difference set stabilizes.
+- Add the next audit-driven cases from `AUDIT-BUGS.md`, especially the remaining malformed packet and truncated parser paths that can be expressed deterministically in the shared harness.

@@ -108,3 +108,17 @@
   the quoted `%~dp0` value ends with a trailing backslash, which is fragile when forwarded through `pwsh -File ... -WorkspaceRoot`.
 - Fix:
   normalize the wrapper argument first, for example with `SET "WORKSPACE_ROOT=%~dp0."`, and pass that stabilized path to PowerShell instead of the raw `%~dp0`.
+
+- Error:
+  `git checkout <sha>` in the `tests` submodule failed with `fatal: unable to read tree (...)`.
+- Cause:
+  I pasted an incorrect full commit hash while advancing the submodule to the latest sibling-repo commit.
+- Fix:
+  verify the exact commit with `git rev-parse HEAD` in the source repo before checking it out in the submodule worktrees.
+
+- Error:
+  `Get-Content` failed for `tests\\reports\\dev-parity.log` because the file did not exist.
+- Cause:
+  I assumed the doctest XML reporter would still emit console output to tee into the `.log` file, but with `--out=<xml>` it did not produce a companion log.
+- Fix:
+  confirm whether a reporter writes to stdout before reading a derived log path, or guard the read with `Test-Path`.
