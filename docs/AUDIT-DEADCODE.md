@@ -256,20 +256,13 @@ Refers to an external website infrastructure that was never built. The TODO has 
 |------|------|------|
 | `srchybrid/DownloadListCtrl.cpp` | 1756 | "'GetCategory' SHOULD be a 'const' function" — const-correctness issue noted but not fixed |
 
-### 4.4 Obsolete Configuration Loading
+### 4.4 Obsolete Configuration Loading [DONE]
 
-*See REFAC_017 in REFACTOR-TASKS.md*
+*Handled by REFAC_016 in REFACTOR-TASKS.md*
 
-**File:** `srchybrid/Preferences.cpp` (lines 2185, 2194)
-
-```cpp
-m_uFileBufferSize = ini.GetInt(_T("FileBufferSizePref"), 0); // old setting
-m_iQueueSize = (INT_PTR)ini.GetInt(_T("QueueSizePref"), 50) * 100; // old setting
-```
-
-These load deprecated .ini keys that no longer have corresponding UI or write paths. They exist solely to migrate values from very old installations.
-
-**Action:** After confirming the minimum supported config file age, remove these legacy reads. *See REFAC_017 in REFACTOR-TASKS.md*
+The legacy `FileBufferSizePref` and `QueueSizePref` compatibility reads have already been removed
+from `srchybrid/Preferences.cpp`. Keep this section only as historical context so the older audit
+notes match the current tree.
 
 ---
 
@@ -294,23 +287,15 @@ The string "deadlake PROXYSUPPORT" appears 20+ times across multiple files as an
 
 ## 6. Legacy Windows Compatibility Code
 
-### 6.1 Windows 95 Check
+### 6.1 Windows 95 Check [DONE]
 
-*See REFAC_017 in REFACTOR-TASKS.md*
+*Handled by REFAC_015 in REFACTOR-TASKS.md*
 
-**File:** `srchybrid/OtherFunctions.cpp` (line 624)
+The old Windows 95 / NT4 detection block has already been removed from `srchybrid/OtherFunctions.cpp`.
 
-```cpp
-if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 0) { // old school 95
-```
+### 6.2 Obsolete Pref Keys [DONE]
 
-Windows 95 (NT 4.0) detection. The minimum supported Windows version for this branch is well above Windows 9x. This branch is dead on any supported OS.
-
-**Action:** Remove the Windows 95 / NT4 conditional block. *See REFAC_017 in REFACTOR-TASKS.md*
-
-### 6.2 Obsolete Pref Keys
-
-As noted above (`Preferences.cpp:2185, 2194`), two old .ini key reads survive from a prior configuration format. The keys `FileBufferSizePref` and `QueueSizePref` have been superseded but are still silently loaded.
+As noted above, the stale `FileBufferSizePref` and `QueueSizePref` imports are no longer present in the live tree.
 
 ---
 
