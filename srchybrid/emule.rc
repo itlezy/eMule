@@ -277,7 +277,6 @@ BEGIN
     CONTROL         "Start with Windows",IDC_STARTWIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,202,190,10
     PUSHBUTTON      "Edit Web Services...",IDC_WEBSVEDIT,11,131,100,14
     PUSHBUTTON      "Handle eD2K Links",IDC_ED2KFIX,116,131,106,14
-    CONTROL         "Enable Minimule window",IDC_MINIMULE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,104,202,10
     CONTROL         "Prevent Standby mode while eMule is running",IDC_PREVENTSTANDBY,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,114,212,10
 END
@@ -1148,14 +1147,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,276,71,50,14
 END
 
-IDD_MINIMULE DIALOGEX 0, 0, 16, 16
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-EXSTYLE WS_EX_TOPMOST | WS_EX_TOOLWINDOW
-CAPTION "eMule"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-END
-
 IDD_COLLECTIONCREATEDIALOG DIALOGEX 0, 0, 402, 207
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME
 CAPTION "Collection create"
@@ -1901,7 +1892,6 @@ END
 // HTML
 //
 
-IDR_HTML_MINIMULE       HTML                    "res\\MiniMule.htm"
 CONNECTED.GIF           HTML                    "res\\Connected.gif"
 CONNECTEDNOTNOT.GIF     HTML                    "res\\ConnectedNotNot.gif"
 CONNECTEDNOTLOW.GIF     HTML                    "res\\ConnectedNotLow.gif"
@@ -1918,7 +1908,6 @@ COMPLETED.GIF           HTML                    "res\\FileInfo.gif"
 FREESPACE.GIF           HTML                    "res\\HardDisk.gif"
 OPENINCOMING.GIF        HTML                    "res\\Incoming.gif"
 RESTOREWINDOW.GIF       HTML                    "res\\RestoreWindow.gif"
-TABLEBACKGND.GIF        HTML                    "res\\MiniMuleBack.gif"
 PREFERENCES.GIF         HTML                    "res\\Preferences.gif"
 
 
@@ -3821,7 +3810,6 @@ BEGIN
     IDS_UNVERIFIED          "Unverified"
     IDS_INVALIDFILEEXT      "Invalid file extension"
     IDS_UNKNOWNFILEEXT      "Unknown file extension"
-    IDS_ENABLEMINIMULE      "Enable MiniMule"
     IDS_DISABLE_AUTOARCHPREV
                             "Disable automatic archive preview start in file details"
     IDS_US_STALLEDW4BR      "Stalled! Waiting for block request."

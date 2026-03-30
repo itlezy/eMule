@@ -1281,7 +1281,6 @@
 #define IDS_SMTPSERVER                  1409
 #define IDS_PW_SENDERADDRESS            1410
 #define IDS_AVAILABLEPARTS              1411
-#define IDD_MINIMULE                    1412
 #define IDS_NOSOUND                     1412
 #define IDS_PW_RECEIVERADDRESS          1413
 #define IDS_PW_ENABLEEMAIL              1414
@@ -1347,7 +1346,6 @@
 #define IDS_ARCHTYPE                    1478
 #define IDS_ATTRIBUTES                  1479
 #define IDS_LASTMODIFIED                1480
-#define IDR_HTML_MINIMULE               1481
 #define IDR_LISTVIEW                    1481
 #define IDS_RARFULLENCR                 1481
 #define IDS_ARCPARSED                   1482
@@ -1380,7 +1378,6 @@
 #define IDS_UNVERIFIED                  1509
 #define IDS_INVALIDFILEEXT              1510
 #define IDS_UNKNOWNFILEEXT              1511
-#define IDS_ENABLEMINIMULE              1512
 #define IDS_DISABLE_AUTOARCHPREV        1513
 #define IDS_US_STALLEDW4BR              1514
 #define IDS_US_STALLEDREADINGFDISK      1515
@@ -1797,7 +1794,6 @@
 #define IDC_SERVMSG                     2446
 #define IDC_ONLINESIG                   2447
 #define IDC_SEARCHLST_ICO               2448
-#define IDC_MINIMULE                    2448
 #define IDC_SERVLST_ICO                 2449
 #define IDC_PREVENTSTANDBY              2449
 #define IDC_DOWNLOAD_ICO                2452

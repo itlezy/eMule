@@ -55,7 +55,6 @@ BEGIN_MESSAGE_MAP(CPPgGeneral, CPropertyPage)
 	ON_BN_CLICKED(IDC_WEBSVEDIT, OnBnClickedEditWebservices)
 	ON_BN_CLICKED(IDC_ONLINESIG, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CHECK4UPDATE, OnBnClickedCheck4Update)
-	ON_BN_CLICKED(IDC_MINIMULE, OnSettingsChange)
 	ON_BN_CLICKED(IDC_PREVENTSTANDBY, OnSettingsChange)
 	ON_WM_HSCROLL()
 	ON_WM_HELPINFO()
@@ -88,7 +87,6 @@ void CPPgGeneral::LoadSettings()
 	CheckDlgButton(IDC_BRINGTOFOREGROUND, static_cast<UINT>(thePrefs.bringtoforeground));
 	CheckDlgButton(IDC_EXIT, static_cast<UINT>(thePrefs.confirmExit));
 	CheckDlgButton(IDC_ONLINESIG, static_cast<UINT>(thePrefs.onlineSig));
-	CheckDlgButton(IDC_MINIMULE, static_cast<UINT>(thePrefs.m_bEnableMiniMule));
 	CheckDlgButton(IDC_CHECK4UPDATE, static_cast<UINT>(thePrefs.updatenotify));
 	CheckDlgButton(IDC_SPLASHON, static_cast<UINT>(thePrefs.splashscreen));
 	CheckDlgButton(IDC_STARTMIN, static_cast<UINT>(thePrefs.startMinimized));
@@ -218,7 +216,6 @@ BOOL CPPgGeneral::OnApply()
 	thePrefs.bringtoforeground = IsDlgButtonChecked(IDC_BRINGTOFOREGROUND) != 0;
 	thePrefs.confirmExit = IsDlgButtonChecked(IDC_EXIT) != 0;
 	thePrefs.onlineSig = IsDlgButtonChecked(IDC_ONLINESIG) != 0;
-	thePrefs.m_bEnableMiniMule = IsDlgButtonChecked(IDC_MINIMULE) != 0;
 	thePrefs.m_bPreventStandby = IsDlgButtonChecked(IDC_PREVENTSTANDBY) != 0;
 	thePrefs.updatenotify = IsDlgButtonChecked(IDC_CHECK4UPDATE) != 0;
 	thePrefs.versioncheckdays = static_cast<CSliderCtrl*>(GetDlgItem(IDC_CHECKDAYS))->GetPos();
@@ -260,7 +257,6 @@ void CPPgGeneral::Localize()
 		SetDlgItemText(IDC_BRINGTOFOREGROUND, GetResString(IDS_PW_FRONT));
 		SetDlgItemText(IDC_EXIT, GetResString(IDS_PW_PROMPT));
 		SetDlgItemText(IDC_ONLINESIG, GetResString(IDS_PREF_ONLINESIG));
-		SetDlgItemText(IDC_MINIMULE, GetResString(IDS_ENABLEMINIMULE));
 		SetDlgItemText(IDC_PREVENTSTANDBY, GetResString(IDS_PREVENTSTANDBY));
 		SetDlgItemText(IDC_WEBSVEDIT, GetResString(IDS_WEBSVEDIT));
 		SetDlgItemText(IDC_ED2KFIX, GetResString(IDS_ED2KLINKFIX));

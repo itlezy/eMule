@@ -32,7 +32,6 @@ class CChatWnd;
 class CKademliaWnd;
 class CKnownFileList;
 class CMainFrameDropTarget;
-class CMiniMule;
 class CMuleStatusBarCtrl;
 class CMuleSystrayDlg;
 class CMuleToolbarCtrl;
@@ -56,7 +55,6 @@ struct Status;
 class CemuleDlg : public CTrayDialog
 {
 	friend class CMuleToolbarCtrl;
-	friend class CMiniMule;
 
 	enum
 	{
@@ -132,7 +130,6 @@ public:
 	HBRUSH GetCtlColor(CDC*, CWnd*, UINT);
 
 	virtual void OnTrayRButtonUp(CPoint pt);
-	virtual void OnTrayLButtonUp();
 	virtual void TrayMinimizeToTrayChange();
 	virtual void RestoreWindow();
 	virtual void HtmlHelp(DWORD_PTR dwData, UINT nCmd = 0x000F);
@@ -193,10 +190,6 @@ protected:
 	DWORD m_dwSplashTime;
 	void ShowSplash();
 	void DestroySplash();
-
-	// Mini Mule
-	CMiniMule	*m_pMiniMule;
-	void DestroyMiniMule();
 
 	CMap<UINT, UINT, LPCTSTR, LPCTSTR> m_mapTbarCmdToIcon;
 	void CreateToolbarCmdIconMap();
@@ -293,8 +286,6 @@ protected:
 	afx_msg LRESULT OnAddRemoveFriend(WPARAM wParam, LPARAM lParam);
 	// VersionCheck DNS
 	afx_msg LRESULT OnVersionCheckResponse(WPARAM, LPARAM lParam);
-	// MiniMule
-	afx_msg LRESULT OnCloseMiniMule(WPARAM wParam, LPARAM);
 	// Terminal Services
 	afx_msg LRESULT OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam);
 	// UPnP

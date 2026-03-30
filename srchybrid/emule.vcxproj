@@ -226,7 +226,6 @@
     <ClCompile Include="HttpDownloadDlg.cpp" />
     <ClCompile Include="I18n.cpp" />
     <ClCompile Include="IconStatic.cpp" />
-    <ClCompile Include="IESecurity.cpp" />
     <ClCompile Include="Ini2.cpp" />
     <ClCompile Include="InputBox.cpp" />
     <ClCompile Include="IP2Country.cpp" />
@@ -274,7 +273,6 @@
     <ClCompile Include="MediaInfo.cpp" />
     <ClCompile Include="MetaDataDlg.cpp" />
     <ClCompile Include="MeterIcon.cpp" />
-    <ClCompile Include="MiniMule.cpp" />
     <ClCompile Include="MediaInfo_DLL.cpp" />
     <ClCompile Include="MuleListCtrl.cpp" />
     <ClCompile Include="MuleStatusBarCtrl.cpp" />
@@ -406,9 +404,6 @@
     </CustomBuild>
     <None Include="res\emule.rc2" />
     <None Include="res\InetDownload.avi" />
-    <None Include="res\MiniMule.htm">
-      <DeploymentContent>true</DeploymentContent>
-    </None>
     <None Include="res\WideCharLowerMap.bin" />
     <None Include="..\setup\eMule Light.tmpl" />
     <None Include="..\setup\staticservers.dat" />
@@ -498,7 +493,6 @@
     <ClInclude Include="HttpClientReqSocket.h" />
     <ClInclude Include="HttpDownloadDlg.h" />
     <ClInclude Include="IconStatic.h" />
-    <ClInclude Include="IESecurity.h" />
     <ClInclude Include="ImportParts.h" />
     <ClInclude Include="Ini2.h" />
     <ClInclude Include="InputBox.h" />
@@ -558,7 +552,6 @@
     <ClInclude Include="MenuCmds.h" />
     <ClInclude Include="MetaDataDlg.h" />
     <ClInclude Include="MeterIcon.h" />
-    <ClInclude Include="MiniMule.h" />
     <ClInclude Include="MuleListCtrl.h" />
     <ClInclude Include="MuleStatusBarCtrl.h" />
     <ClInclude Include="MuleSystrayDlg.h" />
@@ -832,7 +825,6 @@
     <Image Include="res\MessagePending.ico" />
     <Image Include="res\Messages.ico" />
     <Image Include="res\MetaData.ico" />
-    <Image Include="res\MiniMuleBack.gif" />
     <Image Include="res\Mule.ico" />
     <Image Include="res\Mule_Vista.ico" />
     <Image Include="res\mule_wiz.gif" />

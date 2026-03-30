@@ -84,7 +84,6 @@
 #include "StringConversion.h"
 #include "aichsyncthread.h"
 #include "Log.h"
-#include "MiniMule.h"
 #include "UserMsgs.h"
 #include "TextToSpeech.h"
 #include "Collection.h"
@@ -164,7 +163,6 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	// WM_USER messages
 	//
 	ON_MESSAGE(UM_TASKBARNOTIFIERCLICKED, OnTaskbarNotifierClicked)
-	ON_MESSAGE(UM_CLOSE_MINIMULE, OnCloseMiniMule)
 
 	// Web Server messages
 	ON_MESSAGE(WEB_GUI_INTERACTION, OnWebGUIInteraction)
@@ -230,7 +228,6 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_prevProgress()
 	, m_ovlIcon()
 	, m_dwSplashTime(_UI32_MAX)
-	, m_pMiniMule()
 	, m_hTimer()
 	, m_hUPnPTimeOutTimer()
 	, notifierenabled()
@@ -277,7 +274,6 @@ void CemuleDlg::SetClientIconList()
 CemuleDlg::~CemuleDlg()
 {
 	CloseTTS();
-	DestroyMiniMule();
 	if (m_icoSysTrayCurrent)
 		VERIFY(::DestroyIcon(m_icoSysTrayCurrent));
 	if (m_hIcon)
@@ -1091,8 +1087,6 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 		szBuff.Format(_T("(U:%.1f D:%.1f) eMule v%s"), m_uUpDatarate / 1024.0f, m_uDownDatarate / 1024.0f, (LPCTSTR)theApp.m_strCurVersionLong);
 		SetWindowText(szBuff);
 	}
-	if (m_pMiniMule && m_pMiniMule->m_hWnd && m_pMiniMule->IsWindowVisible() && !m_pMiniMule->GetAutoClose() && !m_pMiniMule->IsInInitDialog())
-		m_pMiniMule->UpdateContent(m_uUpDatarate, m_uDownDatarate);
 }
 
 void CemuleDlg::OnOK()
@@ -1698,72 +1692,6 @@ void CemuleDlg::OnClose()
 	AddDebugLogLine(DLP_VERYLOW, _T("Closed eMule"));
 }
 
-void CemuleDlg::DestroyMiniMule()
-{
-	if (m_pMiniMule)
-		if (m_pMiniMule->IsInInitDialog()) {
-			TRACE("%s - *** Cannot destroy Minimule, it's still in 'OnInitDialog'\n", __FUNCTION__);
-			m_pMiniMule->SetDestroyAfterInitDialog();
-		} else if (!m_pMiniMule->IsInCallback()) { // for safety
-			TRACE("%s - m_pMiniMule->DestroyWindow();\n", __FUNCTION__);
-			m_pMiniMule->DestroyWindow();
-			ASSERT(m_pMiniMule == NULL);
-			m_pMiniMule = NULL;
-		} else
-			ASSERT(0);
-}
-
-LRESULT CemuleDlg::OnCloseMiniMule(WPARAM wParam, LPARAM)
-{
-	TRACE("%s -> DestroyMiniMule();\n", __FUNCTION__);
-	DestroyMiniMule();
-	if (wParam)
-		RestoreWindow();
-	return 0;
-}
-
-void CemuleDlg::OnTrayLButtonUp()
-{
-	if (theApp.IsClosing())
-		return;
-
-	// Avoid re-entrance problems with the main window, options dialog and minimule window
-	if (IsPreferencesDlgOpen()) {
-		MessageBeep(MB_OK);
-		preferenceswnd->SetForegroundWindow();
-		preferenceswnd->BringWindowToTop();
-		return;
-	}
-
-	if (m_pMiniMule) {
-		if (!m_pMiniMule->IsInInitDialog()) {
-			TRACE("%s - m_pMiniMule->ShowWindow(SW_SHOW);\n", __FUNCTION__);
-			m_pMiniMule->ShowWindow(SW_SHOW);
-			m_pMiniMule->SetForegroundWindow();
-			m_pMiniMule->BringWindowToTop();
-		}
-		return;
-	}
-
-	if (thePrefs.GetEnableMiniMule())
-		try {
-			TRACE("%s - m_pMiniMule = new CMiniMule(this);\n", __FUNCTION__);
-			ASSERT(m_pMiniMule == NULL);
-			m_pMiniMule = new CMiniMule(this);
-			m_pMiniMule->Create(CMiniMule::IDD, this);
-			if (m_pMiniMule->GetDestroyAfterInitDialog())
-				DestroyMiniMule();
-			else {
-				//m_pMiniMule->ShowWindow(SW_SHOW);	// do not explicitly show the window, it will do that by itself when it's ready
-				m_pMiniMule->SetForegroundWindow();
-				m_pMiniMule->BringWindowToTop();
-			}
-		} catch (...) {
-			ASSERT(0);
-			m_pMiniMule = NULL;
-		}
-}
-
 void CemuleDlg::OnTrayRButtonUp(CPoint pt)
 {
 	if (theApp.m_app_state != APP_STATE_RUNNING)
@@ -1776,18 +1704,6 @@ void CemuleDlg::OnTrayRButtonUp(CPoint pt)
 		preferenceswnd->BringWindowToTop();
 		return;
 	}
-
-	if (m_pMiniMule) {
-		if (m_pMiniMule->GetAutoClose()) {
-			TRACE("%s - m_pMiniMule->GetAutoClose() -> DestroyMiniMule();\n", __FUNCTION__);
-			DestroyMiniMule();
-		} else if (m_pMiniMule->m_hWnd && !m_pMiniMule->IsWindowEnabled()) {
-			// Avoid re-entrance problems with main window, options dialog and minimule window
-			MessageBeep(MB_OK);
-			return;
-		}
-	}
-
 	if (m_pSystrayDlg) {
 		m_pSystrayDlg->BringWindowToTop();
 		return;
@@ -1932,7 +1848,6 @@ void CemuleDlg::RestoreWindow()
 	}
 
 	TrayHide();
-	DestroyMiniMule();
 
 	if (m_wpFirstRestore.length) {
 		SetWindowPlacement(&m_wpFirstRestore);
@@ -2257,8 +2172,6 @@ void CemuleDlg::Localize()
 	ShowTransferRate(true);
 	ShowUserCount();
 	CPartFileConvert::Localize();
-	if (m_pMiniMule && !m_pMiniMule->IsInInitDialog())
-		m_pMiniMule->Localize();
 }
 
 void CemuleDlg::ShowUserStateIcon()

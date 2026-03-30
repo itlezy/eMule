@@ -201,11 +201,8 @@ LRESULT CTrayDialog::OnTrayNotify(WPARAM wParam, LPARAM lParam)
 		// whereby the according WM_LBUTTONDOWN message was meant for some other tray bar
 		// icon.
 		if (m_uLButtonDown) {
-			if (m_uLButtonDown > 1 || !thePrefs.m_bEnableMiniMule) { //use single click to restore from tray
-				KillSingleClickTimer();
-				RestoreWindow();
-			} else if (!m_uSingleClickTimer && !IsWindowVisible())
-				m_uSingleClickTimer = SetTimer(IDT_SINGLE_CLICK, u_DblClickSpeed, NULL);
+			KillSingleClickTimer();
+			RestoreWindow();
 		}
 		break;
 	case WM_LBUTTONDBLCLK:
@@ -238,7 +235,6 @@ void CTrayDialog::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == m_uSingleClickTimer) {
 		TRACE("%s: nIDEvent=%u\n", __FUNCTION__, nIDEvent);
-		// Kill that timer before calling 'OnTrayLButtonUp' which may create the MiniMule window asynchronously!
 		KillSingleClickTimer();
 		OnTrayLButtonUp();
 	} else

@@ -266,7 +266,6 @@ bool	CPreferences::m_bAutoConnectToStaticServersOnly;
 bool	CPreferences::autotakeed2klinks;
 bool	CPreferences::addnewfilespaused;
 UINT	CPreferences::depth3D;
-bool	CPreferences::m_bEnableMiniMule;
 int		CPreferences::m_iStraightWindowStyles;
 bool	CPreferences::m_bUseSystemFontForMainControls;
 bool	CPreferences::m_bRTLWindowsLayout;
@@ -1742,8 +1741,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("AutoTakeED2KLinks"), autotakeed2klinks);
 	ini.WriteBool(_T("AddNewFilesPaused"), addnewfilespaused);
 	ini.WriteInt(_T("3DDepth"), depth3D);
-	ini.WriteBool(_T("MiniMule"), m_bEnableMiniMule);
-
 	ini.WriteString(_T("NotifierConfiguration"), notifierConfiguration);
 	ini.WriteBool(_T("NotifyOnDownload"), notifierOnDownloadFinished);
 	ini.WriteBool(_T("NotifyOnNewDownload"), notifierOnNewDownload);
@@ -2202,8 +2199,6 @@ void CPreferences::LoadPreferences()
 	autotakeed2klinks = ini.GetBool(_T("AutoTakeED2KLinks"), true);
 	addnewfilespaused = ini.GetBool(_T("AddNewFilesPaused"), false);
 	depth3D = ini.GetInt(_T("3DDepth"), 5);
-	m_bEnableMiniMule = ini.GetBool(_T("MiniMule"), true);
-
 	// Notifier
 	notifierConfiguration = ini.GetString(_T("NotifierConfiguration"), GetMuleDirectory(EMULE_CONFIGDIR) + _T("Notifier.ini"));
 	notifierOnDownloadFinished = ini.GetBool(_T("NotifyOnDownload"));
