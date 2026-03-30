@@ -80,16 +80,16 @@ inline uint32 ReadLittleEndianUInt32(const BYTE *pBuffer)
 }
 
 /**
- * Reports whether the serialized parser can still read the requested byte count
- * from the current logical cursor without underflowing the remaining length.
+ * Reproduces the legacy remaining-byte logic without guarding underflow first.
  */
 inline bool CanReadSerializedBytes(ULONGLONG position, ULONGLONG length, ULONGLONG byteCount)
 {
-	return position <= length && byteCount <= (length - position);
+	return byteCount <= (length - position);
 }
 
 /**
- * Reports whether a serialized bool-array tag can still read its packed payload.
+ * Reproduces the legacy bool-array payload logic without guarding underflow first.
+>>>>>>> 19a1b7d (TEST: mirror legacy parser seam for live diff)
  */
 inline bool CanReadBoolArrayPayload(ULONGLONG position, ULONGLONG length, uint16 bitCount)
 {
@@ -97,28 +97,22 @@ inline bool CanReadBoolArrayPayload(ULONGLONG position, ULONGLONG length, uint16
 }
 
 /**
- * Decodes a serialized packet header while rejecting the legacy zero-length
- * payload underflow at the seam.
+ * Reproduces the legacy packet-header decode, including the zero-length underflow.
  */
 inline bool TryParsePacketHeader(const BYTE *pBuffer, size_t nBufferSize, ProtocolPacketHeader *pHeader)
 {
 	if (pBuffer == NULL || pHeader == NULL || nBufferSize < PROTOCOL_PACKET_HEADER_SIZE)
 		return false;
 
-	const uint32 nPacketLength = ReadLittleEndianUInt32(pBuffer + 1);
-	if (nPacketLength == 0)
-		return false;
-
 	pHeader->nProtocol = pBuffer[0];
-	pHeader->nPacketLength = nPacketLength;
-	pHeader->nPayloadLength = nPacketLength - 1;
+	pHeader->nPacketLength = ReadLittleEndianUInt32(pBuffer + 1);
+	pHeader->nPayloadLength = pHeader->nPacketLength - 1;
 	pHeader->nOpcode = pBuffer[5];
 	return true;
 }
 
 /**
- * Decodes a serialized tag header and validates that the tag name bytes are
- * fully present before any payload parsing starts.
+ * Reproduces the legacy tag-header decode without rejecting truncated explicit names.
  */
 inline bool TryParseTagHeader(const BYTE *pBuffer, size_t nBufferSize, ProtocolTagHeader *pHeader)
 {
@@ -148,18 +142,13 @@ inline bool TryParseTagHeader(const BYTE *pBuffer, size_t nBufferSize, ProtocolT
 
 	const uint16 nNameLength = ReadLittleEndianUInt16(pBuffer + 1);
 	if (nNameLength == 1) {
-		if (nBufferSize < 4)
-			return false;
-
-		pHeader->nNameId = pBuffer[3];
+		if (nBufferSize >= 4)
+			pHeader->nNameId = pBuffer[3];
 		pHeader->nNameLength = 1;
 		pHeader->nHeaderSize = 4;
 		pHeader->bUsesNameId = true;
 		return true;
 	}
-
-	if (nBufferSize < 3u + static_cast<size_t>(nNameLength))
-		return false;
 
 	pHeader->nNameLength = nNameLength;
 	pHeader->nHeaderSize = 3u + static_cast<size_t>(nNameLength);
@@ -167,7 +156,7 @@ inline bool TryParseTagHeader(const BYTE *pBuffer, size_t nBufferSize, ProtocolT
 }
 
 /**
- * Computes the serialized span of a tag value after the tag header was decoded.
+ * Reproduces the legacy tag-span decode without rejecting oversized values.
  */
 inline bool TryParseTagSpan(const BYTE *pBuffer, size_t nBufferSize, ProtocolTagSpan *pSpan)
 {
@@ -182,9 +171,10 @@ inline bool TryParseTagSpan(const BYTE *pBuffer, size_t nBufferSize, ProtocolTag
 	const size_t nValueOffset = pSpan->Header.nHeaderSize;
 	switch (pSpan->Header.nType) {
 	case TAGTYPE_STRING:
-		if (!CanReadSerializedBytes(nValueOffset, nBufferSize, 2))
-			return false;
-		nValueSize = 2u + static_cast<size_t>(ReadLittleEndianUInt16(pBuffer + nValueOffset));
+		if (nBufferSize >= nValueOffset + 2)
+			nValueSize = 2u + static_cast<size_t>(ReadLittleEndianUInt16(pBuffer + nValueOffset));
+		else
+			nValueSize = 2;
 		break;
 	case TAGTYPE_UINT32:
 	case TAGTYPE_FLOAT32:
@@ -204,14 +194,14 @@ inline bool TryParseTagSpan(const BYTE *pBuffer, size_t nBufferSize, ProtocolTag
 		nValueSize = 16;
 		break;
 	case TAGTYPE_BOOLARRAY:
-		if (!CanReadSerializedBytes(nValueOffset, nBufferSize, 2))
-			return false;
-		nValueSize = 2u + (static_cast<size_t>(ReadLittleEndianUInt16(pBuffer + nValueOffset)) / 8u) + 1u;
+		if (nBufferSize >= nValueOffset + 2)
+			nValueSize = 2u + (static_cast<size_t>(ReadLittleEndianUInt16(pBuffer + nValueOffset)) / 8u) + 1u;
+		else
+			nValueSize = 2;
 		break;
 	case TAGTYPE_BLOB:
-		if (!CanReadSerializedBytes(nValueOffset, nBufferSize, 4))
-			return false;
-		nBlobSize = ReadLittleEndianUInt32(pBuffer + nValueOffset);
+		if (nBufferSize >= nValueOffset + 4)
+			nBlobSize = ReadLittleEndianUInt32(pBuffer + nValueOffset);
 		nValueSize = 4u + static_cast<size_t>(nBlobSize);
 		break;
 	default:
@@ -219,9 +209,6 @@ inline bool TryParseTagSpan(const BYTE *pBuffer, size_t nBufferSize, ProtocolTag
 			nValueSize = static_cast<size_t>(pSpan->Header.nType - TAGTYPE_STR1 + 1u);
 		break;
 	}
-
-	if (!CanReadSerializedBytes(nValueOffset, nBufferSize, nValueSize))
-		return false;
 
 	pSpan->nValueSize = nValueSize;
 	pSpan->nTotalSize = pSpan->Header.nHeaderSize + nValueSize;
