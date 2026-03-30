@@ -52,3 +52,10 @@
   I used a regular-expression search for a literal pattern instead of switching to fixed-string search or escaping the metacharacters first.
 - Fix:
   use `rg -F` for literal tokens, or use `Select-String` when the pattern is already naturally expressed as a PowerShell regex string.
+
+- Error:
+  `Get-ChildItem` failed with `Cannot convert 'System.Object[]' to the type 'System.String' required by parameter 'Filter'.`
+- Cause:
+  I passed multiple filter values to `-Filter`, which accepts only a single string.
+- Fix:
+  use `Where-Object` with `$_ .Extension` / `$_ .Name`, or run separate `Get-ChildItem` calls when matching several filename patterns.

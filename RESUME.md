@@ -2,19 +2,19 @@
 
 ## Last Chunk
 
-- Consolidated the docs tree by deleting obsolete one-off reports and duplicate status files.
-- Refreshed the surviving audit and roadmap docs with 2026-03-30 status markers and commit references for completed refactors.
-- Updated dependency, security, long-path, and modern-limits tracking to reflect the current branch state.
-- Synced `AGENTS.md` to the required absolute local paths and added the local analysis repos to check during feature comparisons.
+- Added a standalone `emule-tests` console project and wired it into the solution as an opt-in target.
+- Vendored doctest `v2.5.0` under `srchybrid\tests\third_party\doctest` and added parent helper scripts to build and run the tests in Debug x64.
+- Refactored `CRing` to use index-based state instead of undefined pointer sentinels, and added regression tests covering the `BUG_006` and `BUG_007` scenarios.
+- Verified with `..\36-run-emule-tests-debug.cmd` and `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- The pending worktree content is documentation-only plus the `AGENTS.md` instruction update.
-- Removed docs have been folded into the remaining canonical docs such as `AUDIT-*`, `DEP-*`, `FEATURE-MODERN-LIMITS`, `GUIDE-LONGPATHS`, and `REFACTOR-TASKS`.
-- The next commit for this chunk should be a WIP documentation cleanup commit.
+- The submodule now contains a working logic-test harness under `srchybrid\tests` plus the `CRing` fix and solution registration.
+- The parent repo has new helper entry points `26-build-emule-tests-debug.cmd` and `36-run-emule-tests-debug.cmd` and needs its submodule pointer updated to the new eMule commit.
+- The test target is explicit and opt-in; normal eMule incremental builds remain unchanged.
 
 ## Next Chunk
 
-- Check for stale references to the removed markdown files and clean them up if any remain.
-- Continue the remaining roadmap items in `docs/REFACTOR-TASKS.md`, starting with `REFAC_002`, `REFAC_013`, or `REFAC_018`.
-- If another code chunk starts, replace this resume with the code-focused last/current/next state before the next WIP commit.
+- Expand `emule-tests` to other logic-only seams such as MIME helpers, long-path utilities, and small protocol/parsing helpers.
+- If another `CRing` or container bug is found, add the regression test first in `srchybrid\tests` before changing production code.
+- Consider teaching `workspace.ps1` about `emule-tests` only if direct workspace-managed test builds become worth the extra plumbing.
