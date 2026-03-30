@@ -793,7 +793,7 @@
     <Image Include="res\Messages.ico" />
     <Image Include="res\MetaData.ico" />
     <Image Include="res\Mule.ico" />
-    <Image Include="res\Mule_Vista.ico" />
+    <Image Include="res\Mule_App.ico" />
     <Image Include="res\mule_wiz.gif" />
     <Image Include="res\mule_wiz_hdr.gif" />
     <Image Include="res\NavigateBack.ico" />

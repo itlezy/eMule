@@ -139,12 +139,12 @@ void CClosableTabCtrl::OnLButtonUp(UINT nFlags, CPoint point)
 			GetItemRect(iTab, rcItem);
 			rcItem.InflateRect(2, 2); // get the real tab item rect
 
-			bool bVistaThemeActive = theApp.IsVistaThemeActive();
+			const bool bThemeActive = ::IsThemeActive() && ::IsAppThemed();
 			CRect rcCloseButton;
-			GetCloseButtonRect(iTab, rcItem, rcCloseButton, iTab == GetCurSel(), bVistaThemeActive);
+			GetCloseButtonRect(iTab, rcItem, rcCloseButton, iTab == GetCurSel(), bThemeActive);
 
 			// The visible part of our close icon is one pixel less on each side
-			if (!bVistaThemeActive)
+			if (!bThemeActive)
 				rcCloseButton.InflateRect(-1, -1);
 
 			if (rcCloseButton.PtInRect(point)) {
@@ -234,14 +234,14 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	// because some borders would become visible again.
 	//
 	HTHEME hTheme = NULL;
-	bool bVistaHotTracked = false;
-	bool bVistaThemeActive = theApp.IsVistaThemeActive();
-	if (bVistaThemeActive) {
+	bool bThemeHotTracked = false;
+	const bool bThemeActive = ::IsThemeActive() && ::IsAppThemed();
+	if (bThemeActive) {
 		// To determine if the current item is in 'hot tracking' mode, we need to evaluate
 		// the current foreground color - there is no flag which would indicate this state
-		// more safely. This applies only for Vista and for tab controls which have the
+		// more safely. This applies to themed owner-drawn tab controls.
 		// TCS_OWNERDRAWFIXED style.
-		bVistaHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
+		bThemeHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
 
 		hTheme = ::OpenThemeData(m_hWnd, L"TAB");
 		if (hTheme) {
@@ -265,7 +265,7 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 					iPartId = (nTabIndex == iCnt - 1) ? TABP_TOPTABITEMRIGHTEDGE : TABP_TOPTABITEM;
 			} else {
 				rcBk.top += 2;
-				iStateId = bVistaHotTracked ? TIS_HOT : TIS_NORMAL;
+				iStateId = bThemeHotTracked ? TIS_HOT : TIS_NORMAL;
 				if (nTabIndex == 0)
 					iPartId = (iCnt == 1) ? TABP_TABITEMBOTHEDGE : TABP_TABITEMLEFTEDGE;
 				else
@@ -277,10 +277,7 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 		}
 	}
 
-	// Following background clearing is needed for:
-	//	WinXP/Vista (when used without an application theme)
-	//	Vista (when used with an application theme but without a theme for the tab control)
-	if (!::IsThemeActive() || !::IsAppThemed() || (!hTheme && bVistaThemeActive))
+	if (!bThemeActive || hTheme == NULL)
 		pDC->FillSolidRect(rcItem, ::GetSysColor(COLOR_BTNFACE));
 
 	int iOldBkMode = pDC->SetBkMode(TRANSPARENT);
@@ -304,19 +301,19 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	// Draw 'Close button' at right side
 	if (bClosable && m_ImgLstCloseButton.m_hImageList) {
 		CRect rcCloseButton;
-		GetCloseButtonRect(nTabIndex, rcItem, rcCloseButton, bSelected, bVistaThemeActive);
+		GetCloseButtonRect(nTabIndex, rcItem, rcCloseButton, bSelected, bThemeActive);
 
-		HTHEME hThemeNC = bVistaThemeActive ? ::OpenThemeData(m_hWnd, _T("WINDOW")) : NULL;
+		HTHEME hThemeNC = bThemeActive ? ::OpenThemeData(m_hWnd, _T("WINDOW")) : NULL;
 		if (hThemeNC) {
 			// Possible "Close" parts: WP_CLOSEBUTTON, WP_SMALLCLOSEBUTTON, WP_MDICLOSEBUTTON
 			int iPartId = WP_SMALLCLOSEBUTTON;
-			int iStateId = (bSelected || bVistaHotTracked) ? CBS_NORMAL : CBS_DISABLED;
+			int iStateId = (bSelected || bThemeHotTracked) ? CBS_NORMAL : CBS_DISABLED;
 			if (::IsThemeBackgroundPartiallyTransparent(hTheme, iPartId, iStateId))
 				::DrawThemeParentBackground(m_hWnd, *pDC, &rcCloseButton);
 			::DrawThemeBackground(hThemeNC, *pDC, iPartId, iStateId, rcCloseButton, NULL);
 			::CloseThemeData(hThemeNC);
 		} else
-			m_ImgLstCloseButton.Draw(pDC, static_cast<int>(!bSelected && !bVistaHotTracked), rcCloseButton.TopLeft(), ILD_TRANSPARENT);
+			m_ImgLstCloseButton.Draw(pDC, static_cast<int>(!bSelected && !bThemeHotTracked), rcCloseButton.TopLeft(), ILD_TRANSPARENT);
 
 		rcItem.right = rcCloseButton.left - 2;
 		if (bSelected)
@@ -326,7 +323,7 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	COLORREF crOldColor;
 	if (tci.dwState & TCIS_HIGHLIGHTED)
 		crOldColor = pDC->SetTextColor(RGB(192, 0, 0));
-	else if (bVistaHotTracked)
+	else if (bThemeHotTracked)
 		crOldColor = pDC->SetTextColor(::GetSysColor(COLOR_BTNTEXT));
 	else
 		crOldColor = CLR_NONE;
@@ -389,7 +386,7 @@ void CClosableTabCtrl::InternalInit()
 	// theme change. After the theme is changed (regardless whether we switch between
 	// Vista themes or from/to a non-Vista theme), the hot tracking effect is gone even
 	// if we try to modify the styles again within OnThemeChanged...
-	if (theApp.IsVistaThemeActive())
+	if (::IsThemeActive() && ::IsAppThemed())
 		ModifyStyle(0, WS_CLIPCHILDREN);
 #else
 	// Remove the automatically applied hot tracking effect to avoid that the tab control

@@ -1179,7 +1179,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-AAAEMULEAPP             ICON                    "res\\Mule_Vista.ico"
+AAAEMULEAPP             ICON                    "res\\Mule_App.ico"
 AABCOLLECTIONFILETYPE   ICON                    "res\\emuleCollectionFileType.ico"
 COLOUR                  ICON                    "res\\colour.ico"
 BOLD                    ICON                    "res\\bold.ico"

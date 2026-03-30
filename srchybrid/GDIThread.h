@@ -34,7 +34,6 @@ public:
 	//}}AFX_VIRTUAL
 
 	// Implementation
-	BOOL SetWaitVRT(BOOL bWait = TRUE);
 	int SetScrollDirection(int nDirection);
 	int SetDelay(int nDelay);
 	virtual	~CGDIThread();
@@ -56,7 +55,6 @@ protected:
 	// options
 	int m_nDelay;
 	int m_nScrollInc;
-	BOOL m_bWaitVRT;
 
 	static CCriticalSection m_csGDILock;
 };

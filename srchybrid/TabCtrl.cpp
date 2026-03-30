@@ -379,14 +379,14 @@ void TabControl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	bool bSelected = (lpDIS->itemState & ODS_SELECTED) != 0;
 
 	HTHEME hTheme = NULL;
-	bool bVistaHotTracked = false;
-	bool bVistaThemeActive = theApp.IsVistaThemeActive();
-	if (bVistaThemeActive) {
+	bool bThemeHotTracked = false;
+	const bool bThemeActive = ::IsThemeActive() && ::IsAppThemed();
+	if (bThemeActive) {
 		// To determine if the current item is in 'hot tracking' mode, we need to evaluate
 		// the current foreground color - there is no flag which would indicate this state
-		// more safely. This applies only for Vista and for tab controls which have the
+		// more safely. This applies to themed owner-drawn tab controls.
 		// TCS_OWNERDRAWFIXED style.
-		bVistaHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
+		bThemeHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
 
 		hTheme = ::OpenThemeData(m_hWnd, L"TAB");
 		if (hTheme) {
@@ -416,7 +416,7 @@ void TabControl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 					iPartId = TABP_TOPTABITEM;
 			} else {
 				rcBk.top += 2;
-				iStateId = bVistaHotTracked ? TIS_HOT : TIS_NORMAL;
+				iStateId = bThemeHotTracked ? TIS_HOT : TIS_NORMAL;
 				if (nTabIndex == 0) {
 					// First item
 					if (nTabIndex == GetItemCount() - 1)
@@ -438,7 +438,7 @@ void TabControl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	// Vista: Need to clear the background explicitly to avoid glitches with
 	//	*) a changed icon
 	//	*) hot tracking effect
-	if (hTheme == NULL && bVistaThemeActive)
+	if (hTheme == NULL && bThemeActive)
 		pDC->FillSolidRect(&rcItem, ::GetSysColor(COLOR_BTNFACE));
 
 	int iOldBkMode = pDC->SetBkMode(TRANSPARENT);
@@ -446,7 +446,7 @@ void TabControl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	COLORREF crOldColor;
 	if (tci.lParam != -1)
 		crOldColor = pDC->SetTextColor((COLORREF)tci.lParam);
-	else if (bVistaHotTracked)
+	else if (bThemeHotTracked)
 		crOldColor = pDC->SetTextColor(::GetSysColor(COLOR_BTNTEXT));
 	else
 		crOldColor = CLR_NONE;

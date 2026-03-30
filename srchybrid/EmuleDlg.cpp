@@ -2010,7 +2010,7 @@ HBRUSH CemuleDlg::GetCtlColor(CDC* /*pDC*/, CWnd* /*pWnd*/, UINT /*nCtlColor*/)
 	// do not change their background color accordingly. They don't use NMCUSTOMDRAW nor to they
 	// use WM_CTLCOLOR...
 	//
-	//if (theApp.IsVistaThemeActive() && (nCtlColor == CTLCOLOR_DLG || nCtlColor == CTLCOLOR_STATIC))
+	//if (::IsThemeActive() && ::IsAppThemed() && (nCtlColor == CTLCOLOR_DLG || nCtlColor == CTLCOLOR_STATIC))
 	//	return ::GetSysColorBrush(COLOR_WINDOW);
 	return NULL;
 }
@@ -3228,7 +3228,7 @@ LRESULT CemuleDlg::OnDisplayChange(WPARAM, LPARAM)
 
 
 //////////////////////////////////////////////////////////////////
-// Windows 7 GUI goodies
+// Taskbar progress integration
 
 // update thumbbarbutton structs and add/update the GUI thumbbar
 void CemuleDlg::UpdateThumbBarButtons(bool initialAddToDlg)

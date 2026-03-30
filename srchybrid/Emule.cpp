@@ -1543,17 +1543,6 @@ void CemuleApp::CreateAllFonts()
 
 const CString& CemuleApp::GetDefaultFontFaceName()
 {
-/* Support for old Windows was dropped
-	if (m_strDefaultFontFaceName.IsEmpty()) {
-		OSVERSIONINFO osvi;
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof osvi;
-		if (GetVersionEx(&osvi)
-			&& osvi.dwPlatformId == VER_PLATFORM_WIN32_NT
-			&& osvi.dwMajorVersion >= 5) // Win2000/XP or higher
-			m_strDefaultFontFaceName = _T("MS Shell Dlg 2");
-		else
-			m_strDefaultFontFaceName = _T("MS Shell Dlg");
-	}*/
 	return m_strDefaultFontFaceName;
 }
 
@@ -1719,16 +1708,4 @@ void CemuleApp::ResetStandByIdleTimer()
 			m_bStandbyOff = true;
 	} else if (m_bStandbyOff && ::SetThreadExecutionState(ES_CONTINUOUS))
 		m_bStandbyOff = false;
-}
-
-bool CemuleApp::IsXPThemeActive() const
-{
-	// TRUE: If an XP style (and only an XP style) is active
-	return theApp.m_ullComCtrlVer < MAKEDLLVERULL(6, 16, 0, 0) && ::IsThemeActive() && ::IsAppThemed();
-}
-
-bool CemuleApp::IsVistaThemeActive() const
-{
-	// Return true if Vista (or better) style is active
-	return theApp.m_ullComCtrlVer >= MAKEDLLVERULL(6, 16, 0, 0) && ::IsThemeActive() && ::IsAppThemed();
 }

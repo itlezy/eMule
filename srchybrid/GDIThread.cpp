@@ -46,7 +46,6 @@ CGDIThread::CGDIThread(CWnd *pWnd, HDC hDC)
 	: m_hDC(hDC)
 	, m_nDelay(50)
 	, m_nScrollInc(SCROLL_UP)
-	, m_bWaitVRT()
 {
 	m_bAutoDelete = FALSE;
 	m_pMainWnd = pWnd;
@@ -128,11 +127,4 @@ int CGDIThread::SetScrollDirection(int nDirection)
 	int nTmp = m_nScrollInc;
 	m_nScrollInc = nDirection;
 	return nTmp;
-}
-
-BOOL CGDIThread::SetWaitVRT(BOOL bWait)
-{
-	BOOL bTmp = m_bWaitVRT;
-	m_bWaitVRT = bWait;
-	return bTmp;
 }

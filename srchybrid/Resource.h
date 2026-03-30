@@ -1551,7 +1551,6 @@
 #define IDC_USECAPTCHAS                 2114
 #define IDC_WIZARD_NETWORK_ED2K         2115
 #define IDC_SERVERMETURL                2118
-#define IDC_WIZ_XP_RADIO                2122
 #define IDC_SHOWRATEONTITLE             2123
 #define IDC_WSENABLEDLOW                2125
 #define IDC_S_ENABLE                    2126

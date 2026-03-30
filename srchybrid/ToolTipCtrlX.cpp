@@ -140,7 +140,7 @@ void CToolTipCtrlX::CustomPaint(LPNMTTCUSTOMDRAW pNMCD)
 	//
 	bool bUseEmbeddedThemeFonts = false;
 	HTHEME hTheme = NULL;
-	if (theApp.IsVistaThemeActive()) {
+	if (::IsThemeActive() && ::IsAppThemed()) {
 		hTheme = ::OpenThemeData(*pwnd, L"TOOLTIP");
 		// Using the theme's fonts works only under Vista without SP1. When SP1
 		// is installed the fonts which are used for TTP_STANDARDTITLE and TTP_STANDARD
@@ -328,7 +328,7 @@ void CToolTipCtrlX::CustomPaint(LPNMTTCUSTOMDRAW pNMCD)
 		iCaptionHeight = maxi(iCaptionHeight, (int)(theApp.GetBigSytemIconSize().cy + (2 * iIconMinYBorder)));
 	sizText.cy += iCaptionHeight;
 	if (hTheme && theApp.m_ullComCtrlVer >= MAKEDLLVERULL(6, 16, 0, 0))
-		sizText.cy += 2; // extra bottom margin for Vista Theme
+		sizText.cy += 2; // extra bottom margin for themed tooltips
 
 	iMaxCol1Width = min(m_iScreenWidth4, iMaxCol1Width);
 	iMaxCol2Width = min(m_iScreenWidth4 * 2, iMaxCol2Width);

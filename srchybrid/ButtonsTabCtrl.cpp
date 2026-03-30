@@ -90,14 +90,14 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	HTHEME hTheme = NULL;
 	int iPartId = BP_PUSHBUTTON;
 	int iStateId = PBS_NORMAL;
-	bool bVistaHotTracked;
-	bool bVistaThemeActive = theApp.IsVistaThemeActive();
-	if (bVistaThemeActive) {
+	bool bThemeHotTracked = false;
+	const bool bThemeActive = ::IsThemeActive() && ::IsAppThemed();
+	if (bThemeActive) {
 		// To determine if the current item is in 'hot tracking' mode, we need to evaluate
 		// the current foreground color - there is no flag which would indicate this state
-		// more safely. This applies only for Vista and for tab controls which have the
+		// more safely. This applies to themed owner-drawn tab controls.
 		// TCS_OWNERDRAWFIXED style.
-		bVistaHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
+		bThemeHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
 
 		hTheme = ::OpenThemeData(m_hWnd, L"BUTTON");
 		if (hTheme) {
@@ -106,7 +106,7 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 			if (bSelected)
 				iStateId = PBS_PRESSED;
 			else
-				iStateId = bVistaHotTracked ? PBS_HOT : PBS_NORMAL;
+				iStateId = bThemeHotTracked ? PBS_HOT : PBS_NORMAL;
 
 			// Not very smart, but this is needed (in addition to the DrawThemeBackground and the clipping)
 			// to fix a minor glitch in both of the bottom side corners.
@@ -118,18 +118,13 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 				::DrawThemeParentBackground(m_hWnd, *pDC, rcFullItem);
 			::DrawThemeBackground(hTheme, *pDC, iPartId, iStateId, rcFullItem, NULL);
 		}
-	} else
-		bVistaHotTracked = false;
-
-	// Following background clearing is needed for:
-	//	WinXP/Vista (when used without an application theme)
-	//	Vista (when used with an application theme but without a theme for the tab control)
-	if (!::IsThemeActive() || !::IsAppThemed() || (hTheme == NULL && bVistaThemeActive))
+	}
+	if (!bThemeActive || hTheme == NULL)
 		pDC->FillSolidRect(&lpDIS->rcItem, ::GetSysColor(COLOR_BTNFACE));
 
 	int iOldBkMode = pDC->SetBkMode(TRANSPARENT);
 
-	COLORREF crOldColor = bVistaHotTracked ? pDC->SetTextColor(::GetSysColor(COLOR_BTNTEXT)) : CLR_NONE;
+	COLORREF crOldColor = bThemeHotTracked ? pDC->SetTextColor(::GetSysColor(COLOR_BTNTEXT)) : CLR_NONE;
 
 	rcItem.top += 2;
 	// Vista: Tab control has troubles with determining the width of a tab if the
@@ -167,7 +162,7 @@ int CButtonsTabCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CButtonsTabCtrl::InternalInit()
 {
-	if (theApp.IsVistaThemeActive()) {
+	if (::IsThemeActive() && ::IsAppThemed()) {
 		ModifyStyle(0, TCS_OWNERDRAWFIXED);
 		ModifyStyle(0, TCS_HOTTRACK);
 	}
@@ -175,7 +170,7 @@ void CButtonsTabCtrl::InternalInit()
 
 LRESULT CButtonsTabCtrl::_OnThemeChanged()
 {
-	// Owner drawn tab control seems to have troubles with updating itself due to an XP theme change.
+	// Owner drawn tab control seems to have troubles with updating itself after a theme change.
 	bool bIsOwnerDrawn = (GetStyle() & TCS_OWNERDRAWFIXED) != 0;
 	if (bIsOwnerDrawn)
 		ModifyStyle(TCS_OWNERDRAWFIXED, 0);	// Reset control style to not-owner drawn
