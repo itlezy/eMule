@@ -30,6 +30,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_030` through `BBUG_034` were fixed in the GDI/DC cleanup pass on 2026-03-30 by replacing raw desktop-DC ownership with RAII where possible and by consolidating early-return cleanup in the meter-icon drawing helpers.
 - `BBUG_036`, `BBUG_037`, and `BBUG_044` were fixed in the runtime-guard cleanup pass on 2026-03-30 by inlining defensive zero-denominator handling in the import-progress callback and by guarding colour-popup parent notifications against dead owner windows.
 - `BBUG_038`, `BBUG_039`, `BBUG_040`, and `BBUG_041` were fixed in the UI dialog crash-hardening pass on 2026-03-30 by guarding audited `GetDlgItem()` call sites and by validating the `CPartFile` downcast once before using archive-preview-only methods.
+- `BBUG_042`, `BBUG_045`, and `BBUG_046` were fixed in the remaining small-runtime cleanup pass on 2026-03-30 by rewriting the unsigned countdown heap-sort loops in `DownloadQueue.cpp`, by switching the live `Server.cpp` IPv4 literal parse to `TryParseDottedIPv4Literal`, and by replacing the audited `_tcscpy` sites with bounded `_tcscpy_s` calls.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -1064,6 +1065,7 @@ GetDlgItem(IDC_RESTOREARCH)->EnableWindow(pFile->IsPartFile()
 - **Category:** Logic / Crash
 - **File:** `srchybrid/DownloadQueue.cpp:951`
 - **Reachability:** Internal — download queue processing
+- **Status:** FIXED on 2026-03-30 by replacing the post-decrement countdown loops with explicit non-underflow index ranges.
 
 **Vulnerable Code:**
 ```cpp
@@ -1129,6 +1131,7 @@ If the parent window has been destroyed, `SendMessage` to its HWND causes undefi
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/CreditsThread.cpp:301,316,332,346`
 - **Reachability:** Internal — credits dialog
+- **Status:** FIXED on 2026-03-30 by switching the font face-name copies to bounded `_tcscpy_s` calls.
 
 **Description:**
 `_tcscpy(lf.lfFaceName, _T("Arial"))` — safe because "Arial" (5 chars + null) fits in `lfFaceName` (32 chars), but the pattern is dangerous. Should use `_tcscpy_s` or `_tcsncpy`.
@@ -1141,6 +1144,7 @@ If the parent window has been destroyed, `SendMessage` to its HWND causes undefi
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/Server.cpp:32,79,257`
 - **Reachability:** Internal
+- **Status:** FIXED on 2026-03-30 by switching the cached IP-string copies to bounded `_tcscpy_s` calls while also routing the live literal parse through `TryParseDottedIPv4Literal`.
 
 **Description:**
 `_tcscpy(ipfull, ipstr(ip))` — IPv4 addresses fit, but `_tcscpy` offers no bounds protection if the source changes.
