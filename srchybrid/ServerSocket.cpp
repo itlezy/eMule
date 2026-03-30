@@ -42,6 +42,23 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	static const uint32 MAX_SERVERIDENT_TAGS = 256;
+
+	/**
+	 * Rejects impossible or hostile tag counts before entering the per-tag parsing loop.
+	 */
+	bool HasSaneTagCount(CSafeMemFile &data, uint32 tagcount, uint32 maxTagCount)
+	{
+		const ULONGLONG uPosition = data.GetPosition();
+		const ULONGLONG uLength = data.GetLength();
+		return uPosition <= uLength
+			&& tagcount <= maxTagCount
+			&& static_cast<ULONGLONG>(tagcount) <= (uLength - uPosition);
+	}
+}
+
 
 #pragma pack(push, 1)
 struct LoginAnswer_Struct
@@ -429,6 +446,10 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 				uint32 nTags = data.ReadUInt32();
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					strInfo.AppendFormat(_T("  Tags=%u"), nTags);
+				if (!HasSaneTagCount(data, nTags, MAX_SERVERIDENT_TAGS)) {
+					DebugLogWarning(_T("ServerMsg - OP_ServerIdent: rejected malformed tag count %u"), nTags);
+					break;
+				}
 
 				CString strName;
 				CString strDescription;
@@ -481,7 +502,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 				CSafeMemFile servers(packet, size);
 				UINT count = servers.ReadUInt8();
 				// check if packet is valid
-				if (1 + count * (4 + 2) <= size) {
+				if (size >= 1 && count <= (size - 1) / (4 + 2)) {
 					int addcount = 0;
 					for (; count; --count) {
 						uint32 ip = servers.ReadUInt32();
