@@ -1,8 +1,6 @@
 <Solution>
   <Configurations>
     <BuildType Name="Dynamic" />
-    <Platform Name="ARM64" />
-    <Platform Name="Win32" />
     <Platform Name="x64" />
   </Configurations>
   <Project Path="ar_AE.vcxproj" Id="a710033c-f75a-4431-96aa-876a9867a2f8" />
@@ -49,3 +47,4 @@
   <Project Path="zh_CN.vcxproj" Id="bfcee1be-5dc9-4cdf-b55e-6dedfc4ff782" />
   <Project Path="zh_TW.vcxproj" Id="db748474-ada6-4aeb-8694-f02088d88ad7" />
 </Solution>
+

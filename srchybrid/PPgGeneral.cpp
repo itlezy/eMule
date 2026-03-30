@@ -261,17 +261,8 @@ void CPPgGeneral::OnLangChange()
 // Official version mirrors
 //#define MIRRORS_URL	_T("http://langmirror%u.emule-project.org/lang/%u%u%u%u/")
 
-// Community version mirrors
-#if defined _M_IX86
-#define SBITS _T("32/")
-#elif defined _M_X64
-#define SBITS _T("64/")
-#elif defined _M_ARM64
-#define SBITS _T("arm64/")
-#else
-#define SBITS
-#endif
-#define MIRRORS_URL	_T("https://langmirror%u.emule-project.org/lang/fox/%u%u%u%u/") SBITS
+/** Community version mirrors for the x64-only language package layout. */
+#define MIRRORS_URL	_T("https://langmirror%u.emule-project.org/lang/fox/%u%u%u%u/64/")
 
 	LANGID newLangId = (LANGID)m_language.GetItemData(m_language.GetCurSel());
 	if (thePrefs.GetLanguageID() != newLangId) {
