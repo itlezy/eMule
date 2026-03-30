@@ -1886,7 +1886,7 @@ BEGIN
     IDS_CLOSEEMULE          "Quitter eMule"
     IDS_DONOTASKAGAIN       "Ne pas me le redemander"
     IDS_POPULARITY          "Rang de popularité"
-    IDS_TASKBARPROGRESS "Activer les effets Windows 7 de la barre des tâches"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN Mode"
     IDS_OPENPREFINI         "Open preferences.ini"
 END

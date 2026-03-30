@@ -1880,7 +1880,7 @@ BEGIN
     IDS_CLOSEEMULE          "Đóng eMule"
     IDS_DONOTASKAGAIN       "Không hiển thị nữa"
     IDS_POPULARITY          "Xếp hạng Thông dụng"
-    IDS_TASKBARPROGRESS "Cho phép hiệu ứng thanh công cụ Windows 7"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "Chế độ Mạng nội bộ"
     IDS_OPENPREFINI         "Mở preferences.ini"
 END

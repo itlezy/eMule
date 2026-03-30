@@ -1884,7 +1884,7 @@ BEGIN
     IDS_CLOSEEMULE          "eMule'u Kapat"
     IDS_DONOTASKAGAIN       "Bana tekrar sorma"
     IDS_POPULARITY          "Popülerlik Derecesi"
-    IDS_TASKBARPROGRESS "Windows 7 görev çubuğu efektleri etkin"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN Kipi"
     IDS_OPENPREFINI         "Preferences.ini'yi aç"
 END

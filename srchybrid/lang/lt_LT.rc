@@ -1885,7 +1885,7 @@ BEGIN
     IDS_CLOSEEMULE          "Uždaryti eMule"
     IDS_DONOTASKAGAIN       "Daugiau neklausti"
     IDS_POPULARITY          "Populiarumo lygis"
-    IDS_TASKBARPROGRESS "Įjungti Windows 7 užduočių juostos efektus"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN Mode"
     IDS_OPENPREFINI         "Open preferences.ini"
 END

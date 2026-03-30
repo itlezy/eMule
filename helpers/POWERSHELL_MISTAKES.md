@@ -178,3 +178,10 @@
   I searched the whole `srchybrid` tree in parallel with a cleanup that deleted the generated `srchybrid\lang\x64` build output, so `rg` raced stale paths.
 - Fix:
   do not run recursive searches against a tree that is being deleted in parallel; delete generated output first, then search, or exclude that path explicitly with `--glob '!srchybrid/lang/x64/**'`.
+
+- Error:
+  `rg` again returned `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed wildcard paths such as `srchybrid\*.cpp` and `srchybrid\*.h`.
+- Cause:
+  I slipped back into Windows wildcard path arguments instead of passing a real search root and using `rg` globs for extension filtering.
+- Fix:
+  pass `srchybrid` as the concrete search root and use `--glob '*.cpp' --glob '*.h'` when restricting file types.

@@ -1879,7 +1879,7 @@ BEGIN
     IDS_CLOSEEMULE          "Sulge eMule"
     IDS_DONOTASKAGAIN       "Ära küsi uuesti"
     IDS_POPULARITY          "Populaarsuse tase"
-    IDS_TASKBARPROGRESS "Luba Windows 7 tööristariba effektid"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN Mode"
     IDS_OPENPREFINI         "Ava seadistuste.ini"
 END

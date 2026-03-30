@@ -1865,8 +1865,7 @@ BEGIN
     IDS_CLOSEEMULE          "Fechar eMule"
     IDS_DONOTASKAGAIN       "Não pergunte novamente"
     IDS_POPULARITY          "Ranking de Popularidade"
-    IDS_TASKBARPROGRESS
-                            "Habilitar efeitos da barra de tarefas do Windows 7"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_WEB_HTTPS           "Usar HTTPS"
     IDS_CERTIFICATE         "Certificado"
     IDS_CERT_NOT_FOUND      "Certificado não encontrado"

@@ -1831,7 +1831,7 @@ BEGIN
     IDS_CLOSEEMULE          "Κλείσιμο του eMule"
     IDS_DONOTASKAGAIN       "Να μην ξαναγίνει ερώτηση"
     IDS_POPULARITY          "Δημοτικότητα"
-    IDS_TASKBARPROGRESS "Ενεργοποίηση των Windows 7 taskbar effects"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "Κατάσταση LAN"
     IDS_OPENPREFINI         "Άνοιγμα του preferences.ini"
 END

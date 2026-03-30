@@ -1885,7 +1885,7 @@ STRINGTABLE
 BEGIN
     IDS_DONOTASKAGAIN       "Больше не спрашивать"
     IDS_POPULARITY          "Рейтинг популярности"
-    IDS_TASKBARPROGRESS "Включить эффекты панели задач Windows 7"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "Режим LAN"
     IDS_OPENPREFINI         "Открыть preferences.ini"
     IDS_WEB_HTTPS           "Включить HTTPS"

@@ -290,13 +290,7 @@ void CMuleToolbarCtrl::SetAllButtonsWidth()
 
 		SetButtonWidth(iCalcSize, iCalcSize);
 	} else {
-		int iSmallIconsButtonHeight;
-		if (theApp.m_ullComCtrlVer < MAKEDLLVERULL(6, 0, 0, 0)) {
-			// Win98,WinME,Win2000: Comtrl32 prior to 6.0 cannot make a toolbar smaller than 22 pixels
-			// in height and if it gets larger than 22 pixels the icons do not get centered vertically.
-			iSmallIconsButtonHeight = 22;
-		} else
-			iSmallIconsButtonHeight = ::GetSystemMetrics(SM_CYSCREEN) <= 600 ? 16 : 28;
+		const int iSmallIconsButtonHeight = ::GetSystemMetrics(SM_CYSCREEN) <= 600 ? 16 : 28;
 
 		int iFixedButtonWidth;
 		int iFixedButtonHeight;
@@ -885,8 +879,7 @@ void CMuleToolbarCtrl::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 	// not use the value of that parameter to limit the invocation of our correction code.
 	//
 
-	if (theApp.m_ullComCtrlVer >= MAKEDLLVERULL(6, 16, 0, 0)
-		&& (m_eLabelType == NoLabels || (m_eLabelType == LabelsRight && m_sizBtnBmp.cx == 16)))
+	if (m_eLabelType == NoLabels || (m_eLabelType == LabelsRight && m_sizBtnBmp.cx == 16))
 	{
 		ChangeToolbarBitmap(thePrefs.GetToolbarBitmapSettings(), true);
 	}
@@ -994,18 +987,7 @@ void CMuleToolbarCtrl::AutoSize()
 
 BOOL CMuleToolbarCtrl::GetMaxSize(LPSIZE pSize) const
 {
-	BOOL bResult = CToolBarCtrl::GetMaxSize(pSize);
-	if (theApp.m_ullComCtrlVer <= MAKEDLLVERULL(5, 81, 0, 0)) {
-		int iWidth = 0;
-		CRect rcButton;
-		for (int i = GetButtonCount(); --i >= 0;)
-			if (GetItemRect(i, &rcButton))
-				iWidth += rcButton.Width();
-
-		if (iWidth > pSize->cx)
-			pSize->cx = iWidth;
-	}
-	return bResult;
+	return CToolBarCtrl::GetMaxSize(pSize);
 }
 
 void CMuleToolbarCtrl::SaveCurHeight()

@@ -482,12 +482,6 @@ void CMuleListCtrl::SetSortArrow(int iColumn, ArrowType atType)
 				if (imlSortStates.Create(14, 14, theApp.m_iDfltImageListColorFlags | ILC_MASK, 1, 0)) {
 					VERIFY(imlSortStates.Add(&bmSortStates, RGB(255, 0, 255)) >= 0);
 
-					// To avoid drawing problems (which occur only with an image list *with* a mask) while
-					// resizing list view columns which have the header control bitmap right aligned, set
-					// the background color of the image list.
-					if (theApp.m_ullComCtrlVer < MAKEDLLVERULL(6, 0, 0, 0))
-						imlSortStates.SetBkColor(::GetSysColor(COLOR_BTNFACE));
-
 					// When setting the image list for the header control for the first time we'll get
 					// the image list of the listview control!! So, better store the header control image list separate.
 					(void)pHeaderCtrl->SetImageList(&imlSortStates);
@@ -496,12 +490,10 @@ void CMuleListCtrl::SetSortArrow(int iColumn, ArrowType atType)
 
 					// Use smaller bitmap margins -- this saves some pixels which may be required for
 					// rather small column titles.
-					if (theApp.m_ullComCtrlVer >= MAKEDLLVERULL(5, 8, 0, 0)) {
-						int iBmpMargin = pHeaderCtrl->GetBitmapMargin();
-						int iNewBmpMargin = ::GetSystemMetrics(SM_CXEDGE) + ::GetSystemMetrics(SM_CXEDGE) / 2;
-						if (iNewBmpMargin < iBmpMargin)
-							pHeaderCtrl->SetBitmapMargin(iNewBmpMargin);
-					}
+					int iBmpMargin = pHeaderCtrl->GetBitmapMargin();
+					int iNewBmpMargin = ::GetSystemMetrics(SM_CXEDGE) + ::GetSystemMetrics(SM_CXEDGE) / 2;
+					if (iNewBmpMargin < iBmpMargin)
+						pHeaderCtrl->SetBitmapMargin(iNewBmpMargin);
 				}
 			}
 		}

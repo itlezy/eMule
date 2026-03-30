@@ -1850,7 +1850,7 @@ BEGIN
     IDS_CLOSEEMULE          "‫eMule نى ياپ‬"
     IDS_DONOTASKAGAIN       "قايتا سورىما"
     IDS_POPULARITY          "ئومۇملىشىش نىسبىتى"
-    IDS_TASKBARPROGRESS "‫Windows 7 ۋەزىپە بالداق ئۈنۈمىنى قوزغات‬"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "دائىرىلىك تور ھالىتى"
     IDS_OPENPREFINI         "‫سەپلىمە ھۆججەت preferences.ini نى ئاچ‬"
 END

@@ -1885,7 +1885,7 @@ BEGIN
     IDS_CLOSEEMULE          "Zavřít eMule"
     IDS_DONOTASKAGAIN       "Příště se již nedotazovat"
     IDS_POPULARITY          "Míra oblíbenosti"
-    IDS_TASKBARPROGRESS "Povolit efekty hlavního panelu ve Windows 7"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN mód"
     IDS_OPENPREFINI         "Otevřít preferences.ini"
 END

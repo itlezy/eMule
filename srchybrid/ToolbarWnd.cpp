@@ -213,7 +213,7 @@ LRESULT CToolbarWnd::OnInitDialog(WPARAM, LPARAM)
 	if (pImlOld)
 		pImlOld->DeleteImageList();
 
-	m_btnBar.ModifyStyle((theApp.m_ullComCtrlVer >= MAKEDLLVERULL(6, 16, 0, 0)) ? TBSTYLE_TRANSPARENT : 0, 0);
+	m_btnBar.ModifyStyle(TBSTYLE_TRANSPARENT, 0);
 	m_btnBar.SetMaxTextRows(0);
 
 	Localize();

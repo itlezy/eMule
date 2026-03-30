@@ -1855,7 +1855,7 @@ BEGIN
     IDS_CLOSEEMULE          "Sulje eMule"
     IDS_DONOTASKAGAIN       "Älä kysy minulta uudelleen"
     IDS_POPULARITY          "Miten suosittu"
-    IDS_TASKBARPROGRESS "Käytä Windows 7:n tehtäväpalkin efektejä"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN-tila"
     IDS_OPENPREFINI         "Avaa preferences.ini"
 END

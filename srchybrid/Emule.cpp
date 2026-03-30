@@ -1575,20 +1575,6 @@ void CemuleApp::UpdateDesktopColorDepth()
 		// Get current desktop color depth and derive the image list format from it
 		m_iDfltImageListColorFlags = GetAppImageListColorFlag();
 
-		// Don't use 32-bit image lists if not supported by COMCTL32.DLL
-		if (m_iDfltImageListColorFlags == ILC_COLOR32 && m_ullComCtrlVer < MAKEDLLVERULL(6, 0, 0, 0)) {
-			// We fall back to 16-bit image lists because we do not provide 24-bit
-			// versions of icons any longer (due to resource size restrictions for Win98). We
-			// could also fall back to 24-bit image lists here but the difference is minimal
-			// and considered not to be worth the additional memory consumption.
-			//
-			// Though, do not fall back to 8-bit image lists because this would let Windows
-			// reduce the color resolution to the standard 256 color window system palette.
-			// We need a 16-bit or 24-bit image list to hold all our 256 color icons (which
-			// are not pre-quantized to standard 256 color windows system palette) without
-			// losing any colors.
-			m_iDfltImageListColorFlags = ILC_COLOR16;
-		}
 	}
 
 	// Doesn't help.

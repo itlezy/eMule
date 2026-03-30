@@ -1851,7 +1851,7 @@ BEGIN
     IDS_CLOSEEMULE          "بستن ايميول"
     IDS_DONOTASKAGAIN       "ديگر از من نپرس"
     IDS_POPULARITY          "رتبه محبوبيت"
-    IDS_TASKBARPROGRESS "فعال کردن جلوه شيشه اي تسک بار ويندوز 7"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "در حالت شبکه اتصال محلي LAN"
     IDS_OPENPREFINI         "باز کردن preferences.ini"
 END

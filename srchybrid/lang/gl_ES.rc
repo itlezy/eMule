@@ -1889,7 +1889,7 @@ BEGIN
     IDS_CLOSEEMULE          "Pechar eMule"
     IDS_DONOTASKAGAIN       "Non preguntar de novo"
     IDS_POPULARITY          "Popularidade"
-    IDS_TASKBARPROGRESS "Activar efectos da barra de tarefas de Windows 7"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "Modo LAN"
     IDS_OPENPREFINI         "Abrir preferences.ini"
 END
