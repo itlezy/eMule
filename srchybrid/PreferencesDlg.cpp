@@ -70,7 +70,6 @@ CPreferencesDlg::CPreferencesDlg()
 	m_wndDirectories.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndFiles.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndStats.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndWebServer.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndTweaks.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndSecurity.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndScheduler.m_psp.dwFlags &= ~PSH_HASHELP;
@@ -91,7 +90,6 @@ CPreferencesDlg::CPreferencesDlg()
 	CTreePropSheet::SetPageIcon(&m_wndStats, _T("STATISTICS"));
 	CTreePropSheet::SetPageIcon(&m_wndSecurity, _T("SECURITY"));
 	CTreePropSheet::SetPageIcon(&m_wndScheduler, _T("SCHEDULER"));
-	CTreePropSheet::SetPageIcon(&m_wndWebServer, _T("WEB"));
 	CTreePropSheet::SetPageIcon(&m_wndTweaks, _T("TWEAK"));
 	CTreePropSheet::SetPageIcon(&m_wndMessages, _T("MESSAGES"));
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
@@ -110,7 +108,6 @@ CPreferencesDlg::CPreferencesDlg()
 	AddPage(&m_wndMessages);
 	AddPage(&m_wndSecurity);
 	AddPage(&m_wndScheduler);
-	AddPage(&m_wndWebServer);
 	AddPage(&m_wndTweaks);
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
 	AddPage(&m_wndDebug);
@@ -171,17 +168,16 @@ void CPreferencesDlg::Localize()
 	m_wndNotify.Localize();
 	m_wndSecurity.Localize();
 	m_wndTweaks.Localize();
-	m_wndWebServer.Localize();
 	m_wndScheduler.Localize();
 	m_wndProxy.Localize();
 	m_wndMessages.Localize();
 
 	if (GetPageTreeControl()) {
-		static const UINT uids[14] =
+		static const UINT uids[13] =
 		{
 			IDS_PW_GENERAL, IDS_PW_DISPLAY, IDS_CONNECTION, IDS_PW_PROXY, IDS_PW_SERVER,
 			IDS_PW_DIR, IDS_PW_FILES, IDS_PW_EKDEV_OPTIONS, IDS_STATSSETUPINFO,
-			IDS_MESSAGESCOMMENTS, IDS_SECURITY, IDS_SCHEDULER, IDS_PW_WS, IDS_PW_TWEAK
+			IDS_MESSAGESCOMMENTS, IDS_SECURITY, IDS_SCHEDULER, IDS_PW_TWEAK
 		};
 
 		int c;

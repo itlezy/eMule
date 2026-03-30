@@ -42,7 +42,6 @@
 #include "IPFilter.h"
 #include "IP2Country.h"
 #include "Statistics.h"
-#include "WebServer.h"
 #include "UploadQueue.h"
 #include "SharedFileList.h"
 #include "ServerList.h"
@@ -540,7 +539,6 @@ BOOL CemuleApp::InitInstance()
 	downloadqueue = new CDownloadQueue();	// bugfix - do this before creating the upload queue
 	uploadqueue = new CUploadQueue();
 	ipfilter = new CIPFilter();
-	webserver = new CWebServer(); // Web Server [kuchin]
 	scheduler = new CScheduler();
 
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();

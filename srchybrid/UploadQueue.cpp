@@ -34,7 +34,6 @@
 #include "ServerConnect.h"
 #include "ClientCredits.h"
 #include "ServerList.h"
-#include "WebServer.h"
 #include "emuledlg.h"
 #include "ServerWnd.h"
 #include "TransferDlg.h"
@@ -1027,9 +1026,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 			// *** 60 seconds *********************************************
 			if (++i60sec >= 60) {
 				i60sec = 0;
-
-				if (thePrefs.GetWSIsEnabled())
-					theApp.webserver->UpdateSessionCount();
 
 				theApp.serverconnect->KeepConnectionAlive();
 

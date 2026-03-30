@@ -239,13 +239,6 @@ LPCSTR	CPreferences::m_pszBindAddrA;
 CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
 CStringW CPreferences::m_strBindAddrW;
-CString	CPreferences::m_strConfiguredWebBindAddr;
-CString	CPreferences::m_strWebBindInterface;
-CString	CPreferences::m_strWebBindInterfaceName;
-LPCSTR	CPreferences::m_pszWebBindAddrA;
-CStringA CPreferences::m_strWebBindAddrA;
-LPCWSTR	CPreferences::m_pszWebBindAddrW;
-CStringW CPreferences::m_strWebBindAddrW;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
 uint16	CPreferences::nServerUDPPort;
@@ -527,22 +520,6 @@ COLORREF CPreferences::m_crLogSuccess = RGB(0, 0, 255);
 int		CPreferences::m_iExtractMetaData;
 bool	CPreferences::m_bAdjustNTFSDaylightFileTime = false; //'true' causes rehashing in XP and above when DST switches on/off
 bool	CPreferences::m_bRearrangeKadSearchKeywords;
-CString	CPreferences::m_strWebPassword;
-CString	CPreferences::m_strWebLowPassword;
-CUIntArray CPreferences::m_aAllowedRemoteAccessIPs;
-uint16	CPreferences::m_nWebPort;
-bool	CPreferences::m_bWebUseUPnP;
-bool	CPreferences::m_bWebEnabled;
-bool	CPreferences::m_bWebUseGzip;
-int		CPreferences::m_nWebPageRefresh;
-bool	CPreferences::m_bWebLowEnabled;
-int		CPreferences::m_iWebTimeoutMins;
-int		CPreferences::m_iWebFileUploadSizeLimitMB;
-bool	CPreferences::m_bAllowAdminHiLevFunc;
-CString	CPreferences::m_strTemplateFile;
-bool	CPreferences::m_bWebUseHttps;
-CString	CPreferences::m_sWebHttpsCertificate;
-CString	CPreferences::m_sWebHttpsKey;
 
 ProxySettings CPreferences::proxy;
 bool	CPreferences::showCatTabInfos;
@@ -1750,7 +1727,6 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("DateTimeFormat"), GetDateTimeFormat());
 	ini.WriteString(_T("DateTimeFormat4Log"), GetDateTimeFormat4Log());
 	ini.WriteString(_T("DateTimeFormat4Lists"), m_strDateTimeFormat4Lists);
-	ini.WriteString(_T("WebTemplateFile"), m_strTemplateFile);
 	ini.WriteString(_T("FilenameCleanups"), filenameCleanups);
 	ini.WriteInt(_T("ExtractMetaData"), m_iExtractMetaData);
 	ini.WriteBool(_T("MessageEnableSmileys"), m_bMessageEnableSmileys);
@@ -1895,26 +1871,6 @@ void CPreferences::SavePreferences()
 	}
 	ini.WriteBool(_T("HasCustomTaskIconColor"), m_bHasCustomTaskIconColor, _T("Statistics"));
 
-
-	///////////////////////////////////////////////////////////////////////////
-	// Section: "WebServer"
-	//
-	ini.WriteString(_T("Password"), GetWSPass(), _T("WebServer"));
-	ini.WriteString(_T("PasswordLow"), GetWSLowPass());
-	ini.WriteInt(_T("Port"), m_nWebPort);
-	ini.WriteString(_T("BindInterface"), m_strWebBindInterface, _T("WebServer"));
-	ini.WriteString(_T("BindInterfaceName"), m_strWebBindInterfaceName, _T("WebServer"));
-	ini.WriteString(_T("BindAddr"), m_strConfiguredWebBindAddr, _T("WebServer"));
-	ini.WriteBool(_T("WebUseUPnP"), m_bWebUseUPnP);
-	ini.WriteBool(_T("Enabled"), m_bWebEnabled);
-	ini.WriteBool(_T("UseGzip"), m_bWebUseGzip);
-	ini.WriteInt(_T("PageRefreshTime"), m_nWebPageRefresh);
-	ini.WriteBool(_T("UseLowRightsUser"), m_bWebLowEnabled);
-	ini.WriteBool(_T("AllowAdminHiLevelFunc"), m_bAllowAdminHiLevFunc);
-	ini.WriteInt(_T("WebTimeoutMins"), m_iWebTimeoutMins);
-	ini.WriteBool(_T("UseHTTPS"), m_bWebUseHttps);
-	ini.WriteString(_T("HTTPSCertificate"), m_sWebHttpsCertificate);
-	ini.WriteString(_T("HTTPSKey"), m_sWebHttpsKey);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
@@ -2304,13 +2260,6 @@ void CPreferences::LoadPreferences()
 	m_strVideoPlayer = ini.GetString(_T("VideoPlayer"), _T(""));
 	m_strVideoPlayerArgs = ini.GetString(_T("VideoPlayerArgs"), _T(""));
 
-	m_strTemplateFile = ini.GetString(_T("WebTemplateFile"), GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule.tmpl"));
-	// if emule is using the default, check if the file is in the config folder, as it used to be val prior version
-	// and might be wanted by the user when switching to a personalized template
-	if (m_strTemplateFile.Compare(GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule.tmpl")) == 0)
-		if (::PathFileExists(GetMuleDirectory(EMULE_CONFIGDIR) + _T("eMule.tmpl")))
-			m_strTemplateFile = GetMuleDirectory(EMULE_CONFIGDIR) + _T("eMule.tmpl");
-
 	messageFilter = ini.GetStringLong(_T("MessageFilter"), _T("fastest download speed|fastest eMule"));
 	commentFilter = ini.GetStringLong(_T("CommentFilter"), _T("http://|https://|ftp://|www.|ftp."));
 	commentFilter.MakeLower();
@@ -2426,38 +2375,6 @@ void CPreferences::LoadPreferences()
 	// <-----khaos-
 
 	///////////////////////////////////////////////////////////////////////////
-	// Section: "WebServer"
-	//
-	m_strWebPassword = ini.GetString(_T("Password"), _T(""), _T("WebServer"));
-	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
-	m_nWebPort = (uint16)ini.GetInt(_T("Port"), 4711);
-	m_strWebBindInterface = ini.GetString(_T("BindInterface"), _T(""), _T("WebServer")).Trim();
-	m_strWebBindInterfaceName = ini.GetString(_T("BindInterfaceName"), _T(""), _T("WebServer")).Trim();
-	m_strConfiguredWebBindAddr = ini.GetString(_T("BindAddr"), _T(""), _T("WebServer")).Trim();
-	ResolveConfiguredBinding(_T("Web interface"), m_strWebBindInterface, m_strWebBindInterfaceName, m_strConfiguredWebBindAddr
-		, m_strWebBindAddrW, m_pszWebBindAddrW, m_strWebBindAddrA, m_pszWebBindAddrA);
-	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
-	m_bWebEnabled = ini.GetBool(_T("Enabled"), false);
-	m_bWebLowEnabled = ini.GetBool(_T("UseLowRightsUser"), false);
-	m_nWebPageRefresh = ini.GetInt(_T("PageRefreshTime"), 120);
-	m_iWebTimeoutMins = ini.GetInt(_T("WebTimeoutMins"), 5);
-	m_iWebFileUploadSizeLimitMB = ini.GetInt(_T("MaxFileUploadSizeMB"), 5);
-	m_bAllowAdminHiLevFunc = ini.GetBool(_T("AllowAdminHiLevelFunc"), false);
-
-	buffer = ini.GetString(_T("AllowedIPs"));
-	for (int iPos = 0; iPos >= 0;) {
-		const CString &strIP(buffer.Tokenize(_T(";"), iPos));
-		if (!strIP.IsEmpty()) {
-			u_long nIP = inet_addr((CStringA)strIP);
-			if (nIP != INADDR_ANY && nIP != INADDR_NONE)
-				m_aAllowedRemoteAccessIPs.Add(nIP);
-		}
-	}
-	m_bWebUseHttps = ini.GetBool(_T("UseHTTPS"), false);
-	m_bWebUseGzip = m_bWebUseHttps ? false : ini.GetBool(_T("UseGzip"), true); //allow only for HTTP
-	m_sWebHttpsCertificate = ini.GetString(_T("HTTPSCertificate"), _T(""));
-	m_sWebHttpsKey = ini.GetString(_T("HTTPSKey"), _T(""));
-
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
@@ -2642,11 +2559,6 @@ bool CPreferences::IsShareableDirectory(const CString &rstrDir)
 	return true;
 }
 
-void CPreferences::SetWSPass(const CString &strNewPass)
-{
-	m_strWebPassword = MD5Sum(strNewPass).GetHashString();
-}
-
 void CPreferences::SetBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress)
 {
 	m_strBindInterface = strInterfaceId;
@@ -2655,27 +2567,6 @@ void CPreferences::SetBindNetworkSelection(const CString &strInterfaceId, const 
 	m_strBindInterfaceName.Trim();
 	m_strConfiguredBindAddr = strAddress;
 	m_strConfiguredBindAddr.Trim();
-}
-
-void CPreferences::SetWebBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress)
-{
-	m_strWebBindInterface = strInterfaceId;
-	m_strWebBindInterface.Trim();
-	m_strWebBindInterfaceName = strInterfaceName;
-	m_strWebBindInterfaceName.Trim();
-	m_strConfiguredWebBindAddr = strAddress;
-	m_strConfiguredWebBindAddr.Trim();
-}
-
-void CPreferences::RefreshResolvedWebBindAddress()
-{
-	ResolveConfiguredBinding(_T("Web interface"), m_strWebBindInterface, m_strWebBindInterfaceName, m_strConfiguredWebBindAddr
-		, m_strWebBindAddrW, m_pszWebBindAddrW, m_strWebBindAddrA, m_pszWebBindAddrA);
-}
-
-void CPreferences::SetWSLowPass(const CString &strNewPass)
-{
-	m_strWebLowPassword = MD5Sum(strNewPass).GetHashString();
 }
 
 void CPreferences::SetMaxUpload(uint32 val)

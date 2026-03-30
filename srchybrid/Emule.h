@@ -42,7 +42,6 @@ class CClientCreditsList;
 class CFriendList;
 class CClientUDPSocket;
 class CIPFilter;
-class CWebServer;
 class CAbstractFile;
 class CUpDownClient;
 class CUPnPImplWrapper;
@@ -85,7 +84,6 @@ public:
 	CFriendList			*friendlist;
 	CClientUDPSocket	*clientudp;
 	CIPFilter			*ipfilter;
-	CWebServer			*webserver;
 	CScheduler			*scheduler;
 	CUPnPImplWrapper	*m_pUPnPFinder;
 	CUploadDiskIOThread	*m_pUploadDiskIOThread;

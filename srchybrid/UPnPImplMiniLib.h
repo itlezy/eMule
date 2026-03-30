@@ -26,7 +26,7 @@ public:
 	CUPnPImplMiniLib();
 	virtual	~CUPnPImplMiniLib();
 
-	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort);
+	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort);
 	virtual bool CheckAndRefresh();
 	virtual void StopAsyncFind();
 	virtual void DeletePorts();

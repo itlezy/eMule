@@ -107,8 +107,6 @@ class CPreferences
 
 	static LPCSTR	m_pszBindAddrA;
 	static LPCWSTR	m_pszBindAddrW;
-	static LPCSTR	m_pszWebBindAddrA;
-	static LPCWSTR	m_pszWebBindAddrW;
 	static void		MovePreferences(EDefaultDirectory eSrc, LPCTSTR const sFile, const CString &dst);
 public:
 	static CString	strNick;
@@ -125,11 +123,6 @@ public:
 	static CString	m_strBindInterfaceName;
 	static CStringA m_strBindAddrA;
 	static CStringW m_strBindAddrW;
-	static CString	m_strConfiguredWebBindAddr;
-	static CString	m_strWebBindInterface;
-	static CString	m_strWebBindInterfaceName;
-	static CStringA m_strWebBindAddrA;
-	static CStringW m_strWebBindAddrW;
 	static uint16	port;
 	static uint16	udpport;
 	static uint16	nServerUDPPort;
@@ -473,25 +466,7 @@ public:
 	static bool		m_bForceSpeedsToKB;
 	static bool		m_bAutoShowLookups;
 	static bool		m_bExtraPreviewWithMenu;
-
-	// Web Server [kuchin]
-	static CString	m_strWebPassword;
-	static CString	m_strWebLowPassword;
-	static uint16	m_nWebPort;
-	static bool		m_bWebUseUPnP;
-	static bool		m_bWebEnabled;
-	static bool		m_bWebUseGzip;
-	static int		m_nWebPageRefresh;
-	static bool		m_bWebLowEnabled;
-	static int		m_iWebTimeoutMins;
-	static int		m_iWebFileUploadSizeLimitMB;
-	static CString	m_strTemplateFile;
 	static ProxySettings proxy;
-	static bool		m_bAllowAdminHiLevFunc;
-	static CUIntArray m_aAllowedRemoteAccessIPs;
-	static bool		m_bWebUseHttps;
-	static CString	m_sWebHttpsCertificate;
-	static CString	m_sWebHttpsKey;
 
 	static bool		showCatTabInfos;
 	static bool		resumeSameCat;
@@ -1109,40 +1084,6 @@ public:
 	static UINT		GetMaxLogFileSize()					{ return uMaxLogFileSize; }
 	static ELogFileFormat GetLogFileFormat()			{ return m_iLogFileFormat; }
 
-	// Web Server
-	static uint16	GetWSPort()							{ return m_nWebPort; }
-	static bool		GetWSUseUPnP()						{ return m_bWebUseUPnP && GetWSIsEnabled(); }
-	static void		SetWSPort(uint16 uPort)				{ m_nWebPort = uPort; }
-	static LPCSTR	GetWebBindAddrA()					{ return m_pszWebBindAddrA; }
-	static LPCWSTR	GetWebBindAddrW()					{ return m_pszWebBindAddrW; }
-	static const CString& GetConfiguredWebBindAddr()	{ return m_strConfiguredWebBindAddr; }
-	static const CString& GetWebBindInterface()		{ return m_strWebBindInterface; }
-	static const CString& GetWebBindInterfaceName()	{ return m_strWebBindInterfaceName; }
-	static void		SetWebBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress);
-	static void		RefreshResolvedWebBindAddress();
-	static const CString& GetWSPass()					{ return m_strWebPassword; }
-	static void		SetWSPass(const CString &strNewPass);
-	static bool		GetWSIsEnabled()					{ return m_bWebEnabled; }
-	static void		SetWSIsEnabled(bool bEnable)		{ m_bWebEnabled = bEnable; }
-	static bool		GetWebUseGzip()						{ return m_bWebUseGzip; }
-	static void		SetWebUseGzip(bool bUse)			{ m_bWebUseGzip = bUse; }
-	static int		GetWebPageRefresh()					{ return m_nWebPageRefresh; }
-	static void		SetWebPageRefresh(int nRefresh)		{ m_nWebPageRefresh = nRefresh; }
-	static bool		GetWSIsLowUserEnabled()				{ return m_bWebLowEnabled; }
-	static void		SetWSIsLowUserEnabled(bool in)		{ m_bWebLowEnabled = in; }
-	static const CString& GetWSLowPass()				{ return m_strWebLowPassword; }
-	static int		GetWebTimeoutMins()					{ return m_iWebTimeoutMins; }
-	static bool		GetWebAdminAllowedHiLevFunc()		{ return m_bAllowAdminHiLevFunc; }
-	static void		SetWSLowPass(const CString &strNewPass);
-	static const CUIntArray& GetAllowedRemoteAccessIPs() { return m_aAllowedRemoteAccessIPs; }
-	static uint32	GetMaxWebUploadFileSizeMB()			{ return m_iWebFileUploadSizeLimitMB; }
-	static bool		GetWebUseHttps()					{ return m_bWebUseHttps; }
-	static void		SetWebUseHttps(bool bUse)			{ m_bWebUseHttps = bUse; }
-	static const CString& GetWebCertPath()				{ return m_sWebHttpsCertificate; }
-	static void		SetWebCertPath(const CString &path)		{ m_sWebHttpsCertificate = path; }
-	static const CString& GetWebKeyPath()				{ return m_sWebHttpsKey; }
-	static void		SetWebKeyPath(const CString &path)	{ m_sWebHttpsKey = path; }
-
 	static void		SetMaxSourcesPerFile(UINT in)		{ maxsourceperfile = in; }
 	static void		SetMaxConnections(UINT in)			{ maxconnections = in; }
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
@@ -1155,8 +1096,6 @@ public:
 	static bool		IsSecureIdentEnabled()				{ return m_bUseSecureIdent; } // use client credits->CryptoAvailable() to check if encryption is really available and not this function
 	static bool		IsAdvSpamfilterEnabled()			{ return m_bAdvancedSpamfilter; }
 	static bool		IsChatCaptchaEnabled()				{ return IsAdvSpamfilterEnabled() && m_bUseChatCaptchas; }
-	static const CString& GetTemplate()					{ return m_strTemplateFile; }
-	static void		SetTemplate(const CString &in)		{ m_strTemplateFile = in; }
 	static bool		GetNetworkKademlia()				{ return networkkademlia && udpport > 0; }
 	static void		SetNetworkKademlia(bool val)		{ networkkademlia = val; }
 	static bool		GetNetworkED2K()					{ return networked2k; }

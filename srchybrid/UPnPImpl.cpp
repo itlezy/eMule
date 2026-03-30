@@ -28,10 +28,8 @@ CUPnPImpl::CUPnPImpl()
 	, m_nResultMessageID()
 	, m_bUPnPPortsForwarded(TRIS_FALSE)
 	, m_nOldTCPPort()
-	, m_nOldTCPWebPort()
 	, m_nOldUDPPort()
 	, m_nTCPPort()
-	, m_nTCPWebPort()
 	, m_nUDPPort()
 	, m_bCheckAndRefresh()
 {
@@ -51,11 +49,3 @@ void CUPnPImpl::SendResultMessage()
 	m_wndResultMessage = NULL;
 }
 
-void CUPnPImpl::LateEnableWebServerPort(uint16 nPort)
-{
-	if (ArePortsForwarded() == TRIS_TRUE && IsReady()) {
-		m_nOldTCPWebPort = (m_nTCPWebPort == nPort ? 0 : m_nTCPWebPort);
-		m_nTCPWebPort = nPort;
-		CheckAndRefresh();
-	}
-}

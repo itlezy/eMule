@@ -208,7 +208,7 @@ void CUPnPImplWinServ::StopAsyncFind()
 }
 
 // Start the discovery of the UPnP gateway devices
-void CUPnPImplWinServ::StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort, bool bSecondTry)
+void CUPnPImplWinServ::StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, bool bSecondTry)
 {
 	if (bSecondTry && m_bSecondTry)	// already did 2 tries
 		return;
@@ -227,7 +227,6 @@ void CUPnPImplWinServ::StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 n
 	if (nTCPPort != 0) {
 		m_nTCPPort = nTCPPort;
 		m_nUDPPort = nUDPPort;
-		m_nTCPWebPort = nTCPWebPort;
 	}
 
 	m_bSecondTry = bSecondTry;
@@ -690,13 +689,11 @@ void CUPnPImplWinServ::DeleteExistingPortMappings(ServicePointer pService)
 						DebugLog(_T("Old port mapping deleted: %s%s"), (LPCTSTR)strPort, (LPCTSTR)strProtocol);
 				} else { // different IP found in the port mapping entry
 					DebugLog(_T("Port %s is used by %s"), (LPCTSTR)oTokens[1], (LPCTSTR)oTokens[4]);
-					CString strUDPPort, strTCPPort, strTCPWebPort;
+					CString strUDPPort, strTCPPort;
 					strUDPPort.Format(_T("|VT_UI2=%hu"), m_nUDPPort);
 					strTCPPort.Format(_T("|VT_UI2=%hu"), m_nTCPPort);
-					strTCPWebPort.Format(_T("|VT_UI2=%hu"), m_nTCPWebPort);
 					if ((strTCPPort.CompareNoCase(strPort) == 0 && strProtocol.CompareNoCase(_T("|VT_BSTR=TCP|")) == 0)
-						|| (strUDPPort.CompareNoCase(strPort) == 0 && strProtocol.CompareNoCase(_T("|VT_BSTR=UDP|")) == 0)
-						|| (strTCPWebPort.CompareNoCase(strPort) == 0 && strProtocol.CompareNoCase(_T("|VT_BSTR=TCP|")) == 0))
+						|| (strUDPPort.CompareNoCase(strPort) == 0 && strProtocol.CompareNoCase(_T("|VT_BSTR=UDP|")) == 0))
 					{
 						m_bPortIsFree = false;
 					}
@@ -741,13 +738,6 @@ void CUPnPImplWinServ::CreatePortMappings(ServicePointer pService)
 	hr = InvokeAction(pService, _T("AddPortMapping"), strInArgs, strResult);
 	if (FAILED(hr))
 		return (void)UPnPMessage(hr);
-
-	if (m_nTCPWebPort != 0) {
-		strInArgs.Format(strFormatString, m_nTCPWebPort, _T("TCP"), m_nTCPWebPort, (LPCTSTR)m_sLocalIP, _T("TCP"));
-		hr = InvokeAction(pService, _T("AddPortMapping"), strInArgs, strResult);
-		if (FAILED(hr))
-			DebugLogWarning(_T("UPnP: WinServImpl: Mapping Port for Web Interface failed, continuing anyway"));
-	}
 
 	m_bUPnPPortsForwarded = TRIS_TRUE;
 	SendResultMessage();
@@ -1045,7 +1035,7 @@ HRESULT __stdcall CDeviceFinderCallback::SearchComplete(LONG /*nFindData*/)
 	bool bRetry = !m_instance.OnSearchComplete();
 	m_instance.StopAsyncFind();
 	if (bRetry)
-		m_instance.StartDiscovery(0, 0, 0, true);
+		m_instance.StartDiscovery(0, 0, true);
 	return S_OK;
 }
 

@@ -304,7 +304,6 @@
     <ClCompile Include="PPgServer.cpp" />
     <ClCompile Include="PPgStats.cpp" />
     <ClCompile Include="PPgTweaks.cpp" />
-    <ClCompile Include="PPgWebServer.cpp" />
     <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="PreferencesDlg.cpp" />
     <ClCompile Include="Preview.cpp" />
@@ -383,8 +382,6 @@
     <ClCompile Include="UPnPImplWrapper.cpp" />
     <ClCompile Include="URLClient.cpp" />
     <ClCompile Include="Version.cpp" />
-    <ClCompile Include="WebServer.cpp" />
-    <ClCompile Include="WebSocket.cpp" />
     <ClCompile Include="ZIPFile.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -579,7 +576,6 @@
     <ClInclude Include="PPgServer.h" />
     <ClInclude Include="PPgStats.h" />
     <ClInclude Include="PPgTweaks.h" />
-    <ClInclude Include="PPgWebServer.h" />
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="PreferencesDlg.h" />
     <ClInclude Include="Preview.h" />
@@ -659,9 +655,7 @@
     <ClInclude Include="URLClient.h" />
     <ClInclude Include="UserMsgs.h" />
     <ClInclude Include="Version.h" />
-    <ClInclude Include="WebServer.h" />
     <ClInclude Include="WebServices.h" />
-    <ClInclude Include="WebSocket.h" />
     <ClInclude Include="ZIPFile.h" />
   </ItemGroup>
   <ItemGroup>

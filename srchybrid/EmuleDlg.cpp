@@ -60,7 +60,6 @@
 #include "kademlia/kademlia/kademlia.h"
 #include "PerfLog.h"
 #include "DropTarget.h"
-#include "WebServer.h"
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
 #include "UploadQueue.h"
@@ -556,9 +555,6 @@ BOOL CemuleDlg::OnInitDialog()
 		m_bStartMinimizedChecked = true;
 	}
 	SetWindowPlacement(&wp);
-
-	if (thePrefs.GetWSIsEnabled())
-		theApp.webserver->StartServer();
 
 	VERIFY((m_hTimer = ::SetTimer(NULL, 0, SEC2MS(3)/10, StartupTimer)) != 0);
 	if (thePrefs.GetVerbose() && !m_hTimer)
@@ -1635,7 +1631,6 @@ void CemuleDlg::OnClose()
 	delete theApp.friendlist;				theApp.friendlist = NULL;		// CFriendList::SaveList
 	delete theApp.scheduler;				theApp.scheduler = NULL;
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
-	delete theApp.webserver;				theApp.webserver = NULL;
 	delete theApp.uploadBandwidthThrottler;	theApp.uploadBandwidthThrottler = NULL;
 	delete theApp.m_pUPnPFinder;			theApp.m_pUPnPFinder = NULL;
 	delete theApp.m_pUploadDiskIOThread;	theApp.m_pUploadDiskIOThread = NULL;
@@ -2985,27 +2980,6 @@ LRESULT CemuleDlg::OnWebGUIInteraction(WPARAM wParam, LPARAM lParam)
 		serverwnd->UpdateMyInfo();
 		break;
 	case WEBGUIIA_WINFUNC:
-		if (thePrefs.GetWebAdminAllowedHiLevFunc()) {
-			try {
-				HANDLE hToken;
-				TOKEN_PRIVILEGES tkp;	// Get a token for this process.
-
-				if (!OpenProcessToken(GetCurrentProcess(), TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
-					throw 0; //parameterless throw not allowed here
-				LookupPrivilegeValue(NULL, SE_SHUTDOWN_NAME, &tkp.Privileges[0].Luid);
-				tkp.PrivilegeCount = 1;  // one privilege to set
-				tkp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;	// Get the shutdown privilege for this process.
-				AdjustTokenPrivileges(hToken, FALSE, &tkp, 0, (PTOKEN_PRIVILEGES)NULL, 0);
-
-				if (lParam == 1) // shutdown
-					ExitWindowsEx(EWX_SHUTDOWN | EWX_FORCE, 0);
-				else if (lParam == 2)
-					ExitWindowsEx(EWX_REBOOT | EWX_FORCE, 0);
-			} catch (...) {
-				AddLogLine(true, GetResString(IDS_WEB_REBOOT) + _T(' ') + GetResString(IDS_FAILED));
-			}
-		} else
-			AddLogLine(true, GetResString(IDS_WEB_REBOOT) + _T(' ') + GetResString(IDS_ACCESSDENIED));
 		break;
 	case WEBGUIIA_UPD_CATTABS:
 		theApp.emuledlg->transferwnd->UpdateCatTabTitles();
@@ -3181,8 +3155,7 @@ void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPor
 				if (bReset)
 					VERIFY((m_hUPnPTimeOutTimer = ::SetTimer(NULL, 0, SEC2MS(40), (TIMERPROC)UPnPTimeOutTimer)) != 0);
 				impl->StartDiscovery((nForceTCPPort ? nForceTCPPort : thePrefs.GetPort())
-					, (nForceUDPPort ? nForceUDPPort : thePrefs.GetUDPPort())
-					, (thePrefs.GetWSUseUPnP() ? thePrefs.GetWSPort() : 0));
+					, (nForceUDPPort ? nForceUDPPort : thePrefs.GetUDPPort()));
 			} else
 				/*theApp.emuledlg->*/PostMessage(UM_UPNP_RESULT, (WPARAM)CUPnPImpl::UPNP_FAILED, 0);
 		} catch (const CUPnPImpl::UPnPError&) {

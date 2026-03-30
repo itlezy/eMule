@@ -48,30 +48,25 @@ public:
 		UPNP_TIMEOUT
 	};
 
-	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort) = 0;
+	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort) = 0;
 	virtual bool CheckAndRefresh() = 0;
 	virtual void StopAsyncFind() = 0;
 	virtual void DeletePorts() = 0;
 	virtual bool IsReady() = 0;
 	virtual int GetImplementationID() = 0;
 
-	void LateEnableWebServerPort(uint16 nPort);	// Add Web Server port to already existing port mapping
-
 	void SetMessageOnResult(CWnd *cwnd, UINT nMessageID);
 	TRISTATE ArePortsForwarded() const					{ return m_bUPnPPortsForwarded; }
 	uint16 GetUsedTCPPort() const						{ return m_nTCPPort; }
 	uint16 GetUsedUDPPort() const						{ return m_nUDPPort; }
-	uint16 GetUsedTCPWebPort() const					{ return m_nTCPWebPort; }
 
 // Implementation
 protected:
 	void SendResultMessage();
 	volatile TRISTATE m_bUPnPPortsForwarded;
 	uint16 m_nOldTCPPort;
-	uint16 m_nOldTCPWebPort;
 	uint16 m_nOldUDPPort;
 	uint16 m_nTCPPort;
-	uint16 m_nTCPWebPort;
 	uint16 m_nUDPPort;
 	bool m_bCheckAndRefresh;
 };
@@ -80,7 +75,7 @@ protected:
 class CUPnPImplNone : public CUPnPImpl
 {
 public:
-	virtual void StartDiscovery(uint16, uint16, uint16)	{ ASSERT(0); }
+	virtual void StartDiscovery(uint16, uint16)			{ ASSERT(0); }
 	virtual bool CheckAndRefresh()						{ return false; }
 	virtual void StopAsyncFind()						{}
 	virtual void DeletePorts()							{}

@@ -46,7 +46,6 @@ CUPnPImplMiniLib::CUPnPImplMiniLib()
 {
 	m_nOldUDPPort = 0;
 	m_nOldTCPPort = 0;
-	m_nOldTCPWebPort = 0;
 	m_achLanIP[0] = 0;
 	m_achWanIP[0] = 0;
 }
@@ -91,7 +90,6 @@ void CUPnPImplMiniLib::DeletePorts()
 	GetOldPorts();
 	m_nUDPPort = 0;
 	m_nTCPPort = 0;
-	m_nTCPWebPort = 0;
 	m_bUPnPPortsForwarded = TRIS_FALSE;
 	DeletePorts(false);
 }
@@ -114,11 +112,9 @@ void CUPnPImplMiniLib::GetOldPorts()
 	if (ArePortsForwarded() == TRIS_TRUE) {
 		m_nOldUDPPort = m_nUDPPort;
 		m_nOldTCPPort = m_nTCPPort;
-		m_nOldTCPWebPort = m_nTCPWebPort;
 	} else {
 		m_nOldUDPPort = 0;
 		m_nOldTCPPort = 0;
-		m_nOldTCPWebPort = 0;
 	}
 }
 
@@ -133,23 +129,20 @@ void CUPnPImplMiniLib::DeletePorts(bool bSkipLock)
 		else {
 			DeletePort(m_nOldTCPPort, sTCP);
 			DeletePort(m_nOldUDPPort, sUDP);
-			DeletePort(m_nOldTCPWebPort, sTCP);
 		}
 		m_nOldTCPPort = 0;
 		m_nOldUDPPort = 0;
-		m_nOldTCPWebPort = 0;
 	} else
 		DebugLogError(_T("Unable to remove port mappings - implementation still busy"));
 }
 
-void CUPnPImplMiniLib::StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort)
+void CUPnPImplMiniLib::StartDiscovery(uint16 nTCPPort, uint16 nUDPPort)
 {
 	DebugLog(_T("Using MiniUPnPLib based implementation"));
 	DebugLog(_T("miniupnpc (c) 2005-2026 Thomas Bernard - http://miniupnp.free.fr/"));
 	GetOldPorts();
 	m_nUDPPort = nUDPPort;
 	m_nTCPPort = nTCPPort;
-	m_nTCPWebPort = nTCPWebPort;
 	m_bUPnPPortsForwarded = TRIS_UNKNOWN;
 	m_bCheckAndRefresh = false;
 
@@ -280,12 +273,6 @@ int CUPnPImplMiniLib::CStartDiscoveryThread::Run()
 		bSucceeded = OpenPort(m_pOwner->m_nTCPPort, true, m_pOwner->m_achLanIP, m_pOwner->m_bCheckAndRefresh);
 		if (bSucceeded && m_pOwner->m_nUDPPort != 0)
 			bSucceeded = OpenPort(m_pOwner->m_nUDPPort, false, m_pOwner->m_achLanIP, m_pOwner->m_bCheckAndRefresh);
-		if (bSucceeded) {
-			if (m_pOwner->m_nOldTCPWebPort)
-				m_pOwner->DeletePort(m_pOwner->m_nOldTCPWebPort, sTCP);	//unmap WebServer port (late binding)
-			if (m_pOwner->m_nTCPWebPort)
-				OpenPort(m_pOwner->m_nTCPWebPort, true, m_pOwner->m_achLanIP, m_pOwner->m_bCheckAndRefresh);	// don't fail if only the Web Interface port fails for some reason
-		}
 #if !(defined(_DEBUG) || defined(_BETA) || defined(_DEVBUILD))
 	} catch (...) {
 		DebugLogError(_T("Unknown Exception in CUPnPImplMiniLib::CStartDiscoveryThread::Run()"));

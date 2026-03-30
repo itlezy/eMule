@@ -28,7 +28,6 @@
 #include "ListenSocket.h"
 #include "ClientUDPSocket.h"
 #include "PreferencesDlg.h"
-#include "PPgWebServer.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -455,8 +454,6 @@ BOOL CPPgConnection::OnApply()
 		thePrefs.m_bEnableUPnP = !thePrefs.m_bEnableUPnP;
 		if (thePrefs.m_bEnableUPnP)
 			theApp.emuledlg->StartUPnP();
-		if (theApp.emuledlg->preferenceswnd->m_wndWebServer)
-			theApp.emuledlg->preferenceswnd->m_wndWebServer.SetUPnPState();
 	}
 
 	theApp.scheduler->SaveOriginals();

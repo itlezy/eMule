@@ -9,7 +9,6 @@
 #include "PPgTweaks.h"
 #include "PPgDisplay.h"
 #include "PPgSecurity.h"
-#include "PPgWebServer.h"
 #include "PPgScheduler.h"
 #include "PPgProxy.h"
 #include "PPgMessages.h"
@@ -38,7 +37,6 @@ public:
 	CPPgTweaks		m_wndTweaks;
 	CPPgDisplay		m_wndDisplay;
 	CPPgSecurity	m_wndSecurity;
-	CPPgWebServer	m_wndWebServer;
 	CPPgScheduler	m_wndScheduler;
 	CPPgProxy		m_wndProxy;
 	CPPgMessages	m_wndMessages;

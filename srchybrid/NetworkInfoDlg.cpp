@@ -11,7 +11,6 @@
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/kademlia/prefs.h"
 #include "kademlia/kademlia/indexed.h"
-#include "WebServer.h"
 #include "clientlist.h"
 
 #ifdef _DEBUG
@@ -294,25 +293,4 @@ void CreateNetworkInfo(CRichEditCtrlX &rCtrl, CHARFORMAT &rcfDef, CHARFORMAT &rc
 		rCtrl << GetResString(Kademlia::CKademlia::IsRunning() ? IDS_CONNECTING : IDS_DISCONNECTED) << _T("\r\n");
 
 	rCtrl << _T("\r\n");
-
-	///////////////////////////////////////////////////////////////////////////
-	// Web Interface
-	///////////////////////////////////////////////////////////////////////////
-	rCtrl.SetSelectionCharFormat(rcfBold);
-	rCtrl << GetResString(IDS_WEBSRV) << _T("\r\n");
-	rCtrl.SetSelectionCharFormat(rcfDef);
-	rCtrl << GetResString(IDS_STATUS) << _T(":\t");
-	rCtrl << GetResString(thePrefs.GetWSIsEnabled() ? IDS_ENABLED : IDS_DISABLED) << _T("\r\n");
-	if (thePrefs.GetWSIsEnabled()) {
-		CString sTemp;
-		sTemp.Format(_T("%d %s"), static_cast<int>(theApp.webserver->GetSessionCount()), (LPCTSTR)GetResString(IDS_ACTSESSIONS));
-		rCtrl << _T("\t") << sTemp << _T("\r\n"); //count
-
-		if (thePrefs.GetYourHostname().IsEmpty() || thePrefs.GetYourHostname().Find(_T('.')) < 0)
-			sTemp = ipstr(theApp.serverconnect->GetLocalIP());
-		else
-			sTemp = thePrefs.GetYourHostname();
-		rCtrl << _T("URL:\t") << (thePrefs.GetWebUseHttps() ? _T("https://") : _T("http://"));
-		rCtrl << sTemp << _T(":") << thePrefs.GetWSPort() << _T("/\r\n"); //web interface host name
-	}
 }

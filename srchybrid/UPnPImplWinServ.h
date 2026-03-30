@@ -69,9 +69,9 @@ public:
 	virtual	~CUPnPImplWinServ();
 	CUPnPImplWinServ();
 
-	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort)
+	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort)
 	{
-		StartDiscovery(nTCPPort, nUDPPort, nTCPWebPort, false);
+		StartDiscovery(nTCPPort, nUDPPort, false);
 	}
 	virtual void StopAsyncFind();
 	virtual void DeletePorts();
@@ -90,7 +90,7 @@ public:
 	}
 
 protected:
-	void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort, bool bSecondTry);
+	void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, bool bSecondTry);
 	void AddDevice(DevicePointer device, bool bAddChildren, int nLevel = 0);
 	void RemoveDevice(CComBSTR bsUDN);
 	bool OnSearchComplete();
