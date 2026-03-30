@@ -150,3 +150,10 @@
   I launched two commits against the same repository at the same time, so both processes contended for the submodule index lock and one commit ended up recording the wrong staged payload/message pairing.
 - Fix:
   never parallelize `git add`/`git commit` operations that target the same repository; stage and commit those changes serially.
+
+- Error:
+  `mt.exe` failed with `Missing command-line option "-inputresource:"` when extracting the embedded manifest.
+- Cause:
+  I constructed the PowerShell invocation as separate concatenated tokens, so `mt.exe` did not receive the `-inputresource:<path>;#1` argument as one complete string.
+- Fix:
+  build the full argument with interpolation, for example `"-inputresource:$($exe);#1"`, and pass it as a single token to `mt.exe`.
