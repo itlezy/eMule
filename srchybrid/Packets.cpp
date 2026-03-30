@@ -27,6 +27,18 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	/**
+	 * Returns the payload size encoded in a packet header while treating zero-length
+	 * packets as malformed instead of letting the subtraction underflow.
+	 */
+	inline uint32 GetPacketPayloadSize(const Header_Struct &header)
+	{
+		return header.packetlength > 0 ? header.packetlength - 1 : 0;
+	}
+}
+
 
 void Packet::init()
 {
@@ -51,7 +63,7 @@ Packet::Packet(uint8 protocol)
 
 Packet::Packet(char *header)
 	: pBuffer()
-	, size(reinterpret_cast<Header_Struct*>(header)->packetlength - 1)
+	, size(GetPacketPayloadSize(*reinterpret_cast<Header_Struct*>(header)))
 	, opcode(reinterpret_cast<Header_Struct*>(header)->command)
 	, prot(reinterpret_cast<Header_Struct*>(header)->eDonkeyID)
 	, completebuffer()
