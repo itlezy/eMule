@@ -68,6 +68,23 @@ static char THIS_FILE[] = __FILE__;
 
 #define URLINDICATOR	_T("http:|www.|.de |.net |.com |.org |.to |.tk |.cc |.fr |ftp:|ed2k:|https:|ftp.|.info|.biz|.uk|.eu|.es|.tv|.cn|.tw|.ws|.nu|.jp")
 
+namespace
+{
+	static const uint32 MAX_HELLO_PACKET_TAGS = 256;
+
+	/**
+	 * Rejects impossible or hostile tag counts before entering the per-tag parsing loop.
+	 */
+	bool HasSaneTagCount(CSafeMemFile &data, uint32 tagcount, uint32 maxTagCount)
+	{
+		const ULONGLONG uPosition = data.GetPosition();
+		const ULONGLONG uLength = data.GetLength();
+		return uPosition <= uLength
+			&& tagcount <= maxTagCount
+			&& static_cast<ULONGLONG>(tagcount) <= (uLength - uPosition);
+	}
+}
+
 IMPLEMENT_DYNAMIC(CClientException, CException)
 IMPLEMENT_DYNAMIC(CUpDownClient, CObject)
 
@@ -388,6 +405,10 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 	uint32 tagcount = data.ReadUInt32();
 	if (bDbgInfo)
 		m_strHelloInfo.AppendFormat(_T("  Tags=%u"), tagcount);
+	if (!HasSaneTagCount(data, tagcount, MAX_HELLO_PACKET_TAGS)) {
+		DebugLogWarning(_T("Rejected malformed client hello with %u tags"), tagcount);
+		return false;
+	}
 	for (uint32 i = 0; i < tagcount; ++i) {
 		CTag temptag(data, true);
 		switch (temptag.GetNameID()) {
@@ -779,6 +800,10 @@ void CUpDownClient::ProcessMuleInfoPacket(const uchar *pachPacket, uint32 nSize)
 	uint32 tagcount = data.ReadUInt32();
 	if (bDbgInfo)
 		m_strMuleInfo.AppendFormat(_T("  Tags=%u"), tagcount);
+	if (!HasSaneTagCount(data, tagcount, MAX_HELLO_PACKET_TAGS)) {
+		DebugLogWarning(_T("Rejected malformed client emule info with %u tags"), tagcount);
+		return;
+	}
 	for (uint32 i = 0; i < tagcount; ++i) {
 		CTag temptag(data, false);
 		switch (temptag.GetNameID()) {
