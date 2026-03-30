@@ -15,7 +15,8 @@ This eMule P2P application implements custom obfuscation/encryption, protocol ha
 - Cryptographic limitations (MD4, MD5, RC4, 768-bit DH) are protocol-legacy artifacts, not new mistakes
 - No externally-authenticated session or login mechanism exposed to the network
 - Local web server uses modern TLS (mbedTLS) with self-signed certs — acceptable for private use
-- Several fixable issues exist: weak RNG for crypto values, one unguarded `strcpy`, deprecated socket API
+- Several fixable issues existed: weak RNG for crypto values, one unguarded `strcpy`, deprecated socket API
+- **Update 2026-03-30:** BUG_001 (strcpy) fixed in commit `0cb4d1e`; BUG_003 (srand) fix attempted and intentionally reverted — accepted as low-priority legacy risk
 
 ---
 
@@ -507,9 +508,9 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 
 ### Priority 1 — Fix Immediately
 
-1. **`BUG_001`** **`srchybrid/Emule.cpp:844`** — Replace `strcpy(pGlobalA, strTextA)` with `strcpy_s()` or a size-bounded alternative. The rest of the file already uses safe variants.
+1. **`BUG_001`** **[DONE]** (commit `0cb4d1e`) — `strcpy(pGlobalA, strTextA)` replaced with bounded alternative.
 
-2. **`BUG_003`** **`srchybrid/Emule.cpp:304`** — Replace `srand((unsigned)time(NULL))` with no-op or remove entirely; all crypto operations should draw from `AutoSeededRandomPool` (already available via Crypto++).
+2. **`BUG_003`** **[ACCEPTED RISK]** — Fix attempted (commit `71e298d`) and intentionally reverted (commit `e9e0be6`). The `srand((unsigned)time(NULL))` seed is kept for legacy `rand()` callers. All crypto-sensitive operations already use `AutoSeededRandomPool`. The remaining `rand()` usage is non-crypto timing jitter only.
 
 3. **`BUG_002`** **`srchybrid/BaseClient.cpp:2004-2005`** — Replace `rand()` in `m_dwCryptRndChallengeFor` assignment with `GetRandomUInt32()` or equivalent CSPRNG call. This is a crypto challenge value.
 

@@ -14,6 +14,17 @@ This report covers MFC-specific patterns, deprecated protocol handlers, dead cod
 
 **Cleanup potential:** A focused sweep of Priority-1 items could reduce codebase complexity by 30–50% in the affected subsystems.
 
+### Update 2026-03-30
+
+Many Priority-1 items have been completed:
+- **[DONE]** `#if 0` blocks — all removed (REFAC_011, commit `ceb8edf`)
+- **[DONE]** PeerCache opcode handlers — removed (REFAC_012, commit `0c5811d`)
+- **[DONE]** `deadlake PROXYSUPPORT` comments — removed (REFAC_014, commit `fc0d12e`)
+- **[DONE]** Windows 95 detection — removed (REFAC_015, commit `1771c30`)
+- **[DONE]** Legacy INI key reads — removed (REFAC_016, commit `bf41753`)
+- **[PARTIAL]** Encryption ASSERT(0) audit — most converted (REFAC_017, commit `2b9837c`)
+- **Remaining:** Source Exchange v1 branches (REFAC_013), compression remnants (REFAC_018)
+
 ---
 
 ## 1. MFC-Specific Dead Code Patterns

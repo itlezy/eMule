@@ -9,7 +9,7 @@ This note summarizes the current dependency set on `v0.72a`, the pinned version 
 | Dependency | Workspace pin | GitHub status | Maintained? | Recommendation |
 |---|---:|---|---|---|
 | Crypto++ | 8.9.0 | Latest release `8.9.0`; active commits continue | Yes | Keep |
-| id3lib | 3.9.1 | Fork appears dormant; no releases | No, effectively frozen | Monitor / plan replacement |
+| id3lib | ~~3.9.1~~ | **REMOVED** (commit `907e675`) | N/A | **[DONE]** Replaced by MediaInfo |
 | miniupnp / miniupnpc | 2.3.3 | Latest `miniupnpc_2_3_3`; active commits continue | Yes | Keep |
 | ResizableLib | `master` | Latest release `v1.5.3`; small amount of recent activity | Lightly maintained | Keep, low priority |
 | zlib | 1.3.2 | Latest release `1.3.2`; current upstream activity | Yes | Keep |
@@ -36,26 +36,13 @@ Sources:
 - https://github.com/weidai11/cryptopp/releases
 - https://github.com/weidai11/cryptopp/commits/master
 
-### id3lib
+### id3lib [DONE — REMOVED]
 
-- Workspace pin: `v3.9.1`
-- GitHub:
-  - [itlezy/eMule-id3lib](https://github.com/itlezy/eMule-id3lib) shows a single commit on February 8, 2019
-  - No GitHub releases on the fork
-  - Upstream fork [irwir/id3lib](https://github.com/irwir/id3lib) also has no releases
-- Assessment:
-  - This is effectively a frozen legacy dependency
-  - It is the weakest maintenance point in the workspace
-  - Risk is not "upstream churn", but "nobody maintains this anymore"
-- Recommendation:
-  - Keep it for now because eMule still needs it
-  - Treat it as workspace-owned legacy baggage
-  - Long term, plan either replacement or deeper fork ownership
-
-Sources:
-- https://github.com/itlezy/eMule-id3lib/commits/master
-- https://github.com/itlezy/eMule-id3lib/releases
-- https://github.com/irwir/id3lib/releases
+- **Status:** Fully removed in commit `907e675` ("WIP: remove id3lib and unify MP3 metadata on MediaInfo")
+- Previous workspace pin: `v3.9.1`
+- MP3 metadata extraction now handled entirely by MediaInfo
+- Binary dependency removed from `emule.vcxproj` (no `ID3LIB_LINKOPTION` or lib paths)
+- UI option `IDS_META_DATA_ID3LIB` retained as legacy selector label (maps to MediaInfo internally)
 
 ### miniupnp / miniupnpc
 
@@ -159,7 +146,5 @@ Sources:
   - TF-PSA-Crypto
 - Keep but low priority:
   - ResizableLib
-- Keep for now, but treat as legacy risk:
-  - id3lib
-
-If the workspace gets another cleanup cycle, `id3lib` is the dependency most worth reassessing first.
+- **Removed:**
+  - id3lib (replaced by MediaInfo, commit `907e675`)

@@ -890,4 +890,8 @@ This document covers the Windows long path support (paths exceeding MAX_PATH / 2
 - Using `\?\` prefix or wide-character APIs where needed
 - Registry configuration guidance for enabling system-wide long path support on Windows 10+
 
-**Status:** Documentation and guidance complete. Runtime implementation is incremental as path-handling code is modernized.
+**Status:** **[PARTIAL]** — Long path helpers implemented and active in critical paths (commits `f3781f8`, `ea009a3`, `85000bb`):
+- `OpenCrtReadOnlyLongPath()` helper in use for file I/O (e.g., MediaInfo.cpp)
+- Shared-file discovery and completion paths updated
+- Manifest `LongPathAware` declaration not yet added
+- Remaining: systematic audit of all `MAX_PATH`-dependent call sites

@@ -11,5 +11,6 @@
 - this is a development alpha branch, it is ok to make breaking changes when refactoring
 - ensure to perform WIP commits for each block of edits to offer a granular history of changes
 - save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
-- load and strictly follow the PowerSheel guide from `%G_PRJ%\aidev\specs\POWERSHELL_GUIDE.md`
-- When checking UPNP mapping, ensure to launch `C:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
+- load and strictly follow the PowerSheel guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
+- When checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
+- When comparing features ensure to check the local repos `c:\prj\p2p\eMule-my\analysis\eMuleAI` and `c:\prj\p2p\eMule-my\analysis\eMule-mods-archive`

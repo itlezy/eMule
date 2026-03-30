@@ -1,7 +1,7 @@
 # Refactor & Task Roadmap
 
 **Branch:** `v0.72a-broadband-dev`
-**Last updated:** 2026-03-29
+**Last updated:** 2026-03-30
 
 This file consolidates all refactoring tasks, feature gaps, and actionable work items
 with globally unique identifiers. Items marked **[DONE]** are completed and kept for
@@ -16,20 +16,20 @@ historical reference.
 | REFAC_001 | IRC Removal | **[DONE]** | Remove built-in IRC client (~5,300 LOC) |
 | REFAC_002 | ZIP Handling | Planned | Replace custom CZIPFile with zlib minizip |
 | REFAC_003 | GZIP Wrapper | Deferred | Inline or keep CGZIPFile wrapper |
-| REFAC_004 | MIME Detection | Planned | Expand GetMimeType magic-byte table |
-| REFAC_005 | MIME BZ2 Bug | Planned | Fix BZ2 signature matching bug |
-| REFAC_006 | MIME Buffer | Planned | Reduce buffer size, reorder detection |
-| REFAC_007 | MIME Forward Decl | Planned | Clean up PPgSecurity.cpp forward declaration |
+| REFAC_004 | MIME Detection | **[DONE]** | Expand GetMimeType magic-byte table |
+| REFAC_005 | MIME BZ2 Bug | **[DONE]** | Fix BZ2 signature matching bug |
+| REFAC_006 | MIME Buffer | **[DONE]** | Reduce buffer size, reorder detection |
+| REFAC_007 | MIME Forward Decl | **[DONE]** | Clean up PPgSecurity.cpp forward declaration |
 | REFAC_008 | MIME WebM/MKV | Optional | Disambiguate WebM vs MKV (EBML DocType) |
-| REFAC_009 | First-Start Socket | Planned | Remove startup wizard, unify socket init |
+| REFAC_009 | First-Start Socket | **[DONE]** | Remove startup wizard, unify socket init |
 | REFAC_010 | Property Store | Exploratory | Windows Property Store for file metadata |
-| REFAC_011 | Dead Code Sweep | Planned | Delete `#if 0` blocks (~300-400 lines) |
-| REFAC_012 | PeerCache Opcodes | Planned | Remove defunct OP_PEERCACHE_* handlers |
+| REFAC_011 | Dead Code Sweep | **[DONE]** | Delete `#if 0` blocks (~300-400 lines) |
+| REFAC_012 | PeerCache Opcodes | **[DONE]** | Remove defunct OP_PEERCACHE_* handlers |
 | REFAC_013 | Source Exchange v1 | Planned | Remove deprecated SX v1 branches |
-| REFAC_014 | Proxy Comments | Planned | Remove `deadlake PROXYSUPPORT` attribution noise |
-| REFAC_015 | Win95 Compat | Planned | Remove Windows 95/NT4 detection code |
-| REFAC_016 | Legacy INI Keys | Planned | Remove obsolete FileBufferSizePref/QueueSizePref reads |
-| REFAC_017 | ASSERT(0) Audit | Planned | Convert "must be a bug" ASSERTs to real error handling |
+| REFAC_014 | Proxy Comments | **[DONE]** | Remove `deadlake PROXYSUPPORT` attribution noise |
+| REFAC_015 | Win95 Compat | **[DONE]** | Remove Windows 95/NT4 detection code |
+| REFAC_016 | Legacy INI Keys | **[DONE]** | Remove obsolete FileBufferSizePref/QueueSizePref reads |
+| REFAC_017 | ASSERT(0) Audit | **[PARTIAL]** | Convert "must be a bug" ASSERTs to real error handling |
 | REFAC_018 | Upload Compression | Planned | Audit/remove compression stubs after WIP removal |
 
 ---
@@ -108,77 +108,40 @@ Only revisit if the ZIP refactor creates a natural opportunity to inline.
 
 ---
 
-## REFAC_004 — Expand GetMimeType Magic-Byte Table
+## REFAC_004 — Expand GetMimeType Magic-Byte Table [DONE]
 
-**Status:** Planned
-**Effort:** Low (~100 lines of new table entries)
-**File:** `srchybrid/MediaInfo.cpp:504`
+**Status:** Completed (commit `2f026c7`)
 
-### Current state
-
-Two-stage detection:
-1. `FindMimeFromData` (Windows urlmon.dll) — ~26 hardcoded types
-2. Manual magic-byte checks for RAR, BZ2, ACE, LHA (4 formats only)
-
-### Planned expansion
-
-Replace the `if`/`memcmp` chain with a static `MagicEntry` lookup table covering:
-
-| Format | Magic | MIME |
-|---|---|---|
-| RAR 4 | `52 61 72 21 1A 07 00` | `application/x-rar-compressed` |
-| RAR 5 | `52 61 72 21 1A 07 01 00` | `application/x-rar-compressed` |
-| 7z | `37 7A BC AF 27 1C` | `application/x-7z-compressed` |
-| BZ2 | `42 5A 68` + digit `1-9` | `application/x-bzip2` |
-| XZ | `FD 37 7A 58 5A 00` | `application/x-xz` |
-| GZ | `1F 8B` | `application/gzip` |
-| ZIP | `50 4B 03 04` | `application/zip` |
-| ACE | offset 7: `2A 2A 41 43 45 2A 2A` | `application/x-ace-compressed` |
-| LHA/LZH | offset 2: `2D 6C 68 35 2D` | `application/x-lha-compressed` |
-| ISO 9660 | offset 0x8001: `43 44 30 30 31` | `application/x-iso9660-image` |
-| MKV/WebM | `1A 45 DF A3` | `video/x-matroska` |
-| OGG | `4F 67 67 53` | `audio/ogg` |
-| FLAC | `66 4C 61 43` | `audio/flac` |
-| MP4/M4A | offset 4: `66 74 79 70` | `video/mp4` |
-| FLV | `46 4C 56` | `video/x-flv` |
-| ASF (WMV/WMA) | `30 26 B2 75 8E 66 CF 11` | `video/x-ms-asf` |
-| TORRENT | `64 38 3A 61 6E 6E 6F 75 6E 63 65` | `application/x-bittorrent` |
-
-Run the table **before** `FindMimeFromData` (faster, more reliable). Fall back to
-`FindMimeFromData` only for types not covered.
+Replaced the chain of `if`/`memcmp` blocks with a static `MagicEntry` lookup table
+covering 17 format types: RAR (3 variants), 7z, BZ2, XZ, GZ, ZIP, ACE, LHA, EBML
+(MKV/WebM), OGG, FLAC, MP4, FLV, ASF, TORRENT. Table is checked before
+`FindMimeFromData` for speed and reliability.
 
 ---
 
-## REFAC_005 — Fix BZ2 Signature Bug
+## REFAC_005 — Fix BZ2 Signature Bug [DONE]
 
-**Status:** Planned
-**Effort:** Trivial (1-line fix)
+**Status:** Completed (commit `2f026c7`)
 
-Current code checks for `"BZh19"` (5 bytes). Real BZ2 header is `"BZh"` followed by
-block-size digit `1`-`9`. Current check only matches block size 1 (rare).
-
-**Fix:** Match `"BZh"` (3 bytes) then verify `buffer[3] >= '1' && buffer[3] <= '9'`.
+Replaced the old `"BZh19"` 5-byte check with a dedicated `MatchMimeMagicBZip()` function
+that correctly matches `"BZh"` followed by any digit `1`-`9`.
 
 ---
 
-## REFAC_006 — Reduce MIME Buffer and Reorder Detection
+## REFAC_006 — Reduce MIME Buffer and Reorder Detection [DONE]
 
-**Status:** Planned
-**Effort:** Low
+**Status:** Completed (commit `2f026c7`)
 
-- Shrink buffer from 8 KB to 512 bytes (all non-ISO signatures fit in first 16 bytes)
-- For ISO check, do a targeted seek only when no earlier signature matched
-- Run magic-byte table before `FindMimeFromData` (no COM call overhead)
+Magic-byte table now runs before `FindMimeFromData`. Buffer handling optimized.
 
 ---
 
-## REFAC_007 — Clean Up MIME Forward Declaration
+## REFAC_007 — Clean Up MIME Forward Declaration [DONE]
 
-**Status:** Planned
-**Effort:** Trivial
+**Status:** Completed (commit `2f026c7`)
 
-`PPgSecurity.cpp:40` has a bare `bool GetMimeType(...)` declaration instead of
-including `MediaInfo.h`. Replace with `#include "MediaInfo.h"`.
+`PPgSecurity.cpp` now properly uses `GetMimeType()` at line 231 instead of a bare
+forward declaration.
 
 ---
 
@@ -193,27 +156,18 @@ element deeper in the header (`webm` vs `matroska`). Low priority — returning
 
 ---
 
-## REFAC_009 — First-Start Socket Rework
+## REFAC_009 — First-Start Socket Rework [DONE]
 
-**Status:** Planned (workaround in place)
-**Effort:** Medium
+**Status:** Completed (commit `83ff501`)
 
-### Current issue
+### What was done
 
-On fresh config, the first-time wizard pre-opens TCP/UDP sockets via `Rebind()`. Later,
-normal startup tries to create the same sockets again, causing debug assertions in
-`AsyncSocketEx.cpp` and MFC `sockcore.cpp`.
-
-### Current workaround
-
-Same-port second creation made a no-op in `ListenSocket.cpp` and `ClientUDPSocket.cpp`
-(commit `9b13906`).
-
-### Planned fix
-
-- Remove the startup wizard entirely
-- Replace with a single, non-duplicated first-run initialization path
-- Own port selection, socket startup, and first-run defaults deterministically
+- Removed the startup wizard entirely (`PShtWiz1.cpp`, 854 lines deleted)
+- Removed wizard menu command and associated UI
+- The `m_bFirstStart` flag in Preferences is retained solely for detecting first
+  application launch for initialization logic (not a UI wizard)
+- Socket initialization unified into a single non-duplicated startup path
+- Connection presets dialog also removed in follow-up commit `dbf9133`
 
 ---
 
@@ -228,34 +182,22 @@ optional fallback where it adds coverage beyond the Windows property system.
 
 ---
 
-## REFAC_011 — Delete `#if 0` Dead Code Blocks
+## REFAC_011 — Delete `#if 0` Dead Code Blocks [DONE]
 
-**Status:** Planned
-**Effort:** Low (~300-400 lines, zero risk)
+**Status:** Completed (commit `ceb8edf`)
 
-10 blocks of completely dead code gated with `#if 0`:
-
-| File | Description |
-|---|---|
-| `EmuleDlg.cpp` | Abandoned font-size UI experiment |
-| `DialogMinTrayBtn.cpp` | Template/non-template compilation switch |
-| `IESecurity.cpp` | Disabled security code |
-| `MiniMule.cpp` (×2) | Two dead blocks |
-| `MuleListCtrl.cpp` (×2) | Two dead blocks |
-| `OtherFunctions.cpp` | Dead utility code |
-| `SelfTest.cpp` | Disabled self-test |
-| `kademlia/io/DataIO.cpp` | Dead Kad I/O path |
+Removed all 10 `#if 0` blocks across: `AddSourceDlg.h`, `DialogMinTrayBtn.cpp`,
+`EmuleDlg.cpp`, `IESecurity.cpp`, `MiniMule.cpp`, `MuleListCtrl.cpp`,
+`OtherFunctions.cpp`, `SelfTest.cpp`, `WebServer.h`, `kademlia/io/DataIO.cpp`.
 
 ---
 
-## REFAC_012 — Remove Defunct PeerCache Opcode Handlers
+## REFAC_012 — Remove Defunct PeerCache Opcode Handlers [DONE]
 
-**Status:** Planned
-**Effort:** Low (~30-50 lines)
+**Status:** Completed (commit `0c5811d`)
 
-`OP_PEERCACHE_QUERY`, `OP_PEERCACHE_ANSWER`, `OP_PEERCACHE_ACK` are marked *DEFUNCT* in
-`Opcodes.h` — PeerCache infrastructure was fully removed in v0.70b. The handler cases
-in `ListenSocket.cpp` are pure dead weight.
+All `OP_PEERCACHE_QUERY`, `OP_PEERCACHE_ANSWER`, `OP_PEERCACHE_ACK` references removed
+from `Opcodes.h` and `ListenSocket.cpp`.
 
 ---
 
@@ -270,47 +212,44 @@ set to v2-capable.
 
 ---
 
-## REFAC_014 — Remove `deadlake PROXYSUPPORT` Comments
+## REFAC_014 — Remove `deadlake PROXYSUPPORT` Comments [DONE]
 
-**Status:** Planned
-**Effort:** Trivial (20+ comment-only removals)
+**Status:** Completed (commit `fc0d12e`)
 
-Attribution comments from an old patch, scattered across `EMSocket.cpp`, `ServerConnect.h`,
-`Preferences.h`, `ServerConnect.cpp`. The proxy code itself stays; only noise removed.
-
----
-
-## REFAC_015 — Remove Windows 95/NT4 Detection
-
-**Status:** Planned
-**Effort:** Trivial
-
-`OtherFunctions.cpp:624` — Windows 95 (NT 4.0) detection. Dead on any supported OS
-(minimum is Windows 10).
+Removed all 20+ `deadlake PROXYSUPPORT` attribution comments from `EMSocket.cpp`,
+`ServerConnect.h`, `Preferences.h`, `ServerConnect.cpp`.
 
 ---
 
-## REFAC_016 — Remove Legacy INI Key Reads
+## REFAC_015 — Remove Windows 95/NT4 Detection [DONE]
 
-**Status:** Planned
-**Effort:** Trivial
+**Status:** Completed (commit `1771c30`)
 
-`Preferences.cpp:2185, 2194` — `FileBufferSizePref` and `QueueSizePref` are deprecated
-import keys from a prior configuration format. No write path exists. Remove after
-confirming minimum supported config file age.
+Removed Windows 95 detection code and the fake Windows TCP half-open limit helper
+(commit `879b081`).
 
 ---
 
-## REFAC_017 — ASSERT(0) Audit in Networking/Encryption
+## REFAC_016 — Remove Legacy INI Key Reads [DONE]
 
-**Status:** Planned
-**Effort:** Medium
+**Status:** Completed (commit `bf41753`)
 
-Convert `ASSERT(0)` + "must be a bug" paths in `EncryptedStreamSocket.cpp` (14 instances)
-to proper `OnError()` + disconnect. In release builds these are silent no-ops that leave
-sockets in indeterminate state.
+Removed `FileBufferSizePref`, `QueueSizePref`, and other deprecated import keys from
+`Preferences.cpp`.
 
-Also: replace `ASSERT(0); // FIXME` in `ArchiveRecovery.cpp:233` with graceful error return.
+---
+
+## REFAC_017 — ASSERT(0) Audit in Networking/Encryption [PARTIAL]
+
+**Status:** Partially done (commit `2b9837c`)
+
+Most "must be a bug" ASSERT(0) paths in `EncryptedStreamSocket.cpp` were converted to
+proper error handling. 4 defensive assertions remain at lines 149, 699, 711, 753 —
+these are in critical failure paths (`FailEncryptedStream`, buffer state machine edge
+cases, worst-case RNG failure) where the ASSERT is intentionally retained as a debug
+diagnostic.
+
+The `ArchiveRecovery.cpp:233` ASSERT(0) FIXME has **not** been addressed.
 
 ---
 
@@ -326,25 +265,14 @@ After WIP commit `6c6fd3f` is finalized, grep for `zlib`, `compress`, `uncompres
 
 ## Priority Ranking
 
-### Immediate (low risk, high cleanup value)
+### Remaining work (items not yet [DONE])
 
-1. REFAC_011 — Delete `#if 0` blocks
-2. REFAC_012 — Remove PeerCache opcode handlers
-3. REFAC_014 — Remove proxy attribution comments
-4. REFAC_015 — Remove Win95 detection
-5. REFAC_005 — Fix BZ2 signature bug
+**Immediate (low risk, high cleanup value):**
+1. REFAC_002 — Replace CZIPFile with minizip
+2. REFAC_013 — Remove Source Exchange v1 branches
+3. REFAC_018 — Audit compression remnants
 
-### Short-term (moderate effort, good payoff)
-
-6. REFAC_002 — Replace CZIPFile with minizip
-7. REFAC_004 — Expand MIME detection table
-8. REFAC_006 — Reduce MIME buffer + reorder
-9. REFAC_007 — Clean up MIME forward declaration
-10. REFAC_009 — First-start socket rework
-
-### Medium-term (requires more testing)
-
-11. REFAC_013 — Remove Source Exchange v1
-12. REFAC_017 — ASSERT(0) audit
-13. REFAC_016 — Legacy INI key removal
-14. REFAC_018 — Compression remnant audit
+**Optional / exploratory:**
+4. REFAC_008 — WebM/MKV disambiguation
+5. REFAC_010 — Windows Property Store metadata
+6. REFAC_003 — GZIPFile wrapper (deferred, low value)

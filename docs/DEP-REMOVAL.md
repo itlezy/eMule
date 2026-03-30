@@ -123,9 +123,9 @@ The core P2P features (downloading, uploading, Kademlia, server connections) are
 
 ---
 
-## 3. id3lib — `DEP_002`
+## 3. id3lib — `DEP_002` [DONE — REMOVED]
 
-**Status: Replace/fork, highest risk**
+**Status: Removed in commit `907e675` — MP3 metadata unified on MediaInfo**
 
 ### What it is
 

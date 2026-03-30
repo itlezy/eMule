@@ -4,13 +4,13 @@
 
 | ID | Feature | Status |
 |----|---------|--------|
-| FEAT_013 | Connection budget defaults | Not started |
-| FEAT_014 | Per-client upload cap | Not started |
-| FEAT_015 | Socket buffer sizes | Not started |
-| FEAT_016 | Disk buffering defaults | Not started |
-| FEAT_017 | Queue/source limits | Not started |
-| FEAT_018 | Timeout adjustments | Not started |
-| FEAT_019 | Advanced tree UI exposure | Not started |
+| FEAT_013 | Connection budget defaults | **[PARTIAL]** — MaxHalfConnections=50, MaxConPerFive=50; MaxConnections still 500 (planned 1000) |
+| FEAT_014 | Per-client upload cap | **[DONE]** — raised to 8 MB/s |
+| FEAT_015 | Socket buffer sizes | **[PARTIAL]** — UDP recv buffer=512 KiB [DONE]; TCP big send buffer status TBD |
+| FEAT_016 | Disk buffering defaults | **[DONE]** — FileBufferSize=2 MiB |
+| FEAT_017 | Queue/source limits | **[PARTIAL]** — QueueSize still 5000 (planned 10000); MaxSourcesPerFile still 400 (planned 600) |
+| FEAT_018 | Timeout adjustments | Not started — CONNECTION_TIMEOUT=40s, DOWNLOADTIMEOUT=100s, UDPMAXQUEUETIME=30s unchanged |
+| FEAT_019 | Advanced tree UI exposure | **[PARTIAL]** — connection and web limits UI refitted (commit `6b74300`) |
 
 ## Purpose
 

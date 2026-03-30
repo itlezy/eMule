@@ -2,21 +2,19 @@
 
 ## Last Chunk
 
-- Collapsed bandwidth settings to a limits-only model on the Connection page and the web preferences page.
-- Stopped loading and saving the legacy capacity keys, changed fresh defaults to `20000` upload and `100000` download, and now persist unlimited as `0`.
-- Updated the upload controller to derive its budget from the active limit or live throughput estimates instead of `min(capacity, limit)`.
-- Made the Connection page sliders use `0` as unlimited, kept the textbox free-form, and removed the separate capacity UI.
-- Verified with `..\23-build-emule-debug-incremental.cmd`.
+- Consolidated the docs tree by deleting obsolete one-off reports and duplicate status files.
+- Refreshed the surviving audit and roadmap docs with 2026-03-30 status markers and commit references for completed refactors.
+- Updated dependency, security, long-path, and modern-limits tracking to reflect the current branch state.
+- Synced `AGENTS.md` to the required absolute local paths and added the local analysis repos to check during feature comparisons.
 
 ## Current State
 
-- Bandwidth configuration is now driven by upload/download limits only across preferences, web settings, tray quick actions, and the broadband upload controller.
-- Unlimited is represented as `0` in the UI and INI, while the graph range auto-estimates from live traffic when a limit is unlimited.
-- The project builds cleanly after the refactor.
-- The worktree still contains the unrelated existing `AGENTS.md` modification plus the expected `helpers\POWERSHELL_MISTAKES.md` maintenance entry.
+- The pending worktree content is documentation-only plus the `AGENTS.md` instruction update.
+- Removed docs have been folded into the remaining canonical docs such as `AUDIT-*`, `DEP-*`, `FEATURE-MODERN-LIMITS`, `GUIDE-LONGPATHS`, and `REFACTOR-TASKS`.
+- The next commit for this chunk should be a WIP documentation cleanup commit.
 
 ## Next Chunk
 
-- Manually inspect the Connection page and tray speed dialog to confirm the new slider/textbox behavior is visually clear at `0`, at `300000`, and above the slider ceiling.
-- Decide whether to update the localized language resources that still translate the old capacity-related string IDs even though the base UI no longer uses them as capacities.
-- Consider whether the tray speed dialog should also allow free-form entry above its slider range, or whether keeping that simplification limited to Preferences is acceptable.
+- Check for stale references to the removed markdown files and clean them up if any remain.
+- Continue the remaining roadmap items in `docs/REFACTOR-TASKS.md`, starting with `REFAC_002`, `REFAC_013`, or `REFAC_018`.
+- If another code chunk starts, replace this resume with the code-focused last/current/next state before the next WIP commit.
