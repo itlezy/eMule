@@ -2,21 +2,20 @@
 
 ## Last Chunk
 
-- Removed the remaining `Win32` and `ARM64` solution/project configurations from the language build tree so `srchybrid/lang/lang.sln`, `srchybrid/lang/lang.slnx`, and every `srchybrid/lang/*.vcxproj` now target `Dynamic|x64` only.
-- Dropped the stale `WIN32` preprocessor define from the language DLL projects and updated `srchybrid/PPgGeneral.cpp` so the language mirror URL now points directly at the x64 package layout.
-- Renamed the old `Win7 taskbar goodies` preference, resource ids, and UI wiring to neutral `taskbar progress` naming across the main app sources, the base resources, and the language resource files.
-- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-205531-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
-- Rebuilt `srchybrid/lang/lang.sln` for `Dynamic|x64`; the solution still fails in `rc.exe` because many language `.rc` files reference the missing `IDS_COMCTRL32_DLL_TOOOLD` symbol, for example `ar_AE.rc(1613)`.
+- Audited `REFAC_018` after upload-compression removal and confirmed the remaining packet-compression surfaces are live protocol behavior, not dead remnants.
+- Removed the unused `CUpDownClient::GetDataCompressionVersion()` accessor left behind by the compressed upload-path removal.
+- Updated `docs/REFACTOR-TASKS.md` so `REFAC_018` is marked done and explicitly keeps ED2K packed receive, source exchange compression, server publish compression, Kad packed packets, and current capability advertisement in scope as intentional behavior.
+- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-210452-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
 
 ## Current State
 
-- The main application and the language build metadata are now aligned on an x64-only policy.
-- The taskbar progress feature still exists, but its public naming and preference key are no longer tied to Windows 7 branding.
-- The main parent-wrapper debug build is green at `20260330-205531`.
-- The language solution is still broken for reasons unrelated to the x64-only metadata cleanup: `IDS_COMCTRL32_DLL_TOOOLD` is undefined across many localized resource files.
+- `REFAC_018` is now closed as a narrow upload-remnant audit rather than a broad compression-removal task.
+- Live compression behavior is intentionally preserved for ED2K receive compatibility, source exchange, server publish traffic, Kad UDP, and hello capability advertisement.
+- The current parent-wrapper debug build baseline is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-210452-build-project-eMule-Debug\eMule-Debug.log`.
+- The language solution still has the previously noted unrelated `IDS_COMCTRL32_DLL_TOOOLD` resource breakage.
 
 ## Next Chunk
 
-- Decide whether to fix the missing `IDS_COMCTRL32_DLL_TOOOLD` resource symbol across the language tree so the x64-only language solution can build again.
-- If more legacy cleanup is wanted, audit the remaining XP/Vista theme helpers and Windows-version-branded UI/resource text that still survives outside this taskbar rename pass.
-- If language outputs need to stay buildable in CI, add a dedicated language-solution validation step once the missing resource symbol issue is resolved.
+- Tackle `REFAC_013` next by auditing `m_bySourceExchange1Ver` branches and the remaining SX v1 compatibility logic for removal.
+- Alternatively, if dependency cleanup is preferred, start `REFAC_002` and replace `CZIPFile` with minizip from the vendored zlib tree.
+- Keep the `20260330-210452` parent-wrapper debug log as the validation baseline for the completed `REFAC_018` chunk.

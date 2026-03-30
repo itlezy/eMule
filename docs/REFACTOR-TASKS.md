@@ -30,7 +30,7 @@ historical reference.
 | REFAC_015 | Win95 Compat | **[DONE]** | Remove Windows 95/NT4 detection code |
 | REFAC_016 | Legacy INI Keys | **[DONE]** | Remove obsolete FileBufferSizePref/QueueSizePref reads |
 | REFAC_017 | ASSERT(0) Audit | **[PARTIAL]** | Convert "must be a bug" ASSERTs to real error handling |
-| REFAC_018 | Upload Compression | Planned | Audit/remove compression stubs after WIP removal |
+| REFAC_018 | Upload Compression | **[DONE]** | Audit upload-removal remnants and keep live protocol compression |
 
 ---
 
@@ -253,13 +253,30 @@ The `ArchiveRecovery.cpp:233` ASSERT(0) FIXME has **not** been addressed.
 
 ---
 
-## REFAC_018 — Audit Upload Compression Remnants
+## REFAC_018 — Audit Upload Compression Remnants [DONE]
 
-**Status:** Planned (blocked on WIP compression removal finalization)
+**Status:** Completed (commit `683d19e`)
 **Effort:** Low
 
-After WIP commit `6c6fd3f` is finalized, grep for `zlib`, `compress`, `uncompress`,
-`OP_PACKEDPROT` and remove any now-dead references.
+Audited the current tree after WIP commit `6c6fd3f` and narrowed the task to true
+upload-removal remnants instead of broad protocol compression removal.
+
+### What was done
+
+- Removed the now-unused `CUpDownClient::GetDataCompressionVersion()` accessor, which no
+  longer has any callers after the upload compressed-part path was deleted.
+- Confirmed that the upload thread now always emits standard upload packets and no longer
+  retains dead compressed-part generation helpers.
+- Locked the task scope to dead upload-removal remnants only, not unrelated zlib or
+  packet-compression infrastructure.
+
+### Intentionally kept
+
+- `OP_PACKEDPROT` receive/unpack compatibility on the ED2K TCP path
+- Source-exchange packet compression
+- Server `OP_OFFERFILES` compression
+- Kad UDP packed-packet send/receive support
+- Current client hello/mule-info compression capability advertisement
 
 ---
 
@@ -270,7 +287,6 @@ After WIP commit `6c6fd3f` is finalized, grep for `zlib`, `compress`, `uncompres
 **Immediate (low risk, high cleanup value):**
 1. REFAC_002 — Replace CZIPFile with minizip
 2. REFAC_013 — Remove Source Exchange v1 branches
-3. REFAC_018 — Audit compression remnants
 
 **Optional / exploratory:**
 4. REFAC_008 — WebM/MKV disambiguation
