@@ -172,20 +172,19 @@ BOOL CEnBitmap::Attach(IPicture *pPicture, COLORREF crBack)
 		return FALSE;
 
 	BOOL bResult = FALSE;
-
-	CDC *pDC = CWnd::GetDesktopWindow()->GetDC();
+	CWindowDC dcScreen(CWnd::GetDesktopWindow());
 	CDC dcMem;
-	if (dcMem.CreateCompatibleDC(pDC)) {
+	if (dcScreen.GetSafeHdc() != NULL && dcMem.CreateCompatibleDC(&dcScreen)) {
 		long hmWidth;
 		long hmHeight;
 		pPicture->get_Width(&hmWidth);
 		pPicture->get_Height(&hmHeight);
 
-		int nWidth = ::MulDiv(hmWidth, pDC->GetDeviceCaps(LOGPIXELSX), HIMETRIC_INCH);
-		int nHeight = ::MulDiv(hmHeight, pDC->GetDeviceCaps(LOGPIXELSY), HIMETRIC_INCH);
+		int nWidth = ::MulDiv(hmWidth, dcScreen.GetDeviceCaps(LOGPIXELSX), HIMETRIC_INCH);
+		int nHeight = ::MulDiv(hmHeight, dcScreen.GetDeviceCaps(LOGPIXELSY), HIMETRIC_INCH);
 
 		CBitmap bmMem;
-		if (bmMem.CreateCompatibleBitmap(pDC, nWidth, nHeight)) {
+		if (bmMem.CreateCompatibleBitmap(&dcScreen, nWidth, nHeight)) {
 			CBitmap *pOldBM = dcMem.SelectObject(&bmMem);
 
 			if (crBack != CLR_NONE)
@@ -198,8 +197,6 @@ BOOL CEnBitmap::Attach(IPicture *pPicture, COLORREF crBack)
 				bResult = CBitmap::Attach(bmMem.Detach());
 		}
 	}
-
-	CWnd::GetDesktopWindow()->ReleaseDC(pDC);
 
 	return bResult;
 }

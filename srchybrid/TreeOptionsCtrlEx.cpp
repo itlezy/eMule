@@ -211,16 +211,16 @@ BOOL CTreeOptionsCtrlEx::NotifyParent(UINT uCode, HTREEITEM hItem)
 
 void CTreeOptionsCtrlEx::OnCreateImageList()
 {
-	CDC *pDCScreen = CDC::FromHandle(::GetDC(HWND_DESKTOP)); // explicitly use screen-dc, for proper RTL support
-	if (pDCScreen) {
+	CWindowDC dcScreen(CWnd::GetDesktopWindow()); // explicitly use screen-dc, for proper RTL support
+	if (dcScreen.GetSafeHdc() != NULL) {
 		static const int iBmpWidth = 16;
 		static const int iBmpHeight = 16;
 		static const int iBitmaps = 13;
 		CBitmap bmpControls;
-		if (bmpControls.CreateCompatibleBitmap(pDCScreen, iBmpWidth * iBitmaps, iBmpHeight)) {
+		if (bmpControls.CreateCompatibleBitmap(&dcScreen, iBmpWidth * iBitmaps, iBmpHeight)) {
 			if (m_ilTree.Create(iBmpWidth, iBmpHeight, m_uImageListColorFlags | ILC_MASK, 0, 1)) {
 				CDC dcMem;
-				if (dcMem.CreateCompatibleDC(pDCScreen)) {
+				if (dcMem.CreateCompatibleDC(&dcScreen)) {
 					HTHEME hTheme = (::IsThemeActive() && ::IsAppThemed()) ? ::OpenThemeData(NULL, L"BUTTON") : NULL;
 					CBitmap *pOldBmp = dcMem.SelectObject(&bmpControls);
 					dcMem.FillSolidRect(0, 0, iBmpWidth * iBitmaps, iBmpHeight, ::GetSysColor(COLOR_WINDOW));
@@ -343,7 +343,6 @@ void CTreeOptionsCtrlEx::OnCreateImageList()
 				}
 			}
 		}
-		::ReleaseDC(HWND_DESKTOP, *pDCScreen);
 	}
 }
 

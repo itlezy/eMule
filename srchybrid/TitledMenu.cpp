@@ -110,13 +110,11 @@ void CTitledMenu::EnableIcons()
 void CTitledMenu::MeasureItem(LPMEASUREITEMSTRUCT lpMIS)
 {
 	if (lpMIS->itemID == MP_TITLE) {
-		CDC dc;
-		dc.Attach(::GetDC(HWND_DESKTOP));
+		CWindowDC dc(CWnd::GetDesktopWindow());
 		HFONT hfontOld = (HFONT)::SelectObject(dc.m_hDC, (HFONT)theApp.m_fontDefaultBold);
 		CSize size = dc.GetTextExtent(m_strTitle);
 		::SelectObject(dc.m_hDC, hfontOld);
 		size.cx += ::GetSystemMetrics(SM_CXMENUCHECK) + 8;
-		::ReleaseDC(NULL, dc.Detach());
 
 		static const int nBorderSize = 2;
 		lpMIS->itemWidth = size.cx + nBorderSize;

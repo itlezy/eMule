@@ -1163,19 +1163,22 @@ HBITMAP IconToBitmap(HICON hIcon, COLORREF crBackground, int cx = 16, int cy = 1
 
 #ifdef USE_METAFILE
 		{
-			HDC hdc = ::GetDC(HWND_DESKTOP);
-			int iWidthMM = ::GetDeviceCaps(hdc, HORZSIZE);
-			int iHeightMM = ::GetDeviceCaps(hdc, VERTSIZE);
-			int iWidthPels = ::GetDeviceCaps(hdc, HORZRES);
-			int iHeightPels = ::GetDeviceCaps(hdc, VERTRES);
-			RECT rcMF{0, 0, ((cx + 1) * iWidthMM * 100) / iWidthPels, ((cy + 1) * iHeightMM * 100) / iHeightPels};
-			HDC hdcEnhMF = ::CreateEnhMetaFile(NULL, NULL, &rcMF, NULL);
-			if (hdcEnhMF) {
-				::SetBkColor(hdcEnhMF, crBackground);
-				::DrawIconEx(hdcEnhMF, 0, 0, hIcon, cx, cy, 0, 0, DI_NORMAL);
-				hBitmap = (HBITMAP)::CloseEnhMetaFile(hdcEnhMF);
+			CWindowDC dcScreen(CWnd::GetDesktopWindow());
+			if (dcScreen.GetSafeHdc() != NULL) {
+				int iWidthMM = dcScreen.GetDeviceCaps(HORZSIZE);
+				int iHeightMM = dcScreen.GetDeviceCaps(VERTSIZE);
+				int iWidthPels = dcScreen.GetDeviceCaps(HORZRES);
+				int iHeightPels = dcScreen.GetDeviceCaps(VERTRES);
+				RECT rcMF{0, 0, ((cx + 1) * iWidthMM * 100) / iWidthPels, ((cy + 1) * iHeightMM * 100) / iHeightPels};
+				HDC hdcEnhMF = ::CreateEnhMetaFile(NULL, NULL, &rcMF, NULL);
+				if (hdcEnhMF) {
+					::SetBkColor(hdcEnhMF, crBackground);
+					::DrawIconEx(hdcEnhMF, 0, 0, hIcon, cx, cy, 0, 0, DI_NORMAL);
+					hBitmap = (HBITMAP)::CloseEnhMetaFile(hdcEnhMF);
+				} else {
+					ASSERT(0);
+				}
 			}
-			::ReleaseDC(HWND_DESKTOP, hdc);
 		}
 #else
 		CClientDC dcScreen(CWnd::GetDesktopWindow());
@@ -1211,9 +1214,8 @@ HBITMAP CHTRichEditCtrl::GetSmileyBitmap(LPCTSTR pszSmileyID, COLORREF bk)
 	CHARFORMAT cf;
 	GetDefaultCharFormat(cf);
 	if (cf.cbSize == sizeof cf && cf.dwMask & CFM_SIZE) {
-		HDC hDC = ::GetDC(HWND_DESKTOP);
-		int iPixelFontSize = abs(-::MulDiv(cf.yHeight, ::GetDeviceCaps(hDC, LOGPIXELSY), 20) / 72);
-		::ReleaseDC(NULL, hDC);
+		CWindowDC dcScreen(CWnd::GetDesktopWindow());
+		int iPixelFontSize = abs(-::MulDiv(cf.yHeight, dcScreen.GetDeviceCaps(LOGPIXELSY), 20) / 72);
 		//Point	Pixel	Icon
 		//10	13		14
 		//11	14		14

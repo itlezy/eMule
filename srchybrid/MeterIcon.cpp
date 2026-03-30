@@ -52,64 +52,76 @@ HICON CMeterIcon::CreateMeterIcon(const int *pBarData)
 {// begin CreateMeterIcon
 	ICONINFO iiNewIcon = {};
 	iiNewIcon.fIcon = true;	// set that it is an icon
+	HICON hNewIcon = NULL;
 
 	// create DCs
 	HDC hScreenDC = ::GetDC(HWND_DESKTOP);
 	HDC hIconDC = ::CreateCompatibleDC(hScreenDC);
 	HDC hMaskDC = ::CreateCompatibleDC(hScreenDC);
+	HGDIOBJ hOldIconDC = NULL;
+	HGDIOBJ hOldMaskDC = NULL;
 
 	// begin error check
 	if (hScreenDC == NULL || hIconDC == NULL || hMaskDC == NULL)
-		return NULL;
+		goto cleanup;
 	// end error check
 
 	// load bitmaps
 	iiNewIcon.hbmColor = ::CreateCompatibleBitmap(hScreenDC, m_sDimensions.cx, m_sDimensions.cy);
 	if (iiNewIcon.hbmColor == NULL)
-		return NULL;
+		goto cleanup;
 
-	if (!::ReleaseDC(NULL, hScreenDC))	// release this ASAP
-		return NULL; // DC not released
+	::ReleaseDC(HWND_DESKTOP, hScreenDC);	// release this ASAP
+	hScreenDC = NULL;
 	iiNewIcon.hbmMask = ::CreateCompatibleBitmap(hMaskDC, m_sDimensions.cx, m_sDimensions.cy);
 	if (iiNewIcon.hbmMask == NULL)
-		return NULL;
+		goto cleanup;
 
-	HGDIOBJ hOldIconDC = ::SelectObject(hIconDC, iiNewIcon.hbmColor);
+	hOldIconDC = ::SelectObject(hIconDC, iiNewIcon.hbmColor);
 	if (hOldIconDC == NULL)
-		return NULL;
+		goto cleanup;
 
-	HGDIOBJ hOldMaskDC = ::SelectObject(hMaskDC, iiNewIcon.hbmMask);
+	hOldMaskDC = ::SelectObject(hMaskDC, iiNewIcon.hbmMask);
 	if (hOldMaskDC == NULL)
-		return NULL;
+		goto cleanup;
 
 	// initialize the bitmaps
 	if (!::BitBlt(hIconDC, 0, 0, m_sDimensions.cx, m_sDimensions.cy, NULL, 0, 0, BLACKNESS))
-		return NULL; // BitBlt failed
+		goto cleanup; // BitBlt failed
 
 	if (!::BitBlt(hMaskDC, 0, 0, m_sDimensions.cx, m_sDimensions.cy, NULL, 0, 0, WHITENESS))
-		return NULL; // BitBlt failed
+		goto cleanup; // BitBlt failed
 
 	// draw the meters
 	for (int i = 0; i < m_nNumBars; ++i)
 		if (!DrawIconMeter(hIconDC, hMaskDC, pBarData[i], i))
-			return NULL;
+			goto cleanup;
 
 	if (!::DrawIconEx(hIconDC, 0, 0, m_hFrame, m_sDimensions.cx, m_sDimensions.cy, NULL, NULL, DI_NORMAL | DI_IMAGE))
-		return NULL;
+		goto cleanup;
 
 	if (!::DrawIconEx(hMaskDC, 0, 0, m_hFrame, m_sDimensions.cx, m_sDimensions.cy, NULL, NULL, DI_NORMAL | DI_MASK))
-		return NULL;
+		goto cleanup;
 
 	// create icon
-	::SelectObject(hIconDC, hOldIconDC);
-	::SelectObject(hMaskDC, hOldMaskDC);
-	HICON hNewIcon = ::CreateIconIndirect(&iiNewIcon);
+	hNewIcon = ::CreateIconIndirect(&iiNewIcon);
 
-	// cleanup
-	::DeleteObject(iiNewIcon.hbmColor);
-	::DeleteObject(iiNewIcon.hbmMask);
-	::DeleteDC(hMaskDC);
-	::DeleteDC(hIconDC);
+cleanup:
+	/** Ensure every failure path releases the scratch DCs and bitmaps exactly once. */
+	if (hOldIconDC != NULL && hIconDC != NULL)
+		::SelectObject(hIconDC, hOldIconDC);
+	if (hOldMaskDC != NULL && hMaskDC != NULL)
+		::SelectObject(hMaskDC, hOldMaskDC);
+	if (iiNewIcon.hbmColor != NULL)
+		::DeleteObject(iiNewIcon.hbmColor);
+	if (iiNewIcon.hbmMask != NULL)
+		::DeleteObject(iiNewIcon.hbmMask);
+	if (hMaskDC != NULL)
+		::DeleteDC(hMaskDC);
+	if (hIconDC != NULL)
+		::DeleteDC(hIconDC);
+	if (hScreenDC != NULL)
+		::ReleaseDC(HWND_DESKTOP, hScreenDC);
 	return hNewIcon;
 
 }// end CreateMeterIcon
@@ -118,43 +130,45 @@ bool CMeterIcon::DrawIconMeter(HDC hDestDC, HDC hDestDCMask, int nLevel, int nPo
 {
 	// draw meter
 	HBRUSH hBrush = ::CreateSolidBrush(GetMeterColor(nLevel));
+	HBRUSH hDestDCMaskBrush = NULL;
+	HGDIOBJ hOldBrush = NULL;
+	HGDIOBJ hOldPen = NULL;
+	HGDIOBJ hOldDestDCMaskBrush = NULL;
+	HGDIOBJ hOldMaskPen = NULL;
+	HPEN hPen = NULL;
+	HPEN hMaskPen = NULL;
+	bool bSuccess = false;
 	if (hBrush == NULL)
-		return false;
+		goto cleanup;
 
-	HGDIOBJ hOldBrush = ::SelectObject(hDestDC, hBrush);
+	hOldBrush = ::SelectObject(hDestDC, hBrush);
 	if (hOldBrush == NULL)
-		return false;
+		goto cleanup;
 
-	HPEN hPen = ::CreatePen(PS_SOLID, 1, m_crBorderColor);
+	hPen = ::CreatePen(PS_SOLID, 1, m_crBorderColor);
 	if (hPen == NULL)
-		return false;
-	HGDIOBJ hOldPen = ::SelectObject(hDestDC, hPen);
+		goto cleanup;
+	hOldPen = ::SelectObject(hDestDC, hPen);
 	if (hOldPen == NULL)
-		return false;
+		goto cleanup;
 	if (!::Rectangle(hDestDC, ((m_sDimensions.cx - 1) / m_nNumBars)*nPos + m_nSpacingWidth, m_sDimensions.cy - ((nLevel*(m_sDimensions.cy - 1) / m_nMaxVal) + 1), ((m_sDimensions.cx - 1) / m_nNumBars)*(nPos + 1) + 1, m_sDimensions.cy))
-		return false;
-
-	if (!::DeleteObject(::SelectObject(hDestDC, hOldPen)))
-		return false;
-
-	if (!::DeleteObject(::SelectObject(hDestDC, hOldBrush)))
-		return false;
+		goto cleanup;
 
 	// draw meter mask
-	HBRUSH hDestDCMaskBrush = ::CreateSolidBrush(RGB(0, 0, 0));
+	hDestDCMaskBrush = ::CreateSolidBrush(RGB(0, 0, 0));
 	if (hDestDCMaskBrush == NULL)
-		return false;
+		goto cleanup;
 
-	HGDIOBJ hOldDestDCMaskBrush = ::SelectObject(hDestDCMask, hDestDCMaskBrush);
+	hOldDestDCMaskBrush = ::SelectObject(hDestDCMask, hDestDCMaskBrush);
 	if (hOldDestDCMaskBrush == NULL)
-		return false;
+		goto cleanup;
 
-	HPEN hMaskPen = ::CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
+	hMaskPen = ::CreatePen(PS_SOLID, 1, RGB(0, 0, 0));
 	if (hMaskPen == NULL)
-		return false;
-	HGDIOBJ hOldMaskPen = ::SelectObject(hDestDCMask, hMaskPen);
+		goto cleanup;
+	hOldMaskPen = ::SelectObject(hDestDCMask, hMaskPen);
 	if (hOldMaskPen == NULL)
-		return false;
+		goto cleanup;
 
 	if (nLevel > 0)
 		if (!::Rectangle(hDestDCMask
@@ -163,12 +177,28 @@ bool CMeterIcon::DrawIconMeter(HDC hDestDC, HDC hDestDCMask, int nLevel, int nPo
 					, m_sDimensions.cx
 					, m_sDimensions.cy))
 		{
-			return false;
+			goto cleanup;
 		}
-	if (!::DeleteObject(::SelectObject(hDestDCMask, hOldMaskPen)))
-		return false;
+	bSuccess = true;
 
-	return ::DeleteObject(::SelectObject(hDestDCMask, hOldDestDCMaskBrush));
+cleanup:
+	if (hOldMaskPen != NULL)
+		::SelectObject(hDestDCMask, hOldMaskPen);
+	if (hMaskPen != NULL)
+		::DeleteObject(hMaskPen);
+	if (hOldDestDCMaskBrush != NULL)
+		::SelectObject(hDestDCMask, hOldDestDCMaskBrush);
+	if (hDestDCMaskBrush != NULL)
+		::DeleteObject(hDestDCMaskBrush);
+	if (hOldPen != NULL)
+		::SelectObject(hDestDC, hOldPen);
+	if (hPen != NULL)
+		::DeleteObject(hPen);
+	if (hOldBrush != NULL)
+		::SelectObject(hDestDC, hOldBrush);
+	if (hBrush != NULL)
+		::DeleteObject(hBrush);
+	return bSuccess;
 }// end DrawIconMeter
 
 
