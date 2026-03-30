@@ -136,3 +136,10 @@
   I started the standalone test build and the live-diff build in parallel, and both tried to write the same intermediate/object paths at the same time.
 - Fix:
   do not parallelize builds that share the same output tree; run the shared test build and the live-diff script serially.
+
+- Error:
+  `MSBuild` failed with `MSB3491: Could not write lines to file ...\\emule-tests.lastbuildstate ... because it is being used by another process`.
+- Cause:
+  I repeated the same mistake and launched the standalone shared-test build and the live-diff build in parallel, so both commands contended for the same `.tlog` state files.
+- Fix:
+  treat all `emule-tests.vcxproj` builds as mutually exclusive when they target the same `BuildTag` output tree; never run those scripts in parallel.

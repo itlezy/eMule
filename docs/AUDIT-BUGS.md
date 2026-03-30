@@ -26,7 +26,9 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 
 - `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
 - `BBUG_018`, `BBUG_020`, `BBUG_026`, `BBUG_028`, `BBUG_029`, and `BBUG_035` were fixed in the audit-driven guard/test pass on 2026-03-30.
+- `BBUG_014`, `BBUG_015`, `BBUG_016`, and `BBUG_043` were fixed in the connected-server snapshot hardening pass on 2026-03-30 by caching `GetCurrentServer()` once per call site before dereferencing it.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
+- The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
 ### Stale after feature removal
 
@@ -406,6 +408,7 @@ void CClientReqSocket::OnClose(int nErrorCode)
 - **Category:** Logic / Crash
 - **File:** `srchybrid/BaseClient.cpp:1048-1049`
 - **Reachability:** Internal — disconnect race condition
+- **Status:** FIXED on 2026-03-30 by caching `GetCurrentServer()` once before reading the server endpoint.
 
 **Vulnerable Code:**
 ```cpp
@@ -429,6 +432,7 @@ if (theApp.serverconnect->IsConnected()) {
 - **Category:** Logic / Crash
 - **File:** `srchybrid/Emule.cpp:893,900,907`
 - **Reachability:** Internal — disconnect race condition
+- **Status:** FIXED on 2026-03-30 by caching `GetCurrentServer()` once before reading the online-signature server fields.
 
 **Vulnerable Code:**
 ```cpp
@@ -452,6 +456,7 @@ Three consecutive unguarded `GetCurrentServer()` dereferences. Even if the first
 - **Category:** Logic / Crash
 - **File:** `srchybrid/PartFile.cpp:2423`
 - **Reachability:** Internal — disconnect race condition
+- **Status:** FIXED on 2026-03-30 by caching `GetCurrentServer()` once before comparing the low-ID server identity.
 
 **Vulnerable Code:**
 ```cpp
@@ -1064,6 +1069,7 @@ When `n == 0` or `n == 1`, `i = 0`. The post-decrement `i--` evaluates to 0 (fal
 - **Category:** Logic / Crash
 - **File:** `srchybrid/SearchResultsWnd.cpp:1211-1212`
 - **Reachability:** Internal — search UI
+- **Status:** FIXED on 2026-03-30 by caching `GetCurrentServer()` once before reading the large-file and related-search capability flags.
 
 **Vulnerable Code:**
 ```cpp
