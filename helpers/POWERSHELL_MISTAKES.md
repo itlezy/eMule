@@ -101,3 +101,10 @@
   modern Git blocks local `file` transport for submodule add unless it is explicitly permitted.
 - Fix:
   run the add with `-c protocol.file.allow=always`, then re-stage `.gitmodules` after any URL cleanup.
+
+- Error:
+  the parent `.cmd` wrappers passed `"%~dp0"` directly to PowerShell parameters and the called script interpreted the workspace path as part of the remaining argument string.
+- Cause:
+  the quoted `%~dp0` value ends with a trailing backslash, which is fragile when forwarded through `pwsh -File ... -WorkspaceRoot`.
+- Fix:
+  normalize the wrapper argument first, for example with `SET "WORKSPACE_ROOT=%~dp0."`, and pass that stabilized path to PowerShell instead of the raw `%~dp0`.
