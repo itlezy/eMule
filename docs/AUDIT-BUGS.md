@@ -34,6 +34,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_047` and `BBUG_048` were fixed in the final low-risk resource-cleanup pass on 2026-03-30 by replacing the toolbar desktop-DC probe with `CWindowDC` and by wrapping the captcha generator's temporary GDI/DC ownership in scoped cleanup helpers.
 - `BBUG_049` was fixed on 2026-03-30 by making `UDPReaskFNF()` return client liveness and by moving the only remaining delete decision to its caller in `ClientUDPSocket.cpp`.
 - `BBUG_013` was fixed on 2026-03-30 by removing socket self-deletion from `CClientReqSocket` and by making `CListenSocket::Process()` own final destruction after the close grace period expires.
+- `BBUG_008` and `BBUG_009` were fixed on 2026-03-30 by removing `delete this` from `TryToConnect()`, by making the surviving caller contract explicit, and by deleting failed re-ask sources at the `PartFile` iteration seam instead of inside `CUpDownClient`.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -46,7 +47,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 
 ### Deferred architectural work
 
-- The raw-pointer lifetime findings (`BBUG_008` through `BBUG_012`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
+- The raw-pointer lifetime findings (`BBUG_010` through `BBUG_012`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
 - The remaining active backlog is now dominated by ownership/thread-safety work rather than low-risk guard or cleanup bugs.
 
 ---
@@ -256,6 +257,7 @@ The multiplication `count * 6` can overflow UINT. If `count = 0x2AAAAAAA` (715,8
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/BaseClient.cpp:1306,1315,1332,1343,1357,1367,1380`
 - **Reachability:** Internal — triggered by connection failures
+- **Status:** FIXED on 2026-03-30 by removing `delete this` from the immediate-failure branches and by making the caller-owned liveness contract explicit at the affected seams.
 
 **Vulnerable Code:**
 ```cpp
@@ -273,7 +275,7 @@ if (Disconnected(_T("Too many connections"))) {
 
 **Impact:** Use-after-free if any caller doesn't check the return value or if the object is referenced elsewhere.
 
-**Fix:** Replace `delete this` with a deferred deletion queue or ref-counted pointer. Ensure all containers are cleaned up atomically.
+**Fix:** Keep the existing `bool` return, but stop deleting from inside `TryToConnect()` and let the call site decide whether to delete immediately.
 
 ---
 
@@ -283,6 +285,7 @@ if (Disconnected(_T("Too many connections"))) {
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/PartFile.cpp:2351-2352`
 - **Reachability:** Internal — triggered during download processing
+- **Status:** FIXED on 2026-03-30 by making `AskForDownload()` report caller-owned liveness and by deleting the failed source explicitly at the `PartFile` loop site before breaking.
 
 **Vulnerable Code:**
 ```cpp
@@ -300,7 +303,7 @@ if (Disconnected(_T("Too many connections"))) {
 
 **Impact:** Crash during download source processing. The existing `break` is a fragile safeguard.
 
-**Fix:** Use a safe deletion pattern — mark for deletion, continue iteration, then bulk-delete.
+**Fix:** Move the delete to the `PartFile` loop so the iteration site owns the lifetime transition explicitly.
 
 ---
 
