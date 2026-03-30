@@ -332,7 +332,11 @@ public:
 	DWORD			GetTimeUntilReask(const CPartFile *file) const;
 	DWORD			GetTimeUntilReask(const CPartFile *file, const bool allowShortReaskTime, const bool useGivenNNP = false, const bool givenNNP = false) const;
 	void			UDPReaskACK(uint16 nNewQR);
-	void			UDPReaskFNF();
+	/**
+	 * Handles a UDP file-not-found reply and reports whether the client object
+	 * survived the disconnect path.
+	 */
+	bool			UDPReaskFNF();
 	void			UDPReaskForDownload();
 	bool			UDPPacketPending() const						{ return m_bUDPPending; }
 	bool			IsSourceRequestAllowed() const					{ return IsSourceRequestAllowed(m_reqfile); }
