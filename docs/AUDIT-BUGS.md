@@ -20,7 +20,7 @@
 
 ## Current Triage Status
 
-This report captures the original 2026-03-30 audit snapshot. The current tree has already moved since that scan, so use the buckets below as the active backlog:
+This report captures the original 2026-03-30 audit snapshot. The current tree has already moved since that scan, so use the buckets below as the closure record for what was fixed and what proved stale in the current tree:
 
 ### Resolved in current tree
 

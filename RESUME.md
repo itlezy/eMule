@@ -11,13 +11,10 @@
 
 - `docs/AUDIT-BUGS.md` now has no active unresolved findings from the 2026-03-30 audit report.
 - The dependency workspace is still restored on the expected local `emule-build-v0.72a` branches, and the latest confirmed parent debug wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190139-build-project-eMule-Debug\eMule-Debug.log`.
-- The current working tree for this chunk touches:
-  - `srchybrid/OtherFunctions.cpp`
-  - `docs/AUDIT-BUGS.md`
-  - `RESUME.md`
+- The working tree is clean after the `BBUG_022` `FIX` and `DOC` commits.
 
 ## Next Chunk
 
 - Treat `docs/AUDIT-BUGS.md` as complete for the current tree unless a later audit reopens a finding.
 - If more safety work is needed, pick it from outside the 2026-03-30 audit backlog rather than extending the now-closed report.
-- Commit the `BBUG_022` code fix and the matching doc refresh as separate `FIX` and `DOC` commits once this slice is complete.
+- Choose the next hardening task from outside this audit report rather than continuing `docs/AUDIT-BUGS.md`.
