@@ -571,7 +571,7 @@ void CStatisticsTree::ExportHTML()
 			_T("stats_hidden.gif"), _T("stats_space.gif"), _T("stats_visible.gif")
 		};
 		CString strDst(saveAsDlg.GetPathName(), saveAsDlg.GetPathName().GetLength() - saveAsDlg.GetFileName().GetLength());// EC - what if directory name == filename? this should fix this
-		CString strSrc(thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR));
+		CString strSrc(thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("webserver\\"));
 
 		for (size_t i = 0; i < _countof(s_apcFileNames); ++i)
 			::CopyFile(strSrc + s_apcFileNames[i], strDst + s_apcFileNames[i], FALSE);

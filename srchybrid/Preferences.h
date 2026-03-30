@@ -41,13 +41,12 @@ enum EDefaultDirectory
 	EMULE_LOGDIR = 3,
 	EMULE_ADDLANGDIR = 4, // directories with languages installed by the eMule (parent: EMULE_EXPANSIONDIR)
 	EMULE_INSTLANGDIR = 5, // directories with languages installed by the user or installer (parent: EMULE_EXECUTABLEDIR)
-	EMULE_WEBSERVERDIR = 6,
-	EMULE_SKINDIR = 7,
-	EMULE_DATABASEDIR = 8, // the parent directory of the incoming/temp folder
-	EMULE_CONFIGBASEDIR = 9, // the parent directory of the config folder
-	EMULE_EXECUTABLEDIR = 10, // assumed to be non-writable (!)
-	EMULE_TOOLBARDIR = 11,
-	EMULE_EXPANSIONDIR = 12 // this is a base directory accessible to all users for things eMule installs
+	EMULE_SKINDIR = 6,
+	EMULE_DATABASEDIR = 7, // the parent directory of the incoming/temp folder
+	EMULE_CONFIGBASEDIR = 8, // the parent directory of the config folder
+	EMULE_EXECUTABLEDIR = 9, // assumed to be non-writable (!)
+	EMULE_TOOLBARDIR = 10,
+	EMULE_EXPANSIONDIR = 11 // this is a base directory accessible to all users for things eMule installs
 };
 
 enum EToolbarLabelType : uint8;
@@ -1250,7 +1249,7 @@ protected:
 	static CString	m_strFileCommentsFilePath;
 	static Preferences_Ext_Struct *prefsExt;
 	static CArray<Category_Struct*,Category_Struct*> catArr;
-	static CString	m_astrDefaultDirs[13];
+	static CString	m_astrDefaultDirs[12];
 	static bool		m_abDefaultDirsCreated[13];
 	static int		m_nCurrentUserDirMode; // Only for PPgTweaks
 

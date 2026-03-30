@@ -647,47 +647,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,201,46,50,14
 END
 
-IDD_PPG_WEBSRV DIALOGEX 0, 0, 300, 350
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Web Server"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "General",IDC_STATIC_GENERAL,4,2,238,202
-    CONTROL         "Enable",IDC_WSENABLED,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,12,107,8
-    CONTROL         "Gzip",IDC_WS_GZIP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,23,194,8
-    CONTROL         "Include port into UPnP setup",IDC_WSUPNP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,33,205,8
-    RTEXT           "Port",IDC_WSPORT_LBL,11,48,72,8
-    EDITTEXT        IDC_WSPORT,85,46,33,13,ES_AUTOHSCROLL | ES_NUMBER
-    RTEXT           "Network interface:",IDC_WS_BIND_INTERFACE_LABEL,11,64,72,8
-    COMBOBOX        IDC_WS_BIND_INTERFACE,85,62,150,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "Optional IP address to bind to:",IDC_WS_BIND_ADDRESS_LABEL,11,80,72,16
-    COMBOBOX        IDC_WS_BIND_ADDRESS,85,78,150,90,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "Template:",IDC_TEMPLATE,11,98,72,8
-    EDITTEXT        IDC_TMPLPATH,85,96,150,13,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_TMPLBROWSE,224,93,14,12
-    PUSHBUTTON      "Reload",IDC_WSRELOADTMPL,174,111,61,12
-    RTEXT           "Session time out",IDC_WSTIMEOUTLABEL,11,122,72,8
-    EDITTEXT        IDC_WSTIMEOUT,85,120,26,13,ES_AUTOHSCROLL | ES_NUMBER
-    LTEXT           "minutes",IDC_MINS,114,122,40,8
-    CONTROL         "Use HTTPS",IDC_WEB_HTTPS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,136,70,8
-    PUSHBUTTON      "Create new certificate",IDC_WEB_GENERATE,85,136,150,12
-    RTEXT           "Certificate:",IDC_WEB_CERT,11,154,72,8
-    EDITTEXT        IDC_CERTPATH,85,152,150,13,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_CERTBROWSE,224,149,14,12
-    RTEXT           "Key:",IDC_WEB_KEY,11,172,72,8
-    EDITTEXT        IDC_KEYPATH,85,170,150,13,ES_AUTOHSCROLL
-    PUSHBUTTON      "...",IDC_KEYBROWSE,224,167,14,12
-    GROUPBOX        "Admin",IDC_STATIC_ADMIN,4,205,238,39
-    RTEXT           "Password",IDC_WSPASS_LBL,11,217,72,8
-    EDITTEXT        IDC_WSPASS,85,215,150,13,ES_PASSWORD | ES_AUTOHSCROLL
-    CONTROL         "Allow exit, reboot and shutdown",IDC_WS_ALLOWHILEVFUNC,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,230,205,8
-    GROUPBOX        "low user",IDC_STATIC_LOWUSER,4,245,238,40
-    CONTROL         "Enable",IDC_WSENABLEDLOW,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,255,100,11
-    RTEXT           "Password",IDC_WSPASS_LBL2,11,269,72,8
-    EDITTEXT        IDC_WSPASSLOW,85,267,150,13,ES_PASSWORD | ES_AUTOHSCROLL
-END
-
 IDD_PPG_SCHEDULER DIALOGEX 0, 0, 300, 350
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Scheduler"
@@ -1270,7 +1229,6 @@ TRAYNOTCONNECTED        ICON                    "res\\TrayDisconnected.ico"
 TRAYLOWID               ICON                    "res\\TrayLowID.ico"
 DISPLAY                 ICON                    "res\\Display.ico"
 SECURITY                ICON                    "res\\Security.ico"
-WEB                     ICON                    "res\\Web.ico"
 SHAREDFILESLIST         ICON                    "res\\SharedFilesList.ico"
 TWEAK                   ICON                    "res\\Tweak.ico"
 NOTIFICATIONS           ICON                    "res\\Notifications.ico"
@@ -1920,11 +1878,6 @@ BEGIN
     IDD_PPG_SECURITY, DIALOG
     BEGIN
         BOTTOMMARGIN, 185
-    END
-
-    IDD_PPG_WEBSRV, DIALOG
-    BEGIN
-        VERTGUIDE, 11
     END
 
     IDD_KADEMLIAWND, DIALOG

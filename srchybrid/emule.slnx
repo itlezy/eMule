@@ -10,9 +10,6 @@
   <Project Path="../../eMule-cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
-  <Project Path="../../eMule-mbedtls/visualc/VS2017/mbedTLS.vcxproj" Id="46cf2d25-6a36-4189-b59c-e4815388e554">
-    <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
-  </Project>
   <Project Path="../../eMule-miniupnp/miniupnpc/msvc/miniupnpc.vcxproj" Id="d28ce435-cb33-4bae-8a52-c6ef915956f5">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
@@ -24,7 +21,6 @@
   </Project>
   <Project Path="emule.vcxproj" Id="584ea69d-3443-4197-8994-364880fc1b9b">
     <BuildDependency Project="../../eMule-cryptopp/cryptlib.vcxproj" />
-    <BuildDependency Project="../../eMule-mbedtls/visualc/VS2017/mbedTLS.vcxproj" />
     <BuildDependency Project="../../eMule-miniupnp/miniupnpc/msvc/miniupnpc.vcxproj" />
     <BuildDependency Project="../../eMule-ResizableLib/ResizableLib/ResizableLib.vcxproj" />
     <BuildDependency Project="../../eMule-zlib/contrib/vstudio/vc/zlib.vcxproj" />
