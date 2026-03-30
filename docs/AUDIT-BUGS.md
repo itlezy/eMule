@@ -27,6 +27,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
 - `BBUG_018`, `BBUG_020`, `BBUG_026`, `BBUG_028`, `BBUG_029`, and `BBUG_035` were fixed in the audit-driven guard/test pass on 2026-03-30.
 - `BBUG_014`, `BBUG_015`, `BBUG_016`, and `BBUG_043` were fixed in the connected-server snapshot hardening pass on 2026-03-30 by caching `GetCurrentServer()` once per call site before dereferencing it.
+- `BBUG_038`, `BBUG_039`, `BBUG_040`, and `BBUG_041` were fixed in the UI dialog crash-hardening pass on 2026-03-30 by guarding audited `GetDlgItem()` call sites and by validating the `CPartFile` downcast once before using archive-preview-only methods.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -968,6 +969,7 @@ m_nNumRows = m_nNumColours / m_nNumColumns;  // line 585
 - **Category:** Logic / Crash
 - **File:** `srchybrid/ArchivePreviewDlg.cpp:1070,183,185`
 - **Reachability:** Internal — archive preview dialog
+- **Status:** FIXED on 2026-03-30 by guarding the reduced-layout and progress-bar `GetDlgItem()` call sites before using the returned controls.
 
 **Vulnerable Code:**
 ```cpp
@@ -989,6 +991,7 @@ GetDlgItem(IDC_RESTOREARCH)->GetWindowRect(rc);             // line 185
 - **Category:** Logic / Crash
 - **File:** `srchybrid/PPgDirectories.cpp:70,72,75`
 - **Reachability:** Internal — preferences dialog
+- **Status:** FIXED on 2026-03-30 by guarding the audited edit, buddy-button, and balloon-tip control lookups before dereferencing them.
 
 **Vulnerable Code:**
 ```cpp
@@ -1010,6 +1013,7 @@ Multiple unchecked `GetDlgItem()` calls with direct member access and unsafe `st
 - **Category:** Logic / Crash
 - **File:** `srchybrid/AddFriend.cpp:86`
 - **Reachability:** Internal — friend dialog
+- **Status:** FIXED on 2026-03-30 by guarding the username edit lookup before applying the nickname length limit.
 
 **Vulnerable Code:**
 ```cpp
@@ -1029,6 +1033,7 @@ Unsafe `static_cast` of potentially NULL pointer from `GetDlgItem()`.
 - **Category:** Logic / Crash
 - **File:** `srchybrid/ArchivePreviewDlg.cpp:1002-1004`
 - **Reachability:** Internal — archive preview
+- **Status:** FIXED on 2026-03-30 by validating the `CPartFile` runtime type once with `IsKindOf(RUNTIME_CLASS(CPartFile))` before enabling restore/archive-preview-only paths.
 
 **Vulnerable Code:**
 ```cpp

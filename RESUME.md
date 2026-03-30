@@ -2,6 +2,7 @@
 
 ## Last Chunk
 
+- Hardened the audited UI dialog crash sites in `ArchivePreviewDlg.cpp`, `PPgDirectories.cpp`, and `AddFriend.cpp` by guarding the flagged `GetDlgItem()` dereferences and by validating the archive-preview `CPartFile` downcast once before using part-file-only methods.
 - Added the missing explicit `#include "Opcodes.h"` dependency to `srchybrid/MediaInfo_DLL.cpp` so the `SEC2MS` uses in that translation unit no longer depend on transitive headers.
 - Re-synced `eMule-zlib` from an ad hoc detached-HEAD fix back onto the canonical local `emule-build-v0.72a` dependency branch at commit `884172c664fd7b92127ebb53968ec04ee8679d41`, matching the already-recorded `zlib-v1.3.2.patch` workflow instead of carrying a one-off checkout-only commit.
 - Restored the missing `eMule-zlib/.gitignore` entries for the generated `cmake-build/` tree and the workspace-owned `contrib/vstudio/vc/zlib.vcxproj` wrapper so the zlib submodule stops reporting disposable build noise as untracked content.
@@ -13,8 +14,9 @@
 
 ## Current State
 
+- `docs/AUDIT-BUGS.md` now marks `BBUG_038` through `BBUG_041` as fixed in the current tree after the dialog/control guard pass.
 - `..\23-build-emule-debug-incremental.cmd` still fails in the workspace environment precheck before app compilation:
-  `cryptopp`, `miniupnp`, and `ResizableLib` are on `HEAD` with missing local patch commits, and `eMule-zlib\contrib\vstudio\vc\x64\Debug\zlib.lib` is still missing, so the `MediaInfo_DLL.cpp` include fix was not fully compile-validated through the required parent build entry point in this turn either.
+  `cryptopp`, `miniupnp`, and `ResizableLib` are on `HEAD` with missing local patch commits, and `eMule-zlib\contrib\vstudio\vc\x64\Debug\zlib.lib` is still missing, so neither the `MediaInfo_DLL.cpp` include fix nor the latest dialog/control guard pass was fully compile-validated through the required parent build entry point in this turn.
 - `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib` is back on the intended local dependency branch `emule-build-v0.72a` with the recorded patch commit `884172c664fd7b92127ebb53968ec04ee8679d41`; the detached helper commit `30b8e3f181e037e8be23681e538803215962d75e` is no longer the active checkout.
 - `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib\.gitignore` now matches the workspace patch intent again, so generated `cmake-build/` output and the materialized `contrib\vstudio\vc\zlib.vcxproj` wrapper are ignored instead of surfacing as local noise in the zlib submodule.
 - Latest current-tree connected-server guard commit: `e2578dafe11a96b0623ea8214c07c4fc12d06427`.
@@ -30,6 +32,6 @@
 
 ## Next Chunk
 
-- Continue the low-risk crash-hardening pass from `docs/AUDIT-BUGS.md` with the remaining UI-only null/guard findings that do not require ownership refactors, especially `GetDlgItem()` dereferences in `ArchivePreviewDlg.cpp`, `PPgDirectories.cpp`, and `AddFriend.cpp`.
+- Continue the low-risk crash-hardening pass from `docs/AUDIT-BUGS.md` with the remaining UI-only/runtime-guard findings that still do not require ownership refactors, especially the `CDC`/`HBITMAP` cleanup paths in `CxImage/xImage.cpp` and the remaining ASSERT-only runtime guards in list/progress calculations.
 - Decide whether the next seam should stay in the same shared `protocol.tests.cpp` file or split into a second guard-oriented test file before the dialog/control guard cases accumulate further.
 - Re-run the parent build once the sibling dependency environment is restored, so the connected-server guard changes and the next crash-hardening batch both get a full current-workspace compile check again.
