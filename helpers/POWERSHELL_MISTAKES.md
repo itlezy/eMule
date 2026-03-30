@@ -73,3 +73,17 @@
   I reused a shell wildcard path with `rg`, which expects a real directory path and optional `--glob` filters rather than a Windows wildcard path.
 - Fix:
   pass `.\\srchybrid` as the search root and add `--glob` filters only when file-name filtering is needed.
+
+- Error:
+  `Select-String` failed with `Cannot find path ...\\srchybrid\\WebServer.cpp because it does not exist.`
+- Cause:
+  I searched for a removed source file name from stale audit notes without verifying the current tree path first.
+- Fix:
+  confirm the live file list with `rg --files` or `Test-Path` before issuing targeted `Select-String` reads against audit-referenced paths.
+
+- Error:
+  `Select-Object` failed with `Cannot bind parameter 'Index'. Cannot convert value "338..356" to type "System.Int32".`
+- Cause:
+  I tried to pass a PowerShell range expression to `Select-Object -Index`, which expects already-materialized integers rather than a quoted range token.
+- Fix:
+  slice the content array directly (`$c[338..356]`) or pass an unquoted integer array to `-Index`.

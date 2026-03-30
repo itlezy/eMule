@@ -18,6 +18,25 @@
 | Logic / Crash Bugs | 5 | 3 | 6 | 0 | 14 |
 | **Total** | **19** | **7** | **18** | **6** | **50** |
 
+## Current Triage Status
+
+This report captures the original 2026-03-30 audit snapshot. The current tree has already moved since that scan, so use the buckets below as the active backlog:
+
+### Resolved in current tree
+
+- `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
+
+### Stale after feature removal
+
+- `BBUG_017` is stale because `srchybrid/WebServer.cpp` was removed with the embedded web server.
+- `BBUG_021` is stale because `srchybrid/SendMail.cpp` was removed with the SMTP notifier and TLS mail path.
+- `BBUG_027` is stale because `srchybrid/WebServer.cpp` was removed with the embedded web server.
+
+### Deferred architectural work
+
+- The raw-pointer lifetime findings (`BBUG_008` through `BBUG_013`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`, `BBUG_049`, `BBUG_050`) still need a dedicated ownership/thread-safety pass.
+- The next low-risk crash-hardening batch should focus on the remaining live `GetCurrentServer()` null dereferences and division-by-zero guards.
+
 ---
 
 ## CRITICAL Findings
@@ -30,6 +49,7 @@
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/Packets.cpp:54`
 - **Reachability:** Network (TCP) — any peer or server
+- **Status:** FIXED on 2026-03-30 by rejecting zero-length packet headers before size derivation.
 
 **Vulnerable Code:**
 ```cpp
@@ -57,6 +77,7 @@ The `size + 1` wraps back to 0, allocating a tiny buffer that is then used to re
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/EMSocket.cpp:335-350`
 - **Reachability:** Network (TCP)
+- **Status:** FIXED on 2026-03-30 by rejecting zero-length headers before subtracting from `packetlength`.
 
 **Vulnerable Code:**
 ```cpp
@@ -92,6 +113,7 @@ The check `packetlength - 1 > sizeof GlobalReadBuffer` attempts to prevent overf
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/UDPSocket.cpp:178-179`
 - **Reachability:** Network (UDP) — any peer
+- **Status:** FIXED on 2026-03-30 by requiring both UDP header bytes before dispatch.
 
 **Vulnerable Code:**
 ```cpp
@@ -114,6 +136,7 @@ If `nPayLoadLen < 2`, the operation `nPayLoadLen - 2` underflows (UINT wraps to 
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/ClientUDPSocket.cpp:206-214`
 - **Reachability:** Network (UDP)
+- **Status:** FIXED on 2026-03-30 for the audited underflow path by deriving the forwarded payload size only after the minimum-size guard.
 
 **Vulnerable Code:**
 ```cpp
@@ -144,6 +167,7 @@ While there is a `size < 17` check, the `size` variable is UINT. The `memcpy` us
 - **Category:** Network Protocol Parsing
 - **File:** `srchybrid/BaseClient.cpp:388-392, 779-783`
 - **Reachability:** Network (TCP) — any connecting peer
+- **Status:** FIXED on 2026-03-30 by capping hostile tag counts before the per-tag parse loops.
 
 **Vulnerable Code:**
 ```cpp
@@ -171,6 +195,7 @@ The same pattern exists in the MuleInfo handler at lines 779-783.
 - **Category:** Network Protocol Parsing
 - **File:** `srchybrid/ServerSocket.cpp:429-438`
 - **Reachability:** Network (TCP) — malicious server
+- **Status:** FIXED on 2026-03-30 by capping hostile tag counts before the per-tag parse loop.
 
 **Vulnerable Code:**
 ```cpp
@@ -194,6 +219,7 @@ Same pattern as BBUG_005 but in server packet processing. A malicious server can
 - **Category:** Network Protocol Parsing
 - **File:** `srchybrid/ServerSocket.cpp:484`
 - **Reachability:** Network (TCP) — malicious server
+- **Status:** FIXED on 2026-03-30 by switching the bounds check to division-based arithmetic.
 
 **Vulnerable Code:**
 ```cpp
@@ -447,6 +473,7 @@ Two separate `GetCurrentServer()` calls in a chained `&&` expression. Short-circ
 - **Category:** Logic / Crash
 - **File:** `srchybrid/WebServer.cpp:776-777, 1215`
 - **Reachability:** Network (HTTP) — web interface handler
+- **Status:** STALE on 2026-03-30 because the embedded web server was removed from the current tree.
 
 **Vulnerable Code:**
 ```cpp
@@ -558,6 +585,7 @@ When `nPacketLen == 2`, `nPacketLen - 2 == 0` which is valid but degenerate — 
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/SendMail.cpp:377`
 - **Reachability:** Network (TLS indirect)
+- **Status:** STALE on 2026-03-30 because the SMTP notifier and `SendMail.cpp` were removed from the current tree.
 
 **Vulnerable Code:**
 ```cpp
@@ -718,6 +746,7 @@ No validation that `m_PartsToImport.GetSize() > 0` before division. If the impor
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/WebServer.cpp:2349-2353, 2387-2391, 2426-2430`
 - **Reachability:** Internal — web interface rendering
+- **Status:** STALE on 2026-03-30 because the embedded web server was removed from the current tree.
 
 **Description:**
 Multiple instances of `TCHAR HTTPTempC[20]` with `_stprintf(HTTPTempC, _T("%i"), ...)`. While `%i` with a 32-bit int fits in 20 chars, the pattern is unsafe — no bounds checking. Other instances at lines 2982-3001 use 100-char buffers with string formatting that could overflow with very long CastItoXBytes results.

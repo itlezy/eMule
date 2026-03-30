@@ -2,18 +2,18 @@
 
 ## Last Chunk
 
-- Removed the SMTP notifier end to end, including `SendMail.cpp`, `SMTPdialog.*`, notification-page mail controls, and the `NotifierMail*` preference model and persistence.
-- Removed the embedded web server end to end, including `WebServer.*`, `WebSocket.*`, `PPgWebServer.*`, startup/shutdown hooks, statistics/network info/session tracking, and web-port UPnP support.
-- Removed the remaining `mbedTLS`/`TLSthreading` linkage, deleted the web templates/assets, updated the solution/project/workspace wiring, rebuilt with `..\23-build-emule-debug-incremental.cmd`, and refreshed the active docs to match the removal.
+- Hardened the live network parser paths called out at the top of `docs/AUDIT-BUGS.md`.
+- Fixed the packet/header underflow and short-payload issues in `Packets.cpp`, `EMSocket.cpp`, `UDPSocket.cpp`, and `ClientUDPSocket.cpp`.
+- Fixed the hostile tag-count / server-list bounds issues in `BaseClient.cpp` and `ServerSocket.cpp`, rebuilt with `..\23-build-emule-debug-incremental.cmd`, and refreshed the audit status notes.
 
 ## Current State
 
-- The source tree no longer contains live SMTP notifier code, embedded web-server code, or `mbedTLS` app linkage.
-- The parent workspace still needs its final commit for `deps.psd1`, `workspace.ps1`, `README.md`, and the updated `eMule` submodule pointer.
-- Historical audit/changelog docs may still mention removed files, but the active architecture/build docs now describe the current feature set.
+- The first live `AUDIT-BUGS` batch is done: `BBUG_001` through `BBUG_007` are fixed in the current tree.
+- `docs/AUDIT-BUGS.md` now marks the removed-code findings for `WebServer.cpp` and `SendMail.cpp` as stale instead of active.
+- The remaining highest-value live work is the low-risk crash-hardening set (`GetCurrentServer()` guards and division-by-zero fixes), followed later by the larger `delete this` / ownership refactor.
 
 ## Next Chunk
 
-- Commit the parent workspace cleanup that drops `mbedTLS` from the manifest/tooling and records the new submodule head.
-- Run one final search sweep for stale SMTP/web-server references in active docs and workspace metadata after the parent commit.
-- Pick the next refactor/fix batch from the audits once the removal branch is fully clean.
+- Fix the remaining live `GetCurrentServer()` null-dereference findings in `BaseClient.cpp`, `Emule.cpp`, and `PartFile.cpp`, then sweep for similar duplicate-call patterns.
+- Add the low-risk division-by-zero guards from the audit (`KnownFile.cpp` first, then the other straightforward UI/import cases if they are still live).
+- Rebuild with `..\23-build-emule-debug-incremental.cmd` and update `docs/AUDIT-BUGS.md` statuses for the newly closed crash-hardening items.
