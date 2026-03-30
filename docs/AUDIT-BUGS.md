@@ -35,6 +35,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_049` was fixed on 2026-03-30 by making `UDPReaskFNF()` return client liveness and by moving the only remaining delete decision to its caller in `ClientUDPSocket.cpp`.
 - `BBUG_013` was fixed on 2026-03-30 by removing socket self-deletion from `CClientReqSocket` and by making `CListenSocket::Process()` own final destruction after the close grace period expires.
 - `BBUG_008` and `BBUG_009` were fixed on 2026-03-30 by removing `delete this` from `TryToConnect()`, by making the surviving caller contract explicit, and by deleting failed re-ask sources at the `PartFile` iteration seam instead of inside `CUpDownClient`.
+- `BBUG_010`, `BBUG_011`, and `BBUG_012` were fixed on 2026-03-30 by moving upload-entry removal to a two-phase retire path in `CUploadQueue`, by delaying final struct destruction until all overlapped reads complete, and by making the disk thread treat retired entries as inert once the live client pointer has been detached.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -47,7 +48,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 
 ### Deferred architectural work
 
-- The raw-pointer lifetime findings (`BBUG_010` through `BBUG_012`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
+- The remaining raw-pointer lifetime findings (`BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
 - The remaining active backlog is now dominated by ownership/thread-safety work rather than low-risk guard or cleanup bugs.
 
 ---
@@ -313,6 +314,7 @@ if (Disconnected(_T("Too many connections"))) {
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/UploadQueue.cpp:1132-1143`
 - **Reachability:** Internal — triggered during upload queue cleanup
+- **Status:** FIXED on 2026-03-30 by making upload-entry retirement clear and detach the live client before delayed reclamation, and by guarding the destructor against a missing client pointer.
 
 **Vulnerable Code:**
 ```cpp
@@ -344,6 +346,7 @@ When `UploadingToClient_Struct` is destroyed, it unconditionally calls `m_pClien
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/UploadQueue.cpp:773-776`
 - **Reachability:** Internal — race between main thread and I/O thread
+- **Status:** FIXED on 2026-03-30 by replacing eager deletion with a two-phase retire list that only reclaims upload structs after pending overlapped reads have drained.
 
 **Vulnerable Code:**
 ```cpp
@@ -368,6 +371,7 @@ The struct is removed from the list under lock, but `delete curClientStruct` hap
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/UploadDiskIOThread.cpp:96-101`
 - **Reachability:** Internal — race condition
+- **Status:** FIXED on 2026-03-30 by making the disk thread bail out on retired upload entries, by nulling `m_pClient` during retirement, and by letting completion callbacks discard blocks for entries no longer present in the live upload list.
 
 **Vulnerable Code:**
 ```cpp
