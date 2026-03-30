@@ -157,3 +157,10 @@
   I constructed the PowerShell invocation as separate concatenated tokens, so `mt.exe` did not receive the `-inputresource:<path>;#1` argument as one complete string.
 - Fix:
   build the full argument with interpolation, for example `"-inputresource:$($exe);#1"`, and pass it as a single token to `mt.exe`.
+
+- Error:
+  `Select-String` failed with `A positional parameter cannot be found that accepts argument '\$\(Platform\)'`.
+- Cause:
+  I pushed a heavily escaped pattern through a PowerShell one-liner and the quoting broke before `Select-String` received the intended search string.
+- Fix:
+  prefer simpler literal searches, or put the pattern in a PowerShell variable and pass that variable to `Select-String -Pattern`.
