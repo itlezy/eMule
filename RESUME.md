@@ -2,25 +2,23 @@
 
 ## Last Chunk
 
-- Closed the remaining actionable low-risk lifetime finding from `docs/AUDIT-BUGS.md`.
-- Changed `srchybrid/UpDownClient.h` / `srchybrid/DownloadClient.cpp` so `UDPReaskFNF()` reports whether the client survived the disconnect path instead of deleting `this` internally.
-- Updated the sole caller in `srchybrid/ClientUDPSocket.cpp` to delete the client explicitly when `UDPReaskFNF()` reports that it should be destroyed.
-- Reclassified `BBUG_050` as stale after code inspection because `CDeletedClient` entries are independent per-IP snapshots, not cross-linked ownership nodes.
-- Refreshed `docs/AUDIT-BUGS.md` so `BBUG_049` is marked fixed and `BBUG_050` is marked stale in the current tree.
-- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-165445-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
+- Closed `BBUG_013` from `docs/AUDIT-BUGS.md`.
+- Changed `srchybrid/ListenSocket.h` / `srchybrid/ListenSocket.cpp` so `CClientReqSocket` no longer deletes itself after the grace timer.
+- Kept the existing 10-second delay, but moved final socket destruction into `CListenSocket::Process()` after the socket handle is already closed and the grace period has elapsed.
+- Refreshed `docs/AUDIT-BUGS.md` so `BBUG_013` is marked fixed and removed from the deferred lifetime bucket.
+- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-170506-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
 
 ## Current State
 
-- `docs/AUDIT-BUGS.md` now has no remaining active low-risk cleanup items; the live backlog is down to the earlier deferred ownership/thread-safety findings.
+- `docs/AUDIT-BUGS.md` now leaves the remaining ownership/thread-safety backlog at `BBUG_008` through `BBUG_012`, `BBUG_019`, `BBUG_023` through `BBUG_025`, and `BBUG_044`.
 - The dependency workspace is still restored on the expected local `emule-build-v0.72a` branches, and the parent debug wrapper continues to pass environment precheck and the `eMule` Debug build.
-- The current working tree has the new lifetime/reporting edits in:
-  - `srchybrid/UpDownClient.h`
-  - `srchybrid/DownloadClient.cpp`
-  - `srchybrid/ClientUDPSocket.cpp`
+- The current working tree has the new socket-lifetime edits in:
+  - `srchybrid/ListenSocket.h`
+  - `srchybrid/ListenSocket.cpp`
   - `docs/AUDIT-BUGS.md`
 
 ## Next Chunk
 
-- Continue `docs/AUDIT-BUGS.md` with the earlier deferred ownership/thread-safety findings, starting with the oldest still-live `BBUG_008` through `BBUG_013` set to see whether any can be reduced to mechanical guard work.
-- Decide whether the next ownership slice needs shared `eMule-build-tests` coverage or whether it is still best handled as build-verified code cleanup only.
-- Commit the new lifetime cleanup batch and the matching doc refresh as separate `FIX` and `DOC` commits once this slice is complete.
+- Continue `docs/AUDIT-BUGS.md` with the still-live `CUpDownClient` / upload-queue lifetime cluster: `BBUG_008`, `BBUG_009`, `BBUG_010`, `BBUG_011`, and `BBUG_012`.
+- Decide whether that next slice should remain mechanical and build-verified only, or whether it now warrants shared `eMule-build-tests` coverage because it crosses `TryToConnect`, `PartFile`, and upload I/O paths.
+- Commit the new socket-lifetime batch and the matching doc refresh as separate `FIX` and `DOC` commits once this slice is complete.

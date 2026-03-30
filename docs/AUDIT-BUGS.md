@@ -33,6 +33,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_042`, `BBUG_045`, and `BBUG_046` were fixed in the remaining small-runtime cleanup pass on 2026-03-30 by rewriting the unsigned countdown heap-sort loops in `DownloadQueue.cpp`, by switching the live `Server.cpp` IPv4 literal parse to `TryParseDottedIPv4Literal`, and by replacing the audited `_tcscpy` sites with bounded `_tcscpy_s` calls.
 - `BBUG_047` and `BBUG_048` were fixed in the final low-risk resource-cleanup pass on 2026-03-30 by replacing the toolbar desktop-DC probe with `CWindowDC` and by wrapping the captcha generator's temporary GDI/DC ownership in scoped cleanup helpers.
 - `BBUG_049` was fixed on 2026-03-30 by making `UDPReaskFNF()` return client liveness and by moving the only remaining delete decision to its caller in `ClientUDPSocket.cpp`.
+- `BBUG_013` was fixed on 2026-03-30 by removing socket self-deletion from `CClientReqSocket` and by making `CListenSocket::Process()` own final destruction after the close grace period expires.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -45,7 +46,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 
 ### Deferred architectural work
 
-- The raw-pointer lifetime findings (`BBUG_008` through `BBUG_013`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
+- The raw-pointer lifetime findings (`BBUG_008` through `BBUG_012`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
 - The remaining active backlog is now dominated by ownership/thread-safety work rather than low-risk guard or cleanup bugs.
 
 ---
@@ -390,6 +391,7 @@ pcsUploadListRead->Unlock();
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/ListenSocket.cpp:189-191`
 - **Reachability:** Internal — triggered on socket close
+- **Status:** FIXED on 2026-03-30 by moving final socket destruction into `CListenSocket::Process()` after the existing grace delay instead of deleting the socket from `CClientReqSocket`.
 
 **Vulnerable Code:**
 ```cpp
@@ -405,7 +407,7 @@ void CClientReqSocket::OnClose(int nErrorCode)
 
 **Impact:** Use-after-free on socket objects. Windows message dispatch to deleted objects causes crashes.
 
-**Fix:** Use `PostMessage` to schedule deletion after all pending messages are processed, or use `CAsyncSocket::Close()` first.
+**Fix:** Keep the grace delay, but make the listener own final destruction after the socket handle is already closed.
 
 ---
 
