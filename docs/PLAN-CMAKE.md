@@ -171,7 +171,7 @@ Set in `.vscode/settings.json` (see Phase 6). The CMake Tools extension can call
 The migration adds new `CMakeLists.txt` files and a `vcpkg.json` manifest. Nothing is moved or deleted from existing subdirectories (except the files listed in Section 10). The tree below shows only new/changed items.
 
 ```
-C:\prj\p2p\eMulebb\
+C:\prj\p2p\eMule\eMulebb\eMule-build\
 ├── CMakeLists.txt                          ← NEW: top-level root
 ├── CMakePresets.json                       ← NEW: 4 build presets
 ├── vcpkg.json                              ← NEW: vcpkg manifest
@@ -281,7 +281,7 @@ id3lib is not in vcpkg mainstream and its autoconf build system does not work on
 - Config header: `config.h` must come from `config.h.win32`
 - No PCH used in the library itself
 
-Create **`C:\prj\p2p\eMulebb\eMule-id3lib\CMakeLists.txt`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-id3lib\CMakeLists.txt`**:
 
 ```cmake
 cmake_minimum_required(VERSION 3.25)
@@ -382,7 +382,7 @@ The original vcxproj does not use a PCH for this library. The sources are hetero
 
 ResizableLib is an MFC extension library. It uses `StdAfx.h`/`StdAfx.cpp` as its PCH. The original vcxproj uses `UseOfMfc=Static` for the configurations we care about.
 
-Create **`C:\prj\p2p\eMulebb\eMule-ResizableLib\ResizableLib\CMakeLists.txt`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-ResizableLib\ResizableLib\CMakeLists.txt`**:
 
 ```cmake
 cmake_minimum_required(VERSION 3.25)
@@ -465,7 +465,7 @@ vcpkg operates in two modes: classic mode (global `vcpkg install cryptopp`) and 
 
 ### 5.2 `vcpkg.json`
 
-Create **`C:\prj\p2p\eMulebb\vcpkg.json`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\vcpkg.json`**:
 
 ```json
 {
@@ -489,7 +489,7 @@ Create **`C:\prj\p2p\eMulebb\vcpkg.json`**:
 
 ### 5.3 `vcpkg-configuration.json` — baseline pin
 
-Create **`C:\prj\p2p\eMulebb\vcpkg-configuration.json`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\vcpkg-configuration.json`**:
 
 ```json
 {
@@ -536,7 +536,7 @@ The cryptopp package exports a CMake target `cryptopp::cryptopp` via `find_packa
 
 ## 6. Phase 3 — Root CMakeLists.txt
 
-Create **`C:\prj\p2p\eMulebb\CMakeLists.txt`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\CMakeLists.txt`**:
 
 ```cmake
 cmake_minimum_required(VERSION 3.25)
@@ -671,7 +671,7 @@ The explicit list is long but maintainable. It is organized by subsystem.
 
 ### 7.2 The full `srchybrid/CMakeLists.txt`
 
-Create **`C:\prj\p2p\eMulebb\eMule\srchybrid\CMakeLists.txt`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\CMakeLists.txt`**:
 
 ```cmake
 cmake_minimum_required(VERSION 3.25)
@@ -1223,7 +1223,7 @@ Listing `emule.rc` in the source list is sufficient. CMake detects `.rc` files a
 
 All commands must be run from an **MSVC-activated terminal** (i.e., after `vcvarsall.bat`).
 
-The working directory for all commands is `C:\prj\p2p\eMulebb\` (the workspace root where `CMakeLists.txt` and `CMakePresets.json` live).
+The working directory for all commands is `C:\prj\p2p\eMule\eMulebb\eMule-build\` (the workspace root where `CMakeLists.txt` and `CMakePresets.json` live).
 
 ### 8.1 First-time setup (run once)
 
@@ -1234,7 +1234,7 @@ call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliar
 rem Set VCPKG_ROOT if not already in environment
 set VCPKG_ROOT=C:\tools\vcpkg
 
-cd C:\prj\p2p\eMulebb
+cd C:\prj\p2p\eMule\eMulebb\eMule-build
 ```
 
 ### 8.2 Configure — x64 Release
@@ -1347,7 +1347,7 @@ cmake --build --preset x64-release
 
 ### 9.1 `CMakePresets.json`
 
-Create **`C:\prj\p2p\eMulebb\CMakePresets.json`**:
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\CMakePresets.json`**:
 
 ```json
 {
@@ -1469,7 +1469,7 @@ Create **`C:\prj\p2p\eMulebb\CMakePresets.json`**:
 
 ### 9.2 VS Code settings
 
-Create **`C:\prj\p2p\eMulebb\.vscode\settings.json`** (or merge into existing):
+Create **`C:\prj\p2p\eMule\eMulebb\eMule-build\.vscode\settings.json`** (or merge into existing):
 
 ```json
 {

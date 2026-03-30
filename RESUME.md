@@ -11,9 +11,9 @@
 ## Current State
 
 - Latest current-tree guard-code commit: `e11fe0daa5ec4676a8af36e1acb9ba036818a878`.
-- Latest shared-tests commit in `C:\prj\p2p\eMulebb\tests`: `43768d5f178c2ca2841cae1309107836a0cd1921`.
+- Latest shared-tests commit in `C:\prj\p2p\eMule\eMulebb\eMule-build\tests`: `43768d5f178c2ca2841cae1309107836a0cd1921`.
 - Latest oracle seam commit: `e4226e72f3ac5baf2a33b4aa94dc28f1d09fd8af`.
-- Latest shared-tests commit in `C:\prj\p2p\eMulebb-oracle\tests`: `b0e8bb02b26e164eb4baadc30539e4ce8acbf076`.
+- Latest shared-tests commit in `C:\prj\p2p\eMule\eMulebb\eMule-build-oracle\tests`: `b0e8bb02b26e164eb4baadc30539e4ce8acbf076`.
 - `..\23-build-emule-debug-incremental.cmd` passes on the current workspace after the guard-wiring changes.
 - `36-run-emule-tests-debug.cmd` passes on the current workspace with 22 test cases / 40 assertions.
 - `37-run-emule-tests-live-diff.cmd` now reports case-level results:

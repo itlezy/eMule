@@ -1,6 +1,6 @@
 # Code Review: eMule v0.72a Changes
 
-**Repository:** `eMule-my\analysis\bbclean7\eMule`
+**Repository:** `eMule\analysis\bbclean7\eMule`
 **Commits reviewed:** `24d1de7` (irwir, 2026-01-05) · `18911c5` (Threepwood-7, 2026-03-23)
 **Branch:** `origin/v0.72a` (current: `v0.72a-community`)
 **Review date:** 2026-03-24

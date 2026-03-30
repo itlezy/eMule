@@ -2,7 +2,7 @@
 
 **Target platform: Windows 10+ x64 ONLY**
 **Build: MSVC v143 (VS 2022), static MFC, `/MT` CRT**
-**Source analysis: `c:\prj\p2p\eMule-my\analysis\bbclean7`**
+**Source analysis: `c:\prj\p2p\eMule\analysis\bbclean7`**
 
 ---
 

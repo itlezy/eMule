@@ -1,6 +1,6 @@
 # eMule Community Build — Code Review: v0.60d → v0.70b → v0.72a
 
-**Repository:** `eMule-my\analysis\bbclean7\eMule`
+**Repository:** `eMule\analysis\bbclean7\eMule`
 **Branch analyzed:** `origin/v0.72a` (current: `v0.72a-community`)
 **Base branch:** `origin/v0.60d`
 **Review date:** 2026-03-24

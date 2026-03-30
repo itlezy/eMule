@@ -276,7 +276,7 @@ Ninja + MSVC.
 
 ```powershell
 # From VS 2022 x64 Developer PowerShell (or vcvarsall.bat x64 in cmd)
-cd C:\prj\p2p\eMulebb
+cd C:\prj\p2p\eMule\eMulebb\eMule-build
 
 cmake --preset x64-debug
 cmake --build --preset x64-debug
