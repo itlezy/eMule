@@ -2795,7 +2795,10 @@ DWORD CALLBACK CopyProgressRoutine(LARGE_INTEGER TotalFileSize, LARGE_INTEGER To
 {
 	CPartFile *pPartFile = static_cast<CPartFile*>(lpData);
 	if (TotalFileSize.QuadPart && pPartFile && pPartFile->IsKindOf(RUNTIME_CLASS(CPartFile))) {
-		WPARAM uProgress = (WPARAM)(TotalBytesTransferred.QuadPart * 100 / TotalFileSize.QuadPart);
+		/** Keep the runtime zero-denominator guard inline with the progress calculation. */
+		WPARAM uProgress = (WPARAM)(TotalFileSize.QuadPart
+			? (TotalBytesTransferred.QuadPart * 100 / TotalFileSize.QuadPart)
+			: 0);
 		if (uProgress != pPartFile->GetFileOpProgress()) {
 			ASSERT(uProgress <= 100);
 			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pPartFile));
