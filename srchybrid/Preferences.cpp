@@ -599,8 +599,6 @@ bool	CPreferences::m_bRememberCancelledFiles;
 bool	CPreferences::m_bRememberDownloadedFiles;
 bool	CPreferences::m_bPartiallyPurgeOldKnownFiles;
 
-EmailSettings CPreferences::m_email;
-
 bool	CPreferences::m_bWinaTransToolbar;
 bool	CPreferences::m_bShowDownloadToolbar;
 
@@ -1861,17 +1859,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("RememberCancelledFiles"), m_bRememberCancelledFiles);
 	ini.WriteBool(_T("RememberDownloadedFiles"), m_bRememberDownloadedFiles);
 
-	ini.WriteBool(_T("NotifierSendMail"), m_email.bSendMail);
-	ini.WriteInt(_T("NotifierMailAuth"), m_email.uAuth);
-	ini.WriteInt(_T("NotifierMailTLS"), m_email.uTLS);
-	ini.WriteString(_T("NotifierMailSender"), m_email.sFrom);
-	ini.WriteString(_T("NotifierMailServer"), m_email.sServer);
-	ini.WriteInt(_T("NotifierMailPort"), m_email.uPort);
-	ini.WriteString(_T("NotifierMailRecipient"), m_email.sTo);
-	ini.WriteString(_T("NotifierMailLogin"), m_email.sUser);
-	ini.WriteString(_T("NotifierMailPassword"), m_email.sPass);
-	//ini.WriteString(_T("NotifierMailEncryptCertName"), m_email.sEncryptCertName);
-
 	ini.WriteBool(_T("WinaTransToolbar"), m_bWinaTransToolbar);
 	ini.WriteBool(_T("ShowDownloadToolbar"), m_bShowDownloadToolbar);
 
@@ -2390,17 +2377,6 @@ void CPreferences::LoadPreferences()
 	m_bRememberCancelledFiles = ini.GetBool(_T("RememberCancelledFiles"), true);
 	m_bRememberDownloadedFiles = ini.GetBool(_T("RememberDownloadedFiles"), true);
 	m_bPartiallyPurgeOldKnownFiles = ini.GetBool(_T("PartiallyPurgeOldKnownFiles"), true);
-
-	m_email.bSendMail = ini.GetBool(_T("NotifierSendMail"), false);
-	m_email.uAuth = static_cast<SMTPauth>(ini.GetInt(_T("NotifierMailAuth"), 0));
-	m_email.uTLS = static_cast<TLSmode>(ini.GetInt(_T("NotifierMailTLS"), 0));
-	m_email.sFrom = ini.GetString(_T("NotifierMailSender"), _T(""));
-	m_email.sServer = ini.GetString(_T("NotifierMailServer"), _T(""));
-	m_email.uPort = static_cast<uint16>(ini.GetInt(_T("NotifierMailPort"), 0));
-	m_email.sTo = ini.GetString(_T("NotifierMailRecipient"), _T(""));
-	m_email.sUser = ini.GetString(_T("NotifierMailLogin"), _T(""));
-	m_email.sPass = ini.GetString(_T("NotifierMailPassword"), _T(""));
-	//m_email.sEncryptCertName = ini.GetString(_T("NotifierMailEncryptCertName"), _T(""));
 
 	m_bWinaTransToolbar = ini.GetBool(_T("WinaTransToolbar"), true);
 	m_bShowDownloadToolbar = ini.GetBool(_T("ShowDownloadToolbar"), true);

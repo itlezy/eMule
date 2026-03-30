@@ -398,7 +398,7 @@ BEGIN
     LTEXT           "",IDC_SF_FNAME,144,275,340,8
 END
 
-IDD_PPG_NOTIFY DIALOGEX 0, 0, 300, 350
+IDD_PPG_NOTIFY DIALOGEX 0, 0, 300, 246
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Notifications"
 FONT 8, "MS Shell Dlg", 0, 0, 0x0
@@ -417,38 +417,7 @@ BEGIN
     CONTROL         "Download finished",IDC_CB_TBN_ONDOWNLOAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,117,191,10
     CONTROL         "Urgent: out of disk space, server connection lost",IDC_CB_TBN_IMPORTATNT,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,19,139,191,19
-    GROUPBOX        "Email Notifications",IDC_EMAILNOT_GROUP,4,168,223,71
-    CONTROL         "Enable email notifications",IDC_CB_ENABLENOTIFICATIONS,
-                    "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,11,180,200,10
-    PUSHBUTTON      "SMTP server...",IDC_SMTPSERVER,107,191,112,14
-    RTEXT           "Receiver address:",IDC_TXT_RECEIVER,11,208,94,8
-    EDITTEXT        IDC_EDIT_RECEIVER,107,206,112,13,ES_AUTOHSCROLL | WS_GROUP
-    RTEXT           "Sender address:",IDC_TXT_SENDER,11,223,94,8
-    EDITTEXT        IDC_EDIT_SENDER,107,221,112,13,ES_AUTOHSCROLL | WS_GROUP
     PUSHBUTTON      "Test",IDC_TEST_NOTIFICATION,164,13,57,14
-END
-
-IDD_SMTPSERVER DIALOGEX 0, 0, 241, 161
-STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "SMTP Server"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "Connection",IDC_SMTPCONN_GROUP,5,5,231,60
-    RTEXT           "Security:",IDC_SMTPSEC_LBL,10,16,83,8
-    COMBOBOX        IDC_SMTPSEC,95,15,67,110,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "Server:",IDC_SMTPSERVER_LBL,10,32,83,8
-    EDITTEXT        IDC_TXT_SMTPSERVER,95,31,134,13,ES_AUTOHSCROLL
-    RTEXT           "Port:",IDC_SMTPPORT_LBL,10,48,81,8
-    EDITTEXT        IDC_SMTPPORT,95,47,67,13,ES_AUTOHSCROLL | ES_NUMBER
-    GROUPBOX        "Authentication",IDC_SMTPAUTH_GROUP,5,70,231,60
-    RTEXT           "Authentication method:",IDC_SMTPAUTH_LBL,10,81,83,8
-    COMBOBOX        IDC_SMTPAUTH,95,80,67,110,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "User Name:",IDC_SMTPUSER_LBL,10,97,83,8
-    EDITTEXT        IDC_SMTPUSER,95,96,135,13,ES_AUTOHSCROLL
-    RTEXT           "Password:",IDC_SMTPPASS_LBL,10,113,83,8
-    EDITTEXT        IDC_SMTPPASS,95,112,136,13,ES_PASSWORD | ES_AUTOHSCROLL
-    DEFPUSHBUTTON   "OK",IDOK,117,139,50,14
-    PUSHBUTTON      "Cancel",IDCANCEL,175,139,50,14
 END
 
 
@@ -1305,7 +1274,6 @@ WEB                     ICON                    "res\\Web.ico"
 SHAREDFILESLIST         ICON                    "res\\SharedFilesList.ico"
 TWEAK                   ICON                    "res\\Tweak.ico"
 NOTIFICATIONS           ICON                    "res\\Notifications.ico"
-EMAIL                   ICON                    "res\\Email.ico"
 CONNECTION              ICON                    "res\\Connection.ico"
 FOLDERS                 ICON                    "res\\Folders.ico"
 PROXY                   ICON                    "res\\Proxy.ico"
@@ -1821,23 +1789,6 @@ BEGIN
 0x5448, 0x5054, 0x3120, 0x302e, "\000"
     IDC_PROXYTYPE, 0x403, 9, 0
 0x5448, 0x5054, 0x3120, 0x312e, "\000"
-    0
-END
-
-IDD_SMTPSERVER DLGINIT
-BEGIN
-    IDC_SMTPSEC, 0x403, 5, 0
-0x6f4e, 0x656e, "\000"
-    IDC_SMTPSEC, 0x403, 8, 0
-0x5353, 0x2f4c, 0x4c54, 0x0053,
-    IDC_SMTPSEC, 0x403, 9, 0
-0x5453, 0x5241, 0x5454, 0x534c, "\000"
-    IDC_SMTPAUTH, 0x403, 5, 0
-0x6f4e, 0x656e, "\000"
-    IDC_SMTPAUTH, 0x403, 6, 0
-0x4c50, 0x4941, 0x004e,
-    IDC_SMTPAUTH, 0x403, 6, 0
-0x4f4c, 0x4947, 0x004e,
     0
 END
 

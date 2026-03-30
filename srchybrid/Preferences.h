@@ -32,26 +32,6 @@ enum ENotifierSoundType
 	ntfstSpeech
 };
 
-enum TLSmode: byte
-{
-	MODE_NONE,
-	MODE_SSL_TLS,
-	MODE_STARTTLS
-};
-
-enum SMTPauth: byte
-{
-	AUTH_NONE,
-	AUTH_PLAIN,
-	AUTH_LOGIN /*,
-	AUTH_GSSAPI,
-	AUTH_DIGEST,
-	AUTH_MD5,
-	AUTH_CRAM,
-	AUTH_OAUTH1,
-	AUTH_OAUTH2 */
-};
-
 
 enum EDefaultDirectory
 {
@@ -82,22 +62,6 @@ struct Preferences_Ext_Struct
 	WINDOWPLACEMENT EmuleWindowPlacement;
 };
 #pragma pack(pop)
-
-//email notifier
-struct EmailSettings
-{
-	CString	sServer;
-	CString	sFrom;
-	CString	sTo;
-	CString	sUser;
-	CString	sPass;
-	CString	sEncryptCertName;
-	uint16	uPort;
-	SMTPauth uAuth;
-	TLSmode uTLS;
-	bool	bSendMail;
-};
-
 
 struct ProxySettings
 {
@@ -588,9 +552,6 @@ public:
 	static bool		m_bRememberCancelledFiles;
 	static bool		m_bRememberDownloadedFiles;
 	static bool		m_bPartiallyPurgeOldKnownFiles;
-
-	//email notifier
-	static EmailSettings m_email;
 
 	// encryption / obfuscation / verification
 	static bool		m_bCryptLayerRequested;
@@ -1305,13 +1266,6 @@ public:
 	static bool		DoPartiallyPurgeOldKnownFiles()		{ return m_bPartiallyPurgeOldKnownFiles; }
 	static void		SetRememberDownloadedFiles(bool nv)	{ m_bRememberDownloadedFiles = nv; }
 	static void		SetRememberCancelledFiles(bool nv)	{ m_bRememberCancelledFiles = nv; }
-	// mail notifier
-	static const EmailSettings &GetEmailSettings()		{ return m_email; }
-	static void		SetEmailSettings(const EmailSettings &settings) { m_email = settings; }
-
-	static bool		IsNotifierSendMailEnabled()			{ return m_email.bSendMail; }
-
-	static void		SetNotifierSendMail(bool nv)		{ m_email.bSendMail = nv; }
 	static bool		DoFlashOnNewMessage()				{ return m_bIconflashOnNewMessage; }
 	static void		IniCopy(const CString &si, const CString &di);
 

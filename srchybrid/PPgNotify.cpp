@@ -18,7 +18,6 @@
 #include "emule.h"
 #include "emuleDlg.h"
 #include "PPgNotify.h"
-#include "SMTPdialog.h"
 #include "Preferences.h"
 #include "OtherFunctions.h"
 #include "HelpIDs.h"
@@ -48,16 +47,11 @@ BEGIN_MESSAGE_MAP(CPPgNotify, CPropertyPage)
 	ON_BN_CLICKED(IDC_CB_TBN_ONCHAT, OnBnClickedOnChat)
 	ON_BN_CLICKED(IDC_CB_TBN_IMPORTATNT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CB_TBN_POP_ALWAYS, OnSettingsChange)
-	ON_BN_CLICKED(IDC_SMTPSERVER, OnBnClickedSMTPserver)
-	ON_EN_CHANGE(IDC_EDIT_SENDER, OnSettingsChange)
-	ON_EN_CHANGE(IDC_EDIT_RECEIVER, OnSettingsChange)
-	ON_BN_CLICKED(IDC_CB_ENABLENOTIFICATIONS, OnBnClickedCbEnableNotifications)
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
 
 CPPgNotify::CPPgNotify()
 	: CPropertyPage(CPPgNotify::IDD)
-	, m_mail(thePrefs.GetEmailSettings())
 	, m_icoBrowse()
 {
 }
@@ -97,13 +91,7 @@ BOOL CPPgNotify::OnInitDialog()
 	CheckDlgButton(IDC_CB_TBN_IMPORTATNT, thePrefs.notifierOnImportantError ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_POP_ALWAYS, thePrefs.notifierOnEveryChatMsg ? BST_CHECKED : BST_UNCHECKED);
 
-	GetDlgItem(IDC_CB_TBN_POP_ALWAYS)->EnableWindow(IsDlgButtonChecked(IDC_CB_TBN_ONCHAT));
-
 	SetDlgItemText(IDC_EDIT_TBN_WAVFILE, thePrefs.notifierSoundFile);
-
-	CheckDlgButton(IDC_CB_ENABLENOTIFICATIONS, m_mail.bSendMail ? BST_CHECKED : BST_UNCHECKED);
-	SetDlgItemText(IDC_EDIT_RECEIVER, m_mail.sTo);
-	SetDlgItemText(IDC_EDIT_SENDER, m_mail.sFrom);
 
 	UpdateControls();
 	Localize();
@@ -119,11 +107,7 @@ void CPPgNotify::UpdateControls()
 	bool b = IsDlgButtonChecked(IDC_CB_TBN_USESOUND) != 0;
 	GetDlgItem(IDC_EDIT_TBN_WAVFILE)->EnableWindow(b);
 	GetDlgItem(IDC_BTN_BROWSE_WAV)->EnableWindow(b);
-
-	b = IsDlgButtonChecked(IDC_CB_ENABLENOTIFICATIONS) != 0;
-	GetDlgItem(IDC_SMTPSERVER)->EnableWindow(b);
-	GetDlgItem(IDC_EDIT_RECEIVER)->EnableWindow(b);
-	GetDlgItem(IDC_EDIT_SENDER)->EnableWindow(b);
+	GetDlgItem(IDC_CB_TBN_POP_ALWAYS)->EnableWindow(IsDlgButtonChecked(IDC_CB_TBN_ONCHAT));
 }
 
 void CPPgNotify::Localize()
@@ -141,38 +125,18 @@ void CPPgNotify::Localize()
 		SetDlgItemText(IDC_CB_TBN_IMPORTATNT, GetResString(IDS_PS_TBN_IMPORTANT) + _T(" (*)"));
 		SetDlgItemText(IDC_TBN_OPTIONS, GetResString(IDS_PW_TBN_OPTIONS));
 		SetDlgItemText(IDC_CB_TBN_USESPEECH, GetResString(IDS_USESPEECH));
-		SetDlgItemText(IDC_EMAILNOT_GROUP, _T("(*) ") + GetResString(IDS_PW_EMAILNOTIFICATIONS));
-		SetDlgItemText(IDC_SMTPSERVER, GetResString(IDS_SMTPSERVER) + _T("..."));
-		SetDlgItemText(IDC_TXT_RECEIVER, GetResString(IDS_PW_RECEIVERADDRESS));
-		SetDlgItemText(IDC_TXT_SENDER, GetResString(IDS_PW_SENDERADDRESS));
-		SetDlgItemText(IDC_CB_ENABLENOTIFICATIONS, GetResString(IDS_PW_ENABLEEMAIL));
 		SetDlgItemText(IDC_TEST_NOTIFICATION, GetResString(IDS_TEST));
 	}
 }
 
 BOOL CPPgNotify::OnApply()
 {
-	m_mail.bSendMail = IsDlgButtonChecked(IDC_CB_ENABLENOTIFICATIONS) != 0;
-	if (m_mail.bSendMail
-		&& (m_mail.sServer.IsEmpty()
-			|| !m_mail.uPort
-			|| (m_mail.uAuth != AUTH_NONE && m_mail.sUser.IsEmpty())))
-	{
-		CheckDlgButton(IDC_CB_ENABLENOTIFICATIONS, BST_UNCHECKED);
-		UpdateControls();
-		return FALSE;
-	}
-
 	thePrefs.notifierOnDownloadFinished = IsDlgButtonChecked(IDC_CB_TBN_ONDOWNLOAD) != 0;
 	thePrefs.notifierOnNewDownload = IsDlgButtonChecked(IDC_CB_TBN_ONNEWDOWNLOAD) != 0;
 	thePrefs.notifierOnChat = IsDlgButtonChecked(IDC_CB_TBN_ONCHAT) != 0;
 	thePrefs.notifierOnLog = IsDlgButtonChecked(IDC_CB_TBN_ONLOG) != 0;
 	thePrefs.notifierOnImportantError = IsDlgButtonChecked(IDC_CB_TBN_IMPORTATNT) != 0;
 	thePrefs.notifierOnEveryChatMsg = IsDlgButtonChecked(IDC_CB_TBN_POP_ALWAYS) != 0;
-
-	GetDlgItemText(IDC_EDIT_SENDER, m_mail.sFrom);
-	GetDlgItemText(IDC_EDIT_RECEIVER, m_mail.sTo);
-	thePrefs.SetEmailSettings(m_mail);
 
 	ApplyNotifierSoundType();
 	if (thePrefs.notifierSoundType != ntfstSpeech)
@@ -197,7 +161,7 @@ void CPPgNotify::ApplyNotifierSoundType()
 
 void CPPgNotify::OnBnClickedOnChat()
 {
-	GetDlgItem(IDC_CB_TBN_POP_ALWAYS)->EnableWindow(IsDlgButtonChecked(IDC_CB_TBN_ONCHAT));
+	UpdateControls();
 	SetModified();
 }
 
@@ -266,22 +230,6 @@ BOOL CPPgNotify::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
-}
-
-void CPPgNotify::OnBnClickedCbEnableNotifications()
-{
-	UpdateControls();
-	SetModified();
-}
-
-void CPPgNotify::OnBnClickedSMTPserver()
-{
-	CSMTPserverDlg serverDlg;
-	if (serverDlg.DoModal() == IDOK) {
-		SetModified();
-		m_mail = thePrefs.GetEmailSettings(); //reload
-		UpdateControls();
-	}
 }
 
 void CPPgNotify::OnDestroy()

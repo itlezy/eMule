@@ -329,7 +329,6 @@
     <ClCompile Include="SearchParamsWnd.cpp" />
     <ClCompile Include="SearchResultsWnd.cpp" />
     <ClCompile Include="SelfTest.cpp" />
-    <ClCompile Include="SendMail.cpp" />
     <ClCompile Include="Server.cpp" />
     <ClCompile Include="ServerConnect.cpp" />
     <ClCompile Include="ServerList.cpp" />
@@ -344,7 +343,6 @@
     <ClCompile Include="SharedFilesCtrl.cpp" />
     <ClCompile Include="SharedFilesWnd.cpp" />
     <ClCompile Include="SmileySelector.cpp" />
-    <ClCompile Include="SMTPdialog.cpp" />
     <ClCompile Include="SplashScreen.cpp" />
     <ClCompile Include="SplitterControl.cpp" />
     <ClCompile Include="StatisticFile.cpp" />
@@ -620,7 +618,6 @@
     <ClInclude Include="SharedFilesCtrl.h" />
     <ClInclude Include="SharedFilesWnd.h" />
     <ClInclude Include="SmileySelector.h" />
-    <ClInclude Include="SMTPdialog.h" />
     <ClInclude Include="SplashScreen.h" />
     <ClInclude Include="SplitterControl.h" />
     <ClInclude Include="StatisticFile.h" />
@@ -748,7 +745,6 @@
     <Image Include="res\DownloadFiles.ico" />
     <Image Include="res\eD2kLink.ico" />
     <Image Include="res\eD2kLinkPaste.ico" />
-    <Image Include="res\Email.ico" />
     <Image Include="res\Empty.ico" />
     <Image Include="res\emuleCollAdd.ico" />
     <Image Include="res\emuleCollectionFileType.ico" />
