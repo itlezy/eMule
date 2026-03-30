@@ -349,7 +349,10 @@ bool CClientUDPSocket::ProcessPacket(const BYTE *packet, UINT size, uint8 opcode
 				DebugRecv("OP_FileNotFound", sender, NULL, ip);
 			if (sender != NULL)
 				if (sender->UDPPacketPending())
-					sender->UDPReaskFNF(); // may delete 'sender'!
+				{
+					if (!sender->UDPReaskFNF())
+						delete sender;
+				}
 				else
 					DebugLogError(_T("Received UDP Packet (OP_FILENOTFOUND) which was not requested (pendingflag == false); Ignored packet - %s"), (LPCTSTR)sender->DbgGetClientInfo());
 

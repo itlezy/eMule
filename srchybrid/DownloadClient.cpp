@@ -1306,7 +1306,7 @@ void CUpDownClient::UDPReaskACK(uint16 nNewQR)
 	SetLastAskedTime();
 }
 
-void CUpDownClient::UDPReaskFNF()
+bool CUpDownClient::UDPReaskFNF()
 {
 	m_bUDPPending = false;
 	if (GetDownloadState() != DS_DOWNLOADING) { // avoid premature deletion of 'this' client
@@ -1324,10 +1324,11 @@ void CUpDownClient::UDPReaskFNF()
 		default:
 			theApp.downloadqueue->RemoveSource(this);
 			if (!socket && Disconnected(_T("UDPReaskFNF socket=NULL")))
-				delete this;
+				return false;
 		}
 	} else if (thePrefs.GetVerbose())
 		DebugLogWarning(_T("UDP FNF-Answer: %s - did not remove client because of current download state"), GetUserName());
+	return true;
 }
 
 void CUpDownClient::UDPReaskForDownload()
