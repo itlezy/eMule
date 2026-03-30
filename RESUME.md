@@ -2,6 +2,7 @@
 
 ## Last Chunk
 
+- Restored the missing `eMule-zlib/.gitignore` entries for the generated `cmake-build/` tree and the workspace-owned `contrib/vstudio/vc/zlib.vcxproj` wrapper so the zlib submodule stops reporting disposable build noise as untracked content.
 - Added a new connected-server snapshot seam in `srchybrid/ServerConnectionGuards.h` on the current branch and routed the live `GetCurrentServer()` call sites through it in `BaseClient.cpp`, `Emule.cpp`, `PartFile.cpp`, `SearchResultsWnd.cpp`, and `DownloadQueue.cpp`.
 - Hardened the current tree against null `GetCurrentServer()` snapshots by caching the server pointer once per call site before dereferencing endpoint or capability fields, which fixes the audited `BaseClient`, `Emule`, `PartFile`, and `SearchResultsWnd` TOCTOU/null-deref paths and also cleans up the same pattern in nearby `DownloadQueue`/`PartFile` helpers.
 - Mirrored the same seam into the oracle tree with legacy semantics so the shared live-diff harness can keep surfacing the dev-vs-oracle connected-server snapshot split.
@@ -10,6 +11,7 @@
 
 ## Current State
 
+- `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib\.gitignore` now matches the workspace patch intent again, so generated `cmake-build/` output and the materialized `contrib\vstudio\vc\zlib.vcxproj` wrapper are ignored instead of surfacing as local noise in the zlib submodule.
 - Latest current-tree connected-server guard commit: `e2578dafe11a96b0623ea8214c07c4fc12d06427`.
 - Latest shared-tests commit in `C:\prj\p2p\eMule\eMulebb\eMule-build-tests`: `39211de9761f8b6b3340399b8c7aa6e6d753373a`.
 - Latest oracle seam commit: `898d419d6ce57184f4b35a426f2c400751952046`.
