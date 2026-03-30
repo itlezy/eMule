@@ -20,6 +20,7 @@
 #include "Opcodes.h"
 #include "OtherFunctions.h"
 #include "Packets.h"
+#include "ProtocolGuards.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -27,9 +28,22 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	/**
+	 * Parses server literals without treating 255.255.255.255 as an invalid host
+	 * name fallback.
+	 */
+	bool TryParseServerAddressLiteral(LPCTSTR pszAddr, uint32 *pnAddress)
+	{
+		const CStringA strAddress(pszAddr);
+		return TryParseDottedIPv4Literal(strAddress, pnAddress);
+	}
+}
+
 void CServer::init()
 {
-	_tcscpy(ipfull, ipstr(ip));
+	_tcscpy_s(ipfull, _countof(ipfull), ipstr(ip));
 	lastpingedtime = 0;
 	m_RealLastPingedTime = 0;
 	challenge = 0;
@@ -66,8 +80,7 @@ CServer::CServer(const ServerMet_Struct *in_data)
 CServer::CServer(uint16 in_port, LPCTSTR pszAddr)
 	: port(in_port)
 {
-	ip = inet_addr((CStringA)pszAddr);
-	if (ip == INADDR_NONE && _tcscmp(pszAddr, _T("255.255.255.255")) != 0) {
+	if (!TryParseServerAddressLiteral(pszAddr, &ip)) {
 		m_strDynIP = pszAddr;
 		ip = 0;
 	}
@@ -76,7 +89,7 @@ CServer::CServer(uint16 in_port, LPCTSTR pszAddr)
 
 CServer::CServer(const CServer *pOld)
 {
-	_tcscpy(ipfull, pOld->ipfull);
+	_tcscpy_s(ipfull, _countof(ipfull), pOld->ipfull);
 	m_strDescription = pOld->m_strDescription;
 	m_strName = pOld->m_strName;
 	m_strDynIP = pOld->m_strDynIP;
@@ -254,7 +267,7 @@ LPCTSTR CServer::GetAddress() const
 void CServer::SetIP(uint32 newip)
 {
 	ip = newip;
-	_tcscpy(ipfull, ipstr(ip));
+	_tcscpy_s(ipfull, _countof(ipfull), ipstr(ip));
 }
 
 void CServer::SetLastDescPingedCount(bool bReset)

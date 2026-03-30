@@ -298,7 +298,7 @@ void CCreditsThread::InitFonts()
 	lf.lfHeight = 12;
 	lf.lfWeight = 500;
 	lf.lfQuality = NONANTIALIASED_QUALITY;
-	_tcscpy(lf.lfFaceName, _T("Arial"));
+	_tcscpy_s(lf.lfFaceName, _countof(lf.lfFaceName), _T("Arial"));
 	CFont *font0 = new CFont;
 	font0->CreateFontIndirect(&lf);
 	m_arFonts.Add(font0);
@@ -313,7 +313,7 @@ void CCreditsThread::InitFonts()
 	lf.lfHeight = 14;
 	lf.lfWeight = 600;
 	lf.lfQuality = NONANTIALIASED_QUALITY;
-	_tcscpy(lf.lfFaceName, _T("Arial"));
+	_tcscpy_s(lf.lfFaceName, _countof(lf.lfFaceName), _T("Arial"));
 	CFont *font1 = new CFont;
 	font1->CreateFontIndirect(&lf);
 	m_arFonts.Add(font1);
@@ -329,7 +329,7 @@ void CCreditsThread::InitFonts()
 	lf.lfWeight = 700;
 	//lf.lfItalic = TRUE;
 	lf.lfQuality = ANTIALIASED_QUALITY;
-	_tcscpy(lf.lfFaceName, _T("Arial"));
+	_tcscpy_s(lf.lfFaceName, _countof(lf.lfFaceName), _T("Arial"));
 	CFont *font2 = new CFont;
 	font2->CreateFontIndirect(&lf);
 	m_arFonts.Add(font2);
@@ -343,7 +343,7 @@ void CCreditsThread::InitFonts()
 	lf.lfHeight = 25;
 	lf.lfWeight = 900;
 	lf.lfQuality = ANTIALIASED_QUALITY;
-	_tcscpy(lf.lfFaceName, _T("Arial"));
+	_tcscpy_s(lf.lfFaceName, _countof(lf.lfFaceName), _T("Arial"));
 	CFont *font3 = new CFont;
 	font3->CreateFontIndirect(&lf);
 	m_arFonts.Add(font3);
