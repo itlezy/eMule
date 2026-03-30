@@ -1581,6 +1581,8 @@ jobs:
 
 **Why:** Users run years-old builds because they don't know updates exist.
 
+**Current state:** The legacy DNS-based update checker and its UI hooks were removed on 2026-03-30. Any future updater should be implemented as a new code path.
+
 **What:**
 - Background version check against GitHub Releases API on startup (configurable interval)
 - Show non-modal notification: "eMule 0.73.2 is available. [Download] [Remind me later] [Skip this version]"

@@ -66,3 +66,10 @@
   I slipped back into shell-style wildcard path arguments instead of using `rg` globs against a concrete directory.
 - Fix:
   pass `.\\srchybrid` as the search root and add `--glob '*.h' --glob '*.cpp'` when filtering by extension.
+
+- Error:
+  `rg` returned `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed `.\\srchybrid\\*` as a search target.
+- Cause:
+  I reused a shell wildcard path with `rg`, which expects a real directory path and optional `--glob` filters rather than a Windows wildcard path.
+- Fix:
+  pass `.\\srchybrid` as the search root and add `--glob` filters only when file-name filtering is needed.

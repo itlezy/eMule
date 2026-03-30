@@ -42,8 +42,6 @@ The last two groups are documented because they still live in the same file, but
 | `Language` | `eMule` | `RW` | Yes | Current OS / app default | UI language identifier. Changing it reloads most windows. |
 | `BringToFront` | `eMule` | `RW` | Yes | `false` | Bring the main window to the foreground on relevant events. |
 | `OnlineSignature` | `eMule` | `RW` | Yes | `false` | Enables the online signature/status output used by external tools or web pages. |
-| `UpdateNotifyTestClient` | `eMule` | `RW` | Yes | `false` | Master on/off switch for checking for new versions on startup. |
-| `Check4NewVersionDelay` | `eMule` | `RW` | Yes | `5` | Number of days between automatic version checks when version checking is enabled. |
 | `Splashscreen` | `eMule` | `RW` | Yes | `false` | Show the splash screen during startup. |
 | `StartupMinimized` | `eMule` | `RW` | Yes | `false` | Start the main window minimized. This is persisted correctly. |
 | `AutoStart` | `eMule` | `RW` | Yes | `false` | Start eMule automatically with Windows. |
@@ -176,7 +174,6 @@ The last two groups are documented because they still live in the same file, but
 | `NotifyOnLog` | `eMule` | `RW` | Yes | `false` unless enabled by user | Notify on log output. |
 | `NotifyOnImportantError` | `eMule` | `RW` | Yes | `false` unless enabled by user | Notify on important errors. |
 | `NotifierPopEveryChatMessage` | `eMule` | `RW` | Yes | `false` | Pop every chat message, not just first/important ones. |
-| `NotifierPopNewVersion` | `eMule` | `RW` | Yes | `false` | Pop a notice when a new version is detected. |
 | `NotifierUseSound` | `eMule` | `RW` | Yes | `ntfstNoSound` | Select notifier sound mode. |
 | `NotifierSoundPath` | `eMule` | `RW` | Yes | empty | Custom sound file path. |
 | `NotifierSendMail` | `eMule` | `RW` | Yes | `false` | Enable mail notifications. |
