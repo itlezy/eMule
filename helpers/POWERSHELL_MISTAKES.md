@@ -143,3 +143,10 @@
   I repeated the same mistake and launched the standalone shared-test build and the live-diff build in parallel, so both commands contended for the same `.tlog` state files.
 - Fix:
   treat all `emule-tests.vcxproj` builds as mutually exclusive when they target the same `BuildTag` output tree; never run those scripts in parallel.
+
+- Error:
+  parallel `git commit` commands in the `eMule` submodule failed with `Unable to create ...\\.git\\modules\\eMule\\index.lock: File exists`.
+- Cause:
+  I launched two commits against the same repository at the same time, so both processes contended for the submodule index lock and one commit ended up recording the wrong staged payload/message pairing.
+- Fix:
+  never parallelize `git add`/`git commit` operations that target the same repository; stage and commit those changes serially.
