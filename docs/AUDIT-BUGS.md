@@ -36,6 +36,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_013` was fixed on 2026-03-30 by removing socket self-deletion from `CClientReqSocket` and by making `CListenSocket::Process()` own final destruction after the close grace period expires.
 - `BBUG_008` and `BBUG_009` were fixed on 2026-03-30 by removing `delete this` from `TryToConnect()`, by making the surviving caller contract explicit, and by deleting failed re-ask sources at the `PartFile` iteration seam instead of inside `CUpDownClient`.
 - `BBUG_010`, `BBUG_011`, and `BBUG_012` were fixed on 2026-03-30 by moving upload-entry removal to a two-phase retire path in `CUploadQueue`, by delaying final struct destruction until all overlapped reads complete, and by making the disk thread treat retired entries as inert once the live client pointer has been detached.
+- `BBUG_022` was fixed on 2026-03-30 by replacing the `inet_ntoa()`-based `ipstr` wrappers with local stack-buffer formatting that preserves the existing dotted-IPv4 text without using Winsock's static conversion storage.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -53,7 +54,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 ### Deferred architectural work
 
 - No deferred ownership/thread-safety findings remain after the current-tree review.
-- The next active unresolved finding is `BBUG_022` (`inet_ntoa` thread-safety).
+- The 2026-03-30 audit report is now fully triaged in the current tree: every finding is either fixed or stale.
 
 ---
 
@@ -638,6 +639,7 @@ n = sprintf((char*)base, "%s\n", mbedtls_ssl_get_ciphersuite(&ssl));
 - **Category:** Network Protocol Parsing
 - **File:** `srchybrid/OtherFunctions.cpp:2520,2525`
 - **Reachability:** All threads — pervasive use
+- **Status:** FIXED on 2026-03-30 by replacing the `inet_ntoa()` wrappers with local buffer formatting that preserves the existing dotted-IPv4 output without using Winsock's shared conversion storage.
 
 **Vulnerable Code:**
 ```cpp

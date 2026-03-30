@@ -2,21 +2,22 @@
 
 ## Last Chunk
 
-- Re-triaged the remaining ownership bucket in `docs/AUDIT-BUGS.md`.
-- Confirmed from the live code that `BBUG_019`, `BBUG_023`, `BBUG_024`, and `BBUG_025` are stale in the current tree, and removed the stale ownership bucket from the deferred summary.
-- Corrected the top-level audit backlog so the next active unresolved item is now `BBUG_022` (`inet_ntoa` thread-safety).
-- This chunk is docs-only; no code changes or build rerun were needed.
+- Closed `BBUG_022` from `docs/AUDIT-BUGS.md`.
+- Updated `srchybrid/OtherFunctions.cpp` so `ipstr(uint32)` and `ipstrA(uint32)` now format IPv4 text through a local stack-buffer helper instead of relying on `inet_ntoa()`'s static conversion storage.
+- Refreshed `docs/AUDIT-BUGS.md` so `BBUG_022` is marked fixed and the audit summary now reflects that the entire 2026-03-30 report is fully triaged in the current tree.
+- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190139-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
 
 ## Current State
 
-- `docs/AUDIT-BUGS.md` no longer has a deferred ownership/thread-safety bucket; the next active unresolved audit item is `BBUG_022`.
-- The dependency workspace is still restored on the expected local `emule-build-v0.72a` branches, and the latest confirmed parent debug wrapper log remains `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-173435-build-project-eMule-Debug\eMule-Debug.log`.
-- The current working tree for this chunk only touches:
+- `docs/AUDIT-BUGS.md` now has no active unresolved findings from the 2026-03-30 audit report.
+- The dependency workspace is still restored on the expected local `emule-build-v0.72a` branches, and the latest confirmed parent debug wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190139-build-project-eMule-Debug\eMule-Debug.log`.
+- The current working tree for this chunk touches:
+  - `srchybrid/OtherFunctions.cpp`
   - `docs/AUDIT-BUGS.md`
   - `RESUME.md`
 
 ## Next Chunk
 
-- Continue `docs/AUDIT-BUGS.md` with `BBUG_022`, the `inet_ntoa` thread-safety finding in `OtherFunctions.cpp`.
-- Decide whether that next slice should stay local to the `ipstr` helpers or widen into a broader `InetNtop` migration if the live call sites make a narrow helper swap unsafe.
-- Commit this docs-only triage cleanup as a `DOC` batch, then use the next implementation chunk for `BBUG_022`.
+- Treat `docs/AUDIT-BUGS.md` as complete for the current tree unless a later audit reopens a finding.
+- If more safety work is needed, pick it from outside the 2026-03-30 audit backlog rather than extending the now-closed report.
+- Commit the `BBUG_022` code fix and the matching doc refresh as separate `FIX` and `DOC` commits once this slice is complete.
