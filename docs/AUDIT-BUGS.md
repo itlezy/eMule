@@ -27,6 +27,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
 - `BBUG_018`, `BBUG_020`, `BBUG_026`, `BBUG_028`, `BBUG_029`, and `BBUG_035` were fixed in the audit-driven guard/test pass on 2026-03-30.
 - `BBUG_014`, `BBUG_015`, `BBUG_016`, and `BBUG_043` were fixed in the connected-server snapshot hardening pass on 2026-03-30 by caching `GetCurrentServer()` once per call site before dereferencing it.
+- `BBUG_030` through `BBUG_034` were fixed in the GDI/DC cleanup pass on 2026-03-30 by replacing raw desktop-DC ownership with RAII where possible and by consolidating early-return cleanup in the meter-icon drawing helpers.
 - `BBUG_036`, `BBUG_037`, and `BBUG_044` were fixed in the runtime-guard cleanup pass on 2026-03-30 by inlining defensive zero-denominator handling in the import-progress callback and by guarding colour-popup parent notifications against dead owner windows.
 - `BBUG_038`, `BBUG_039`, `BBUG_040`, and `BBUG_041` were fixed in the UI dialog crash-hardening pass on 2026-03-30 by guarding audited `GetDlgItem()` call sites and by validating the `CPartFile` downcast once before using archive-preview-only methods.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
@@ -816,6 +817,7 @@ if (dwID == INADDR_NONE) {  // host name?
 - **Category:** Resource Leak
 - **File:** `srchybrid/MeterIcon.cpp:57-95`
 - **Reachability:** Internal — called during icon refresh
+- **Status:** FIXED on 2026-03-30 by routing the meter icon and bar-drawing failure paths through a single cleanup block that restores selected objects and frees every created DC/bitmap/brush/pen exactly once.
 
 **Vulnerable Code:**
 ```cpp
@@ -848,6 +850,7 @@ At least 5 error paths return without releasing created DCs and bitmaps. The fun
 - **Category:** Resource Leak
 - **File:** `srchybrid/TreeOptionsCtrlEx.cpp:214-346`
 - **Reachability:** Internal — control initialization
+- **Status:** FIXED on 2026-03-30 by switching the temporary desktop DC to `CWindowDC`, which releases the screen DC automatically on every exit path.
 
 **Description:**
 `CDC::FromHandle(::GetDC(HWND_DESKTOP))` wraps the screen DC in an MFC CDC object. The `ReleaseDC` at line 346 attempts release via CDC pointer dereference, but the pattern is fragile. If any exception occurs in the 130-line block between GetDC and ReleaseDC, the DC leaks.
@@ -862,6 +865,7 @@ At least 5 error paths return without releasing created DCs and bitmaps. The fun
 - **Category:** Resource Leak
 - **File:** `srchybrid/HTRichEditCtrl.cpp:1166-1170`
 - **Reachability:** Internal — rich edit rendering
+- **Status:** FIXED on 2026-03-30 by replacing the raw desktop-DC calls in the smiley/icon conversion helpers with `CWindowDC`.
 
 **Description:**
 Inside a `USE_METAFILE` block, `GetDC(HWND_DESKTOP)` is called with complex control flow before `ReleaseDC`. An exception after GetDC but before ReleaseDC leaks the handle.
@@ -876,6 +880,7 @@ Inside a `USE_METAFILE` block, `GetDC(HWND_DESKTOP)` is called with complex cont
 - **Category:** Resource Leak
 - **File:** `srchybrid/TitledMenu.cpp:113-119`
 - **Reachability:** Internal — menu rendering
+- **Status:** FIXED on 2026-03-30 by replacing the manual `Attach`/`Detach` desktop DC management with `CWindowDC`.
 
 **Description:**
 ```cpp
@@ -896,6 +901,7 @@ If an exception occurs between Attach and Detach, the DC is never released. CDC'
 - **Category:** Resource Leak
 - **File:** `srchybrid/EnBitmap.cpp:176-204`
 - **Reachability:** Internal — bitmap loading
+- **Status:** FIXED on 2026-03-30 by switching the desktop DC used for `Attach(IPicture*)` to `CWindowDC`, so early exits no longer bypass `ReleaseDC`.
 
 **Description:**
 If `CreateCompatibleBitmap` at line 188 fails or picture rendering fails, early return paths bypass the `ReleaseDC` at line 202.

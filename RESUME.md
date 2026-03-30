@@ -2,6 +2,7 @@
 
 ## Last Chunk
 
+- Hardened the audited GDI/DC lifetime paths in `MeterIcon.cpp`, `TreeOptionsCtrlEx.cpp`, `HTRichEditCtrl.cpp`, `TitledMenu.cpp`, and `EnBitmap.cpp` by replacing raw desktop-DC ownership with RAII where possible and by consolidating meter-icon cleanup on every early-return path.
 - Restored the build workspace through `workspace.ps1 setup` / `build-project`, which moved the third-party deps back onto their local `emule-build-v0.72a` branches, rebuilt the missing zlib debug library, and let `..\23-build-emule-debug-incremental.cmd` run through the `eMule` Debug build again.
 - Hardened the remaining low-risk runtime guards in `PartFile.cpp` and `ColourPopup.cpp` by inlining the import-progress zero-denominator fallback, guarding `m_nNumColumns` before division, and sending colour-popup notifications only to a live parent window.
 - Hardened the audited UI dialog crash sites in `ArchivePreviewDlg.cpp`, `PPgDirectories.cpp`, and `AddFriend.cpp` by guarding the flagged `GetDlgItem()` dereferences and by validating the archive-preview `CPartFile` downcast once before using part-file-only methods.
@@ -16,6 +17,7 @@
 
 ## Current State
 
+- `docs/AUDIT-BUGS.md` now marks `BBUG_030` through `BBUG_034` as fixed in the current tree after the GDI/DC cleanup pass.
 - `docs/AUDIT-BUGS.md` now marks `BBUG_036`, `BBUG_037`, and `BBUG_044` as fixed in the current tree after the latest runtime-guard cleanup.
 - `docs/AUDIT-BUGS.md` now marks `BBUG_038` through `BBUG_041` as fixed in the current tree after the dialog/control guard pass.
 - `workspace.ps1 setup -Config Debug` restored `eMule-cryptopp`, `eMule-miniupnp`, `eMule-ResizableLib`, and `eMule-zlib` onto their local `emule-build-v0.72a` branches, and `workspace.ps1 build-project -Config Debug -Project zlib` regenerated `eMule-zlib\contrib\vstudio\vc\x64\Debug\zlib.lib`.
@@ -35,6 +37,6 @@
 
 ## Next Chunk
 
-- Continue the low-risk crash-hardening pass from `docs/AUDIT-BUGS.md` with the remaining mechanical cleanup findings that still do not require ownership refactors, especially the GDI/DC cleanup paths in `MeterIcon.cpp`, `TreeOptionsCtrlEx.cpp`, `HTRichEditCtrl.cpp`, `TitledMenu.cpp`, and `EnBitmap.cpp`.
+- Continue the low-risk crash-hardening pass from `docs/AUDIT-BUGS.md` with the remaining small behavioural/runtime findings that still do not require ownership refactors, especially `BBUG_042` in `DownloadQueue.cpp`, the `inet_addr` ambiguity in `ED2KLink.cpp`, and the low-risk string-copy cleanups.
 - Decide whether the next seam should stay in the same shared `protocol.tests.cpp` file or split into a second guard-oriented test file before the dialog/control guard cases accumulate further.
 - Re-run the parent build once the sibling dependency environment is restored, so the connected-server guard changes and the next crash-hardening batch both get a full current-workspace compile check again.
