@@ -2,19 +2,18 @@
 
 ## Last Chunk
 
-- Added a standalone `emule-tests` console project and wired it into the solution as an opt-in target.
-- Vendored doctest `v2.5.0` under `srchybrid\tests\third_party\doctest` and added parent helper scripts to build and run the tests in Debug x64.
-- Refactored `CRing` to use index-based state instead of undefined pointer sentinels, and added regression tests covering the `BUG_006` and `BUG_007` scenarios.
-- Verified with `..\36-run-emule-tests-debug.cmd` and `..\23-build-emule-debug-incremental.cmd`.
+- Refreshed `docs\AUDIT-CODEREVIEW.md` so every finding now has a stable `CODEREV_###` identifier.
+- Marked the completed ring-buffer findings as `[DONE]` and added a short 2026-03-30 update note pointing to commit `2ee7bd7`.
+- Corrected the stale `mem2bmp` ownership note to match the current `BaseClient.cpp` call site.
 
 ## Current State
 
-- The submodule now contains a working logic-test harness under `srchybrid\tests` plus the `CRing` fix and solution registration.
-- The parent repo has new helper entry points `26-build-emule-tests-debug.cmd` and `36-run-emule-tests-debug.cmd` and needs its submodule pointer updated to the new eMule commit.
-- The test target is explicit and opt-in; normal eMule incremental builds remain unchanged.
+- The only pending change in the submodule is the `docs\AUDIT-CODEREVIEW.md` identifier/status refresh.
+- The main code and test-harness work from the previous chunk is already committed.
+- The parent repo does not need any follow-up for this documentation-only update.
 
 ## Next Chunk
 
-- Expand `emule-tests` to other logic-only seams such as MIME helpers, long-path utilities, and small protocol/parsing helpers.
-- If another `CRing` or container bug is found, add the regression test first in `srchybrid\tests` before changing production code.
-- Consider teaching `workspace.ps1` about `emule-tests` only if direct workspace-managed test builds become worth the extra plumbing.
+- Continue clearing or implementing the remaining `CODEREV_*` findings, starting with `CODEREV_001`, `CODEREV_002`, or `CODEREV_006`.
+- If more review documents are updated, keep the same stable-ID pattern instead of mixing `BUG_*`, `GAP_*`, and anonymous findings.
+- Commit this docs-only follow-up separately from future code changes to keep the audit history readable.

@@ -5,6 +5,8 @@
 **Branch:** `origin/v0.72a` (current: `v0.72a-community`)
 **Review date:** 2026-03-24
 
+**Update 2026-03-30:** `CODEREV_003`, `CODEREV_004`, and `CODEREV_011` were fixed in commit `2ee7bd7`.
+
 ---
 
 ## Scope
@@ -28,7 +30,7 @@ Primary changes in v0.72a:
 
 ---
 
-### 1. `CaptchaGenerator.cpp` — SelectObject called before NULL check — **`BUG_004`**
+### 1. `CaptchaGenerator.cpp` — SelectObject called before NULL check — **`CODEREV_001`**
 
 **File:** `srchybrid/CaptchaGenerator.cpp`
 
@@ -67,7 +69,7 @@ if (!hdc || !hdcMem || !m_hbmpCaptcha || !hBitMem || !hFont) {
 
 ---
 
-### 2. `CaptchaGenerator.cpp` — `rand() & 8` bimodal jitter — **`BUG_005`**
+### 2. `CaptchaGenerator.cpp` — `rand() & 8` bimodal jitter — **`CODEREV_002`**
 
 **File:** `srchybrid/CaptchaGenerator.cpp`, inside the letter-rendering loop:
 
@@ -84,7 +86,7 @@ This makes every CAPTCHA letter either vertically centered or shifted exactly 8 
 
 ---
 
-### 3. `Ring.h` — `m_pTail` initialized to `&buffer[-1]` (undefined behavior) — **`BUG_006`**
+### 3. `Ring.h` — `m_pTail` initialized to `&buffer[-1]` (undefined behavior) — **`CODEREV_003`** **[DONE]**
 
 **File:** `srchybrid/Ring.h`, `SetBuffer()`:
 
@@ -120,7 +122,7 @@ UINT_PTR m_nTail = 0;  // or use a "full" flag
 
 ---
 
-### 4. `Ring.h` — `operator[]` has no bounds check against `Count()` — **`BUG_007`**
+### 4. `Ring.h` — `operator[]` has no bounds check against `Count()` — **`CODEREV_004`** **[DONE]**
 
 ```cpp
 const TYPE& operator[](UINT_PTR index) const {
@@ -134,7 +136,7 @@ const TYPE& operator[](UINT_PTR index) const {
 
 ---
 
-### 5. `CreditsThread.cpp` — mask bitmap changed from 1-bit monochrome to screen color depth — **`BUG_008`**
+### 5. `CreditsThread.cpp` — mask bitmap changed from 1-bit monochrome to screen color depth — **`CODEREV_005`**
 
 **File:** `srchybrid/CreditsThread.cpp`
 
@@ -159,7 +161,7 @@ The variable is named `m_bmpMask`. If it is used anywhere as the `hbmMask` param
 
 ---
 
-### 6. `WebSocket.cpp` — `ULONGLONG` → `UINT` silent truncation in `Read()` — **`BUG_009`**
+### 6. `WebSocket.cpp` — `ULONGLONG` → `UINT` silent truncation in `Read()` — **`CODEREV_006`**
 
 **File:** `srchybrid/WebSocket.cpp` (commit `18911c5`)
 
@@ -179,7 +181,7 @@ if (fileLen == 0 || fileLen > 1024 * 1024) { ret = MBEDTLS_ERR_X509_FILE_IO_ERRO
 
 ---
 
-### 7. `emule.vcxproj` — `MBEDTLS_ALLOW_PRIVATE_ACCESS` is technical debt — **`GAP_005`**
+### 7. `emule.vcxproj` — `MBEDTLS_ALLOW_PRIVATE_ACCESS` is technical debt — **`CODEREV_007`**
 
 **File:** `srchybrid/emule.vcxproj`
 
@@ -193,7 +195,7 @@ Acceptable as a short-term migration bridge, but must be tracked. The correct fi
 
 ---
 
-### 8. `OtherFunctions.cpp` — `bmp2mem` exception-unsafe; `mem2bmp` ownership implicit
+### 8. `OtherFunctions.cpp` — `bmp2mem` exception-unsafe; `mem2bmp` ownership contract is brittle — **`CODEREV_008`**
 
 **File:** `srchybrid/OtherFunctions.cpp`
 
@@ -215,8 +217,9 @@ Separately, in `BaseClient.cpp`, the HBITMAP returned by `mem2bmp()` is passed t
 HBITMAP imgCaptcha = mem2bmp(&byBuffer[pos], nSize);
 if (imgCaptcha) {
     theApp.emuledlg->chatwnd->chatselector.ShowCaptchaRequest(this, imgCaptcha);
+    ::DeleteObject(imgCaptcha);
 ```
-There is no `DeleteObject` at the call site; ownership presumably transfers to the chat selector. This implicit contract is undocumented — if `ShowCaptchaRequest` ever changes its ownership semantics, this becomes a double-free or leak.
+The current call site deletes `imgCaptcha` immediately after `ShowCaptchaRequest()`, which means the selector must copy or consume the bitmap synchronously. That ownership contract is still undocumented and brittle — if `ShowCaptchaRequest` ever changes its handling, this becomes a use-after-free or leak.
 
 ---
 
@@ -224,7 +227,7 @@ There is no `DeleteObject` at the call site; ownership presumably transfers to t
 
 ---
 
-### 9. `CaptchaGenerator.cpp` — local variable named `m_LF` (misleading member prefix)
+### 9. `CaptchaGenerator.cpp` — local variable named `m_LF` (misleading member prefix) — **`CODEREV_009`**
 
 **File:** `srchybrid/CaptchaGenerator.cpp`
 
@@ -240,7 +243,7 @@ The `m_` prefix is a well-established MFC convention for class member variables.
 
 ---
 
-### 10. `BarShader.cpp/h` — `CDC*` → `CDC&` is a source-breaking API change
+### 10. `BarShader.cpp/h` — `CDC*` → `CDC&` is a source-breaking API change — **`CODEREV_010`**
 
 **Files:** `srchybrid/BarShader.cpp`, `srchybrid/BarShader.h`
 
@@ -262,7 +265,7 @@ The change from pointer to reference is semantically correct (a null `CDC*` woul
 
 ---
 
-### 11. `Ring.h` — `SetBuffer()` may copy wrong element count when fully wrapped
+### 11. `Ring.h` — `SetBuffer()` may copy wrong element count when fully wrapped — **`CODEREV_011`** **[DONE]**
 
 **File:** `srchybrid/Ring.h`, `SetBuffer()`:
 
@@ -279,7 +282,7 @@ Due to the initialization issue in finding 3 (`m_pTail = &dst[-1]` on constructi
 
 ---
 
-### 12. `CreditsThread.cpp` — `DrawText` now passes `-1` for string length
+### 12. `CreditsThread.cpp` — `DrawText` now passes `-1` for string length — **`CODEREV_012`**
 
 **File:** `srchybrid/CreditsThread.cpp`
 
@@ -312,18 +315,18 @@ Passing `-1` tells `DrawText` to compute the string length with `lstrlen()` on e
 
 | # | ID | File | Severity | Nature |
 |---|---|------|----------|--------|
-| 1 | **BUG_004** | `CaptchaGenerator.cpp` | **CRITICAL** | ASSERT after SelectObject with potentially NULL handles; resource leak in release builds |
-| 2 | **BUG_005** | `CaptchaGenerator.cpp` | **CRITICAL** | `rand() & 8` — bimodal output (0 or 8 only), not uniform 0–7 range |
-| 3 | **BUG_006** | `Ring.h` | **CRITICAL** | `m_pTail = &buf[-1]` on construction; `m_pTail = m_pEnd` after RemoveAll() — both UB pointers |
-| 4 | **BUG_007** | `Ring.h` | **CRITICAL** | `operator[]` has no bounds check against `Count()` — silent stale data reads |
-| 5 | **BUG_008** | `CreditsThread.cpp` | **CRITICAL** | 1-bit monochrome mask replaced with color-depth bitmap — breaks compositing if used as BitBlt mask |
-| 6 | **BUG_009** | `WebSocket.cpp` | **HIGH** | `ULONGLONG` → `UINT` silent truncation in `CFile::Read()`; `fileLen + 1` can overflow `size_t` |
-| 7 | **GAP_005** | `emule.vcxproj` | **HIGH** | `MBEDTLS_ALLOW_PRIVATE_ACCESS` — brittle migration bridge, breaks on next MbedTLS restructure |
-| 8 | — | `OtherFunctions.cpp` | **HIGH** | `bmp2mem` exception-unsafe; `mem2bmp` implicit ownership transfer |
-| 9 | — | `CaptchaGenerator.cpp` | MEDIUM | Local variable named `m_LF` — misleading member prefix on a stack variable |
-| 10 | — | `BarShader.cpp/h` | MEDIUM | `CDC*` → `CDC&` is a source-breaking API change for external consumers |
-| 11 | — | `Ring.h` | MEDIUM | `SetBuffer()` realloc may copy wrong element count when ring is fully wrapped |
-| 12 | — | `CreditsThread.cpp` | LOW | `DrawText` with `-1` re-scans for null terminator on every animation frame |
+| 1 | **`CODEREV_001`** | `CaptchaGenerator.cpp` | **CRITICAL** | ASSERT after SelectObject with potentially NULL handles; resource leak in release builds |
+| 2 | **`CODEREV_002`** | `CaptchaGenerator.cpp` | **CRITICAL** | `rand() & 8` — bimodal output (0 or 8 only), not uniform 0–7 range |
+| 3 | **`CODEREV_003`** **[DONE]** | `Ring.h` | **CRITICAL** | `m_pTail = &buf[-1]` on construction; `m_pTail = m_pEnd` after RemoveAll() — both UB pointers |
+| 4 | **`CODEREV_004`** **[DONE]** | `Ring.h` | **CRITICAL** | `operator[]` has no bounds check against `Count()` — silent stale data reads |
+| 5 | **`CODEREV_005`** | `CreditsThread.cpp` | **CRITICAL** | 1-bit monochrome mask replaced with color-depth bitmap — breaks compositing if used as BitBlt mask |
+| 6 | **`CODEREV_006`** | `WebSocket.cpp` | **HIGH** | `ULONGLONG` → `UINT` silent truncation in `CFile::Read()`; `fileLen + 1` can overflow `size_t` |
+| 7 | **`CODEREV_007`** | `emule.vcxproj` | **HIGH** | `MBEDTLS_ALLOW_PRIVATE_ACCESS` — brittle migration bridge, breaks on next MbedTLS restructure |
+| 8 | **`CODEREV_008`** | `OtherFunctions.cpp` | **HIGH** | `bmp2mem` exception-unsafe; `mem2bmp` ownership contract remains brittle |
+| 9 | **`CODEREV_009`** | `CaptchaGenerator.cpp` | MEDIUM | Local variable named `m_LF` — misleading member prefix on a stack variable |
+| 10 | **`CODEREV_010`** | `BarShader.cpp/h` | MEDIUM | `CDC*` → `CDC&` is a source-breaking API change for external consumers |
+| 11 | **`CODEREV_011`** **[DONE]** | `Ring.h` | MEDIUM | `SetBuffer()` realloc may copy wrong element count when ring is fully wrapped |
+| 12 | **`CODEREV_012`** | `CreditsThread.cpp` | LOW | `DrawText` with `-1` re-scans for null terminator on every animation frame |
 
 ---
 
