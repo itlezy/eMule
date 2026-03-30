@@ -42,7 +42,6 @@ The last two groups are documented because they still live in the same file, but
 | `Language` | `eMule` | `RW` | Yes | Current OS / app default | UI language identifier. Changing it reloads most windows. |
 | `BringToFront` | `eMule` | `RW` | Yes | `false` | Bring the main window to the foreground on relevant events. |
 | `OnlineSignature` | `eMule` | `RW` | Yes | `false` | Enables the online signature/status output used by external tools or web pages. |
-| `MiniMule` | `eMule` | `RW` | Yes | `true` | Enables the MiniMule mini-window feature. |
 | `UpdateNotifyTestClient` | `eMule` | `RW` | Yes | `false` | Master on/off switch for checking for new versions on startup. |
 | `Check4NewVersionDelay` | `eMule` | `RW` | Yes | `5` | Number of days between automatic version checks when version checking is enabled. |
 | `Splashscreen` | `eMule` | `RW` | Yes | `false` | Show the splash screen during startup. |

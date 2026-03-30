@@ -62,6 +62,7 @@ Where we have proven implementations to port from, we say so. Where we are propo
 | IOCP async file writes (PartFileWriteThread) | ✅ Done |
 | Async overlapped upload disk reads | ✅ Done |
 | PeerCache removed | ✅ Done |
+| MiniMule / IE-hosted mini window removed | ✅ Done |
 | ARM64 manifest | ✅ Done |
 | CList → CRing for rate tracking | ✅ Done |
 | Broadband upload slot controller (BBMaxUpClientsAllowed) | ✅ Done |

@@ -862,7 +862,6 @@ set(EMULE_SOURCES
     ListViewSearchDlg.cpp
     ListViewWalkerPropertySheet.cpp
     MetaDataDlg.cpp
-    MiniMule.cpp
     MuleSystrayDlg.cpp
     NetworkInfoDlg.cpp
     PreviewDlg.cpp
@@ -898,7 +897,6 @@ set(EMULE_SOURCES
     GradientStatic.cpp
     HTRichEditCtrl.cpp
     I18n.cpp
-    IESecurity.cpp
     IconStatic.cpp
     LayeredWindowHelperST.cpp
     ListBoxST.cpp

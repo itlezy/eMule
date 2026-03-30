@@ -90,20 +90,16 @@ The following MFC dialog classes have constructors with empty bodies. These are 
 
 *See REFAC_012 in REFACTOR-TASKS.md*
 
-Ten blocks of completely dead code, gated with `#if 0`. None of these compile. They represent abandoned experiments or design alternatives that were never removed:
+Remaining completely dead code, gated with `#if 0`. None of these compile. They represent abandoned experiments or design alternatives that were never removed:
 
 | File | Lines | Description |
 |------|-------|-------------|
 | `srchybrid/EmuleDlg.cpp` | ~344–356 | Abandoned font-size UI experiment — comment says "introduces new glitches" |
 | `srchybrid/DialogMinTrayBtn.cpp` | ~25–36 | Template/non-template compilation switch (always uses `#else` path) |
-| `srchybrid/IESecurity.cpp` | ~213 | Disabled security code |
-| `srchybrid/MiniMule.cpp` | ~559, ~616 | Two dead blocks |
 | `srchybrid/MuleListCtrl.cpp` | ~366, ~452 | Two dead blocks |
 | `srchybrid/OtherFunctions.cpp` | ~3175 | Dead utility code |
 | `srchybrid/SelfTest.cpp` | ~22 | Disabled self-test |
 | `srchybrid/kademlia/io/DataIO.cpp` | ~494 | Dead Kad I/O path |
-
-**Total:** ~300–400 lines that never compile and cannot execute.
 
 **Action:** Delete all `#if 0` ... `#endif` blocks. *See REFAC_012 in REFACTOR-TASKS.md*
 
