@@ -42,14 +42,18 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 ### Stale after review
 
 - `BBUG_017` is stale because `srchybrid/WebServer.cpp` was removed with the embedded web server.
+- `BBUG_019` is stale after inspection because `CTaskbarNotifier::CreateRgnFromBitmap()` still has a single-owner `pBitmapBits` cleanup path in the current tree, so the audited double-free concern does not materialize as written.
 - `BBUG_021` is stale because `srchybrid/SendMail.cpp` was removed with the SMTP notifier and TLS mail path.
+- `BBUG_023` is stale after inspection because the audited `CList` erase-during-iteration pattern in `CDownloadQueue::RemoveSource()` is valid for MFC `CList`, and the intervening `CDownloadListCtrl::RemoveSource()` call only mutates UI list state, not the A4AF lists being iterated.
+- `BBUG_024` is stale after inspection because `CSharedFileList::FindSharedFiles()` is using a known-safe MFC `CMap::GetNextAssoc()` plus `RemoveKey(key)` pattern in the current container model.
+- `BBUG_025` is stale after inspection because `CColourPopup` is self-owned and only heap-allocated from `CColorButton`, which does not retain a popup pointer that could dangle after `OnNcDestroy()`.
 - `BBUG_027` is stale because `srchybrid/WebServer.cpp` was removed with the embedded web server.
 - `BBUG_050` is stale after inspection because `CDeletedClient` only stores scalar metadata plus a flat per-IP array of `{port, credits}` snapshots, so tracked-entry destruction order does not participate in any observable ownership relationship.
 
 ### Deferred architectural work
 
-- The remaining raw-pointer lifetime findings (`BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
-- The remaining active backlog is now dominated by ownership/thread-safety work rather than low-risk guard or cleanup bugs.
+- No deferred ownership/thread-safety findings remain after the current-tree review.
+- The next active unresolved finding is `BBUG_022` (`inet_ntoa` thread-safety).
 
 ---
 
@@ -542,6 +546,7 @@ The only protection against `GetFileSize() == 0` is the ASSERT on the previous l
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/TaskbarNotifier.cpp:504-623`
 - **Reachability:** Internal — UI notification code
+- **Status:** STALE on 2026-03-30 after inspection because the current-tree `pBitmapBits` cleanup is still single-owner and does not actually double-free the buffer.
 
 **Vulnerable Code:**
 ```cpp
@@ -665,6 +670,7 @@ CStringA ipstrA(uint32 nIP)
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/DownloadQueue.cpp:639-648`
 - **Reachability:** Internal — A4AF source processing
+- **Status:** STALE on 2026-03-30 after inspection because the current `CList` iteration/removal pattern is valid for MFC `CList`, and the intervening UI removal call does not mutate the iterated source lists.
 
 **Vulnerable Code:**
 ```cpp
@@ -695,6 +701,7 @@ While iterating `m_OtherRequests_list`, the code calls `RemoveAt(pos1)` on the s
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/SharedFileList.cpp:800-814`
 - **Reachability:** Internal — file list cleanup
+- **Status:** STALE on 2026-03-30 after inspection because the current-tree MFC `CMap` iteration uses a known-safe `GetNextAssoc()` plus `RemoveKey(key)` pattern.
 
 **Vulnerable Code:**
 ```cpp
@@ -721,6 +728,7 @@ for (POSITION pos = m_Files_map.GetStartPosition(); pos != NULL;) {
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/ColourPopup.cpp:392-396`
 - **Reachability:** Internal — UI popup destruction
+- **Status:** STALE on 2026-03-30 after inspection because `CColourPopup` is still self-owned and only spawned from `CColorButton`, which keeps no popup pointer that could dangle after `OnNcDestroy()`.
 
 **Vulnerable Code:**
 ```cpp
