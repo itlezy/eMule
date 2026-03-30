@@ -55,6 +55,7 @@
 #include "PreviewDlg.h"
 #include "Exceptions.h"
 #include "ClientUDPSocket.h"
+#include "ProtocolGuards.h"
 #include "shahashset.h"
 #include "Log.h"
 #include "CaptchaGenerator.h"
@@ -71,18 +72,6 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 	static const uint32 MAX_HELLO_PACKET_TAGS = 256;
-
-	/**
-	 * Rejects impossible or hostile tag counts before entering the per-tag parsing loop.
-	 */
-	bool HasSaneTagCount(CSafeMemFile &data, uint32 tagcount, uint32 maxTagCount)
-	{
-		const ULONGLONG uPosition = data.GetPosition();
-		const ULONGLONG uLength = data.GetLength();
-		return uPosition <= uLength
-			&& tagcount <= maxTagCount
-			&& static_cast<ULONGLONG>(tagcount) <= (uLength - uPosition);
-	}
 }
 
 IMPLEMENT_DYNAMIC(CClientException, CException)
@@ -405,7 +394,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 	uint32 tagcount = data.ReadUInt32();
 	if (bDbgInfo)
 		m_strHelloInfo.AppendFormat(_T("  Tags=%u"), tagcount);
-	if (!HasSaneTagCount(data, tagcount, MAX_HELLO_PACKET_TAGS)) {
+	if (!HasSaneTagCount(data.GetPosition(), data.GetLength(), tagcount, MAX_HELLO_PACKET_TAGS)) {
 		DebugLogWarning(_T("Rejected malformed client hello with %u tags"), tagcount);
 		return false;
 	}
@@ -800,7 +789,7 @@ void CUpDownClient::ProcessMuleInfoPacket(const uchar *pachPacket, uint32 nSize)
 	uint32 tagcount = data.ReadUInt32();
 	if (bDbgInfo)
 		m_strMuleInfo.AppendFormat(_T("  Tags=%u"), tagcount);
-	if (!HasSaneTagCount(data, tagcount, MAX_HELLO_PACKET_TAGS)) {
+	if (!HasSaneTagCount(data.GetPosition(), data.GetLength(), tagcount, MAX_HELLO_PACKET_TAGS)) {
 		DebugLogWarning(_T("Rejected malformed client emule info with %u tags"), tagcount);
 		return;
 	}

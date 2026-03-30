@@ -23,6 +23,7 @@
 #include "emsocket.h"
 #include "AsyncProxySocketLayer.h"
 #include "Packets.h"
+#include "ProtocolGuards.h"
 #include "OtherFunctions.h"
 #include "UploadBandwidthThrottler.h"
 #include "Preferences.h"
@@ -352,7 +353,7 @@ void CEMSocket::OnReceive(int nErrorCode)
 			}
 
 			// Security: Check for buffer overflow (2MB)
-			if (pHeader->packetlength - 1 > sizeof GlobalReadBuffer) {
+			if (!CanReadTcpPacketPayload(pHeader->packetlength, sizeof GlobalReadBuffer)) {
 				OnError(ERR_TOOBIG);
 				return;
 			}

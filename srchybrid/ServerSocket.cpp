@@ -35,6 +35,7 @@
 #include "SearchDlg.h"
 #include "IPFilter.h"
 #include "Log.h"
+#include "ProtocolGuards.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -45,18 +46,6 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 	static const uint32 MAX_SERVERIDENT_TAGS = 256;
-
-	/**
-	 * Rejects impossible or hostile tag counts before entering the per-tag parsing loop.
-	 */
-	bool HasSaneTagCount(CSafeMemFile &data, uint32 tagcount, uint32 maxTagCount)
-	{
-		const ULONGLONG uPosition = data.GetPosition();
-		const ULONGLONG uLength = data.GetLength();
-		return uPosition <= uLength
-			&& tagcount <= maxTagCount
-			&& static_cast<ULONGLONG>(tagcount) <= (uLength - uPosition);
-	}
 }
 
 
@@ -446,7 +435,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 				uint32 nTags = data.ReadUInt32();
 				if (thePrefs.GetDebugServerTCPLevel() > 0)
 					strInfo.AppendFormat(_T("  Tags=%u"), nTags);
-				if (!HasSaneTagCount(data, nTags, MAX_SERVERIDENT_TAGS)) {
+				if (!HasSaneTagCount(data.GetPosition(), data.GetLength(), nTags, MAX_SERVERIDENT_TAGS)) {
 					DebugLogWarning(_T("ServerMsg - OP_ServerIdent: rejected malformed tag count %u"), nTags);
 					break;
 				}

@@ -25,6 +25,7 @@
 #include "OtherFunctions.h"
 #include "ServerList.h"
 #include "Opcodes.h"
+#include "ProtocolGuards.h"
 #include "SafeFile.h"
 #include "PartFile.h"
 #include "Packets.h"
@@ -176,7 +177,7 @@ void CUDPSocket::OnReceive(int nErrorCode)
 		}
 
 		/** Require the protocol byte and opcode byte before touching the UDP payload header. */
-		if (nPayLoadLen < 2) {
+		if (!HasUdpPayloadHeader(nPayLoadLen)) {
 			if (thePrefs.GetDebugServerUDPLevel() > 0)
 				Debug(_T("***NOTE: ServerUDPMessage from %s:%u - Packet too short (%d bytes)\n"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4, nPayLoadLen);
 		} else if (pBuffer[0] == OP_EDONKEYPROT)
