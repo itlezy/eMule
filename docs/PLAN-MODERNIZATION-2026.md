@@ -403,30 +403,30 @@ Separate worker threads (already exist):
 
 ---
 
-### D-03 Fast Kad / Safe Kad
+### D-03 Fast Kad / Safe Kad [DONE: `4798953`]
 
 **Why:** Cold-start Kad bootstrap is slow (can take 5+ minutes to reach `Connected` state).
 
 **What (port from eMuleAI's FastKad.cpp/h):**
-- Cache last-seen Kad nodes in `nodes.dat` with timestamps
-- On startup, immediately contact the 20 most-recently-seen nodes instead of waiting for bootstrap response
-- SafeKad: pause Kad operations during IP changes / reconnects to avoid ghost entries in routing table
-- Expose Kad bootstrap progress bar in status bar
+- Learn Kad response times and use them to shorten or extend pending search timeout cleanup
+- Track Kad node identity by `IP:UDPPort`, reject conflicting IDs, and temporarily ban verified fast-flipping identities when enabled
+- Clear Fast Kad / Safe Kad caches on Kad reconnect-style firewall rechecks and full shutdown
+- Expose Kad bootstrap progress as status-bar text while the bootstrap list is being consumed
 
 **Effort:** M
 **Dependency:** none
 
 ---
 
-### D-04 Kademlia Flood Protection
+### D-04 Kademlia Flood Protection [DONE: `4798953`]
 
 **Why:** Malicious nodes can flood a Kad ID with fake publish operations, poisoning source lists.
 
 **What:**
 - Rate-limit incoming `KADEMLIA2_PUBLISH_SOURCE_REQ` per source IP
-- Validate published sources (IP must be routable, port in valid range)
-- Track publish-rate per contact; demote contacts that exceed threshold
-- Configurable flood threshold in advanced preferences
+- Validate published sources, including source type, source port, and low-ID buddy metadata completeness
+- Track abusive senders through Safe Kad and expire matching routing contacts when the publish flood threshold escalates to a ban
+- Add configurable flood-threshold and bad-node-ban toggles in advanced preferences
 
 **Effort:** M
 **Dependency:** none

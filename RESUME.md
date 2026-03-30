@@ -2,20 +2,26 @@
 
 ## Last Chunk
 
-- Removed the stray `Win32` and `ARM64` platform entries from `srchybrid/emule.slnx`, so the main solution metadata now matches the x64-only project setup.
-- Simplified the remaining constant common-controls compatibility branches in the touched UI code under the Windows 10+/x64-only policy, including toolbar sizing and style handling in `srchybrid/ChatWnd.cpp`, `srchybrid/KademliaWnd.cpp`, `srchybrid/SearchResultsWnd.cpp`, `srchybrid/ToolbarWnd.cpp`, `srchybrid/TransferWnd.cpp`, `srchybrid/MuleToolBarCtrl.cpp`, `srchybrid/ListCtrlX.cpp`, `srchybrid/MuleListCtrl.cpp`, `srchybrid/ToolTipCtrlX.cpp`, `srchybrid/Preferences.cpp`, and `srchybrid/Emule.cpp`.
-- Normalized the remaining `IDS_TASKBARPROGRESS` strings which still mentioned `Windows 7` to the generic `Enable taskbar progress integration` wording across the touched localized `.rc` files.
-- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-220035-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
+- Implemented D-03 / D-04 Kad hardening in `4798953` (`FIX port Fast Kad Safe Kad and Kad publish guards`).
+- Added `FastKad`, `SafeKad`, and `KadPublishGuard` helpers and wired them into Kad search timeout handling, routing admission/cleanup, hello/challenge verification, publish-source validation, and bootstrap progress reporting.
+- Added advanced-preference wiring for `BanBadKadNodes` and `KadPublishSourceThrottle`, including `PPgTweaks` controls and localized strings.
+- Added shared Kad regression coverage in the sibling test repo via `a2c7638` (`TEST add Kad guard regression coverage`).
+- Validation passed:
+  - Main build: `..\23-build-emule-debug-incremental.cmd`
+  - Wrapper log: `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-223157-build-project-eMule-Debug\eMule-Debug.log`
+  - Shared tests: `C:\prj\p2p\eMule\eMulebb\eMule-build-tests\build\default\x64\Debug\emule-tests.exe`
+  - Test result: `42` cases passed, `94` assertions passed
 
 ## Current State
 
-- The main app metadata, manifest path, and touched UI code now align with the x64-only Windows 10+ baseline.
-- The remaining live `m_ullComCtrlVer` references in the main app are down to the stored value in `srchybrid/Emule.h` / `srchybrid/Emule.cpp`; the constant UI fallback branches in this pass are gone.
-- The latest validation baseline is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-220035-build-project-eMule-Debug\eMule-Debug.log`.
-- The language solution still has the previously noted unrelated `IDS_COMCTRL32_DLL_TOOOLD` resource breakage.
+- Fast Kad now learns recent response times and uses that estimate to avoid fixed Kad search jump-start timing.
+- Safe Kad now tracks node identity per `IP:UDPPort`, keeps short-lived problematic-node state, and can temporarily ban verified fast-flipping identities when enabled.
+- `KADEMLIA2_PUBLISH_SOURCE_REQ` now has dedicated per-IP throttling plus stricter source and buddy metadata validation on top of the generic packet tracker.
+- The Kad status text now shows bootstrap progress while consuming the bootstrap list.
+- The tree still has the unrelated user-side `AGENTS.md` modification in the main repo working tree; leave it alone unless explicitly requested.
 
 ## Next Chunk
 
-- If the legacy cleanup continues, audit whether the remaining stored `m_ullComCtrlVer` value can be removed entirely or replaced with a clearer invariant now that the supported baseline is fixed.
-- Review remaining Windows-version-named comments, assets, and resource strings outside the touched files, especially where they are now just naming noise rather than live compatibility behavior.
-- Keep the `20260330-220035` parent-wrapper debug log as the validation baseline for this cleanup chunk.
+- Revisit the remaining D-03 gap from the modernization plan: persisted recency-aware `nodes.dat` reuse and stronger startup prioritization of recently seen Kad contacts if we want closer parity with the eMuleAI description.
+- Audit whether Safe Kad should also pause or suppress selected routing actions during explicit reconnect / IP-change transitions instead of relying only on cache cleanup during `RecheckFirewalled()`.
+- If Kad work continues, add focused regression coverage for the status-bar bootstrap text path or additional publish-source malformed-tag cases if a concrete bug appears.
