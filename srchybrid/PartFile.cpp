@@ -38,6 +38,7 @@
 #include "Packets.h"
 #include "Preferences.h"
 #include "SafeFile.h"
+#include "ServerConnectionGuards.h"
 #include "SharedFileList.h"
 #include "ListenSocket.h"
 #include "ServerConnect.h"
@@ -2377,9 +2378,12 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 			Kademlia::CSearchManager::StopSearch(GetKadFileSearchID(), true);
 
 		// check if we want new sources from server
+		const CServer *pCurrentServer = theApp.serverconnect->GetCurrentServer();
+		const bool bServerSupportsLargeFiles = HasConnectedServerCapability(theApp.serverconnect->IsConnected(), pCurrentServer,
+			pCurrentServer != NULL && pCurrentServer->SupportsLargeFilesTCP());
 		if (!m_bLocalSrcReqQueued && (!m_LastSearchTime || curTick >= m_LastSearchTime + SERVERREASKTIME) && theApp.serverconnect->IsConnected()
 			&& GetMaxSourcePerFileSoft() > GetSourceCount() && !m_stopped
-			&& (!IsLargeFile() || (theApp.serverconnect->GetCurrentServer() != NULL && theApp.serverconnect->GetCurrentServer()->SupportsLargeFilesTCP())))
+			&& (!IsLargeFile() || bServerSupportsLargeFiles))
 		{
 			m_bLocalSrcReqQueued = true;
 			theApp.downloadqueue->SendLocalSrcRequest(this);
@@ -2418,9 +2422,12 @@ bool CPartFile::CanAddSource(uint32 userid, uint16 port, uint32 serverip, uint16
 	}
 
 	// MOD Note: Do not change this part - Merkur
+	const CServer *pCurrentServer = theApp.serverconnect->GetCurrentServer();
 	if (theApp.serverconnect->IsConnected()) {
 		if (theApp.serverconnect->IsLowID()) {
-			if (theApp.serverconnect->GetClientID() == userid && theApp.serverconnect->GetCurrentServer()->GetIP() == serverip && theApp.serverconnect->GetCurrentServer()->GetPort() == serverport)
+			const bool bMatchesCurrentServer = MatchesConnectedServerEndpoint(theApp.serverconnect->IsConnected(), pCurrentServer,
+				pCurrentServer != NULL ? pCurrentServer->GetIP() : 0, pCurrentServer != NULL ? pCurrentServer->GetPort() : 0, serverip, serverport);
+			if (theApp.serverconnect->GetClientID() == userid && bMatchesCurrentServer)
 				return false;
 			if (theApp.serverconnect->GetLocalIP() == userid)
 				return false;

@@ -35,6 +35,7 @@
 #include "Friend.h"
 #include "Statistics.h"
 #include "ServerConnect.h"
+#include "ServerConnectionGuards.h"
 #include "DownloadQueue.h"
 #include "UploadQueue.h"
 #include "SearchFile.h"
@@ -1058,9 +1059,11 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 
 	uint32 dwIP;
 	uint16 nPort;
-	if (theApp.serverconnect->IsConnected()) {
-		dwIP = theApp.serverconnect->GetCurrentServer()->GetIP();
-		nPort = theApp.serverconnect->GetCurrentServer()->GetPort();
+	const CServer *pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	if (HasConnectedServerSnapshot(theApp.serverconnect->IsConnected(), pCurrentServer)) {
+		/** Cache the current server once so a disconnect cannot null it between reads. */
+		dwIP = pCurrentServer->GetIP();
+		nPort = pCurrentServer->GetPort();
 #ifdef _DEBUG
 		if (dwIP == theApp.serverconnect->GetLocalIP()) {
 			dwIP = 0;

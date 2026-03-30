@@ -34,6 +34,7 @@
 #include "Statistics.h"
 #include "emuledlg.h"
 #include "opcodes.h"
+#include "ServerConnectionGuards.h"
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/kademlia/search.h"
@@ -1208,8 +1209,9 @@ bool CSearchResultsWnd::DoNewEd2kSearch(SSearchParams *pParams)
 
 	delete m_searchpacket;
 	m_searchpacket = NULL;
-	bool bServerSupports64Bit = theApp.serverconnect->GetCurrentServer() != NULL
-		&& (theApp.serverconnect->GetCurrentServer()->GetTCPFlags() & SRV_TCPFLG_LARGEFILES);
+	const CServer *pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	const bool bServerSupports64Bit = HasConnectedServerCapability(theApp.serverconnect->IsConnected(), pCurrentServer,
+		pCurrentServer != NULL && (pCurrentServer->GetTCPFlags() & SRV_TCPFLG_LARGEFILES) != 0);
 	bool bPacketUsing64Bit = false;
 	CSafeMemFile data(100);
 	if (!GetSearchPacket(data, pParams, bServerSupports64Bit, &bPacketUsing64Bit) || data.GetLength() == 0)
@@ -1655,9 +1657,9 @@ void CSearchResultsWnd::OnSysCommand(UINT nID, LPARAM lParam)
 
 bool CSearchResultsWnd::CanSearchRelatedFiles() const
 {
-	return theApp.serverconnect->IsConnected()
-		&& theApp.serverconnect->GetCurrentServer() != NULL
-		&& theApp.serverconnect->GetCurrentServer()->GetRelatedSearchSupport();
+	const CServer *pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	return HasConnectedServerCapability(theApp.serverconnect->IsConnected(), pCurrentServer,
+		pCurrentServer != NULL && pCurrentServer->GetRelatedSearchSupport());
 }
 
 // https://forum.emule-project.net/index.php?showtopic=79371&view=findpost&p=564252 )

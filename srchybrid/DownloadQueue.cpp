@@ -31,6 +31,7 @@
 #include "Packets.h"
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "kademlia/utils/uint128.h"
+#include "ServerConnectionGuards.h"
 #include "ipfilter.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
@@ -1337,8 +1338,13 @@ void CDownloadQueue::ProcessLocalRequests()
 				cur_file->m_bLocalSrcReqQueued = false;
 				cur_file->m_LastSearchTime = curTick;
 				m_localServerReqQueue.RemoveAt(posNextRequest);
+				const CServer *pCurrentServer = theApp.serverconnect->GetCurrentServer();
+				const bool bServerSupportsLargeFiles = HasConnectedServerCapability(theApp.serverconnect->IsConnected(), pCurrentServer,
+					pCurrentServer != NULL && pCurrentServer->SupportsLargeFilesTCP());
+				const bool bServerSupportsSourceObfuscation = HasConnectedServerCapability(theApp.serverconnect->IsConnected(), pCurrentServer,
+					pCurrentServer != NULL && pCurrentServer->SupportsGetSourcesObfuscation());
 
-				if (cur_file->IsLargeFile() && (theApp.serverconnect->GetCurrentServer() == NULL || !theApp.serverconnect->GetCurrentServer()->SupportsLargeFilesTCP())) {
+				if (cur_file->IsLargeFile() && !bServerSupportsLargeFiles) {
 					ASSERT(0);
 					DebugLogError(_T("Large file (%s) on local request queue for server without support for large files"), (LPCTSTR)cur_file->GetFileName());
 					continue;
@@ -1357,7 +1363,7 @@ void CDownloadQueue::ProcessLocalRequests()
 				}
 
 				uint8 byOpcode;
-				if (thePrefs.IsCryptLayerEnabled() && theApp.serverconnect->GetCurrentServer() != NULL && theApp.serverconnect->GetCurrentServer()->SupportsGetSourcesObfuscation())
+				if (thePrefs.IsCryptLayerEnabled() && bServerSupportsSourceObfuscation)
 					byOpcode = OP_GETSOURCES_OBFU;
 				else
 					byOpcode = OP_GETSOURCES;

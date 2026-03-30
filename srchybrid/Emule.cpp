@@ -38,6 +38,7 @@
 #include "FriendList.h"
 #include "ClientUDPSocket.h"
 #include "UpDownClient.h"
+#include "ServerConnectionGuards.h"
 #include "DownloadQueue.h"
 #include "IPFilter.h"
 #include "IP2Country.h"
@@ -880,23 +881,25 @@ void CemuleApp::OnlineSig() // Added By Bouc7
 		char buffer[20];
 		CStringA strBuff;
 		if (IsConnected()) {
+			const CServer *pCurrentServer = serverconnect->GetCurrentServer();
+			const bool bHasCurrentServer = HasConnectedServerSnapshot(serverconnect->IsConnected(), pCurrentServer);
 			file.Write("1|", 2);
-			if (serverconnect->IsConnected())
-				strBuff = serverconnect->GetCurrentServer()->GetListName();
+			if (bHasCurrentServer)
+				strBuff = pCurrentServer->GetListName();
 			else
 				strBuff = "Kademlia";
 			file.Write(strBuff, strBuff.GetLength());
 
 			file.Write("|", 1);
-			if (serverconnect->IsConnected())
-				strBuff = serverconnect->GetCurrentServer()->GetAddress();
+			if (bHasCurrentServer)
+				strBuff = pCurrentServer->GetAddress();
 			else
 				strBuff = "0.0.0.0";
 			file.Write(strBuff, strBuff.GetLength());
 
 			file.Write("|", 1);
-			if (serverconnect->IsConnected()) {
-				_itoa(serverconnect->GetCurrentServer()->GetPort(), buffer, 10);
+			if (bHasCurrentServer) {
+				_itoa(pCurrentServer->GetPort(), buffer, 10);
 				file.Write(buffer, (UINT)strlen(buffer));
 			} else
 				file.Write("0", 1);
