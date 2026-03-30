@@ -202,6 +202,7 @@ public:
 	static WINDOWPLACEMENT EmuleWindowPlacement;
 	static uint32	maxGraphDownloadRate;
 	static uint32	maxGraphUploadRate;
+	static uint32	maxGraphDownloadRateEstimated;
 	static uint32	maxGraphUploadRateEstimated;
 	static bool		beepOnError;
 	static bool		confirmExit;
@@ -937,10 +938,8 @@ public:
 	static bool		FilterLANIPs()						{ return filterLANIPs; }
 	static bool		GetAllowLocalHostIP()				{ return m_bAllocLocalHostIP; }
 	static bool		IsOnlineSignatureEnabled()			{ return onlineSig; }
-	static uint32	GetMaxGraphDownloadRate()			{ return maxGraphDownloadRate; }
-	static void		SetMaxGraphDownloadRate(uint32 in)	{ maxGraphDownloadRate = (in ? in : 96); }
+	static uint32	GetMaxGraphDownloadRate();
 	static uint32	GetMaxGraphUploadRate(bool bEstimateIfUnlimited);
-	static void		SetMaxGraphUploadRate(uint32 in);
 
 	static uint32	GetMaxDownload();
 	static uint64	GetMaxDownloadInBytesPerSec(bool dynamic = false);
@@ -1329,6 +1328,7 @@ public:
 	static bool		DoFlashOnNewMessage()				{ return m_bIconflashOnNewMessage; }
 	static void		IniCopy(const CString &si, const CString &di);
 
+	static void		EstimateMaxDownloadCap(uint32 nCurrentDownload);
 	static void		EstimateMaxUploadCap(uint32 nCurrentUpload);
 	static bool		GetAllocCompleteMode()				{ return m_bAllocFull; }
 	static void		SetAllocCompleteMode(bool in)		{ m_bAllocFull = in; }

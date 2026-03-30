@@ -1289,12 +1289,16 @@ LRESULT CemuleDlg::OnWMData(WPARAM, LPARAM lParam)
 				clcommand.Delete(0, 7);
 				int pos = clcommand.Find(_T(','));
 				if (pos > 0) {
-					if (clcommand[pos + 1])
-						thePrefs.SetMaxDownload(_tstoi(CPTR(clcommand, pos + 1)));
+					if (clcommand[pos + 1]) {
+						const int iDownloadLimit = _tstoi(CPTR(clcommand, pos + 1));
+						thePrefs.SetMaxDownload(iDownloadLimit > 0 ? static_cast<uint32>(iDownloadLimit) : 0);
+					}
 					clcommand.Truncate(pos);
 				}
-				if (!clcommand.IsEmpty())
-					thePrefs.SetMaxUpload(_tstoi(clcommand));
+				if (!clcommand.IsEmpty()) {
+					const int iUploadLimit = _tstoi(clcommand);
+					thePrefs.SetMaxUpload(iUploadLimit > 0 ? static_cast<uint32>(iUploadLimit) : 0);
+				}
 			} else if (clcommand == _T("reloadipf"))
 				theApp.ipfilter->LoadFromDefaultFile();
 			else if (clcommand == _T("restore"))
@@ -1792,7 +1796,7 @@ void CemuleDlg::OnTrayRButtonUp(CPoint pt)
 	try {
 		m_pSystrayDlg = new CMuleSystrayDlg(this, pt
 			, thePrefs.GetMaxGraphUploadRate(true), thePrefs.GetMaxGraphDownloadRate()
-			, thePrefs.GetMaxUpload(), thePrefs.GetMaxDownload());
+			, thePrefs.m_maxupload, thePrefs.m_maxdownload);
 	} catch (...) {
 		return;
 	}
@@ -2268,8 +2272,8 @@ void CemuleDlg::QuickSpeedOther(UINT nID)
 		thePrefs.SetMaxUpload(1);
 		thePrefs.SetMaxDownload(1);
 	} else if (nID == MP_QS_UA) {
-		thePrefs.SetMaxUpload(thePrefs.GetMaxGraphUploadRate(true));
-		thePrefs.SetMaxDownload(thePrefs.GetMaxGraphDownloadRate());
+		thePrefs.SetMaxUpload(0);
+		thePrefs.SetMaxDownload(0);
 	}
 }
 

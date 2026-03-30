@@ -51,9 +51,40 @@ CPreferences thePrefs;
 
 namespace
 {
+	static const uint32 s_uDefaultUploadLimit = 20000;
+	static const uint32 s_uDefaultDownloadLimit = 100000;
 	static const uint16 s_uStartupTcpPortMin = 21756;
 	static const uint16 s_uStartupTcpPortMax = 65500;
 	static const uint16 s_uStartupUdpPortOffset = 10;
+
+	/**
+	 * @brief Convert persisted bandwidth input into the live limit format.
+	 *
+	 * A stored value of `0` or any negative number now means "unlimited".
+	 */
+	static uint32 NormalizeBandwidthLimit(const int nConfiguredLimit)
+	{
+		if (nConfiguredLimit <= 0)
+			return UNLIMITED;
+		return static_cast<uint32>(nConfiguredLimit);
+	}
+
+	/**
+	 * @brief Persist unlimited limits as `0` so the single-limit UI round-trips cleanly.
+	 */
+	static int SerializeBandwidthLimit(const uint32 uConfiguredLimit)
+	{
+		return (uConfiguredLimit == UNLIMITED) ? 0 : static_cast<int>(uConfiguredLimit);
+	}
+
+	/**
+	 * @brief Keep graph auto-ranging anchored to the last useful ceiling or the latest live estimate.
+	 */
+	static uint32 GetEstimatedGraphRange(const uint32 uFallbackRange, const uint32 uEstimatedRate)
+	{
+		const uint32 uEstimatedRange = (uEstimatedRate != 0) ? (uEstimatedRate + 4) : 0;
+		return max(uFallbackRange, uEstimatedRange);
+	}
 
 	static void SetResolvedBindAddress(const CString &strResolvedAddress
 		, CStringW &rstrBindAddrW
@@ -251,6 +282,7 @@ uchar	CPreferences::userhash[MDX_DIGEST_SIZE];
 WINDOWPLACEMENT CPreferences::EmuleWindowPlacement;
 uint32	CPreferences::maxGraphDownloadRate;
 uint32	CPreferences::maxGraphUploadRate;
+uint32	CPreferences::maxGraphDownloadRateEstimated = 0;
 uint32	CPreferences::maxGraphUploadRateEstimated = 0;
 bool	CPreferences::beepOnError;
 bool	CPreferences::m_bIconflashOnNewMessage;
@@ -1631,8 +1663,8 @@ void CPreferences::SavePreferences()
 	ini.WriteFloat(_T("BBBoostLowRatioFiles"), m_bbBoostLowRatioFiles);
 	ini.WriteFloat(_T("BBBoostLowRatioFilesBy"), m_bbBoostLowRatioFilesBy);
 	ini.WriteInt(_T("BBDeboostLowIDs"), m_bbDeboostLowIDs);
-	ini.WriteInt(_T("MaxUpload"), m_maxupload);
-	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
+	ini.WriteInt(_T("MaxUpload"), SerializeBandwidthLimit(m_maxupload));
+	ini.WriteInt(_T("MaxDownload"), SerializeBandwidthLimit(m_maxdownload));
 	ini.WriteInt(_T("MaxConnections"), maxconnections);
 	ini.WriteInt(_T("MaxHalfConnections"), maxhalfconnections);
 	ini.WriteBool(_T("ConditionalTCPAccept"), m_bConditionalTCPAccept);
@@ -1650,8 +1682,6 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("StatGraphsInterval"), trafficOMeterInterval);
 	ini.WriteInt(_T("StatsInterval"), statsInterval);
 	ini.WriteBool(_T("StatsFillGraphs"), m_bFillGraphs);
-	ini.WriteInt(_T("DownloadCapacity"), (int)maxGraphDownloadRate);
-	ini.WriteInt(_T("UploadCapacityNew"), (int)maxGraphUploadRate);
 	ini.WriteInt(_T("DeadServerRetry"), m_uDeadServerRetries);
 	ini.WriteInt(_T("ServerKeepAliveTimeout"), m_dwServerKeepAliveTimeout);
 	ini.WriteInt(_T("SplitterbarPosition"), splitterbarPosition);
@@ -2022,19 +2052,8 @@ void CPreferences::LoadPreferences()
 			tempdir.Add(sTmp);
 	}
 
-	SetMaxGraphDownloadRate((uint32)ini.GetInt(_T("DownloadCapacity"), 200000));
-
-	SetMaxGraphUploadRate((uint32)ini.GetInt(_T("UploadCapacityNew"), 50000));
-	if (maxGraphUploadRate == UNLIMITED) {
-		// converting value from prior versions
-		int nOldUploadCapacity = ini.GetInt(_T("UploadCapacity"), 100);
-		if (nOldUploadCapacity == 16 && ini.GetInt(_T("MaxUpload"), 12) == 12) {
-			// either this is a complete new install, or the prior version used the default value
-			// in both cases, set the new default values
-			ini.WriteInt(_T("MaxUpload"), 100, _T("eMule"));
-		} else
-			maxGraphUploadRate = nOldUploadCapacity; // use old custom value
-	}
+	maxGraphDownloadRateEstimated = 0;
+	maxGraphUploadRateEstimated = 0;
 
 	// Hidden broadband knob: keep the normal upload-slot target low on modern uplinks.
 	m_maxUpClientsAllowed = max((uint32)MIN_UP_CLIENTS_ALLOWED, min((uint32)MAX_UP_CLIENTS_ALLOWED, (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), 12)));
@@ -2047,13 +2066,10 @@ void CPreferences::LoadPreferences()
 	m_bbBoostLowRatioFilesBy = max(0.0f, ini.GetFloat(_T("BBBoostLowRatioFilesBy"), 0.0f));
 	// A divisor of 0 or 1 is treated as disabled to avoid surprising no-op math in GetScore.
 	m_bbDeboostLowIDs = max(0, ini.GetInt(_T("BBDeboostLowIDs"), 0));
-	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), 50000);
-	if (m_maxupload > maxGraphUploadRate && m_maxupload != UNLIMITED)
-		m_maxupload = maxGraphUploadRate * 4 / 5;
-
-	m_maxdownload = (uint32)ini.GetInt(_T("MaxDownload"), 200000);
-	if (m_maxdownload > maxGraphDownloadRate && m_maxdownload != UNLIMITED)
-		m_maxdownload = maxGraphDownloadRate * 9 / 10;
+	m_maxupload = NormalizeBandwidthLimit(ini.GetInt(_T("MaxUpload"), s_uDefaultUploadLimit));
+	m_maxdownload = NormalizeBandwidthLimit(ini.GetInt(_T("MaxDownload"), s_uDefaultDownloadLimit));
+	maxGraphUploadRate = (m_maxupload != UNLIMITED) ? m_maxupload : s_uDefaultUploadLimit;
+	maxGraphDownloadRate = (m_maxdownload != UNLIMITED) ? m_maxdownload : s_uDefaultDownloadLimit;
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
 	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 50);
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
@@ -2715,11 +2731,15 @@ void CPreferences::SetWSLowPass(const CString &strNewPass)
 void CPreferences::SetMaxUpload(uint32 val)
 {
 	m_maxupload = val ? val : UNLIMITED;
+	if (m_maxupload != UNLIMITED)
+		maxGraphUploadRate = m_maxupload;
 }
 
 void CPreferences::SetMaxDownload(uint32 val)
 {
 	m_maxdownload = val ? val : UNLIMITED;
+	if (m_maxdownload != UNLIMITED)
+		maxGraphDownloadRate = m_maxdownload;
 }
 
 CString CPreferences::GetHomepageBaseURLForLevel(int nLevel)
@@ -2809,25 +2829,38 @@ bool CPreferences::GetUseReBarToolbar()
 	return GetReBarToolbar() && theApp.m_ullComCtrlVer >= MAKEDLLVERULL(5, 8, 0, 0);
 }
 
+uint32 CPreferences::GetMaxGraphDownloadRate()
+{
+	if (m_maxdownload != UNLIMITED)
+		return m_maxdownload;
+	return GetEstimatedGraphRange(maxGraphDownloadRate, maxGraphDownloadRateEstimated);
+}
+
+void CPreferences::EstimateMaxDownloadCap(uint32 nCurrentDownload)
+{
+	if (maxGraphDownloadRateEstimated + 1 < nCurrentDownload) {
+		maxGraphDownloadRateEstimated = nCurrentDownload;
+		if (m_maxdownload == UNLIMITED && theApp.emuledlg->statisticswnd)
+			theApp.emuledlg->statisticswnd->SetARange(true, thePrefs.GetMaxGraphDownloadRate());
+	}
+}
+
 uint32 CPreferences::GetMaxGraphUploadRate(bool bEstimateIfUnlimited)
 {
-	if (maxGraphUploadRate != UNLIMITED || !bEstimateIfUnlimited)
+	if (m_maxupload != UNLIMITED)
+		return m_maxupload;
+	if (!bEstimateIfUnlimited)
 		return maxGraphUploadRate;
-	return (maxGraphUploadRateEstimated != 0) ? maxGraphUploadRateEstimated + 4 : 16u;
+	return GetEstimatedGraphRange(maxGraphUploadRate, maxGraphUploadRateEstimated);
 }
 
 void CPreferences::EstimateMaxUploadCap(uint32 nCurrentUpload)
 {
 	if (maxGraphUploadRateEstimated + 1 < nCurrentUpload) {
 		maxGraphUploadRateEstimated = nCurrentUpload;
-		if (maxGraphUploadRate == UNLIMITED && theApp.emuledlg->statisticswnd)
+		if (m_maxupload == UNLIMITED && theApp.emuledlg->statisticswnd)
 			theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxGraphUploadRate(true));
 	}
-}
-
-void CPreferences::SetMaxGraphUploadRate(uint32 in)
-{
-	maxGraphUploadRate = in ? in : UNLIMITED;
 }
 
 bool CPreferences::CanFSHandleLargeFiles(int nForCat)

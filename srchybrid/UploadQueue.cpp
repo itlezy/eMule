@@ -63,9 +63,6 @@ namespace
 constexpr DWORD UPLOAD_OVERFLOW_GRACE_TIME = SEC2MS(2);
 constexpr DWORD UPLOAD_SLOW_EVICT_TIME = SEC2MS(15);
 constexpr DWORD UPLOAD_ZERO_RATE_EVICT_TIME = SEC2MS(3);
-// Modern fixed floor for the legacy no-budget upload-slot heuristic.
-// 32 KiB/s corresponds to a 256 kbit/s upstream assumption for a minimally viable slot.
-constexpr uint32 MIN_FALLBACK_UPLOAD_CLIENT_DATARATE = 32u * 1024u;
 
 uint64 ResolveBBSessionMaxTransferLimit(uint64 configuredLimit, const CKnownFile *pUploadingFile)
 {
@@ -307,20 +304,13 @@ void CUploadQueue::UpdateActiveClientsInfo(DWORD curTick)
 	}
 }
 
-// Only treat the upload budget as valid when it comes from an explicit configured line-capacity hint.
-bool CUploadQueue::HasEffectiveUploadBudget() const
-{
-	return thePrefs.GetMaxGraphUploadRate(false) != UNLIMITED;
-}
-
-// Base all broadband slot decisions on the effective upload budget: capacity and user limit.
+// Base all broadband slot decisions on the active upload limit, or a live estimate when unlimited.
 uint32 CUploadQueue::GetEffectiveUploadBudget() const
 {
-	uint32 budget = thePrefs.GetMaxGraphUploadRate(true);
 	const uint32 maxUpload = thePrefs.GetMaxUpload();
 	if (maxUpload != UNLIMITED)
-		budget = min(budget, maxUpload);
-	return max(1u, budget);
+		return max(1u, maxUpload);
+	return max(1u, thePrefs.GetMaxGraphUploadRate(true));
 }
 
 uint32 CUploadQueue::GetSoftMaxUploadSlots() const
@@ -333,10 +323,7 @@ CUploadQueue::BroadbandControlState CUploadQueue::GetBroadbandControlState() con
 {
 	BroadbandControlState state = {};
 	state.softMaxSlots = GetSoftMaxUploadSlots();
-	state.hasBudget = HasEffectiveUploadBudget();
-	if (!state.hasBudget)
-		return state;
-
+	state.hasBudget = true;
 	state.effectiveBudgetBytesPerSec = GetEffectiveUploadBudget() * 1024u;
 	state.targetPerSlotBytesPerSec = max(3u * 1024u, state.effectiveBudgetBytesPerSec / max(1u, state.softMaxSlots));
 	state.underfillHeadroomBytesPerSec = max(state.targetPerSlotBytesPerSec / 2u, state.effectiveBudgetBytesPerSec / 20u);
@@ -529,19 +516,6 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
  */
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
-	if (!HasEffectiveUploadBudget()) {
-		// Legacy fallback path used only when no explicit upload budget is available.
-		// Keep the old "1 KiB/s per open slot" shape for compatibility with the surrounding
-		// queue heuristics, but clamp it to a modern fixed floor and ceiling so the queue
-		// no longer assumes dial-up-era upload slot speeds.
-		uint32 nOpenSlots = (uint32)GetUploadQueueLength();
-		uint32 nResult = max(MIN_FALLBACK_UPLOAD_CLIENT_DATARATE, nOpenSlots * 1024u);
-		// The cap is still a heuristic ceiling only. It prevents the fallback path from
-		// extrapolating unrealistic per-slot targets when the slot count becomes very large.
-		nResult = min(UPLOAD_CLIENT_MAXDATARATE, nResult);
-		return bMinDatarate ? nResult * 3 / 4 : nResult;
-	}
-
 	const BroadbandControlState state = GetBroadbandControlState();
 	const uint32 nResult = state.targetPerSlotBytesPerSec;
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
@@ -1033,6 +1007,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 				if (!theApp.emuledlg->IsTrayIconToFlash())
 					theApp.emuledlg->ShowTransferRate();
 
+				thePrefs.EstimateMaxDownloadCap(theApp.downloadqueue->GetDatarate() / 1024);
 				thePrefs.EstimateMaxUploadCap(theApp.uploadqueue->GetDatarate() / 1024);
 
 				// update cat-titles with downloads info only when needed

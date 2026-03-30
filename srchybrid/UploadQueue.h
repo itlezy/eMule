@@ -77,7 +77,6 @@ public:
 	uint32	GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged);
 	uint32	GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const;
 	uint32	GetTargetClientDataRate(bool bMinDatarate) const;
-	bool	HasEffectiveUploadBudget() const;
 	uint32	GetEffectiveUploadBudget() const;
 	uint32	GetSoftMaxUploadSlots() const;
 	uint32	GetUploadSlotLimit() const;
