@@ -236,3 +236,83 @@ inline bool TryParseDottedIPv4Literal(const char *pszAddress, uint32 *pnAddress)
 	pBytes[3] = static_cast<uint8>(octets[3]);
 	return true;
 }
+
+/**
+ * Reproduces the legacy compressed UDP gate, which accepted a header-only
+ * packet and forwarded an empty payload to the inflater.
+ */
+inline bool HasCompressedUdpPayload(UINT payloadLength)
+{
+	return payloadLength >= 2;
+}
+
+/**
+ * Reproduces the legacy blob bounds check, including the unsigned underflow
+ * when the current position has already advanced past the buffer length.
+ */
+inline bool CanReadBlobPayload(ULONGLONG position, ULONGLONG length, uint32 blobSize)
+{
+	return static_cast<ULONGLONG>(blobSize) <= (length - position);
+}
+
+/**
+ * Reproduces the legacy ASSERT-only integer progress calculation.
+ */
+inline uint32 CalculateProgressPercent(uint64 completed, uint64 total)
+{
+	ASSERT(total != 0);
+	return static_cast<uint32>((static_cast<double>(completed) * 100.0) / static_cast<double>(total));
+}
+
+/**
+ * Reproduces the legacy floating-point progress calculation without guarding a
+ * zero denominator first.
+ */
+inline float CalculateProgressRatio(float completed, float total)
+{
+	return completed / total;
+}
+
+/**
+ * Reproduces the legacy dotted IPv4 parsing ambiguity where the broadcast
+ * address is treated as an invalid parse result.
+ */
+inline bool TryParseDottedIPv4Literal(const char *pszAddress, uint32 *pnAddress)
+{
+	if (pszAddress == NULL || pnAddress == NULL)
+		return false;
+
+	unsigned int octets[4] = {};
+	const size_t nOctetCount = sizeof(octets) / sizeof(octets[0]);
+	const char *pszCursor = pszAddress;
+	for (size_t index = 0; index < nOctetCount; ++index) {
+		if (*pszCursor < '0' || *pszCursor > '9')
+			return false;
+
+		unsigned int nOctet = 0;
+		do {
+			nOctet = nOctet * 10 + static_cast<unsigned int>(*pszCursor - '0');
+			if (nOctet > 255)
+				return false;
+			++pszCursor;
+		} while (*pszCursor >= '0' && *pszCursor <= '9');
+
+		octets[index] = nOctet;
+		if (index + 1 == nOctetCount)
+			break;
+
+		if (*pszCursor != '.')
+			return false;
+		++pszCursor;
+	}
+
+	if (*pszCursor != '\0')
+		return false;
+
+	uint8 *pBytes = reinterpret_cast<uint8*>(pnAddress);
+	pBytes[0] = static_cast<uint8>(octets[0]);
+	pBytes[1] = static_cast<uint8>(octets[1]);
+	pBytes[2] = static_cast<uint8>(octets[2]);
+	pBytes[3] = static_cast<uint8>(octets[3]);
+	return *pnAddress != static_cast<uint32>(0xFFFFFFFFu);
+}
