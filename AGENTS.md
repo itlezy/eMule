@@ -18,4 +18,4 @@
 - save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
 - load and strictly follow the PowerSheel guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
 - when checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
-- when comparing features ensure to check the local repos `c:\prj\p2p\eMule\analysis\eMuleAI` and `c:\prj\p2p\eMule\analysis\eMule-mods-archive`
+- when comparing features ensure to check the local repos `eMuleAI` at `c:\prj\p2p\eMule\analysis\eMuleAI` and `eMule-mods-archive` at `c:\prj\p2p\eMule\analysis\eMule-mods-archive`
