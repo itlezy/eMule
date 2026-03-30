@@ -74,6 +74,12 @@ uint64 ResolveBBSessionMaxTransferLimit(uint64 configuredLimit, const CKnownFile
 	}
 	return configuredLimit;
 }
+
+void DeleteRequestedBlockList(CTypedPtrList<CPtrList, Requested_Block_Struct*> &rBlockList)
+{
+	while (!rBlockList.IsEmpty())
+		delete rBlockList.RemoveHead();
+}
 }
 
 struct CUploadQueue::BroadbandControlState
@@ -479,6 +485,8 @@ void CUploadQueue::Process()
 		m_average_ur_sum -= average_ur_hist.Head().upBytes;
 		average_ur_hist.RemoveHead();
 	}
+
+	ReclaimRetiredUploadClientStructs();
 };
 
 bool CUploadQueue::AcceptNewClient(bool addOnNextConnect) const
@@ -747,6 +755,53 @@ float CUploadQueue::GetAverageCombinedFilePrioAndCredit()
 	return m_fAverageCombinedFilePrioAndCredit;
 }
 
+void CUploadQueue::InvalidateUploadClientStruct(UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient)
+{
+	ASSERT(pUploadClientStruct != NULL);
+	ASSERT(pClient != NULL);
+
+	pClient->FlushSendBlocks();
+
+	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
+	ASSERT(lockBlockLists.IsLocked());
+
+	// Retired upload entries no longer own a live client. Pending disk completions keep their own offsets.
+	DeleteRequestedBlockList(pUploadClientStruct->m_BlockRequests_queue);
+	DeleteRequestedBlockList(pUploadClientStruct->m_DoneBlocks_list);
+	pUploadClientStruct->m_pClient = NULL;
+}
+
+void CUploadQueue::RetireUploadClientStruct(POSITION pos, UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient)
+{
+	ASSERT(pUploadClientStruct != NULL);
+	ASSERT(pClient != NULL);
+
+	CSingleLock lockUploadList(&m_csUploadListMainThrdWriteOtherThrdsRead, TRUE);
+	ASSERT(lockUploadList.IsLocked());
+
+	uploadinglist.RemoveAt(pos);
+	pUploadClientStruct->m_bRetired = true;
+	pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
+	InvalidateUploadClientStruct(pUploadClientStruct, pClient);
+	m_retiredUploadingList.AddTail(pUploadClientStruct);
+}
+
+void CUploadQueue::ReclaimRetiredUploadClientStructs()
+{
+	CSingleLock lockUploadList(&m_csUploadListMainThrdWriteOtherThrdsRead, TRUE);
+	ASSERT(lockUploadList.IsLocked());
+
+	for (POSITION pos = m_retiredUploadingList.GetHeadPosition(); pos != NULL;) {
+		POSITION curPos = pos;
+		UploadingToClient_Struct *pUploadClientStruct = m_retiredUploadingList.GetNext(pos);
+		ASSERT(pUploadClientStruct->m_bRetired);
+		if (InterlockedCompareExchange(&pUploadClientStruct->m_nPendingIOBlocks, 0, 0) == 0) {
+			m_retiredUploadingList.RemoveAt(curPos);
+			delete pUploadClientStruct;
+		}
+	}
+}
+
 bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReason, bool updatewindow, bool earlyabort)
 {
 	bool result = false;
@@ -769,11 +824,7 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReaso
 					, theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) ? (LPCTSTR)theApp.sharedfiles->GetFileByID(client->GetUploadFileID())->GetFileName() : _T(""));
 			}
 			client->m_bAddNextConnect = false;
-
-			m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
-			uploadinglist.RemoveAt(curPos);
-			m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();
-			delete curClientStruct; // m_csBlockListsLock.Lock();
+			RetireUploadClientStruct(curPos, curClientStruct, client);
 
 			//if (thePrefs.GetLogUlDlEvents() && !theApp.uploadBandwidthThrottler->RemoveFromStandardList(client->socket))
 			//	AddDebugLogLine(false, _T("UploadQueue: Didn't find socket to delete. Address: 0x%x"), client->socket);
@@ -891,10 +942,24 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 void CUploadQueue::DeleteAll()
 {
 	waitinglist.RemoveAll();
-	m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
-	while (!uploadinglist.IsEmpty())
-		delete uploadinglist.RemoveHead();
-	m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();
+	CSingleLock lockUploadList(&m_csUploadListMainThrdWriteOtherThrdsRead, TRUE);
+	ASSERT(lockUploadList.IsLocked());
+
+	while (!uploadinglist.IsEmpty()) {
+		UploadingToClient_Struct *pUploadClientStruct = uploadinglist.RemoveHead();
+		CUpDownClient *pClient = pUploadClientStruct->m_pClient;
+		pUploadClientStruct->m_bRetired = true;
+		pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
+		if (pClient != NULL)
+			InvalidateUploadClientStruct(pUploadClientStruct, pClient);
+		ASSERT(InterlockedCompareExchange(&pUploadClientStruct->m_nPendingIOBlocks, 0, 0) == 0);
+		delete pUploadClientStruct;
+	}
+	while (!m_retiredUploadingList.IsEmpty()) {
+		UploadingToClient_Struct *pUploadClientStruct = m_retiredUploadingList.RemoveHead();
+		ASSERT(InterlockedCompareExchange(&pUploadClientStruct->m_nPendingIOBlocks, 0, 0) == 0);
+		delete pUploadClientStruct;
+	}
 	// PENDING: Remove from UploadBandwidthThrottler as well!
 }
 
@@ -1125,13 +1190,11 @@ UploadingToClient_Struct* CUploadQueue::GetUploadingClientStructByClient(const C
 
 UploadingToClient_Struct::~UploadingToClient_Struct()
 {
-	m_pClient->FlushSendBlocks();
+	if (m_pClient != NULL)
+		m_pClient->FlushSendBlocks();
 
 	m_csBlockListsLock.Lock();
-	while (!m_BlockRequests_queue.IsEmpty())
-		delete m_BlockRequests_queue.RemoveHead();
-
-	while (!m_DoneBlocks_list.IsEmpty())
-		delete m_DoneBlocks_list.RemoveHead();
+	DeleteRequestedBlockList(m_BlockRequests_queue);
+	DeleteRequestedBlockList(m_DoneBlocks_list);
 	m_csBlockListsLock.Unlock();
 }

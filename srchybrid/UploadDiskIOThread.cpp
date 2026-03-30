@@ -166,17 +166,18 @@ void CUploadDiskIOThread::DissociateFile(CKnownFile *pFile)
 
 void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *pUploadClientStruct)
 {
-	if (pUploadClientStruct->m_bIOError || pUploadClientStruct->m_BlockRequests_queue.IsEmpty())
-		return;
 	// when calling this function we already have a lock on the uploadlist
-	// (so pUploadClientStruct and its members are safe in terms of not getting deleted/changed)
+	// (so pUploadClientStruct is stable), but retired entries must still be treated as inert.
+
+	// now also get a lock on the Block lists
+	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
+	if (pUploadClientStruct->m_bRetired || pUploadClientStruct->m_bIOError || pUploadClientStruct->m_pClient == NULL || pUploadClientStruct->m_BlockRequests_queue.IsEmpty())
+		return;
+
 	CUpDownClient *pClient = pUploadClientStruct->m_pClient;
 	CClientReqSocket *pSock = pClient->socket;
 	if (pSock == NULL || !pSock->IsConnected())
 		return;
-
-	// now also get a lock on the Block lists
-	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
 	// See if we can do an early return.
 	// There may be no new blocks to load from disk and add to buffer, or buffer may be large enough already.
 
@@ -257,6 +258,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 				}
 			}
 			++pFile->nInUse;
+			InterlockedIncrement(&pUploadClientStruct->m_nPendingIOBlocks);
 			pOverlappedRead->pos = m_listPendingIO.AddTail(pOverlappedRead);
 			DEBUG_ONLY(dbgDataReadPending += uTogo);
 
@@ -283,6 +285,7 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 	ASSERT(pOvRead->pFile && pOvRead->pos);
 
 	--pOvRead->pFile->nInUse;
+	UploadingToClient_Struct *pStruct = pOvRead->pUploadClientStruct;
 
 	CKnownFile *pKnownFile = pOvRead->pFile;
 	if (m_Run) {
@@ -296,7 +299,6 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 			bReadError = true;
 		}
 		if (pKnownFile->m_hRead != INVALID_HANDLE_VALUE) { //discard data from closed files
-			UploadingToClient_Struct *pStruct = pOvRead->pUploadClientStruct;
 			DEBUG_ONLY(dbgDataReadPending -= pOvRead->uEndOffset - pOvRead->uStartOffset);
 			// check if the client struct is still in the upload list (otherwise it is a deleted pointer)
 			CCriticalSection *pcsUploadListRead = NULL;
@@ -313,15 +315,17 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				// just to be sure there is no chance of a deadlock (now or in future version, also it doesn't cost us much)
 				CPacketList packetsList;
 				CUpDownClient *pClient = pStruct->m_pClient;
-				CClientReqSocket *pSocket = pClient->socket;
-				if (pSocket && pSocket->IsConnected()) {
+				CClientReqSocket *pSocket = pClient != NULL ? pClient->socket : NULL;
+				if (pClient != NULL && pSocket && pSocket->IsConnected()) {
 					// Broadband parity: always send standard upload packets and avoid
 					// the extra CPU/latency path of compressed-part generation.
 					CreateStandardPackets(*pOvRead, packetsList);
 
 					m_bSignalThrottler = true;
-				} else
+				} else if (pClient != NULL)
 					theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pClient->DbgGetClientInfo(true));
+				else
+					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Upload entry retired before packet delivery; discarding block"));
 
 				lockUploadListRead.Unlock();
 
@@ -341,8 +345,11 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				lockUploadListRead.Unlock();
 			}
 		}
-	} else if (pKnownFile)
-		DissociateFile(pKnownFile);
+	} else {
+		if (pKnownFile)
+			DissociateFile(pKnownFile);
+	}
+	InterlockedDecrement(&pStruct->m_nPendingIOBlocks);
 
 	// cleanup
 	delete[] pOvRead->pBuffer;

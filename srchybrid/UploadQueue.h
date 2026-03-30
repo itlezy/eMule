@@ -26,6 +26,9 @@ struct UploadingToClient_Struct
 	UploadingToClient_Struct()
 		: m_pClient()
 		, m_bIOError()
+		, m_bRetired()
+		, m_nPendingIOBlocks()
+		, m_dwRetiredTick()
 	{
 	}
 	~UploadingToClient_Struct();
@@ -35,6 +38,9 @@ struct UploadingToClient_Struct
 	CTypedPtrList<CPtrList, Requested_Block_Struct*>	m_DoneBlocks_list;
 	CCriticalSection									m_csBlockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
 	bool												m_bIOError;
+	bool												m_bRetired;
+	volatile LONG										m_nPendingIOBlocks;
+	DWORD												m_dwRetiredTick;
 };
 typedef CTypedPtrList<CPtrList, UploadingToClient_Struct*> CUploadingPtrList;
 
@@ -120,6 +126,12 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	/** Makes a removed upload entry inert before worker-thread completions can observe it again. */
+	void	RetireUploadClientStruct(POSITION pos, UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient);
+	/** Deletes retired upload entries once no overlapped disk reads still point at them. */
+	void	ReclaimRetiredUploadClientStructs();
+	/** Clears queued upload-block state and detaches the client before delayed reclamation. */
+	void	InvalidateUploadClientStruct(UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient);
 	void	UpdateActiveClientsInfo(DWORD curTick);
 	void	UpdateSlotCapacityState(DWORD curTick);
 	bool	ShouldOpenMoreUploadSlots(INT_PTR curUploadSlots) const;
@@ -132,6 +144,7 @@ private:
 	float GetAverageCombinedFilePrioAndCredit();
 
 	CUploadingPtrList	uploadinglist;
+	CUploadingPtrList	m_retiredUploadingList;
 	// This lock ensures that only the main thread writes the uploading list,
 	// other threads need to fetch the lock if they want to read (but are not allowed to write).
 	// Don't acquire other locks while having this one in any thread
