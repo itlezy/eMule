@@ -40,6 +40,49 @@ namespace
 {
 	static DWORD_PTR const s_dwAnyInterfaceItemData = static_cast<DWORD_PTR>(-1);
 	static DWORD_PTR const s_dwMissingInterfaceItemData = static_cast<DWORD_PTR>(-2);
+	static int const s_iBandwidthSliderMax = 300000;
+
+	/**
+	 * @brief Parse a signed bandwidth value from a limit edit box.
+	 *
+	 * The limits page now accepts `0` and negative numbers to mean unlimited.
+	 */
+	static LONGLONG GetBandwidthEditValue(const CWnd *pWnd, int iControlId)
+	{
+		CString strValue;
+		pWnd->GetDlgItemText(iControlId, strValue);
+		return _tcstoi64(strValue, NULL, 10);
+	}
+
+	/**
+	 * @brief Convert typed bandwidth input into the internal unlimited-or-positive format.
+	 */
+	static uint32 NormalizeBandwidthLimitInput(const LONGLONG nConfiguredLimit)
+	{
+		if (nConfiguredLimit <= 0)
+			return UNLIMITED;
+		return (nConfiguredLimit >= static_cast<LONGLONG>(UNLIMITED)) ? (UNLIMITED - 1) : static_cast<uint32>(nConfiguredLimit);
+	}
+
+	/**
+	 * @brief Keep the slider bounded while the textbox remains free-form.
+	 */
+	static int GetBandwidthSliderPos(const uint32 uConfiguredLimit)
+	{
+		if (uConfiguredLimit == UNLIMITED)
+			return 0;
+		return min(s_iBandwidthSliderMax, static_cast<int>(uConfiguredLimit));
+	}
+
+	/**
+	 * @brief Round-trip unlimited limits through the edit boxes as `0`.
+	 */
+	static void SetBandwidthEditValue(CWnd *pWnd, int iControlId, const uint32 uConfiguredLimit)
+	{
+		CString strValue;
+		strValue.Format(_T("%u"), (uConfiguredLimit == UNLIMITED) ? 0u : uConfiguredLimit);
+		pWnd->SetDlgItemText(iControlId, strValue);
+	}
 }
 
 
@@ -61,8 +104,6 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_RANDOMIZEPORTSONSTARTUP, OnSettingsChange)
 	ON_BN_CLICKED(IDC_NETWORK_ED2K, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWOVERHEAD, OnSettingsChange)
-	ON_BN_CLICKED(IDC_ULIMIT_LBL, OnLimiterChange)
-	ON_BN_CLICKED(IDC_DLIMIT_LBL, OnLimiterChange)
 	ON_WM_HSCROLL()
 	ON_BN_CLICKED(IDC_NETWORK_KADEMLIA, OnSettingsChange)
 	ON_WM_HELPINFO()
@@ -273,6 +314,8 @@ BOOL CPPgConnection::OnInitDialog()
 	CPropertyPage::OnInitDialog();
 	InitWindowStyles(this);
 
+	static_cast<CEdit*>(GetDlgItem(IDC_DOWNLOAD_CAP))->SetLimitText(11);
+	static_cast<CEdit*>(GetDlgItem(IDC_UPLOAD_CAP))->SetLimitText(11);
 	static_cast<CEdit*>(GetDlgItem(IDC_PORT))->SetLimitText(5);
 	static_cast<CEdit*>(GetDlgItem(IDC_UDPPORT))->SetLimitText(5);
 
@@ -290,34 +333,17 @@ void CPPgConnection::LoadSettings()
 {
 	if (m_hWnd) {
 		LoadBindableInterfaces();
-		if (thePrefs.m_maxupload != 0)
-			thePrefs.m_maxdownload = thePrefs.GetMaxDownload();
 		m_lastudp = thePrefs.udpport;
 		CheckDlgButton(IDC_UDPDISABLE, !m_lastudp); //before the port number!
 		SetDlgItemInt(IDC_UDPPORT, m_lastudp, FALSE);
-
-		SetDlgItemInt(IDC_DOWNLOAD_CAP, thePrefs.maxGraphDownloadRate);
-
-		m_ctlMaxDown.SetRange(1, thePrefs.maxGraphDownloadRate);
+		SetBandwidthEditValue(this, IDC_DOWNLOAD_CAP, thePrefs.m_maxdownload);
+		m_ctlMaxDown.SetRange(0, s_iBandwidthSliderMax);
 		SetRateSliderTicks(m_ctlMaxDown);
-
-		SetDlgItemInt(IDC_UPLOAD_CAP, (thePrefs.maxGraphUploadRate != UNLIMITED ? thePrefs.maxGraphUploadRate : 0));
-
-		m_ctlMaxUp.SetRange(1, thePrefs.GetMaxGraphUploadRate(true));
+		SetBandwidthEditValue(this, IDC_UPLOAD_CAP, thePrefs.m_maxupload);
+		m_ctlMaxUp.SetRange(0, s_iBandwidthSliderMax);
 		SetRateSliderTicks(m_ctlMaxUp);
-
-		uint32 up = thePrefs.m_maxupload;
-		uint32 dn = thePrefs.m_maxdownload;
-		CheckDlgButton(IDC_DLIMIT_LBL, (dn != UNLIMITED));
-		CheckDlgButton(IDC_ULIMIT_LBL, (up != UNLIMITED));
-		if (dn == UNLIMITED)
-			dn = thePrefs.maxGraphDownloadRate;
-		if (up == UNLIMITED)
-			up = thePrefs.GetMaxGraphUploadRate(true);
-		CheckUp(up, dn);
-		CheckDown(up, dn);
-		m_ctlMaxDown.SetPos(dn);
-		m_ctlMaxUp.SetPos(up);
+		m_ctlMaxDown.SetPos(GetBandwidthSliderPos(thePrefs.m_maxdownload));
+		m_ctlMaxUp.SetPos(GetBandwidthSliderPos(thePrefs.m_maxupload));
 
 		SetDlgItemInt(IDC_PORT, thePrefs.port, FALSE);
 		FillBindInterfaceCombo();
@@ -336,57 +362,27 @@ void CPPgConnection::LoadSettings()
 		GetDlgItem(IDC_PREF_UPNPONSTART)->EnableWindow(TRUE);
 
 		CheckDlgButton(IDC_PREF_UPNPONSTART, static_cast<UINT>(thePrefs.IsUPnPEnabled()));
-
-		//ShowLimitValues(); - will be called in OnLimiterChange()
-		OnLimiterChange();
+		ShowLimitValues();
 	}
 }
 
 BOOL CPPgConnection::OnApply()
 {
-	UINT v = GetDlgItemInt(IDC_DOWNLOAD_CAP, NULL, FALSE);
-	if (v >= UNLIMITED) {
-		GetDlgItem(IDC_DOWNLOAD_CAP)->SetFocus();
-		return FALSE;
-	}
-	UINT u = GetDlgItemInt(IDC_UPLOAD_CAP, NULL, FALSE);
-	if (u >= UNLIMITED) {
-		GetDlgItem(IDC_UPLOAD_CAP)->SetFocus();
-		return FALSE;
-	}
+	uint32 u = NormalizeBandwidthLimitInput(GetBandwidthEditValue(this, IDC_UPLOAD_CAP));
+	uint32 v = NormalizeBandwidthLimitInput(GetBandwidthEditValue(this, IDC_DOWNLOAD_CAP));
+	uint32 adjustedUp = (u == UNLIMITED) ? 0u : u;
+	uint32 adjustedDown = (v == UNLIMITED) ? 0u : v;
+	if (CheckUp(adjustedUp, adjustedDown))
+		CheckDown(adjustedUp, adjustedDown);
+	else if (CheckDown(adjustedUp, adjustedDown))
+		CheckUp(adjustedUp, adjustedDown);
+	u = (adjustedUp == 0) ? UNLIMITED : adjustedUp;
+	v = (adjustedDown == 0) ? UNLIMITED : adjustedDown;
 
-	uint32 lastmaxgu = thePrefs.maxGraphUploadRate; //save the values
-	uint32 lastmaxgd = thePrefs.maxGraphDownloadRate;
-
-	thePrefs.SetMaxGraphDownloadRate(v);
-	m_ctlMaxDown.SetRange(1, thePrefs.GetMaxGraphDownloadRate(), TRUE);
-	SetRateSliderTicks(m_ctlMaxDown);
-
-	thePrefs.SetMaxGraphUploadRate(u);
-	m_ctlMaxUp.SetRange(1, thePrefs.GetMaxGraphUploadRate(true), TRUE);
-	SetRateSliderTicks(m_ctlMaxUp);
-
-	if (IsDlgButtonChecked(IDC_ULIMIT_LBL)) {
-		u = (uint32)m_ctlMaxUp.GetPos();
-		v = (uint32)thePrefs.GetMaxGraphUploadRate(true);
-		if (u > v)
-			u = v * 4 / 5; //80%
-	} else
-		u = UNLIMITED;
-
+	const uint32 lastmaxgu = thePrefs.GetMaxGraphUploadRate(true);
+	const uint32 lastmaxgd = thePrefs.GetMaxGraphDownloadRate();
 	thePrefs.SetMaxUpload(u);
-
-	if (thePrefs.GetMaxUpload() != UNLIMITED)
-		m_ctlMaxUp.SetPos(thePrefs.GetMaxUpload());
-
-	thePrefs.SetMaxDownload(IsDlgButtonChecked(IDC_DLIMIT_LBL) ? m_ctlMaxDown.GetPos() : UNLIMITED);
-
-	if (thePrefs.GetMaxDownload() != UNLIMITED) {
-		u = (uint32)thePrefs.GetMaxGraphDownloadRate();
-		if (thePrefs.GetMaxDownload() > u)
-			thePrefs.SetMaxDownload(u * 4 / 5); //80%
-		m_ctlMaxDown.SetPos(thePrefs.GetMaxDownload());
-	}
+	thePrefs.SetMaxDownload(v);
 
 	u = GetDlgItemInt(IDC_MAXSOURCEPERFILE, NULL, FALSE);
 	thePrefs.maxsourceperfile = (u > INT_MAX ? 1 : u);
@@ -442,10 +438,10 @@ BOOL CPPgConnection::OnApply()
 	thePrefs.reconnect = IsDlgButtonChecked(IDC_RECONN) != 0;
 	thePrefs.m_bRandomizePortsOnStartup = (IsDlgButtonChecked(IDC_RANDOMIZEPORTSONSTARTUP) != 0);
 
-	if (lastmaxgu != thePrefs.maxGraphUploadRate)
+	if (lastmaxgu != thePrefs.GetMaxGraphUploadRate(true))
 		theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxGraphUploadRate(true));
-	if (lastmaxgd != thePrefs.maxGraphDownloadRate)
-		theApp.emuledlg->statisticswnd->SetARange(true, thePrefs.maxGraphDownloadRate);
+	if (lastmaxgd != thePrefs.GetMaxGraphDownloadRate())
+		theApp.emuledlg->statisticswnd->SetARange(true, thePrefs.GetMaxGraphDownloadRate());
 
 	UINT tempcon;
 	u = GetDlgItemInt(IDC_MAXCON, NULL, FALSE);
@@ -484,12 +480,12 @@ void CPPgConnection::Localize()
 {
 	if (m_hWnd) {
 		SetWindowText(GetResString(IDS_CONNECTION));
-		SetDlgItemText(IDC_CAPACITIES_FRM, GetResString(IDS_PW_CON_CAPFRM));
+		SetDlgItemText(IDC_CAPACITIES_FRM, GetResString(IDS_SPEED_LIMITS));
 		SetDlgItemText(IDC_DCAP_LBL, GetResString(IDS_PW_CON_DOWNLBL));
 		SetDlgItemText(IDC_UCAP_LBL, GetResString(IDS_PW_CON_UPLBL));
 		SetDlgItemText(IDC_LIMITS_FRM, GetResString(IDS_PW_CON_LIMITFRM));
-		SetDlgItemText(IDC_DLIMIT_LBL, GetResString(IDS_PW_DOWNL));
-		SetDlgItemText(IDC_ULIMIT_LBL, GetResString(IDS_PW_UPL));
+		SetDlgItemText(IDC_DLIMIT_LBL, GetResString(IDS_PW_CON_DOWNLBL));
+		SetDlgItemText(IDC_ULIMIT_LBL, GetResString(IDS_PW_CON_UPLBL));
 		SetDlgItemText(IDC_CONNECTION_NETWORK, GetResString(IDS_NETWORK));
 		SetDlgItemText(IDC_KBS2, GetResString(IDS_KBYTESPERSEC));
 		SetDlgItemText(IDC_KBS3, GetResString(IDS_KBYTESPERSEC));
@@ -513,7 +509,7 @@ void CPPgConnection::Localize()
 
 bool CPPgConnection::CheckUp(uint32 mUp, uint32 &mDown)
 {
-	if (thePrefs.maxGraphDownloadRate == 0)
+	if (mUp == 0 || mDown == 0)
 		return false;
 	uint32 uDown = mDown;
 	if (mUp < 4 && mDown > mUp * 3)
@@ -522,16 +518,12 @@ bool CPPgConnection::CheckUp(uint32 mUp, uint32 &mDown)
 		mDown = mUp * 4;
 	else if (mUp < 20 && mDown > mUp * 5)
 		mDown = mUp * 5;
-	if (mDown > thePrefs.maxGraphDownloadRate) {
-		mDown = thePrefs.maxGraphDownloadRate;
-		return true;
-	}
 	return uDown != mDown;
 }
 
 bool CPPgConnection::CheckDown(uint32 &mUp, uint32 mDown)
 {
-	if (thePrefs.maxGraphUploadRate == 0)
+	if (mUp == 0 || mDown == 0)
 		return false;
 	uint32 uUp = mUp;
 	if (mDown < 13 && mUp * 3 < mDown)
@@ -540,10 +532,6 @@ bool CPPgConnection::CheckDown(uint32 &mUp, uint32 mDown)
 		mUp = (mDown + 3) / 4;
 	else if (mUp < 20 && mUp * 5 < mDown)
 		mUp = (mDown + 4) / 5;
-	if (mUp > thePrefs.maxGraphUploadRate) {
-		mUp = thePrefs.maxGraphUploadRate;
-		return true;
-	}
 	return uUp != mUp;
 }
 
@@ -568,35 +556,34 @@ void CPPgConnection::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
 		}
 	}
 
+	SetBandwidthEditValue(this, IDC_UPLOAD_CAP, maxup == 0 ? UNLIMITED : maxup);
+	SetBandwidthEditValue(this, IDC_DOWNLOAD_CAP, maxdown == 0 ? UNLIMITED : maxdown);
 	ShowLimitValues();
-
-	UpdateData(FALSE);
 	CPropertyPage::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
 void CPPgConnection::ShowLimitValues()
 {
-	static LPCTSTR const pszFmt = _T("%i %s");
 	CString buffer;
-
-	if (IsDlgButtonChecked(IDC_ULIMIT_LBL))
-		buffer.Format(pszFmt, m_ctlMaxUp.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	const LONGLONG nUploadLimit = GetBandwidthEditValue(this, IDC_UPLOAD_CAP);
+	if (nUploadLimit <= 0)
+		buffer = GetResString(IDS_PW_UNLIMITED);
+	else
+		buffer.Format(_T("%I64d %s"), nUploadLimit, (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_KBS4, buffer);
 
-	if (!IsDlgButtonChecked(IDC_DLIMIT_LBL))
-		buffer.Empty();
+	const LONGLONG nDownloadLimit = GetBandwidthEditValue(this, IDC_DOWNLOAD_CAP);
+	if (nDownloadLimit <= 0)
+		buffer = GetResString(IDS_PW_UNLIMITED);
 	else
-		buffer.Format(pszFmt, m_ctlMaxDown.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+		buffer.Format(_T("%I64d %s"), nDownloadLimit, (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_KBS1, buffer);
 }
 
-void CPPgConnection::OnLimiterChange()
+void CPPgConnection::OnSettingsChange()
 {
-	m_ctlMaxDown.ShowWindow(IsDlgButtonChecked(IDC_DLIMIT_LBL) ? SW_SHOW : SW_HIDE);
-	m_ctlMaxUp.ShowWindow(IsDlgButtonChecked(IDC_ULIMIT_LBL) ? SW_SHOW : SW_HIDE);
-
-	ShowLimitValues();
 	SetModified(TRUE);
+	ShowLimitValues();
 }
 
 void CPPgConnection::OnHelp()

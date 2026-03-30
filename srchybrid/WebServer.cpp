@@ -3341,22 +3341,15 @@ CString CWebServer::_GetPreferences(const ThreadData &Data)
 		if (!_ParseURL(Data.sURL, _T("refresh")).IsEmpty())
 			thePrefs.SetWebPageRefresh(_tstoi(_ParseURL(Data.sURL, _T("refresh"))));
 
-		strTmp = _ParseURL(Data.sURL, _T("maxcapdown"));
-		if (!strTmp.IsEmpty())
-			thePrefs.SetMaxGraphDownloadRate(_tstoi(strTmp));
-		strTmp = _ParseURL(Data.sURL, _T("maxcapup"));
-		if (!strTmp.IsEmpty())
-			thePrefs.SetMaxGraphUploadRate(_tstoi(strTmp));
-
 		strTmp = _ParseURL(Data.sURL, _T("maxdown"));
 		if (!strTmp.IsEmpty()) {
-			uint32 dwSpeed = _tstoi(strTmp);
-			thePrefs.SetMaxDownload(dwSpeed > 0 ? dwSpeed : UNLIMITED);
+			const int iSpeed = _tstoi(strTmp);
+			thePrefs.SetMaxDownload(iSpeed > 0 ? static_cast<uint32>(iSpeed) : 0);
 		}
 		strTmp = _ParseURL(Data.sURL, _T("maxup"));
 		if (!strTmp.IsEmpty()) {
-			uint32 dwSpeed = _tstoi(strTmp);
-			thePrefs.SetMaxUpload(dwSpeed > 0 ? dwSpeed : UNLIMITED);
+			const int iSpeed = _tstoi(strTmp);
+			thePrefs.SetMaxUpload(iSpeed > 0 ? static_cast<uint32>(iSpeed) : 0);
 		}
 
 		if (!_ParseURL(Data.sURL, _T("maxsources")).IsEmpty())
@@ -3394,10 +3387,6 @@ CString CWebServer::_GetPreferences(const ThreadData &Data)
 	Out.Replace(_T("[RefreshTimeForm]"), _GetPlainResString(IDS_WEB_REFRESH_TIME));
 	Out.Replace(_T("[RefreshTimeComment]"), _GetPlainResString(IDS_WEB_REFRESH_COMMENT));
 	Out.Replace(_T("[SpeedForm]"), _GetPlainResString(IDS_SPEED_LIMITS));
-	Out.Replace(_T("[SpeedCapForm]"), _GetPlainResString(IDS_CAPACITY_LIMITS));
-
-	Out.Replace(_T("[MaxCapDown]"), _GetPlainResString(IDS_PW_CON_DOWNLBL));
-	Out.Replace(_T("[MaxCapUp]"), _GetPlainResString(IDS_PW_CON_UPLBL));
 	Out.Replace(_T("[MaxDown]"), _GetPlainResString(IDS_PW_CON_DOWNLBL));
 	Out.Replace(_T("[MaxUp]"), _GetPlainResString(IDS_PW_CON_UPLBL));
 	Out.Replace(_T("[WebControl]"), _GetPlainResString(IDS_WEB_CONTROL));
@@ -3416,17 +3405,11 @@ CString CWebServer::_GetPreferences(const ThreadData &Data)
 
 
 	CString sT;
-	sT.Format(_T("%u"), thePrefs.GetMaxDownload() == UNLIMITED ? 0u : thePrefs.GetMaxDownload());
+	sT.Format(_T("%u"), thePrefs.m_maxdownload == UNLIMITED ? 0u : thePrefs.m_maxdownload);
 	Out.Replace(_T("[MaxDownVal]"), sT);
 
-	sT.Format(_T("%u"), thePrefs.GetMaxUpload() == UNLIMITED ? 0u : thePrefs.GetMaxUpload());
+	sT.Format(_T("%u"), thePrefs.m_maxupload == UNLIMITED ? 0u : thePrefs.m_maxupload);
 	Out.Replace(_T("[MaxUpVal]"), sT);
-
-	sT.Format(_T("%u"), thePrefs.GetMaxGraphDownloadRate());
-	Out.Replace(_T("[MaxCapDownVal]"), sT);
-
-	sT.Format(_T("%u"), thePrefs.GetMaxGraphUploadRate(true));
-	Out.Replace(_T("[MaxCapUpVal]"), sT);
 
 	return Out;
 }
