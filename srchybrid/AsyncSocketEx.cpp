@@ -894,9 +894,13 @@ bool CAsyncSocketEx::Connect(const CString &sHostAddress, UINT nHostPort)
 	if (m_SocketData.nFamily == AF_INET) {
 		SOCKADDR_IN sockAddr = {};
 		sockAddr.sin_family = AF_INET;
-		sockAddr.sin_addr.s_addr = inet_addr(sAscii);
+		/**
+		 * Preserve the legacy inet_addr() behavior by falling back for
+		 * INADDR_NONE-valued input instead of treating it as a direct IPv4 literal.
+		 */
+		const int nParsedIpv4 = InetPtonA(AF_INET, sAscii, &sockAddr.sin_addr);
 
-		if (sockAddr.sin_addr.s_addr == INADDR_NONE) {
+		if (nParsedIpv4 != 1 || sockAddr.sin_addr.s_addr == INADDR_NONE) {
 			delete[] m_pAsyncGetHostByNameBuffer;
 			m_pAsyncGetHostByNameBuffer = new char[MAXGETHOSTSTRUCT];
 
