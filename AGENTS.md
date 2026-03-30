@@ -16,6 +16,6 @@
 - do not recreate or edit per-workspace `tests\` directories under `eMule-build` or `eMule-build-oracle`
 - keep the fixed sibling layout `eMule-build`, `eMule-build-oracle`, and `eMule-build-tests`, and make the shared tests build against the target workspace via explicit paths
 - save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
-- load and strictly follow the PowerSheel guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
+- load and strictly follow the PowerShell guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
 - when checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
 - when comparing features ensure to check the local repos `eMuleAI` at `c:\prj\p2p\eMule\analysis\eMuleAI` and `eMule-mods-archive` at `c:\prj\p2p\eMule\analysis\eMule-mods-archive`
