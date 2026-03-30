@@ -61,7 +61,11 @@ public:
 	CUpDownClient *client;
 protected:
 	virtual	~CClientReqSocket();
-	void	Delete_Timed();
+	/**
+	 * Reports when the listener-owned grace period has elapsed and this socket
+	 * can be destroyed from `CListenSocket::Process()`.
+	 */
+	bool	IsDeleteReady(DWORD dwCurrentTick) const;
 
 	void		 OnError(int nErrorCode);
 

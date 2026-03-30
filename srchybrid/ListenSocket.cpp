@@ -182,13 +182,12 @@ void CClientReqSocket::Disconnect(LPCTSTR pszReason)
 	Safe_Delete();
 }
 
-void CClientReqSocket::Delete_Timed()
+bool CClientReqSocket::IsDeleteReady(DWORD dwCurrentTick) const
 {
-// it seems that MFC Sockets call socket functions after they are deleted, even if the socket is closed
-// and select(0) is set. So we need to wait some time to make sure this doesn't happen
-// we currently also rely on this for multithreading; rework synchronization if this ever changes
-	if (::GetTickCount() >= deltimer + SEC2MS(10))
-		delete this;
+	// It seems that MFC sockets may still dispatch callbacks briefly after
+	// close/select shutdown, so the listener keeps the object alive for a
+	// short grace period before destroying it.
+	return dwCurrentTick - deltimer >= SEC2MS(10);
 }
 
 void CClientReqSocket::Safe_Delete()
@@ -2125,14 +2124,18 @@ void CListenSocket::OnAccept(int nErrorCode)
 
 void CListenSocket::Process()
 {
+	const DWORD curTick = ::GetTickCount();
 	m_OpenSocketsInterval = 0;
 	for (POSITION pos = socket_list.GetHeadPosition(); pos != NULL;) {
+		POSITION posCurSock = pos;
 		CClientReqSocket *cur_sock = socket_list.GetNext(pos);
 		if (cur_sock->deletethis) {
 			if (cur_sock->m_SocketData.hSocket != INVALID_SOCKET)
 				cur_sock->Close();			// calls 'closesocket'
-			else
-				cur_sock->Delete_Timed();	// may delete 'cur_sock'
+			else if (cur_sock->IsDeleteReady(curTick)) {
+				socket_list.RemoveAt(posCurSock);
+				delete cur_sock;
+			}
 		} else
 			cur_sock->CheckTimeOut();		// may call 'shutdown'
 	}
