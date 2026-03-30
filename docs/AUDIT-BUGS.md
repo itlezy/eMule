@@ -32,18 +32,20 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_038`, `BBUG_039`, `BBUG_040`, and `BBUG_041` were fixed in the UI dialog crash-hardening pass on 2026-03-30 by guarding audited `GetDlgItem()` call sites and by validating the `CPartFile` downcast once before using archive-preview-only methods.
 - `BBUG_042`, `BBUG_045`, and `BBUG_046` were fixed in the remaining small-runtime cleanup pass on 2026-03-30 by rewriting the unsigned countdown heap-sort loops in `DownloadQueue.cpp`, by switching the live `Server.cpp` IPv4 literal parse to `TryParseDottedIPv4Literal`, and by replacing the audited `_tcscpy` sites with bounded `_tcscpy_s` calls.
 - `BBUG_047` and `BBUG_048` were fixed in the final low-risk resource-cleanup pass on 2026-03-30 by replacing the toolbar desktop-DC probe with `CWindowDC` and by wrapping the captcha generator's temporary GDI/DC ownership in scoped cleanup helpers.
+- `BBUG_049` was fixed on 2026-03-30 by making `UDPReaskFNF()` return client liveness and by moving the only remaining delete decision to its caller in `ClientUDPSocket.cpp`.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
-### Stale after feature removal
+### Stale after review
 
 - `BBUG_017` is stale because `srchybrid/WebServer.cpp` was removed with the embedded web server.
 - `BBUG_021` is stale because `srchybrid/SendMail.cpp` was removed with the SMTP notifier and TLS mail path.
 - `BBUG_027` is stale because `srchybrid/WebServer.cpp` was removed with the embedded web server.
+- `BBUG_050` is stale after inspection because `CDeletedClient` only stores scalar metadata plus a flat per-IP array of `{port, credits}` snapshots, so tracked-entry destruction order does not participate in any observable ownership relationship.
 
 ### Deferred architectural work
 
-- The raw-pointer lifetime findings (`BBUG_008` through `BBUG_013`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`, `BBUG_049`, `BBUG_050`) still need a dedicated ownership/thread-safety pass.
+- The raw-pointer lifetime findings (`BBUG_008` through `BBUG_013`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`) still need a dedicated ownership/thread-safety pass.
 - The remaining active backlog is now dominated by ownership/thread-safety work rather than low-risk guard or cleanup bugs.
 
 ---
@@ -1190,6 +1192,7 @@ DCs and GDI objects created between lines 71-76 are cleaned up at lines 107-114.
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/DownloadClient.cpp:1325-1327`
 - **Reachability:** Internal
+- **Status:** FIXED on 2026-03-30 by making `UDPReaskFNF()` report whether the client survived and by letting `ClientUDPSocket.cpp` perform the only remaining delete after the call returns.
 
 **Vulnerable Code:**
 ```cpp
@@ -1209,6 +1212,7 @@ The function that contains this code doesn't reliably signal to callers that `th
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/ClientList.h:156-157`
 - **Reachability:** Internal — client tracking
+- **Status:** STALE on 2026-03-30 after inspection: tracked entries are independent per-IP snapshots and do not own cross-linked clients, so destruction order is not semantically relevant here.
 
 **Description:**
 `CDeletedClientMap m_trackedClientsMap` stores pointers to `CDeletedClient` objects. During bulk cleanup in `RemoveAllTrackedClients()`, the order of deletion may matter if objects have cross-references.
