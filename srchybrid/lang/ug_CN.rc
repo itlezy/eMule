@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ug_CN.h"
@@ -448,7 +448,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "بىۋاسىتە چۈشۈر"
     IDS_SW_LINK             "eD2K ئۇلىنىشى"
     IDS_SW_START            "باشلا"
-    IDS_SCHEDULER           "پىلان ۋەزىپە"
     IDS_SW_RESULT           "ئىزدەش نەتىجىسى"
     IDS_SW_DOWNLOAD         "تاللىغاننى چۈشۈر"
     IDS_SV_SERVERLIST       "مۇلازىمېتىر"
@@ -1138,8 +1137,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_HM_SCHED_ON         "پىلان ۋەزىپىنى ئاچ"
-    IDS_HM_SCHED_OFF        "پىلان ۋەزىپىنى ياپ"
     IDS_HM_LINKHP           "‫eMule باش بېتى‬"
     IDS_HM_LINKFAQ          "‫eMule چىگىش مەسىلىگە جاۋاب‬"
     IDS_DEBUG_SOURCE_EXCHANGE

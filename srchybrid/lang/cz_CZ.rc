@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "cz_CZ.h"
@@ -427,7 +427,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Přímý download"
     IDS_SW_LINK             "eD2K odkazy"
     IDS_SW_START            "Start" //!
-    IDS_SCHEDULER           "Plánovač"
 END
 
 STRINGTABLE
@@ -1091,8 +1090,6 @@ BEGIN
     IDS_HARDFILES           "Pevný limit souborů"
     IDS_FILTER              "Filtr"
     IDS_LINKS               "Odkazy"
-    IDS_HM_SCHED_ON         "Zapnout plánovač"
-    IDS_HM_SCHED_OFF        "Vypnout plánovač"
     IDS_HM_LINKHP           "Domovská stránka eMule"
     IDS_HM_LINKFAQ          "FAQ eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Zobrazit zprávy o výměně zdrojů"

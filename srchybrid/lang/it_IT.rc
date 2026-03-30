@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "it_IT.h"
@@ -449,7 +449,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Incolla indirizzo eD2K"
     IDS_SW_LINK             "Indirizzo eD2K"
     IDS_SW_START            "Inizia"
-    IDS_SCHEDULER           "Pianificatore"
     IDS_SW_RESULT           "Risultati ricerche"
     IDS_SW_DOWNLOAD         "Scarica i file selezionati"
     IDS_SV_SERVERLIST       "Lista server"
@@ -1139,8 +1138,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_HM_SCHED_ON         "Attiva le azioni pianificate"
-    IDS_HM_SCHED_OFF        "Disattiva le azioni pianificate"
     IDS_HM_LINKHP           "Sito di eMule"
     IDS_HM_LINKFAQ          "Domande frequenti su eMule"
     IDS_DEBUG_SOURCE_EXCHANGE

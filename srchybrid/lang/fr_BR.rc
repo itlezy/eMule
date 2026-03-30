@@ -1,4 +1,4 @@
-﻿//Microsoft Developer Studio generated resource script.
+//Microsoft Developer Studio generated resource script.
 //
 #include "fr_BR.h"
 
@@ -383,7 +383,6 @@ BEGIN
 	IDS_SW_DIRECTDOWNLOAD	"Pellgargañ eeun"
 	IDS_SW_LINK	"Ere(où) ED2K"
 	IDS_SW_START	"Loc'hañ"
-	IDS_SCHEDULER	"Raktresañ"
 END
 
 STRINGTABLE FIXED IMPURE
@@ -1079,8 +1078,6 @@ BEGIN
 	IDS_HARDFILES	"Harz kreñv ar restroù"
 	IDS_FILTER	"Sil"
 	IDS_LINKS	"Ereoù"
-	IDS_HM_SCHED_ON	"Gweredekaat ar Raktreser"
-	IDS_HM_SCHED_OFF	"Diweredekaat ar Raktreser"
 	IDS_HM_LINKHP	"Lec'hienn ofisiel eMule"
 	IDS_HM_LINKFAQ	"FAG eMule"
 	IDS_DEBUG_SOURCE_EXCHANGE	"Diskouez ar gemennadennoù diwar eskemm an orinoù"

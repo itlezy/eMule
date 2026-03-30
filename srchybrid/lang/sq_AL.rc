@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "sq_AL.h"
@@ -436,7 +436,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Shkruaj një Link eD2K"
     IDS_SW_LINK             "Linku eD2K"
     IDS_SW_START            "Kërko"
-    IDS_SCHEDULER           "Plane"
 END
 
 STRINGTABLE
@@ -1126,8 +1125,6 @@ BEGIN
     IDS_HARDFILES           "Kufi i Fortë i Skedave"
     IDS_FILTER              "Filtro"
     IDS_LINKS               "Linke"
-    IDS_HM_SCHED_ON         "Ndize Planifikuesin"
-    IDS_HM_SCHED_OFF        "Fike Planifikuesin"
     IDS_HM_LINKHP           "Faqe zyrtare e eMule"
     IDS_HM_LINKFAQ          "eMule PBSH"
     IDS_DEBUG_SOURCE_EXCHANGE

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "nb_NO.h"
@@ -386,7 +386,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Direkte Nedlastning"
     IDS_SW_LINK             "ED2K Link(er)"
     IDS_SW_START            "Start"//!
-    IDS_SCHEDULER           "Planlegger"
 END
 
 STRINGTABLE
@@ -1094,8 +1093,6 @@ BEGIN
     IDS_HARDFILES           "Hard filgrense"
     IDS_FILTER              "Filter"//!
     IDS_LINKS               "Lenker"
-    IDS_HM_SCHED_ON         "Aktiver planlegger"
-    IDS_HM_SCHED_OFF        "Deaktiver planlegger"
     IDS_HM_LINKHP           "eMule hjemmeside"
     IDS_HM_LINKFAQ          "eMule OSS"
     IDS_DEBUG_SOURCE_EXCHANGE "Vis kildeutvekslingsmeldinger"

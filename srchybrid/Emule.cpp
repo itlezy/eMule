@@ -26,7 +26,6 @@
 #include "emule.h"
 #include "opcodes.h"
 #include "mdump.h"
-#include "Scheduler.h"
 #include "SearchList.h"
 #include "kademlia/kademlia/Error.h"
 #include "kademlia/kademlia/Kademlia.h"
@@ -515,14 +514,14 @@ BOOL CemuleApp::InitInstance()
 				MMRESULT mmResult = timeBeginPeriod(m_wTimerRes);
 				if (thePrefs.GetVerbose()) {
 					if (mmResult == TIMERR_NOERROR)
-						theApp.QueueDebugLogLine(false, _T("Succeeded to set timer/scheduler resolution to %i ms."), m_wTimerRes);
+						theApp.QueueDebugLogLine(false, _T("Succeeded to set timer resolution to %i ms."), m_wTimerRes);
 					else {
-						theApp.QueueDebugLogLine(false, _T("Failed to set timer/scheduler resolution to %i ms."), m_wTimerRes);
+						theApp.QueueDebugLogLine(false, _T("Failed to set timer resolution to %i ms."), m_wTimerRes);
 						m_wTimerRes = 0;
 					}
 				}
 			} else
-				theApp.QueueDebugLogLine(false, _T("m_wTimerRes == 0. Not setting timer/scheduler resolution."));
+				theApp.QueueDebugLogLine(false, _T("m_wTimerRes == 0. Not setting timer resolution."));
 		}
 	}
 
@@ -540,8 +539,6 @@ BOOL CemuleApp::InitInstance()
 	downloadqueue = new CDownloadQueue();	// bugfix - do this before creating the upload queue
 	uploadqueue = new CUploadQueue();
 	ipfilter = new CIPFilter();
-	scheduler = new CScheduler();
-
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();
 
 	m_pUploadDiskIOThread = new CUploadDiskIOThread();

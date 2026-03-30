@@ -21,7 +21,6 @@
 #include "PartFile.h"
 #include "ListenSocket.h"
 #include "Exceptions.h"
-#include "Scheduler.h"
 #include "PerfLog.h"
 #include "UploadBandwidthThrottler.h"
 #include "ClientList.h"
@@ -234,8 +233,10 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	// tell the client that we are now ready to upload
 	if (!newclient->socket || !newclient->socket->IsConnected() || !newclient->CheckHandshakeFinished()) {
 		newclient->SetUploadState(US_CONNECTING);
-		if (!newclient->TryToConnect(true))
+		if (!newclient->TryToConnect(true)) {
+			delete newclient;
 			return false;
+		}
 	} else {
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP_AcceptUploadReq", newclient);
@@ -1016,9 +1017,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 				{
 					theApp.emuledlg->transferwnd->UpdateCatTabTitles(false);
 				}
-
-				if (thePrefs.IsSchedulerEnabled())
-					theApp.scheduler->Check();
 
 				theApp.emuledlg->transferwnd->UpdateListCount(CTransferWnd::wnd2Uploading, -1);
 			}

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "vi_VN.h"
@@ -438,7 +438,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Dán Liên kết eD2K"
     IDS_SW_LINK             "Liên kết eD2K"
     IDS_SW_START            "Bắt đầu"
-    IDS_SCHEDULER           "Thời Gian Biểu"
 END
 
 STRINGTABLE
@@ -1128,8 +1127,6 @@ BEGIN
     IDS_HARDFILES           "Giới hạn tập tin cứng"
     IDS_FILTER              "Lọc"
     IDS_LINKS               "Liên kết"
-    IDS_HM_SCHED_ON         "Bật Thời gian biểu"
-    IDS_HM_SCHED_OFF        "Tắt Thời gian biểu"
     IDS_HM_LINKHP           "Trang chủ eMule"
     IDS_HM_LINKFAQ          "Câu hỏi thường gặp eMule"
     IDS_DEBUG_SOURCE_EXCHANGE

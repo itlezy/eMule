@@ -17,7 +17,6 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "PPgConnection.h"
-#include "Scheduler.h"
 #include "emuledlg.h"
 #include "Preferences.h"
 #include "Opcodes.h"
@@ -455,8 +454,6 @@ BOOL CPPgConnection::OnApply()
 		if (thePrefs.m_bEnableUPnP)
 			theApp.emuledlg->StartUPnP();
 	}
-
-	theApp.scheduler->SaveOriginals();
 
 	SetModified(FALSE);
 	LoadSettings();

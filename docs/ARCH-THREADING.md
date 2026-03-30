@@ -14,8 +14,8 @@ processing, Kademlia, download/upload scheduling, and everything else. The socke
 (`CAsyncSocketEx`) is built on `WSAAsyncSelect`, which converts network events into Windows
 messages dispatched to a message-only "helper window" — also on the UI thread.
 
-The result is that the UI thread is the network thread, the protocol thread, the scheduler, and
-the rendering thread simultaneously. This is architecturally sound for a 2002-era Win32 app, but
+The result is that the UI thread is the network thread, the protocol thread, and the rendering
+thread simultaneously. This is architecturally sound for a 2002-era Win32 app, but
 produces serious bottlenecks at modern connection counts, blocks the UI whenever any one operation
 stalls, and makes the code hard to reason about under load.
 
@@ -56,7 +56,7 @@ message dispatch:
 
 ---
 
-## 2. The Central Scheduler
+## 2. The Central Timer Tick
 
 ### 2.1 UploadQueue Timer (the heartbeat)
 

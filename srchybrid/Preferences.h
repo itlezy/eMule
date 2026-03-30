@@ -99,7 +99,6 @@ class CPreferences
 	friend class CPPgFiles;
 	friend class CPPgGeneral;
 	friend class CPPgNotify;
-	friend class CPPgScheduler;
 	friend class CPPgSecurity;
 	friend class CPPgServer;
 	friend class CPPgTweaks;
@@ -430,7 +429,6 @@ public:
 	static int		iMaxLogBuff;
 	static UINT		uMaxLogFileSize;
 	static ELogFileFormat m_iLogFileFormat;
-	static bool		scheduler;
 	static bool		msgonlyfriends;
 	static bool		msgsecure;
 	static bool		m_bUseChatCaptchas;
@@ -1086,9 +1084,6 @@ public:
 	static void		SetMaxSourcesPerFile(UINT in)		{ maxsourceperfile = in; }
 	static void		SetMaxConnections(UINT in)			{ maxconnections = in; }
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
-	static bool		IsSchedulerEnabled()				{ return scheduler; }
-	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
-
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }
 	static UINT		GetMsgSessionsMax()					{ return maxmsgsessions; }

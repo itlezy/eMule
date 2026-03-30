@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "tr_TR.h"
@@ -400,7 +400,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "ED2K Bağlantılarını Yapıştır"
     IDS_SW_LINK             "ED2K Bağlantıları"
     IDS_SW_START            "Başlat"
-    IDS_SCHEDULER           "Zamanlayıcı"
 END
 
 STRINGTABLE
@@ -1105,8 +1104,6 @@ BEGIN
     IDS_HARDFILES           "Sabit Dosya Sınırı"
     IDS_FILTER              "Süz"
     IDS_LINKS               "Bağlantılar"
-    IDS_HM_SCHED_ON         "Zamanlayıcı Açık"
-    IDS_HM_SCHED_OFF        "Zamanlayıcı Kapalı"
     IDS_HM_LINKHP           "eMule Ana Sayfası"
     IDS_HM_LINKFAQ          "eMule S.S.S"
     IDS_DEBUG_SOURCE_EXCHANGE

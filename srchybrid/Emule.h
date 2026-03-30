@@ -30,7 +30,6 @@ class CSearchList;
 class CUploadQueue;
 class CListenSocket;
 class CDownloadQueue;
-class CScheduler;
 class UploadBandwidthThrottler;
 class CemuleDlg;
 class CClientList;
@@ -84,7 +83,6 @@ public:
 	CFriendList			*friendlist;
 	CClientUDPSocket	*clientudp;
 	CIPFilter			*ipfilter;
-	CScheduler			*scheduler;
 	CUPnPImplWrapper	*m_pUPnPFinder;
 	CUploadDiskIOThread	*m_pUploadDiskIOThread;
 	CPartFileWriteThread *m_pPartFileWriteThread;

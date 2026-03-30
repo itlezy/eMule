@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "el_GR.h"
@@ -372,7 +372,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Επικόλληση eD2K-link(s)"
     IDS_SW_LINK             "eD2K-link(s)"
     IDS_SW_START            "Έναρξη"
-    IDS_SCHEDULER           "Προγραμματισμός"
 END
 
 STRINGTABLE
@@ -1064,8 +1063,6 @@ BEGIN
     IDS_HARDFILES           "Σκληρό όριο αρχείων"
     IDS_FILTER              "Φίλτρο"
     IDS_LINKS               "Σχετικές τοποθεσίες"
-    IDS_HM_SCHED_ON         "Ενεργοποίηση προγραμματισμού"
-    IDS_HM_SCHED_OFF        "Απενεργοποίηση προγραμματισμού"
     IDS_HM_LINKHP           "Κεντρική σελίδα του eMule"
     IDS_HM_LINKFAQ          "Συχνές ερωτήσεις για το eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Καταγραφή διαδικασίας ανταλλαγής πηγών"

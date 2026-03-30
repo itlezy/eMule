@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "gl_ES.h"
@@ -427,7 +427,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Descarga directa"
     IDS_SW_LINK             "enlace(s) ed2k"
     IDS_SW_START            "Comezar"
-    IDS_SCHEDULER           "Programador"
 END
 
 STRINGTABLE
@@ -1091,8 +1090,6 @@ BEGIN
     IDS_HARDFILES           "Límite superior de arquivo"
     IDS_FILTER              "Filtro"
     IDS_LINKS               "enlaces"
-    IDS_HM_SCHED_ON         "Activar Programador"
-    IDS_HM_SCHED_OFF        "Desconectar Programador"
     IDS_HM_LINKHP           "Web do eMule"
     IDS_HM_LINKFAQ          "FAQ do eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Mostrar a orixe de intercambio de mensaxes"

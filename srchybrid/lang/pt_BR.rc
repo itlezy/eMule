@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "pt_BR.h"
@@ -392,7 +392,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Colar link eD2K"
     IDS_SW_LINK             "Link eD2K"
     IDS_SW_START            "Iniciar"
-    IDS_SCHEDULER           "Agendador de Tarefas"
     IDS_SW_RESULT           "Resultado da Pesquisa"
     IDS_SW_DOWNLOAD         "Baixar Selecionados"
     IDS_SV_SERVERLIST       "Lista de Servidores"
@@ -1086,8 +1085,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_HM_SCHED_ON         "Alterar Agendador para Ligado"
-    IDS_HM_SCHED_OFF        "Alterar Agendador para Desligado"
     IDS_HM_LINKHP           "Homepage do eMule"
     IDS_HM_LINKFAQ          "FAQ do eMule"
     IDS_DEBUG_SOURCE_EXCHANGE

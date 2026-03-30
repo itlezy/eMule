@@ -647,30 +647,6 @@ BEGIN
     PUSHBUTTON      "Cancel",IDCANCEL,201,46,50,14
 END
 
-IDD_PPG_SCHEDULER DIALOGEX 0, 0, 300, 350
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Scheduler"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    CONTROL         "Enable",IDC_ENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,4,90,12
-    PUSHBUTTON      "Remove",IDC_REMOVE,123,12,50,12
-    PUSHBUTTON      "New",IDC_NEW,178,12,48,12
-    CONTROL         "",IDC_SCHEDLIST,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | LVS_NOSORTHEADER | WS_BORDER | WS_TABSTOP,4,26,222,63
-    CONTROL         "Enable",IDC_S_ENABLE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,102,60,9
-    EDITTEXT        IDC_S_TITLE,51,112,162,11,ES_AUTOHSCROLL
-    COMBOBOX        IDC_TIMESEL,51,125,75,60,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "",IDC_DATETIMEPICKER1,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP,51,140,42,12
-    CONTROL         "",IDC_DATETIMEPICKER2,"SysDateTimePick32",DTS_RIGHTALIGN | DTS_UPDOWN | WS_TABSTOP,104,140,42,12
-    CONTROL         "Check1",IDC_CHECKNOENDTIME,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,150,142,63,9
-    CONTROL         "",IDC_SCHEDACTION,"SysListView32",LVS_REPORT | LVS_SHOWSELALWAYS | LVS_ALIGNLEFT | LVS_NOSORTHEADER | WS_BORDER | WS_TABSTOP,10,160,211,61
-    PUSHBUTTON      "Apply",IDC_APPLY,164,223,58,12
-    GROUPBOX        "Details",IDC_STATIC_DETAILS,4,92,223,147
-    RTEXT           "Title",IDC_STATIC_S_TITLE,11,114,38,8
-    RTEXT           "Time:",IDC_STATIC_S_TIME,11,128,38,8
-    LTEXT           "Action:",IDC_STATIC_S_ACTION,11,150,40,8
-    CTEXT           "-",IDC_STATIC,94,142,8,8
-END
-
 IDD_WIZ1_WELCOME DIALOGEX 0, 0, 317, 193
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Welcome"
@@ -1356,7 +1332,6 @@ DELETEFRIEND            ICON                    "res\\UserDelete.ico"
 CLIENTDETAILS           ICON                    "res\\UserDetails.ico"
 VIEWFILES               ICON                    "res\\UserFiles.ico"
 SENDMESSAGE             ICON                    "res\\UserMessage.ico"
-SCHEDULER               ICON                    "res\\Scheduler.ico"
 LISTADD                 ICON                    "res\\ListAdd.ico"
 LISTREMOVE              ICON                    "res\\ListRemove.ico"
 RESTORE                 ICON                    "res\\Restore.ico"
@@ -2358,7 +2333,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Paste eD2K Links"
     IDS_SW_LINK             "eD2K Links"
     IDS_SW_START            "Start"
-    IDS_SCHEDULER           "Scheduler"
     IDS_SW_RESULT           "Search Results"
     IDS_SW_DOWNLOAD         "Download"
     IDS_SV_SERVERLIST       "Servers"
@@ -3086,8 +3060,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_HM_SCHED_ON         "Switch Scheduler On"
-    IDS_HM_SCHED_OFF        "Switch Scheduler Off"
     IDS_HM_LINKHP           "eMule Homepage"
     IDS_HM_LINKFAQ          "eMule FAQ"
     IDS_DEBUG_SOURCE_EXCHANGE

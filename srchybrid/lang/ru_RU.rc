@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ru_RU.h"
@@ -438,7 +438,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Добавить eD2K ссылку"
     IDS_SW_LINK             "eD2K ссылка"
     IDS_SW_START            "Старт"
-    IDS_SCHEDULER           "Планировщик"
 END
 
 STRINGTABLE
@@ -1127,8 +1126,6 @@ BEGIN
     IDS_HARDFILES           "Жёсткий лимит файлов"
     IDS_FILTER              "Фильтр"
     IDS_LINKS               "Ссылки"
-    IDS_HM_SCHED_ON         "Вкл. планировщик"
-    IDS_HM_SCHED_OFF        "Выкл. планировщик"
     IDS_HM_LINKHP           "Сайт eMule"
     IDS_HM_LINKFAQ          "eMule FAQ" //!
     IDS_DEBUG_SOURCE_EXCHANGE "Лог обмена источниками с сервером и клиентами"

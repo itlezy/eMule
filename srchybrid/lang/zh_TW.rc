@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "zh_TW.h"
@@ -390,7 +390,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "貼上 eD2K 連結"
     IDS_SW_LINK             "eD2K 連結"
     IDS_SW_START            "開始"
-    IDS_SCHEDULER           "時間表"
 END
 
 STRINGTABLE
@@ -1089,8 +1088,6 @@ BEGIN
     IDS_HARDFILES           "硬性檔案限制"
     IDS_FILTER              "過濾器"
     IDS_LINKS               "連結"
-    IDS_HM_SCHED_ON         "啟用時間表"
-    IDS_HM_SCHED_OFF        "停用時間表"
     IDS_HM_LINKHP           "eMule 首頁"
     IDS_HM_LINKFAQ          "eMule FAQ"//!
     IDS_DEBUG_SOURCE_EXCHANGE "記錄客戶端來源交換及伺服器來源查詢/回覆"

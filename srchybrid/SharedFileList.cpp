@@ -63,7 +63,7 @@ static CString NormalizeDirectoryPath(const CString &directory)
 	return normalized;
 }
 
-/** Returns true when the tick-based scheduler may treat the target time as elapsed. */
+/** Returns true when the periodic shared-file tick may treat the target time as elapsed. */
 static bool HasElapsedTick(DWORD dwNow, DWORD dwTarget)
 {
 	return static_cast<LONG>(dwNow - dwTarget) >= 0;

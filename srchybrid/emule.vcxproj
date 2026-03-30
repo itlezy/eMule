@@ -298,7 +298,6 @@
     <ClCompile Include="PPgMessages.cpp" />
     <ClCompile Include="PPgNotify.cpp" />
     <ClCompile Include="PPgProxy.cpp" />
-    <ClCompile Include="PPgScheduler.cpp" />
     <ClCompile Include="PPgSecurity.cpp" />
     <ClCompile Include="PPgServer.cpp" />
     <ClCompile Include="PPgStats.cpp" />
@@ -319,7 +318,6 @@
       <PreprocessorDefinitions Condition="'$(Platform)'=='x64'">_CRT_SECURE_NO_DEPRECATE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PrecompiledHeader />
     </ClCompile>
-    <ClCompile Include="Scheduler.cpp" />
     <ClCompile Include="SearchDlg.cpp" />
     <ClCompile Include="SearchFile.cpp" />
     <ClCompile Include="SearchList.cpp" />
@@ -569,7 +567,6 @@
     <ClInclude Include="PPgMessages.h" />
     <ClInclude Include="PPgNotify.h" />
     <ClInclude Include="PPgProxy.h" />
-    <ClInclude Include="PPgScheduler.h" />
     <ClInclude Include="PPgSecurity.h" />
     <ClInclude Include="PPgServer.h" />
     <ClInclude Include="PPgStats.h" />
@@ -589,7 +586,6 @@
     <ClInclude Include="Ring.h" />
     <ClInclude Include="SafeFile.h" />
     <ClInclude Include="Scanner.h" />
-    <ClInclude Include="Scheduler.h" />
     <ClInclude Include="SearchDlg.h" />
     <ClInclude Include="SearchExpr.h" />
     <ClInclude Include="SearchFile.h" />
@@ -832,7 +828,6 @@
     <Image Include="res\Restore.ico" />
     <Image Include="res\RestoreWindow.gif" />
     <Image Include="res\RestoreWindow.ico" />
-    <Image Include="res\Scheduler.ico" />
     <Image Include="res\Search.ico" />
     <Image Include="res\SearchEdit.ico" />
     <Image Include="res\SearchGlobalActive.ico" />

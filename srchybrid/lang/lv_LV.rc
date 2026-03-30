@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "lv_LV.h"
@@ -438,7 +438,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "ievietot eD2K Saites"
     IDS_SW_LINK             "eD2K Saites"
     IDS_SW_START            "Sākt"
-    IDS_SCHEDULER           "Plānotājs"
 END
 
 STRINGTABLE
@@ -1128,8 +1127,6 @@ BEGIN
     IDS_HARDFILES           "Hard File Limit"
     IDS_FILTER              "Filter"
     IDS_LINKS               "Links"
-    IDS_HM_SCHED_ON         "Switch Scheduler On"
-    IDS_HM_SCHED_OFF        "Switch Scheduler Off"
     IDS_HM_LINKHP           "eMule Homepage"
     IDS_HM_LINKFAQ          "eMule FAQ"
     IDS_DEBUG_SOURCE_EXCHANGE

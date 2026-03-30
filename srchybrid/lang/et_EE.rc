@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "et_EE.h"
@@ -381,7 +381,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Kleebi ed2k viited"
     IDS_SW_LINK             "ed2k viited"
     IDS_SW_START            "Start"
-    IDS_SCHEDULER           "Planeerija"
 END
 
 STRINGTABLE
@@ -1079,8 +1078,6 @@ BEGIN
     IDS_HARDFILES           "Failipiirang"
     IDS_FILTER              "Filter"
     IDS_LINKS               "Viited"
-    IDS_HM_SCHED_ON         "Luba planeerija"
-    IDS_HM_SCHED_OFF        "Keela planeerija"
     IDS_HM_LINKHP           "eMule koduleht"
     IDS_HM_LINKFAQ          "eMule KKK"
     IDS_DEBUG_SOURCE_EXCHANGE "Logi allikavahetuse ja serverilt allikate küsimise päringud"

@@ -276,7 +276,6 @@
 #define IDS_SW_DIRECTDOWNLOAD           356
 #define IDS_SW_LINK                     357
 #define IDS_SW_START                    358
-#define IDS_SCHEDULER                   359
 #define IDS_SW_RESULT                   361
 #define IDS_SW_DOWNLOAD                 362
 #define IDS_SV_SERVERLIST               363
@@ -825,8 +824,6 @@
 #define IDS_HARDFILES                   941
 #define IDS_FILTER                      942
 #define IDS_LINKS                       943
-#define IDS_HM_SCHED_ON                 944
-#define IDS_HM_SCHED_OFF                945
 #define IDS_HM_LINKHP                   946
 #define IDS_HM_LINKFAQ                  947
 #define IDS_DEBUG_SOURCE_EXCHANGE       949
@@ -854,7 +851,6 @@
 #define IDS_STATS_SVRECFILES            971
 #define IDS_STATS_SHRECNUM              972
 #define IDS_SEARCH_COLUMN               973
-#define IDD_PPG_SCHEDULER               974
 #define IDS_STATS_SHRECSIZE             974
 #define IDS_STATS_SHRECASIZE            975
 #define IDS_STATS_SESSION               976

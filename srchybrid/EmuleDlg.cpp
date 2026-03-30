@@ -75,7 +75,6 @@
 #include "ListenSocket.h"
 #include "Server.h"
 #include "PartFile.h"
-#include "Scheduler.h"
 #include "MenuCmds.h"
 #include "MuleSystrayDlg.h"
 #include "IPFilterDlg.h"
@@ -1577,7 +1576,6 @@ void CemuleDlg::OnClose()
 	serverwnd->SaveAllSettings();
 	kademliawnd->SaveAllSettings();
 
-	theApp.scheduler->RestoreOriginals();
 	theApp.searchlist->SaveSpamFilter();
 	if (thePrefs.IsStoringSearchesEnabled())
 		theApp.searchlist->StoreSearches();
@@ -1630,7 +1628,6 @@ void CemuleDlg::OnClose()
 	delete theApp.clientlist;				theApp.clientlist = NULL;
 	delete theApp.ip2country;				theApp.ip2country = NULL;
 	delete theApp.friendlist;				theApp.friendlist = NULL;		// CFriendList::SaveList
-	delete theApp.scheduler;				theApp.scheduler = NULL;
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
 	delete theApp.uploadBandwidthThrottler;	theApp.uploadBandwidthThrottler = NULL;
 	delete theApp.m_pUPnPFinder;			theApp.m_pUPnPFinder = NULL;
@@ -2298,10 +2295,6 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	case MP_HM_CONVERTPF:
 		CPartFileConvert::ShowGUI();
 		break;
-	case MP_HM_SCHEDONOFF:
-		thePrefs.SetSchedulerEnabled(!thePrefs.IsSchedulerEnabled());
-		theApp.scheduler->Check(true);
-		break;
 	case MP_HM_IPFILTER:
 		{
 			CIPFilterDlg dlg;
@@ -2316,10 +2309,7 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	}
 	if (wParam >= MP_WEBURL && wParam <= MP_WEBURL + 99)
 		theWebServices.RunURL(NULL, (UINT)wParam);
-	else if (wParam >= MP_SCHACTIONS && wParam <= MP_SCHACTIONS + 99) {
-		theApp.scheduler->ActivateSchedule(wParam - MP_SCHACTIONS);
-		theApp.scheduler->SaveOriginals(); // use the new settings as original
-	} else if (HIWORD(wParam) == THBN_CLICKED) {
+	else if (HIWORD(wParam) == THBN_CLICKED) {
 		OnTBBPressed(LOWORD(wParam));
 		return TRUE;
 	}
@@ -2360,17 +2350,6 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	Links.InsertMenu(2, MF_BYPOSITION | MF_SEPARATOR);
 	Links.AppendMenu(MF_STRING, MP_WEBSVC_EDIT, GetResString(IDS_WEBSVEDIT));
 
-	CMenu scheduler;
-	scheduler.CreateMenu();
-	const CString &schedonoff(GetResString(thePrefs.IsSchedulerEnabled() ? IDS_HM_SCHED_OFF : IDS_HM_SCHED_ON));
-
-	scheduler.AppendMenu(MF_STRING, MP_HM_SCHEDONOFF, schedonoff);
-	if (theApp.scheduler->GetCount() > 0) {
-		scheduler.AppendMenu(MF_SEPARATOR);
-		for (INT_PTR i = 0; i < theApp.scheduler->GetCount(); ++i)
-			scheduler.AppendMenu(MF_STRING, MP_SCHACTIONS + i, theApp.scheduler->GetSchedule(i)->title);
-	}
-
 	if (!toolsonly) {
 		if (theApp.serverconnect->IsConnected())
 			menu.AppendMenu(MF_STRING, MP_HM_CON, GetResString(IDS_MAIN_BTN_DISCONNECT), _T("DISCONNECT"));
@@ -2398,7 +2377,6 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 
 	menu.AppendMenu(MF_SEPARATOR);
 	menu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)Links.m_hMenu, GetResString(IDS_LINKS), _T("WEB"));
-	menu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)scheduler.m_hMenu, GetResString(IDS_SCHEDULER), _T("SCHEDULER"));
 
 	if (!toolsonly) {
 		menu.AppendMenu(MF_SEPARATOR);
@@ -2406,7 +2384,6 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	}
 	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 	VERIFY(Links.DestroyMenu());
-	VERIFY(scheduler.DestroyMenu());
 	VERIFY(menu.DestroyMenu());
 }
 

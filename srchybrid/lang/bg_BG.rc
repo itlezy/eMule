@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "bg_BG.h"
@@ -437,7 +437,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Директно сваляне"
     IDS_SW_LINK             "eD2K линк"
     IDS_SW_START            "Старт"
-    IDS_SCHEDULER           "Разписание"
 END
 
 STRINGTABLE
@@ -1123,8 +1122,6 @@ BEGIN
     IDS_HARDFILES           "Твърд лимит за файлове"
     IDS_FILTER              "Филтър"
     IDS_LINKS               "Линкове"
-    IDS_HM_SCHED_ON         "Включи разписанието"
-    IDS_HM_SCHED_OFF        "Изключи разписанието"
     IDS_HM_LINKHP           "Домашна страница"
     IDS_HM_LINKFAQ          "eMule FAQ"	//!
     IDS_DEBUG_SOURCE_EXCHANGE "Показвай съобщения за обмен"

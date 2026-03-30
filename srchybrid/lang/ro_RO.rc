@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ro_RO.h"
@@ -430,7 +430,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Adaugă link eD2k"
     IDS_SW_LINK             "link eD2k"
     IDS_SW_START            "Start" //!
-    IDS_SCHEDULER           "Programare"
 END
 
 STRINGTABLE
@@ -1106,8 +1105,6 @@ BEGIN
     IDS_HARDFILES           "Limită 'Hard' fişiere"
     IDS_FILTER              "Filtru"
     IDS_LINKS               "Link-uri"
-    IDS_HM_SCHED_ON         "Activare acţiuni programate"
-    IDS_HM_SCHED_OFF        "Dezactivare acţiuni programate"
     IDS_HM_LINKHP           "Homepage eMule"
     IDS_HM_LINKFAQ          "F.A.Q. eMule"
     IDS_DEBUG_SOURCE_EXCHANGE

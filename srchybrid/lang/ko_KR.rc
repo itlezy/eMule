@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ko_KR.h"
@@ -447,7 +447,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "eD2K 링크 붙여넣기"
     IDS_SW_LINK             "eD2K 링크"
     IDS_SW_START            "시작"
-    IDS_SCHEDULER           "시간표"
     IDS_SW_RESULT           "검색 결과"
     IDS_SW_DOWNLOAD         "다운로드"
     IDS_SV_SERVERLIST       "서버"
@@ -1137,8 +1136,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_HM_SCHED_ON         "시간표 켜기"
-    IDS_HM_SCHED_OFF        "시간표 끄기"
     IDS_HM_LINKHP           "eMule 홈 페이지"
     IDS_HM_LINKFAQ          "eMule 자주 묻는 질문"
     IDS_DEBUG_SOURCE_EXCHANGE

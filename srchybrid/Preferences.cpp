@@ -494,7 +494,6 @@ bool	CPreferences::debug2disk;
 int		CPreferences::iMaxLogBuff;
 UINT	CPreferences::uMaxLogFileSize;
 ELogFileFormat CPreferences::m_iLogFileFormat = Unicode;
-bool	CPreferences::scheduler;
 bool	CPreferences::msgonlyfriends;
 bool	CPreferences::msgsecure;
 bool	CPreferences::m_bUseChatCaptchas;
@@ -1773,7 +1772,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("UseCreditSystem"), m_bCreditSystem);
 	ini.WriteBool(_T("SaveLogToDisk"), log2disk);
 	ini.WriteBool(_T("SaveDebugToDisk"), debug2disk);
-	ini.WriteBool(_T("EnableScheduler"), scheduler);
 	ini.WriteBool(_T("MessagesFromFriendsOnly"), msgonlyfriends);
 	ini.WriteBool(_T("MessageFromValidSourcesOnly"), msgsecure);
 	ini.WriteBool(_T("MessageUseCaptchas"), m_bUseChatCaptchas);
@@ -2238,7 +2236,6 @@ void CPreferences::LoadPreferences()
 	m_bDisableKnownClientList = ini.GetBool(_T("DisableKnownClientList"), false);
 	m_bDisableQueueList = ini.GetBool(_T("DisableQueueList"), false);
 	m_bCreditSystem = ini.GetBool(_T("UseCreditSystem"), true);
-	scheduler = ini.GetBool(_T("EnableScheduler"), false);
 	msgonlyfriends = ini.GetBool(_T("MessagesFromFriendsOnly"), false);
 	msgsecure = ini.GetBool(_T("MessageFromValidSourcesOnly"), true);
 	m_bUseChatCaptchas = ini.GetBool(_T("MessageUseCaptchas"), true);

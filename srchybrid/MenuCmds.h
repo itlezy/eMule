@@ -48,7 +48,6 @@
 #define MP_HM_KAD				10229
 #define MP_HM_LINK1				10230
 #define MP_HM_LINK2				10231
-#define MP_HM_SCHEDONOFF		10233
 #define MP_SELECTTOOLBARBITMAPDIR 10234
 #define MP_SELECTTOOLBARBITMAP	10235
 #define MP_NOTEXTLABELS			10236
@@ -178,7 +177,6 @@
 
 #define MP_WEBURL				10600	// reserve 100 entries for weburls!
 #define MP_ASSIGNCAT			10700	// reserve 100 entries for categories!
-#define MP_SCHACTIONS			10800	// reserve 100 entries for schedules
 #define MP_CAT_SET0				10900	// reserve 100 entries for change all-cats
 #define MP_TOOLBARBITMAP		11000	// reserve 100 entries for toolbar bitmaps
 #define	MP_SKIN_PROFILE			11100	// reserve 100 entries for skin profiles

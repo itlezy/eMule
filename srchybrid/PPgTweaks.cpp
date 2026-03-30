@@ -20,7 +20,6 @@
 #include "OtherFunctions.h"
 #include "SearchDlg.h"
 #include "PPgTweaks.h"
-#include "Scheduler.h"
 #include "DownloadQueue.h"
 #include "Preferences.h"
 #include "TransferDlg.h"
@@ -732,7 +731,6 @@ BOOL CPPgTweaks::OnApply()
 		return FALSE;
 
 	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : DFLT_MAXCONPERFIVE);
-	theApp.scheduler->original_cons5s = thePrefs.GetMaxConperFive();
 	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : DFLT_MAXHALFOPEN);
 	thePrefs.m_uUDPReceiveBufferSize = m_uUDPReceiveBufferSizeKiB * 1024u;
 	thePrefs.m_uTCPSendBufferSize = m_uTCPBigSendBufferSizeKiB * 1024u;

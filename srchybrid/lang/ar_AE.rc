@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ar_AE.h"
@@ -437,7 +437,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "الصق وصلة  eD2K"
     IDS_SW_LINK             "eD2K وصلات"
     IDS_SW_START            "ابدأ"
-    IDS_SCHEDULER           "سشكولدر"
 END
 
 STRINGTABLE
@@ -1126,8 +1125,6 @@ BEGIN
     IDS_HARDFILES           "حد الملف القوي"
     IDS_FILTER              "فلتر"
     IDS_LINKS               "وصلات"
-    IDS_HM_SCHED_ON         "فعل القائمة"
-    IDS_HM_SCHED_OFF        "ابطل القائمة"
     IDS_HM_LINKHP           "صفحة ايمول "
     IDS_HM_LINKFAQ          "معلومات ايمول"
     IDS_DEBUG_SOURCE_EXCHANGE

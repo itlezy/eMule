@@ -9,7 +9,6 @@
 #include "PPgTweaks.h"
 #include "PPgDisplay.h"
 #include "PPgSecurity.h"
-#include "PPgScheduler.h"
 #include "PPgProxy.h"
 #include "PPgMessages.h"
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
@@ -37,7 +36,6 @@ public:
 	CPPgTweaks		m_wndTweaks;
 	CPPgDisplay		m_wndDisplay;
 	CPPgSecurity	m_wndSecurity;
-	CPPgScheduler	m_wndScheduler;
 	CPPgProxy		m_wndProxy;
 	CPPgMessages	m_wndMessages;
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)

@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "va_ES.h"
@@ -388,7 +388,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "Baixada directa"
     IDS_SW_LINK             "Enllaços eD2K"
     IDS_SW_START            "Comença"
-    IDS_SCHEDULER           "Planificador"
 END
 
 STRINGTABLE
@@ -1089,8 +1088,6 @@ BEGIN
     IDS_HARDFILES           "Límit de fitxers alt"
     IDS_FILTER              "Filtre"
     IDS_LINKS               "Enllaços"
-    IDS_HM_SCHED_ON         "Activa el programador"
-    IDS_HM_SCHED_OFF        "Desactiva rogramador"
     IDS_HM_LINKHP           "Web de l'eMule"
     IDS_HM_LINKFAQ          "PMF de l'eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Registre d'intercanvi de fonts i de recerques i resultats des dels servidors "

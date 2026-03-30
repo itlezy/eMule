@@ -1,4 +1,4 @@
-﻿// Microsoft Visual C++ generated resource script.
+// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "jp_JP.h"
@@ -439,7 +439,6 @@ BEGIN
     IDS_SW_DIRECTDOWNLOAD   "eD2Kリンクを貼り付け"
     IDS_SW_LINK             "eD2Kリンク"
     IDS_SW_START            "開始"
-    IDS_SCHEDULER           "スケジューラ"
 END
 
 STRINGTABLE
@@ -1132,8 +1131,6 @@ BEGIN
     IDS_HARDFILES           "ハードファイル制限"
     IDS_FILTER              "フィルタ"
     IDS_LINKS               "リンク"
-    IDS_HM_SCHED_ON         "スケジューラを使用する"
-    IDS_HM_SCHED_OFF        "スケジューラを使用しない"
     IDS_HM_LINKHP           "eMule ホームページ"
     IDS_HM_LINKFAQ          "eMule FAQ"
     IDS_DEBUG_SOURCE_EXCHANGE
