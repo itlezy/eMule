@@ -104,135 +104,6 @@ int eMuleAllocHook(int mode, void *pUserData, size_t nSize, int nBlockUse, long 
 static TCHAR s_szCrtDebugReportFilePath[MAX_PATH] = APP_CRT_DEBUG_LOG_FILE;
 #endif //_DEBUG
 
-#ifdef _M_IX86
-///////////////////////////////////////////////////////////////////////////////
-// SafeSEH - Safe Exception Handlers
-//
-// This security feature must be enabled at compile time, due to using the
-// linker command line option "/SafeSEH". Depending on the used libraries and
-// object files which are used to link eMule.exe, the linker may or may not
-// throw some errors about 'safeseh'. Those errors have to get resolved until
-// the linker is capable of linking eMule.exe *with* "/SafeSEH".
-//
-// At runtime, we just can check if the linker created an according SafeSEH
-// exception table in the '__safe_se_handler_table' object. If SafeSEH was not
-// specified at all during link time, the address of '__safe_se_handler_table'
-// is NULL -> hence, no SafeSEH is enabled.
-///////////////////////////////////////////////////////////////////////////////
-extern "C" PVOID __safe_se_handler_table[];
-extern "C" BYTE  __safe_se_handler_count;
-
-static void InitSafeSEH()
-{
-	// Need to workaround the optimizer of the C-compiler...
-	volatile PVOID safe_se_handler_table = __safe_se_handler_table;
-	if (safe_se_handler_table == NULL)
-		AfxMessageBox(_T("eMule.exe was not linked with /SafeSEH!"), MB_ICONSTOP);
-}
-#endif //_M_IX86
-
-///////////////////////////////////////////////////////////////////////////////
-// DEP - Data Execution Prevention
-//
-// For Windows XP SP2 and later. Does *not* have any performance impact!
-//
-// VS2003:	DEP must be enabled dynamically because the linker does not support
-//			the "/NXCOMPAT" command line option.
-// VS2005:	DEP can get enabled at link time by using the "/NXCOMPAT" command
-//			line option.
-// VS2008:	DEP can get enabled at link time by using the "DEP" option within
-//			'Visual Studio Linker Advanced Options'.
-//
-#ifndef PROCESS_DEP_ENABLE
-#define	PROCESS_DEP_ENABLE						0x00000001
-#define	PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION	0x00000002
-#endif//!PROCESS_DEP_ENABLE
-
-static void InitDEP()
-{
-	BOOL(WINAPI *pfnGetProcessDEPPolicy)(HANDLE hProcess, LPDWORD lpFlags, PBOOL lpPermanent);
-	BOOL(WINAPI *pfnSetProcessDEPPolicy)(DWORD dwFlags);
-	(FARPROC&)pfnGetProcessDEPPolicy = ::GetProcAddress(::GetModuleHandle(_T("kernel32")), "GetProcessDEPPolicy");
-	(FARPROC&)pfnSetProcessDEPPolicy = ::GetProcAddress(::GetModuleHandle(_T("kernel32")), "SetProcessDEPPolicy");
-	if (pfnGetProcessDEPPolicy && pfnSetProcessDEPPolicy) {
-		DWORD dwFlags;
-		BOOL bPermanent;
-		if ((*pfnGetProcessDEPPolicy)(::GetCurrentProcess(), &dwFlags, &bPermanent)) {
-			// Vista SP1
-			// ===============================================================
-			//
-			// BOOT.INI nx=OptIn,  VS2003/VS2005
-			// ---------------------------------
-			// DEP flags: 00000000
-			// Permanent: 0
-			//
-			// BOOT.INI nx=OptOut, VS2003/VS2005
-			// ---------------------------------
-			// DEP flags: 00000001 (PROCESS_DEP_ENABLE)
-			// Permanent: 0
-			//
-			// BOOT.INI nx=OptIn/OptOut, VS2003 + EditBinX/NXCOMPAT
-			// ----------------------------------------------------
-			// DEP flags: 00000003 (PROCESS_DEP_ENABLE | *PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION*)
-			// Permanent: *1*
-			// ---
-			// There is no way to remove the PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION flag at runtime,
-			// because the DEP policy is already permanent due to the NXCOMPAT flag.
-			//
-			// BOOT.INI nx=OptIn/OptOut, VS2005 + /NXCOMPAT
-			// --------------------------------------------
-			// DEP flags: 00000003 (PROCESS_DEP_ENABLE | PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION)
-			// Permanent: *1*
-			//
-			// NOTE: It is ultimately important to explicitly enable the DEP policy even if the
-			// process' DEP policy is already enabled. If the DEP policy is already enabled due
-			// to an OptOut system policy, the DEP policy is though not yet permanent. As long as
-			// the DEP policy is not permanent it could get changed during runtime...
-			//
-			// So, if the DEP policy for the current process is already enabled but not permanent,
-			// it has to be explicitly enabled by calling 'SetProcessDEPPolicy' to make it permanent.
-			//
-			if (((dwFlags & PROCESS_DEP_ENABLE) == 0 || !bPermanent)
-#if _ATL_VER>0x0710
-				|| (dwFlags & PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION) == 0
-#endif
-				)
-			{
-				 // VS2003:	Enable DEP (with ATL-thunk emulation) if not already set by system policy
-				 //			or if the policy is not yet permanent.
-				 //
-				 // VS2005:	Enable DEP (without ATL-thunk emulation) if not already set by system policy
-				 //			or linker "/NXCOMPAT" option or if the policy is not yet permanent. We should
-				 //			not reach this code path at all because the "/NXCOMPAT" option is specified.
-				 //			However, the code path is here for safety reasons.
-				dwFlags = PROCESS_DEP_ENABLE;
-				// VS2005: Disable ATL thunks.
-				dwFlags |= PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION;
-				(*pfnSetProcessDEPPolicy)(dwFlags);
-			}
-		}
-	}
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-// Heap Corruption Detection
-//
-// For Windows XP SP3 and later. Does *not* have any performance impact!
-//
-#ifndef HeapEnableTerminationOnCorruption
-#define HeapEnableTerminationOnCorruption (HEAP_INFORMATION_CLASS)1
-#endif//!HeapEnableTerminationOnCorruption
-
-static void InitHeapCorruptionDetection()
-{
-	BOOL(WINAPI *pfnHeapSetInformation)(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, PVOID HeapInformation, SIZE_T HeapInformationLength);
-	(FARPROC &)pfnHeapSetInformation = ::GetProcAddress(::GetModuleHandle(_T("kernel32")), "HeapSetInformation");
-	if (pfnHeapSetInformation)
-		(*pfnHeapSetInformation)(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
-}
-
-
 struct SLogItem
 {
 	UINT uFlags;
@@ -287,12 +158,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bAutoStart()
 	, m_bStandbyOff()
 {
-	// Initialize Windows security features.
-#if !defined(_DEBUG) && !defined(_WIN64)
-	InitSafeSEH();
-#endif
-	InitDEP();
-	InitHeapCorruptionDetection();
+	/** Startup-only constructor work begins here after static member initialization. */
 
 	// This does not seem to work well with multithreading, although there is no reason why it should not.
 	//_set_sbh_threshold(768);

@@ -2,19 +2,18 @@
 
 ## Last Chunk
 
-- Closed `BBUG_022` from `docs/AUDIT-BUGS.md`.
-- Updated `srchybrid/OtherFunctions.cpp` so `ipstr(uint32)` and `ipstrA(uint32)` now format IPv4 text through a local stack-buffer helper instead of relying on `inet_ntoa()`'s static conversion storage.
-- Refreshed `docs/AUDIT-BUGS.md` so `BBUG_022` is marked fixed and the audit summary now reflects that the entire 2026-03-30 report is fully triaged in the current tree.
-- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190139-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
+- Removed the legacy runtime SafeSEH, DEP, and heap-corruption startup helpers from `srchybrid/Emule.cpp` and left constructor startup flow focused on actual application initialization.
+- Kept the Common Controls manifest pragma block in place because the shipped manifest files under `srchybrid/res` still do not carry that dependency.
+- Re-ran `..\23-build-emule-debug-incremental.cmd`; the current wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190847-build-project-eMule-Debug\eMule-Debug.log`, and it completed successfully.
 
 ## Current State
 
-- `docs/AUDIT-BUGS.md` now has no active unresolved findings from the 2026-03-30 audit report.
-- The dependency workspace is still restored on the expected local `emule-build-v0.72a` branches, and the latest confirmed parent debug wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190139-build-project-eMule-Debug\eMule-Debug.log`.
-- The working tree is clean after the `BBUG_022` `FIX` and `DOC` commits.
+- `srchybrid/Emule.cpp` no longer carries the XP/VS2003-era runtime hardening block at the top of the file.
+- The dependency workspace is still restored on the expected local `emule-build-v0.72a` branches, and the latest confirmed parent debug wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-190847-build-project-eMule-Debug\eMule-Debug.log`.
+- The next cleanup in this area can focus on remaining top-of-file noise without revisiting the removed runtime security shims.
 
 ## Next Chunk
 
-- Treat `docs/AUDIT-BUGS.md` as complete for the current tree unless a later audit reopens a finding.
-- If more safety work is needed, pick it from outside the 2026-03-30 audit backlog rather than extending the now-closed report.
-- Choose the next hardening task from outside this audit report rather than continuing `docs/AUDIT-BUGS.md`.
+- If more `srchybrid/Emule.cpp` cleanup is wanted, audit the remaining top-of-file includes and debug-only scaffolding for dead or duplicated setup.
+- Keep the manifest pragma until the dependency is moved into the shipped manifest files in a deliberate follow-up change.
+- Use the fresh `20260330-190847` debug wrapper log as the baseline validation point for this cleanup chunk.
