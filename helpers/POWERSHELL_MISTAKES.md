@@ -87,3 +87,17 @@
   I tried to pass a PowerShell range expression to `Select-Object -Index`, which expects already-materialized integers rather than a quoted range token.
 - Fix:
   slice the content array directly (`$c[338..356]`) or pass an unquoted integer array to `-Index`.
+
+- Error:
+  `git submodule add ..\\eMulebb-tests tests` resolved to `https://github.com/itlezy/eMulebb-tests` instead of the intended local sibling repo.
+- Cause:
+  I passed a relative submodule URL in a repo with a GitHub `origin`, so Git resolved it relative to the remote URL rather than as a local filesystem path.
+- Fix:
+  use an explicit local path when adding the submodule, then normalize `.gitmodules` to the desired relative URL afterward.
+
+- Error:
+  `git submodule add C:/prj/p2p/eMulebb-tests tests` failed with `transport 'file' not allowed`.
+- Cause:
+  modern Git blocks local `file` transport for submodule add unless it is explicitly permitted.
+- Fix:
+  run the add with `-c protocol.file.allow=always`, then re-stage `.gitmodules` after any URL cleanup.

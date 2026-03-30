@@ -2,18 +2,18 @@
 
 ## Last Chunk
 
-- Hardened the live network parser paths called out at the top of `docs/AUDIT-BUGS.md`.
-- Fixed the packet/header underflow and short-payload issues in `Packets.cpp`, `EMSocket.cpp`, `UDPSocket.cpp`, and `ClientUDPSocket.cpp`.
-- Fixed the hostile tag-count / server-list bounds issues in `BaseClient.cpp` and `ServerSocket.cpp`, rebuilt with `..\23-build-emule-debug-incremental.cmd`, and refreshed the audit status notes.
+- Created the shared sibling `eMulebb-tests` git repo and wired it into both the current workspace and the new oracle workspace as a `tests` submodule.
+- Tagged the parent pre-refactor baseline, branched both parent and pinned `eMule` checkouts as `v0.72a-oracle`, cloned `C:\prj\p2p\eMulebb-oracle`, and added parent-level wrappers to build and run the shared test project.
+- Verified that both workspaces build and run the same shared doctest binary, and that the live diff script reports the first observed behavior difference between the modern branch and the oracle branch.
 
 ## Current State
 
-- The first live `AUDIT-BUGS` batch is done: `BBUG_001` through `BBUG_007` are fixed in the current tree.
-- `docs/AUDIT-BUGS.md` now marks the removed-code findings for `WebServer.cpp` and `SendMail.cpp` as stale instead of active.
-- The remaining highest-value live work is the low-risk crash-hardening set (`GetCurrentServer()` guards and division-by-zero fixes), followed later by the larger `delete this` / ownership refactor.
+- `C:\prj\p2p\eMulebb\tests` and `C:\prj\p2p\eMulebb-oracle\tests` now point at the same shared test repository content.
+- `tests\scripts\run-live-diff.ps1` already exercises both workspaces end to end and records advisory output diffs.
+- The current shared suite is still small and ring-focused; it proves the cross-worktree harness but does not yet cover the socket / packet / protocol audit targets.
 
 ## Next Chunk
 
-- Fix the remaining live `GetCurrentServer()` null-dereference findings in `BaseClient.cpp`, `Emule.cpp`, and `PartFile.cpp`, then sweep for similar duplicate-call patterns.
-- Add the low-risk division-by-zero guards from the audit (`KnownFile.cpp` first, then the other straightforward UI/import cases if they are still live).
-- Rebuild with `..\23-build-emule-debug-incremental.cmd` and update `docs/AUDIT-BUGS.md` statuses for the newly closed crash-hardening items.
+- Expand the shared tests repo from the ring smoke test into real protocol coverage, starting with packet/header framing and malformed-length boundary cases that can run against both workspaces.
+- Add a normalized machine-readable result format to the live diff path so branch differences are easier to review than raw doctest console text.
+- Decide which observed oracle differences are intentional and which should become actionable regressions before tightening any failure policy.
