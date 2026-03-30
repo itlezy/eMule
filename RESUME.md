@@ -2,6 +2,7 @@
 
 ## Last Chunk
 
+- Re-synced `eMule-zlib` from an ad hoc detached-HEAD fix back onto the canonical local `emule-build-v0.72a` dependency branch at commit `884172c664fd7b92127ebb53968ec04ee8679d41`, matching the already-recorded `zlib-v1.3.2.patch` workflow instead of carrying a one-off checkout-only commit.
 - Restored the missing `eMule-zlib/.gitignore` entries for the generated `cmake-build/` tree and the workspace-owned `contrib/vstudio/vc/zlib.vcxproj` wrapper so the zlib submodule stops reporting disposable build noise as untracked content.
 - Added a new connected-server snapshot seam in `srchybrid/ServerConnectionGuards.h` on the current branch and routed the live `GetCurrentServer()` call sites through it in `BaseClient.cpp`, `Emule.cpp`, `PartFile.cpp`, `SearchResultsWnd.cpp`, and `DownloadQueue.cpp`.
 - Hardened the current tree against null `GetCurrentServer()` snapshots by caching the server pointer once per call site before dereferencing endpoint or capability fields, which fixes the audited `BaseClient`, `Emule`, `PartFile`, and `SearchResultsWnd` TOCTOU/null-deref paths and also cleans up the same pattern in nearby `DownloadQueue`/`PartFile` helpers.
@@ -11,6 +12,7 @@
 
 ## Current State
 
+- `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib` is back on the intended local dependency branch `emule-build-v0.72a` with the recorded patch commit `884172c664fd7b92127ebb53968ec04ee8679d41`; the detached helper commit `30b8e3f181e037e8be23681e538803215962d75e` is no longer the active checkout.
 - `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib\.gitignore` now matches the workspace patch intent again, so generated `cmake-build/` output and the materialized `contrib\vstudio\vc\zlib.vcxproj` wrapper are ignored instead of surfacing as local noise in the zlib submodule.
 - Latest current-tree connected-server guard commit: `e2578dafe11a96b0623ea8214c07c4fc12d06427`.
 - Latest shared-tests commit in `C:\prj\p2p\eMule\eMulebb\eMule-build-tests`: `39211de9761f8b6b3340399b8c7aa6e6d753373a`.
