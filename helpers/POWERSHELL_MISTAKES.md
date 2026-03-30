@@ -29,3 +29,26 @@
   I passed a Windows wildcard path as a literal search target to `rg`; `rg` expects actual paths or glob filters, not shell-expanded wildcard filenames on Windows.
 - Fix:
   use `rg --glob '*.vcxproj*' ... .\\srchybrid` or pass concrete file paths discovered first with `Get-ChildItem`.
+
+## 2026-03-30
+
+- Error:
+  `Get-ChildItem` returned path-not-found errors while probing `AGENTS.md`, `..\\AGENTS.md`, and `..\\..\\AGENTS.md` in one call.
+- Cause:
+  I mixed an existing current-repo path with optional parent paths without filtering the missing candidates first, which produced avoidable non-terminating errors.
+- Fix:
+  build the candidate list first, keep only paths where `Test-Path` succeeds, and then pass the filtered set to `Get-ChildItem`.
+
+- Error:
+  `rg` returned `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed paths like `.\\srchybrid\\*.cpp` and `.\\srchybrid\\Preferences.*`.
+- Cause:
+  I reused shell-style wildcard path arguments with `rg`, which expects real paths plus `--glob` filters instead of Windows wildcard filenames.
+- Fix:
+  pass a concrete directory such as `.\\srchybrid` and add `--glob '*.cpp'` or `--glob 'Preferences.*'` when filtering file names.
+
+- Error:
+  `rg` failed with `regex parse error: unclosed group` while searching for literal text containing `(`, `)`, and `"` inside a PowerShell one-liner.
+- Cause:
+  I used a regular-expression search for a literal pattern instead of switching to fixed-string search or escaping the metacharacters first.
+- Fix:
+  use `rg -F` for literal tokens, or use `Select-String` when the pattern is already naturally expressed as a PowerShell regex string.

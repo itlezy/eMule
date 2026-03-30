@@ -2,20 +2,21 @@
 
 ## Last Chunk
 
-- Removed the remaining connection presets dialog from Preferences > Connection, the project, and the resource/icon lists.
-- Deleted `srchybrid\Wizard.cpp`, `srchybrid\Wizard.h`, and `srchybrid\res\Wizard.ico`.
-- Removed the `SetLanguage()` popup that announced fallback to English while keeping language autodetection and silent English fallback intact.
+- Collapsed bandwidth settings to a limits-only model on the Connection page and the web preferences page.
+- Stopped loading and saving the legacy capacity keys, changed fresh defaults to `20000` upload and `100000` download, and now persist unlimited as `0`.
+- Updated the upload controller to derive its budget from the active limit or live throughput estimates instead of `min(capacity, limit)`.
+- Made the Connection page sliders use `0` as unlimited, kept the textbox free-form, and removed the separate capacity UI.
 - Verified with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- Fresh installs no longer open a first-run wizard.
-- Preferences > Connection now has no wizard/presets helper at all; users tune settings directly on the page.
-- Falling back to English no longer shows an informational startup messagebox.
-- The build is green, and the only remaining uncommitted changes in the worktree are the unrelated existing `AGENTS.md` and `helpers\POWERSHELL_MISTAKES.md` modifications.
+- Bandwidth configuration is now driven by upload/download limits only across preferences, web settings, tray quick actions, and the broadband upload controller.
+- Unlimited is represented as `0` in the UI and INI, while the graph range auto-estimates from live traffic when a limit is unlimited.
+- The project builds cleanly after the refactor.
+- The worktree still contains the unrelated existing `AGENTS.md` modification plus the expected `helpers\POWERSHELL_MISTAKES.md` maintenance entry.
 
 ## Next Chunk
 
-- Manually inspect the Connection page layout after removing the bottom-left button and tighten spacing only if the gap looks bad.
-- Decide whether to prune the remaining first-run wizard string/dialog resources from `emule.rc` and the language files, or leave them as dead localization baggage for now.
-- If desired, replace the `IDS_MB_LANGUAGEINFO` fallback sanity check with a less semantically awkward sentinel string.
+- Manually inspect the Connection page and tray speed dialog to confirm the new slider/textbox behavior is visually clear at `0`, at `300000`, and above the slider ceiling.
+- Decide whether to update the localized language resources that still translate the old capacity-related string IDs even though the base UI no longer uses them as capacities.
+- Consider whether the tray speed dialog should also allow free-form entry above its slider range, or whether keeping that simplification limited to Preferences is acceptable.
