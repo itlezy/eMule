@@ -180,24 +180,46 @@ BOOL CArchivePreviewDlg::OnInitDialog()
 		AddAnchor(IDC_INFO_STATUS, TOP_LEFT, TOP_RIGHT);
 	} else {
 		CRect rc;
-		GetDlgItem(IDC_APV_FILEINFO)->GetWindowRect(rc);
-		int nDelta1 = rc.Height();
-		GetDlgItem(IDC_RESTOREARCH)->GetWindowRect(rc);
-		int nDelta2 = rc.Height();
-		CSplitterControl::ChangePos(GetDlgItem(IDC_FILELIST), 0, -nDelta1);
-		CSplitterControl::ChangeHeight(GetDlgItem(IDC_FILELIST), nDelta1 + nDelta2);
-		CSplitterControl::ChangePos(GetDlgItem(IDC_ARCHPROGRESS), 0, nDelta2);
-		CSplitterControl::ChangePos(GetDlgItem(IDC_INFO_FILECOUNT), 0, nDelta2);
-		GetDlgItem(IDC_READARCH)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_RESTOREARCH)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_APV_FILEINFO)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_ARCP_ATTRIBS)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_INFO_ATTR)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_AP_EXPLAIN)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_INFO_STATUS)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_INFO_TYPE)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_ARCP_TYPE)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_ARCP_STATUS)->ShowWindow(SW_HIDE);
+		int nDelta1 = 0;
+		if (CWnd *pFileInfoWnd = GetDlgItem(IDC_APV_FILEINFO)) {
+			pFileInfoWnd->GetWindowRect(rc);
+			nDelta1 = rc.Height();
+		}
+		int nDelta2 = 0;
+		if (CWnd *pRestoreArchWnd = GetDlgItem(IDC_RESTOREARCH)) {
+			pRestoreArchWnd->GetWindowRect(rc);
+			nDelta2 = rc.Height();
+		}
+
+		/** Guard reduced-layout controls so dialog-template drift cannot crash the page. */
+		if (CWnd *pFileListWnd = GetDlgItem(IDC_FILELIST)) {
+			CSplitterControl::ChangePos(pFileListWnd, 0, -nDelta1);
+			CSplitterControl::ChangeHeight(pFileListWnd, nDelta1 + nDelta2);
+		}
+		if (CWnd *pArchProgressWnd = GetDlgItem(IDC_ARCHPROGRESS))
+			CSplitterControl::ChangePos(pArchProgressWnd, 0, nDelta2);
+		if (CWnd *pInfoFileCountWnd = GetDlgItem(IDC_INFO_FILECOUNT))
+			CSplitterControl::ChangePos(pInfoFileCountWnd, 0, nDelta2);
+		if (CWnd *pReadArchWnd = GetDlgItem(IDC_READARCH))
+			pReadArchWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pRestoreArchWnd = GetDlgItem(IDC_RESTOREARCH))
+			pRestoreArchWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pFileInfoWnd = GetDlgItem(IDC_APV_FILEINFO))
+			pFileInfoWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pArcpAttribsWnd = GetDlgItem(IDC_ARCP_ATTRIBS))
+			pArcpAttribsWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pInfoAttrWnd = GetDlgItem(IDC_INFO_ATTR))
+			pInfoAttrWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pApExplainWnd = GetDlgItem(IDC_AP_EXPLAIN))
+			pApExplainWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pInfoStatusWnd = GetDlgItem(IDC_INFO_STATUS))
+			pInfoStatusWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pInfoTypeWnd = GetDlgItem(IDC_INFO_TYPE))
+			pInfoTypeWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pArcpTypeWnd = GetDlgItem(IDC_ARCP_TYPE))
+			pArcpTypeWnd->ShowWindow(SW_HIDE);
+		if (CWnd *pArcpStatusWnd = GetDlgItem(IDC_ARCP_STATUS))
+			pArcpStatusWnd->ShowWindow(SW_HIDE);
 	}
 	AddAnchor(IDC_INFO_FILECOUNT, BOTTOM_RIGHT);
 	AddAnchor(IDC_ARCHPROGRESS, BOTTOM_LEFT, BOTTOM_RIGHT);
@@ -998,10 +1020,14 @@ void CArchivePreviewDlg::UpdateArchiveDisplay(bool doscan)
 		return;
 
 	CShareableFile *pFile = static_cast<CShareableFile*>((*m_paFiles)[0]);
+	CPartFile *pPartFile = (pFile != NULL && pFile->IsKindOf(RUNTIME_CLASS(CPartFile)))
+		? static_cast<CPartFile*>(pFile)
+		: NULL;
 
-	GetDlgItem(IDC_RESTOREARCH)->EnableWindow(pFile->IsPartFile()
-		&& static_cast<CPartFile*>(pFile)->IsArchive(true)
-		&& static_cast<CPartFile*>(pFile)->IsReadyForPreview());
+	if (CWnd *pRestoreArchWnd = GetDlgItem(IDC_RESTOREARCH))
+		pRestoreArchWnd->EnableWindow(pPartFile != NULL
+			&& pPartFile->IsArchive(true)
+			&& pPartFile->IsReadyForPreview());
 
 	EFileType type = GetFileTypeEx(pFile);
 	LPCTSTR pType;
@@ -1032,8 +1058,8 @@ void CArchivePreviewDlg::UpdateArchiveDisplay(bool doscan)
 
 	// get filled area list
 	CArray<Gap_Struct> *filled = new CArray<Gap_Struct>;
-	if (pFile->IsPartFile()) {
-		static_cast<CPartFile*>(pFile)->GetFilledArray(*filled);
+	if (pPartFile != NULL) {
+		pPartFile->GetFilledArray(*filled);
 		if (filled->IsEmpty()) {
 			SetDlgItemText(IDC_INFO_STATUS, GetResString(IDS_ARCPREV_INSUFFDATA));
 			delete filled;
@@ -1067,7 +1093,9 @@ void CArchivePreviewDlg::UpdateArchiveDisplay(bool doscan)
 	tp->filled = filled;
 	tp->type = type;
 	tp->ownerHwnd = m_hWnd;
-	tp->progressHwnd = GetDlgItem(IDC_ARCHPROGRESS)->m_hWnd;
+	tp->progressHwnd = NULL;
+	if (CWnd *pArchProgressWnd = GetDlgItem(IDC_ARCHPROGRESS))
+		tp->progressHwnd = pArchProgressWnd->m_hWnd;
 	tp->curProgress = 0;
 	tp->m_bIsValid = true;
 

@@ -67,15 +67,26 @@ BOOL CPPgDirectories::OnInitDialog()
 	CPropertyPage::OnInitDialog();
 	InitWindowStyles(this);
 
-	static_cast<CEdit*>(GetDlgItem(IDC_INCFILES))->SetLimitText(MAX_PATH);
+	CWnd *pIncomingWnd = GetDlgItem(IDC_INCFILES);
+	CWnd *pTempWnd = GetDlgItem(IDC_TEMPFILES);
+	HWND hSelIncDirWnd = ::GetDlgItem(m_hWnd, IDC_SELINCDIR);
+	HWND hSelTempDirWnd = ::GetDlgItem(m_hWnd, IDC_SELTEMPDIR);
 
-	AddBuddyButton(GetDlgItem(IDC_INCFILES)->m_hWnd, ::GetDlgItem(m_hWnd, IDC_SELINCDIR));
-	InitAttachedBrowseButton(::GetDlgItem(m_hWnd, IDC_SELINCDIR), m_icoBrowse);
+	/** Guard dialog-template controls before wiring edit limits and buddy buttons. */
+	if (CEdit *pIncomingEdit = static_cast<CEdit*>(pIncomingWnd))
+		pIncomingEdit->SetLimitText(MAX_PATH);
+	if (pIncomingWnd != NULL && hSelIncDirWnd != NULL)
+		AddBuddyButton(pIncomingWnd->m_hWnd, hSelIncDirWnd);
+	if (hSelIncDirWnd != NULL)
+		InitAttachedBrowseButton(hSelIncDirWnd, m_icoBrowse);
 
-	AddBuddyButton(GetDlgItem(IDC_TEMPFILES)->m_hWnd, ::GetDlgItem(m_hWnd, IDC_SELTEMPDIR));
-	InitAttachedBrowseButton(::GetDlgItem(m_hWnd, IDC_SELTEMPDIR), m_icoBrowse);
+	if (pTempWnd != NULL && hSelTempDirWnd != NULL)
+		AddBuddyButton(pTempWnd->m_hWnd, hSelTempDirWnd);
+	if (hSelTempDirWnd != NULL)
+		InitAttachedBrowseButton(hSelTempDirWnd, m_icoBrowse);
 
-	GetDlgItem(IDC_SELTEMPDIRADD)->ShowWindow(thePrefs.IsExtControlsEnabled() ? SW_SHOW : SW_HIDE);
+	if (CWnd *pTempDirAddWnd = GetDlgItem(IDC_SELTEMPDIRADD))
+		pTempDirAddWnd->ShowWindow(thePrefs.IsExtControlsEnabled() ? SW_SHOW : SW_HIDE);
 
 	LoadSettings();
 	Localize();
@@ -106,8 +117,10 @@ void CPPgDirectories::LoadSettings()
 void CPPgDirectories::UpdateAutoRescanControls()
 {
 	const BOOL bEnableInterval = (IsDlgButtonChecked(IDC_AUTORESCANSHAREDFOLDERS) == BST_CHECKED);
-	GetDlgItem(IDC_AUTORESCANSHAREDINTERVALLBL)->EnableWindow(bEnableInterval);
-	GetDlgItem(IDC_AUTORESCANSHAREDINTERVAL)->EnableWindow(bEnableInterval);
+	if (CWnd *pIntervalLabelWnd = GetDlgItem(IDC_AUTORESCANSHAREDINTERVALLBL))
+		pIntervalLabelWnd->EnableWindow(bEnableInterval);
+	if (CWnd *pIntervalWnd = GetDlgItem(IDC_AUTORESCANSHAREDINTERVAL))
+		pIntervalWnd->EnableWindow(bEnableInterval);
 }
 
 void CPPgDirectories::OnBnClickedSelincdir()
@@ -367,5 +380,6 @@ void CPPgDirectories::OnDestroy()
 
 void CPPgDirectories::ErrorBalloon(int iEdit, UINT uid)
 {
-	static_cast<CEdit*>(GetDlgItem(iEdit))->ShowBalloonTip(GetResString(IDS_ERROR), GetResString(uid), TTI_ERROR);
+	if (CEdit *pEdit = static_cast<CEdit*>(GetDlgItem(iEdit)))
+		pEdit->ShowBalloonTip(GetResString(IDS_ERROR), GetResString(uid), TTI_ERROR);
 }
