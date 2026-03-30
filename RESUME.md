@@ -2,6 +2,7 @@
 
 ## Last Chunk
 
+- Restored the build workspace through `workspace.ps1 setup` / `build-project`, which moved the third-party deps back onto their local `emule-build-v0.72a` branches, rebuilt the missing zlib debug library, and let `..\23-build-emule-debug-incremental.cmd` run through the `eMule` Debug build again.
 - Hardened the remaining low-risk runtime guards in `PartFile.cpp` and `ColourPopup.cpp` by inlining the import-progress zero-denominator fallback, guarding `m_nNumColumns` before division, and sending colour-popup notifications only to a live parent window.
 - Hardened the audited UI dialog crash sites in `ArchivePreviewDlg.cpp`, `PPgDirectories.cpp`, and `AddFriend.cpp` by guarding the flagged `GetDlgItem()` dereferences and by validating the archive-preview `CPartFile` downcast once before using part-file-only methods.
 - Added the missing explicit `#include "Opcodes.h"` dependency to `srchybrid/MediaInfo_DLL.cpp` so the `SEC2MS` uses in that translation unit no longer depend on transitive headers.
@@ -17,8 +18,8 @@
 
 - `docs/AUDIT-BUGS.md` now marks `BBUG_036`, `BBUG_037`, and `BBUG_044` as fixed in the current tree after the latest runtime-guard cleanup.
 - `docs/AUDIT-BUGS.md` now marks `BBUG_038` through `BBUG_041` as fixed in the current tree after the dialog/control guard pass.
-- `..\23-build-emule-debug-incremental.cmd` still fails in the workspace environment precheck before app compilation:
-  `cryptopp`, `miniupnp`, and `ResizableLib` are on `HEAD` with missing local patch commits, and `eMule-zlib\contrib\vstudio\vc\x64\Debug\zlib.lib` is still missing, so neither the `MediaInfo_DLL.cpp` include fix nor the latest dialog/control and runtime-guard passes were fully compile-validated through the required parent build entry point in this turn.
+- `workspace.ps1 setup -Config Debug` restored `eMule-cryptopp`, `eMule-miniupnp`, `eMule-ResizableLib`, and `eMule-zlib` onto their local `emule-build-v0.72a` branches, and `workspace.ps1 build-project -Config Debug -Project zlib` regenerated `eMule-zlib\contrib\vstudio\vc\x64\Debug\zlib.lib`.
+- `..\23-build-emule-debug-incremental.cmd` now passes workspace precheck and completes the `eMule` Debug build again; the latest wrapper log is `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-163723-build-project-eMule-Debug\eMule-Debug.log`, ending in `emule.vcxproj -> ...\srchybrid\x64\Debug\emule.exe`.
 - `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib` is back on the intended local dependency branch `emule-build-v0.72a` with the recorded patch commit `884172c664fd7b92127ebb53968ec04ee8679d41`; the detached helper commit `30b8e3f181e037e8be23681e538803215962d75e` is no longer the active checkout.
 - `C:\prj\p2p\eMule\eMulebb\eMule-build\eMule-zlib\.gitignore` now matches the workspace patch intent again, so generated `cmake-build/` output and the materialized `contrib\vstudio\vc\zlib.vcxproj` wrapper are ignored instead of surfacing as local noise in the zlib submodule.
 - Latest current-tree connected-server guard commit: `e2578dafe11a96b0623ea8214c07c4fc12d06427`.
