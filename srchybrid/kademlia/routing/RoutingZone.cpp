@@ -76,6 +76,22 @@ using namespace Kademlia;
 
 //void DebugSend(LPCTSTR pszMsg, uint32 uIP, uint16 uUDPPort);
 
+namespace
+{
+	/**
+	 * @brief Builds a standalone bootstrap queue contact from a live routing entry without copying GUI ownership flags.
+	 */
+	Kademlia::CContact *CreateBootstrapQueueContact(const Kademlia::CContact &contact)
+	{
+		Kademlia::CContact *pBootstrapContact = new Kademlia::CContact(contact.GetClientID(), contact.GetIPAddress(), contact.GetUDPPort()
+			, contact.GetTCPPort(), contact.GetVersion(), contact.GetUDPKey(), contact.IsIpVerified());
+		pBootstrapContact->SetBootstrapContact();
+		if (contact.GetReceivedHelloPacket())
+			pBootstrapContact->SetReceivedHelloPacket();
+		return pBootstrapContact;
+	}
+}
+
 CString CRoutingZone::m_sFilename;
 CUInt128 CRoutingZone::uMe(0ul);
 
@@ -414,7 +430,7 @@ void CRoutingZone::SeedFastKadBootstrapContacts()
 	ContactArray listContacts;
 	GetBootstrapContacts(listContacts, 20);
 	for (ContactArray::const_iterator itContact = listContacts.begin(); itContact != listContacts.end(); ++itContact)
-		CKademlia::s_liBootstrapList.AddTail(new CContact(**itContact));
+		CKademlia::s_liBootstrapList.AddTail(CreateBootstrapQueueContact(**itContact));
 }
 
 void CRoutingZone::DbgWriteBootstrapFile()
