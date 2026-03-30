@@ -31,6 +31,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_036`, `BBUG_037`, and `BBUG_044` were fixed in the runtime-guard cleanup pass on 2026-03-30 by inlining defensive zero-denominator handling in the import-progress callback and by guarding colour-popup parent notifications against dead owner windows.
 - `BBUG_038`, `BBUG_039`, `BBUG_040`, and `BBUG_041` were fixed in the UI dialog crash-hardening pass on 2026-03-30 by guarding audited `GetDlgItem()` call sites and by validating the `CPartFile` downcast once before using archive-preview-only methods.
 - `BBUG_042`, `BBUG_045`, and `BBUG_046` were fixed in the remaining small-runtime cleanup pass on 2026-03-30 by rewriting the unsigned countdown heap-sort loops in `DownloadQueue.cpp`, by switching the live `Server.cpp` IPv4 literal parse to `TryParseDottedIPv4Literal`, and by replacing the audited `_tcscpy` sites with bounded `_tcscpy_s` calls.
+- `BBUG_047` and `BBUG_048` were fixed in the final low-risk resource-cleanup pass on 2026-03-30 by replacing the toolbar desktop-DC probe with `CWindowDC` and by wrapping the captcha generator's temporary GDI/DC ownership in scoped cleanup helpers.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
 
@@ -43,7 +44,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 ### Deferred architectural work
 
 - The raw-pointer lifetime findings (`BBUG_008` through `BBUG_013`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`, `BBUG_049`, `BBUG_050`) still need a dedicated ownership/thread-safety pass.
-- The next low-risk crash-hardening batch should focus on the remaining live `GetCurrentServer()` null dereferences plus the other UI-only guard sites that are still outside the shared seam coverage.
+- The remaining active backlog is now dominated by ownership/thread-safety work rather than low-risk guard or cleanup bugs.
 
 ---
 
@@ -1159,6 +1160,7 @@ If the parent window has been destroyed, `SendMessage` to its HWND causes undefi
 - **Category:** Resource Leak
 - **File:** `srchybrid/ToolBarCtrlX.cpp:140-142`
 - **Reachability:** Internal — toolbar rendering
+- **Status:** FIXED on 2026-03-30 by switching the desktop metrics probe to `CWindowDC`, which removes the mismatched raw `GetDC`/`ReleaseDC` pair entirely.
 
 **Description:**
 `GetDC(HWND_DESKTOP)` paired with `ReleaseDC(NULL, hDC)`. While both resolve to the desktop DC on Windows, the HWND parameter mismatch is technically incorrect per MSDN.
@@ -1173,6 +1175,7 @@ If the parent window has been destroyed, `SendMessage` to its HWND causes undefi
 - **Category:** Resource Leak
 - **File:** `srchybrid/CaptchaGenerator.cpp:71-114`
 - **Reachability:** Internal — captcha generation
+- **Status:** FIXED on 2026-03-30 by wrapping the temporary captcha bitmaps, font, memory DCs, and selected-object restoration in scoped cleanup helpers.
 
 **Description:**
 DCs and GDI objects created between lines 71-76 are cleaned up at lines 107-114. If an exception occurs in the drawing code (lines 78-106), cleanup is skipped.
