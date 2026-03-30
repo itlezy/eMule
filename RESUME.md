@@ -2,23 +2,24 @@
 
 ## Last Chunk
 
-- Implemented the Fast Kad sidecar follow-up for D-03.
-- Added persisted startup metadata in `nodes.fastkad.dat`, reused it to rank bootstrap candidates, and seeded the Kad bootstrap queue directly from the best loaded routing contacts after `nodes.dat` startup.
-- Fed Fast Kad metadata from Kad search responses, verified bootstrap replies, routing-contact expiry/bans, and unanswered search contacts.
+- Implemented D-05 Kad `nodes.dat` management and URL bootstrap hardening.
+- Replaced the old temp-file import flow with download validation plus atomic replacement of the persisted `nodes.dat`, then live Kad reload/import from the accepted file.
+- Added a persisted bootstrap URL preference, a Kad dialog timestamp/status line for the local `nodes.dat`, and shared `NodesDatSupport` helpers/tests for candidate validation and replacement.
+- Preserved dormant `nodes.fastkad.dat` metadata across `nodes.dat` changes so bootstrap ranking survives imported/downloaded snapshot churn.
 - Validation passed:
   - Main build: `..\23-build-emule-debug-incremental.cmd`
-  - Wrapper log: `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260331-002426-build-project-eMule-Debug-x64\eMule-Debug-x64.log`
+  - Wrapper log: `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260331-005119-build-project-eMule-Debug-x64\eMule-Debug-x64.log`
   - Shared tests: `C:\prj\p2p\eMule\eMulebb\eMule-build-tests\build\default\x64\Debug\emule-tests.exe`
-  - Test result: `45` cases passed, `136` assertions passed
+  - Test result: `49` cases passed, `203` assertions passed
 
 ## Current State
 
-- Fast Kad now has both runtime response-time learning and persisted bootstrap-priority metadata.
-- Regular `nodes.dat` startup now queues the top 20 ranked routing contacts for immediate bootstrap probing instead of relying only on minute-scale routing timers.
-- D-04 publish-source flood hardening from the prior chunk remains intact and covered by the shared Kad guard tests.
+- Kad URL bootstrap now persists the source URL, validates downloaded `nodes.dat` files before acceptance, and atomically replaces the local snapshot instead of importing directly from an unchecked temp file.
+- The Kad window now shows the local `nodes.dat` modification timestamp or a missing-state message.
+- Fast Kad sidecar metadata remains separate from `nodes.dat` and now survives snapshot replacement even when some tracked nodes are not present in the current routing export.
 
 ## Next Chunk
 
-- If Kad work continues, audit whether the bootstrap sidecar should track a richer failure taxonomy or remain intentionally coarse.
-- Consider adding a narrow UI/debug view for Fast Kad sidecar hit-rate or bootstrap candidate order only if the current logs are not sufficient during parity checks.
-- Keep IPv6 transport work separate; the Kad startup sidecar is still IPv4-oriented by the current transport model.
+- If Kad work continues, decide whether D-05 should grow an automatic stale-`nodes.dat` refresh path or stay as a hardened manual/on-demand refresh only.
+- Consider hardening `server.met` and related bootstrap file replacement flows with the same validation/replacement seam used for `nodes.dat`.
+- Keep IPv6 transport work separate; the Kad routing and bootstrap persistence path remains IPv4-oriented by the current transport model.

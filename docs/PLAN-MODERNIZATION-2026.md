@@ -435,7 +435,7 @@ Separate worker threads (already exist):
 
 ---
 
-### D-05 nodes.dat Management & Bootstrap URL
+### D-05 nodes.dat Management & Bootstrap URL [DONE: `0877a46`]
 
 **Why:** `nodes.dat` becomes stale. Users with a cold/empty `nodes.dat` cannot bootstrap.
 
@@ -444,6 +444,8 @@ Separate worker threads (already exist):
 - From eMuleAI / UltiMatiX: `NodesDateUpdateUrl` preference
 - Background fetch, atomic replace of `nodes.dat`
 - Show timestamp of `nodes.dat` in Kademlia dialog
+- Validate downloaded `nodes.dat` candidates before replacing the persisted file
+- Keep the Fast Kad sidecar separate and preserve dormant bootstrap metadata across imported/downloaded `nodes.dat` changes
 
 **Effort:** S
 **Dependency:** none
