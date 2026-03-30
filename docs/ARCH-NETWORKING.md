@@ -458,7 +458,7 @@ CUPnPImplWrapper  (UPnPImplWrapper.h — selects and manages active impl)
 **Base interface** (`UPnPImpl.h:51–56`):
 
 ```cpp
-virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort) = 0;
+virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort) = 0;
 virtual bool CheckAndRefresh() = 0;
 virtual void StopAsyncFind() = 0;
 virtual void DeletePorts() = 0;
@@ -466,7 +466,7 @@ virtual bool IsReady() = 0;
 virtual int  GetImplementationID() = 0;
 ```
 
-Three ports are mapped: **TCP peer port**, **UDP peer port**, **TCP web server port** (optional).
+Two ports are mapped: **TCP peer port** and **UDP peer port**.
 
 ### 7.2 Implementation Selection (`UPnPImplWrapper.cpp:30–68`)
 
@@ -585,15 +585,7 @@ volatile TRISTATE m_bUPnPPortsForwarded;
 
 `TRIS_UNKNOWN` is the initial state and the state after a failed/pending discovery. The application uses this to show "unknown" in the status bar rather than a definitive success/failure indication.
 
-### 7.6 Late Web Server Port Addition
-
-```cpp
-void CUPnPImpl::LateEnableWebServerPort(uint16 nPort);
-```
-
-This allows the web server TCP port to be added to an existing mapping without re-running full discovery. Called when the web server is enabled after UPnP discovery has already completed.
-
-### 7.7 UPnP Issues Summary
+### 7.6 UPnP Issues Summary
 
 | Issue | Severity | File |
 |-------|----------|------|

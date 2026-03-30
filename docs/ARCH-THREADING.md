@@ -36,13 +36,8 @@ stalls, and makes the code hard to reason about under load.
 | `CGDIThread` | GDIThread.h:9 | NORMAL | GDI off-screen rendering | CEvent m_hEventKill/m_hEventDead + CCriticalSection |
 | `CPreviewThread` | Preview.h:24 | BELOW_NORMAL | Launch external preview process | Fires and forgets |
 | `CGetMediaInfoThread` | FileInfoDialog.cpp:232 | LOWEST | Read media file metadata | PostMessage UM_MEDIA_INFO_RESULT |
-| `CNotifierMailThread` | SendMail.cpp:223 | LOWEST | Send SMTP email notifications | CCriticalSection sm_critSect |
 | `CLoadDataThread` | Indexed.h:64 | BELOW_NORMAL | Load Kademlia index data from disk | CMutex m_mutSync + volatile flags |
 | `CStartDiscoveryThread` | UPnPImplMiniLib.h:36 | NORMAL | miniupnpc UPnP device discovery | CMutex m_mutBusy |
-
-Additionally:
-- `WebSocket.cpp:472` — raw `CreateThread` for WebSocket accept loop
-- `WebSocket.cpp:583` — raw `CreateThread` for TLS/socket session handling
 
 ### 1.2 Everything Else: The UI Thread
 
@@ -184,7 +179,6 @@ the 1-second Process tick, no socket event can be processed. Every millisecond a
 | `m_csGDILock` | GDIThread.h:61 | GDI off-screen drawing |
 | `m_lockWriteList` | PartFileWriteThread.h:43 | File write queue |
 | `m_lockFlushList` | PartFileWriteThread.h:51 | File flush queue |
-| `sm_critSect` | SendMail.cpp:238 | SMTP send serialization |
 | `m_mutWriteList` | SharedFileList.h:102 | Shared file map writes |
 | `queueLocker` | UploadBandwidthThrottler.h:69 | Upload socket list |
 | `tempQueueLocker` | UploadBandwidthThrottler.h:70 | Temp socket queue |
@@ -298,7 +292,7 @@ TM_CONSOLETHREADEVENT                 // terminal services event
 
 ### 6.2 UI subsystem messages (UM_* messages, UserMsgs.h:4)
 
-30+ UM_ message codes used for web interface ↔ UI, UPnP results, media info, tab
+30+ UM_ message codes used for UI coordination, UPnP results, media info, tab
 control events, archive scan completion, etc.
 
 ### 6.3 Async Socket Messages (AsyncSocketEx.h:82)

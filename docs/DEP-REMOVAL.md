@@ -11,7 +11,7 @@ This document covers each dependency in full: what it is, where it is used, what
 ## Contents
 
 1. [Crypto++ (cryptopp)](#1-crypto-cryptopp) — **`DEP_001`**
-2. [Mbed TLS (mbedtls)](#2-mbed-tls-mbedtls) — **`DEP_006`**
+2. [Mbed TLS (mbedtls)](#2-mbed-tls-mbedtls--dep_006-done--removed) — **`DEP_006` [DONE - REMOVED]**
 3. [id3lib](#3-id3lib) — **`DEP_002`**
 4. [miniupnpc (miniupnp)](#4-miniupnpc-miniupnp) — **`DEP_003`**
 5. [zlib](#5-zlib) — **`DEP_004`**
@@ -68,58 +68,27 @@ The application would not be buildable at all without a source-level replacement
 | Alternative | Notes |
 |---|---|
 | **OpenSSL / libssl** | Provides MD4, MD5, SHA1, DH, RSA, and a CSPRNG. Mature, widely used, actively maintained. However, it ships dynamic libraries by default and the eMule build requires static `/MT`. A static OpenSSL build on Windows is non-trivial. The API surface is C-only and would require substantial rewrites at all call sites, since eMule uses CryptoPP's C++ object model heavily. |
-| **Mbed TLS** (already present) | Already linked into eMule for the web server. Provides MD4, MD5, SHA1 (`mbedtls_md4_*`, etc.), RSA (`mbedtls_rsa_*`), a CSPRNG (`mbedtls_ctr_drbg`), and big-integer arithmetic (`mbedtls_mpi`). All of these are available with static `/MT` builds, which the workspace already configures. Migrating Crypto++ call sites to Mbed TLS would consolidate two libraries into one at the cost of significant source changes. The DH negotiation would need to use `mbedtls_mpi_exp_mod` instead of `CryptoPP::a_exp_b_mod_c`. Feasible long-term but not a drop-in swap. |
 | **Botan** | C++ cryptographic library like Crypto++, with a similar object-oriented API. Provides all needed primitives. Less Windows-native build story than Crypto++; would require similar vcxproj plumbing work. Not an obvious improvement over Crypto++ for this project. |
-| **Windows CNG (BCrypt API)** | Natively available on Windows 7+. `BCryptGenRandom` is already required by Mbed TLS 4.0 (hence `bcrypt.lib` in `AdditionalDependencies`). CNG provides MD4, MD5, SHA1, RSA, and a CSPRNG, but its API is low-level C and would require writing substantial wrapper code to replace the C++ object model. It also ties the build to Windows exclusively, which may not be a concern here but is a trade-off. |
+| **Windows CNG (BCrypt API)** | Natively available on Windows 7+. eMule still links `bcrypt.lib`, so the platform RNG is available without adding another third-party crypto dependency. CNG provides MD4, MD5, SHA1, RSA, and a CSPRNG, but its API is low-level C and would require writing substantial wrapper code to replace the C++ object model. It also ties the build to Windows exclusively, which may not be a concern here but is a trade-off. |
 
-**Recommended path if Crypto++ must be removed:** Consolidate onto Mbed TLS, which is already present, maintained, and already built with the correct CRT settings. Requires rewriting `MD4.h`, `MD5Sum.h`, `SHA.h`, `EncryptedStreamSocket`, `ClientCredits`, `Collection`, and `Preferences` to use Mbed TLS primitives. Estimated effort: high.
+**Recommended path if Crypto++ must be removed:** Either migrate to Windows CNG or adopt a new library such as OpenSSL or Botan. Any option still requires rewriting `MD4.h`, `MD5Sum.h`, `SHA.h`, `EncryptedStreamSocket`, `ClientCredits`, `Collection`, and `Preferences`. Estimated effort: high.
 
 ---
 
-## 2. Mbed TLS (mbedtls) — `DEP_006`
+## 2. Mbed TLS (mbedtls) -- `DEP_006` [DONE - REMOVED]
 
-**Status: Keep, watch API churn**
+**Status: Removed in commit `6a1c440` as part of the SMTP + embedded web-server purge**
 
-### What it is
+Mbed TLS was only used by the optional SMTP notifier and the embedded web server. Those features, their UI, their settings, `TLSthreading`, and the workspace wrapper/build plumbing were removed on 2026-03-30.
 
-Mbed TLS (`Mbed-TLS/mbedtls`, pinned at `mbedtls-4.0.0`) is a C TLS/SSL library. Version 4.0 restructured the library into a core (`mbedtls` proper) plus the `TF-PSA-Crypto` subproject providing the cryptographic primitives. The workspace's `setup` step generates the VS project files via cmake, rewrites them to use `/MT`/`/MTd`, adds the threading patch (`MBEDTLS_THREADING_C` + `MBEDTLS_THREADING_ALT` via `threading_alt.h`), and combines all six static libs into a single `mbedtls.lib` via a `lib.exe` PostBuildEvent. `bcrypt.lib` must be listed explicitly in `AdditionalDependencies` because Mbed TLS 4.0 calls `BCryptGenRandom` at runtime.
+### Removal outcome
 
-### Usage in eMule
+- `emule.exe` no longer links `mbedtls.lib`
+- `workspace.ps1` and `deps.psd1` no longer configure or build `eMule-mbedtls`
+- `WebSocket.cpp`, `WebServer.cpp`, `PPgWebServer.cpp`, `SendMail.cpp`, and `TLSthreading.cpp` are gone
+- Core P2P behavior is unchanged because the dependency was never used by ED2K/Kad traffic
 
-| Source file | Mbed TLS API used | Purpose |
-|---|---|---|
-| `WebSocket.h/.cpp` | `mbedtls_ssl_config`, `mbedtls_ssl_cache_context`, `mbedtls_ssl_ticket_context`, `mbedtls_x509_crt`, `mbedtls_pk_context`, `mbedtls_net_sockets.h`, `mbedtls_ssl_ticket.h` | HTTPS server for the built-in web interface |
-| `TLSthreading.h/.cpp` | `mbedtls_threading.h`, `mbedtls_strerror`, custom `threading_mutex_*_alt` callbacks | Thread-safe TLS (Windows `CRITICAL_SECTION`-based mutex adaptation) |
-| `SendMail.cpp` | `mbedtls_base64.h`, `mbedtls_net_sockets.h`, `mbedtls_ssl_cache.h`, `mbedtls_ssl_ticket.h` | SMTPS encrypted email sending |
-| `PPgWebServer.cpp` | `mbedtls/x509_crt.h` | Certificate loading and validation in web server preferences dialog |
-
-#### Mbed TLS usage depth
-
-The dependency is narrower than Crypto++ but not trivial to remove. It is the sole TLS provider for the web-based remote control interface. Without Mbed TLS, the built-in web server falls back to HTTP-only, and the email notification feature loses TLS entirely.
-
-The threading support (`TLSthreading`) is required because Mbed TLS is not thread-safe by default and eMule is multi-threaded. The custom `threading_alt.h` adapts Mbed TLS mutex calls to Windows `CRITICAL_SECTION`. This was carried as a local source patch and is non-trivial to replicate with another library.
-
-### Impact of removal
-
-- The HTTPS web interface is disabled; the web server still runs but without TLS (HTTP only)
-- SMTPS email notifications are disabled
-- The `PPgWebServer` certificate UI becomes non-functional
-- Certificate management code in `WebSocket.cpp` (~400 LOC) must be stripped or stubbed
-
-The core P2P features (downloading, uploading, Kademlia, server connections) are entirely unaffected. The web interface and email features are optional; eMule remains functional without them.
-
-**Removal verdict: Feasible. Significant source changes but no core protocol impact.**
-
-### Alternatives
-
-| Alternative | Notes |
-|---|---|
-| **OpenSSL / libssl** | The most common alternative for HTTPS server use cases. Mature, well-documented, actively maintained. Providing TLS in a Windows static-build is harder than with Mbed TLS, but achievable. The TLS server code in `WebSocket.cpp` would need a substantial rewrite. |
-| **Crypto++ (already present)** | Crypto++ provides TLS 1.2 via its `TLS` module, but it is experimental and rarely used for server-side HTTPS. Not a practical replacement for Mbed TLS's full TLS server stack. |
-| **SChannel (Windows)** | The Windows native TLS provider via `Schannel.dll`. Works with the standard Winsock I/O and requires no extra static libraries. However, the API is significantly lower-level and platform-specific; porting WebSocket.cpp to SChannel is a larger effort than switching to OpenSSL. Eliminates the Mbed TLS dependency entirely at the cost of tying TLS to Windows. |
-| **Disable the web interface entirely** | If the web remote control is not a required feature, removing the web server (`WebServer.cpp`, `WebSocket.cpp`, `SendMail.cpp`) along with Mbed TLS eliminates the dependency without replacing it. This is the lowest-effort path. |
-
-**Recommended path if Mbed TLS must be removed:** Either disable the HTTPS web interface (least effort) or replace with OpenSSL. If consolidation is the goal, migrating Crypto++ to use Mbed TLS for all primitives (see section 1) and then keeping Mbed TLS as the single crypto library is a better long-term strategy than removing Mbed TLS.
+**Removal verdict: Completed with no protocol impact.**
 
 ---
 
@@ -246,7 +215,6 @@ zlib (`madler/zlib`, pinned at `v1.3.2`) is the standard data compression librar
 | `ClientUDPSocket.cpp` | `uncompress` | Decompresses Kademlia UDP packets that have the compression flag set |
 | `GZipFile.cpp` | `gzopen`, `gzread`, `gzclose`, `gzdirect` | Reading `.gz` compressed update/server-list files (e.g., `server.met.gz`) |
 | `ZIPFile.cpp` | `z_stream`, `inflateInit2`, `inflate`, `inflateEnd` | ZIP archive extraction (for skin/mod ZIP files) |
-| `WebServer.cpp`/`WebServer.h` | `deflateInit2`, `deflate`, `deflateEnd`, `Z_DEFLATED`, `MAX_WBITS`, `MAX_MEM_LEVEL`, `Z_DEFAULT_COMPRESSION` | HTTP `Content-Encoding: gzip` compression for web server responses |
 | `HttpDownloadDlg.cpp` | `z_stream`, `inflate*` | Transparent decompression of gzip-encoded HTTP responses from servers |
 | `ArchiveRecovery.cpp` | `z_stream`, `inflate*`, `gzopen`, `gzread`, `gzclose` | Recovering and reading gzip-compressed archives for preview functionality |
 
@@ -258,7 +226,7 @@ zlib is used at three distinct levels:
 
 2. **File transfer level (important)** — `DownloadClient.cpp` uses streaming `inflate` to decompress compressed file data blocks. This is the zlib-per-block download compression negotiated between clients. Without it, downloads from clients that negotiate compression would fail or need to fall back to uncompressed blocks.
 
-3. **Utility level (non-critical)** — GZip file reading, ZIP archive extraction, HTTP gzip compression, and archive recovery. These are quality-of-life features that can be stubbed without breaking file transfers.
+3. **Utility level (non-critical)** — GZip file reading, ZIP archive extraction, HTTP response decompression, and archive recovery. These are quality-of-life features that can be stubbed without breaking file transfers.
 
 ### Impact of removal
 
@@ -266,9 +234,7 @@ zlib is used at three distinct levels:
 - Compressed block downloads fail — fall back to uncompressed exchange or drop compressed blocks.
 - `.gz` server list files cannot be read — users must use uncompressed server lists.
 - ZIP skins/mods cannot be loaded.
-- The web server falls back to uncompressed HTTP.
-
-zlib is a deeply integrated transport-layer dependency. Unlike the web interface or UI features, the ED2K protocol compression is exercised on every active connection to a modern eMule peer.
+zlib is a deeply integrated transport-layer dependency. Unlike the removed SMTP/web features, the ED2K protocol compression is exercised on every active connection to a modern eMule peer.
 
 **Removal verdict: Technically feasible with significant protocol degradation. Not recommended.**
 
@@ -281,7 +247,7 @@ zlib is a deeply integrated transport-layer dependency. Unlike the web interface
 | **lz4** | Much faster than zlib but uses a different format and is not compatible with zlib's stream format. Cannot replace zlib transparently for the protocol. Would require protocol-level changes. |
 | **libdeflate** | High-performance zlib/gzip-compatible implementation. Faster decompression than stock zlib. Compatible API for `compress`/`decompress`. Does not provide the streaming `inflate`/`deflate` API used by `DownloadClient.cpp` and `ZIPFile.cpp`. |
 
-**Recommended path if zlib must be removed:** Replace with **miniz**. It is the only API-compatible option with zero additional library build overhead. The call sites in `Packets.cpp`, `ClientUDPSocket.cpp`, `DownloadClient.cpp`, `HttpDownloadDlg.cpp`, and `WebServer.cpp` are directly compatible. `GZipFile.cpp` and `ArchiveRecovery.cpp` use the `gz*` high-level gzip functions which need minor adaptation. Estimated effort: low to medium.
+**Recommended path if zlib must be removed:** Replace with **miniz**. It is the only API-compatible option with zero additional library build overhead. The call sites in `Packets.cpp`, `ClientUDPSocket.cpp`, `DownloadClient.cpp`, and `HttpDownloadDlg.cpp` are directly compatible. `GZipFile.cpp` and `ArchiveRecovery.cpp` use the `gz*` high-level gzip functions which need minor adaptation. Estimated effort: low to medium.
 
 ---
 
@@ -340,7 +306,7 @@ Despite being in 31 files, all usages are inheritance-level only. No ResizableLi
 | Dependency | Core P2P protocol | File transfer | Kademlia DHT | Web interface | Email notify | GUI dialogs | MP3 metadata | UPnP NAT |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
 | **Crypto++** (`DEP_001`) | BREAKS | BREAKS | BREAKS | — | — | — | — | — |
-| **Mbed TLS** (`DEP_006`) | — | — | — | degrades (HTTP) | BREAKS | — | — | — |
+| **Mbed TLS** (`DEP_006`) | — | — | — | removed | removed | — | — | — |
 | **id3lib** (`DEP_002`) | — | — | — | — | — | — | removed | — |
 | **miniupnpc** (`DEP_003`) | — | — | — | — | — | — | — | manual only |
 | **zlib** (`DEP_004`) | degrades | degrades | degrades | degrades | — | — | — | — |
@@ -353,9 +319,9 @@ Despite being in 31 files, all usages are inheritance-level only. No ResizableLi
 | **id3lib** | `DEP_002` | Low | Very low | Remove or replace with taglib / Windows Shell IPropertyStore |
 | **miniupnpc** | `DEP_003` | Very low | Very low | Switch to `UPnPImplWinServ` (already in codebase) |
 | **ResizableLib** | `DEP_005` | Medium (31 files) | Low | Inline into source tree, or drop resizable dialogs |
-| **Mbed TLS** | `DEP_006` | High | Low | Keep; or disable web server / consolidate with Crypto++ |
+| **Mbed TLS** | `DEP_006` | Done | Low | Removed together with SMTP and the embedded web server |
 | **zlib** | `DEP_004` | Medium | Medium | Keep; or replace with miniz for same API |
-| **Crypto++** | `DEP_001` | Very high | Critical | Keep; or consolidate all crypto onto Mbed TLS (long-term) |
+| **Crypto++** | `DEP_001` | Very high | Critical | Keep; or plan a dedicated migration to a new crypto backend |
 
 ### Priority order for reduction
 
@@ -365,5 +331,4 @@ If the goal is reducing the dependency count with the least disruption:
 2. **id3lib** (`DEP_002`) — remove two isolated code blocks; MP3 metadata display disappears gracefully
 3. **ResizableLib** (`DEP_005`) — inline the library source into the tree; zero runtime change, submodule gone
 4. **zlib** (`DEP_004`) — replace with miniz; API-compatible, no separate build needed
-5. **Mbed TLS** (`DEP_006`) — only if the web server feature is being dropped, or as part of a full crypto consolidation
-6. **Crypto++** (`DEP_001`) — only as part of a multi-month effort to migrate all crypto call sites to Mbed TLS
+5. **Crypto++** (`DEP_001`) — only as part of a multi-month effort to migrate all crypto call sites

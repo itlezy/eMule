@@ -176,37 +176,6 @@ The last two groups are documented because they still live in the same file, but
 | `NotifierPopEveryChatMessage` | `eMule` | `RW` | Yes | `false` | Pop every chat message, not just first/important ones. |
 | `NotifierUseSound` | `eMule` | `RW` | Yes | `ntfstNoSound` | Select notifier sound mode. |
 | `NotifierSoundPath` | `eMule` | `RW` | Yes | empty | Custom sound file path. |
-| `NotifierSendMail` | `eMule` | `RW` | Yes | `false` | Enable mail notifications. |
-| `NotifierMailAuth` | `eMule` | `RW` | Yes | `0` | Mail authentication mode. |
-| `NotifierMailTLS` | `eMule` | `RW` | Yes | `0` | Mail TLS mode. |
-| `NotifierMailSender` | `eMule` | `RW` | Yes | empty | Sender email/address. |
-| `NotifierMailServer` | `eMule` | `RW` | Yes | empty | SMTP server. |
-| `NotifierMailPort` | `eMule` | `RW` | Yes | `0` | SMTP port. |
-| `NotifierMailRecipient` | `eMule` | `RW` | Yes | empty | Recipient address. |
-| `NotifierMailLogin` | `eMule` | `RW` | Yes | empty | SMTP login. |
-| `NotifierMailPassword` | `eMule` | `RW` | Yes | empty | SMTP password. |
-
-
-### Web Server
-
-| INI key | Section | Mode | UI | Default | Explanation |
-| --- | --- | --- | --- | --- | --- |
-| `Password` | `WebServer` | `RW` | Yes | empty | Admin web password. |
-| `PasswordLow` | `eMule` | `RW` | Yes | empty | Low-rights web password. |
-| `Port` | `eMule` | `RW` | Yes | `4711` for web path | Web server port. |
-| `BindInterface` | `WebServer` | `RW` | Yes | empty | Preferred network interface for the Web UI listener. Empty means no interface restriction. |
-| `BindInterfaceName` | `WebServer` | `RW` | Yes | empty | Stored display name for the selected Web UI bind interface. |
-| `BindAddr` | `WebServer` | `RW` | Yes | empty | Optional IPv4 address for the Web UI listener. Empty means all addresses on the selected interface, or all interfaces when no interface is selected. |
-| `Enabled` | `eMule` | `RW` | Yes | `false` | Enable the web server. |
-| `UseLowRightsUser` | `eMule` | `RW` | Yes | `false` | Enable low-rights web user mode. |
-| `PageRefreshTime` | `eMule` | `RW` | Yes | `120` | Auto-refresh interval in seconds. |
-| `WebTimeoutMins` | `eMule` | `RW` | Yes | `5` | Web session timeout in minutes. |
-| `UseGzip` | `eMule` | `RW` | Yes | `true` for HTTP, forced off for HTTPS | Compress web responses. |
-| `UseHTTPS` | `eMule` | `RW` | Yes | `false` | Enable HTTPS. |
-| `HTTPSCertificate` | `eMule` | `RW` | Yes | empty | HTTPS certificate path. |
-| `HTTPSKey` | `eMule` | `RW` | Yes | empty | HTTPS private key path. |
-| `AllowAdminHiLevelFunc` | `eMule` | `RW` | Yes | `false` | Allow dangerous/high-level admin actions. |
-| `WebUseUPnP` | `eMule` | `RW` | Yes | `false` | Apply UPnP to the web server port too. |
 
 ### Proxy
 
