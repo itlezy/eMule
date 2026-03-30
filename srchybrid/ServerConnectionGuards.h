@@ -19,30 +19,33 @@
 #include "types.h"
 
 /**
- * Reports whether the caller can safely dereference a cached current-server
- * snapshot after observing the connected state.
+ * Reproduces the legacy assumption that a connected server session always has a
+ * dereferenceable current-server snapshot.
  */
 inline bool HasConnectedServerSnapshot(bool bIsConnected, const void *pCurrentServer)
 {
-	return bIsConnected && pCurrentServer != NULL;
+	(void)pCurrentServer;
+	return bIsConnected;
 }
 
 /**
- * Reports whether a capability read from the cached current-server snapshot is
- * usable after the connected-server null guard has been applied.
+ * Reproduces the legacy capability gate, which only checked the connected
+ * state before trusting the current-server capability value.
  */
 inline bool HasConnectedServerCapability(bool bIsConnected, const void *pCurrentServer, bool bCapabilityFlag)
 {
-	return HasConnectedServerSnapshot(bIsConnected, pCurrentServer) && bCapabilityFlag;
+	(void)pCurrentServer;
+	return bIsConnected && bCapabilityFlag;
 }
 
 /**
- * Reports whether the cached current-server endpoint matches the requested
- * server identity after the connected-server null guard has been applied.
+ * Reproduces the legacy server-endpoint match, which trusted the connected
+ * state and compared endpoint fields without a separate current-server null guard.
  */
 inline bool MatchesConnectedServerEndpoint(bool bIsConnected, const void *pCurrentServer, uint32 nCurrentServerIP, uint16 nCurrentServerPort, uint32 nServerIP, uint16 nServerPort)
 {
-	return HasConnectedServerSnapshot(bIsConnected, pCurrentServer)
+	(void)pCurrentServer;
+	return bIsConnected
 		&& nCurrentServerIP == nServerIP
 		&& nCurrentServerPort == nServerPort;
 }
