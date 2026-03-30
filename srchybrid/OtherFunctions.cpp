@@ -2618,20 +2618,33 @@ CString ipstr(uint32 nIP, uint16 nPort)
 	return ipstr((LPCTSTR)ipstr(nIP), nPort);
 }
 
+/**
+ * Format an IPv4 address into a caller-provided ANSI buffer without relying on
+ * Winsock's thread-local/static inet_ntoa conversion storage.
+ */
+static void FormatIPv4AddressA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
+{
+	const BYTE *pucIP = (BYTE*)&nIP;
+	snprintf(pszAddress, iMaxAddress, "%u.%u.%u.%u", pucIP[0], pucIP[1], pucIP[2], pucIP[3]);
+}
+
 CString ipstr(uint32 nIP)
 {
-	return CString(inet_ntoa(*(in_addr*)&nIP));
+	CHAR szAddress[16];
+	FormatIPv4AddressA(szAddress, _countof(szAddress), nIP);
+	return CString(CA2T(szAddress));
 }
 
 CStringA ipstrA(uint32 nIP)
 {
-	return CStringA(inet_ntoa(*(in_addr*)&nIP));
+	CHAR szAddress[16];
+	FormatIPv4AddressA(szAddress, _countof(szAddress), nIP);
+	return CStringA(szAddress);
 }
 
 void ipstrA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
 {
-	const BYTE *pucIP = (BYTE*)&nIP;
-	snprintf(pszAddress, iMaxAddress, "%u.%u.%u.%u", pucIP[0], pucIP[1], pucIP[2], pucIP[3]);
+	FormatIPv4AddressA(pszAddress, iMaxAddress, nIP);
 }
 
 static bool IsDaylightSavingTimeActive(LONG &rlDaylightBias)
