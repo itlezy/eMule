@@ -10,7 +10,9 @@
 - do NOT keep wrappers, unused code, compatibility mapping when refactoring
 - this is a development alpha branch, it is ok to make breaking changes when refactoring
 - ensure to perform commits for each block of edits to offer a granular history of changes, prefix them appropriately like WIP, BUG, FIX, DOC, etc..
+- ensure to implement regression and parity test when touching core features
+- test suites live here `c:\prj\p2p\eMulebb-tests` vs "oracle" branch `c:\prj\p2p\eMulebb-oracle`
 - save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
 - load and strictly follow the PowerSheel guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
-- When checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
-- When comparing features ensure to check the local repos `c:\prj\p2p\eMule-my\analysis\eMuleAI` and `c:\prj\p2p\eMule-my\analysis\eMule-mods-archive`
+- when checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
+- when comparing features ensure to check the local repos `c:\prj\p2p\eMule-my\analysis\eMuleAI` and `c:\prj\p2p\eMule-my\analysis\eMule-mods-archive`
