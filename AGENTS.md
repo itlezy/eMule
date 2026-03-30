@@ -11,7 +11,10 @@
 - this is a development alpha branch, it is ok to make breaking changes when refactoring
 - ensure to perform commits for each block of edits to offer a granular history of changes, prefix them appropriately like WIP, BUG, FIX, DOC, etc..
 - ensure to implement regression and parity test when touching core features
-- test suites live here `c:\prj\p2p\eMule\eMulebb\eMule-build-tests` vs "oracle" branch `c:\prj\p2p\eMule\eMulebb\eMule-build-oracle`
+- test suites live only here `c:\prj\p2p\eMule\eMulebb\eMule-build-tests`
+- treat `c:\prj\p2p\eMule\eMulebb\eMule-build-tests` as the single source of truth for all test code, scripts, and reports
+- do not recreate or edit per-workspace `tests\` directories under `eMule-build` or `eMule-build-oracle`
+- keep the fixed sibling layout `eMule-build`, `eMule-build-oracle`, and `eMule-build-tests`, and make the shared tests build against the target workspace via explicit paths
 - save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
 - load and strictly follow the PowerSheel guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
 - when checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
