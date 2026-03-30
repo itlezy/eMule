@@ -30,6 +30,7 @@
 #include "log.h"
 #include "HttpDownloadDlg.h"
 #include "Kademlia/routing/RoutingZone.h"
+#include "kademlia/utils/NodesDatSupport.h"
 #include "HelpIDs.h"
 #include "DropDownButton.h"
 #include "MenuCmds.h"
@@ -50,6 +51,18 @@ static char THIS_FILE[] = __FILE__;
 #define	WND1_BUTTON_WIDTH	250
 #define	WND1_BUTTON_HEIGHT	22	// don't set the height to something different than 22 unless you know exactly what you are doing!
 #define	WND1_NUM_BUTTONS	2
+
+namespace
+{
+	/**
+	 * @brief Clears any pending bootstrap-only contacts before a replacement list is imported.
+	 */
+	void ClearKadBootstrapList()
+	{
+		while (!Kademlia::CKademlia::s_liBootstrapList.IsEmpty())
+			delete Kademlia::CKademlia::s_liBootstrapList.RemoveHead();
+	}
+}
 
 
 // KademliaWnd dialog
@@ -108,6 +121,10 @@ CKademliaWnd::~CKademliaWnd()
 
 BOOL CKademliaWnd::SaveAllSettings()
 {
+	CString strBootstrapUrl;
+	GetDlgItemText(IDC_BOOTSTRAPURL, strBootstrapUrl);
+	thePrefs.SetNodesDatUpdateUrl(strBootstrapUrl.Trim());
+
 	if (m_pacONBSIPs)
 		m_pacONBSIPs->SaveList(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + ONBOOTSTRAP_STRINGS_PROFILE);
 
@@ -193,12 +210,15 @@ BOOL CKademliaWnd::OnInitDialog()
 			m_pacONBSIPs->LoadList(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + ONBOOTSTRAP_STRINGS_PROFILE);
 	}
 
-	if (GetDlgItem(IDC_BOOTSTRAPURL)->GetWindowTextLength() == 0)
-		SetDlgItemText(IDC_BOOTSTRAPURL, DEFAULT_NODESDAT_URL);
+	CString strBootstrapUrl(thePrefs.GetNodesDatUpdateUrl());
+	if (strBootstrapUrl.IsEmpty())
+		strBootstrapUrl = DEFAULT_NODESDAT_URL;
+	SetDlgItemText(IDC_BOOTSTRAPURL, strBootstrapUrl);
 
 	CheckRadioButton(IDC_RADIP, IDC_RADNODESURL, IDC_RADNODESURL);
 	UpdateControlsState();
 	ShowLookupGraph(false);
+	RefreshNodesDatStatus();
 
 	return TRUE;
 }
@@ -336,6 +356,7 @@ void CKademliaWnd::Localize()
 	SetDlgItemText(IDC_SSTATIC4, GetResString(IDS_SV_ADDRESS) + _T(':'));
 	SetDlgItemText(IDC_SSTATIC7, GetResString(IDS_PORT) + _T(':'));
 	SetDlgItemText(IDC_NODESDATLABEL, GetResString(IDS_BOOTSRAPNODESDAT));
+	SetDlgItemText(IDC_NODESDATSTATUSLABEL, GetResString(IDS_KADNODESDATSTATUS));
 	SetDlgItemText(IDC_FIREWALLCHECKBUTTON, GetResString(IDS_KAD_RECHECKFW));
 
 	SetDlgItemText(IDC_RADCLIENTS, GetResString(IDS_RADCLIENTS));
@@ -346,9 +367,31 @@ void CKademliaWnd::Localize()
 	m_contactListCtrl->Localize();
 	searchList->Localize();
 	m_kadLookupGraph->Localize();
+	RefreshNodesDatStatus();
 
 	m_pbtnWnd->SetBtnText(MP_VIEW_KADCONTACTS, GetResString(IDS_KADCONTACTLAB));
 	m_pbtnWnd->SetBtnText(MP_VIEW_KADLOOKUP, GetResString(IDS_LOOKUPGRAPH));
+}
+
+CString CKademliaWnd::GetNodesDatFilename() const
+{
+	return thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("nodes.dat");
+}
+
+void CKademliaWnd::RefreshNodesDatStatus()
+{
+	WIN32_FILE_ATTRIBUTE_DATA fileData = {};
+	if (!::GetFileAttributesEx(GetNodesDatFilename(), GetFileExInfoStandard, &fileData)) {
+		SetDlgItemText(IDC_NODESDATSTATUS, GetResString(IDS_KADNODESDATMISSING));
+		return;
+	}
+
+	CString strTimeFormat(thePrefs.GetDateTimeFormat4Lists());
+	if (strTimeFormat.IsEmpty())
+		strTimeFormat = _T("%c");
+
+	const CTime tLastWrite(static_cast<time_t>(FileTimeToUnixTime(fileData.ftLastWriteTime)));
+	SetDlgItemText(IDC_NODESDATSTATUS, tLastWrite.Format(strTimeFormat));
 }
 
 void CKademliaWnd::UpdateControlsState()
@@ -438,24 +481,53 @@ void CKademliaWnd::UpdateNodesDatFromURL(const CString &strURL)
 {
 	CString strTempFilename(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	strTempFilename.AppendFormat(_T("temp-%lu-nodes.dat"), ::GetTickCount());
+	CString strTrimmedUrl(strURL);
+	strTrimmedUrl.Trim();
+	const CString strTargetFilename(GetNodesDatFilename());
+	thePrefs.SetNodesDatUpdateUrl(strTrimmedUrl);
+	SetDlgItemText(IDC_BOOTSTRAPURL, strTrimmedUrl);
 
 	// try to download nodes.dat
-	Log(GetResString(IDS_DOWNLOADING_NODESDAT_FROM), (LPCTSTR)strURL);
+	Log(GetResString(IDS_DOWNLOADING_NODESDAT_FROM), (LPCTSTR)strTrimmedUrl);
 	CHttpDownloadDlg dlgDownload;
 	dlgDownload.m_strTitle = GetResString(IDS_DOWNLOADING_NODESDAT);
-	dlgDownload.m_sURLToDownload = strURL;
+	dlgDownload.m_sURLToDownload = strTrimmedUrl;
 	dlgDownload.m_sFileToDownloadInto = strTempFilename;
 	if (dlgDownload.DoModal() != IDOK) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FAILEDDOWNLOADNODES), (LPCTSTR)strURL);
+		(void)::DeleteFile(strTempFilename);
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FAILEDDOWNLOADNODES), (LPCTSTR)strTrimmedUrl);
+		RefreshNodesDatStatus();
 		return;
 	}
 
-	if (!Kademlia::CKademlia::IsRunning()) {
+	Kademlia::NodesDatFileInfo fileInfo;
+	if (!Kademlia::InspectNodesDatFile(strTempFilename, fileInfo) || fileInfo.m_uUsableContacts == 0) {
+		(void)::DeleteFile(strTempFilename);
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_INVALIDNODESDAT), (LPCTSTR)strTrimmedUrl);
+		RefreshNodesDatStatus();
+		return;
+	}
+
+	if (!Kademlia::ReplaceNodesDatFile(strTempFilename, strTargetFilename)) {
+		const DWORD dwError = ::GetLastError();
+		(void)::DeleteFile(strTempFilename);
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_STORINGNODESDAT), (LPCTSTR)strTrimmedUrl, (LPCTSTR)GetErrorMessage(dwError));
+		RefreshNodesDatStatus();
+		return;
+	}
+
+	const bool bKadWasRunning = Kademlia::CKademlia::IsRunning();
+	if (!bKadWasRunning) {
 		Kademlia::CKademlia::Start();
 		theApp.emuledlg->ShowConnectionState();
+	} else {
+		if (fileInfo.m_bBootstrapOnly)
+			ClearKadBootstrapList();
+		Kademlia::CKademlia::GetRoutingZone()->ReadFile(strTargetFilename);
 	}
-	Kademlia::CKademlia::GetRoutingZone()->ReadFile(strTempFilename);
-	(void)_tremove(strTempFilename);
+
+	Log(GetResString(IDS_NODESDATUPDATED), (LPCTSTR)strTrimmedUrl, fileInfo.m_uUsableContacts);
+	RefreshNodesDatStatus();
 }
 
 BOOL CKademliaWnd::OnHelpInfo(HELPINFO*)

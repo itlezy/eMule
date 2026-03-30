@@ -438,6 +438,7 @@ UINT	CPreferences::m_uMinFreeDiskSpace;
 bool	CPreferences::m_bSparsePartFiles;
 bool	CPreferences::m_bImportParts;
 CString	CPreferences::m_strYourHostname;
+CString	CPreferences::m_strNodesDatUpdateUrl;
 bool	CPreferences::m_bEnableVerboseOptions;
 bool	CPreferences::m_bVerbose;
 bool	CPreferences::m_bFullVerbose;
@@ -1702,6 +1703,7 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("AutoRescanSharedFoldersIntervalSec"), max(600u, m_uAutoRescanSharedFoldersIntervalSec));
 	ini.WriteBool(_T("AutoShareNewSharedSubdirs"), m_bAutoShareNewSharedSubdirs);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
+	ini.WriteString(_T("NodesDatUpdateUrl"), m_strNodesDatUpdateUrl);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
 	ini.WriteBool(_T("ShowTaskbarProgress"), m_bShowTaskbarProgress);
 
@@ -2126,6 +2128,7 @@ void CPreferences::LoadPreferences()
 	m_bAutoShareNewSharedSubdirs = ini.GetBool(_T("AutoShareNewSharedSubdirs"), true);
 	m_bKeepUnavailableFixedSharedDirs = ini.GetBool(_T("KeepUnavailableFixedSharedDirs"), false);
 	m_strYourHostname = ini.GetString(_T("YourHostname"), _T(""));
+	m_strNodesDatUpdateUrl = ini.GetString(_T("NodesDatUpdateUrl"), _T("http://upd.emule-security.org/nodes.dat"));
 	m_bImportParts = false; //enable on demand for the current session only
 
 	// Barry - New properties...

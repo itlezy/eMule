@@ -373,6 +373,7 @@ public:
 	static bool		m_bSparsePartFiles;
 	static bool		m_bImportParts;
 	static CString	m_strYourHostname;
+	static CString	m_strNodesDatUpdateUrl;
 	static bool		m_bEnableVerboseOptions;
 	static bool		m_bVerbose;
 	static bool		m_bFullVerbose;
@@ -1030,6 +1031,8 @@ public:
 
 	static const CString& GetYourHostname()				{ return m_strYourHostname; }
 	static void		SetYourHostname(LPCTSTR pszHostname) { m_strYourHostname = pszHostname; }
+	static const CString& GetNodesDatUpdateUrl()		{ return m_strNodesDatUpdateUrl; }
+	static void		SetNodesDatUpdateUrl(LPCTSTR pszUrl)	{ m_strNodesDatUpdateUrl = pszUrl; }
 	static bool		IsCheckDiskspaceEnabled()			{ return checkDiskspace; }
 	static UINT		GetMinFreeDiskSpace()				{ return m_uMinFreeDiskSpace; }
 	static bool		GetSparsePartFiles();

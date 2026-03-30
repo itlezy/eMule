@@ -246,6 +246,9 @@
     <ClCompile Include="kademlia\utils\FastKad.cpp">
       <PrecompiledHeader />
     </ClCompile>
+    <ClCompile Include="kademlia\utils\NodesDatSupport.cpp">
+      <PrecompiledHeader />
+    </ClCompile>
     <ClCompile Include="kademlia\utils\KadPublishGuard.cpp">
       <PrecompiledHeader />
     </ClCompile>

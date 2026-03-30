@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <set>
 
 namespace
 {
@@ -138,7 +139,8 @@ namespace Kademlia
 	void CFastKad::SaveNodesMetadata(LPCTSTR pszFilename, const std::vector<NodeKey> &knownNodes) const
 	{
 		std::vector<SidecarEntry> records;
-		records.reserve(knownNodes.size());
+		records.reserve((std::max)(knownNodes.size(), m_mapNodeStates.size()));
+		std::set<NodeKey> includedKeys;
 
 		for (std::vector<NodeKey>::const_iterator itKey = knownNodes.begin(); itKey != knownNodes.end(); ++itKey) {
 			std::map<NodeKey, NodeState>::const_iterator itState = m_mapNodeStates.find(*itKey);
@@ -149,6 +151,23 @@ namespace Kademlia
 
 			SidecarEntry entry;
 			entry.m_key = *itKey;
+			entry.m_state = itState->second;
+			records.push_back(entry);
+			includedKeys.insert(*itKey);
+		}
+
+		/**
+		 * Keep dormant metadata across imported `nodes.dat` replacements so Fast Kad does not lose
+		 * ranking hints for nodes that temporarily fall out of the current routing snapshot.
+		 */
+		for (std::map<NodeKey, NodeState>::const_iterator itState = m_mapNodeStates.begin(); itState != m_mapNodeStates.end(); ++itState) {
+			if (includedKeys.find(itState->first) != includedKeys.end())
+				continue;
+			if (itState->second.m_uLastSuccessTime == 0 && itState->second.m_uResponseTimeMs == 0 && itState->second.m_nHealthScore == 0)
+				continue;
+
+			SidecarEntry entry;
+			entry.m_key = itState->first;
 			entry.m_state = itState->second;
 			records.push_back(entry);
 		}

@@ -52,6 +52,8 @@ public:
 	BOOL SaveAllSettings();
 private:
 	bool						m_btnsetsize;
+	CString						GetNodesDatFilename() const;
+	void						RefreshNodesDatStatus();
 protected:
 	CIconStatic					m_ctrlBootstrap;
 	CKadContactListCtrl			*m_contactListCtrl;
