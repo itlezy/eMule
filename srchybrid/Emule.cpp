@@ -1229,12 +1229,11 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 		if (cx != LR_DEFAULTSIZE || cy != LR_DEFAULTSIZE || uFlags != LR_DEFAULTCOLOR)
 			hIcon = (HICON)::LoadImage(AfxGetResourceHandle(), lpszResourceName, IMAGE_ICON, cx, cy, uFlags);
 		if (hIcon == NULL) {
-			//TODO: Either do not use that function or copy the returned icon. All the calling code is designed
-			// in a way that the icons returned by this function are to be freed with 'DestroyIcon'. But an
-			// icon which was loaded with 'LoadIcon', is not be freed with 'DestroyIcon'.
-			// Right now, we never come here...
-			ASSERT(0);
-			hIcon = CWinApp::LoadIcon(lpszResourceName);
+			/** Keep debug builds alive when stale skins or icon references request a removed icon. */
+			DebugLogWarning(_T("Missing icon resource '%s'; falling back to the application icon"), lpszResourceName);
+			hIcon = (HICON)::LoadImage(AfxGetResourceHandle(), _T("AAAEMULEAPP"), IMAGE_ICON, cx, cy, uFlags);
+			if (hIcon == NULL)
+				hIcon = CWinApp::LoadIcon(_T("AAAEMULEAPP"));
 		}
 	}
 	return hIcon;
