@@ -503,7 +503,7 @@ CTag::CTag(CFileDataIO &data, bool bOptUTF8)
 	case TAGTYPE_BLOB:
 		// 07-Apr-2004: eMule versions prior to 0.42e.29 handled the "len" as int16!
 		m_nBlobSize = data.ReadUInt32();
-		if (m_nBlobSize <= data.GetLength() - data.GetPosition()) {
+		if (CanReadBlobPayload(data.GetPosition(), data.GetLength(), m_nBlobSize)) {
 			m_pData = new BYTE[m_nBlobSize];
 			data.Read(m_pData, m_nBlobSize);
 		} else {
