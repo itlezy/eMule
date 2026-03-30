@@ -1260,9 +1260,9 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 	return false;
 }
 
-//Returned bool is not about if TryToConnect was successful or not.
-//false means the client was deleted!
-//true means the client was not deleted!
+// Returned bool is not about whether the connect attempt succeeded.
+// false means the caller must stop using the pointer unless it is deleting it
+// explicitly at that call site.
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntimeClass *pClassSocket)
 {
 	// There are 7 possible ways how we are going to connect in this function, sorted by priority:
@@ -1319,19 +1319,15 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 		// This is a sanitize check and counts as a "hard failure", so this check should be also done before calling
 		// TryToConnect if a special handling, like waiting till there are enough connection available should be fone
 		DebugLogWarning(_T("TryToConnect: Too many connections sanitize check (%s)"), (LPCTSTR)DbgGetClientInfo());
-		if (Disconnected(_T("Too many connections"))) {
-			delete this;
+		if (Disconnected(_T("Too many connections")))
 			return false;
-		}
 		return true;
 	}
 	// do not try to connect to source which are incompatible with our encryption setting (one requires it, and the other one doesn't support it)
 	if ((RequiresCryptLayer() && !thePrefs.IsCryptLayerEnabled()) || (thePrefs.IsCryptLayerRequired() && !SupportsCryptLayer())) {
 		DEBUG_ONLY(AddDebugLogLine(DLP_DEFAULT, false, _T("Rejected outgoing connection because CryptLayer-Setting (Obfuscation) was incompatible %s"), (LPCTSTR)DbgGetClientInfo()));
-		if (Disconnected(_T("CryptLayer-Settings (Obfuscation) incompatible"))) {
-			delete this;
+		if (Disconnected(_T("CryptLayer-Settings (Obfuscation) incompatible")))
 			return false;
-		}
 		return true;
 	}
 
@@ -1345,10 +1341,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			++theStats.filteredclients;
 			if (thePrefs.GetLogFilteredIPs())
 				AddDebugLogLine(true, (LPCTSTR)GetResString(IDS_IPFILTERED), (LPCTSTR)ipstr(uClientIP), (LPCTSTR)theApp.ipfilter->GetLastHit());
-			if (Disconnected(_T("IPFilter"))) {
-				delete this;
+			if (Disconnected(_T("IPFilter")))
 				return false;
-			}
 			return true;
 		}
 
@@ -1356,10 +1350,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 		if (theApp.clientlist->IsBannedClient(uClientIP)) {
 			if (thePrefs.GetLogBannedClients())
 				AddDebugLogLine(false, _T("Refused to connect to banned client %s"), (LPCTSTR)DbgGetClientInfo());
-			if (Disconnected(_T("Banned IP"))) {
-				delete this;
+			if (Disconnected(_T("Banned IP")))
 				return false;
-			}
 			return true;
 		}
 	}
@@ -1370,20 +1362,16 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			// We cannot reach this client, so we hard fail to connect, if this client should be kept,
 			// for example, because we might want to wait a bit and hope we get a high ID,
 			// this check has to be done before calling this function
-			if (Disconnected(_T("LowID->LowID"))) {
-				delete this;
+			if (Disconnected(_T("LowID->LowID")))
 				return false;
-			}
 			return true;
 		}
 
 		// are callbacks disallowed?
 		if (bNoCallbacks) {
 			DebugLogError(_T("TryToConnect: Would like to do callback on a no-callback client, %s"), (LPCTSTR)DbgGetClientInfo());
-			if (Disconnected(_T("LowID: No Callback Option allowed"))) {
-				delete this;
+			if (Disconnected(_T("LowID: No Callback Option allowed")))
 				return false;
-			}
 			return true;
 		}
 
@@ -1393,10 +1381,8 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			|| theApp.serverconnect->IsLocalServer(GetServerIP(), GetServerPort()))) // Server Callback
 		{
 			// Nope
-			if (Disconnected(_T("LowID: No Callback Option available"))) {
-				delete this;
+			if (Disconnected(_T("LowID: No Callback Option available")))
 				return false;
-			}
 			return true;
 		}
 	}
@@ -1811,7 +1797,8 @@ void CUpDownClient::RequestSharedFileList()
 	if (m_iFileListRequested == 0) {
 		AddLogLine(true, GetResString(IDS_SHAREDFILES_REQUEST), GetUserName());
 		m_iFileListRequested = 1;
-		TryToConnect(true);
+		if (!TryToConnect(true))
+			delete this;
 	} else
 		LogWarning(LOG_STATUSBAR, _T("Requesting shared files from user %s (%u) is already in progress"), GetUserName(), GetUserIDHybrid());
 }
@@ -2205,9 +2192,9 @@ void CUpDownClient::ProcessPreviewAnswer(const uchar *pachPacket, uint32 nSize)
 }
 
 // Sends a packet. If needed, it will establish a connection before.
-// Options used: ignore max connections, control packet, delete packet
-// !if the functions returns false, that client object was deleted because the connection try failed,
-// and the object wasn't needed any more.
+// Options used: ignore max connections, control packet, delete packet.
+// If the connect attempt reports that the client is no longer usable, this
+// wrapper performs the explicit delete to preserve the legacy caller contract.
 bool CUpDownClient::SafeConnectAndSendPacket(Packet *packet)
 {
 	if (socket != NULL && socket->IsConnected()) {
@@ -2215,7 +2202,11 @@ bool CUpDownClient::SafeConnectAndSendPacket(Packet *packet)
 		return true;
 	}
 	m_WaitingPackets_list.AddTail(packet);
-	return TryToConnect(true);
+	if (!TryToConnect(true)) {
+		delete this;
+		return false;
+	}
+	return true;
 }
 
 bool CUpDownClient::SendPacket(Packet *packet, bool bVerifyConnection)

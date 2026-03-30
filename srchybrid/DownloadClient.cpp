@@ -168,8 +168,8 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 }
 
 // Return bool is not if you asked or not.
-// false = Client was deleted!
-// true = client was not deleted!
+// false = caller must delete the client immediately and stop using the pointer.
+// true = client object is still alive.
 bool CUpDownClient::AskForDownload()
 {
 	if (m_bUDPPending) {

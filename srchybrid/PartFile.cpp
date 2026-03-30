@@ -2349,8 +2349,10 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 						cur_src->SetLastTriedToConnectTime();
 						cur_src->SendFileRequest();
 					} else if (curTick >= cur_src->GetLastTriedToConnectTime() + MIN2MS(20)) {
-						if (!cur_src->AskForDownload()) // NOTE: This may *delete* the client!!
+						if (!cur_src->AskForDownload()) {
+							delete cur_src;
 							break; //I left this break here as a reminder in case of re-arranging things.
+						}
 					}
 				}
 			}
