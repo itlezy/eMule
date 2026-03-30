@@ -409,6 +409,8 @@ Separate worker threads (already exist):
 
 **What (port from eMuleAI's FastKad.cpp/h):**
 - Learn Kad response times and use them to shorten or extend pending search timeout cleanup
+- Persist Fast Kad bootstrap-priority metadata in a sidecar beside `nodes.dat`
+- Seed the startup bootstrap queue from the best recent healthy contacts loaded from the routing table
 - Track Kad node identity by `IP:UDPPort`, reject conflicting IDs, and temporarily ban verified fast-flipping identities when enabled
 - Clear Fast Kad / Safe Kad caches on Kad reconnect-style firewall rechecks and full shutdown
 - Expose Kad bootstrap progress as status-bar text while the bootstrap list is being consumed
