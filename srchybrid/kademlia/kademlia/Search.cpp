@@ -153,8 +153,10 @@ CSearch::~CSearch()
 
 	/// Keep unanswered nodes on a short problematic list so the next lookup avoids stale contacts first.
 	for (ContactMap::const_iterator itTriedMap = m_mapTried.begin(); itTriedMap != m_mapTried.end(); ++itTriedMap) {
-		if (m_mapResponded.find(itTriedMap->first) == m_mapResponded.end())
+		if (m_mapResponded.find(itTriedMap->first) == m_mapResponded.end()) {
 			safeKad.TrackProblematicNode(itTriedMap->second->GetIPAddress(), itTriedMap->second->GetUDPPort());
+			fastKad.TrackNodeFailure(itTriedMap->second->GetClientID(), itTriedMap->second->GetUDPPort());
+		}
 	}
 
 	// Delete any temp contacts.
@@ -392,7 +394,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, const ContactArr
 
 	std::map<Kademlia::CUInt128, clock_t>::iterator itPendingResponse = m_mapPendingResponses.find(uFromDistance);
 	if (itPendingResponse != m_mapPendingResponses.end()) {
-		fastKad.AddResponseTime(uFromIP, clock() - itPendingResponse->second);
+		fastKad.TrackNodeResponse(pFromContact->GetClientID(), uFromPort, uFromIP, clock() - itPendingResponse->second);
 		m_mapPendingResponses.erase(itPendingResponse);
 	}
 	if (safeKad.IsBadNode(uFromIP, uFromPort, pFromContact->GetClientID(), pFromContact->GetVersion(), pFromContact->IsIpVerified(), false, thePrefs.IsBanBadKadNodes()))

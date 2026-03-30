@@ -69,6 +69,7 @@ namespace Kademlia
 		static uint32 GetIPAddress();
 		static bool IsBootstrapping();
 		static uint32 GetBootstrapProgressPercent();
+		static void NoteBootstrapResponse(const CUInt128 &uID, uint16 uUDPPort);
 		static void	Bootstrap(uint32 uIP, uint16 uPort);
 		static void	Bootstrap(LPCTSTR szHost, uint16 uPort);
 		static void	ProcessPacket(const byte *pbyData, uint32 uLenData, uint32 uIP, uint16 uPort, bool bValidReceiverKey, const CKadUDPKey &senderUDPKey);
@@ -106,6 +107,9 @@ namespace Kademlia
 		static bool m_bLANMode;
 		static bool	m_bootstrapping; // used for GUI
 		static uint32 m_uBootstrapListInitialSize;
+		static bool m_bBootstrapPending;
+		static CUInt128 m_uBootstrapPendingID;
+		static uint16 m_uBootstrapPendingUDPPort;
 
 		CPrefs *m_pPrefs;
 		CRoutingZone *m_pRoutingZone;

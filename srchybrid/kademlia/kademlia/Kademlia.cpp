@@ -79,6 +79,9 @@ CList<uint32, uint32> CKademlia::m_liStatsEstUsersProbes;
 _ContactList CKademlia::s_liBootstrapList;
 bool		CKademlia::m_bootstrapping = false;
 uint32		CKademlia::m_uBootstrapListInitialSize = 0;
+bool		CKademlia::m_bBootstrapPending = false;
+CUInt128	CKademlia::m_uBootstrapPendingID(0ul);
+uint16		CKademlia::m_uBootstrapPendingUDPPort = 0;
 
 CKademlia::CKademlia()
 	: m_pPrefs()
@@ -134,6 +137,9 @@ void CKademlia::Start(CPrefs *pPrefs)
 		m_tBootstrap = 0;
 		m_bootstrapping = false;
 		m_uBootstrapListInitialSize = 0;
+		m_bBootstrapPending = false;
+		m_uBootstrapPendingID = CUInt128(0ul);
+		m_uBootstrapPendingUDPPort = 0;
 		// Init our random seed.
 		//srand((unsigned)tNow); not needed, KAD is in the main thread
 		// Create our Kad objects.
@@ -195,6 +201,9 @@ void CKademlia::Stop()
 
 	m_bootstrapping = false;
 	m_uBootstrapListInitialSize = 0;
+	m_bBootstrapPending = false;
+	m_uBootstrapPendingID = CUInt128(0ul);
+	m_uBootstrapPendingUDPPort = 0;
 
 	// Make sure all zones are removed.
 	m_mapEvents.clear();
@@ -237,8 +246,10 @@ void CKademlia::Process()
 		m_pInstance->m_pPrefs->SetFindBuddy();
 		m_tNextFindBuddy = tNow + MIN2S(20);
 	}
-	if (IsConnected())
+	if (IsConnected()) {
 		m_bootstrapping = false;
+		m_bBootstrapPending = false;
+	}
 	if (tNow >= m_tExternPortLookup && CUDPFirewallTester::IsFWCheckUDPRunning() && GetPrefs()->FindExternKadPort(false)) {
 		// if our UDP firewall check is running and we don't know our external port, we send a request every 15 seconds
 		CContact *pContact = GetRoutingZone()->GetRandomContact(3, KADEMLIA_VERSION6_49aBETA);
@@ -300,18 +311,26 @@ void CKademlia::Process()
 			if (m_uBootstrapListInitialSize == 0 || m_uBootstrapListInitialSize < s_liBootstrapList.GetCount())
 				m_uBootstrapListInitialSize = s_liBootstrapList.GetCount();
 			CContact *pContact = s_liBootstrapList.RemoveHead();
+			if (m_bBootstrapPending)
+				fastKad.TrackNodeFailure(m_uBootstrapPendingID, m_uBootstrapPendingUDPPort);
 			m_tBootstrap = tNow;
 			m_bootstrapping = true;
 			DebugLog(_T("Trying to Bootstrap Kad from %s, Distance: %s, Version: %u, %u Contacts left"), (LPCTSTR)ipstr(pContact->GetNetIP()), (LPCTSTR)pContact->GetDistance().ToHexString(), pContact->GetVersion(), s_liBootstrapList.GetCount());
 			const CUInt128 uTargetID(pContact->GetClientID());
 			m_pInstance->m_pUDPListener->Bootstrap(pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetVersion(), &uTargetID);
+			m_bBootstrapPending = true;
+			m_uBootstrapPendingID = uTargetID;
+			m_uBootstrapPendingUDPPort = pContact->GetUDPPort();
 			delete pContact;
 			theApp.emuledlg->kademliawnd->StartUpdateContacts();
 			theApp.emuledlg->ShowConnectionState();
 		} else if (m_bootstrapping) {
 			// failed to bootstrap
+			if (m_bBootstrapPending)
+				fastKad.TrackNodeFailure(m_uBootstrapPendingID, m_uBootstrapPendingUDPPort);
 			m_bootstrapping = false;
 			m_uBootstrapListInitialSize = 0;
+			m_bBootstrapPending = false;
 			AddLogLine(true, GetResString(IDS_BOOTSTRAPFAILED));
 			theApp.emuledlg->ShowConnectionState();
 		}
@@ -393,6 +412,13 @@ uint32 CKademlia::GetIPAddress()
 	return 0;
 }
 
+void CKademlia::NoteBootstrapResponse(const CUInt128 &uID, uint16 uUDPPort)
+{
+	fastKad.TrackNodeReachable(uID, uUDPPort);
+	if (m_bBootstrapPending && m_uBootstrapPendingID == uID && m_uBootstrapPendingUDPPort == uUDPPort)
+		m_bBootstrapPending = false;
+}
+
 bool CKademlia::IsBootstrapping()
 {
 	return m_bRunning && !IsConnected() && (m_bootstrapping || !s_liBootstrapList.IsEmpty());
@@ -444,6 +470,9 @@ void CKademlia::RecheckFirewalled()
 	if (m_pInstance && m_pInstance->GetPrefs() && !IsRunningInLANMode()) {
 		safeKad.ShutdownCleanup();
 		fastKad.ShutdownCleanup();
+		m_bBootstrapPending = false;
+		m_uBootstrapPendingID = CUInt128(0ul);
+		m_uBootstrapPendingUDPPort = 0;
 
 		// Something is forcing a new firewall check
 		// Stop any new buddy requests, and tell the client
