@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "Packets.h"
 #include "ProtocolGuards.h"
+#include "ProtocolParsers.h"
 #include "OtherFunctions.h"
 #include "SafeFile.h"
 #include "StringConversion.h"
@@ -51,15 +52,23 @@ Packet::Packet(uint8 protocol)
 
 Packet::Packet(char *header)
 	: pBuffer()
-	, size(GetPacketPayloadSize(reinterpret_cast<Header_Struct*>(header)->packetlength))
-	, opcode(reinterpret_cast<Header_Struct*>(header)->command)
-	, prot(reinterpret_cast<Header_Struct*>(header)->eDonkeyID)
+	, size()
+	, opcode()
+	, prot()
 	, completebuffer()
 	, m_bSplitted()
 	, m_bLastSplitted()
 	, m_bFromPF()
 {
 	init();
+
+	/** Guard the serialized header before deriving the payload size from it. */
+	ProtocolPacketHeader headerInfo = {};
+	if (TryParsePacketHeader(reinterpret_cast<const BYTE*>(header), PROTOCOL_PACKET_HEADER_SIZE, &headerInfo)) {
+		size = headerInfo.nPayloadLength;
+		opcode = headerInfo.nOpcode;
+		prot = headerInfo.nProtocol;
+	}
 }
 
 Packet::Packet(char *pPacketPart, uint32 nSize, bool bLast, bool bFromPartFile) // only used for split packets!
@@ -443,6 +452,10 @@ CTag::CTag(CFileDataIO &data, bool bOptUTF8)
 			m_uName = data.ReadUInt8();
 		else {
 			m_uName = 0;
+			if (!CanReadSerializedBytes(data.GetPosition(), data.GetLength(), length)) {
+				ASSERT(0);
+				AfxThrowFileException(CFileException::endOfFile);
+			}
 			LPSTR p = m_sName.GetBuffer(length);
 			try {
 				data.Read(p, length);
@@ -477,10 +490,18 @@ CTag::CTag(CFileDataIO &data, bool bOptUTF8)
 		m_uType = TAGTYPE_UINT32;
 		break;
 	case TAGTYPE_FLOAT32:
+		if (!CanReadSerializedBytes(data.GetPosition(), data.GetLength(), 4)) {
+			ASSERT(0);
+			AfxThrowFileException(CFileException::endOfFile);
+		}
 		data.Read(&m_fVal, 4);
 		break;
 	case TAGTYPE_HASH:
 		{
+			if (!CanReadSerializedBytes(data.GetPosition(), data.GetLength(), MDX_DIGEST_SIZE)) {
+				ASSERT(0);
+				AfxThrowFileException(CFileException::endOfFile);
+			}
 			BYTE bHash[MDX_DIGEST_SIZE];
 			data.Read(bHash, MDX_DIGEST_SIZE);
 			m_pData = new BYTE[MDX_DIGEST_SIZE];
@@ -489,6 +510,10 @@ CTag::CTag(CFileDataIO &data, bool bOptUTF8)
 		break;
 	case TAGTYPE_BOOL:
 		TRACE("***NOTE: %s; Reading BOOL tag\n", __FUNCTION__);
+		if (!CanReadSerializedBytes(data.GetPosition(), data.GetLength(), 1)) {
+			ASSERT(0);
+			AfxThrowFileException(CFileException::endOfFile);
+		}
 		data.Seek(1, CFile::current);
 		break;
 	case TAGTYPE_BOOLARRAY:
@@ -497,6 +522,10 @@ CTag::CTag(CFileDataIO &data, bool bOptUTF8)
 			uint16 len;
 			data.Read(&len, 2);
 			// 07-Apr-2004: eMule versions prior to 0.42e.29 used the formula "(len+7)/8"!
+			if (!CanReadBoolArrayPayload(data.GetPosition(), data.GetLength(), len)) {
+				ASSERT(0);
+				AfxThrowFileException(CFileException::endOfFile);
+			}
 			data.Seek((len / 8) + 1ll, CFile::current);
 		}
 		break;

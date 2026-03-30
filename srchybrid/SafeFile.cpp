@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "SafeFile.h"
+#include "ProtocolParsers.h"
 #include "StringConversion.h"
 #include "kademlia/utils/UInt128.h"
 #include "OtherFunctions.h"
@@ -70,6 +71,9 @@ void CFileDataIO::ReadHash16(uchar *pVal)
 
 CString CFileDataIO::ReadString(bool bOptUTF8, UINT uRawSize)
 {
+	if (!CanReadSerializedBytes(GetPosition(), GetLength(), uRawSize))
+		AfxThrowFileException(CFileException::endOfFile);
+
 	const UINT uMaxShortRawSize = SHORT_RAW_ED2K_UTF8_STR;
 	if (uRawSize <= uMaxShortRawSize) {
 		char acRaw[uMaxShortRawSize];
@@ -117,6 +121,8 @@ CString CFileDataIO::ReadString(bool bOptUTF8)
 CStringW CFileDataIO::ReadStringUTF8()
 {
 	UINT uRawSize = ReadUInt16();
+	if (!CanReadSerializedBytes(GetPosition(), GetLength(), uRawSize))
+		AfxThrowFileException(CFileException::endOfFile);
 	const UINT uMaxShortRawSize = SHORT_RAW_ED2K_UTF8_STR;
 	if (uRawSize <= uMaxShortRawSize) {
 		char acRaw[uMaxShortRawSize];
