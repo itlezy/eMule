@@ -10,8 +10,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "emule", "emule.vcxproj", "{
 		{745DEC58-EBB3-47A9-A9B8-4C6627C01BF8} = {745DEC58-EBB3-47A9-A9B8-4C6627C01BF8}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "emule-tests", "emule-tests.vcxproj", "{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "cryptlib", "..\..\eMule-cryptopp\cryptlib.vcxproj", "{C39F4B46-6E89-4074-902E-CA57073044D2}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "miniupnpc", "..\..\eMule-miniupnp\miniupnpc\msvc\miniupnpc.vcxproj", "{D28CE435-CB33-4BAE-8A52-C6EF915956F5}"
@@ -42,12 +40,6 @@ Global
 		{584EA69D-3443-4197-8994-364880FC1B9B}.Release|Win32.Build.0 = Release|Win32
 		{584EA69D-3443-4197-8994-364880FC1B9B}.Release|x64.ActiveCfg = Release|x64
 		{584EA69D-3443-4197-8994-364880FC1B9B}.Release|x64.Build.0 = Release|x64
-		{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}._SpecialBootstrapNodes|Win32.ActiveCfg = _SpecialBootstrapNodes|Win32
-		{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}._SpecialBootstrapNodes|x64.ActiveCfg = _SpecialBootstrapNodes|x64
-		{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}.Debug|Win32.ActiveCfg = Debug|Win32
-		{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}.Debug|x64.ActiveCfg = Debug|x64
-		{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}.Release|Win32.ActiveCfg = Release|Win32
-		{2ED52960-2E77-46F7-87DE-C2B2ED5A96EA}.Release|x64.ActiveCfg = Release|x64
 		{C39F4B46-6E89-4074-902E-CA57073044D2}._SpecialBootstrapNodes|Win32.ActiveCfg = Debug|Win32
 		{C39F4B46-6E89-4074-902E-CA57073044D2}._SpecialBootstrapNodes|Win32.Build.0 = Debug|Win32
 		{C39F4B46-6E89-4074-902E-CA57073044D2}._SpecialBootstrapNodes|x64.ActiveCfg = Debug|x64
