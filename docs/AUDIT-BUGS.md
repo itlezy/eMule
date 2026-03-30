@@ -25,6 +25,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 ### Resolved in current tree
 
 - `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
+- `BBUG_018`, `BBUG_020`, `BBUG_026`, `BBUG_028`, `BBUG_029`, and `BBUG_035` were fixed in the audit-driven guard/test pass on 2026-03-30.
 
 ### Stale after feature removal
 
@@ -35,7 +36,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 ### Deferred architectural work
 
 - The raw-pointer lifetime findings (`BBUG_008` through `BBUG_013`, `BBUG_019`, `BBUG_023` through `BBUG_025`, `BBUG_044`, `BBUG_049`, `BBUG_050`) still need a dedicated ownership/thread-safety pass.
-- The next low-risk crash-hardening batch should focus on the remaining live `GetCurrentServer()` null dereferences and division-by-zero guards.
+- The next low-risk crash-hardening batch should focus on the remaining live `GetCurrentServer()` null dereferences plus the other UI-only guard sites that are still outside the shared seam coverage.
 
 ---
 
@@ -496,6 +497,7 @@ Direct dereference without NULL check in web server handler code. This runs on t
 - **Category:** Logic / Crash
 - **File:** `srchybrid/KnownFile.cpp:454`
 - **Reachability:** Internal — hashing zero-size files
+- **Status:** FIXED on 2026-03-30 by switching the progress update to a bounded helper that treats zero-size files as 0% instead of dividing in Release builds.
 
 **Vulnerable Code:**
 ```cpp
@@ -554,6 +556,7 @@ When `m_bBitmapAlpha` is **false**, `pBitmapBits` is freed and set to NULL at li
 - **Category:** Buffer Overflow / Memory Corruption
 - **File:** `srchybrid/ClientUDPSocket.cpp:88-91`
 - **Reachability:** Network (UDP)
+- **Status:** FIXED on 2026-03-30 by requiring at least one compressed payload byte beyond the UDP header before dispatching the inflater.
 
 **Vulnerable Code:**
 ```cpp
@@ -721,6 +724,7 @@ Auto-deletion pattern in `WM_NCDESTROY` handler. The popup can be destroyed via 
 - **Category:** Logic / Crash
 - **File:** `srchybrid/SharedFileList.cpp:427`
 - **Reachability:** Internal — part file import
+- **Status:** FIXED on 2026-03-30 by routing the import progress update through the same bounded percentage helper used by other guard-safe progress paths.
 
 **Vulnerable Code:**
 ```cpp
@@ -761,6 +765,7 @@ Multiple instances of `TCHAR HTTPTempC[20]` with `_stprintf(HTTPTempC, _T("%i"),
 - **Category:** Network Protocol Parsing
 - **File:** `srchybrid/Packets.cpp:505-508`
 - **Reachability:** Network (TCP)
+- **Status:** FIXED on 2026-03-30 by guarding the blob-length read with an explicit `position <= length` check before subtracting the remaining bytes.
 
 **Vulnerable Code:**
 ```cpp
@@ -782,6 +787,7 @@ The bounds check `data.GetLength() - data.GetPosition()` could underflow if `Get
 - **Category:** Network Protocol Parsing
 - **File:** `srchybrid/ED2KLink.cpp:293-294`
 - **Reachability:** User input — ed2k link parsing
+- **Status:** FIXED on 2026-03-30 by replacing the ambiguous `inet_addr()` literal parse with an explicit dotted-IPv4 parser that accepts the broadcast address.
 
 **Vulnerable Code:**
 ```cpp
@@ -896,6 +902,7 @@ If `CreateCompatibleBitmap` at line 188 fails or picture rendering fails, early 
 - **Category:** Logic / Crash
 - **File:** `srchybrid/EmuleDlg.cpp:3523`
 - **Reachability:** Internal — UI timer handler
+- **Status:** FIXED on 2026-03-30 by clamping the taskbar progress ratio to `0.0f` when the global-size denominator is empty.
 
 **Vulnerable Code:**
 ```cpp
