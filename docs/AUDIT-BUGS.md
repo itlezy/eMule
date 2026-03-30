@@ -27,6 +27,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 - `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
 - `BBUG_018`, `BBUG_020`, `BBUG_026`, `BBUG_028`, `BBUG_029`, and `BBUG_035` were fixed in the audit-driven guard/test pass on 2026-03-30.
 - `BBUG_014`, `BBUG_015`, `BBUG_016`, and `BBUG_043` were fixed in the connected-server snapshot hardening pass on 2026-03-30 by caching `GetCurrentServer()` once per call site before dereferencing it.
+- `BBUG_036`, `BBUG_037`, and `BBUG_044` were fixed in the runtime-guard cleanup pass on 2026-03-30 by inlining defensive zero-denominator handling in the import-progress callback and by guarding colour-popup parent notifications against dead owner windows.
 - `BBUG_038`, `BBUG_039`, `BBUG_040`, and `BBUG_041` were fixed in the UI dialog crash-hardening pass on 2026-03-30 by guarding audited `GetDlgItem()` call sites and by validating the `CPartFile` downcast once before using archive-preview-only methods.
 - The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 - The shared `eMule-build-tests` harness now also covers the connected-server snapshot seam, so the current tree has direct parity/divergence coverage for the null-snapshot guard that backstops the remaining `GetCurrentServer()` TOCTOU fixes.
@@ -929,6 +930,7 @@ If `globalSize` is 0 (no active downloads, or all downloads are zero-size), floa
 - **Category:** Logic / Crash
 - **File:** `srchybrid/PartFile.cpp:2791`
 - **Reachability:** Internal — import progress
+- **Status:** FIXED on 2026-03-30 by keeping the zero-size guard inline with the progress percentage calculation.
 
 **Vulnerable Code:**
 ```cpp
@@ -948,6 +950,7 @@ Guarded by `TotalFileSize.QuadPart != 0` check on line 2790, but if the check is
 - **Category:** Logic / Crash
 - **File:** `srchybrid/ColourPopup.cpp:490,501,585`
 - **Reachability:** Internal — color picker UI
+- **Status:** FIXED on 2026-03-30 by adding runtime guards for `m_nNumColumns <= 0` plus an explicit `ASSERT(m_nNumColumns > 0)` at layout time.
 
 **Vulnerable Code:**
 ```cpp
@@ -1095,6 +1098,7 @@ Two separate `GetCurrentServer()` calls. Server could disconnect between the NUL
 - **Category:** Use-After-Free / Lifetime
 - **File:** `srchybrid/ColourPopup.cpp:686,710`
 - **Reachability:** Internal — color picker UI
+- **Status:** FIXED on 2026-03-30 by sending popup notifications only when the cached parent pointer still owns a live window handle.
 
 **Vulnerable Code:**
 ```cpp
