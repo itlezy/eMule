@@ -122,3 +122,17 @@
   I assumed the doctest XML reporter would still emit console output to tee into the `.log` file, but with `--out=<xml>` it did not produce a companion log.
 - Fix:
   confirm whether a reporter writes to stdout before reading a derived log path, or guard the read with `Test-Path`.
+
+- Error:
+  `Get-Content` failed with `Cannot find path ...\\srchybrid\\Tag.h because it does not exist.`
+- Cause:
+  I assumed the tag declarations lived in a dedicated `Tag.h` file instead of confirming the current header layout first.
+- Fix:
+  use `rg --files .\\srchybrid` or `Test-Path` to confirm the live header path before issuing a targeted `Get-Content`.
+
+- Error:
+  two `MSBuild` invocations for `emule-tests.vcxproj` collided and `CL.exe` failed with `Cannot open compiler generated file ...\\protocol.tests.obj: Permission denied`.
+- Cause:
+  I started the standalone test build and the live-diff build in parallel, and both tried to write the same intermediate/object paths at the same time.
+- Fix:
+  do not parallelize builds that share the same output tree; run the shared test build and the live-diff script serially.

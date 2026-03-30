@@ -26,6 +26,7 @@ This report captures the original 2026-03-30 audit snapshot. The current tree ha
 
 - `BBUG_001` through `BBUG_007` were fixed in the packet/parser hardening pass on 2026-03-30.
 - `BBUG_018`, `BBUG_020`, `BBUG_026`, `BBUG_028`, `BBUG_029`, and `BBUG_035` were fixed in the audit-driven guard/test pass on 2026-03-30.
+- The shared `eMule-build-tests` harness now replays serialized packet headers and tag spans for the live parser seam, so the current tree has direct parity/divergence coverage around the packet-header underflow guard plus the tag/blob truncation checks that backstop `BBUG_001`, `BBUG_005`, `BBUG_006`, and `BBUG_028`.
 
 ### Stale after feature removal
 
