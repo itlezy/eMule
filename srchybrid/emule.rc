@@ -573,7 +573,7 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,106,216,10
     CONTROL         "Remember open searches between restarts",IDC_STORESEARCHES,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,116,216,10
-    CONTROL         "Enable Win7 taskbar stuff",IDC_WIN7TASKBARGOODIES,
+    CONTROL         "Enable taskbar progress integration",IDC_TASKBARPROGRESS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,4,126,216,10
     GROUPBOX        "Lower CPU && Memory Usage",IDC_STATIC_CPUMEM,4,145,223,35
     CONTROL         "Disable Known Clients list",IDC_DISABLEKNOWNLIST,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,12,156,202,10
@@ -2789,7 +2789,7 @@ BEGIN
     IDS_CLOSEEMULE          "Close eMule"
     IDS_DONOTASKAGAIN       "Do not ask me again"
     IDS_POPULARITY          "Popularity Rank"
-    IDS_SHOWWIN7TASKBARGOODIES "Enable Windows 7 taskbar effects"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_WEB_HTTPS           "Use HTTPS"
     IDS_CERTIFICATE         "Certificate"
     IDS_CERT_NOT_FOUND      "Certificate file not found"
@@ -3817,3 +3817,4 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "res\\emule.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

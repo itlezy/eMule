@@ -1867,7 +1867,7 @@ BEGIN
     IDS_CLOSEEMULE          "Затваряне на eMule"
     IDS_DONOTASKAGAIN       "Повече не ме питай"
     IDS_POPULARITY          "Популярност"
-    IDS_SHOWWIN7TASKBARGOODIES "Включи ефектите на Windows 7 за лентата със задачи"
+    IDS_TASKBARPROGRESS "Включи ефектите на Windows 7 за лентата със задачи"
     IDS_LANMODE             "Режим LAN"
     IDS_OPENPREFINI         "Отвори 'preferences.ini'"
 END
@@ -1887,3 +1887,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

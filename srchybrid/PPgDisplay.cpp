@@ -53,7 +53,7 @@ BEGIN_MESSAGE_MAP(CPPgDisplay, CPropertyPage)
 	ON_BN_CLICKED(IDC_CLEARCOMPL, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWTRANSTOOLBAR, OnSettingsChange)
 	ON_BN_CLICKED(IDC_STORESEARCHES, OnSettingsChange)
-	ON_BN_CLICKED(IDC_WIN7TASKBARGOODIES, OnSettingsChange)
+	ON_BN_CLICKED(IDC_TASKBARPROGRESS, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RESETHIST, OnBtnClickedResetHist)
 	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
@@ -84,7 +84,7 @@ void CPPgDisplay::LoadSettings()
 	CheckDlgButton(IDC_SHOWTRANSTOOLBAR, static_cast<UINT>(thePrefs.IsTransToolbarEnabled()));
 	CheckDlgButton(IDC_DISABLEHIST, static_cast<UINT>(thePrefs.GetUseAutocompletion()));
 
-	CheckDlgButton(IDC_WIN7TASKBARGOODIES, static_cast<UINT>(thePrefs.IsWin7TaskbarGoodiesEnabled()));
+	CheckDlgButton(IDC_TASKBARPROGRESS, static_cast<UINT>(thePrefs.IsTaskbarProgressEnabled()));
 
 	SetDlgItemInt(IDC_TOOLTIPDELAY, thePrefs.m_iToolDelayTime, FALSE);
 }
@@ -123,8 +123,8 @@ BOOL CPPgDisplay::OnApply()
 	thePrefs.m_bUseAutocompl = IsDlgButtonChecked(IDC_DISABLEHIST) != 0;
 	thePrefs.m_bStoreSearches = IsDlgButtonChecked(IDC_STORESEARCHES) != 0;
 
-	thePrefs.m_bShowWin7TaskbarGoodies = IsDlgButtonChecked(IDC_WIN7TASKBARGOODIES) != 0;
-	theApp.emuledlg->EnableTaskbarGoodies(thePrefs.m_bShowWin7TaskbarGoodies);
+	thePrefs.m_bShowTaskbarProgress = IsDlgButtonChecked(IDC_TASKBARPROGRESS) != 0;
+	theApp.emuledlg->EnableTaskbarProgress(thePrefs.m_bShowTaskbarProgress);
 
 	thePrefs.showRatesInTitle = IsDlgButtonChecked(IDC_SHOWRATEONTITLE) != 0;
 
@@ -203,7 +203,7 @@ void CPPgDisplay::Localize()
 		SetDlgItemText(IDC_DISABLEHIST, GetResString(IDS_ENABLED));
 
 		SetDlgItemText(IDC_SHOWTRANSTOOLBAR, GetResString(IDS_PW_SHOWTRANSTOOLBAR));
-		SetDlgItemText(IDC_WIN7TASKBARGOODIES, GetResString(IDS_SHOWWIN7TASKBARGOODIES));
+		SetDlgItemText(IDC_TASKBARPROGRESS, GetResString(IDS_TASKBARPROGRESS));
 	}
 }
 
@@ -311,3 +311,4 @@ void CPPgDisplay::DrawPreview()
 	int dep = static_cast<CSliderCtrl*>(GetDlgItem(IDC_3DDEPTH))->GetPos();
 	m_3DPreview.SetSliderPos(dep);
 }
+

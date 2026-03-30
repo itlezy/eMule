@@ -1886,7 +1886,7 @@ BEGIN
     IDS_CLOSEEMULE          "eMule sluiten"
     IDS_DONOTASKAGAIN       "Niet opnieuw vragen"
     IDS_POPULARITY          "Populariteitsrang"
-    IDS_SHOWWIN7TASKBARGOODIES "Taakbalkeffecten van Windows 7 inschakelen"
+    IDS_TASKBARPROGRESS "Taakbalkeffecten van Windows 7 inschakelen"
     IDS_LANMODE             "LAN-mode"
     IDS_OPENPREFINI         "preferences.ini openen"
 END
@@ -1906,3 +1906,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

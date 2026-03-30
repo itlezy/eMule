@@ -1885,7 +1885,7 @@ STRINGTABLE
 BEGIN
     IDS_DONOTASKAGAIN       "Больше не спрашивать"
     IDS_POPULARITY          "Рейтинг популярности"
-    IDS_SHOWWIN7TASKBARGOODIES "Включить эффекты панели задач Windows 7"
+    IDS_TASKBARPROGRESS "Включить эффекты панели задач Windows 7"
     IDS_LANMODE             "Режим LAN"
     IDS_OPENPREFINI         "Открыть preferences.ini"
     IDS_WEB_HTTPS           "Включить HTTPS"
@@ -1913,3 +1913,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

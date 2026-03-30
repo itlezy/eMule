@@ -3335,7 +3335,7 @@ LRESULT CemuleDlg::OnTaskbarBtnCreated(WPARAM, LPARAM)
 
 // Updates global progress and /down state overlay icon
 // Overlay icon looks rather annoying than useful, so it's disabled by default for the common user and can be enabled by ini setting only (Ornis)
-void CemuleDlg::EnableTaskbarGoodies(bool enable)
+void CemuleDlg::EnableTaskbarProgress(bool enable)
 {
 	if (m_pTaskbarList) {
 		m_pTaskbarList->SetOverlayIcon(m_hWnd, NULL, _T(""));
@@ -3351,7 +3351,7 @@ void CemuleDlg::EnableTaskbarGoodies(bool enable)
 
 void CemuleDlg::UpdateStatusBarProgress()
 {
-	if (m_pTaskbarList && thePrefs.IsWin7TaskbarGoodiesEnabled()) {
+	if (m_pTaskbarList && thePrefs.IsTaskbarProgressEnabled()) {
 		// calc global progress & status
 		float finishedsize = theApp.emuledlg->transferwnd->GetDownloadList()->GetFinishedSize();
 		float globalSize = theStats.m_fGlobalSize + finishedsize;
@@ -3455,3 +3455,4 @@ void CemuleDlg::SetTaskbarIconColor()
 	DebugLog(_T("Taskbar Notifier Color: R:%u G:%u B:%u, Brightness: %u, Transparent: %s"), iRed, iGreen, iBlue, iBrightness, bTransparent ? _T("Yes") : _T("No"));
 	thePrefs.SetStatsColor(11, ((bBrightTaskbarIconSpeed || bTransparent) ? RGB(255, 255, 255) : RGB(0, 0, 0)));
 }
+

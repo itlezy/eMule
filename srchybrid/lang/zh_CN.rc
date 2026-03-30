@@ -1860,7 +1860,7 @@ BEGIN
     IDS_CLOSEEMULE          "关闭eMule" //"Close eMule"
     IDS_DONOTASKAGAIN       "不再询问" //"Don't ask me again"
     IDS_POPULARITY          "普及率" //"Popularity Rank"
-    IDS_SHOWWIN7TASKBARGOODIES "启用 Winodws 7 任务栏特效" //"Enable Windows 7 taskbar effects"
+    IDS_TASKBARPROGRESS "启用 Winodws 7 任务栏特效" //"Enable taskbar progress integration"
     IDS_LANMODE             "局域网模式" //"LAN Mode"
     IDS_OPENPREFINI         "打开配置文件(preferences.ini)" //"Open preferences.ini"
 END
@@ -1881,3 +1881,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

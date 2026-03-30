@@ -1855,7 +1855,7 @@ BEGIN
     IDS_CLOSEEMULE          "Chiudi eMule"
     IDS_DONOTASKAGAIN       "Non chiedermelo nuovamente"
     IDS_POPULARITY          "Livello di popolarità"
-    IDS_SHOWWIN7TASKBARGOODIES "Abilita gli effetti della barra strumenti di Windows 7"
+    IDS_TASKBARPROGRESS "Abilita gli effetti della barra strumenti di Windows 7"
     IDS_LANMODE             "Modalità rete domestica"
     IDS_OPENPREFINI         "Apri il file preferences.ini"
 END
@@ -1875,3 +1875,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

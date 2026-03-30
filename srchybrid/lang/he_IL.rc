@@ -1875,7 +1875,7 @@ BEGIN
     IDS_CLOSEEMULE          "סגור את אימיול"
     IDS_DONOTASKAGAIN       "אל תשאל אותי שוב"
     IDS_POPULARITY          "דירוג פופולריות"
-    IDS_SHOWWIN7TASKBARGOODIES "הפעל אפקטים של שורת מצב של חלונות 7"
+    IDS_TASKBARPROGRESS "הפעל אפקטים של שורת מצב של חלונות 7"
     IDS_LANMODE             "מצב רשת מקומית (LAN)"
     IDS_OPENPREFINI         "פתח את preferences.ini"
 END
@@ -1895,3 +1895,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

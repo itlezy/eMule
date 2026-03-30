@@ -1439,7 +1439,7 @@
 #define IDS_CLOSEEMULE                  1587
 #define IDS_DONOTASKAGAIN               1588
 #define IDS_POPULARITY                  1589
-#define IDS_SHOWWIN7TASKBARGOODIES      1590
+#define IDS_TASKBARPROGRESS      1590
 #define IDS_WEB_HTTPS                   1591
 #define IDS_CERTIFICATE                 1592
 #define IDS_CERT_NOT_FOUND              1593
@@ -1596,7 +1596,7 @@
 #define IDC_UPDATESERVERCONNECT         2190
 #define IDC_STORESEARCHES               2190
 #define IDC_VWIDTH                      2191
-#define IDC_WIN7TASKBARGOODIES          2191
+#define IDC_TASKBARPROGRESS          2191
 #define IDC_QUEUECOUNT                  2192
 #define IDC_VASPECT                     2192
 #define IDC_UPDATESERVERCLIENT          2194
@@ -2318,3 +2318,4 @@
 #define _APS_NEXT_SYMED_VALUE           1667
 #endif
 #endif
+

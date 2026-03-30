@@ -1888,7 +1888,7 @@ BEGIN
     IDS_CLOSEEMULE          "Cerrar eMule"
     IDS_DONOTASKAGAIN       "No preguntar de nuevo"
     IDS_POPULARITY          "Popularidad"
-    IDS_SHOWWIN7TASKBARGOODIES "Activar efectos de la barra de tareas de Windows 7"
+    IDS_TASKBARPROGRESS "Activar efectos de la barra de tareas de Windows 7"
     IDS_LANMODE             "Modo LAN"
     IDS_OPENPREFINI         "Abrir preferences.ini"
 END
@@ -1908,3 +1908,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

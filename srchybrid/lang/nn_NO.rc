@@ -1841,7 +1841,7 @@ BEGIN
     IDS_CLOSEEMULE          "Close eMule"
     IDS_DONOTASKAGAIN       "Don't ask me again"
     IDS_POPULARITY          "Popularity Rank"
-    IDS_SHOWWIN7TASKBARGOODIES "Enable Windows 7 taskbar effects"
+    IDS_TASKBARPROGRESS "Enable taskbar progress integration"
     IDS_LANMODE             "LAN Mode"
     IDS_OPENPREFINI         "Open preferences.ini"
 END
@@ -1861,3 +1861,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

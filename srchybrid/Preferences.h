@@ -458,7 +458,7 @@ public:
 	static bool		m_bRearrangeKadSearchKeywords;
 	static bool		m_bAllocFull;
 	static bool		m_bShowSharedFilesDetails;
-	static bool		m_bShowWin7TaskbarGoodies;
+	static bool		m_bShowTaskbarProgress;
 	static bool		m_bShowUpDownIconInTaskbar;
 	static bool		m_bForceSpeedsToKB;
 	static bool		m_bAutoShowLookups;
@@ -1033,8 +1033,8 @@ public:
 	static void		SetSparsePartFiles(bool bEnable)	{ m_bSparsePartFiles = bEnable; }
 	static bool		GetResolveSharedShellLinks()		{ return m_bResolveSharedShellLinks; }
 	static bool		IsShowUpDownIconInTaskbar()			{ return m_bShowUpDownIconInTaskbar; }
-	static bool		IsWin7TaskbarGoodiesEnabled()		{ return m_bShowWin7TaskbarGoodies; }
-	static void		SetWin7TaskbarGoodiesEnabled(bool flag)	{ m_bShowWin7TaskbarGoodies = flag; }
+	static bool		IsTaskbarProgressEnabled()		{ return m_bShowTaskbarProgress; }
+	static void		SetTaskbarProgressEnabled(bool flag)	{ m_bShowTaskbarProgress = flag; }
 
 	static void		SetMaxUpload(uint32 val);
 	static void		SetMaxDownload(uint32 val);
@@ -1259,3 +1259,4 @@ protected:
 
 extern CPreferences thePrefs;
 extern bool g_bLowColorDesktop;
+

@@ -1887,7 +1887,7 @@ BEGIN
     IDS_CLOSEEMULE          "Închide eMule"
     IDS_DONOTASKAGAIN       "Nu mă mai întreba"
     IDS_POPULARITY          "Clasament popularitate"
-    IDS_SHOWWIN7TASKBARGOODIES "Activare efecte taskbar Windows 7"
+    IDS_TASKBARPROGRESS "Activare efecte taskbar Windows 7"
     IDS_LANMODE             "Mod LAN"
     IDS_OPENPREFINI         "Deschide preferences.ini"
 END
@@ -1907,3 +1907,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

@@ -1865,7 +1865,7 @@ BEGIN
     IDS_CLOSEEMULE          "Fechar eMule"
     IDS_DONOTASKAGAIN       "Não pergunte novamente"
     IDS_POPULARITY          "Ranking de Popularidade"
-    IDS_SHOWWIN7TASKBARGOODIES
+    IDS_TASKBARPROGRESS
                             "Habilitar efeitos da barra de tarefas do Windows 7"
     IDS_WEB_HTTPS           "Usar HTTPS"
     IDS_CERTIFICATE         "Certificado"
@@ -1895,3 +1895,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

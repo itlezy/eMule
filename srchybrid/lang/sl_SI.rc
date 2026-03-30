@@ -1884,7 +1884,7 @@ BEGIN
     IDS_CLOSEEMULE          "Zapri eMule"
     IDS_DONOTASKAGAIN       "Ne vprašaj ponovno"
     IDS_POPULARITY          "Popularnost"
-    IDS_SHOWWIN7TASKBARGOODIES "Vklopi efekte orodne vrstice v Windows 7"
+    IDS_TASKBARPROGRESS "Vklopi efekte orodne vrstice v Windows 7"
     IDS_LANMODE             "LAN Mode"
     IDS_OPENPREFINI         "Open preferences.ini"
 END
@@ -1904,3 +1904,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

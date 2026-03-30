@@ -1862,7 +1862,7 @@ BEGIN
     IDS_CLOSEEMULE          "關閉 eMule"
     IDS_DONOTASKAGAIN       "不要再次詢問我"
     IDS_POPULARITY          "人氣排名"
-    IDS_SHOWWIN7TASKBARGOODIES "啟用 Windows 7 工作列效果"
+    IDS_TASKBARPROGRESS "啟用 Windows 7 工作列效果"
     IDS_LANMODE             "LAN 模式"
     IDS_OPENPREFINI         "開啟 preferences.ini"
 END
@@ -1882,3 +1882,4 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
+

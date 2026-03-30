@@ -546,7 +546,7 @@ bool	CPreferences::m_bAutomaticArcPreviewStart;
 bool    CPreferences::m_bAllocFull;
 bool	CPreferences::m_bShowSharedFilesDetails;
 bool	CPreferences::m_bShowUpDownIconInTaskbar;
-bool	CPreferences::m_bShowWin7TaskbarGoodies;
+bool	CPreferences::m_bShowTaskbarProgress;
 bool	CPreferences::m_bForceSpeedsToKB;
 bool	CPreferences::m_bAutoShowLookups;
 bool	CPreferences::m_bExtraPreviewWithMenu;
@@ -1701,7 +1701,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("AutoShareNewSharedSubdirs"), m_bAutoShareNewSharedSubdirs);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
-	ini.WriteBool(_T("ShowWin7TaskbarGoodies"), m_bShowWin7TaskbarGoodies);
+	ini.WriteBool(_T("ShowTaskbarProgress"), m_bShowTaskbarProgress);
 
 	// Barry - New properties...
 	ini.WriteBool(_T("AutoConnectStaticOnly"), m_bAutoConnectToStaticServersOnly);
@@ -2205,7 +2205,7 @@ void CPreferences::LoadPreferences()
 	m_bShowSharedFilesDetails = ini.GetBool(_T("ShowSharedFilesDetails"), true);
 	m_bAutoShowLookups = ini.GetBool(_T("AutoShowLookups"), true);
 	m_bShowUpDownIconInTaskbar = ini.GetBool(_T("ShowUpDownIconInTaskbar"), false);
-	m_bShowWin7TaskbarGoodies = ini.GetBool(_T("ShowWin7TaskbarGoodies"), true);
+	m_bShowTaskbarProgress = ini.GetBool(_T("ShowTaskbarProgress"), true);
 	m_bForceSpeedsToKB = ini.GetBool(_T("ForceSpeedsToKB"), false);
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);
 
@@ -2985,3 +2985,4 @@ bool CPreferences::IsRunningAeroGlassTheme()
 	}
 	return m_bIsRunningAeroGlass != FALSE;
 }
+

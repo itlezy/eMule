@@ -1034,7 +1034,7 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 				// Update connection stats...
 				theStats.UpdateConnectionStats(theApp.uploadqueue->GetDatarate() / 1024.0f, theApp.downloadqueue->GetDatarate() / 1024.0f);
 
-				if (thePrefs.IsWin7TaskbarGoodiesEnabled())
+				if (thePrefs.IsTaskbarProgressEnabled())
 					theApp.emuledlg->UpdateStatusBarProgress();
 			}
 
@@ -1198,3 +1198,4 @@ UploadingToClient_Struct::~UploadingToClient_Struct()
 	DeleteRequestedBlockList(m_DoneBlocks_list);
 	m_csBlockListsLock.Unlock();
 }
+

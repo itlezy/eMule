@@ -83,7 +83,7 @@ public:
 	void UpdateStatusBarProgress();
 	void UpdateThumbBarButtons(bool initialAddToDlg = false);
 	void OnTBBPressed(UINT id);
-	void EnableTaskbarGoodies(bool enable);
+	void EnableTaskbarProgress(bool enable);
 
 	enum TBBIDS
 	{

@@ -1880,7 +1880,7 @@ BEGIN
     IDS_CLOSEEMULE          "Đóng eMule"
     IDS_DONOTASKAGAIN       "Không hiển thị nữa"
     IDS_POPULARITY          "Xếp hạng Thông dụng"
-    IDS_SHOWWIN7TASKBARGOODIES "Cho phép hiệu ứng thanh công cụ Windows 7"
+    IDS_TASKBARPROGRESS "Cho phép hiệu ứng thanh công cụ Windows 7"
     IDS_LANMODE             "Chế độ Mạng nội bộ"
     IDS_OPENPREFINI         "Mở preferences.ini"
 END
@@ -1902,3 +1902,4 @@ END
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 ﻿
+

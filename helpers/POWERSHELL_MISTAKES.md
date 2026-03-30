@@ -164,3 +164,17 @@
   I pushed a heavily escaped pattern through a PowerShell one-liner and the quoting broke before `Select-String` received the intended search string.
 - Fix:
   prefer simpler literal searches, or put the pattern in a PowerShell variable and pass that variable to `Select-String -Pattern`.
+
+- Error:
+  `rg` failed with `regex parse error: unclosed group` while I searched for several literal XML / MSBuild tokens in one alternation.
+- Cause:
+  I mixed regex alternation with literal strings containing backslashes, quotes, and angle brackets instead of switching to fixed-string or PowerShell-native matching.
+- Fix:
+  when searching literal manifest or project tokens, use `rg -F` with one token at a time or `Select-String` with a small literal pattern list.
+
+- Error:
+  `rg` reported path-not-found errors under `srchybrid\lang\x64\...` while I was checking for renamed identifiers.
+- Cause:
+  I searched the whole `srchybrid` tree in parallel with a cleanup that deleted the generated `srchybrid\lang\x64` build output, so `rg` raced stale paths.
+- Fix:
+  do not run recursive searches against a tree that is being deleted in parallel; delete generated output first, then search, or exclude that path explicitly with `--glob '!srchybrid/lang/x64/**'`.
