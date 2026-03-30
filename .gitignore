@@ -8,3 +8,5 @@
 /srchybrid/Release/
 /srchybrid/ipch/
 /srchybrid/x64/
+/srchybrid/tests/Win32/
+/srchybrid/tests/x64/
