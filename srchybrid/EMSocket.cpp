@@ -348,8 +348,16 @@ void CEMSocket::OnReceive(int nErrorCode)
 				return;
 			}
 
+			const Header_Struct *pHeader = reinterpret_cast<Header_Struct*>(rptr);
+
+			/** Reject malformed or oversized packet lengths before deriving the payload size. */
+			if (pHeader->packetlength == 0) {
+				OnError(ERR_WRONGHEADER);
+				return;
+			}
+
 			// Security: Check for buffer overflow (2MB)
-			if (reinterpret_cast<Header_Struct*>(rptr)->packetlength - 1 > sizeof GlobalReadBuffer) {
+			if (pHeader->packetlength - 1 > sizeof GlobalReadBuffer) {
 				OnError(ERR_TOOBIG);
 				return;
 			}
