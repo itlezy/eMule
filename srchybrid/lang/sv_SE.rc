@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "sv_SE.h"
@@ -557,9 +557,6 @@ BEGIN
     IDS_CD_RATING           "Värdering (totalt):"
     IDS_CD_USCORE           "Poäng till uppladdningskö:"
     IDS_CD_TITLE            "Klientdetaljer"
-    IDS_EMULEW              "Klicka"
-    IDS_EMULEW2             "för att kolla om en ny version finns tillgänglig"
-    IDS_EMULEW3             "här"
     IDS_PW_MAXSOURCES       "Max. källor per fil"
     IDS_SHAREDFILESCOUNT    "Antal utdelade filer: %u"
     IDS_SF_SIZE             "Total storlek av utdelade filer: %s"
@@ -892,19 +889,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Beskrivning till fil '%s' mottaget: %s"
     IDS_WEBSERVICES         "Webtjänster"
     IDS_WEBSVEDIT           "Ändra webtjänster"
-    IDS_CHECK4UPDATE        "Kolla efter ny version"
     IDS_STARTUP             "Start av eMule"
-    IDS_NEWVERSIONAVL       "En ny version av eMule är tillgänglig! Kolla hemsidan för mer information."
-    IDS_NEWVERSIONAVLPOPUP  "En ny version av eMule är tillgänglig. Klicka här för att läsa om den nya versionen!"
-    IDS_NEWVERSIONFAILED    "Misslyckades att kolla om det fanns en ny version."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Ny eMule version hittad"
-    IDS_NONEWERVERSION      "Ingen ny eMule version hittad."
-    IDS_VERSIONCHECK        "&Versionskontroll"
-    IDS_VISITVERSIONCHECK   "\n\nVill du besöka informationssidan nu?"
     IDS_PW_VIDEOPLAYER      "Videospelare"
     IDS_VIDEOBACKUP         "Skapa backup till granskning"
     IDS_MYINFO              "Min info"
@@ -1100,7 +1089,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Avaktivera schemat"
     IDS_HM_LINKHP           "eMules hemsida"
     IDS_HM_LINKFAQ          "eMules FAQ"
-    IDS_HM_LINKVC           "eMules Versionskontroll"
     IDS_DEBUG_SOURCE_EXCHANGE "Visa källutbytningsmeddelanden"
     IDS_SHAREDREQ1          "Användare %s (%u) frågade efter listan med dina utdelade mappar -> %s"
     IDS_SHAREDREQ2          "Användare %s (%u) frågade efter listan med dina utdelade filer i mapp '%s' -> %s"
@@ -1737,7 +1725,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Du kan inte ladda hem den här filen för att ditt filsystem inte klarar av filer större än 4GB, överväg att konvertera ditt filsystem till NTFS"
-    IDS_NEWVERSIONAVLBETA   "Denna beta-version är gammal. Eftersom beta-versioner ofta innehåller buggar är det mycket viktigt att du uppdaterar till en ny version snarast!"
     IDS_KADSEARCHACTIVE     "(Kad-sökning pågår...)"
     IDS_BOLD                "Fet text"
     IDS_UNDERLINE           "Understrycken text"

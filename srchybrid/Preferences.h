@@ -179,7 +179,6 @@ public:
 	static CStringArray	tempdir;
 	static bool		ICH;
 	static bool		m_bAutoUpdateServerList;
-	static bool		updatenotify;
 	static bool		mintotray;
 	static bool		autoconnect;
 	static bool		m_bAutoConnectToStaticServersOnly; // Barry
@@ -397,7 +396,6 @@ public:
 	static bool		notifierOnLog;
 	static bool		notifierOnImportantError;
 	static bool		notifierOnEveryChatMsg;
-	static bool		notifierOnNewVersion;
 	static ENotifierSoundType notifierSoundType;
 	static CString	notifierSoundFile;
 	static bool		m_bMessageEnableSmileys;
@@ -453,7 +451,6 @@ public:
 	static bool		m_bExtControls;
 	static bool		m_bTransflstRemain;
 
-	static UINT		versioncheckdays;
 	static bool		showRatesInTitle;
 
 	static CString	m_strTxtEditor;
@@ -491,7 +488,6 @@ public:
 	static DWORD	m_uFileBufferTimeLimit;
 
 	static UINT		maxmsgsessions;
-	static time_t	versioncheckLastAutomatic;
 	static CString	messageFilter;
 	static CString	commentFilter;
 	static CString	filenameCleanups;
@@ -687,7 +683,6 @@ public:
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }
-	static bool		UpdateNotify()						{ return updatenotify; }
 	static bool		GetMinToTray()						{ return mintotray; }
 	static bool		DoAutoConnect()						{ return autoconnect; }
 	static void		SetAutoConnect(bool inautoconnect)	{ autoconnect = inautoconnect; }
@@ -1005,7 +1000,6 @@ public:
 	static bool		GetNotifierOnLog()					{ return notifierOnLog; }
 	static bool		GetNotifierOnImportantError()		{ return notifierOnImportantError; }
 	static bool		GetNotifierOnEveryChatMsg()			{ return notifierOnEveryChatMsg; }
-	static bool		GetNotifierOnNewVersion()			{ return notifierOnNewVersion; }
 	static ENotifierSoundType GetNotifierSoundType()	{ return notifierSoundType; }
 	static const CString& GetNotifierSoundFile()		{ return notifierSoundFile; }
 
@@ -1116,9 +1110,6 @@ public:
 	static void		SetWindowLayout(const WINDOWPLACEMENT &in) { EmuleWindowPlacement = in; }
 
 	static bool		GetAutoConnectToStaticServersOnly()	{ return m_bAutoConnectToStaticServersOnly; }
-	static UINT		GetUpdateDays()						{ return versioncheckdays; }
-	static time_t	GetLastVC()							{ return versioncheckLastAutomatic; }
-	static void		UpdateLastVC();
 	static int		GetIPFilterLevel()					{ return filterlevel; }
 	static const CString& GetMessageFilter()			{ return messageFilter; }
 	static const CString& GetCommentFilter()			{ return commentFilter; }
@@ -1262,8 +1253,6 @@ public:
 	static bool		GetHighresTimer()					{ return m_bHighresTimer; }
 
 	static CString	GetHomepageBaseURL()				{ return GetHomepageBaseURLForLevel(GetWebMirrorAlertLevel()); }
-	static CString	GetVersionCheckBaseURL();
-	static CString	GetVersionCheckURL();
 	static void		SetWebMirrorAlertLevel(uint8 newValue) { m_nWebMirrorAlertLevel = newValue; }
 	static bool		IsDefaultNick(const CString &strCheck);
 	static UINT		GetWebMirrorAlertLevel();

@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "tr_TR.h"
@@ -573,9 +573,6 @@ BEGIN
     IDS_CD_RATING           "Derecelendirme (toplam):"
     IDS_CD_USCORE           "Gönderme Sırası Skoru:"
     IDS_CD_TITLE            "İstemci Ayrıntıları"
-    IDS_EMULEW              "Yeni"
-    IDS_EMULEW2             "olup olmadığını kontrol etmek için buraya tıklayın!"
-    IDS_EMULEW3             "sürümün"
     IDS_PW_MAXSOURCES       "Azami Kaynak/Dosya"
     IDS_SHAREDFILESCOUNT    "Paylaşılan Dosya Sayısı: %u"
     IDS_SF_SIZE             "Paylaşılan Dosyaların Toplam Boyutu: %s"
@@ -911,19 +908,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' dosyası için alınan açıklama: %s"
     IDS_WEBSERVICES         "&Web Hizmeti"
     IDS_WEBSVEDIT           "Web Hizmetini Düzenle..."
-    IDS_CHECK4UPDATE        "Yeni sürümü kontrol et"
     IDS_STARTUP             "Başlangıç"
-    IDS_NEWVERSIONAVL       "eMule'un yeni sürümü mevcut! Daha fazla bilgi için proje ana sayfamızı kontrol edin."
-    IDS_NEWVERSIONAVLPOPUP  "eMule'un yeni sürümü mevcut! Yeni sürüm hakkında bilgi almak için buraya tıklayın!"
-    IDS_NEWVERSIONFAILED    "Yeni Sürüm Kontrol Edilemez!"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Yeni eMule sürümü algılandığında"
-    IDS_NONEWERVERSION      "Yeni eMule Sürümü Algılanmadı!"
-    IDS_VERSIONCHECK        "&Sürüm Kontrolü"
-    IDS_VISITVERSIONCHECK   "\n\nBilgi sayfasını şimdi ziyaret etmek istiyor musunuz?"
     IDS_PW_VIDEOPLAYER      "Görüntü Oynatıcı"
     IDS_VIDEOBACKUP         "Önizlemek için yedekleme oluştur"
     IDS_MYINFO              "Bilgilerim"
@@ -1120,7 +1109,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Zamanlayıcı Kapalı"
     IDS_HM_LINKHP           "eMule Ana Sayfası"
     IDS_HM_LINKFAQ          "eMule S.S.S"
-    IDS_HM_LINKVC           "eMule Sürüm Kontrolü"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "İstemci kaynak değişimi ve sunucu kaynak sorgulamalarını/cevaplarını günlükle"
     IDS_SHAREDREQ1          "Kullanıcı %s (%u) paylaşılmış dizinlerinizin listesini istedi -> %s"
@@ -1747,7 +1735,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Bu dosyayı indiremezsiniz çünkü dosya sisteminiz 4GB'dan daha büyük dosyaları desteklemez, NTFS'e dönüştürmeyi düşünün"
-    IDS_NEWVERSIONAVLBETA   "Bu Beta sürüm eskimiş. Sık sık program hataları içeren Beta sürümlerin cinsinden dolayı en kısa zamanda sağlam yayıma güncellemeniz çok önemlidir!"
     IDS_BOLD                "Kalın metine değiştirir"
     IDS_UNDERLINE           "Altı çizilmiş metine değiştirir"
     IDS_COLOUR              "Önplan metin rengini seçer (isteğe bağlı arkaplan rengi)"

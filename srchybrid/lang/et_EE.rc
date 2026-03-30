@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "et_EE.h"
@@ -553,9 +553,6 @@ BEGIN
     IDS_CD_RATING           "Reiting (kokku):"
     IDS_CD_USCORE           "Saatmisjärjekorra skoor:"
     IDS_CD_TITLE            "Kliendi detailne info"
-    IDS_EMULEW              "Klõpsa"
-    IDS_EMULEW2             "kontrollimaks uue versiooni olemasolu"
-    IDS_EMULEW3             "siia"
     IDS_PW_MAXSOURCES       "Max allikaid faili kohta"
     IDS_SHAREDFILESCOUNT    "Jagatud failide arv: %u"
     IDS_SF_SIZE             "Jagatud failide kogusuurus: %s"
@@ -887,19 +884,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Kirjeldus failile '%s' saabus: %s"
     IDS_WEBSERVICES         "Veebiteenused"
     IDS_WEBSVEDIT           "Muuda veebiteenuseid"
-    IDS_CHECK4UPDATE        "Kontrolli uue versiooni saadavust"
     IDS_STARTUP             "Käivitamine"
-    IDS_NEWVERSIONAVL       "Uus eMule versioon on saadaval! Vaata projekti kodulehte täiendava info saamiseks."
-    IDS_NEWVERSIONAVLPOPUP  "Uus eMule versioon on saadaval. Kliki siia uue versiooni kohta lugemiseks!"
-    IDS_NEWVERSIONFAILED    "Ei suutnud kontrollida uue versiooni olemasolu."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Leidsin uue eMule versiooni"
-    IDS_NONEWERVERSION      "Uut eMule versiooni ei leitud."
-    IDS_VERSIONCHECK        "&Versioonikontroll"
-    IDS_VISITVERSIONCHECK   "\n\nKas Sa soovite infolehekülge kohe külastada?"
     IDS_PW_VIDEOPLAYER      "Video vaataja"
     IDS_VIDEOBACKUP         "Eelvaade koopia alusel"
     IDS_MYINFO              "Minu info"
@@ -1094,7 +1083,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Keela planeerija"
     IDS_HM_LINKHP           "eMule koduleht"
     IDS_HM_LINKFAQ          "eMule KKK"
-    IDS_HM_LINKVC           "eMule versioonikontroll"
     IDS_DEBUG_SOURCE_EXCHANGE "Logi allikavahetuse ja serverilt allikate küsimise päringud"
     IDS_SHAREDREQ1          "Kasutaja %s (%u) küsis Sinu jagatud kaustade nimekirja -> %s"
     IDS_SHAREDREQ2          "Kasutaja %s (%u) küsis Sinu jagatud failide nimekirja kataloogist '%s' -> %s"
@@ -1732,7 +1720,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Sa ei saa allalaadida seda faili sest sinu failisüsteem ei toeta faile4 mis on suuremad kui 4GB, kaalu selle konvertimist NTFS-i"
-    IDS_NEWVERSIONAVLBETA   "See Beta versioon on aegunud. See Beta versioon, sisaldab puuke on väga tähtis et uuendaksid  stabiilsuse saavutamiseks!"
     IDS_KADSEARCHACTIVE     "(Kad otisng arengus...)"
     IDS_BOLD                "Rasvase teksti nupp"
     IDS_UNDERLINE           "Allakriipsutatud teksti nupp"

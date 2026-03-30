@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "pt_PT.h"
@@ -564,9 +564,6 @@ BEGIN
     IDS_CD_RATING           "Classificação (total):"
     IDS_CD_USCORE           "Pontos na Lista de Espera:"
     IDS_CD_TITLE            "Detalhes do Cliente"
-    IDS_EMULEW              "Clique"
-    IDS_EMULEW2             "para verificar se está disponível uma nova versão"
-    IDS_EMULEW3             "aqui"
     IDS_PW_MAXSOURCES       "Máx. Fontes por Ficheiro"
     IDS_SHAREDFILESCOUNT    "Numero de Ficheiros Partilhados: %u"
     IDS_SF_SIZE             "Tamanho Total de Ficheiros Partilhados: %s"
@@ -899,19 +896,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Recebida a descrição para o ficheiro '%s': %s"
     IDS_WEBSERVICES         "Serviços Web"
     IDS_WEBSVEDIT           "Editar Serviços Web"
-    IDS_CHECK4UPDATE        "Verificar existência de nova versão"
     IDS_STARTUP             "Arranque"
-    IDS_NEWVERSIONAVL       "Está disponível uma nova versão do eMule! Venha à nossa página para mais informações."
-    IDS_NEWVERSIONAVLPOPUP  "Está disponível uma nova versão do eMule! Clique aqui para saber mais acerca da nova versão!"
-    IDS_NEWVERSIONFAILED    "Não foi possível verificar a existência de uma nova versão."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "For detectada uma nova versão do eMule"
-    IDS_NONEWERVERSION      "Não foi detectada nenhuma nova versão do eMule."
-    IDS_VERSIONCHECK        "&Verificar Versão"
-    IDS_VISITVERSIONCHECK   "\n\nDeseja visitar a página de informações neste momento?"
     IDS_PW_VIDEOPLAYER      "Programa de Visualização"
     IDS_VIDEOBACKUP         "Criar cópia de segurança para pré-visualizar"
     IDS_MYINFO              "A Minha Informação"
@@ -1108,7 +1097,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Desligar o Temporizador"
     IDS_HM_LINKHP           "Página do eMule"
     IDS_HM_LINKFAQ          "FAQ do eMule"
-    IDS_HM_LINKVC           "Verificação da versão do eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Registar pedidos/respostas de troca de fontes para clientes/servidores"
     IDS_SHAREDREQ1          "Utilizador %s (%u) pediu a sua lista de pastas partilhadas -> %s"
@@ -1746,7 +1734,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Não pode descarregar este ficheiro porque o seu sistema de ficheiros não suporta ficheiros maiores de 4GB, considere converter o sistema de ficheiros para NTFS"
-    IDS_NEWVERSIONAVLBETA   "Esta versão Beta está desactualizada. Devido à natureza das versões Beta, que costumam vir com bugs, é muito importante que actualize para uma versão estável o mais cedo possível!"
     IDS_KADSEARCHACTIVE     "(Pesquisa Kad em curso...)"
     IDS_BOLD                "Alterna o Texto a Negrito"
     IDS_UNDERLINE           "Alterna o Texto a Sublinhado"

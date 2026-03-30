@@ -110,7 +110,6 @@ public:
 	CString		m_strCurVersionLong;
 	CString		m_strCurVersionLongDbg;
 	UINT		m_uCurVersionShort;
-	UINT		m_uCurVersionCheck;
 	ULONGLONG	m_ullComCtrlVer;
 	CMutex		hashing_mut;
 	CString		m_strPendingLink;

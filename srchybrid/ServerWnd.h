@@ -77,7 +77,6 @@ private:
 	CIconStatic m_ctrlUpdateServerFrm;
 	CIconStatic m_ctrlMyInfoFrm;
 	CImageList m_imlLogPanes;
-	CString m_strClickNewVersion;
 	CRichEditCtrlX m_MyInfo;
 	HICON icon_srvlist;
 	CHARFORMAT2 m_cfDef;

@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "el_GR.h"
@@ -545,9 +545,6 @@ BEGIN
     IDS_CD_RATING           "Εκτίμηση (συνολικά):"
     IDS_CD_USCORE           "Βαθμολογία ανεβάσματος:"
     IDS_CD_TITLE            "Λεπτομέρειες χρήστη"
-    IDS_EMULEW              "Κλικ"
-    IDS_EMULEW2             "για να ελεγχθεί αν υπάρχει διαθέσιμη καινούργια έκδοση."
-    IDS_EMULEW3             "εδώ"
     IDS_PW_MAXSOURCES       "Μέγιστες πηγές αρχείου"
     IDS_SHAREDFILESCOUNT    "Αριθμός κοινόχρηστων αρχείων: %u"
     IDS_SF_SIZE             "Συνολικό μέγεθος κοινόχρηστων αρχείων: %s"
@@ -877,19 +874,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Λήψη περιγραφής για το αρχείο '%s': %s"
     IDS_WEBSERVICES         "Υπηρεσίες Web"
     IDS_WEBSVEDIT           "Αλλαγή υπηρεσιών Web..."
-    IDS_CHECK4UPDATE        "Έλεγχος νέας έκδοσης"
     IDS_STARTUP             "Εκκίνηση"
-    IDS_NEWVERSIONAVL       "Μια νέα έκδοση του eMule είναι διαθέσιμη! Ελέγξτε την κεντρική σελίδα του προγράμματος για περισσότερες πληροφορίες."
-    IDS_NEWVERSIONAVLPOPUP  "Μια νέα έκδοση του eMule είναι διαθέσιμη! Κάντε κλικ εδώ για να διαβάσετε σχετικά με την νέα έκδοση!"
-    IDS_NEWVERSIONFAILED    "Αδύνατος ο έλεγχος για νέα έκδοση"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Εντοπισμό νέας έκδοσης του eMule"
-    IDS_NONEWERVERSION      "Δεν εντοπίστηκε νέα έκδοση του eMule"
-    IDS_VERSIONCHECK        "Έλεγχος νέας έ&κδοσης"
-    IDS_VISITVERSIONCHECK   "\n\nΘέλετε να επισκευθείτε την σελίδα πληροφοριών τώρα;"
     IDS_PW_VIDEOPLAYER      "Πρόγραμμα αναπαραγωγής βίντεο"
     IDS_VIDEOBACKUP         "Δημιουργία αντιγράφου κατά την προεπισκόπηση"
     IDS_MYINFO              "Οι πληροφορίες μου"
@@ -1079,7 +1068,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Απενεργοποίηση προγραμματισμού"
     IDS_HM_LINKHP           "Κεντρική σελίδα του eMule"
     IDS_HM_LINKFAQ          "Συχνές ερωτήσεις για το eMule"
-    IDS_HM_LINKVC           "Έλεγχος νέας έκδοσης"
     IDS_DEBUG_SOURCE_EXCHANGE "Καταγραφή διαδικασίας ανταλλαγής πηγών"
     IDS_SHAREDREQ1          "Ο χρήστης %s (%u) ζήτησε τη λίστα των κοινόχρηστων φακέλων σας -> %s"
     IDS_SHAREDREQ2          "Ο χρήστης %s (%u) ζήτησε τη λίστα των κοινόχρηστων αρχείων για τον φάκελο '%s' -> %s"
@@ -1735,7 +1723,6 @@ BEGIN
     IDS_LOADFILTER_EMTOOLBAR "Αρχεία eMule Toolbar Bitmap"
     IDS_LOADFILTER_EMSKINFILES "Αρχεία eMule Skin"
     IDS_ERR_FSCANTHANDLEFILE  "Δεν μπορείτε να κατεβάσετε το αρχείο αυτό, επειδή το σύστημα αρχείων σας, δεν υποστηρίζει αρχεία μεγαλύτερα των 4GB. Μετατρέψτε το σε NTFS."
-    IDS_NEWVERSIONAVLBETA   "Αυτή η δοκιμαστική έκδοση, είναι παλιά. Λόγω της φύσεως των δοκιμαστικών εκδόσεων, που συχνά περιέχουν σφάλματα στον κώδικά τους, είναι πολύ σημαντικό να αναβαθμίσετε το eMule σας σε μία σταθερή έκδοση το γρηγορότερο δυνατόν!"
     IDS_ARCHPREV_ATTRIBINFO "Οι ιδιότητες αρχείου μπορούν να περιέχουν:\r\n\r\nP\tπροστατευμένο με κωδικό\r\nD\tφάκελος\r\nC\tσχόλιο\r\nLx\tεπίπεδο συμπίεσης x\r\nM\tδεν ολοκληρώθηκε\r\n<\tσυνέχιση αρχείου από προηγούμενο τμήμα\r\n>\tτο αρχείο συνεχίζει σε επόμενο τμήμα\r\n"
     IDS_CONTENT_INFO        "Περιεχόμενα"
 END

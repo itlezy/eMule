@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "gl_ES.h"
@@ -600,9 +600,6 @@ BEGIN
     IDS_CD_RATING           "Puntuación (total):"
     IDS_CD_USCORE           "Punt. cola de subida:"
     IDS_CD_TITLE            "Detalles do cliente"
-    IDS_EMULEW              "Pulsa"
-    IDS_EMULEW2             "para comprobar se hai unha nova versión."
-    IDS_EMULEW3             "aquí"
     IDS_PW_MAXSOURCES       "Máximo de fontes/arquivo"
     IDS_SHAREDFILESCOUNT    "Nº de arquivos compartidos: %u"
     IDS_SF_SIZE             "Tamaño total dos arquivos compartidos: %s"
@@ -936,19 +933,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descrición para o arquivo '%s' recibida: %s"
     IDS_WEBSERVICES         "Servicios Web"
     IDS_WEBSVEDIT           "Editar Servicios Web"
-    IDS_CHECK4UPDATE        "Verificar se hai unha nova versión"
     IDS_STARTUP             "Ao iniciar"
-    IDS_NEWVERSIONAVL       "Hai unha nova versión de eMule dispoñíble! Para máis información visita a páxina web do proxecto emule."
-    IDS_NEWVERSIONAVLPOPUP  "Hai unha nova versión de eMule dispoñíble! Pulsa aquí para ler acerca desta nova versión."
-    IDS_NEWVERSIONFAILED    "Non se puido verificar se hai unha nova versión."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Ao detectar unha nova versión de eMule"
-    IDS_NONEWERVERSION      "Non se detectou unha nova versión de eMule."
-    IDS_VERSIONCHECK        "&Verificar nova versión"
-    IDS_VISITVERSIONCHECK   "\n\nQueres visitar agora a páxina de información?"
     IDS_PW_VIDEOPLAYER      "Reproductor de video"
     IDS_VIDEOBACKUP         "Crear unha copia de seguridade para previsualizar"
     IDS_MYINFO              "Información persoal"
@@ -1106,7 +1095,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Desconectar Programador"
     IDS_HM_LINKHP           "Web do eMule"
     IDS_HM_LINKFAQ          "FAQ do eMule"
-    IDS_HM_LINKVC           "Comprobar a versión do eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Mostrar a orixe de intercambio de mensaxes"
     IDS_SHAREDREQ1          "O usuario %s (%u) pediu a túa lista de carpetas compartidas -> %s"
     IDS_SHAREDREQ2          "O usuario %s (%u) pediu a túa lista de arquivos compartidos na carpeta '%s' -> %s"
@@ -1743,7 +1731,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Non podes descargar este ficheiro porque o teu sistema de arquivos non admite ficheiros de máis de 4 GB, plantéxate convertelo a NTFS"
-    IDS_NEWVERSIONAVLBETA   "Esta versión Beta está anticuada. As versións Beta adoitan ter fallos, polo que é moi importante que actualices a unha versión estable canto antes!"
     IDS_KADSEARCHACTIVE     "(Buscando vía Kad...)"
     IDS_BOLD                "Cambia a texto en negriña"
     IDS_UNDERLINE           "Cambia a texto subliñado"

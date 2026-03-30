@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ru_RU.h"
@@ -611,9 +611,6 @@ BEGIN
     IDS_CD_RATING           "Рейтинг (всего):"
     IDS_CD_USCORE           "Очки в очереди:"
     IDS_CD_TITLE            "Детали клиента"
-    IDS_EMULEW              "Нажмите"
-    IDS_EMULEW2             "для проверки наличия новой версии"
-    IDS_EMULEW3             "здесь"
     IDS_PW_MAXSOURCES       "Макс. источников/файл"
     IDS_SHAREDFILESCOUNT    "Число файлов обмена: %u"
     IDS_SF_SIZE             "Общий размер файлов обмена: %s"
@@ -973,19 +970,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Описание файла '%s' получено: %s"
     IDS_WEBSERVICES         "&Web сервисы"
     IDS_WEBSVEDIT           "Редактор Web сервисов..."
-    IDS_CHECK4UPDATE        "Проверка наличия новой версии"
     IDS_STARTUP             "При запуске"
-    IDS_NEWVERSIONAVL       "Вышла новая версия eMule! Посетите сайт eMule для получения более полной информации."
-    IDS_NEWVERSIONAVLPOPUP  "Вышла новая версия eMule! Нажмите сюда для получения более полной информации."
-    IDS_NEWVERSIONFAILED    "Невозможно проверить наличие новой версии."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Найдена новая версия eMule"
-    IDS_NONEWERVERSION      "Новая версия eMule не найдена."
-    IDS_VERSIONCHECK        "&Проверка версии"
-    IDS_VISITVERSIONCHECK   "\n\nХотите посетить страницу с информацией?"
     IDS_PW_VIDEOPLAYER      "Видео проигрыватель"
     IDS_VIDEOBACKUP         "Сделать копию для предпросмотра"
     IDS_MYINFO              "Моя информация"
@@ -1142,7 +1131,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Выкл. планировщик"
     IDS_HM_LINKHP           "Сайт eMule"
     IDS_HM_LINKFAQ          "eMule FAQ" //!
-    IDS_HM_LINKVC           "Проверка версии eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Лог обмена источниками с сервером и клиентами"
     IDS_SHAREDREQ1          "Пользователь %s (%u) запросил список ваших файлов обмена -> %s"
     IDS_SHAREDREQ2          "Пользователь %s (%u) запросил список ваших файлов из папки '%s' -> %s"
@@ -1738,7 +1726,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Невозможно скачать этот файл, файловая система не поддерживает файлы размером более 4GB, решается переходом на NTFS"
-    IDS_NEWVERSIONAVLBETA   "Срок действия данной Бета версии истек. Крайне рекомендуется перейти на более стабильную версию как можно быстрее!"
     IDS_KADSEARCHACTIVE     "(Идет поиск в Kad...)"
     IDS_BOLD                "Текст жирным шрифтом"
     IDS_UNDERLINE           "Подчеркнутый текст"

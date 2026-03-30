@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ba_BA.h"
@@ -567,9 +567,6 @@ BEGIN
     IDS_CD_RATING           "Kalifikazioa (guztia):"
     IDS_CD_USCORE           "Igoera ilaran puntuazioa:"
     IDS_CD_TITLE            "Bezeroaren xehetasunak"
-    IDS_EMULEW              "Egin klik "
-    IDS_EMULEW2             "bertsio berririk irten den jakiteko"
-    IDS_EMULEW3             "hemen"
     IDS_PW_MAXSOURCES       "Iturri max. fitxategiko"
     IDS_SHAREDFILESCOUNT    "Konpartitutako fitxategi kopurua: %u"
     IDS_SF_SIZE             "Konpartitutako fitxategien tamaina: %s"
@@ -902,19 +899,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' fitxategiaren deskribapena jaso da: %s"
     IDS_WEBSERVICES         "Web zerbitzuak"
     IDS_WEBSVEDIT           "Web zerbitzuak editatu"
-    IDS_CHECK4UPDATE        "Bertsio berririk dagoen begiratu"
     IDS_STARTUP             "Hasieran"
-    IDS_NEWVERSIONAVL       "eMule bertsio berri bat dago. Informazio gehiago jasotzeko emule-project webgunea bisitatu"
-    IDS_NEWVERSIONAVLPOPUP  "eMule bertsio berri bat dago. Egin klik hemen, bertsio berri honen aldaketak aztertzeko!"
-    IDS_NEWVERSIONFAILED    "Ezin izan da bertsio berririk dagoen begiratu"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "eMule bertsio berria antzematerakoan"
-    IDS_NONEWERVERSION      "Ez da eMuleren bertsio berririk antzeman."
-    IDS_VERSIONCHECK        "Bertsio berria bilatu"
-    IDS_VISITVERSIONCHECK   "\n\nInformazio orria bisitatu nahi al duzu?"
     IDS_PW_VIDEOPLAYER      "Bideo erreproduktorea"
     IDS_VIDEOBACKUP         "Segurtasun kopia sortu aurrikusteko"
     IDS_MYINFO              "Norbere informazioa"
@@ -1109,7 +1098,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Programatzailea desaktibatu"
     IDS_HM_LINKHP           "eMuleren webgunea"
     IDS_HM_LINKFAQ          "eMule FAQ-a"
-    IDS_HM_LINKVC           "eMuleren bertsio azterketa"
     IDS_DEBUG_SOURCE_EXCHANGE "Iturrien trukeen mezuak ikusi"
     IDS_SHAREDREQ1          "%s (%u) erabiltzaileak zuk konpartitutako karpeten zerrenda eskatu du -> %s"
     IDS_SHAREDREQ2          "%s (%u) erabiltzaileak '%s' karpetako fitxategi konpartituak eskatu dizkizu -> %s"
@@ -1745,7 +1733,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Ezin duzu fitxategi hau jaitsi zure fitxategi sistemak ez duelako 4 GB-tik gorako fitxategirik onartzen, NTFS sistema erabiltzea komeniko litzaizuke"
-    IDS_NEWVERSIONAVLBETA   "Beta bertsio hau zaharra da. Kontuan izanez beta bertsioak akatsak izan ditzakeela, lehenbailehen bertsio egonkor bat instalatzea gomendatzen dizugu!"
     IDS_KADSEARCHACTIVE     "(Kad bilaketa egiten...)"
     IDS_BOLD                "Testu beltza aktibatu/desaktibatu"
     IDS_UNDERLINE           "Azpimarratutako testua aktibatu/desaktibatu"

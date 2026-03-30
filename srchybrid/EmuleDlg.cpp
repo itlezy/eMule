@@ -172,9 +172,6 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(WEB_CATPRIO, OnWebSetCatPrio)
 	ON_MESSAGE(WEB_ADDREMOVEFRIEND, OnAddRemoveFriend)
 
-	// Version Check DNS
-	ON_MESSAGE(UM_VERSIONCHECK_RESPONSE, OnVersionCheckResponse)
-
 	// UPnP
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
 
@@ -215,7 +212,6 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_uLastSysTrayIconCookie(SYS_TRAY_ICON_COOKIE_FORCE_UPDATE)
 	, m_uUpDatarate()
 	, m_uDownDatarate()
-	, m_acVCDNSBuffer()
 	, m_bStartMinimizedChecked()
 	, m_bStartMinimized()
 	, m_bMsgBlinkState()
@@ -366,9 +362,6 @@ BOOL CemuleDlg::OnInitDialog()
 
 		ASSERT((MP_ABOUTBOX & 0xFFF0) == MP_ABOUTBOX && MP_ABOUTBOX < 0xF000);
 		pSysMenu->AppendMenu(MF_STRING, MP_ABOUTBOX, GetResString(IDS_ABOUTBOX));
-
-		ASSERT((MP_VERSIONCHECK & 0xFFF0) == MP_VERSIONCHECK && MP_VERSIONCHECK < 0xF000);
-		pSysMenu->AppendMenu(MF_STRING, MP_VERSIONCHECK, GetResString(IDS_VERSIONCHECK));
 
 		// remaining system menu entries are created later...
 	}
@@ -592,35 +585,6 @@ BOOL CemuleDlg::OnInitDialog()
 	return TRUE;
 }
 
-// modders: don't remove or change the original version check! (additional are OK)
-void CemuleDlg::DoVersioncheck(bool manual)
-{
-#ifndef _DEVBUILD
-	if (!manual && thePrefs.GetLastVC() != 0) {
-		CTime last(thePrefs.GetLastVC());
-		struct tm tmTemp;
-		time_t tLast = safe_mktime(last.GetLocalTm(&tmTemp));
-		time_t tNow = safe_mktime(CTime::GetCurrentTime().GetLocalTm(&tmTemp));
-#ifndef _BETA
-		if (difftime(tNow, tLast) / DAY2S(1) < thePrefs.GetUpdateDays())
-#else
-		if ((difftime(tNow, tLast) / DAY2S(1)) < 3)
-#endif
-			return;
-	}
-//Automatic version check for community and official versions use different domain names
-//Hence "cv" prefix was added for community version
-#ifndef _BETA
-	if (WSAAsyncGetHostByName(m_hWnd, UM_VERSIONCHECK_RESPONSE, "cv" "vcdns2.emule-project.org", m_acVCDNSBuffer, sizeof m_acVCDNSBuffer) == 0)
-#else
-	if (WSAAsyncGetHostByName(m_hWnd, UM_VERSIONCHECK_RESPONSE, "cv" "vcdns1.emule-project.org", m_acVCDNSBuffer, sizeof m_acVCDNSBuffer) == 0)
-#endif
-	{
-		AddLogLine(true, GetResString(IDS_NEWVERSIONFAILED));
-	}
-#endif
-}
-
 void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*idEvent*/, DWORD /*dwTime*/) noexcept
 {
 	// NOTE: Always handle all type of MFC exceptions in TimerProcs - otherwise we'll get mem leaks
@@ -706,9 +670,6 @@ void CemuleDlg::StopTimer()
 		VERIFY(::KillTimer(NULL, m_hTimer));
 		m_hTimer = 0;
 	}
-	if (thePrefs.UpdateNotify())
-		DoVersioncheck(false);
-
 	if (!theApp.m_strPendingLink.IsEmpty()) {
 		OnWMData(NULL, (LPARAM)&theApp.sendstruct);
 		theApp.m_strPendingLink.Empty();
@@ -740,9 +701,6 @@ void CemuleDlg::OnSysCommand(UINT nID, LPARAM lParam)
 			m_pSplashWnd = NULL;
 			break;
 		}
-	case MP_VERSIONCHECK:
-		DoVersioncheck(true);
-		break;
 	case MP_CONNECT:
 		StartConnection();
 		break;
@@ -1971,14 +1929,6 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 			SendNotificationMail(nMsgType, pszText);
 		}
 		break;
-	case TBN_NEWVERSION:
-		if (thePrefs.GetNotifierOnNewVersion()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
-			bShowIt = true;
-			pszSoundEvent = _T("eMule_NewVersion");
-			iSoundPrio = 1;
-		}
-		break;
 	case TBN_NULL:
 		m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
 		bShowIt = true;
@@ -2034,8 +1984,6 @@ LRESULT CemuleDlg::OnTaskbarNotifierClicked(WPARAM, LPARAM lParam)
 		RestoreWindow();
 		SetActiveDialog(serverwnd);
 		break;
-	case TBN_NEWVERSION:
-		BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
 	}
 	return 0;
 }
@@ -2139,8 +2087,6 @@ void CemuleDlg::Localize()
 	CMenu *pSysMenu = GetSystemMenu(FALSE);
 	if (pSysMenu) {
 		VERIFY(pSysMenu->ModifyMenu(MP_ABOUTBOX, MF_BYCOMMAND | MF_STRING, MP_ABOUTBOX, GetResString(IDS_ABOUTBOX)));
-		VERIFY(pSysMenu->ModifyMenu(MP_VERSIONCHECK, MF_BYCOMMAND | MF_STRING, MP_VERSIONCHECK, GetResString(IDS_VERSIONCHECK)));
-
 		// localize the 'speed control' sub menus by deleting the current menus and creating a new ones.
 
 		// remove any already available 'speed control' menus from system menu
@@ -2352,9 +2298,6 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	case MP_HM_LINK2:
 		BrowserOpen(thePrefs.GetHomepageBaseURL() + _T("/faq/"), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
 		break;
-	case MP_HM_LINK3:
-		BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-		break;
 	case MP_WEBSVC_EDIT:
 		theWebServices.Edit();
 		break;
@@ -2419,9 +2362,8 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	Links.AddMenuTitle(NULL, true);
 	Links.AppendMenu(MF_STRING, MP_HM_LINK1, GetResString(IDS_HM_LINKHP), _T("WEB"));
 	Links.AppendMenu(MF_STRING, MP_HM_LINK2, GetResString(IDS_HM_LINKFAQ), _T("WEB"));
-	Links.AppendMenu(MF_STRING, MP_HM_LINK3, GetResString(IDS_HM_LINKVC), _T("WEB"));
 	theWebServices.GetGeneralMenuEntries(&Links);
-	Links.InsertMenu(3, MF_BYPOSITION | MF_SEPARATOR);
+	Links.InsertMenu(2, MF_BYPOSITION | MF_SEPARATOR);
 	Links.AppendMenu(MF_STRING, MP_WEBSVC_EDIT, GetResString(IDS_WEBSVEDIT));
 
 	CMenu scheduler;
@@ -2570,44 +2512,6 @@ void InitWindowStyles(CWnd *pWnd)
 		if (!s_bIsXPStyle)
 			FlatWindowStyles(pWnd);
 	}
-}
-
-LRESULT CemuleDlg::OnVersionCheckResponse(WPARAM, LPARAM lParam)
-{
-	if (WSAGETASYNCERROR(lParam) == 0) {
-		WORD iBufLen = WSAGETASYNCBUFLEN(lParam);
-		if (iBufLen >= sizeof(HOSTENT)) {
-			LPHOSTENT pHost = (LPHOSTENT)m_acVCDNSBuffer;
-			if (pHost->h_length == 4 && pHost->h_addr_list && pHost->h_addr_list[0]) {
-				uint32 dwResult = ((LPIN_ADDR)(pHost->h_addr_list[0]))->s_addr;
-				// last byte contains informations about mirror urls, to avoid effects of future DDoS Attacks against eMules Homepage
-				thePrefs.SetWebMirrorAlertLevel((uint8)(dwResult >> 24));
-				uint8 abyCurVer[4] = {(uint8)(CemuleApp::m_nVersionBld + 1), (uint8)(CemuleApp::m_nVersionUpd), (uint8)(CemuleApp::m_nVersionMin), (uint8)0};
-				dwResult &= 0x00FFFFFF;
-				if (dwResult > *(uint32*)abyCurVer) {
-					SetActiveWindow();
-#ifndef _BETA
-					Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_NEWVERSIONAVL));
-					ShowNotifier(GetResString(IDS_NEWVERSIONAVLPOPUP), TBN_NEWVERSION);
-					thePrefs.UpdateLastVC();
-					if (!thePrefs.GetNotifierOnNewVersion())
-						if (AfxMessageBox(GetResString(IDS_NEWVERSIONAVL) + GetResString(IDS_VISITVERSIONCHECK), MB_YESNO) == IDYES)
-							BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-#else
-					Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_NEWVERSIONAVLBETA));
-					if (AfxMessageBox(GetResString(IDS_NEWVERSIONAVLBETA) + GetResString(IDS_VISITVERSIONCHECK), MB_OK) == IDOK)
-						BrowserOpen(thePrefs.GetVersionCheckBaseURL() + _T("/beta"), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-#endif
-				} else {
-					thePrefs.UpdateLastVC();
-					AddLogLine(true, GetResString(IDS_NONEWERVERSION));
-				}
-				return 0;
-			}
-		}
-	}
-	LogWarning(LOG_STATUSBAR, GetResString(IDS_NEWVERSIONFAILED));
-	return 0;
 }
 
 void CemuleDlg::ShowSplash()

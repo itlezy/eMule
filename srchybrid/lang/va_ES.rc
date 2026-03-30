@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "va_ES.h"
@@ -561,9 +561,6 @@ BEGIN
     IDS_CD_RATING           "Valoració (total):"
     IDS_CD_USCORE           "Punt. cua de pujada:"
     IDS_CD_TITLE            "Detalls del client"
-    IDS_EMULEW              "Premeu"
-    IDS_EMULEW2             "per a comprovar si hi ha una versió nova"
-    IDS_EMULEW3             "ací"
     IDS_PW_MAXSOURCES       "Màx. de fonts per fitxer"
     IDS_SHAREDFILESCOUNT    "Quantitat de fitxers compartits: %u"
     IDS_SF_SIZE             "Total de fitxers compartits : %s"
@@ -895,19 +892,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descripció del fitxer «%s» rebuda: %s"
     IDS_WEBSERVICES         "Servicis &web"
     IDS_WEBSVEDIT           "Edita els servicis web"
-    IDS_CHECK4UPDATE        "Comprova si hi ha una nova versió"
     IDS_STARTUP             "A l'inici"
-    IDS_NEWVERSIONAVL       "Hi ha una nova versió de l'eMule disponible. Aneu a la pàgina web del projecte per a obtindre més informació."
-    IDS_NEWVERSIONAVLPOPUP  "Hi ha una nova versió de l'eMule disponible. Feu clic ací per a veure les novetats d'esta versió."
-    IDS_NEWVERSIONFAILED    "No es pot comprovar si hi ha una versió nova."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "En detectar nova versió de l'eMule"
-    IDS_NONEWERVERSION      "No s'ha detectat cap versió nova de l'eMule."
-    IDS_VERSIONCHECK        "Comprova si hi ha &versions noves"
-    IDS_VISITVERSIONCHECK   "\n\nVoleu anar a la pàgina d'informació?"
     IDS_PW_VIDEOPLAYER      "Reproductor de vídeo"
     IDS_VIDEOBACKUP         "Crea una còpia de seguretat abans de previsualitzar"
     IDS_MYINFO              "Informació pròpia"
@@ -1104,7 +1093,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Desactiva rogramador"
     IDS_HM_LINKHP           "Web de l'eMule"
     IDS_HM_LINKFAQ          "PMF de l'eMule"
-    IDS_HM_LINKVC           "Comprova la versió de l'eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Registre d'intercanvi de fonts i de recerques i resultats des dels servidors "
     IDS_SHAREDREQ1          "L'usuari %s (%u) ha demanat la vostra llista de carpetes compartides -> %s"
     IDS_SHAREDREQ2          "L'usuari %s (%u) ha demanat la llista de fitxers compartits de la carpeta «%s» -> %s"
@@ -1737,7 +1725,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "No podeu baixar este fitxer perquè el vostre sistema de fitxers no n'admet de més grans de 4GB. Considereu convertir el sistema de fitxers a NTFS"
-    IDS_NEWVERSIONAVLBETA   "Esta versió beta no està actualitzada. Degut a la naturalesa de les versions beta, les quals sovint contenen errors, és molt important que l'actualitzeu a una versió estable així que pugueu"
     IDS_KADSEARCHACTIVE     "(Cerca del Kad en marxa...)"
     IDS_BOLD                "Commuta la negreta"
     IDS_UNDERLINE           "Commuta el subratllat"

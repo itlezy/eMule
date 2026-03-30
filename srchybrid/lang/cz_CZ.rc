@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "cz_CZ.h"
@@ -600,9 +600,6 @@ BEGIN
     IDS_CD_RATING           "Rating (celkem):"
     IDS_CD_USCORE           "Bodové hodnocení:"
     IDS_CD_TITLE            "Podrobnosti klienta"
-    IDS_EMULEW              "Klikněte na"
-    IDS_EMULEW2             "pro zjištění nové dostupné verze"
-    IDS_EMULEW3             "zde"
     IDS_PW_MAXSOURCES       "Maximum zdrojů na soubor"
     IDS_SHAREDFILESCOUNT    "Počet sdílených souborů: %u"
     IDS_SF_SIZE             "Celková velikost sdílených souborů: %s"
@@ -937,19 +934,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Popis pro soubor '%s' přijat: %s"
     IDS_WEBSERVICES         "&Webové služby"
     IDS_WEBSVEDIT           "Upravit webové služby"
-    IDS_CHECK4UPDATE        "Zjisti novou verzi"
     IDS_STARTUP             "Po spuštění"
-    IDS_NEWVERSIONAVL       "Nová verze eMule je k dispozici! Pro více informací se podívejte na domovskou stránku eMule projektu."
-    IDS_NEWVERSIONAVLPOPUP  "Nová verze eMule je k dispozici. Pro další informace o nové verzi klikněte zde!"
-    IDS_NEWVERSIONFAILED    "Nelze zjistit novou verzi."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Nová verze eMule zjištěna"
-    IDS_NONEWERVERSION      "Žádná nová verze eMule nezjištěna."
-    IDS_VERSIONCHECK        "&Zjištění verze"
-    IDS_VISITVERSIONCHECK   "\n\nChcete nyní navštívit informační stránku?"
     IDS_PW_VIDEOPLAYER      "Přehrávač videa"
     IDS_VIDEOBACKUP         "Vytvořit zálohu pro ukázku"
     IDS_MYINFO              "Moje info"
@@ -1106,7 +1095,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Vypnout plánovač"
     IDS_HM_LINKHP           "Domovská stránka eMule"
     IDS_HM_LINKFAQ          "FAQ eMule"
-    IDS_HM_LINKVC           "Zjištění verze eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Zobrazit zprávy o výměně zdrojů"
     IDS_SHAREDREQ1          "Uživatel %s (%u) požádal o Váš seznam sdílených adresářů -> %s"
     IDS_SHAREDREQ2          "Uživatel %s (%u) požádal o Váš seznam sdílených souborů z adresáře '%s' -> %s"
@@ -1705,7 +1693,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Tento soubor nemůžete stáhnout, nebo? Váš systém souborů nepodporuje soubory přesahující 4GB. Zvažte proto jeho konverzi na NTFS."
-    IDS_NEWVERSIONAVLBETA   "Tato betaverze je již zastaralá. Betaverze jsou svojí podstatou určené k odlaďování chyb, které obsahují. Důrazně proto doporučujeme bezodkladné upgradování na stabilní verzi!"
 END
 
 STRINGTABLE

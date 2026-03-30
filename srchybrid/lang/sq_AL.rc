@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "sq_AL.h"
@@ -609,9 +609,6 @@ BEGIN
     IDS_CD_RATING           "Vlerësimi (në total):"
     IDS_CD_USCORE           "Pikët e pritjes së Ngarkimit:"
     IDS_CD_TITLE            "Detajet e klientit"
-    IDS_EMULEW              "Verifikoni versionin më të ri "
-    IDS_EMULEW2             ">"
-    IDS_EMULEW3             "> >"
     IDS_PW_MAXSOURCES       "Burime maks./skedë"
     IDS_SHAREDFILESCOUNT    "Numri i Skedave të Shpërndara: %u"
     IDS_SF_SIZE             "Përmasa totale e Skedave të Shpërndara: %s"
@@ -972,19 +969,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Përshkrimi për skedën '%s' mori: %s"
     IDS_WEBSERVICES         "&Shërbimet e Rrjetit"
     IDS_WEBSVEDIT           "Shërbimet e Rrjetit..."
-    IDS_CHECK4UPDATE        "Verifiko versionin më të ri"
     IDS_STARTUP             "Në nisje"
-    IDS_NEWVERSIONAVL       "Për eMule ka një version të ri! Për më tepër informacion verifikoni faqen kryesore të projektit."
-    IDS_NEWVERSIONAVLPOPUP  "Për eMule ka një version të ri. Klikoni për të lexuar rreth tij!"
-    IDS_NEWVERSIONFAILED    "Versioni i ri nuk mund të verifikohet!"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Për eMule diktohet një version i ri"
-    IDS_NONEWERVERSION      "Për eMule nuk diktohet asnjë version i ri."
-    IDS_VERSIONCHECK        "&Verifikim versioni"
-    IDS_VISITVERSIONCHECK   "\n\nA do e vizitoni tani faqen e informacionit?"
     IDS_PW_VIDEOPLAYER      "Luajtësi i videos"
     IDS_VIDEOBACKUP         "Për parashikimin, krijo një 'kthim mbrapa'"
     IDS_MYINFO              "Informacion"
@@ -1141,7 +1130,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Fike Planifikuesin"
     IDS_HM_LINKHP           "Faqe zyrtare e eMule"
     IDS_HM_LINKFAQ          "eMule PBSH"
-    IDS_HM_LINKVC           "Verifikimi i versionit"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Hape shkëmbimin me burimin e klientit dhe pyetje/përgjigje me burimin e serverit"
     IDS_SHAREDREQ1          "Përdoruesi %s (%u) kërkoi listën e direktorive të shpërndara -> %s"
@@ -1741,7 +1729,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Kjo skedë nuk mund të shkarkohet pasi sistem-skeda juaj nuk i përkrah skedat më të mëdha sesa 4GB; mbase duhet ta konvertoni në format NTFS"
-    IDS_NEWVERSIONAVLBETA   "Ky version Beta e ka kaluar datën. Për shkak të natyrës së versioneve Beta, që shpesh përmbajnë probleme, është tepër e rëndësishme që të merrni një lëshim të qëndrueshëm sa më shpejt të jetë e mundur!"
     IDS_KADSEARCHACTIVE     "(Kërkimi me Kad vijon...)"
     IDS_BOLD                "Vë Tekstin e Trashë"
     IDS_UNDERLINE           "Vë Tekstin e Nënvizuar"

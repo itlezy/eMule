@@ -1,4 +1,4 @@
-//Microsoft Developer Studio generated resource script.
+﻿//Microsoft Developer Studio generated resource script.
 //
 #include "fr_BR.h"
 
@@ -522,9 +522,6 @@ BEGIN
 	IDS_CD_RATING	"Taol-arnodiñ (hollad) : "
 	IDS_CD_USCORE	"Sammad al lostennad : "
 	IDS_CD_TITLE	"Munudoù an ostiz"
-	IDS_EMULEW	"Klikit"
-	IDS_EMULEW2	"a-benn gwiriañ mard e c'hell bezañ nevesaet ar goulev-mañ"
-	IDS_EMULEW3	"amañ"
 	IDS_PW_MAXSOURCES	"Orinoù uhelañ dre restr"
 	IDS_SHAREDFILESCOUNT	"Niver a restroù eskemmet : %u"
 	IDS_SF_SIZE	"Hollad ment ar restroù eskemmet: %s"
@@ -858,19 +855,11 @@ BEGIN
 	IDS_DESCRIPTIONRECV	"Evezhiadenn ar restr '%s' : %s"
 	IDS_WEBSERVICES	"WebServices"
 	IDS_WEBSVEDIT	"Aozañ WebServices"
-	IDS_CHECK4UPDATE	"Gwiriañ stumm nevez"
 	IDS_STARTUP	"Loc'hañ"
-	IDS_NEWVERSIONAVL	"Prest eo ur stumm nevez eus eMule da vezañ pellgarget. Sellit ouzh https://emule-project.net evit lenn muioc'h a ditouroù."
-	IDS_NEWVERSIONAVLPOPUP 	"Prest eo stumm nevez eus eMule da vezañ staliet. Klikit amañ evit lenn muioc'h a ditouroù."
-	IDS_NEWVERSIONFAILED 	"N'haller ket gwiriañ mard ez eus ur stumm nevez da bellgargañ."
 END
 
 STRINGTABLE FIXED IMPURE
 BEGIN
-	IDS_CB_TBN_ONNEWVERSION	"Dizoloet ez eus bet ur stumm nevez eus eMule"
-	IDS_NONEWERVERSION	"Stumm nevez eus eMule ebet kavet."
-	IDS_VERSIONCHECK	"&Gwiriañ stumm"
-	IDS_VISITVERSIONCHECK	"\n\nHa fellout a ra deoc'h gweladenniñ ar bajenn ditouroù diouzhtu ?"
 	IDS_PW_VIDEOPLAYER	"Lenner video"
 	IDS_VIDEOBACKUP	"Gwarediñ ar stlennoù evit rakgwelout"
 	IDS_MYINFO	"Ma zitouroù"
@@ -1094,7 +1083,6 @@ BEGIN
 	IDS_HM_SCHED_OFF	"Diweredekaat ar Raktreser"
 	IDS_HM_LINKHP	"Lec'hienn ofisiel eMule"
 	IDS_HM_LINKFAQ	"FAG eMule"
-	IDS_HM_LINKVC	"Gwiriañ stummoù nevez eMule"
 	IDS_DEBUG_SOURCE_EXCHANGE	"Diskouez ar gemennadennoù diwar eskemm an orinoù"
 	IDS_SHAREDREQ1	"Goulennet en deus an implijour %s (%u) ganeoc'h ho roll restroù eskemmet -> %s"
 	IDS_SHAREDREQ2	"Goulennet en deus an implijour %s (%u) ganeoc'h ho roll restroù eskemmet evit ar c'havlec'h '%s' -> %s"
@@ -1708,7 +1696,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
 	"N'hallit ket pellgargañ ar restr-mañ abalamour ma ne skor ket ar reizhiad-restroù restroù az a o ment dreist 4Ge. Posubl e vefe implijout NTFS"
-    IDS_NEWVERSIONAVLBETA	"Diamzeret eo ar stumm Beta-mañ. Abalamour ez eus kudennoù atav gant stummoù Beta e vefe mat ma vez staliet ur stumm stabiloc’h war hoc’h urzhiataer an abretañ ar gwellañ !"
     IDS_KADSEARCHACTIVE     "(Kad search in progress...)"
     IDS_BOLD                "Toggles bold text"
     IDS_UNDERLINE           "Toggles underlined text"

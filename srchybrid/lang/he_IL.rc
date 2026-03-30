@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "he_IL.h"
@@ -102,7 +102,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "בטל תיזמון"
     IDS_HM_LINKHP           "אתר הבית של אימיול"
     IDS_HM_LINKFAQ          "שאלות נפוצות"
-    IDS_HM_LINKVC           "בדיקת גירסה"
     IDS_DEBUG_SOURCE_EXCHANGE "הצג הודעת החלפת מקורות"
     IDS_SHAREDREQ1          "המשתמש %s (%u) ביקש את רשימת התיקיות המשותפות שלך -> %s"
     IDS_SHAREDREQ2          "המשתמש %s (%u) ביקש את רשימת הקבצים המשותפים שלך בתיקייה '%s' -> %s"
@@ -300,10 +299,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "אותרה גירסה חדשה לאימיול"
-    IDS_NONEWERVERSION      "לא אותרה גירסה חדשה לאימיול."
-    IDS_VERSIONCHECK        "בדיקת גירסה"
-    IDS_VISITVERSIONCHECK   "\n\nהאם ברצונך לבקר בדף המידע?"
     IDS_PW_VIDEOPLAYER      "נגן וידאו"
     IDS_VIDEOBACKUP         "צור גיבוי לתצוגה מקדימה"
     IDS_MYINFO              "המידע שלי"
@@ -348,11 +343,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "תיאור לקובץ-'%s' התקבל ע""י: %s"
     IDS_WEBSERVICES         "שירותי אינטרנט"
     IDS_WEBSVEDIT           "ערוך שירותי נט"
-    IDS_CHECK4UPDATE        "בדוק אם קיימת גירסה חדשה"
     IDS_STARTUP             "הפעלה"
-    IDS_NEWVERSIONAVL       "גירסה חדשה של אימיול זמינה! בדוק את אתר הפרוייקט למידע נוסף."
-    IDS_NEWVERSIONAVLPOPUP  "גירסה חדשה של אימיול זמינה. לחץ כאן כדי לקרוא על הגירסה החדשה!"
-    IDS_NEWVERSIONFAILED    "לא יכול לבדוק קיום של גירסה חדשה."
 END
 
 STRINGTABLE
@@ -673,9 +664,6 @@ BEGIN
     IDS_CD_RATING           "דירוג (סה""כ):"
     IDS_CD_USCORE           "ניקוד תור העלאה:"
     IDS_CD_TITLE            "פרטי קליינט"
-    IDS_EMULEW              "לחץ "
-    IDS_EMULEW2             "לבדוק אם קיימת גירסה חדשה של אימיול"
-    IDS_EMULEW3             "כאן"
     IDS_PW_MAXSOURCES       "מקורות לקובץ"
     IDS_SHAREDFILESCOUNT    "מספר קבצים משותפים: %u"
     IDS_SF_SIZE             "סה""כ גודל קבצים משותפים: %s"
@@ -1735,7 +1723,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "אינך יכול להוריד את הקובץ בגלל שמערכת הקבצים שלך לא תומכת בקבצים הגדולים מ-4 ג'יגה, חשוב על המרה למערכת קבצים NTFS"
-    IDS_NEWVERSIONAVLBETA   "פג תוקפה של גירסת הבטה. בגלל טבעם של גירסאות בטא, שלעיתים קרובות מכילות באגים, מומלץ מאוד שתעבור לגירסה יציבה מהר ככל שניתן!"
     IDS_KADSEARCHACTIVE     "(מתבצע חיפוש בקדמליה...)"
     IDS_BOLD                "החלף טקסט בולט"
     IDS_UNDERLINE           "החלף טקסט עם קו תחתון"

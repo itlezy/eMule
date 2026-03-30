@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ar_AE.h"
@@ -610,9 +610,6 @@ BEGIN
     IDS_CD_RATING           "تصويت (total):"
     IDS_CD_USCORE           "نقاط التحميل:"
     IDS_CD_TITLE            "معلومات العميل"
-    IDS_EMULEW              "اظغط"
-    IDS_EMULEW2             "للعيين اذا كان هناك اصدار جديد"
-    IDS_EMULEW3             "هنا"
     IDS_PW_MAXSOURCES       "حد اقصى sources/file"
     IDS_SHAREDFILESCOUNT    "عدد الملفات المشتركة: %u"
     IDS_SF_SIZE             "حجم الملفات المشتركة: %s"
@@ -972,19 +969,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "وصف الملف '%s' استلم: %s"
     IDS_WEBSERVICES         "&خدمة الموقع"
     IDS_WEBSVEDIT           "عدل خدمة الموقع..."
-    IDS_CHECK4UPDATE        "افحص هل هاك اصدار جديد"
     IDS_STARTUP             "البدأ"
-    IDS_NEWVERSIONAVL       "اصدار جديد من ايمول متوفر! افحص موقعنا لمزيد من المعلومات."
-    IDS_NEWVERSIONAVLPOPUP  "اصدار جديد من ايمول متوفر. اضغط هنا لقراة بعض المعلومات عن الاصدار الجديد!"
-    IDS_NEWVERSIONFAILED    "غير قادر على فحص اصدار جديد."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "اصدار جديد من ايمول متوفر حاليا"
-    IDS_NONEWERVERSION      "ليس هنال اصدار جديد من ايمول متوفر حاليا."
-    IDS_VERSIONCHECK        "&فحص الاصدار"
-    IDS_VISITVERSIONCHECK   "\n\nهل تريد زيارة صفحة المعلومات الان؟"
     IDS_PW_VIDEOPLAYER      "فيديو بلير"
     IDS_VIDEOBACKUP         "اعمل باك اب للاظهار"
     IDS_MYINFO              "معلوملتي"
@@ -1141,7 +1130,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "ابطل القائمة"
     IDS_HM_LINKHP           "صفحة ايمول "
     IDS_HM_LINKFAQ          "معلومات ايمول"
-    IDS_HM_LINKVC           "فحص اصدار ايمول"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "دخول مصدر العميل و مصدر الخادم"
     IDS_SHAREDREQ1          "المستخدم %s (%u) طلب قائمة الملفات المشتركة الخاصة بك -> %s"
@@ -1736,7 +1724,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "لا تستطيع تحميل هذا الملف لان نظام الملفات عندك لا يدعم الملفات التي هي اكبر من 4 جيجا, فكر في تحويله الى NTFS"
-    IDS_NEWVERSIONAVLBETA   "هذه النسخة التجريبة هي نافذة المفعول. بسبب طبيعة النسخة التجريبية, التي بصورة عامة تحتوي على اخطاء, انه مهم جدا ان تحدث النسخة الى اصدار اكثر ثباتا في عمله بالسرعة الممكنة!"
     IDS_KADSEARCHACTIVE     "(بحث الكاد قيد العمل...)"
     IDS_BOLD                "تعيين الخط العريض"
     IDS_UNDERLINE           "تعيين الخط المسطر"

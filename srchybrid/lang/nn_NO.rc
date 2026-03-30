@@ -1,4 +1,4 @@
-#include "nn_NO.h"
+﻿#include "nn_NO.h"
 
 #define APSTUDIO_READONLY_SYMBOLS
 /////////////////////////////////////////////////////////////////////////////
@@ -542,9 +542,6 @@ BEGIN
     IDS_CD_RATING           "Gradering (total):"
     IDS_CD_USCORE           "Opplastingskøpoeng:"
     IDS_CD_TITLE            "Klientdetaljar"
-    IDS_EMULEW              "Klikk"
-    IDS_EMULEW2             "for å sjå om ei ny utgåve av emule er tilgjengeleg"
-    IDS_EMULEW3             "her"
     IDS_PW_MAXSOURCES       "Maks kjelder per fil"
     IDS_SHAREDFILESCOUNT    "Tal på delte filer: %u"
     IDS_SF_SIZE             "Samla storleik på delte filer: %s"
@@ -883,19 +880,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Filskildring av '%s' motteken: %s"
     IDS_WEBSERVICES         "Vevtenester"
     IDS_WEBSVEDIT           "Rediger vevtenester"
-    IDS_CHECK4UPDATE        "Sjå etter ny utgåve"
     IDS_STARTUP             "Oppstart"
-    IDS_NEWVERSIONAVL       "Det er ei ny utgåve av eMule tilgjengeleg! Sjå eMule si heimeside for meir informasjon."
-    IDS_NEWVERSIONAVLPOPUP  "Det er ei ny utgåve av eMule tilgjengeleg! Klikk her for å lese meir om ho!"
-    IDS_NEWVERSIONFAILED    "Ikkje i stand til å sjå etter ny version"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Ny utgåve av eMule funne"
-    IDS_NONEWERVERSION      "Ikkje funne ny utgåve av eMule"
-    IDS_VERSIONCHECK        "Utgåvekontroll"
-    IDS_VISITVERSIONCHECK   "\n\nVil du vitje informasjonssida no?"
     IDS_PW_VIDEOPLAYER      "Videoavspelar"
     IDS_VIDEOBACKUP         "Opprett tryggingskopi før førehandssyning"
     IDS_MYINFO              "Min info"
@@ -1085,7 +1074,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Deaktiver tidsplanleggjar"
     IDS_HM_LINKHP           "eMule heimeside"
     IDS_HM_LINKFAQ          "eMule FAQ"
-    IDS_HM_LINKVC           "eMule utgåvekontroll"
     IDS_DEBUG_SOURCE_EXCHANGE "Syn kjeldeutvekslingsmeldingar"
     IDS_SHAREDREQ1          "Brukar %s (%u) førespurt liste over dine delte mapper -> %s"
     IDS_SHAREDREQ2          "Brukar %s (%u) førespurt liste over delte filer for mappe '%s' -> %s"
@@ -1695,7 +1683,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE "Du kan ikkje laste ned denne fila fordi filsystemet ditt ikkje stør filer større enn 4GB. Problemet kan løysast ved å konvertere til NTFS!"
-    IDS_NEWVERSIONAVLBETA   "Denne Beta-utgåva er utdatert. Ettersom Beta-utgåver ofte inneheld feil, vert det tilrådd å oppgradere til ei stabil utgåve så raskt som mogleg!"
     IDS_KADSEARCHACTIVE     "(Kadsøk aktivt...)"
     IDS_BOLD                "Set feit tekst på/av"
     IDS_UNDERLINE           "Set underlina tekst på/av"

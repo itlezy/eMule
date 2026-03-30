@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ro_RO.h"
@@ -603,9 +603,6 @@ BEGIN
     IDS_CD_RATING           "Punctaj (total):"
     IDS_CD_USCORE           "Punctaj rînd:"
     IDS_CD_TITLE            "Detalii client"
-    IDS_EMULEW              "Click" //!
-    IDS_EMULEW2             "pentru a verifica dacă a apărut o versiune nouă"
-    IDS_EMULEW3             "AICI"
     IDS_PW_MAXSOURCES       "Maxim surse/fişier"
     IDS_SHAREDFILESCOUNT    "Număr fişiere share: %u"
     IDS_SF_SIZE             "Dimensiune totală fişiere share: %s"
@@ -952,19 +949,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descrierea fişierului '%s' primit: %s"
     IDS_WEBSERVICES         "Servicii Web"
     IDS_WEBSVEDIT           "Modifică serviciile Web"
-    IDS_CHECK4UPDATE        "Caută o nouă versiune"
     IDS_STARTUP             "La pornire"
-    IDS_NEWVERSIONAVL       "E disponibilă o nouă versiune de eMule! Pentru alte informaţii intră pe site-ul eMule."
-    IDS_NEWVERSIONAVLPOPUP  "E disponibilă o nouă versiune de eMule. Pentru informaţii dă click aici!"
-    IDS_NEWVERSIONFAILED    "Nu pot verifica actualizarea."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "E disponibilă o nouă versiune de eMule"
-    IDS_NONEWERVERSION      "Ai deja ultima versiune de eMule."
-    IDS_VERSIONCHECK        "Control &Versiune"
-    IDS_VISITVERSIONCHECK   "\n\nVrei să vezi acum pagina de noutăţi?"
     IDS_PW_VIDEOPLAYER      "Player pentru pre-vizualizare:"
     IDS_VIDEOBACKUP         "Creează copie de pre-vizualizare"
     IDS_MYINFO              "Datele mele"
@@ -1121,7 +1110,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Dezactivare acţiuni programate"
     IDS_HM_LINKHP           "Homepage eMule"
     IDS_HM_LINKFAQ          "F.A.Q. eMule"
-    IDS_HM_LINKVC           "Control versiune eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Log mesaje de schimb de surse client şi cereri/răspunsuri server"
     IDS_SHAREDREQ1          "Utilizatorul %s (%u) a cerut lista dosarelor tale share -> %s"
@@ -1745,7 +1733,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Nu poţi descărca acest fişier fiindcă sistemul tău (FAT-FAT32) nu suportă fişiere mai mari de 4GB, încearcă să-l converteşti în NTFS"
-    IDS_NEWVERSIONAVLBETA   "Această versiune Beta e depăşită. Fiindcă versiunile Beta deseori conţin erori, e foarte important să faci update cu o versiune stabilă cît mai curînd posibil!"
     IDS_KADSEARCHACTIVE     "(Kad căutare în curs...)"
     IDS_BOLD                "Text îngroşat da/nu"
     IDS_UNDERLINE           "Text subliniat da/nu"

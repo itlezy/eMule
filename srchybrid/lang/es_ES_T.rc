@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "es_ES_T.h"
@@ -567,9 +567,6 @@ BEGIN
     IDS_CD_RATING           "Calificación (total):"
     IDS_CD_USCORE           "Punt. cola de subida:"
     IDS_CD_TITLE            "Detalles del cliente"
-    IDS_EMULEW              "Pulsa "
-    IDS_EMULEW2             "para comprobar si hay una nueva versión"
-    IDS_EMULEW3             "aquí"
     IDS_PW_MAXSOURCES       "Máx. fuentes/archivo"
     IDS_SHAREDFILESCOUNT    "Nº de archivos compartidos: %u"
     IDS_SF_SIZE             "Total de archivos compartidos: %s"
@@ -902,19 +899,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descripción del archivo '%s' recibido: %s"
     IDS_WEBSERVICES         "Servicios &Web"
     IDS_WEBSVEDIT           "Editar Servicios Web"
-    IDS_CHECK4UPDATE        "Comprobar si hay una nueva versión"
     IDS_STARTUP             "Al iniciar"
-    IDS_NEWVERSIONAVL       "Existe una nueva versión de eMule. Comprueba la página web del proyecto para más información."
-    IDS_NEWVERSIONAVLPOPUP  "Existe una nueva versión de eMule. ¡Pincha aquí para ver las novedades de esta versión!"
-    IDS_NEWVERSIONFAILED    "No se puede comprobar si hay una nueva versión."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Al detectar nueva versión de eMule"
-    IDS_NONEWERVERSION      "No se ha detectado una nueva versión de eMule."
-    IDS_VERSIONCHECK        "Comprobar nueva &versión"
-    IDS_VISITVERSIONCHECK   "\n\n¿Quieres visitar la página de información ahora?"
     IDS_PW_VIDEOPLAYER      "Reproductor de vídeo"
     IDS_VIDEOBACKUP         "Crear copia de seguridad para previsualizar"
     IDS_MYINFO              "Información propia"
@@ -1109,7 +1098,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Desactivar Programador"
     IDS_HM_LINKHP           "Web de eMule"
     IDS_HM_LINKFAQ          "eMule FAQ"//!
-    IDS_HM_LINKVC           "Comprobar versión de eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Registro de intercambio de fuentes y de búsquedas y resultados desde los servidores"
     IDS_SHAREDREQ1          "Usuario %s (%u) ha solicitado tu lista de carpetas compartidas -> %s"
     IDS_SHAREDREQ2          "Usuario %s (%u) ha solicitado tu lista de archivos compartidos de la carpeta '%s' -> %s"
@@ -1746,7 +1734,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "No puedes descargar este archivo porque tu sistema de archivos no admite ficheros de más de 4 GB, plantéate convertirlo a NTFS"
-    IDS_NEWVERSIONAVLBETA   "Esta versión Beta está anticuada. ¡Las versiones Beta suelen tener fallos, por lo que es muy importante que actualices a una versión estable lo antes posible!"
     IDS_KADSEARCHACTIVE     "(Buscando vía Kad...)"
     IDS_BOLD                "Cambia a Texto en Negrita"
     IDS_UNDERLINE           "Cambia a Texto Subrayado"

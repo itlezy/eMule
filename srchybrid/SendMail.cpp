@@ -558,9 +558,6 @@ void CemuleDlg::SendNotificationMail(TbnMsg nMsgType, LPCTSTR pszText)
 		case TBN_IMPORTANTEVENT:
 			uid = IDS_ERROR;
 			break;
-		case TBN_NEWVERSION:
-			uid = IDS_CB_TBN_ONNEWVERSION;
-			break;
 		default:
 			uid = 0;
 			ASSERT(0);

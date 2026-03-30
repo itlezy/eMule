@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "va_ES_RACV.h"
@@ -567,9 +567,6 @@ BEGIN
     IDS_CD_RATING           "Punt. (total):"
     IDS_CD_USCORE           "Punt. coa env.:"
     IDS_CD_TITLE            "Detalls client"
-    IDS_EMULEW              "Pulsa"
-    IDS_EMULEW2             "Per a comprovar si hi ha una versió nova  \ndisponible"
-    IDS_EMULEW3             "Ací"
     IDS_PW_MAXSOURCES       "Max. fonts per archiu"
     IDS_SHAREDFILESCOUNT    "Cantitat d'archius compartits: %u"
     IDS_SF_SIZE             "Tamany total archius compartits: %s"
@@ -901,19 +898,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Rebuda descripció per a l'archiu '%s': %s"
     IDS_WEBSERVICES         "Servicis web"
     IDS_WEBSVEDIT           "Editar servicis web"
-    IDS_CHECK4UPDATE        "Comprovar si n'hi ha nova versió"
     IDS_STARTUP             "Inici"
-    IDS_NEWVERSIONAVL       "N'hi ha una versió d'eMule nova. Comprova la  \npagina web per a mes informació."
-    IDS_NEWVERSIONAVLPOPUP  "N'hi ha una versió d'eMule nova. Pulsa ací per a  \nllegir les notes de la nova versió"
-    IDS_NEWVERSIONFAILED    "No s'ha pogut comprovar si n'hi ha versions  \nnoves."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Detectada versió nova d'eMule"
-    IDS_NONEWERVERSION      "No s'han detectat versions noves d'eMule."
-    IDS_VERSIONCHECK        "&Comprovar versió"
-    IDS_VISITVERSIONCHECK   "\n\n¿Vols visitar la pagina d'informació ara?"
     IDS_PW_VIDEOPLAYER      "Reproductor de Vídeo"
     IDS_VIDEOBACKUP         "Crear copia per a prevore"
     IDS_MYINFO              "La meua informació"
@@ -1110,7 +1099,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Desactivar Programador"
     IDS_HM_LINKHP           "Pagina Principal d'eMule"
     IDS_HM_LINKFAQ          "FAQ d'eMule"
-    IDS_HM_LINKVC           "Comprovació de versió d'eMule"
     IDS_DEBUG_SOURCE_EXCHANGE "Vore mensages d'intercanvi de fonts"
     IDS_SHAREDREQ1          "L'usuari %s (%u) ha demanat la teua llista de carpetes compartides -> %s"
     IDS_SHAREDREQ2          "L'usuari %s (%u) ha demanat la llista d'archius compartits en la carpeta '%s' -> %s"
@@ -1747,7 +1735,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "No pots descarregar est archiu perque el teu sistema d'archius no admet archius de mes de 4 GB, planteja't convertir-lo a NTFS"
-    IDS_NEWVERSIONAVLBETA   "Esta versió beta està antiquada. ¡Les versions beta solen tindre fallos, per lo que es molt important que actualises a una versió estable lo mes pronte possible!"
     IDS_KADSEARCHACTIVE     "(Buscant via Kad...)"
     IDS_BOLD                "Canvia a text en negreta"
     IDS_UNDERLINE           "Canvia a text subrallat"

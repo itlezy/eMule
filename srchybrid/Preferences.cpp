@@ -259,7 +259,6 @@ CString	CPreferences::m_strIncomingDir;
 CStringArray CPreferences::tempdir;
 bool	CPreferences::ICH;
 bool	CPreferences::m_bAutoUpdateServerList;
-bool	CPreferences::updatenotify;
 bool	CPreferences::mintotray;
 bool	CPreferences::autoconnect;
 bool	CPreferences::m_bAutoConnectToStaticServersOnly;
@@ -425,7 +424,6 @@ bool	CPreferences::notifierOnChat;
 bool	CPreferences::notifierOnLog;
 bool	CPreferences::notifierOnImportantError;
 bool	CPreferences::notifierOnEveryChatMsg;
-bool	CPreferences::notifierOnNewVersion;
 ENotifierSoundType CPreferences::notifierSoundType = ntfstNoSound;
 CString	CPreferences::notifierSoundFile;
 bool	CPreferences::m_bMessageEnableSmileys;
@@ -482,7 +480,6 @@ bool	CPreferences::m_bDisableKnownClientList;
 bool	CPreferences::m_bDisableQueueList;
 bool	CPreferences::m_bExtControls;
 bool	CPreferences::m_bTransflstRemain;
-UINT	CPreferences::versioncheckdays;
 bool	CPreferences::showRatesInTitle;
 CString	CPreferences::m_strTxtEditor;
 CString	CPreferences::m_strVideoPlayer;
@@ -516,7 +513,6 @@ DWORD	CPreferences::m_uFileBufferTimeLimit;
 INT_PTR	CPreferences::m_iQueueSize;
 int		CPreferences::m_iCommitFiles;
 UINT	CPreferences::maxmsgsessions;
-time_t	CPreferences::versioncheckLastAutomatic;
 CString	CPreferences::messageFilter;
 CString	CPreferences::commentFilter;
 CString	CPreferences::filenameCleanups;
@@ -804,7 +800,6 @@ void CPreferences::SetStandardValues()
 	// as the fallback size once the user switches back to a normal window state.
 	defaultWPM.showCmd = SW_SHOWMAXIMIZED;
 	EmuleWindowPlacement = defaultWPM;
-	versioncheckLastAutomatic = 0;
 }
 
 #pragma warning(push)
@@ -1695,12 +1690,10 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("VariousStatisticsMaxValue"), statsMax);
 	ini.WriteInt(_T("StatsAverageMinutes"), statsAverageMinutes);
 	ini.WriteInt(_T("MaxConnectionsPerFiveSeconds"), MaxConperFive);
-	ini.WriteInt(_T("Check4NewVersionDelay"), versioncheckdays);
 
 	ini.WriteBool(_T("Reconnect"), reconnect);
 	ini.WriteBool(_T("Scoresystem"), m_bUseServerPriorities);
 	ini.WriteBool(_T("Serverlist"), m_bAutoUpdateServerList);
-	ini.WriteBool(_T("UpdateNotifyTestClient"), updatenotify);
 	if (IsRunningAeroGlassTheme())
 		ini.WriteBool(_T("MinToTray_Aero"), mintotray);
 	else
@@ -1748,7 +1741,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("NotifyOnLog"), notifierOnLog);
 	ini.WriteBool(_T("NotifyOnImportantError"), notifierOnImportantError);
 	ini.WriteBool(_T("NotifierPopEveryChatMessage"), notifierOnEveryChatMsg);
-	ini.WriteBool(_T("NotifierPopNewVersion"), notifierOnNewVersion);
 	ini.WriteInt(_T("NotifierUseSound"), (int)notifierSoundType);
 	ini.WriteString(_T("NotifierSoundPath"), notifierSoundFile);
 
@@ -1823,8 +1815,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("AllocateFullFile"), m_bAllocFull);
 	ini.WriteBool(_T("ShowSharedFilesDetails"), m_bShowSharedFilesDetails);
 	ini.WriteBool(_T("AutoShowLookups"), m_bAutoShowLookups);
-
-	ini.WriteInt(_T("VersionCheckLastAutomatic"), (int)versioncheckLastAutomatic);
 	ini.WriteInt(_T("FilterLevel"), filterlevel);
 
 	ini.WriteBool(_T("SecureIdent"), m_bUseSecureIdent);// change the name in future version to enable it by default
@@ -2016,7 +2006,6 @@ void CPreferences::LoadPreferences()
 #endif
 
 	m_nWebMirrorAlertLevel = ini.GetInt(_T("WebMirrorAlertLevel"), 0);
-	updatenotify = ini.GetBool(_T("UpdateNotifyTestClient"), false);
 
 	SetUserNick(ini.GetStringUTF8(_T("Nick"), DEFAULT_NICK));
 	if (strNick.IsEmpty() || IsDefaultNick(strNick))
@@ -2207,7 +2196,6 @@ void CPreferences::LoadPreferences()
 	notifierOnLog = ini.GetBool(_T("NotifyOnLog"));
 	notifierOnImportantError = ini.GetBool(_T("NotifyOnImportantError"));
 	notifierOnEveryChatMsg = ini.GetBool(_T("NotifierPopEveryChatMessage"));
-	notifierOnNewVersion = ini.GetBool(_T("NotifierPopNewVersion"));
 	notifierSoundType = (ENotifierSoundType)ini.GetInt(_T("NotifierUseSound"), ntfstNoSound);
 	notifierSoundFile = ini.GetString(_T("NotifierSoundPath"));
 
@@ -2292,7 +2280,6 @@ void CPreferences::LoadPreferences()
 	m_iQueueSize = ini.GetInt(_T("QueueSize"), (int)m_iQueueSize);
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving
-	versioncheckdays = ini.GetInt(_T("Check4NewVersionDelay"), 5);
 	m_bDAP = ini.GetBool(_T("DAPPref"), true);
 	m_bUAP = ini.GetBool(_T("UAPPref"), true);
 	m_bPreviewOnIconDblClk = ini.GetBool(_T("PreviewOnIconDblClk"), false);
@@ -2305,8 +2292,6 @@ void CPreferences::LoadPreferences()
 	//resumeSameCat = ini.GetBool(_T("ResumeNextFromSameCat"), false);
 	dontRecreateGraphs = ini.GetBool(_T("DontRecreateStatGraphsOnResize"), false);
 	m_bExtControls = ini.GetBool(_T("ShowExtControls"), true);
-
-	versioncheckLastAutomatic = ini.GetInt(_T("VersionCheckLastAutomatic"), 0);
 	m_bDisableKnownClientList = ini.GetBool(_T("DisableKnownClientList"), false);
 	m_bDisableQueueList = ini.GetBool(_T("DisableQueueList"), false);
 	m_bCreditSystem = ini.GetBool(_T("UseCreditSystem"), true);
@@ -2681,12 +2666,6 @@ bool CPreferences::IsShareableDirectory(const CString &rstrDir)
 	return true;
 }
 
-void CPreferences::UpdateLastVC()
-{
-	struct tm tmTemp;
-	versioncheckLastAutomatic = safe_mktime(CTime::GetCurrentTime().GetLocalTm(&tmTemp));
-}
-
 void CPreferences::SetWSPass(const CString &strNewPass)
 {
 	m_strWebPassword = MD5Sum(strNewPass).GetHashString();
@@ -2763,37 +2742,6 @@ CString CPreferences::GetHomepageBaseURLForLevel(int nLevel)
 	return tmp;
 }
 
-CString CPreferences::GetVersionCheckBaseURL()
-{
-	CString tmp;
-	LPCTSTR p = NULL;
-	UINT nWebMirrorAlertLevel = GetWebMirrorAlertLevel();
-	if (nWebMirrorAlertLevel < 100)
-		p = _T("https://vcheck.emule-project.net");
-	else if (nWebMirrorAlertLevel < 150)
-		tmp.Format(_T("https://vcheck%u.emule-project.org"), nWebMirrorAlertLevel);
-	else if (nWebMirrorAlertLevel < 200)
-		tmp.Format(_T("https://vcheck%u.emule-project.com"), nWebMirrorAlertLevel);
-	else if (nWebMirrorAlertLevel == 200)
-		p = _T("https://emule.sf.net");
-	else if (nWebMirrorAlertLevel == 201)
-		p = _T("https://www.emuleproject.net");
-	else
-		p = _T("https://vcheck.emule-project.net");
-	if (p)
-		tmp = p;
-	return tmp;
-}
-
-CString CPreferences::GetVersionCheckURL()
-{
-	CString theUrl(thePrefs.GetVersionCheckBaseURL());
-	theUrl.AppendFormat(_T("/en/version_check.php?version=%u&language=%u") _T("&mod=1") //this suffix for community version only
-		, theApp.m_uCurVersionCheck
-		, thePrefs.GetLanguageID());
-	return theUrl;
-}
-
 bool CPreferences::IsDefaultNick(const CString &strCheck)
 {
 // not fast, but this function is not called often
@@ -2816,7 +2764,7 @@ UINT CPreferences::GetWebMirrorAlertLevel()
 		// no threats known at this time
 	}
 	// end
-	return UpdateNotify() ? m_nWebMirrorAlertLevel : 0;
+	return m_nWebMirrorAlertLevel;
 }
 
 bool CPreferences::GetUseReBarToolbar()

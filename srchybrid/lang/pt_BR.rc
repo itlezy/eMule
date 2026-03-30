@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "pt_BR.h"
@@ -568,9 +568,6 @@ BEGIN
     IDS_CD_RATING           "Avaliação (total):"
     IDS_CD_USCORE           "Pontuação na fila:"
     IDS_CD_TITLE            "Detalhes do Usuário"
-    IDS_EMULEW              "Clique"
-    IDS_EMULEW2             "para verificar se há uma nova versão"
-    IDS_EMULEW3             "Aqui"
     IDS_PW_MAXSOURCES       "Máx. de fontes por arquivo"
     IDS_SHAREDFILESCOUNT    "Quantidade de arquivos compartilhados: %u"
     IDS_SF_SIZE             "Tamanho total dos arquivos compartilhados: %s"
@@ -901,19 +898,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descrição recebida para o arquivo '%s': %s"
     IDS_WEBSERVICES         "Serviços &Web"
     IDS_WEBSVEDIT           "Editar Serviços Web..."
-    IDS_CHECK4UPDATE        "Verificar se há uma nova versão"
     IDS_STARTUP             "Iniciando"
-    IDS_NEWVERSIONAVL       "Uma nova versão do eMule está disponível. Verifique a página do projeto para maiores informações."
-    IDS_NEWVERSIONAVLPOPUP  "Uma nova versão do eMule está disponível. Clique aqui para ler sobre a nova versão!"
-    IDS_NEWVERSIONFAILED    "Não é possível verificar se há uma nova versão."
-    IDS_CB_TBN_ONNEWVERSION "Nova versão do eMule encontrada"
-    IDS_NONEWERVERSION      "Nenhuma nova versão do eMule encontrada."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "&Verificar versão"
-    IDS_VISITVERSIONCHECK   "\n\nVocê gostaria de visitar a página de informações agora?"
     IDS_PW_VIDEOPLAYER      "Reprodutor de Vídeo"
     IDS_VIDEOBACKUP         "Criar cópia para pré-visualizar"
     IDS_MYINFO              "Meus Dados"
@@ -1101,7 +1090,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Alterar Agendador para Desligado"
     IDS_HM_LINKHP           "Homepage do eMule"
     IDS_HM_LINKFAQ          "FAQ do eMule"
-    IDS_HM_LINKVC           "Verificar versão do eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Registrar troca de fonte de cliente e fonte de perguntas/respostas de servidor"
     IDS_SHAREDREQ1          "O Usuário %s (%u) solicitou sua lista de pastas compartilhadas -> %s"
@@ -1721,7 +1709,6 @@ BEGIN
     IDS_SRV_LARGEFILES      "Suporte para arquivos grandes"
     IDS_ERR_FSCANTHANDLEFILE
                             "Você não pode baixar esse arquivo porque o sistema de arquivos não suporta arquivos maiores que 4GB, considere converter para NTFS"
-    IDS_NEWVERSIONAVLBETA   "Esta versão Beta está desatualizada. Devido à natureza das versões Beta, que quase sempre contém problemas, é muito importante que você atualize para uma versão final estável o quanto antes!"
     IDS_BOLD                "Texto em negrito"
     IDS_UNDERLINE           "Texto sublinhado"
     IDS_COLOUR              "Selecione a cor do texto (cor de fundo opcional)"

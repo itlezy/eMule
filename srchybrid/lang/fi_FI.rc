@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "fi_FI.h"
@@ -363,8 +363,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "&Päivitystarve"
-    IDS_VISITVERSIONCHECK   "\n\nHaluatko vierailla eMulen www-sivuilla nyt?"
     IDS_PW_VIDEOPLAYER      "Videosoitin"
     IDS_VIDEOBACKUP         "Luo kopio katselemista varten"
     IDS_MYINFO              "Tietosi"
@@ -626,9 +624,6 @@ BEGIN
     IDS_CD_RATING           "Arvo (yhteensä):"
     IDS_CD_USCORE           "Lähetysjonopisteet:"
     IDS_CD_TITLE            "Käyttäjän tiedot"
-    IDS_EMULEW              "Paina"
-    IDS_EMULEW2             ", jos haluat, että tarkastan uuden version saatavuuden"
-    IDS_EMULEW3             "tästä"
     IDS_PW_MAXSOURCES       "Enint. lähteitä / tiedosto"
     IDS_SHAREDFILESCOUNT    "Tiedostoja: %u"
     IDS_SF_SIZE             "Tiedostojen koko: %s"
@@ -1017,13 +1012,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Vastaanotin kuvauksen tiedostolle '%s': %s."
     IDS_WEBSERVICES         "Verkkopalvelut"
     IDS_WEBSVEDIT           "Muokkaa verkkopalveluita"
-    IDS_CHECK4UPDATE        "Tarkista uuden version saatavuus"
     IDS_STARTUP             "Käynnistys"
-    IDS_NEWVERSIONAVL       "Uusi versio on saatavilla! Projektin kotisivuilta saat lisätietoja."
-    IDS_NEWVERSIONAVLPOPUP  "Uusi versio on saatavilla. Napsauta tästä, jos haluat lukea uudesta versiosta!"
-    IDS_NEWVERSIONFAILED    "Uuden version saatavuuden tarkistaminen epäonnistui."
-    IDS_CB_TBN_ONNEWVERSION "Uusi versio on saatavilla."
-    IDS_NONEWERVERSION      "Uutta versioita ei ole saatavilla."
 END
 
 STRINGTABLE
@@ -1155,7 +1144,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Ajastin pois päältä"
     IDS_HM_LINKHP           "eMule kotisivut"
     IDS_HM_LINKFAQ          "eMule usein kysytyt kysymykset"
-    IDS_HM_LINKVC           "eMule version tarkistus"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Näytä lähteiden vaihtoa koskevat viestit."
     IDS_SHAREDREQ1          "Käyttäjä %s (%u) pyysi listaa jaetuista hakemistoista, %s."
@@ -1711,7 +1699,6 @@ BEGIN
     IDS_SRV_LARGEFILES      "Tuki suurikokoisille tiedostoille"
     IDS_ERR_FSCANTHANDLEFILE
                             "Et voi ladata tätä tiedostoa, koska kovalevysi tiedostojärjestelmä ei tue yli 4 GB kokoisia tiedostoja; harkitse kovalevyn tiedostojärjestelmän muunnosta NTFS:ään."
-    IDS_NEWVERSIONAVLBETA   "Tämä betaversio on vanhentunut. Ottaen huomioon sen, että betaversiot ovat usein vailinaisia ja sisältävät virheitä, on tärkeää että päivität ohjelmasi vakaaseen versioon niin pian kuin mahdollista!"
     IDS_BOLD                "Vaihtaa lihavoidun tekstin päälle/pois"
     IDS_UNDERLINE           "vaihtaa alleviivatun tekstin päälle/pois"
     IDS_COLOUR              "Valitsee tekstin värin (valinnainen taustaväri on myös käytettävissä)"

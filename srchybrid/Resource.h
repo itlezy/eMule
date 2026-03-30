@@ -388,9 +388,6 @@
 #define IDS_CD_RATING                   465
 #define IDS_CD_USCORE                   466
 #define IDS_CD_TITLE                    467
-#define IDS_EMULEW                      468
-#define IDS_EMULEW2                     469
-#define IDS_EMULEW3                     470
 #define IDS_PW_MAXSOURCES               471
 #define IDS_SHAREDFILESCOUNT            472
 #define IDS_SF_SIZE                     473
@@ -651,15 +648,7 @@
 #define IDS_DESCRIPTIONRECV             757
 #define IDS_WEBSERVICES                 758
 #define IDS_WEBSVEDIT                   759
-#define IDS_CHECK4UPDATE                761
 #define IDS_STARTUP                     762
-#define IDS_NEWVERSIONAVL               763
-#define IDS_NEWVERSIONAVLPOPUP          764
-#define IDS_NEWVERSIONFAILED            765
-#define IDS_CB_TBN_ONNEWVERSION         766
-#define IDS_NONEWERVERSION              767
-#define IDS_VERSIONCHECK                768
-#define IDS_VISITVERSIONCHECK           769
 #define IDS_PW_VIDEOPLAYER              770
 #define IDS_VIDEOBACKUP                 771
 #define IDS_MYINFO                      772
@@ -733,7 +722,6 @@
 #define IDS_FIRSTCOMPLETE               839
 #define IDS_ENTERUSERNAME               840
 #define IDS_STATIC_CPUMEM               841
-#define IDC_CHECK4UPDATE                842
 #define IDS_KAD_SEARCH_KEYWORD_TOO_SHORT 842
 #define IDS_LOG2DISK                    843
 #define IDS_KAD_SEARCH_KEYWORD_ALREADY_SEARCHING 844
@@ -841,7 +829,6 @@
 #define IDS_HM_SCHED_OFF                945
 #define IDS_HM_LINKHP                   946
 #define IDS_HM_LINKFAQ                  947
-#define IDS_HM_LINKVC                   948
 #define IDS_DEBUG_SOURCE_EXCHANGE       949
 #define IDS_SHAREDREQ1                  950
 #define IDS_SHAREDREQ2                  951
@@ -1332,7 +1319,6 @@
 #define IDS_ERR_MET_BAD                 1464
 #define IDS_SRV_LARGEFILES              1465
 #define IDS_ERR_FSCANTHANDLEFILE        1466
-#define IDS_NEWVERSIONAVLBETA           1467
 #define IDS_BOLD                        1468
 #define IDS_UNDERLINE                   1469
 #define IDS_COLOUR                      1470
@@ -1848,7 +1834,6 @@
 #define IDC_CB_TBN_ONCHAT               2517
 #define IDC_CB_TBN_IMPORTATNT           2522
 #define IDC_CB_ENABLENOTIFICATIONS      2523
-#define IDC_CB_TBN_ONNEWVERSION         2525
 #define IDC_FILENAME                    2528
 #define IDC_FD_SN                       2530
 #define IDC_PREFCOLORS                  2531
@@ -1902,7 +1887,6 @@
 #define IDC_3DDEPTH                     2600
 #define IDC_3DDEP                       2601
 #define IDC_MANUALSERVERHIGHPRIO        2602
-#define IDC_DAYS                        2603
 #define IDC_ROUND                       2605
 #define IDC_STARTUP                     2606
 #define IDC_STATICVIDEOPLAYER           2607
@@ -1910,7 +1894,6 @@
 #define IDC_FILEBUFFERSIZE_STATIC       2610
 #define IDC_QUEUESIZE_STATIC            2611
 #define IDC_QUEUESIZE                   2612
-#define IDC_CHECKDAYS                   2613
 #define IDC_PREFINI_STATIC              2613
 #define IDC_MSG                         2614
 #define IDC_FILTERLABEL                 2615

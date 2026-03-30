@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "zh_TW.h"
@@ -529,9 +529,6 @@ BEGIN
     IDS_CD_RATING           "等級 (總計):"
     IDS_CD_USCORE           "上載等候積分:"
     IDS_CD_TITLE            "客戶端明細"
-    IDS_EMULEW              "按下"
-    IDS_EMULEW2             "檢查是否有新的版本可取得"
-    IDS_EMULEW3             "這裡"
     IDS_PW_MAXSOURCES       "每個檔案最大來源數"
     IDS_SHAREDFILESCOUNT    "已分享檔案數量: %u"
     IDS_SF_SIZE             "已分享檔案大小總計: %s"
@@ -865,19 +862,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' 檔案描述已接收: %s"
     IDS_WEBSERVICES         "Web 服務"
     IDS_WEBSVEDIT           "編輯 Web 服務..."
-    IDS_CHECK4UPDATE        "檢查是否有新版本"
     IDS_STARTUP             "啟動"
-    IDS_NEWVERSIONAVL       "一個新版的 eMule 已可取得! 按這裡到 專案-首頁 取得更多資訊."
-    IDS_NEWVERSIONAVLPOPUP  "一個新版的 eMule 已可取得. 按這裡來讀取新版的相關資訊!"
-    IDS_NEWVERSIONFAILED    "無法檢查是否有新版本."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "已偵測到新版的 eMule"
-    IDS_NONEWERVERSION      "未偵測到新版的 eMule."
-    IDS_VERSIONCHECK        "版本檢查"
-    IDS_VISITVERSIONCHECK   "\n\n您現在想要參觀通知網頁嗎?"
     IDS_PW_VIDEOPLAYER      "影像播放器"
     IDS_VIDEOBACKUP         "建立備份來預覽"
     IDS_MYINFO              "我的資訊"
@@ -1104,7 +1093,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "停用時間表"
     IDS_HM_LINKHP           "eMule 首頁"
     IDS_HM_LINKFAQ          "eMule FAQ"//!
-    IDS_HM_LINKVC           "eMule 版本檢查"
     IDS_DEBUG_SOURCE_EXCHANGE "記錄客戶端來源交換及伺服器來源查詢/回覆"
     IDS_SHAREDREQ1          "使用者 %s (%u) 要求您的已分享資料夾清單 -> %s"
     IDS_SHAREDREQ2          "使用者 %s (%u) 要求您的已分享資料夾中的檔案清單 '%s' -> %s"
@@ -1722,7 +1710,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "您不能下載這個檔案因為您的檔案系統不支援檔案大於 4GB, 請考慮轉換磁碟格式為 NTFS"
-    IDS_NEWVERSIONAVLBETA   "這個測試版本已經過期. 由於是測試版本, 它可能包含許多臭蟲, 可能的話盡快更新到穩定的發佈版本是重要的!"
     IDS_KADSEARCHACTIVE     "(Kad 搜尋在處理中...)"
     IDS_BOLD                "固定為粗體文字"
     IDS_UNDERLINE           "固定為加底線文字"

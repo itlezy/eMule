@@ -17,7 +17,6 @@ enum TbnMsg
 	TBN_DOWNLOADFINISHED,
 	TBN_LOG,
 	TBN_IMPORTANTEVENT,
-	TBN_NEWVERSION,
 	TBN_DOWNLOADADDED
 };
 //END - enkeyDEV(kei-kun) -TaskbarNotifier-

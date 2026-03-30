@@ -48,7 +48,6 @@ BEGIN_MESSAGE_MAP(CPPgNotify, CPropertyPage)
 	ON_BN_CLICKED(IDC_CB_TBN_ONCHAT, OnBnClickedOnChat)
 	ON_BN_CLICKED(IDC_CB_TBN_IMPORTATNT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CB_TBN_POP_ALWAYS, OnSettingsChange)
-	ON_BN_CLICKED(IDC_CB_TBN_ONNEWVERSION, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SMTPSERVER, OnBnClickedSMTPserver)
 	ON_EN_CHANGE(IDC_EDIT_SENDER, OnSettingsChange)
 	ON_EN_CHANGE(IDC_EDIT_RECEIVER, OnSettingsChange)
@@ -97,7 +96,6 @@ BOOL CPPgNotify::OnInitDialog()
 	CheckDlgButton(IDC_CB_TBN_ONLOG, thePrefs.notifierOnLog ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_IMPORTATNT, thePrefs.notifierOnImportantError ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_POP_ALWAYS, thePrefs.notifierOnEveryChatMsg ? BST_CHECKED : BST_UNCHECKED);
-	CheckDlgButton(IDC_CB_TBN_ONNEWVERSION, thePrefs.notifierOnNewVersion ? BST_CHECKED : BST_UNCHECKED);
 
 	GetDlgItem(IDC_CB_TBN_POP_ALWAYS)->EnableWindow(IsDlgButtonChecked(IDC_CB_TBN_ONCHAT));
 
@@ -141,7 +139,6 @@ void CPPgNotify::Localize()
 		SetDlgItemText(IDC_CB_TBN_ONNEWDOWNLOAD, GetResString(IDS_TBN_ONNEWDOWNLOAD));
 		SetDlgItemText(IDC_TASKBARNOTIFIER, GetResString(IDS_PW_TASKBARNOTIFIER));
 		SetDlgItemText(IDC_CB_TBN_IMPORTATNT, GetResString(IDS_PS_TBN_IMPORTANT) + _T(" (*)"));
-		SetDlgItemText(IDC_CB_TBN_ONNEWVERSION, GetResString(IDS_CB_TBN_ONNEWVERSION));
 		SetDlgItemText(IDC_TBN_OPTIONS, GetResString(IDS_PW_TBN_OPTIONS));
 		SetDlgItemText(IDC_CB_TBN_USESPEECH, GetResString(IDS_USESPEECH));
 		SetDlgItemText(IDC_EMAILNOT_GROUP, _T("(*) ") + GetResString(IDS_PW_EMAILNOTIFICATIONS));
@@ -172,7 +169,6 @@ BOOL CPPgNotify::OnApply()
 	thePrefs.notifierOnLog = IsDlgButtonChecked(IDC_CB_TBN_ONLOG) != 0;
 	thePrefs.notifierOnImportantError = IsDlgButtonChecked(IDC_CB_TBN_IMPORTATNT) != 0;
 	thePrefs.notifierOnEveryChatMsg = IsDlgButtonChecked(IDC_CB_TBN_POP_ALWAYS) != 0;
-	thePrefs.notifierOnNewVersion = IsDlgButtonChecked(IDC_CB_TBN_ONNEWVERSION) != 0;
 
 	GetDlgItemText(IDC_EDIT_SENDER, m_mail.sFrom);
 	GetDlgItemText(IDC_EDIT_RECEIVER, m_mail.sTo);

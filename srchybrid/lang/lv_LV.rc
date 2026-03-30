@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "lv_LV.h"
@@ -611,9 +611,6 @@ BEGIN
     IDS_CD_RATING           "Reitingi (kopējie):"
     IDS_CD_USCORE           "Augšupielādes rindas rezultāts:"
     IDS_CD_TITLE            "Klienta detaļas"
-    IDS_EMULEW              "Klikšķini"
-    IDS_EMULEW2             "lai pārbaudītu, vai nav pieejama jauna versija"
-    IDS_EMULEW3             "te"
     IDS_PW_MAXSOURCES       "Maks. avoti/datne"
     IDS_SHAREDFILESCOUNT    "Šārēto datņu skaits: %u"
     IDS_SF_SIZE             "Šārēto datņu kopējais skaits: %s"
@@ -974,19 +971,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Description for file '%s' received: %s"
     IDS_WEBSERVICES         "&Web Services"
     IDS_WEBSVEDIT           "Edit Web Services..."
-    IDS_CHECK4UPDATE        "Check for new version"
     IDS_STARTUP             "Startup"
-    IDS_NEWVERSIONAVL       "A new version of eMule is available! Check the project-homepage for more information."
-    IDS_NEWVERSIONAVLPOPUP  "A new version of eMule is available. Click here to read about the new version!"
-    IDS_NEWVERSIONFAILED    "Unable to check for new version."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "New eMule version detected"
-    IDS_NONEWERVERSION      "No new eMule version detected."
-    IDS_VERSIONCHECK        "&Versioncheck"
-    IDS_VISITVERSIONCHECK   "\n\nDo you want do visit the Informationpage now?"
     IDS_PW_VIDEOPLAYER      "Video player"
     IDS_VIDEOBACKUP         "Create backup to preview"
     IDS_MYINFO              "My Info"
@@ -1143,7 +1132,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Switch Scheduler Off"
     IDS_HM_LINKHP           "eMule Homepage"
     IDS_HM_LINKFAQ          "eMule FAQ"
-    IDS_HM_LINKVC           "eMule Versioncheck"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Log client source exchange and server source queries/answers"
     IDS_SHAREDREQ1          "User %s (%u) requested your list of shared directories -> %s"
@@ -1742,7 +1730,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "You cannot download this file because your filesystem doesn't supports files which are larger than 4GB, consider converting it to NTFS"
-    IDS_NEWVERSIONAVLBETA   "This Beta version is out of date. Due to the nature of Beta versions, which often contain bugs it is very important that you update to a stable release as soon as possible!"
     IDS_KADSEARCHACTIVE     "(Kad search in progress...)"
     IDS_BOLD                "Toggles bold text"
     IDS_UNDERLINE           "Toggles underlined text"

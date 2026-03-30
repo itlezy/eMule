@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ug_CN.h"
@@ -362,8 +362,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "‫نەشرىنى تەكشۈر(&V)‬"
-    IDS_VISITVERSIONCHECK   "\n\nئۇچۇر بېتىنى زىيارەت قىلامسىز؟"
     IDS_PW_VIDEOPLAYER      "سىن قويغۇچ"
     IDS_VIDEOBACKUP         "ئالدىن كۆزەتكەندە زاپاسلا"
     IDS_MYINFO              "ئۇچۇرۇم"
@@ -625,9 +623,6 @@ BEGIN
     IDS_CD_RATING           "نومۇر باھالاش(ئومۇمىي)‏:"
     IDS_CD_USCORE           "يوللاش قاتارى نومۇرى:"
     IDS_CD_TITLE            "خېرىدار تەپسىلاتى"
-    IDS_EMULEW              "چەك"
-    IDS_EMULEW2             "يېڭىلانغان نەشرىنى تەكشۈر"
-    IDS_EMULEW3             "بۇ يەر"
     IDS_PW_MAXSOURCES       "ھۆججەتنىڭ ئەڭ كۆپ مەنبە سانى"
     IDS_SHAREDFILESCOUNT    "ھەمبەھىر ھۆججەت سانى: %u"
     IDS_SF_SIZE             "ھەمبەھىر ھۆججەت ئومۇمى سىغىمى: %s"
@@ -1016,13 +1011,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "‫قوبۇللىغان «%s» ھۆججەتنىڭ چۈشەندۈرۈشى: %s‬"
     IDS_WEBSERVICES         "‫Web مۇلازىمىتى‬"
     IDS_WEBSVEDIT           "‫Web مۇلازىمىتى تەھرىر…‬"
-    IDS_CHECK4UPDATE        "يېڭى نەشرىنى تەكشۈر"
     IDS_STARTUP             "قوزغات"
-    IDS_NEWVERSIONAVL       "‫يېڭى نەشرىدىكى eMule نى چۈشۈرگىلى بولىدۇ! باش بەتتىكى تەپسىلى ئۇچۇرنى كۆرۈڭ.‬"
-    IDS_NEWVERSIONAVLPOPUP  "‫يېڭى نەشرىدىكى eMule نى چۈشۈرگىلى بولىدۇ! بۇ يەرنى چېكىپ مۇناسىۋەتلىك ئۇچۇرنى كۆرۈڭ‬"
-    IDS_NEWVERSIONFAILED    "يېڭى نەشرىنى تەكشۈرەلمىدى"
-    IDS_CB_TBN_ONNEWVERSION "‫يېڭى نەشرىدىكى eMule بايقالدى!‬"
-    IDS_NONEWERVERSION      "‫يېڭى نەشرىدىكى eMule بايقالمىدى!‬"
 END
 
 STRINGTABLE
@@ -1153,7 +1142,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "پىلان ۋەزىپىنى ياپ"
     IDS_HM_LINKHP           "‫eMule باش بېتى‬"
     IDS_HM_LINKFAQ          "‫eMule چىگىش مەسىلىگە جاۋاب‬"
-    IDS_HM_LINKVC           "‫eMule نەشرىنى تەكشۈر‬"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "مەنبە ئالماشتۇرۇش ئۇچۇرىنى خاتىرىلە"
     IDS_SHAREDREQ1          "User %s (%u) requested your list of shared directories -> %s"
@@ -1709,7 +1697,6 @@ BEGIN
     IDS_SRV_LARGEFILES      "چوڭ ھۆججەت قوللايدۇ"
     IDS_ERR_FSCANTHANDLEFILE
                             "‫بۇ ھۆججەتنى چۈشۈرەلمەيسىز چۈنكى ھۆججەت سىستېمىڭىز 4 گىگا بايتتىن چوڭ ھۆججەتنى قوللىمايدۇ. ئۇنى NTFS كە ئايلاندۇرۇشنى ئويلىشىڭ.‬"
-    IDS_NEWVERSIONAVLBETA   "بۇ سىناق نەشرىنىڭ ۋاقتى ئۆتتى سىناق نەشرى بولغاچقا نۇرغۇن خاتالىقنى ئۆز ئىچىگە ئالغان بولۇشى مۇمكىن، مۇمكىن بولسا يېڭىلانغان تارقىتىلغان مۇقىم نەشرىگە يېڭىلاش زۆرۈر!‏"
     IDS_BOLD                "توم خەتكە ئالماشتۇر"
     IDS_UNDERLINE           "ئاستى سىزىق خەتكە ئالماشتۇر"
     IDS_COLOUR              "ئالدى مەنزىرە خەت رەڭگىنى تاللاش (ئارقا مەنزىرە نامى تاللانغان)‏"

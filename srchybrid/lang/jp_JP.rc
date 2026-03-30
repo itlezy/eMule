@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "jp_JP.h"
@@ -612,9 +612,6 @@ BEGIN
     IDS_CD_RATING           "評価(合計):"
     IDS_CD_USCORE           "アップロードキュースコア:"
     IDS_CD_TITLE            "クライアント詳細"
-    IDS_EMULEW              "ここを"
-    IDS_EMULEW2             "すれば新しいバージョンがないか確認できます"
-    IDS_EMULEW3             "クリック"
     IDS_PW_MAXSOURCES       "最大ソース数/ファイル"
     IDS_SHAREDFILESCOUNT    "共有ファイル数: %u"
     IDS_SF_SIZE             "共有ファイルサイズ合計: %s"
@@ -977,19 +974,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'ファイル'%s'の説明を受信しました: %s"
     IDS_WEBSERVICES         "ウェブサービス(&W)"
     IDS_WEBSVEDIT           "ウェブサービスを編集..."
-    IDS_CHECK4UPDATE        "新しいバージョンをチェック"
     IDS_STARTUP             "起動時"
-    IDS_NEWVERSIONAVL       "新しいバージョンのeMuleが利用可能になりました! プロジェクトホームページで詳細情報を確認できます"
-    IDS_NEWVERSIONAVLPOPUP  "新しいバージョンのeMuleが利用可能になりました! ここをクリックすれば新バージョンについての詳細を確認することができます!"
-    IDS_NEWVERSIONFAILED    "新しいバージョンをチェックできません"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "新しいバージョンのeMuleを検出"
-    IDS_NONEWERVERSION      "eMuleの新しいバージョンはありません"
-    IDS_VERSIONCHECK        "バージョンチェック(&V)"
-    IDS_VISITVERSIONCHECK   "\n\n今すぐインフォメーションページを訪問しますか?"
     IDS_PW_VIDEOPLAYER      "ビデオプレーヤー"
     IDS_VIDEOBACKUP         "プレビュー用バックアップを作成"
     IDS_MYINFO              "情報"
@@ -1147,7 +1136,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "スケジューラを使用しない"
     IDS_HM_LINKHP           "eMule ホームページ"
     IDS_HM_LINKFAQ          "eMule FAQ"
-    IDS_HM_LINKVC           "eMule バージョン確認"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "クライアントソース交換とサーバソース問い合わせ/応答のログを採る"
     IDS_SHAREDREQ1          "ユーザー %s (%u) が共有ディレクトリのリストを要求しました -> %s"
@@ -1747,7 +1735,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "現在使用されているOSのファイルシステムが4GBを超えるサイズのファイルに対応していないため、このファイルをダウンロードできません。 ファイルシステムをNTFSに変更する必要があります。"
-    IDS_NEWVERSIONAVLBETA   "このベータバージョンは最早型遅れになっています。 ベータバージョンの成り立ち上、バグが混入している可能性が高いため、出来るだけ早く安定リリースにアップデートすることが重要になります!"
     IDS_KADSEARCHACTIVE     "(Kad検索を実行中...)"
     IDS_BOLD                "テキストを太字にする"
     IDS_UNDERLINE           "テキストに下線を付ける"

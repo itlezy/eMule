@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "da_DK.h"
@@ -565,9 +565,6 @@ BEGIN
     IDS_CD_RATING           "Bedømmelse (total):"
     IDS_CD_USCORE           "Uploadkø Score:"
     IDS_CD_TITLE            "Klientdetaljer"
-    IDS_EMULEW              "Klik"
-    IDS_EMULEW2             "for at se om en ny eMule version er tilgængelig"
-    IDS_EMULEW3             "her"
     IDS_PW_MAXSOURCES       "Max. kilder per fil"
     IDS_SHAREDFILESCOUNT    "Antal delte filer: %u"
     IDS_SF_SIZE             "Samlet størrelse af delte filer: %s"
@@ -906,19 +903,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Filbeskrivelse af '%s' modtaget: %s"
     IDS_WEBSERVICES         "Webservices"
     IDS_WEBSVEDIT           "Rediger webservices"
-    IDS_CHECK4UPDATE        "Tjek for ny version"
     IDS_STARTUP             "Opstart"
-    IDS_NEWVERSIONAVL       "Der er en ny eMule version tilgængelig! Tjek eMule hjemmesiden for mere information."
-    IDS_NEWVERSIONAVLPOPUP  "Der er en ny eMule version tilgængelig!. Klik her for at læse mere om versionen!"
-    IDS_NEWVERSIONFAILED    "Ikke i stand til at tjekke for ny version."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Ny eMule version fundet"
-    IDS_NONEWERVERSION      "Ingen ny eMule version fundet."
-    IDS_VERSIONCHECK        "&Versionscheck"
-    IDS_VISITVERSIONCHECK   "\n\nØnsker du at besøge informationssiden nu?"
     IDS_PW_VIDEOPLAYER      "Videoafspiller"
     IDS_VIDEOBACKUP         "Opret backup før preview"
     IDS_MYINFO              "Min info"
@@ -1115,7 +1104,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Deaktiver planlægger"
     IDS_HM_LINKHP           "eMule hjemmeside"
     IDS_HM_LINKFAQ          "eMule Hyppigt Stillede Spørgsmål (FAQ)"
-    IDS_HM_LINKVC           "eMule versionstjek"
     IDS_DEBUG_SOURCE_EXCHANGE "Vis kildeudvekslingsbeskeder"
     IDS_SHAREDREQ1          "Bruger %s (%u) forespurgt liste af dine delte mapper -> %s"
     IDS_SHAREDREQ2          "Bruger %s (%u) forespurgt liste af delte filer for mappe '%s' -> %s"
@@ -1744,7 +1732,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Du kan ikke downloade denne fil, da dit filsystem ikke understøtter filer større end 4GB. Du kan overveje at ændre filsystemet til NTFS"
-    IDS_NEWVERSIONAVLBETA   "Denne Beta version er forældet. Da Beta versioner ofte indeholder fejl er det yderst vigtigt at du opdaterer til den nyeste version hurtigst muligt!"
     IDS_KADSEARCHACTIVE     "(Kad søgning igang...)"
     IDS_BOLD                "Skift Fed Tekst"
     IDS_UNDERLINE           "Skift understreget Tekst"

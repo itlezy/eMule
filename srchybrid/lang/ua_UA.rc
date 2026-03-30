@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "ua_UA.h"
@@ -610,9 +610,6 @@ BEGIN
     IDS_CD_RATING           "Рейтинг (Разом):"
     IDS_CD_USCORE           "Рейтинг відвантаження:"
     IDS_CD_TITLE            "Подробиці Користувача"
-    IDS_EMULEW              "Натиснути"
-    IDS_EMULEW2             "для перевірки наявності нової версії"
-    IDS_EMULEW3             "тут"
     IDS_PW_MAXSOURCES       "Обмеження джерел файлу"
     IDS_SHAREDFILESCOUNT    "Кількість спільних файлів: %u"
     IDS_SF_SIZE             "Розмір усіх спільних файлів: %s"
@@ -973,19 +970,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Опис файла '%s' отримано: %s"
     IDS_WEBSERVICES         "&Web служба"
     IDS_WEBSVEDIT           "Редагувати..."
-    IDS_CHECK4UPDATE        "Перевірка нової версії"
     IDS_STARTUP             "Запуск"
-    IDS_NEWVERSIONAVL       "Нова версія eMule доступна для завантаження! Відвідайте project-homepage, щоб дізнатися більше."
-    IDS_NEWVERSIONAVLPOPUP  "Нова версія eMule доступна для завантаження. Натисність тут, щоб прочитати більше про неї!"
-    IDS_NEWVERSIONFAILED    "Неможливо перевірити наявність нової версії."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Знайдена нова версія eMule"
-    IDS_NONEWERVERSION      "Нової версії eMule не знайдено."
-    IDS_VERSIONCHECK        "&Перевірка версії"
-    IDS_VISITVERSIONCHECK   "\n\nви хочете відвідати інформаційну сторінку зараз?"
     IDS_PW_VIDEOPLAYER      "Відео програвач"
     IDS_VIDEOBACKUP         "Створти копію для перегляду"
     IDS_MYINFO              "My Info"
@@ -1142,7 +1131,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Виключити планувальник"
     IDS_HM_LINKHP           "Домашня сторінка eMule"
     IDS_HM_LINKFAQ          "Питання по eMule"
-    IDS_HM_LINKVC           "Перевірка версії eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Лоґ повідомлень обміну з сервером і клієнтами"
     IDS_SHAREDREQ1          "Користувач %s (%u) зробив запит на Ваш список спільних тек -> %s"
@@ -1742,7 +1730,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Ви не можете завантажити цей файл, бо Ваша файлова система не підтримує файли, розміром більше ніж 4GB, пропунується перетворити його в NTFS"
-    IDS_NEWVERSIONAVLBETA   "Ця бета версія дуже застаріла. Тому що це бета-версія, яка часто містить помилки, то дуже важливо, щоб Ви оновили її на повну версію якнайшвидше!"
     IDS_KADSEARCHACTIVE     "(Іде пошук у Kad...)"
     IDS_BOLD                "Текст жирним шрифтом"
     IDS_UNDERLINE           "Підкреслений текст"

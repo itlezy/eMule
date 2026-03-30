@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "mt_MT.h"
@@ -610,9 +610,6 @@ BEGIN
     IDS_CD_RATING           "Popolarita' (total):"
     IDS_CD_USCORE           "Punteġġ tal-Uploadqueue:"
     IDS_CD_TITLE            "Dettalji tal-Klijent"
-    IDS_EMULEW              "Ikklikkja"
-    IDS_EMULEW2             "biex tiċċekkja jekk ħargitx verżjoni ġdida tal-eMule"
-    IDS_EMULEW3             "hawn"
     IDS_PW_MAXSOURCES       "Sorsi massimi għal kull file"
     IDS_SHAREDFILESCOUNT    "Numru ta' files ixxerjati: %u"
     IDS_SF_SIZE             "Id-daqs totali tal-files ixxerjati: %s"
@@ -973,19 +970,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Id-deskrizzjoni tal-file '%s' irċevuta: %s"
     IDS_WEBSERVICES         "Servizzi fuq il-Web"
     IDS_WEBSVEDIT           "Is-Servizzi tal-Web..."
-    IDS_CHECK4UPDATE        "Iċċekja għall-verżjonijiet ġodda"
     IDS_STARTUP             "Ftuħ tal-programm"
-    IDS_NEWVERSIONAVL       "Ħarġet verżjoni ġdida tal-eMule! Iċċekja il-website għal aktar informazzjoni."
-    IDS_NEWVERSIONAVLPOPUP  "Ħarġet verżjoni ġdida tal-eMule! Agħfas hawn biex taqra dwar din il-verżjoni."
-    IDS_NEWVERSIONFAILED    "Ma jistax jiġi ċċekkjat jekk hemmx verzjoni ġdida."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "M'hemmx verżjoni ġdida tal-eMule"
-    IDS_NONEWERVERSION      "M'hemmx verżjoni ġdida tal-eMule."
-    IDS_VERSIONCHECK        "Iċċeka l-verżjoni"
-    IDS_VISITVERSIONCHECK   "\n\nTixtieq iżżur il-paġna tal-Informazzjoni issa?"
     IDS_PW_VIDEOPLAYER      "Video player"
     IDS_VIDEOBACKUP         "Agħmel backup biex tara preview"
     IDS_MYINFO              "Info tiegħi"
@@ -1142,7 +1131,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Itfi l-iskeda"
     IDS_HM_LINKHP           "eIl-website tal-Mule"
     IDS_HM_LINKFAQ          "Mistoqsijiet kommuni dwar l-eMule"
-    IDS_HM_LINKVC           "Iċċekja il-verżjoni tal-eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Żomm nota tat-tpartit tas-sorsi bejn il-klijenti u tat-talbiet u r-risposti tas-server"
     IDS_SHAREDREQ1          "Il-user %s (%u) jixtieq il-lista ta' direttori ixxerjati -> %s"
@@ -1742,7 +1730,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Ma tistax tiddawnlowdja dan il-fajl għax is-sistema tal-fajls tiegħek ma tissapportjax fajls li huma ikbar minn 4GB. Ikkunsidra li taqleb għall-NTFS"
-    IDS_NEWVERSIONAVLBETA   "Din il-verżjoni Beta hija skaduta. Minħabba n-natura tal-verżjonijiet Beta, li s-soltu jkun fihom il-bags, huwa importanti ħafna li tapdetja għal-verżjoni stabbli malajr kemm jista' jkun!"
     IDS_KADSEARCHACTIVE     "(Qed issir tfittxija tal-Kad...)"
     IDS_BOLD                "Ittogilja l-kliem bold"
     IDS_UNDERLINE           "Ittogilja l-kliem b'sing taħtu"

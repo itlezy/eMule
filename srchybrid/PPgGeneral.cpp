@@ -54,9 +54,7 @@ BEGIN_MESSAGE_MAP(CPPgGeneral, CPropertyPage)
 	ON_BN_CLICKED(IDC_ED2KFIX, OnBnClickedEd2kfix)
 	ON_BN_CLICKED(IDC_WEBSVEDIT, OnBnClickedEditWebservices)
 	ON_BN_CLICKED(IDC_ONLINESIG, OnSettingsChange)
-	ON_BN_CLICKED(IDC_CHECK4UPDATE, OnBnClickedCheck4Update)
 	ON_BN_CLICKED(IDC_PREVENTSTANDBY, OnSettingsChange)
-	ON_WM_HSCROLL()
 	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
@@ -87,16 +85,11 @@ void CPPgGeneral::LoadSettings()
 	CheckDlgButton(IDC_BRINGTOFOREGROUND, static_cast<UINT>(thePrefs.bringtoforeground));
 	CheckDlgButton(IDC_EXIT, static_cast<UINT>(thePrefs.confirmExit));
 	CheckDlgButton(IDC_ONLINESIG, static_cast<UINT>(thePrefs.onlineSig));
-	CheckDlgButton(IDC_CHECK4UPDATE, static_cast<UINT>(thePrefs.updatenotify));
 	CheckDlgButton(IDC_SPLASHON, static_cast<UINT>(thePrefs.splashscreen));
 	CheckDlgButton(IDC_STARTMIN, static_cast<UINT>(thePrefs.startMinimized));
 	CheckDlgButton(IDC_STARTWIN, static_cast<UINT>(thePrefs.m_bAutoStart));
 
 	CheckDlgButton(IDC_PREVENTSTANDBY, static_cast<UINT>(thePrefs.GetPreventStandby()));
-
-	CString strBuffer;
-	strBuffer.Format(_T("%u %s"), thePrefs.versioncheckdays, (LPCTSTR)GetResString(IDS_DAYS2));
-	SetDlgItemText(IDC_DAYS, strBuffer);
 }
 
 BOOL CPPgGeneral::OnInitDialog()
@@ -146,15 +139,8 @@ BOOL CPPgGeneral::OnInitDialog()
 
 	UpdateEd2kLinkFixCtrl();
 
-	CSliderCtrl *sliderUpdate = static_cast<CSliderCtrl*>(GetDlgItem(IDC_CHECKDAYS));
-	sliderUpdate->SetRange(2, 7, true);
-	sliderUpdate->SetPos(thePrefs.GetUpdateDays());
-
 	LoadSettings();
 	Localize();
-	GetDlgItem(IDC_CHECKDAYS)->ShowWindow(IsDlgButtonChecked(IDC_CHECK4UPDATE) ? SW_SHOW : SW_HIDE);
-	GetDlgItem(IDC_DAYS)->ShowWindow(IsDlgButtonChecked(IDC_CHECK4UPDATE) ? SW_SHOW : SW_HIDE);
-
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }
@@ -217,8 +203,6 @@ BOOL CPPgGeneral::OnApply()
 	thePrefs.confirmExit = IsDlgButtonChecked(IDC_EXIT) != 0;
 	thePrefs.onlineSig = IsDlgButtonChecked(IDC_ONLINESIG) != 0;
 	thePrefs.m_bPreventStandby = IsDlgButtonChecked(IDC_PREVENTSTANDBY) != 0;
-	thePrefs.updatenotify = IsDlgButtonChecked(IDC_CHECK4UPDATE) != 0;
-	thePrefs.versioncheckdays = static_cast<CSliderCtrl*>(GetDlgItem(IDC_CHECKDAYS))->GetPos();
 	thePrefs.splashscreen = IsDlgButtonChecked(IDC_SPLASHON) != 0;
 	thePrefs.startMinimized = IsDlgButtonChecked(IDC_STARTMIN) != 0;
 	thePrefs.m_bAutoStart = IsDlgButtonChecked(IDC_STARTWIN) != 0;
@@ -261,25 +245,10 @@ void CPPgGeneral::Localize()
 		SetDlgItemText(IDC_WEBSVEDIT, GetResString(IDS_WEBSVEDIT));
 		SetDlgItemText(IDC_ED2KFIX, GetResString(IDS_ED2KLINKFIX));
 		SetDlgItemText(IDC_STARTUP, GetResString(IDS_STARTUP));
-		SetDlgItemText(IDC_CHECK4UPDATE, GetResString(IDS_CHECK4UPDATE));
 		SetDlgItemText(IDC_SPLASHON, GetResString(IDS_PW_SPLASH));
 		SetDlgItemText(IDC_STARTMIN, GetResString(IDS_PREF_STARTMIN));
 		SetDlgItemText(IDC_STARTWIN, GetResString(IDS_STARTWITHWINDOWS));
 	}
-}
-
-void CPPgGeneral::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
-{
-	SetModified(TRUE);
-
-	if (pScrollBar == GetDlgItem(IDC_CHECKDAYS)) {
-		CString text;
-		text.Format(_T("%i %s"), reinterpret_cast<CSliderCtrl*>(pScrollBar)->GetPos(), (LPCTSTR)GetResString(IDS_DAYS2));
-		SetDlgItemText(IDC_DAYS, text);
-	}
-
-	UpdateData(FALSE);
-	CPropertyPage::OnHScroll(nSBCode, nPos, pScrollBar);
 }
 
 void CPPgGeneral::OnBnClickedEditWebservices()
@@ -341,14 +310,6 @@ void CPPgGeneral::OnLangChange()
 		} else
 			OnSettingsChange();
 	}
-}
-
-void CPPgGeneral::OnBnClickedCheck4Update()
-{
-	SetModified();
-	int nCmd = IsDlgButtonChecked(IDC_CHECK4UPDATE) ? SW_SHOW : SW_HIDE;
-	GetDlgItem(IDC_CHECKDAYS)->ShowWindow(nCmd);
-	GetDlgItem(IDC_DAYS)->ShowWindow(nCmd);
 }
 
 void CPPgGeneral::OnHelp()

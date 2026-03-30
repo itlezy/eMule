@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "es_AS.h"
@@ -609,9 +609,6 @@ BEGIN
     IDS_CD_RATING           "Calificación (total):"
     IDS_CD_USCORE           "Puntuación cola de subida:"
     IDS_CD_TITLE            "Detalles del veceru"
-    IDS_EMULEW              "Fai click"
-    IDS_EMULEW2             "Pa comprobar si una nueva versión ta disponible"
-    IDS_EMULEW3             "Equí"
     IDS_PW_MAXSOURCES       "Máx. fontes/archivu"
     IDS_SHAREDFILESCOUNT    "Númberu d’archivos compartíos: %u"
     IDS_SF_SIZE             "Tamañu total de los archivos compartíos: %s"
@@ -972,19 +969,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descripción pal archivu '%s' recibíu: %s"
     IDS_WEBSERVICES         "Servicios &Web"
     IDS_WEBSVEDIT           "Editar servicios web"
-    IDS_CHECK4UPDATE        "Comprobar si hai una nueva versión"
     IDS_STARTUP             "Al entamar"
-    IDS_NEWVERSIONAVL       "¡Una nueva versión d’eMule ta disponible! Pa más información visita la web d’emule-project."
-    IDS_NEWVERSIONAVLPOPUP  "Una nueva versión d’eMule ta disponible. ¡Fai click equí pa güeyar les novedaes d’esta nueva versión!"
-    IDS_NEWVERSIONFAILED    "Nun se pue comprobar si hai una nueva versión."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Al detectar nueva versión d’eMule"
-    IDS_NONEWERVERSION      "Nun se detectó denguna versión nueva d’eMule."
-    IDS_VERSIONCHECK        "Comprobar nueva &versión"
-    IDS_VISITVERSIONCHECK   "\n\n¿Quies visitar la páxina d’información agora?"
     IDS_PW_VIDEOPLAYER      "Reproductor de video"
     IDS_VIDEOBACKUP         "Crear copia de seguridá pa previsualizar"
     IDS_MYINFO              "La mio información"
@@ -1141,7 +1130,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Desactivar Programador"
     IDS_HM_LINKHP           "Web d’eMule"
     IDS_HM_LINKFAQ          "eMule FAQ"
-    IDS_HM_LINKVC           "Comprobar versión d’eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Amosar l’orixe d’intercambiu de mensaxes"
     IDS_SHAREDREQ1          "L’usuariu %s (%u) solicitó la to llista de carpetes compartíes -> %s"
@@ -1728,7 +1716,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "You cannot download this file because your filesystem doesn't supports files which are larger than 4GB, consider converting it to NTFS"
-    IDS_NEWVERSIONAVLBETA   "This Beta version is out of date. Due to the nature of Beta versions, which often contain bugs it is very important that you update to a stable release as soon as possible!"
     IDS_KADSEARCHACTIVE     "(Kad search in progress...)"
     IDS_BOLD                "Toggles bold text"
     IDS_UNDERLINE           "Toggles underlined text"

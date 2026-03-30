@@ -19,11 +19,8 @@ enum EUserWndMessages
 	, WEB_CATPRIO
 	, WEB_ADDREMOVEFRIEND
 
-	// VC
-	, UM_VERSIONCHECK_RESPONSE //+11
-
 	// PC
-	, UM_PEERCACHE_RESPONSE //+12 - defunct
+	, UM_PEERCACHE_RESPONSE //+10 - defunct
 
 	// ClosableTabCtrl
 	, UM_CLOSETAB	//+13

@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "nl_NL.h"
@@ -561,9 +561,6 @@ BEGIN
     IDS_CD_RATING           "Waardering (totaal):"
     IDS_CD_USCORE           "Uploadlijstscore:"
     IDS_CD_TITLE            "Cliëntdetails"
-    IDS_EMULEW              "Klik"
-    IDS_EMULEW2             "om te kijken of er een nieuwe versie beschikbaar is"
-    IDS_EMULEW3             "hier"
     IDS_PW_MAXSOURCES       "Max. bronnen per bestand"
     IDS_SHAREDFILESCOUNT    "Aantal gedeelde bestanden: %u"
     IDS_SF_SIZE             "Totale bestandsgrootte gedeelde bestanden: %s"
@@ -896,19 +893,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Waardering voor bestand '%s' ontvangen: %s"
     IDS_WEBSERVICES         "Webservices"
     IDS_WEBSVEDIT           "Webservices bewerken"
-    IDS_CHECK4UPDATE        "Controleren voor nieuwe versie"
     IDS_STARTUP             "Opstarten"
-    IDS_NEWVERSIONAVL       "Een nieuwe eMule-versie is beschikbaar! Kijk op de projectpagina voor meer informatie."
-    IDS_NEWVERSIONAVLPOPUP  "Een nieuwe eMule-versie is beschikbaar. Klik hier voor informatie over de nieuwe versie!"
-    IDS_NEWVERSIONFAILED    "Onmogelijk te controleren of er een nieuwe versie beschikbaar is."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Nieuwe eMule-versie gevonden"
-    IDS_NONEWERVERSION      "Geen nieuwe eMule-versie gevonden."
-    IDS_VERSIONCHECK        "Versiecontrole"
-    IDS_VISITVERSIONCHECK   "\n\nWilt u nu de informatiepagina bezoeken?"
     IDS_PW_VIDEOPLAYER      "Videospeler"
     IDS_VIDEOBACKUP         "Maak een backup voor voorvertoning"
     IDS_MYINFO              "Mijn informatie"
@@ -1104,7 +1093,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Planner uitschakelen"
     IDS_HM_LINKHP           "eMule-website"
     IDS_HM_LINKFAQ          "eMule-FAQ" //!
-    IDS_HM_LINKVC           "eMule-versiecontrole"
     IDS_DEBUG_SOURCE_EXCHANGE "Bronuitwisselingsberichten tonen"
     IDS_SHAREDREQ1          "Gebruiker %s (%u) verzoekt om uw lijst van gedeelde mappen -> %s"
     IDS_SHAREDREQ2          "Gebruiker %s (%u) verzoekt om uw lijst van gedeelde bestanden in de map '%s' -> %s"
@@ -1782,7 +1770,6 @@ BEGIN
     IDS_RUNNINGRESTRICTED   "eMule wordt uitgevoerd met verminderde privileges"
     IDS_ERR_FSCANTHANDLEFILE
                             "U kunt dit bestand niet downloaden omdat uw bestandssysteem bestanden groter dan 4 GB niet ondersteund, u zult het dan moeten converteren naar NTFS"
-    IDS_NEWVERSIONAVLBETA   "Deze bètaversie is verlopen. Door de natuur van bètaversies, die vaak fouten bevatten, is het belangrijk dat u update naar een stabiele uitgave als dat mogelijk is!"
     IDS_ARCHPREV_ATTRIBINFO "Bestandsattributen kunnen bevatten:\r\n\r\nP\tbestand is met wachtwoord beschermd\r\nD\tis een map\r\nC\tCommentaar\r\nLx\tCompressieniveau x\r\nM\tgecompresseerde data nog niet compleet gedownload\r\n<\tbestand verdergegaan vanaf vorige volume\r\n>\tbestand gaat verder in volgende volume\r\n"
     IDS_CONTENT_INFO        "Inhoud"
 END

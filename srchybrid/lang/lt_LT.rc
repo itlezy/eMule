@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "lt_LT.h"
@@ -559,9 +559,6 @@ BEGIN
     IDS_CD_RATING           "Reitingas (viso):"
     IDS_CD_USCORE           "Išsiuntimo eilės taškai:"
     IDS_CD_TITLE            "Kliento duomenys"
-    IDS_EMULEW              "Spauskite"
-    IDS_EMULEW2             "tam, kad patikrintumėte ar yra nauja versija"
-    IDS_EMULEW3             "čia"
     IDS_PW_MAXSOURCES       "Max šaltinių failui"
     IDS_SHAREDFILESCOUNT    "Šarintų failų kiekis: %u"
     IDS_SF_SIZE             "Bendras šarintų failų kiekis: %s"
@@ -894,19 +891,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Failui '%s' gautas aprašymas: %s"
     IDS_WEBSERVICES         "Web servisai"
     IDS_WEBSVEDIT           "Redaguot Web servisus"
-    IDS_CHECK4UPDATE        "Tikrinti ar yra nauja versija kas"
     IDS_STARTUP             "Startuojant"
-    IDS_NEWVERSIONAVL       "Išleista nauja eMule versija! Patikrinkite eMule projekto puslapį norėdami gauti daugiau informacijos."
-    IDS_NEWVERSIONAVLPOPUP  "Išleista nauja eMule versija! Spauskite čia, kad sužinoti apie naują versiją!"
-    IDS_NEWVERSIONFAILED    "Negaliu patikrinti ar yra nauja versija."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Aptikta nauja eMule versija"
-    IDS_NONEWERVERSION      "Neaptikta nauja eMule versija."
-    IDS_VERSIONCHECK        "&Versijos tikrinimas"
-    IDS_VISITVERSIONCHECK   "\n\nAr jūs norite aplankyti informacinį puslapį dabar?"
     IDS_PW_VIDEOPLAYER      "Video grotuvas"
     IDS_VIDEOBACKUP         "Kurti rezervinę peržiūros kopiją"
     IDS_MYINFO              "Mano informacija"
@@ -1102,7 +1091,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Išjungti planavimą"
     IDS_HM_LINKHP           "eMule puslapis"
     IDS_HM_LINKFAQ          "eMule FAQ"//!
-    IDS_HM_LINKVC           "eMule versijos tikrinimas"
     IDS_DEBUG_SOURCE_EXCHANGE "Rodyti šaltinių apsikeitimo pranešimus"
     IDS_SHAREDREQ1          "Vartotojas %s (%u) užklausė jūsų šarintų katalogų sąrašą -> %s"
     IDS_SHAREDREQ2          "Vartotojas %s (%u) užklausė jūsų šarintų failų sąrašą kataloge '%s' -> %s"
@@ -1739,7 +1727,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Jūs negalite gauti šio failo, nes jūsų failų sistema nepalaiko didesnių failų nei 4GB, pagalvokite apie perėjimą prie NTFS"
-    IDS_NEWVERSIONAVLBETA   "Ši Beta versija yra pasenusi. Ji turi daug įvairių klaidų, taigi yra labai svarbu atsinaujinti į normalią versiją kuo greičiau!"
     IDS_KADSEARCHACTIVE     "(Vykdoma Kad paieška...)"
     IDS_BOLD                "Įjungti storą tekstą"
     IDS_UNDERLINE           "Įjungit pabrauktą tekstą"

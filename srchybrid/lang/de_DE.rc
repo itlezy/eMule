@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "de_DE.h"
@@ -564,9 +564,6 @@ BEGIN
     IDS_CD_RATING           "Bewertung (gesamt):"
     IDS_CD_USCORE           "Warteliste Punkte:"
     IDS_CD_TITLE            "Client Details" //!
-    IDS_EMULEW              "Klicke"
-    IDS_EMULEW2             "Um zu sehen ob eine neuere Version erhältlich ist"
-    IDS_EMULEW3             "Hier"
     IDS_PW_MAXSOURCES       "Max. Quellen je Datei"
     IDS_SHAREDFILESCOUNT    "Anzahl freigegebener Dateien: %u"
     IDS_SF_SIZE             "Gesamtgröße freigegebener Dateien: %s"
@@ -897,19 +894,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Datei-Beschreibung für '%s' empfangen: %s"
     IDS_WEBSERVICES         "Web Dienste"
     IDS_WEBSVEDIT           "Webdienste ändern"
-    IDS_CHECK4UPDATE        "Auf neuere Version prüfen"
     IDS_STARTUP             "Programmstart"
-    IDS_NEWVERSIONAVL       "Eine neuere Version von eMule ist verfügbar. Besuche die Projekt-Homepage um mehr Informationen zu erhalten."
-    IDS_NEWVERSIONAVLPOPUP  "Eine neuere Version von eMule ist verfügbar. Klicke hier um mehr über die neue Version zu erfahren!"
-    IDS_NEWVERSIONFAILED    "Ein Fehler trat bei der Versionsüberprüfung auf."
-    IDS_CB_TBN_ONNEWVERSION "Neuere eMule Version gefunden"
-    IDS_NONEWERVERSION      "Es ist keine neuere eMule Version verfügbar."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "&Versionsprüfung"
-    IDS_VISITVERSIONCHECK   "\n\nSoll jetzt die WWW-Seite mit Informationen zur neuen Version und Downloadmöglichkeit aufgerufen werden?"
     IDS_PW_VIDEOPLAYER      "Videowiedergabe Programm"
     IDS_VIDEOBACKUP         "Erstelle Kopie für die Vorschau"
     IDS_MYINFO              "Meine Info"
@@ -1097,7 +1086,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Zeitplaner ausschalten"
     IDS_HM_LINKHP           "eMule Homepage" //!
     IDS_HM_LINKFAQ          "eMule FAQ" //!
-    IDS_HM_LINKVC           "eMule Versionsüberprüfung"
     IDS_DEBUG_SOURCE_EXCHANGE "Source Exchange Meldungen anzeigen"
     IDS_SHAREDREQ1          "Benutzer %s (%u) hat deine Liste freigegebener Verzeichnisse angefragt -> %s"
     IDS_SHAREDREQ2          "Benutzer %s (%u) hat deine Liste freigegebener Dateien für das Verzeichnis '%s' angefragt -> %s"
@@ -1717,7 +1705,6 @@ BEGIN
     IDS_SRV_LARGEFILES      "Unterstützung für große Dateien"
     IDS_ERR_FSCANTHANDLEFILE
                             "Du kannst diese Datei nicht herunterladen, da dein Dateisystem keine Dateien größer als 4GB unterstützt! Überlege es nach NTFS zu konvertieren!"
-    IDS_NEWVERSIONAVLBETA   "Diese Betaversion ist veraltet. Da Betaversionen oft noch Fehler enthalten, wird dringend angeraten, möglichst bald auf eine stabile Version zu wechseln!"
     IDS_BOLD                "Schaltet Fettschrift an/aus"
     IDS_UNDERLINE           "Schaltet Unterstreichung ein/aus"
     IDS_COLOUR              "Wählt Vordergrundfarbe (optional Hintergrundfarbe)"

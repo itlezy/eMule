@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "vi_VN.h"
@@ -611,9 +611,6 @@ BEGIN
     IDS_CD_RATING           "Đánh giá (tổng):"
     IDS_CD_USCORE           "Điểm hàng đợi tải lên:"
     IDS_CD_TITLE            "Chi tiết Máy khách"
-    IDS_EMULEW              "Nhấn"
-    IDS_EMULEW2             "để kiểm tra phiên bản mới"
-    IDS_EMULEW3             "vào đây"
     IDS_PW_MAXSOURCES       "Số nguồn tối đa/tập tin"
     IDS_SHAREDFILESCOUNT    "Tổng số tập tin chia sẻ: %u"
     IDS_SF_SIZE             "Tổng dung lượng tập tin chia sẻ: %s"
@@ -974,19 +971,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Nhận được Ghi chú cho tập tin '%s': %s"
     IDS_WEBSERVICES         "&Dịch vụ Web"
     IDS_WEBSVEDIT           "Chỉnh sửa Dịch-vụ-Web..."
-    IDS_CHECK4UPDATE        "Kiểm tra Phiên bản mới"
     IDS_STARTUP             "Khởi động"
-    IDS_NEWVERSIONAVL       "Đã có Phiên bản eMule mới! Truy cập trang chủ eMule để biết thêm thông tin."
-    IDS_NEWVERSIONAVLPOPUP  "Đã có Phiên bản eMule mới! Nhấn vào đây để xem chi tiết!"
-    IDS_NEWVERSIONFAILED    "Không thể kiểm tra phiên bản mới"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Đã có Phiên bản eMule mới"
-    IDS_NONEWERVERSION      "Không có phiên bản eMule mới."
-    IDS_VERSIONCHECK        "&Kiểm tra Phiên bản"
-    IDS_VISITVERSIONCHECK   "\n\nBạn có muốn truy cập trang thông tin Phiên bản bây giờ không?"
     IDS_PW_VIDEOPLAYER      "Chương trình xem Video"
     IDS_VIDEOBACKUP         "Tạo bản sao cho xem thử"
     IDS_MYINFO              "Thông tin"
@@ -1143,7 +1132,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Tắt Thời gian biểu"
     IDS_HM_LINKHP           "Trang chủ eMule"
     IDS_HM_LINKFAQ          "Câu hỏi thường gặp eMule"
-    IDS_HM_LINKVC           "Kiểm tra phiên bản eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Ghi lại Trao đổi nguồn máy khách và Yêu cầu/trả lời máy chủ"
     IDS_SHAREDREQ1          "Người dùng %s (%u) yêu cầu danh sách thư mục chia sẻ của bạn -> %s"
@@ -1743,7 +1731,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "Bạn không thể tải tập tin này về vì hệ thống không hỗ trợ tập tin lớn hơn 4GB, bạn nên chuyển hệ thống tập tin sang NTFS"
-    IDS_NEWVERSIONAVLBETA   "Phiên bản thử nghiệm này đã quá hạn. Vì phiên bản thử nghiệm thường có lỗi, bạn nên nâng cấp lên phiên bản chính thức, ổn định hơn càng sớm càng tốt!"
     IDS_KADSEARCHACTIVE     "(Tìm kiếm Kad đang tiến hành...)"
     IDS_BOLD                "Bật chữ đậm"
     IDS_UNDERLINE           "Bật chữ gạch dưới"

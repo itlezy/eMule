@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "zh_CN.h"
@@ -365,8 +365,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "检查版本(&V)"
-    IDS_VISITVERSIONCHECK   "\n\n要访问信息页面吗?"
     IDS_PW_VIDEOPLAYER      "视频播放器"
     IDS_VIDEOBACKUP         "预览时建立备份"
     IDS_MYINFO              "我的信息"
@@ -628,9 +626,6 @@ BEGIN
     IDS_CD_RATING           "评分(总共):"
     IDS_CD_USCORE           "上传队列得分:"
     IDS_CD_TITLE            "客户详情"
-    IDS_EMULEW              "点击"
-    IDS_EMULEW2             "检查是否有更新版本"
-    IDS_EMULEW3             "这里"
     IDS_PW_MAXSOURCES       "每个文件最大来源数"
     IDS_SHAREDFILESCOUNT    "共享文件数:%u"
     IDS_SF_SIZE             "共享文件总大小: %s"
@@ -1019,13 +1014,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "收到文件'%s'的描述: %s"
     IDS_WEBSERVICES         "&Web服务"
     IDS_WEBSVEDIT           "编辑Web服务"
-    IDS_CHECK4UPDATE        "检查新版本"
     IDS_STARTUP             "启动"
-    IDS_NEWVERSIONAVL       "已有新版本的eMule可下载!查看主页上的详细信息."
-    IDS_NEWVERSIONAVLPOPUP  "已有新版本的eMule可下载!单击这里查看相关信息."
-    IDS_NEWVERSIONFAILED    "无法检查新版本."
-    IDS_CB_TBN_ONNEWVERSION "侦测到新版本的eMule!"
-    IDS_NONEWERVERSION      "未侦测到更新版本的eMule."
 END
 
 STRINGTABLE
@@ -1156,7 +1145,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "关闭计划任务"
     IDS_HM_LINKHP           "eMule主页"
     IDS_HM_LINKFAQ          "eMule常见问题解答"
-    IDS_HM_LINKVC           "eMule版本检查"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "记录来源交换信息"
     IDS_SHAREDREQ1          "用户 %s (%u) 请求你的共享目录列表-> %s"
@@ -1713,7 +1701,6 @@ BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "你无法下载这个文件因为你的文件系统不支持大于4GB的文件,建议转换为NTFS文件系统"
 //"You cannot download this file because your filesystem doesn't supports files which are larger than 4GB, consider converting it to NTFS"
-    IDS_NEWVERSIONAVLBETA   "这个beta版本已经过期. 因为测试版经常含有错误,因此请尽快更新到稳定的版本!"
 //"This Beta version is out of date. Due to the nature of Beta versions, which often contain bugs it is very important that you update to a stable release as soon as possible!"
     IDS_BOLD                "切换到粗体字" //"Toggles bold text"
     IDS_UNDERLINE           "切换到下划线字体" //"Toggles underlined text"

@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "hu_HU.h"
@@ -560,9 +560,6 @@ BEGIN
     IDS_CD_RATING           "Osztályzat (összesen):"
     IDS_CD_USCORE           "Feltöltési sor pontszám:"
     IDS_CD_TITLE            "Kliens részletei"
-    IDS_EMULEW              "Klikkelj ide:"
-    IDS_EMULEW2             "ha ellenőrizni szeretnéd, hogy elérhető-e már frissebb verzió"
-    IDS_EMULEW3             "ide"
     IDS_PW_MAXSOURCES       "Max. forrás/fájl"
     IDS_SHAREDFILESCOUNT    "Összes megosztott fájl száma: %u"
     IDS_SF_SIZE             "Összes megosztott fájl mérete: %s"
@@ -896,19 +893,11 @@ BEGIN
     IDS_DESCRIPTIONRECV     "'%s' fájlhoz megjegyzés érkezett: %s"
     IDS_WEBSERVICES         "Webszolgáltatások"
     IDS_WEBSVEDIT           "Webszolgáltatás módosítása"
-    IDS_CHECK4UPDATE        "Új verzió keresése"
     IDS_STARTUP             "Indításkor"
-    IDS_NEWVERSIONAVL       "Új eMule verzió érhető el! Látogass el a honlapra tovább információért."
-    IDS_NEWVERSIONAVLPOPUP  "Új eMule verzió érhető. Klikkelj ide további információért!"
-    IDS_NEWVERSIONFAILED    "Nem sikerült megvizsgálni, van-e új verzió."
 END
 
 STRINGTABLE
 BEGIN
-    IDS_CB_TBN_ONNEWVERSION "Új eMule verziót észlelek."
-    IDS_NONEWERVERSION      "Nem észleltem újabb eMule verziót."
-    IDS_VERSIONCHECK        "&Verziófrissítés"
-    IDS_VISITVERSIONCHECK   "\n\nMeg szeretnéd látogatni az információs oldalt?"
     IDS_PW_VIDEOPLAYER      "Videólejátszó"
     IDS_VIDEOBACKUP         "Készítsen ideiglenes másolatot az előnézethez"
     IDS_MYINFO              "Saját adatok"
@@ -1106,7 +1095,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Ütemező tiltása"
     IDS_HM_LINKHP           "eMule honlap"
     IDS_HM_LINKFAQ          "eMule GyIK (FAQ)"
-    IDS_HM_LINKVC           "eMule verziófrissítés"
     IDS_DEBUG_SOURCE_EXCHANGE "Forráscsere üzenetek megjelenítése"
     IDS_SHAREDREQ1          "%s (%u) felhasználó lekérdezte a megosztott mappáidat -> %s"
     IDS_SHAREDREQ2          "%s (%u) felhasználó lekérdezte az egyik megosztott mappád fájljait '%s' -> %s"
@@ -1743,7 +1731,6 @@ STRINGTABLE
 BEGIN
     IDS_ERR_FSCANTHANDLEFILE
                             "You cannot download this file because your filesystem doesn't supports files which are larger than 4GB, consider converting it to NTFS"
-    IDS_NEWVERSIONAVLBETA   "This Beta version is out of date. Due to the nature of Beta versions, which often contain bugs it is very important that you update to a stable release as soon as possible!"
     IDS_KADSEARCHACTIVE     "(Kad search in progress...)"
     IDS_BOLD                "Toggles bold text"
     IDS_UNDERLINE           "Toggles underlined text"

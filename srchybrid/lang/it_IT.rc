@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+﻿// Microsoft Visual C++ generated resource script.
 //
 #pragma code_page(65001)
 #include "it_IT.h"
@@ -363,8 +363,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "&Controlla versione"
-    IDS_VISITVERSIONCHECK   "\n\nVuoi vedere adesso la pagina degli aggiornamenti?"
     IDS_PW_VIDEOPLAYER      "Lettore multimediale per le anteprime"
     IDS_VIDEOBACKUP         "Crea una copia per l'anteprima"
     IDS_MYINFO              "Le mie informazioni"
@@ -626,9 +624,6 @@ BEGIN
     IDS_CD_RATING           "Valutazione (totale):"
     IDS_CD_USCORE           "Punteggio coda:"
     IDS_CD_TITLE            "Dettagli utente"
-    IDS_EMULEW              "Clicca"
-    IDS_EMULEW2             "per vedere se è disponibile una nuova versione"
-    IDS_EMULEW3             "qui"
     IDS_PW_MAXSOURCES       "Fonti massime per file"
     IDS_SHAREDFILESCOUNT    "Numero di file condivisi: %u"
     IDS_SF_SIZE             "Dimensione totale dei file condivisi: %s"
@@ -1017,13 +1012,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Descrizione per il file ricevuto ""%s"": %s"
     IDS_WEBSERVICES         "Risorse in rete"
     IDS_WEBSVEDIT           "Modifica risorse in rete..."
-    IDS_CHECK4UPDATE        "Controlla aggiornamenti"
     IDS_STARTUP             "Avvio"
-    IDS_NEWVERSIONAVL       "È disponibile una nuova versione di eMule! Per maggiori informazioni vai sul sito di eMule."
-    IDS_NEWVERSIONAVLPOPUP  "È disponibile una nuova versione di eMule! Per maggiori informazioni clicca qui!"
-    IDS_NEWVERSIONFAILED    "Impossibile controllare la presenza di aggiornamenti."
-    IDS_CB_TBN_ONNEWVERSION "È disponibile una nuova versione di eMule"
-    IDS_NONEWERVERSION      "Non è stata trovata una versione di eMule più recente di quella in uso."
 END
 
 STRINGTABLE
@@ -1154,7 +1143,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Disattiva le azioni pianificate"
     IDS_HM_LINKHP           "Sito di eMule"
     IDS_HM_LINKFAQ          "Domande frequenti su eMule"
-    IDS_HM_LINKVC           "Controlla versione di eMule"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Registra lo scambio fonti tra utenti, le richieste e le risposte delle fonti ai server"
     IDS_SHAREDREQ1          "L'utente %s (%u) ha richiesto la lista delle tue cartelle condivise -> ""%s"""
@@ -1710,7 +1698,6 @@ BEGIN
     IDS_SRV_LARGEFILES      "Supporto per file di grosse dimensioni"
     IDS_ERR_FSCANTHANDLEFILE
                             "Non è possibile scaricare questo file perché il tuo file system non supporta file di dimensioni maggiori di 4GB; è consigliabile la conversione in NTFS."
-    IDS_NEWVERSIONAVLBETA   "Questa versione in via di sviluppo è obsoleta. Poiché spesso le versioni in via di sviluppo contengono errori è consigliabile aggiornare ad una versione stabile il prima possibile!"
     IDS_BOLD                "Testo grassetto"
     IDS_UNDERLINE           "Testo sottolineato"
     IDS_COLOUR              "Scegli il colore del testo, ripremi per cambiare anche lo sfondo"//check maximum string lenght

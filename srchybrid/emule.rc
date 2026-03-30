@@ -268,10 +268,6 @@ BEGIN
     CONTROL         "Prompt on exit",IDC_EXIT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,84,202,10
     CONTROL         "Onlinesig",IDC_ONLINESIG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,94,202,10
     GROUPBOX        "Startup",IDC_STARTUP,3,156,223,61
-    CONTROL         "Check for new version on startup",IDC_CHECK4UPDATE,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,172,153,10
-    CONTROL         "",IDC_CHECKDAYS,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,169,175,53,10
-    LTEXT           "days",IDC_DAYS,171,166,48,9
     CONTROL         "Show splash screen",IDC_SPLASHON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,182,158,10
     CONTROL         "Startup Minimized",IDC_STARTMIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,192,190,10
     CONTROL         "Start with Windows",IDC_STARTWIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,202,190,10
@@ -419,8 +415,6 @@ BEGIN
     CONTROL         "Chat message received",IDC_CB_TBN_POP_ALWAYS,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,95,191,10
     CONTROL         "Download added",IDC_CB_TBN_ONNEWDOWNLOAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,106,191,10
     CONTROL         "Download finished",IDC_CB_TBN_ONDOWNLOAD,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,117,191,10
-    CONTROL         "New eMule version detected",IDC_CB_TBN_ONNEWVERSION,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,128,191,10
     CONTROL         "Urgent: out of disk space, server connection lost",IDC_CB_TBN_IMPORTATNT,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,19,139,191,19
     GROUPBOX        "Email Notifications",IDC_EMAILNOT_GROUP,4,168,223,71
@@ -2374,8 +2368,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "&Version check"
-    IDS_VISITVERSIONCHECK   "\n\nDo you want do visit the Information page now?"
     IDS_PW_VIDEOPLAYER      "Video Player"
     IDS_VIDEOBACKUP         "Create backup to preview"
     IDS_MYINFO              "My Info"
@@ -2663,9 +2655,6 @@ BEGIN
     IDS_CD_RATING           "Rating (total):"
     IDS_CD_USCORE           "Uploadqueue Score:"
     IDS_CD_TITLE            "Client Details"
-    IDS_EMULEW              "Click"
-    IDS_EMULEW2             "to check if a new version is available"
-    IDS_EMULEW3             "here"
     IDS_PW_MAXSOURCES       "Max. Sources/File"
     IDS_SHAREDFILESCOUNT    "Number of Shared Files: %u"
     IDS_SF_SIZE             "Total size of Shared Files: %s"
@@ -3070,13 +3059,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Description for file '%s' received: %s"
     IDS_WEBSERVICES         "&Web Services"
     IDS_WEBSVEDIT           "Edit Web Services..."
-    IDS_CHECK4UPDATE        "Check for new version"
     IDS_STARTUP             "Startup"
-    IDS_NEWVERSIONAVL       "A new version of eMule is available! Check the project-homepage for more information."
-    IDS_NEWVERSIONAVLPOPUP  "A new version of eMule is available. Click here to read about the new version!"
-    IDS_NEWVERSIONFAILED    "Unable to check for new version."
-    IDS_CB_TBN_ONNEWVERSION "New eMule version detected"
-    IDS_NONEWERVERSION      "No new eMule version detected."
 END
 
 STRINGTABLE
@@ -3203,7 +3186,6 @@ BEGIN
     IDS_HM_SCHED_OFF        "Switch Scheduler Off"
     IDS_HM_LINKHP           "eMule Homepage"
     IDS_HM_LINKFAQ          "eMule FAQ"
-    IDS_HM_LINKVC           "eMule Versioncheck"
     IDS_DEBUG_SOURCE_EXCHANGE
                             "Log client source exchange and server source queries/answers"
     IDS_SHAREDREQ1          "User %s (%u) requested your list of shared directories -> %s"
@@ -3749,7 +3731,6 @@ BEGIN
     IDS_SRV_LARGEFILES      "Support for large files"
     IDS_ERR_FSCANTHANDLEFILE
                             "You cannot download this file because your file system doesn't support files which are larger than 4GB, consider converting it to NTFS"
-    IDS_NEWVERSIONAVLBETA   "This Beta version is out of date. Due to the nature of Beta versions, which often contain bugs it is very important that you update to a stable release as soon as possible!"
     IDS_BOLD                "Toggles bold text"
     IDS_UNDERLINE           "Toggles underlined text"
     IDS_COLOUR              "Selects foreground text color (optional background color)"
