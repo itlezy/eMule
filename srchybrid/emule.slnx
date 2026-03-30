@@ -3,6 +3,7 @@
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
     <BuildType Name="_SpecialBootstrapNodes" />
+    <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
   <Project Path="../../eMule-cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">

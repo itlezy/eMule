@@ -2,26 +2,26 @@
 
 ## Last Chunk
 
-- Implemented D-03 / D-04 Kad hardening in `4798953` (`FIX port Fast Kad Safe Kad and Kad publish guards`).
-- Added `FastKad`, `SafeKad`, and `KadPublishGuard` helpers and wired them into Kad search timeout handling, routing admission/cleanup, hello/challenge verification, publish-source validation, and bootstrap progress reporting.
-- Added advanced-preference wiring for `BanBadKadNodes` and `KadPublishSourceThrottle`, including `PPgTweaks` controls and localized strings.
-- Added shared Kad regression coverage in the sibling test repo via `a2c7638` (`TEST add Kad guard regression coverage`).
+- Enabled `v143` ARM64 support across the app solution, the language DLL solution, and the dependency build flow.
+- Added the ARM64 manifest and ARM64-aware language mirror selection logic.
+- Patched `eMule-cryptopp` for MSVC ARM64 so the library builds without `arm_acle.h` and no longer links unresolved ARM probe helpers on Windows ARM64.
+- Refreshed the dependency patch files in `..\patches\` and the generated zlib wrapper template in `..\templates\zlib\zlib.vcxproj`.
 - Validation passed:
-  - Main build: `..\23-build-emule-debug-incremental.cmd`
-  - Wrapper log: `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260330-223157-build-project-eMule-Debug\eMule-Debug.log`
-  - Shared tests: `C:\prj\p2p\eMule\eMulebb\eMule-build-tests\build\default\x64\Debug\emule-tests.exe`
-  - Test result: `42` cases passed, `94` assertions passed
+  - `eMule-cryptopp`: `MSBuild.exe eMule-cryptopp\cryptlib.vcxproj /t:Rebuild /p:Configuration=Debug /p:Platform=ARM64`
+  - `eMule-miniupnp`: `MSBuild.exe eMule-miniupnp\miniupnpc\msvc\miniupnpc.vcxproj /p:Configuration=Debug /p:Platform=ARM64`
+  - `eMule-ResizableLib`: `MSBuild.exe eMule-ResizableLib\ResizableLib\ResizableLib.vcxproj /p:Configuration=Debug /p:Platform=ARM64`
+  - `eMule-zlib`: `MSBuild.exe eMule-zlib\contrib\vstudio\vc\zlib.vcxproj /p:Configuration=Debug /p:Platform=ARM64`
+  - Language DLLs: `MSBuild.exe eMule\srchybrid\lang\lang.sln /p:Configuration=Dynamic /p:Platform=ARM64`
+  - App: `MSBuild.exe eMule\srchybrid\emule.vcxproj /p:Configuration=Debug /p:Platform=ARM64`
 
 ## Current State
 
-- Fast Kad now learns recent response times and uses that estimate to avoid fixed Kad search jump-start timing.
-- Safe Kad now tracks node identity per `IP:UDPPort`, keeps short-lived problematic-node state, and can temporarily ban verified fast-flipping identities when enabled.
-- `KADEMLIA2_PUBLISH_SOURCE_REQ` now has dedicated per-IP throttling plus stricter source and buddy metadata validation on top of the generic packet tracker.
-- The Kad status text now shows bootstrap progress while consuming the bootstrap list.
+- ARM64 build outputs are ignored in the app repo and zlib repo so generated `ARM64\...` and `cmake-build-*` trees stay out of git status.
+- The parent workspace still needs its final commit with the refreshed dependency patch payloads, ARM64-aware `workspace.ps1`, and the zlib wrapper template update.
 - The tree still has the unrelated user-side `AGENTS.md` modification in the main repo working tree; leave it alone unless explicitly requested.
 
 ## Next Chunk
 
-- Revisit the remaining D-03 gap from the modernization plan: persisted recency-aware `nodes.dat` reuse and stronger startup prioritization of recently seen Kad contacts if we want closer parity with the eMuleAI description.
-- Audit whether Safe Kad should also pause or suppress selected routing actions during explicit reconnect / IP-change transitions instead of relying only on cache cleanup during `RecheckFirewalled()`.
-- If Kad work continues, add focused regression coverage for the status-bar bootstrap text path or additional publish-source malformed-tag cases if a concrete bug appears.
+- Finish the granular commits across the dependency repos, the app repo, and the parent workspace repo.
+- Re-run `workspace.ps1 env-check -Config Debug -Platform ARM64` and the wrapper build entry points after the dependency repos are committed cleanly so the workspace path is validated without dirty-tree failures.
+- Add a Release ARM64 packaging pass once the clean workspace flow is confirmed.

@@ -1,19 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Debug|x64">
+    <ProjectConfiguration Include="Debug|ARM64">
+      <Configuration>Debug</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|ARM64">
+      <Configuration>Release</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="_SpecialBootstrapNodes|ARM64">
+      <Configuration>_SpecialBootstrapNodes</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="Release|x64">
+    </ProjectConfiguration><ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-    <ProjectConfiguration Include="_SpecialBootstrapNodes|x64">
+    </ProjectConfiguration><ProjectConfiguration Include="_SpecialBootstrapNodes|x64">
       <Configuration>_SpecialBootstrapNodes</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-  </ItemGroup>
+    </ProjectConfiguration></ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{584EA69D-3443-4197-8994-364880FC1B9B}</ProjectGuid>
     <ProjectName>emule</ProjectName>

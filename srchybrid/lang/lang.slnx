@@ -1,6 +1,7 @@
 <Solution>
   <Configurations>
     <BuildType Name="Dynamic" />
+    <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
   <Project Path="ar_AE.vcxproj" Id="a710033c-f75a-4431-96aa-876a9867a2f8" />

@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
-    <ProjectConfiguration Include="Dynamic|x64">
+    <ProjectConfiguration Include="Dynamic|ARM64">
+      <Configuration>Dynamic</Configuration>
+      <Platform>ARM64</Platform>
+    </ProjectConfiguration>
+  <ProjectConfiguration Include="Dynamic|x64">
       <Configuration>Dynamic</Configuration>
       <Platform>x64</Platform>
-    </ProjectConfiguration>
-  </ItemGroup>
+    </ProjectConfiguration></ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectName>languages - Norwegian (Nynorsk)</ProjectName>
     <ProjectGuid>{67E3DA3B-6DA6-4948-BA97-3C2519F4DCC6}</ProjectGuid>

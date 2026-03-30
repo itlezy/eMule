@@ -6,7 +6,9 @@
 *.user
 /srchybrid/Debug/
 /srchybrid/Release/
+/srchybrid/ARM64/
 /srchybrid/ipch/
 /srchybrid/x64/
+/srchybrid/lang/ARM64/
 /srchybrid/tests/Win32/
 /srchybrid/tests/x64/
