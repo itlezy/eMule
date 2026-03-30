@@ -3708,6 +3708,8 @@ BEGIN
     IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS "Keep unavailable fixed shared directories"
     IDS_PARTIALLYPURGEOLDKNOWNFILES "Partially purge old known files"
     IDS_ADJUSTNTFSDAYLIGHTFILETIME "Adjust NTFS daylight-saving file times"
+    IDS_BANBADKADNODES    "Temporarily ban bad Kad node identities"
+    IDS_KADPUBLISHSOURCETHROTTLE "Kad publish-source requests per minute (0 disables)"
     IDS_REARRANGEKADSEARCHKEYWORDS "Rearrange Kad search keywords"
     IDS_MESSAGEFROMVALIDSOURCESONLY "Allow messages only from valid sources"
     IDS_UPNPSETUP           "Trying to setup port forwarding with UPnP..."

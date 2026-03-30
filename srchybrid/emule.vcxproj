@@ -234,8 +234,17 @@
     <ClCompile Include="kademlia\routing\Contact.cpp" />
     <ClCompile Include="kademlia\routing\RoutingBin.cpp" />
     <ClCompile Include="kademlia\routing\RoutingZone.cpp" />
+    <ClCompile Include="kademlia\utils\FastKad.cpp">
+      <PrecompiledHeader />
+    </ClCompile>
+    <ClCompile Include="kademlia\utils\KadPublishGuard.cpp">
+      <PrecompiledHeader />
+    </ClCompile>
     <ClCompile Include="kademlia\utils\LookupHistory.cpp" />
     <ClCompile Include="kademlia\utils\MiscUtils.cpp" />
+    <ClCompile Include="kademlia\utils\SafeKad.cpp">
+      <PrecompiledHeader />
+    </ClCompile>
     <ClCompile Include="kademlia\utils\ThreadName.cpp" />
     <ClCompile Include="kademlia\utils\UInt128.cpp" />
     <ClCompile Include="KademliaWnd.cpp" />
@@ -497,10 +506,14 @@
     <ClInclude Include="kademlia\routing\Maps.h" />
     <ClInclude Include="kademlia\routing\RoutingBin.h" />
     <ClInclude Include="kademlia\routing\RoutingZone.h" />
+    <ClInclude Include="kademlia\utils\FastKad.h" />
+    <ClInclude Include="kademlia\utils\KadSupport.h" />
     <ClInclude Include="kademlia\utils\KadClientSearcher.h" />
+    <ClInclude Include="kademlia\utils\KadPublishGuard.h" />
     <ClInclude Include="kademlia\utils\KadUDPKey.h" />
     <ClInclude Include="kademlia\utils\LookupHistory.h" />
     <ClInclude Include="kademlia\utils\MiscUtils.h" />
+    <ClInclude Include="kademlia\utils\SafeKad.h" />
     <ClInclude Include="kademlia\utils\ThreadName.h" />
     <ClInclude Include="kademlia\utils\UInt128.h" />
     <ClInclude Include="KademliaWnd.h" />

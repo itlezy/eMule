@@ -456,6 +456,7 @@ public:
 	static int		m_iExtractMetaData;
 	static bool		m_bAdjustNTFSDaylightFileTime;
 	static bool		m_bRearrangeKadSearchKeywords;
+	static bool		m_bBanBadKadNodes;
 	static bool		m_bAllocFull;
 	static bool		m_bShowSharedFilesDetails;
 	static bool		m_bShowTaskbarProgress;
@@ -531,6 +532,7 @@ public:
 	static bool		m_bCryptLayerRequired;
 	static uint8	m_byCryptTCPPaddingLength;
 	static uint32   m_dwKadUDPKey;
+	static uint32	m_uKadPublishSourceThrottle;
 
 	// UPnP
 	static bool		m_bSkipWANIPSetup;
@@ -1024,6 +1026,7 @@ public:
 	static int		GetExtractMetaData()				{ return m_iExtractMetaData; }
 	static bool		GetAdjustNTFSDaylightFileTime()		{ return m_bAdjustNTFSDaylightFileTime; }
 	static bool		GetRearrangeKadSearchKeywords()		{ return m_bRearrangeKadSearchKeywords; }
+	static bool		IsBanBadKadNodes()					{ return m_bBanBadKadNodes; }
 
 	static const CString& GetYourHostname()				{ return m_strYourHostname; }
 	static void		SetYourHostname(LPCTSTR pszHostname) { m_strYourHostname = pszHostname; }
@@ -1213,6 +1216,7 @@ public:
 	static bool		IsCryptLayerRequired()				{ return IsCryptLayerPreferred() && m_bCryptLayerRequired; }
 	static bool		IsCryptLayerRequiredStrict()			{ return false; } // not even incoming test connections will be answered
 	static uint32	GetKadUDPKey()						{ return m_dwKadUDPKey; }
+	static uint32	GetKadPublishSourceThrottle()		{ return m_uKadPublishSourceThrottle; }
 	static uint8	GetCryptTCPPaddingLength()			{ return m_byCryptTCPPaddingLength; }
 
 	// UPnP

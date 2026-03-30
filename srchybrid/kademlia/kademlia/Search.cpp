@@ -55,8 +55,10 @@ their client on the eMule forum.
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/net/KademliaUDPListener.h"
 #include "kademlia/routing/RoutingZone.h"
+#include "kademlia/utils/FastKad.h"
 #include "kademlia/utils/KadClientSearcher.h"
 #include "kademlia/utils/LookupHistory.h"
+#include "kademlia/utils/SafeKad.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -148,6 +150,12 @@ CSearch::~CSearch()
 	// Decrease the use count for any contacts that are in your contact list.
 	for (ContactMap::const_iterator itInUseMap = m_mapInUse.begin(); itInUseMap != m_mapInUse.end(); ++itInUseMap)
 		itInUseMap->second->DecUse();
+
+	/// Keep unanswered nodes on a short problematic list so the next lookup avoids stale contacts first.
+	for (ContactMap::const_iterator itTriedMap = m_mapTried.begin(); itTriedMap != m_mapTried.end(); ++itTriedMap) {
+		if (m_mapResponded.find(itTriedMap->first) == m_mapResponded.end())
+			safeKad.TrackProblematicNode(itTriedMap->second->GetIPAddress(), itTriedMap->second->GetUDPPort());
+	}
 
 	// Delete any temp contacts.
 	for (ContactArray::const_iterator itContact = m_listDelete.begin(); itContact != m_listDelete.end(); ++itContact)
@@ -260,8 +268,12 @@ void CSearch::PrepareToStop()
 
 void CSearch::JumpStart()
 {
-	// If we had a response within the last 3 seconds, no need to jump-start the search.
-	if (time(NULL) < m_tLastResponse + SEC(3))
+	/// Fast Kad keeps the stall window aligned with recently observed response times.
+	const clock_t clkMaxResponseTime = fastKad.GetEstMaxResponseTime();
+	time_t tMaxPendingSeconds = (clkMaxResponseTime + CLOCKS_PER_SEC - 1) / CLOCKS_PER_SEC;
+	if (tMaxPendingSeconds < 1)
+		tMaxPendingSeconds = 1;
+	if (time(NULL) < m_tLastResponse + tMaxPendingSeconds)
 		return;
 
 	// If we ran out of contacts, stop search.
@@ -340,6 +352,7 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, const ContactArr
 	// a protocol violation, but most likely a malicious answer
 	if (rlistResults.size() > GetRequestContactCount() && !(pRequestedMoreNodesContact == pFromContact && rlistResults.size() <= KADEMLIA_FIND_VALUE_MORE)) {
 		DebugLogWarning(_T("Node %s sent more contacts than requested on a routing query, ignoring response"), (LPCTSTR)ipstr(htonl(uFromIP)));
+		safeKad.TrackProblematicNode(uFromIP, uFromPort);
 		return;
 	}
 
@@ -375,6 +388,14 @@ void CSearch::ProcessResponse(uint32 uFromIP, uint16 uFromPort, const ContactArr
 	}
 
 	if (pFromContact == NULL)
+		return;
+
+	std::map<Kademlia::CUInt128, clock_t>::iterator itPendingResponse = m_mapPendingResponses.find(uFromDistance);
+	if (itPendingResponse != m_mapPendingResponses.end()) {
+		fastKad.AddResponseTime(uFromIP, clock() - itPendingResponse->second);
+		m_mapPendingResponses.erase(itPendingResponse);
+	}
+	if (safeKad.IsBadNode(uFromIP, uFromPort, pFromContact->GetClientID(), pFromContact->GetVersion(), pFromContact->IsIpVerified(), false, thePrefs.IsBanBadKadNodes()))
 		return;
 	try {
 		bool bProvidedCloserContacts = false;
@@ -1270,6 +1291,9 @@ void CSearch::SendFindValue(CContact *pContact, bool bReAskMore)
 					CKademlia::GetUDPListener()->SendPacket(fileIO, KADEMLIA2_REQ, pContact->GetIPAddress(), pContact->GetUDPPort(), CKadUDPKey(), NULL);
 					ASSERT(CKadUDPKey() == pContact->GetUDPKey());
 				}
+				CUInt128 uDistance(pContact->GetClientID());
+				uDistance.Xor(m_uTarget);
+				m_mapPendingResponses[uDistance] = clock();
 				if (thePrefs.GetDebugClientKadUDPLevel() > 0) {
 					LPCSTR pszOp;
 					switch (m_uType) {

@@ -61,6 +61,7 @@ their client on the eMule forum.
 #include "kademlia/net/KademliaUDPListener.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/routing/RoutingBin.h"
+#include "kademlia/utils/SafeKad.h"
 #include "kademlia/utils/KadUDPKey.h"
 
 #ifdef _DEBUG
@@ -468,6 +469,9 @@ bool CRoutingZone::Add(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 
 bool CRoutingZone::AddUnfiltered(const CUInt128 &uID, uint32 uIP, uint16 uUDPPort, uint16 uTCPPort, uint8 uVersion, const CKadUDPKey &cUDPKey, bool &bIPVerified, bool bUpdate, bool /*bFromNodesDat*/, bool bFromHello)
 {
 	if (uID != uMe && uVersion > 1) {
+		if (safeKad.IsBadNode(uIP, uUDPPort, uID, uVersion, bIPVerified, true, thePrefs.IsBanBadKadNodes()))
+			return false;
+
 		CContact *pContact = new CContact(uID, uIP, uUDPPort, uTCPPort, uVersion, cUDPKey, bIPVerified);
 		if (bFromHello)
 			pContact->SetReceivedHelloPacket();
@@ -805,14 +809,22 @@ void CRoutingZone::OnSmallTimer()
 	m_pBin->GetEntries(listEntries);
 	for (ContactArray::const_iterator itContact = listEntries.begin(); itContact != listEntries.end(); ++itContact) {
 		pContact = *itContact;
+		const bool bBanned = safeKad.IsBanned(pContact->GetIPAddress());
 		if (pContact->GetType() == 4)
-			if (((pContact->m_tExpires > 0) && (pContact->m_tExpires <= tNow))) {
+			if (((pContact->m_tExpires > 0) && (pContact->m_tExpires <= tNow)) || bBanned) {
 				if (!pContact->InUse()) {
 					m_pBin->RemoveContact(pContact);
 					delete pContact;
 				}
 				continue;
 			}
+		if (bBanned) {
+			if (!pContact->InUse()) {
+				m_pBin->RemoveContact(pContact);
+				delete pContact;
+			}
+			continue;
+		}
 
 		if (pContact->m_tExpires == 0)
 			pContact->m_tExpires = tNow;

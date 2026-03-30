@@ -519,6 +519,7 @@ COLORREF CPreferences::m_crLogSuccess = RGB(0, 0, 255);
 int		CPreferences::m_iExtractMetaData;
 bool	CPreferences::m_bAdjustNTFSDaylightFileTime = false; //'true' causes rehashing in XP and above when DST switches on/off
 bool	CPreferences::m_bRearrangeKadSearchKeywords;
+bool	CPreferences::m_bBanBadKadNodes;
 
 ProxySettings CPreferences::proxy;
 bool	CPreferences::showCatTabInfos;
@@ -582,6 +583,7 @@ bool	CPreferences::m_bCryptLayerRequested;
 bool	CPreferences::m_bCryptLayerSupported;
 bool	CPreferences::m_bCryptLayerRequired;
 uint32	CPreferences::m_dwKadUDPKey;
+uint32	CPreferences::m_uKadPublishSourceThrottle;
 uint8	CPreferences::m_byCryptTCPPaddingLength;
 
 bool	CPreferences::m_bSkipWANIPSetup;
@@ -1813,6 +1815,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("PartiallyPurgeOldKnownFiles"), m_bPartiallyPurgeOldKnownFiles);
 	ini.WriteBool(_T("AdjustNTFSDaylightFileTime"), m_bAdjustNTFSDaylightFileTime);
 	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
+	ini.WriteBool(_T("BanBadKadNodes"), m_bBanBadKadNodes);
 
 	// Toolbar
 	ini.WriteString(_T("ToolbarSetting"), m_sToolbarSettings);
@@ -1840,6 +1843,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("CryptLayerRequired"), m_bCryptLayerRequired);
 	ini.WriteBool(_T("CryptLayerSupported"), m_bCryptLayerSupported);
 	ini.WriteInt(_T("KadUDPKey"), m_dwKadUDPKey);
+	ini.WriteInt(_T("KadPublishSourceThrottle"), m_uKadPublishSourceThrottle);
 
 	ini.WriteBool(_T("EnableSearchResultSpamFilter"), m_bEnableSearchResultFilter);
 
@@ -2266,6 +2270,7 @@ void CPreferences::LoadPreferences()
 		m_iExtractMetaData = 1;
 	m_bAdjustNTFSDaylightFileTime = ini.GetBool(_T("AdjustNTFSDaylightFileTime"), false);
 	m_bRearrangeKadSearchKeywords = ini.GetBool(_T("RearrangeKadSearchKeywords"), true);
+	m_bBanBadKadNodes = ini.GetBool(_T("BanBadKadNodes"), true);
 
 	m_bUseSecureIdent = ini.GetBool(_T("SecureIdent"), true);
 	m_bAdvancedSpamfilter = ini.GetBool(_T("AdvancedSpamFilter"), true);
@@ -2331,6 +2336,7 @@ void CPreferences::LoadPreferences()
 	m_bCryptLayerRequired = ini.GetBool(_T("CryptLayerRequired"), false);
 	m_bCryptLayerSupported = ini.GetBool(_T("CryptLayerSupported"), true);
 	m_dwKadUDPKey = ini.GetInt(_T("KadUDPKey"), GetRandomUInt32());
+	m_uKadPublishSourceThrottle = ini.GetInt(_T("KadPublishSourceThrottle"), 10);
 
 	uint32 nTmp = ini.GetInt(_T("CryptTCPPaddingLength"), 128);
 	m_byCryptTCPPaddingLength = (uint8)min(nTmp, 254);

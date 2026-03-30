@@ -46,8 +46,10 @@ their client on the eMule forum.
 #include "kademlia/net/KademliaUDPListener.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/routing/contact.h"
+#include "kademlia/utils/FastKad.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
+#include "kademlia/utils/SafeKad.h"
 #include "kademlia/kademlia/tag.h"
 
 #ifdef _DEBUG
@@ -76,6 +78,7 @@ bool		CKademlia::m_bLANMode = false;
 CList<uint32, uint32> CKademlia::m_liStatsEstUsersProbes;
 _ContactList CKademlia::s_liBootstrapList;
 bool		CKademlia::m_bootstrapping = false;
+uint32		CKademlia::m_uBootstrapListInitialSize = 0;
 
 CKademlia::CKademlia()
 	: m_pPrefs()
@@ -129,6 +132,8 @@ void CKademlia::Start(CPrefs *pPrefs)
 		m_tExternPortLookup = tNow;
 		// Init bootstrap time.
 		m_tBootstrap = 0;
+		m_bootstrapping = false;
+		m_uBootstrapListInitialSize = 0;
 		// Init our random seed.
 		//srand((unsigned)tNow); not needed, KAD is in the main thread
 		// Create our Kad objects.
@@ -166,6 +171,9 @@ void CKademlia::Stop()
 	// Remove all active searches.
 	CSearchManager::StopAllSearches();
 
+	safeKad.ShutdownCleanup();
+	fastKad.ShutdownCleanup();
+
 	// Delete all Kad Objects.
 	delete m_pInstance->m_pUDPListener;
 	m_pInstance->m_pUDPListener = NULL;
@@ -186,6 +194,7 @@ void CKademlia::Stop()
 		delete s_liBootstrapList.RemoveHead();
 
 	m_bootstrapping = false;
+	m_uBootstrapListInitialSize = 0;
 
 	// Make sure all zones are removed.
 	m_mapEvents.clear();
@@ -228,6 +237,8 @@ void CKademlia::Process()
 		m_pInstance->m_pPrefs->SetFindBuddy();
 		m_tNextFindBuddy = tNow + MIN2S(20);
 	}
+	if (IsConnected())
+		m_bootstrapping = false;
 	if (tNow >= m_tExternPortLookup && CUDPFirewallTester::IsFWCheckUDPRunning() && GetPrefs()->FindExternKadPort(false)) {
 		// if our UDP firewall check is running and we don't know our external port, we send a request every 15 seconds
 		CContact *pContact = GetRoutingZone()->GetRandomContact(3, KADEMLIA_VERSION6_49aBETA);
@@ -284,8 +295,10 @@ void CKademlia::Process()
 		}
 	}
 
-	if (!IsConnected() && (tNow >= m_tBootstrap + 15 || (GetRoutingZone()->GetNumContacts() == 0 && tNow >= m_tBootstrap + 2)))
+	if (!IsConnected() && (tNow >= m_tBootstrap + 5 || (GetRoutingZone()->GetNumContacts() == 0 && tNow >= m_tBootstrap + 2)))
 		if (!s_liBootstrapList.IsEmpty()) {
+			if (m_uBootstrapListInitialSize == 0 || m_uBootstrapListInitialSize < s_liBootstrapList.GetCount())
+				m_uBootstrapListInitialSize = s_liBootstrapList.GetCount();
 			CContact *pContact = s_liBootstrapList.RemoveHead();
 			m_tBootstrap = tNow;
 			m_bootstrapping = true;
@@ -294,10 +307,13 @@ void CKademlia::Process()
 			m_pInstance->m_pUDPListener->Bootstrap(pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetVersion(), &uTargetID);
 			delete pContact;
 			theApp.emuledlg->kademliawnd->StartUpdateContacts();
+			theApp.emuledlg->ShowConnectionState();
 		} else if (m_bootstrapping) {
 			// failed to bootstrap
 			m_bootstrapping = false;
+			m_uBootstrapListInitialSize = 0;
 			AddLogLine(true, GetResString(IDS_BOOTSTRAPFAILED));
+			theApp.emuledlg->ShowConnectionState();
 		}
 
 	if (GetUDPListener() != NULL)
@@ -377,6 +393,23 @@ uint32 CKademlia::GetIPAddress()
 	return 0;
 }
 
+bool CKademlia::IsBootstrapping()
+{
+	return m_bRunning && !IsConnected() && (m_bootstrapping || !s_liBootstrapList.IsEmpty());
+}
+
+uint32 CKademlia::GetBootstrapProgressPercent()
+{
+	if (!IsBootstrapping() || m_uBootstrapListInitialSize == 0)
+		return 0;
+
+	const uint32 uRemaining = static_cast<uint32>(s_liBootstrapList.GetCount());
+	if (uRemaining >= m_uBootstrapListInitialSize)
+		return 0;
+
+	return min(99u, ((m_uBootstrapListInitialSize - uRemaining) * 100u) / m_uBootstrapListInitialSize);
+}
+
 void CKademlia::ProcessPacket(const byte *pbyData, uint32 uLenData, uint32 uIP, uint16 uPort, bool bValidReceiverKey, const CKadUDPKey &senderUDPKey)
 {
 	if (m_pInstance && m_pInstance->m_pUDPListener)
@@ -409,6 +442,9 @@ void CKademlia::Bootstrap(uint32 uIP, uint16 uPort)
 void CKademlia::RecheckFirewalled()
 {
 	if (m_pInstance && m_pInstance->GetPrefs() && !IsRunningInLANMode()) {
+		safeKad.ShutdownCleanup();
+		fastKad.ShutdownCleanup();
+
 		// Something is forcing a new firewall check
 		// Stop any new buddy requests, and tell the client
 		// to recheck it's IP which in turns rechecks firewall.

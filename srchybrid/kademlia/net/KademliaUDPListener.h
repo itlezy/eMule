@@ -31,6 +31,7 @@ their client on the eMule forum.
 #pragma once
 #include "kademlia/routing/Maps.h"
 #include "kademlia/net/PacketTracking.h"
+#include "kademlia/utils/KadPublishGuard.h"
 
 class CSafeMemFile;
 struct SSearchTerm;
@@ -75,7 +76,7 @@ namespace Kademlia
 		void Process_KADEMLIA2_BOOTSTRAP_RES(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey, bool bValidReceiverKey);
 		void Process_KADEMLIA2_HELLO_REQ(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey, bool bValidReceiverKey);
 		void Process_KADEMLIA2_HELLO_RES(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey, bool bValidReceiverKey);
-		void Process_KADEMLIA2_HELLO_RES_ACK(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, bool bValidReceiverKey);
+		void Process_KADEMLIA2_HELLO_RES_ACK(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, bool bValidReceiverKey);
 		void Process_KADEMLIA2_REQ(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey);
 		void Process_KADEMLIA2_RES(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey);
 		static void Process_KADEMLIA2_SEARCH_KEY_REQ(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey);
@@ -101,6 +102,7 @@ namespace Kademlia
 		static void Process_KADEMLIA2_FIREWALLUDP(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, const CKadUDPKey &senderUDPKey);
 
 		CList<FetchNodeID_Struct> listFetchNodeIDRequests;
+		CKadPublishSourceThrottle m_publishSourceThrottle;
 		//uint32	m_nOpenHellos;
 		//uint32	m_nFirewalledHellos;
 	};

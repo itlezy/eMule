@@ -55,6 +55,7 @@ their client on the eMule forum.
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
+#include "kademlia/utils/SafeKad.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -274,7 +275,7 @@ void CKademliaUDPListener::ProcessPacket(const byte *pbyData, uint32 uLenData, u
 	case KADEMLIA2_HELLO_RES_ACK:
 		if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 			DebugRecv("KADEMLIA2_HELLO_RES_ACK", uIP, uUDPPort);
-		Process_KADEMLIA2_HELLO_RES_ACK(pbyPacketData, uLenData, uIP, bValidReceiverKey);
+		Process_KADEMLIA2_HELLO_RES_ACK(pbyPacketData, uLenData, uIP, uUDPPort, bValidReceiverKey);
 		break;
 	case KADEMLIA2_REQ:
 		if (thePrefs.GetDebugClientKadUDPLevel() > 0)
@@ -598,7 +599,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_HELLO_REQ(const byte *pbyPacketData
 }
 
 // Used in Kad2.0 only
-void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES_ACK(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, bool bValidReceiverKey)
+void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES_ACK(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, bool bValidReceiverKey)
 {
 	if (uLenPacket < 17) {
 		CString strError;
@@ -618,6 +619,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES_ACK(const byte *pbyPacket
 	CSafeMemFile fileIO(pbyPacketData, uLenPacket);
 	CUInt128 uRemoteID;
 	fileIO.ReadUInt128(uRemoteID);
+	safeKad.TrackNode(uIP, uUDPPort, uRemoteID, true, thePrefs.IsBanBadKadNodes());
 	if (!CKademlia::GetRoutingZone()->VerifyContact(uRemoteID, uIP))
 		DebugLogWarning(_T("Kad: Process_KADEMLIA2_HELLO_RES_ACK: Unable to find valid sender in routing table (sender: %s)"), (LPCTSTR)ipstr(htonl(uIP)));
 	//else
@@ -647,6 +649,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_HELLO_RES(const byte *pbyPacketData
 			// most likely a bug in the remote client:
 			DebugLogWarning(_T("Kad: Process_KADEMLIA2_HELLO_RES: Remote clients demands ACK, but didn't send any Senderkey! (%s)"), (LPCTSTR)ipstr(htonl(uIP)));
 		} else {
+			safeKad.TrackNode(uIP, uUDPPort, uContactID, true, thePrefs.IsBanBadKadNodes());
 			CSafeMemFile fileIO(17);
 			CUInt128 uID(CKademlia::GetPrefs()->GetKadID());
 			fileIO.WriteUInt128(uID);
@@ -756,6 +759,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_RES(const byte *pbyPacketData, uint
 	// is this one of our legacy challenge packets?
 	CUInt128 uContactID;
 	if (IsLegacyChallenge(uTarget, uIP, KADEMLIA2_REQ, uContactID)) {
+		safeKad.TrackNode(uIP, uUDPPort, uContactID, true, thePrefs.IsBanBadKadNodes());
 		// yup it is, set the contact as verified
 		if (!CKademlia::GetRoutingZone()->VerifyContact(uContactID, uIP))
 			DebugLogWarning(_T("Kad: KADEMLIA2_RES: Unable to find valid sender in routing table (sender: %s)"), (LPCTSTR)ipstr(htonl(uIP)));
@@ -1279,6 +1283,23 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 	if (CUDPFirewallTester::IsFirewalledUDP(true))
 		//We are firewalled. We should not index this entry and give publisher a false report.
 		return;
+	if (!IsGoodIP(ntohl(uIP)) || theApp.ipfilter->IsFiltered(ntohl(uIP)) || theApp.clientlist->IsBannedClient(ntohl(uIP)) || safeKad.IsBanned(uIP))
+		return;
+
+	const EKadPublishThrottleDecision eThrottleDecision = m_publishSourceThrottle.TrackRequest(uIP, ::GetTickCount(), thePrefs.GetKadPublishSourceThrottle());
+	if (eThrottleDecision == KPUBLISH_BAN) {
+		DebugLogWarning(_T("Kad: publish-source flood detected from %s - banning"), (LPCTSTR)ipstr(htonl(uIP)));
+		safeKad.BanIP(uIP);
+		theApp.clientlist->AddBannedClient(ntohl(uIP));
+		CContact *pContact = CKademlia::GetRoutingZone()->GetContact(uIP, uUDPPort, false);
+		if (pContact != NULL)
+			pContact->Expire();
+		return;
+	}
+	if (eThrottleDecision == KPUBLISH_DROP) {
+		safeKad.TrackProblematicNode(uIP, uUDPPort);
+		return;
+	}
 
 	CByteIO byteIO(pbyPacketData, uLenPacket);
 	CUInt128 uFile;
@@ -1296,6 +1317,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 	byteIO.ReadUInt128(uTarget);
 	CKadTag *pTag = NULL;
 	CEntry *pEntry = NULL;
+	PublishSourceMetadata metadata;
 	try {
 		CString sInfo;
 		pEntry = new Kademlia::CEntry();
@@ -1312,6 +1334,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 				continue;
 			if (pTag->m_name == TAG_SOURCETYPE) {
 				if (!pEntry->m_bSource) {
+					metadata.m_bHasSourceType = true;
+					metadata.m_uSourceType = static_cast<uint8>(pTag->GetInt());
 					pEntry->AddTag(new CKadTagUInt(TAG_SOURCEIP, pEntry->m_uIP));
 					pEntry->m_bSource = true;
 					pEntry->AddTag(pTag);
@@ -1328,6 +1352,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 				}
 			} else if (pTag->m_name == TAG_SOURCEPORT) {
 				if (pEntry->m_uTCPPort == 0) {
+					metadata.m_bHasSourcePort = true;
+					metadata.m_uSourcePort = (uint16)pTag->GetInt();
 					pEntry->m_uTCPPort = (uint16)pTag->GetInt();
 					pEntry->AddTag(pTag);
 					pTag = NULL;
@@ -1344,6 +1370,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 				if (pTag->IsInt()) {
 					LPCTSTR p = NULL;
 					uint32 buddyip = (uint32)pTag->GetInt();
+					metadata.m_bHasBuddyIP = true;
+					metadata.m_uBuddyIP = buddyip;
 					//if (!IsGoodIP(buddyip)) {
 					//	if (thePrefs.GetLogFilteredIPs())
 					//		p = _T("bad");
@@ -1365,6 +1393,23 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 							AddDebugLogLine(false, _T("Publish request from source %s with %s buddy IP=%s"), (LPCTSTR)ipstr(htonl(uIP)), p, (LPCTSTR)ipstr(buddyip));
 					}
 				}
+			} else if (pTag->m_name == TAG_SERVERPORT) {
+				if (pTag->IsInt()) {
+					metadata.m_bHasBuddyPort = true;
+					metadata.m_uBuddyPort = (uint16)pTag->GetInt();
+					if (metadata.m_uBuddyPort > 0) {
+						pEntry->AddTag(pTag);
+						pTag = NULL;
+					} else
+						pEntry->m_bSource = false;
+				}
+			} else if (pTag->m_name == TAG_BUDDYHASH) {
+				if (pTag->IsStr() && !pTag->GetStr().IsEmpty()) {
+					metadata.m_bHasBuddyHash = true;
+					pEntry->AddTag(pTag);
+					pTag = NULL;
+				} else
+					pEntry->m_bSource = false;
 			} else {
 				//TODO: Filter tags
 				pEntry->AddTag(pTag);
@@ -1382,6 +1427,12 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 		delete pTag;
 		delete pEntry;
 		throw;
+	}
+
+	if (!ValidatePublishSourceMetadata(metadata) || !pEntry->m_bSource || pEntry->m_uTCPPort == 0) {
+		safeKad.TrackProblematicNode(uIP, uUDPPort);
+		delete pEntry;
+		return;
 	}
 
 	if (pEntry->m_bSource && CKademlia::GetIndexed()->AddSources(uFile, uTarget, pEntry, uLoad)) {
@@ -1803,7 +1854,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PING(uint32 uIP, uint16 uUDPPort, c
 	SendPacket(fileIO2, KADEMLIA2_PONG, uIP, uUDPPort, senderUDPKey, NULL);
 }
 
-void CKademliaUDPListener::Process_KADEMLIA2_PONG(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 /*uUDPPort*/, const CKadUDPKey& /*senderUDPKey*/)
+void CKademliaUDPListener::Process_KADEMLIA2_PONG(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey& /*senderUDPKey*/)
 {
 	if (uLenPacket < 2) {
 		CString strError;
@@ -1819,6 +1870,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_PONG(const byte *pbyPacketData, uin
 	// is this one of our legacy challenge packets?
 	CUInt128 uContactID;
 	if (IsLegacyChallenge(CUInt128(0ul), uIP, KADEMLIA2_PING, uContactID)) {
+		safeKad.TrackNode(uIP, uUDPPort, uContactID, true, thePrefs.IsBanBadKadNodes());
 		// yup it is, set the contact as verified
 		if (!CKademlia::GetRoutingZone()->VerifyContact(uContactID, uIP))
 			DebugLogWarning(_T("Kad: KADEMLIA2_PONG: Unable to find valid sender in routing table (sender: %s)"), (LPCTSTR)ipstr(htonl(uIP)));

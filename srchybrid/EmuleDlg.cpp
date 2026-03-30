@@ -898,7 +898,13 @@ CString CemuleDlg::GetConnectionStateString()
 		kad = Kademlia::CKademlia::IsRunning() ? IDS_CONNECTING : IDS_DISCONNECTED;
 
 	CString state;
-	state.Format(_T("eD2K:%s|Kad:%s"), (LPCTSTR)GetResString(ed2k), (LPCTSTR)GetResString(kad));
+	CString strKadState(GetResString(kad));
+	if (!Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::IsBootstrapping()) {
+		const uint32 uBootstrapProgress = Kademlia::CKademlia::GetBootstrapProgressPercent();
+		if (uBootstrapProgress > 0)
+			strKadState.Format(_T("%s %u%%"), (LPCTSTR)GetResString(IDS_BOOTSTRAP), uBootstrapProgress);
+	}
+	state.Format(_T("eD2K:%s|Kad:%s"), (LPCTSTR)GetResString(ed2k), (LPCTSTR)strKadState);
 	return state;
 }
 

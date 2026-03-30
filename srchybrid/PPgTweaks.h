@@ -99,6 +99,8 @@ protected:
 	HTREEITEM m_htiKeepUnavailableFixedSharedDirs;
 	HTREEITEM m_htiPartiallyPurgeOldKnownFiles;
 	HTREEITEM m_htiAdjustNTFSDaylightFileTime;
+	HTREEITEM m_htiBanBadKadNodes;
+	HTREEITEM m_htiKadPublishSourceThrottle;
 	HTREEITEM m_htiRearrangeKadSearchKeywords;
 	HTREEITEM m_htiMessageFromValidSourcesOnly;
 	HTREEITEM m_htiFileBufferTimeLimit;
@@ -159,6 +161,7 @@ protected:
 	bool m_bLogRatingDescReceived;
 	bool m_bLogSecureIdent;
 	bool m_bLogUlDlEvents;
+	bool m_bBanBadKadNodes;
 	bool m_bMessageFromValidSourcesOnly;
 	bool m_bPartiallyPurgeOldKnownFiles;
 	bool m_bPreviewCopiedArchives;
@@ -183,6 +186,7 @@ protected:
 
 	CString m_sDateTimeFormat4Lists;
 	UINT m_uFileBufferTimeLimitSeconds;
+	int m_iKadPublishSourceThrottle;
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();

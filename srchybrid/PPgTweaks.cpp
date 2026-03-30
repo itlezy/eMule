@@ -142,6 +142,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiKeepUnavailableFixedSharedDirs()
 	, m_htiPartiallyPurgeOldKnownFiles()
 	, m_htiAdjustNTFSDaylightFileTime()
+	, m_htiBanBadKadNodes()
+	, m_htiKadPublishSourceThrottle()
 	, m_htiRearrangeKadSearchKeywords()
 	, m_htiMessageFromValidSourcesOnly()
 	, m_htiFileBufferTimeLimit()
@@ -211,6 +213,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bLogRatingDescReceived()
 	, m_bLogSecureIdent()
 	, m_bLogUlDlEvents()
+	, m_bBanBadKadNodes()
 	, m_bMessageFromValidSourcesOnly()
 	, m_bPartiallyPurgeOldKnownFiles()
 	, m_bPreviewCopiedArchives()
@@ -231,6 +234,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bVerbose()
 	, m_bForceSpeedsToKB()
 	, m_uFileBufferTimeLimitSeconds()
+	, m_iKadPublishSourceThrottle()
 {
 }
 
@@ -401,6 +405,9 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiForceSpeedsToKB = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FORCESPEEDSTOKB), m_htiHiddenDisplay, m_bForceSpeedsToKB);
 
 		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_SECURITY), iImgConnection, TVI_ROOT);
+		m_htiBanBadKadNodes = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_BANBADKADNODES), m_htiHiddenSecurity, m_bBanBadKadNodes);
+		m_htiKadPublishSourceThrottle = m_ctrlTreeOptions.InsertItem(GetResString(IDS_KADPUBLISHSOURCETHROTTLE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenSecurity);
+		m_ctrlTreeOptions.AddEditBox(m_htiKadPublishSourceThrottle, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiRearrangeKadSearchKeywords = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REARRANGEKADSEARCHKEYWORDS), m_htiHiddenSecurity, m_bRearrangeKadSearchKeywords);
 		m_htiMessageFromValidSourcesOnly = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_MESSAGEFROMVALIDSOURCESONLY), m_htiHiddenSecurity, m_bMessageFromValidSourcesOnly);
 
@@ -521,11 +528,15 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBanBadKadNodes, m_bBanBadKadNodes);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiKadPublishSourceThrottle, m_iKadPublishSourceThrottle);
 	if (pDX->m_bSaveAndValidate) {
 		if (m_uFileBufferTimeLimitSeconds < 1)
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiFileBufferTimeLimit);
 		if (m_iInspectAllFileTypes < 0)
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiInspectAllFileTypes);
+		if (m_iKadPublishSourceThrottle < 0)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiKadPublishSourceThrottle);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -683,8 +694,10 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bKeepUnavailableFixedSharedDirs = thePrefs.m_bKeepUnavailableFixedSharedDirs;
 	m_bPartiallyPurgeOldKnownFiles = thePrefs.DoPartiallyPurgeOldKnownFiles();
 	m_bAdjustNTFSDaylightFileTime = thePrefs.GetAdjustNTFSDaylightFileTime();
+	m_bBanBadKadNodes = thePrefs.IsBanBadKadNodes();
 	m_bRearrangeKadSearchKeywords = thePrefs.GetRearrangeKadSearchKeywords();
 	m_bMessageFromValidSourcesOnly = thePrefs.MsgOnlySecure();
+	m_iKadPublishSourceThrottle = static_cast<int>(thePrefs.GetKadPublishSourceThrottle());
 
 	m_ctrlTreeOptions.SetImageListColorFlags(theApp.m_iDfltImageListColorFlags);
 	CPropertyPage::OnInitDialog();
@@ -842,8 +855,10 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bKeepUnavailableFixedSharedDirs = m_bKeepUnavailableFixedSharedDirs;
 	thePrefs.m_bPartiallyPurgeOldKnownFiles = m_bPartiallyPurgeOldKnownFiles;
 	thePrefs.m_bAdjustNTFSDaylightFileTime = m_bAdjustNTFSDaylightFileTime;
+	thePrefs.m_bBanBadKadNodes = m_bBanBadKadNodes;
 	thePrefs.m_bRearrangeKadSearchKeywords = m_bRearrangeKadSearchKeywords;
 	thePrefs.msgsecure = m_bMessageFromValidSourcesOnly;
+	thePrefs.m_uKadPublishSourceThrottle = static_cast<uint32>(m_iKadPublishSourceThrottle);
 
 	if (thePrefs.GetEnableVerboseOptions()) {
 		theApp.emuledlg->serverwnd->ToggleDebugWindow();
@@ -902,6 +917,7 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
 		LocalizeEditLabel(m_htiFileBufferTimeLimit, IDS_FILEBUFFERTIMELIMIT);
 		LocalizeEditLabel(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
+		LocalizeEditLabel(m_htiKadPublishSourceThrottle, IDS_KADPUBLISHSOURCETHROTTLE);
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
@@ -942,6 +958,7 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiFullAlloc, IDS_FULLALLOC);
 		LocalizeItemText(m_htiImportParts, IDS_ENABLEIMPORTPARTS);
 		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
+		LocalizeItemText(m_htiBanBadKadNodes, IDS_BANBADKADNODES);
 		LocalizeItemText(m_htiHiddenDisplay, IDS_HIDDENRUNTIME_DISPLAY);
 		LocalizeItemText(m_htiHiddenFile, IDS_HIDDENRUNTIME_FILE);
 		LocalizeItemText(m_htiHiddenSecurity, IDS_HIDDENRUNTIME_SECURITY);
@@ -1047,6 +1064,8 @@ void CPPgTweaks::OnDestroy()
 	m_htiKeepUnavailableFixedSharedDirs = NULL;
 	m_htiPartiallyPurgeOldKnownFiles = NULL;
 	m_htiAdjustNTFSDaylightFileTime = NULL;
+	m_htiBanBadKadNodes = NULL;
+	m_htiKadPublishSourceThrottle = NULL;
 	m_htiRearrangeKadSearchKeywords = NULL;
 	m_htiMessageFromValidSourcesOnly = NULL;
 	m_htiFileBufferTimeLimit = NULL;
