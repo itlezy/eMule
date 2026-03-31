@@ -134,6 +134,7 @@ and `_MSC_VER >= 1400` guards are dead or always-true.
 - `Preferences.cpp:2818` - `GetProcAddress` for `SHGetKnownFolderPath` (available since Vista)
 - `Preferences.cpp:2986-2989` - `LoadLibrary("dwmapi.dll")` + `DwmIsCompositionEnabled` (always TRUE on Win10; DWM cannot be disabled)
 - `Mdump.cpp:66-72` - `LoadLibrary("DBGHELP.DLL")` + `MiniDumpWriteDump` (dbghelp.dll ships with Windows since XP SP2 and is always present on Win10)
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
 **Action:** Replace dynamic loading with direct static linking:
 - `ChangeWindowMessageFilter` -> link directly, or better, use `ChangeWindowMessageFilterEx` (Win7+)

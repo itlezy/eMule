@@ -16,6 +16,8 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include <share.h>
+#include <ShlObj.h>
+#include <dwmapi.h>
 #include <iphlpapi.h>
 #include "emule.h"
 #include "Preferences.h"
@@ -2813,14 +2815,10 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		PWSTR pszPersonalDownloads = NULL;
 		PWSTR pszPublicDownloads = NULL;
 		PWSTR pszProgramData = NULL;
-		HRESULT(WINAPI *pfnSHGetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
-		HMODULE hShell32 = ::GetModuleHandle(_T("shell32.dll"));
-		(FARPROC&)pfnSHGetKnownFolderPath = hShell32 ? ::GetProcAddress(hShell32, "SHGetKnownFolderPath") : NULL;
-		if (pfnSHGetKnownFolderPath
-			&& (*pfnSHGetKnownFolderPath)(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
-			&& (*pfnSHGetKnownFolderPath)(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
-			&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
-			&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
+		if (::SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
+			&& ::SHGetKnownFolderPath(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
+			&& ::SHGetKnownFolderPath(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
+			&& ::SHGetKnownFolderPath(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
 		{
 			if (   _tcsclen(pszLocalAppData) < MAX_PATH - 30
 				&& _tcsclen(pszPersonalDownloads) < MAX_PATH - 40
@@ -2982,15 +2980,7 @@ bool CPreferences::IsRunningAeroGlassTheme()
 	static bool bAeroAlreadyDetected = false;
 	if (!bAeroAlreadyDetected) {
 		bAeroAlreadyDetected = true;
-		m_bIsRunningAeroGlass = FALSE;
-		HMODULE hDWMAPI = ::LoadLibrary(_T("dwmapi.dll"));
-		if (hDWMAPI) {
-			HRESULT(WINAPI *pfnDwmIsCompositionEnabled)(BOOL*);
-			(FARPROC&)pfnDwmIsCompositionEnabled = ::GetProcAddress(hDWMAPI, "DwmIsCompositionEnabled");
-			if (pfnDwmIsCompositionEnabled != NULL)
-				pfnDwmIsCompositionEnabled(&m_bIsRunningAeroGlass);
-			::FreeLibrary(hDWMAPI);
-		}
+		m_bIsRunningAeroGlass = TRUE;
 	}
 	return m_bIsRunningAeroGlass != FALSE;
 }

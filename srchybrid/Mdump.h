@@ -11,7 +11,6 @@ private:
 	static TCHAR m_szAppName[MAX_PATH];
 	static TCHAR m_szDumpDir[MAX_PATH];
 
-	static HMODULE GetDebugHelperDll(FARPROC *ppfnMiniDumpWriteDump, bool bShowErrors);
 	static LONG WINAPI TopLevelFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) noexcept;
 };
 

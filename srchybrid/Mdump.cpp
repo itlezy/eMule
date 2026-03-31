@@ -25,11 +25,6 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-typedef BOOL (WINAPI *MINIDUMPWRITEDUMP)(HANDLE hProcess, DWORD dwPid, HANDLE hFile, MINIDUMP_TYPE DumpType,
-										 CONST PMINIDUMP_EXCEPTION_INFORMATION ExceptionParam,
-										 CONST PMINIDUMP_USER_STREAM_INFORMATION UserStreamParam,
-										 CONST PMINIDUMP_CALLBACK_INFORMATION CallbackParam);
-
 CMiniDumper theCrashDumper;
 TCHAR CMiniDumper::m_szAppName[MAX_PATH] = {};
 TCHAR CMiniDumper::m_szDumpDir[MAX_PATH] = {};
@@ -47,34 +42,8 @@ void CMiniDumper::Enable(LPCTSTR pszAppName, bool bShowErrors, LPCTSTR pszDumpDi
 	m_szDumpDir[_countof(m_szDumpDir) - 2] = _T('\0');
 	::PathAddBackslash(m_szDumpDir);
 
-	MINIDUMPWRITEDUMP pfnMiniDumpWriteDump;
-	HMODULE hDbgHelpDll = GetDebugHelperDll((FARPROC*)&pfnMiniDumpWriteDump, bShowErrors);
-	if (hDbgHelpDll) {
-		if (pfnMiniDumpWriteDump)
-			::SetUnhandledExceptionFilter(TopLevelFilter);
-		::FreeLibrary(hDbgHelpDll);
-	}
-}
-
-#define DBGHELP_HINT _T("The required DBGHELP.DLL may be obtained from \"Microsoft Download Center\" as a part of \"User Mode Process Dumper\".\r\n\r\n") \
-	_T("DBGHELP.DLL should reside in Windows/System32 folder, and also 32-bit DLL in 64-bit OS in Windows/SysWOW64 folder.\r\n") \
-	_T("Alternatively, DBGHELP.DLL may be copied to eMule executable's folder (DLL and executable must have the same bitness).")
-
-HMODULE CMiniDumper::GetDebugHelperDll(FARPROC *ppfnMiniDumpWriteDump, bool bShowErrors)
-{
-	*ppfnMiniDumpWriteDump = NULL;
-	HMODULE hDll = ::LoadLibrary(_T("DBGHELP.DLL"));
-	if (hDll == NULL) {
-		if (bShowErrors)
-			// Do *NOT* localize that string (in fact, do not use MFC to load it)!
-			MessageBox(NULL, _T("DBGHELP.DLL not found. Please install a DBGHELP.DLL.\r\n\r\n") DBGHELP_HINT, m_szAppName, MB_ICONSTOP | MB_OK);
-	} else {
-		*ppfnMiniDumpWriteDump = ::GetProcAddress(hDll, "MiniDumpWriteDump");
-		if (*ppfnMiniDumpWriteDump == NULL && bShowErrors)
-			// Do *NOT* localize that string (in fact, do not use MFC to load it)!
-			MessageBox(NULL, _T("DBGHELP.DLL found is too old. Please upgrade to the current version of DBGHELP.DLL.\r\n\r\n") DBGHELP_HINT, m_szAppName, MB_ICONSTOP | MB_OK);
-	}
-	return hDll;
+	UNREFERENCED_PARAMETER(bShowErrors);
+	::SetUnhandledExceptionFilter(TopLevelFilter);
 }
 
 #define CRASHTEXT _T("eMule crashed :-(\r\n\r\n") \
@@ -87,66 +56,59 @@ LONG WINAPI CMiniDumper::TopLevelFilter(struct _EXCEPTION_POINTERS *pExceptionIn
 #ifdef _DEBUG
 	LONG lRetValue = EXCEPTION_CONTINUE_SEARCH;
 #endif
-	MINIDUMPWRITEDUMP pfnMiniDumpWriteDump;
-	HMODULE hDll = GetDebugHelperDll((FARPROC*)&pfnMiniDumpWriteDump, true);
-	if (hDll) {
-		if (pfnMiniDumpWriteDump) {
-			SYSTEMTIME t;
-			::GetLocalTime(&t); //time of this crash
-			// Ask user to confirm writing a dump file
-			// Do *NOT* localize that string (in fact, do not use MFC to load it)!
-			if (theCrashDumper.uCreateCrashDump == 2 || MessageBox(NULL, CRASHTEXT, m_szAppName, MB_ICONSTOP | MB_YESNO) == IDYES) {
-				TCHAR szBaseName[MAX_PATH];
-				_sntprintf(szBaseName, MAX_PATH, _T("%s_%4d%02d%02d-%02d%02d%02d")
-					, m_szAppName, t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
-				szBaseName[_countof(szBaseName) - 1] = _T('\0');
-				// Replace spaces and dots in file name.
-				for (LPTSTR p = szBaseName; *p != _T('\0'); ++p)
-					if (*p == _T('.'))
-						*p = _T('-');
-					else if (*p == _T(' '))
-						*p = _T('_');
+	SYSTEMTIME t;
+	::GetLocalTime(&t); //time of this crash
+	// Ask user to confirm writing a dump file
+	// Do *NOT* localize that string (in fact, do not use MFC to load it)!
+	if (theCrashDumper.uCreateCrashDump == 2 || MessageBox(NULL, CRASHTEXT, m_szAppName, MB_ICONSTOP | MB_YESNO) == IDYES) {
+		TCHAR szBaseName[MAX_PATH];
+		_sntprintf(szBaseName, MAX_PATH, _T("%s_%4d%02d%02d-%02d%02d%02d")
+			, m_szAppName, t.wYear, t.wMonth, t.wDay, t.wHour, t.wMinute, t.wSecond);
+		szBaseName[_countof(szBaseName) - 1] = _T('\0');
+		// Replace spaces and dots in file name.
+		for (LPTSTR p = szBaseName; *p != _T('\0'); ++p)
+			if (*p == _T('.'))
+				*p = _T('-');
+			else if (*p == _T(' '))
+				*p = _T('_');
 
-				// Create full path for the dump file
-				TCHAR szDumpPath[MAX_PATH];
-				_sntprintf(szDumpPath, MAX_PATH, _T("%s%s.dmp"), m_szDumpDir, szBaseName);
-				szDumpPath[_countof(szDumpPath) - 1] = _T('\0');
+		// Create full path for the dump file
+		TCHAR szDumpPath[MAX_PATH];
+		_sntprintf(szDumpPath, MAX_PATH, _T("%s%s.dmp"), m_szDumpDir, szBaseName);
+		szDumpPath[_countof(szDumpPath) - 1] = _T('\0');
 
-				TCHAR szResult[MAX_PATH + 1024];
-				*szResult = _T('\0');
-				HANDLE hFile = ::CreateFile(szDumpPath, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-				if (hFile != INVALID_HANDLE_VALUE) {
-					_MINIDUMP_EXCEPTION_INFORMATION ExInfo = _MINIDUMP_EXCEPTION_INFORMATION{GetCurrentThreadId(), pExceptionInfo, FALSE};
-					BOOL bOK = (*pfnMiniDumpWriteDump)(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &ExInfo, NULL, NULL);
-					if (bOK) {
-						// Do *NOT* localize this string (in fact, do not use MFC to load it)!
-						_sntprintf(szResult, _countof(szResult)
-							, _T("Saved dump file to \"%s\".\r\n\r\n")
-							  _T("Please attach this file to a detailed bug report at forum.emule-project.net\r\n\r\n")
-							  _T("Thank you for helping to improve eMule!")
-							, szDumpPath);
-						szResult[_countof(szResult) - 1] = _T('\0');
+		TCHAR szResult[MAX_PATH + 1024];
+		*szResult = _T('\0');
+		HANDLE hFile = ::CreateFile(szDumpPath, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+		if (hFile != INVALID_HANDLE_VALUE) {
+			_MINIDUMP_EXCEPTION_INFORMATION ExInfo = _MINIDUMP_EXCEPTION_INFORMATION{GetCurrentThreadId(), pExceptionInfo, FALSE};
+			BOOL bOK = ::MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &ExInfo, NULL, NULL);
+			if (bOK) {
+				// Do *NOT* localize this string (in fact, do not use MFC to load it)!
+				_sntprintf(szResult, _countof(szResult)
+					, _T("Saved dump file to \"%s\".\r\n\r\n")
+					  _T("Please attach this file to a detailed bug report at forum.emule-project.net\r\n\r\n")
+					  _T("Thank you for helping to improve eMule!")
+					, szDumpPath);
+				szResult[_countof(szResult) - 1] = _T('\0');
 #ifdef _DEBUG
-						lRetValue = EXCEPTION_EXECUTE_HANDLER;
+				lRetValue = EXCEPTION_EXECUTE_HANDLER;
 #endif
-					} else {
-						// Do *NOT* localize this string (in fact, do not use MFC to load it)!
-						_sntprintf(szResult, _countof(szResult), _T("Failed to save dump file to \"%s\".\r\n\r\nError: %lu")
-							, szDumpPath, ::GetLastError());
-						szResult[_countof(szResult) - 1] = _T('\0');
-					}
-					::CloseHandle(hFile);
-				} else {
-					// Do *NOT* localize this string (in fact, do not use MFC to load it)!
-					_sntprintf(szResult, _countof(szResult), _T("Failed to create dump file \"%s\".\r\n\r\nError: %lu")
-						, szDumpPath, ::GetLastError());
-					szResult[_countof(szResult) - 1] = _T('\0');
-				}
-				if (*szResult != _T('\0'))
-					::MessageBox(NULL, szResult, m_szAppName, MB_ICONINFORMATION | MB_OK);
+			} else {
+				// Do *NOT* localize this string (in fact, do not use MFC to load it)!
+				_sntprintf(szResult, _countof(szResult), _T("Failed to save dump file to \"%s\".\r\n\r\nError: %lu")
+					, szDumpPath, ::GetLastError());
+				szResult[_countof(szResult) - 1] = _T('\0');
 			}
+			::CloseHandle(hFile);
+		} else {
+			// Do *NOT* localize this string (in fact, do not use MFC to load it)!
+			_sntprintf(szResult, _countof(szResult), _T("Failed to create dump file \"%s\".\r\n\r\nError: %lu")
+				, szDumpPath, ::GetLastError());
+					szResult[_countof(szResult) - 1] = _T('\0');
 		}
-		::FreeLibrary(hDll);
+		if (*szResult != _T('\0'))
+			::MessageBox(NULL, szResult, m_szAppName, MB_ICONINFORMATION | MB_OK);
 	}
 
 #ifndef _DEBUG
