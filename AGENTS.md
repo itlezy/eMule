@@ -19,5 +19,6 @@
 - load and strictly follow the PowerShell guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
 - when launching the `emule.exe` UI, always pass `-c` to make the config root explicit; disposable profiles may be created under `c:\tmp`, and a ready-made profile is available as `-c c:\tmp\emule-testing`
 - when running `emule.exe`, always bind to the VPN IP, enable all logging, and persist logs to file
+- when investigating hot loops or 100% CPU in `emule.exe`, prefer ETW sampling, dump capture, or debugger attachment before adding more logging instrumentation
 - when checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
 - when comparing features ensure to check the local repos `eMuleAI` at `c:\prj\p2p\eMule\analysis\eMuleAI` and `eMule-mods-archive` at `c:\prj\p2p\eMule\analysis\eMule-mods-archive`
