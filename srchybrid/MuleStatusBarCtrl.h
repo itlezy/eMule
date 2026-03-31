@@ -3,10 +3,10 @@
 enum EStatusBarPane
 {
 	SBarLog = 0,
+	SBarIP,
 	SBarUsers,
 	SBarUpDown,
 	SBarConnected,
-	SBarIP,
 	SBarChatMsg
 };
 

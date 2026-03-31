@@ -91,7 +91,7 @@ CString CMuleStatusBarCtrl::GetPaneToolTipText(EStatusBarPane iPane) const
 		CString strBindAddress;
 		if (thePrefs.GetBindAddr() != NULL)
 			strBindAddress = thePrefs.GetBindAddr();
-		return StatusBarInfo::FormatNetworkAddressPaneToolTip(strBindAddress, theApp.GetPublicIP());
+		return StatusBarInfo::FormatNetworkAddressPaneToolTip(strBindAddress, theApp.GetED2KPublicIP());
 	}
 	if (iPane == SBarConnected && theApp.serverconnect && theApp.serverconnect->IsConnected()) {
 		const CServer *cur_server = theApp.serverconnect->GetCurrentServer();

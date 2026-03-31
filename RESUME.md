@@ -5,6 +5,7 @@
 - Added a dedicated status-bar IP pane that shows the runtime bind target and public IP separately from the existing eD2K/Kad connection-state pane.
 - Wired the new pane to refresh on startup, normal connection-state changes, and delayed public-IP discovery, and reused the existing Network Info dialog on double-click.
 - Added a shared `StatusBarInfo` formatting helper so the compact pane text and single-line tooltip stay deterministic and regression-testable.
+- Moved the status-bar IP pane to the left of the `Users` pane and aligned its public-IP source with the eD2K-reported public address instead of the broader Kad-aware fallback.
 - Added `helpers\e2e-vpn-launch.ps1` to run a clean `%LOCALAPPDATA%\eMule` end-to-end session with emule-security `nodes.dat`/`server.met`, recursive shared-directory seeding, VPN-IP binding, and disk-backed verbose logging.
 - Verified the helper against `C:\tmp\videodupez\` with bind address `10.54.218.144`: the app wrote `eMule.log` and `eMule_Verbose.log`, loaded 153 Kad contacts from `nodes.dat`, connected to `eMule Sunrise` and `eMule Security`, and started hashing the recursive share tree.
 - Fixed `CKnownFileList::ShouldPurgeAICHHashset` so orphaned known2.met AICH entries are treated as purgeable instead of tripping a debug-only assertion, and added a shared regression seam for the purge decision.
