@@ -79,8 +79,11 @@ The last two groups are documented because they still live in the same file, but
 | `BindInterfaceName` | `eMule` | `RW` | Yes | empty | Stored display name for the selected P2P bind interface, mainly to keep the UI readable if the adapter is currently missing. |
 | `BindAddr` | `eMule` | `RW` | Yes | empty | Optional IPv4 address for P2P sockets. Empty means all addresses on the selected interface, or all interfaces when no interface is selected. |
 | `ConditionalTCPAccept` | `eMule` | `RW` | Yes | existing app default | Controls conditional TCP accept behavior. This is an advanced network-side knob. |
+| `ConnectionTimeout` | `eMule` | `RW` | Advanced tree | `30` seconds | Default TCP peer-connection timeout used by `EMSocket` and related connect/disconnect paths. |
+| `DownloadTimeout` | `eMule` | `RW` | Advanced tree | `75` seconds | Inactivity timeout for receiving download payload blocks from a peer. |
 | `UDPReceiveBufferSize` | `eMule` | `RW` | Advanced tree | `512 * 1024` | UDP receive socket buffer size in bytes. Exposed in Tweaks as KiB. |
 | `BigSendBufferSize` | `eMule` | `RW` | Advanced tree | `512 * 1024` | Configured large TCP send buffer size in bytes for upload sockets. Exposed in Tweaks as KiB. |
+| `UploadClientDataRate` | `eMule` | `RW` | Advanced tree | `8 * 1024 * 1024` | Ceiling for the heuristic per-client upload target used by the broadband slot controller. Exposed in Tweaks as KiB/s. |
 
 ### Server / eD2k / Kad
 
@@ -94,7 +97,7 @@ The last two groups are documented because they still live in the same file, but
 | `AutoConnectStaticOnly` | `eMule` | `RW` | Yes | `false` | Restrict auto-connect attempts to static servers only. |
 | `DeadServerRetry` | `eMule` | `RW` | Yes | `5` | Number of failed tries after which a server is treated as dead and removed. |
 | `SafeServerConnect` | `eMule` | `RW` | Yes | existing app default | More cautious server-connect strategy. |
-| `ServerKeepAliveTimeout` | `eMule` | `RW` | Yes | existing app default | Timeout used to keep the server connection alive. |
+| `ServerKeepAliveTimeout` | `eMule` | `RW` | Advanced tree | existing app default | Timeout used to keep the server connection alive. |
 | `YourHostname` | `eMule` | `RW` | Yes | empty | Optional hostname override displayed/used by the app. |
 | `NetworkED2K` | `eMule` | `RW` | Yes | `true` | Enable the eD2k network layer. |
 | `NetworkKademlia` | `eMule` | `RW` | Yes | `true` | Enable the Kad network layer. |
@@ -106,7 +109,7 @@ The last two groups are documented because they still live in the same file, but
 | `IncomingDir` | `eMule` | `RW` | Yes | app default path | Directory used for completed downloads. |
 | `TempDir` | `eMule` | `RW` | Yes | app default path | Primary temp directory for `.part` files. |
 | `TempDirs` | `eMule` | `RW` | Yes | empty | Additional temp directories, stored as a `|`-separated list. |
-| `MaxSourcesPerFile` | `eMule` | `RW` | Yes | existing app default | Hard cap for sources tracked per file. |
+| `MaxSourcesPerFile` | `eMule` | `RW` | Yes | `600` | Hard cap for sources tracked per file. |
 | `AddNewFilesPaused` | `eMule` | `RW` | Yes | `false` | Add new downloads in paused state instead of starting immediately. |
 | `PreviewPrio` | `eMule` | `RW` | Yes | `true` | Try to download preview chunks first. This is the setting you just changed to default on. |
 | `AllocateFullFile` | `eMule` | `RW` | Yes | `false` | Preallocate the full output file size ahead of download progress. |
@@ -287,6 +290,9 @@ This section explains what the more technical settings actually do in runtime te
 | `MaxHalfConnections` | Caps not-yet-fully-open TCP connections. This mainly affects connect burst behavior and old Windows TCP stack sensitivity. |
 | `MaxConnectionsPerFiveSeconds` | Burst limiter for new outbound connections. It smooths connection churn and protects both the local stack and remote peers from aggressive connect storms. |
 | `ConditionalTCPAccept` | A lower-level network acceptance policy. It affects when the app accepts inbound TCP work under load instead of being a simple UI convenience setting. |
+| `ConnectionTimeout` | Sets the default timeout budget for peer TCP sockets. The listen-socket and download paths extend this base timeout in specific states, but this is now the shared baseline. |
+| `DownloadTimeout` | Controls how long a download peer may stay silent between completed payload blocks before the transfer is cancelled and put back on queue. |
+| `UploadClientDataRate` | Caps the heuristic target rate for one upload slot. It does not replace the global upload throttle; it bounds the per-slot target derived by the broadband upload controller. |
 
 ### Server / Kad Behavior
 

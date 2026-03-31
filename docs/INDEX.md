@@ -134,8 +134,8 @@
 | FEAT_015 | Socket buffer sizes | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_016 | Disk buffering defaults → 2 MiB | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_017 | Queue/source limits | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
-| FEAT_018 | Timeout adjustments | Not started | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
-| FEAT_019 | Advanced tree UI exposure | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
+| FEAT_018 | Timeout adjustments | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
+| FEAT_019 | Advanced tree UI exposure | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_022 | Windows Media Foundation migration | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
 | FEAT_023 | FFmpeg alternative (long-term) | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
 | FEAT_024 | MediaInfo static embedding | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
@@ -253,29 +253,29 @@
 | WWMOD_018 | GDI-only drawing (no Direct2D) | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_019 | Unsafe string formatting functions | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_020 | MD4 as primary file hash | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_021 | No C++ language standard specified | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_021 | No C++ language standard specified | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_022–023 | #define → constexpr, no /permissive- | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_024 | MAX_PATH (260) path length limit | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_025 | IPv4-only networking | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_026–027 | 9.28 MB part size, 256 GB max file size | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_028 | Conservative connection/queue limits | **[PARTIAL]** via FEAT_013–019 | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_029 | 384-bit RSA keys | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_030 | Deprecated Winsock APIs | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_030 | Deprecated Winsock APIs | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_031 | _T()/TCHAR dual-path macros | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_032 | No ETW/structured logging | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_033 | Binary file formats with limited versioning | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_034 | No memory-mapped I/O for large files | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_035 | UpgradeFromVC71.props import | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_034 | No memory-mapped I/O for large files | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_035 | UpgradeFromVC71.props import | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_036 | Static MFC linking | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_037 | No ASan/static analysis in CI | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_038 | Delay-loaded DLLs that are always present | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_038 | Delay-loaded DLLs that are always present | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_039 | qedit.h bundled header | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_040 | ResizableLib third-party dep | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_041 | No accessibility support | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_042 | CAsyncSocketEx custom socket library | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_043 | Pinger.cpp raw ICMP | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_044 | No HTTP/2 or modern TLS for HTTP downloads | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_045–050 | CRichEditCtrl log, taskbar progress, toast, VC_EXTRALEAN, OmitFramePointers, time macros | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_045–050 | CRichEditCtrl log, taskbar progress, toast, VC_EXTRALEAN, OmitFramePointers, time macros | **[PARTIAL]** — WWMOD_046 stale, WWMOD_049 done | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 
 ### Plans (PLAN_)
 

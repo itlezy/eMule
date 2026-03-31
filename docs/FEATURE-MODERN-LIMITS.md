@@ -20,12 +20,12 @@
 | ID | Feature | Status |
 |----|---------|--------|
 | FEAT_013 | Connection budget defaults | **[PARTIAL]** — MaxHalfConnections=50, MaxConPerFive=50; MaxConnections still 500 (planned 1000) |
-| FEAT_014 | Per-client upload cap | **[DONE]** — raised to 8 MB/s |
+| FEAT_014 | Per-client upload cap | **[DONE]** — default cap is 8 MB/s and now persists through Preferences |
 | FEAT_015 | Socket buffer sizes | **[PARTIAL]** — UDP recv buffer=512 KiB [DONE]; TCP big send buffer status TBD |
 | FEAT_016 | Disk buffering defaults | **[DONE]** — FileBufferSize=2 MiB |
-| FEAT_017 | Queue/source limits | **[PARTIAL]** — QueueSize still 5000 (planned 10000); MaxSourcesPerFile still 400 (planned 600) |
-| FEAT_018 | Timeout adjustments | Not started — CONNECTION_TIMEOUT=40s, DOWNLOADTIMEOUT=100s, UDPMAXQUEUETIME=30s unchanged |
-| FEAT_019 | Advanced tree UI exposure | **[PARTIAL]** — connection and web limits UI refitted (commit `6b74300`) |
+| FEAT_017 | Queue/source limits | **[PARTIAL]** — QueueSize still 5000 (planned 10000); MaxSourcesPerFile is now 600 |
+| FEAT_018 | Timeout adjustments | **[DONE]** — ConnectionTimeout=30s, DownloadTimeout=75s, UDP queue expiry=20s, ConnectionLatency=15000 |
+| FEAT_019 | Advanced tree UI exposure | **[DONE]** — Tweaks exposes the remaining active timeout and upload-cap knobs without adding a new subtree |
 
 ## Purpose
 
@@ -137,7 +137,7 @@ This is still safe, but leaves performance on the table for SSD/NVMe systems.
 
 Current code:
 
-- default `MaxSourcesPerFile` is `400` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2187)
+- default `MaxSourcesPerFile` is now `600` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2187)
 - source soft/UDP caps are `750` and `50` in [`Opcodes.h`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Opcodes.h#L96)
 - queue default path still effectively lands around `5000` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2396)
 
@@ -153,7 +153,7 @@ Current code in [`Opcodes.h`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Opcodes.h):
 - `UDPMAXQUEUETIME = 30s`
 - `CONNECTION_LATENCY = 22050`
 
-These may still be functional, but they are conservative and leave recovery/reactivity slower than necessary on modern links.
+These defaults now use the shorter broadband values while staying fixed-value based and non-adaptive.
 
 ### 7. Deprecated Capability Baggage Still Exists
 
@@ -209,7 +209,7 @@ Notes:
 | `CONNECTION_TIMEOUT` | `40s` | `30s` |
 | `DOWNLOADTIMEOUT` | `100s` | `75s` |
 | `UDPMAXQUEUETIME` | `30s` | `20s` |
-| `CONNECTION_LATENCY` | `22050` | `12000` or `15000` |
+| `CONNECTION_LATENCY` | `22050` | `15000` |
 
 Notes:
 
@@ -218,7 +218,7 @@ Notes:
 
 ## Settings To Expose In The Advanced Tree (FEAT_019)
 
-These should become visible advanced preferences if they are not already exposed.
+These are now visible in `Preferences > Tweaks` where they were missing, while already-exposed controls stay in their existing pages/groups.
 
 ### Definitely Expose
 
@@ -237,7 +237,7 @@ These should become visible advanced preferences if they are not already exposed
 ### Exposure Style
 
 - keep them in `Preferences > Tweaks`
-- group them under a new `Modern connection and disk limits` subtree, or reuse existing relevant groups if the tree would become too large
+- reuse existing relevant groups instead of adding a new subtree
 - use numeric edits for exact control
 - add short comments/tooltips in code and labels where the purpose is not obvious
 
@@ -262,7 +262,7 @@ Files likely involved:
 
 Convert selected compile-time constants into persisted advanced preferences where this can be done safely without deep refactoring.
 
-Best candidates:
+Implemented candidates:
 
 - per-client upload cap
 - UDP socket receive buffer size
@@ -432,7 +432,7 @@ Risk:
 
 Current:
 
-- default `MaxSourcesPerFile = 400` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2187)
+- default `MaxSourcesPerFile = 600` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2187)
 - soft/UDP caps in [`PartFile.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/PartFile.cpp#L5362) and [`Opcodes.h`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Opcodes.h#L96)
 
 Action:
