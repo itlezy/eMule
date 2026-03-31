@@ -2,19 +2,19 @@
 
 ## Last Chunk
 
-- Removed the obsolete `Resolve shell links in shared directories` toggle from `PPgTweaks`.
-- Removed the dead `ResolveSharedShellLinks` preference storage and accessor from `CPreferences`.
-- Removed the primary English resource string entry for that obsolete toggle.
-- Kept the shared resource ID define in `Resource.h` so untranslated language resource files still compile unchanged.
-- Verified the cleanup builds successfully with `..\23-build-emule-debug-incremental.cmd`.
+- Added a standalone `--hash-probe` mode to `eMule-build-tests\build\<tag>\x64\Debug\emule-tests.exe`.
+- The probe runs outside the GUI app and compares buffered reads against the shared `MappedFileReader` path on an arbitrary Unicode/long file path.
+- Verified the long-path `videodupez` MP4 (`prepared-path-length=363`) completes in both buffered and mapped modes in about 24.5 seconds with identical digests.
+- This rules out `CreateFile` long-path handling and `VisitMappedFileRange` itself as the source of the observed 100% CPU loop during full eMule share hashing.
 
 ## Current State
 
-- `.lnk` files are still ignored unconditionally by the sharing code, which matches the actual runtime behavior before this cleanup.
-- There is no longer a misleading preference or UI checkbox suggesting that shell-link resolution can be enabled.
-- Localized resource files may still contain unused `IDS_RESOLVELINKS` string entries, but they are no longer referenced by code or the main UI.
+- The isolated non-UI scanner can now be used against any suspect path with:
+  `eMule-build-tests\build\eMule-build\x64\Debug\emule-tests.exe --hash-probe "<path>"`.
+- The problematic `videodupez` long-path file is not getting stuck in raw buffered or mapped sequential scanning.
+- The remaining suspect area is higher in the startup/share pipeline: AICH tree integration, metadata extraction, or another post-read stage that only runs inside full eMule shared-file processing.
 
 ## Next Chunk
 
-- If desired, clean up the leftover localized `IDS_RESOLVELINKS` entries across `srchybrid\lang\*.rc` in a dedicated resource-only pass.
-- Continue the idle CPU investigation independently of this UI cleanup.
+- Instrument or isolate the next stage above raw scanning, starting with the `CKnownFile::CreateFromFile` pipeline after `CreateHash`.
+- Compare pure scan timing against AICH-tree population and metadata-tag extraction on the same long-path file.
