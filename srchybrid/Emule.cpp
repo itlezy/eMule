@@ -935,6 +935,9 @@ void CemuleApp::SetPublicIP(const uint32 dwIP)
 		serverlist->CheckForExpiredUDPKeys();
 	} else
 		m_dwPublicIP = dwIP;
+
+	if (emuledlg != NULL && ::IsWindow(emuledlg->m_hWnd))
+		emuledlg->ShowNetworkAddressState();
 }
 
 bool CemuleApp::IsFirewalled()

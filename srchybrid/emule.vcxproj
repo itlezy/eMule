@@ -520,6 +520,7 @@
     <ClInclude Include="MeterIcon.h" />
     <ClInclude Include="MuleListCtrl.h" />
     <ClInclude Include="MuleStatusBarCtrl.h" />
+    <ClInclude Include="StatusBarInfo.h" />
     <ClInclude Include="MuleSystrayDlg.h" />
     <ClInclude Include="MuleToolBarCtrl.h" />
     <ClInclude Include="NetworkInfoDlg.h" />

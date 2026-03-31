@@ -78,6 +78,7 @@
 #include "MenuCmds.h"
 #include "MuleSystrayDlg.h"
 #include "IPFilterDlg.h"
+#include "StatusBarInfo.h"
 #include "WebServices.h"
 #include "DirectDownloadDlg.h"
 #include "StringConversion.h"
@@ -397,6 +398,7 @@ BOOL CemuleDlg::OnInitDialog()
 	statusbar->SubclassWindow(GetDlgItem(IDC_STATUSBAR)->m_hWnd);
 	statusbar->EnableToolTips(true);
 	SetStatusBarPartsSize();
+	ShowNetworkAddressState();
 
 	// create main window dialog pages
 	DialogCreateIndirect(serverwnd, IDD_SERVER);
@@ -895,6 +897,21 @@ CString CemuleDlg::GetConnectionStateString()
 	return state;
 }
 
+CString CemuleDlg::GetNetworkAddressStateString() const
+{
+	CString strBindAddress;
+	if (thePrefs.GetBindAddr() != NULL)
+		strBindAddress = thePrefs.GetBindAddr();
+	return StatusBarInfo::FormatNetworkAddressPaneText(strBindAddress, theApp.GetPublicIP());
+}
+
+void CemuleDlg::ShowNetworkAddressState()
+{
+	if (theApp.IsClosing() || statusbar == NULL || !::IsWindow(statusbar->m_hWnd))
+		return;
+	statusbar->SetText(GetNetworkAddressStateString(), SBarIP, 0);
+}
+
 void CemuleDlg::ShowConnectionState()
 {
 	if (theApp.IsClosing())
@@ -906,6 +923,7 @@ void CemuleDlg::ShowConnectionState()
 
 	ShowConnectionStateIcon();
 	statusbar->SetText(GetConnectionStateString(), SBarConnected, 0);
+	ShowNetworkAddressState();
 
 	TBBUTTONINFO tbbi;
 	tbbi.cbSize = (UINT)sizeof(TBBUTTONINFO);
@@ -1082,11 +1100,12 @@ void CemuleDlg::SetStatusBarPartsSize()
 {
 	RECT rect;
 	statusbar->GetClientRect(&rect);
-	int aiWidths[5] =
+	int aiWidths[6] =
 	{
-		rect.right - 695,
-		rect.right - 450,
-		rect.right - 250,
+		rect.right - 860,
+		rect.right - 615,
+		rect.right - 415,
+		rect.right - 255,
 		rect.right - 25,
 		-1
 	};

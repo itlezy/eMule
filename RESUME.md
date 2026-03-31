@@ -2,6 +2,9 @@
 
 ## Last Chunk
 
+- Added a dedicated status-bar IP pane that shows the runtime bind target and public IP separately from the existing eD2K/Kad connection-state pane.
+- Wired the new pane to refresh on startup, normal connection-state changes, and delayed public-IP discovery, and reused the existing Network Info dialog on double-click.
+- Added a shared `StatusBarInfo` formatting helper so the compact pane text and single-line tooltip stay deterministic and regression-testable.
 - Added `helpers\e2e-vpn-launch.ps1` to run a clean `%LOCALAPPDATA%\eMule` end-to-end session with emule-security `nodes.dat`/`server.met`, recursive shared-directory seeding, VPN-IP binding, and disk-backed verbose logging.
 - Verified the helper against `C:\tmp\videodupez\` with bind address `10.54.218.144`: the app wrote `eMule.log` and `eMule_Verbose.log`, loaded 153 Kad contacts from `nodes.dat`, connected to `eMule Sunrise` and `eMule Security`, and started hashing the recursive share tree.
 - Fixed `CKnownFileList::ShouldPurgeAICHHashset` so orphaned known2.met AICH entries are treated as purgeable instead of tripping a debug-only assertion, and added a shared regression seam for the purge decision.
@@ -16,6 +19,7 @@
 
 ## Current State
 
+- The main status bar now has a dedicated IP pane with compact `Bind/Public` runtime address visibility and tooltip expansion for the same data.
 - `FEAT_018` is implemented with persisted connection/download timeout defaults and shorter fixed UDP/source-latency constants.
 - `FEAT_019` is effectively complete for the active modern-limits knobs; the remaining advanced limit controls stay in their existing Tweaks groups or other existing UI pages.
 - `FEAT_017` is still partial because `QueueSize` remains `5000` even though `MaxSourcesPerFile` is now `600`.
@@ -23,6 +27,7 @@
 
 ## Next Chunk
 
+- If status-bar polish continues, consider surfacing the resolved bind interface name in the Network Info dialog or connected-pane tooltip without widening the new IP pane.
 - Continue with a similarly scoped modernization block:
   - take `WWMOD_050` next for typed time-conversion helper cleanup, or
   - return to the deferred CRT-hardening pair `WWMOD_019` plus `WWMOD_008`

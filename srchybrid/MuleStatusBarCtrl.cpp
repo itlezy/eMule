@@ -25,6 +25,8 @@
 #include "ServerConnect.h"
 #include "Server.h"
 #include "ServerList.h"
+#include "Preferences.h"
+#include "StatusBarInfo.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -59,6 +61,7 @@ void CMuleStatusBarCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 		break;
 	case SBarUsers:
 	case SBarConnected:
+	case SBarIP:
 		theApp.emuledlg->serverwnd->ShowNetworkInfo();
 		break;
 	case SBarUpDown:
@@ -84,6 +87,12 @@ int CMuleStatusBarCtrl::GetPaneAtPosition(CPoint &point) const
 CString CMuleStatusBarCtrl::GetPaneToolTipText(EStatusBarPane iPane) const
 {
 	CString strText;
+	if (iPane == SBarIP) {
+		CString strBindAddress;
+		if (thePrefs.GetBindAddr() != NULL)
+			strBindAddress = thePrefs.GetBindAddr();
+		return StatusBarInfo::FormatNetworkAddressPaneToolTip(strBindAddress, theApp.GetPublicIP());
+	}
 	if (iPane == SBarConnected && theApp.serverconnect && theApp.serverconnect->IsConnected()) {
 		const CServer *cur_server = theApp.serverconnect->GetCurrentServer();
 		if (cur_server) {
