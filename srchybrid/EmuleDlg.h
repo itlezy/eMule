@@ -112,7 +112,6 @@ public:
 	CString	GetNetworkAddressStateString() const;
 	UINT GetConnectionStateIconIndex() const;
 	CString	GetTransferRateString();
-	CString	GetStatusBarTransferRateString() const;
 	CString	GetUpDatarateString(UINT uUpDatarate = UINT_MAX);
 	CString	GetDownDatarateString(UINT uDownDatarate = UINT_MAX);
 

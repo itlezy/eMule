@@ -909,22 +909,7 @@ void CemuleDlg::ShowNetworkAddressState()
 {
 	if (theApp.IsClosing() || statusbar == NULL || !::IsWindow(statusbar->m_hWnd))
 		return;
-
-	CString strPaneText(GetNetworkAddressStateString());
-	CRect rectPane;
-	if (statusbar->GetRect(SBarIP, &rectPane) && rectPane.Width() < 260) {
-		CString strBindAddress;
-		if (thePrefs.GetBindAddr() != NULL)
-			strBindAddress = thePrefs.GetBindAddr();
-
-		const CString strBindPaneValue = strBindAddress.IsEmpty() ? CString(_T("Any")) : strBindAddress;
-		const CString strPublicPaneValue = theApp.GetED2KPublicIP() != 0
-			? StatusBarInfo::Detail::FormatIPv4Address(theApp.GetED2KPublicIP())
-			: CString(_T("?"));
-		strPaneText.Format(_T("%s/%s"), (LPCTSTR)strBindPaneValue, (LPCTSTR)strPublicPaneValue);
-	}
-
-	statusbar->SetText(strPaneText, SBarIP, 0);
+	statusbar->SetText(GetNetworkAddressStateString(), SBarIP, 0);
 }
 
 void CemuleDlg::ShowConnectionState()
@@ -1035,18 +1020,6 @@ CString CemuleDlg::GetTransferRateString()
 	return szBuff;
 }
 
-CString CemuleDlg::GetStatusBarTransferRateString() const
-{
-	CString strTransferRate;
-	if (thePrefs.ShowOverhead())
-		strTransferRate.Format(_T("U:%.1f(%.1f)|D:%.1f(%.1f)")
-			, m_uUpDatarate / 1024.0, theStats.GetUpDatarateOverhead() / 1024.0
-			, m_uDownDatarate / 1024.0, theStats.GetDownDatarateOverhead() / 1024.0);
-	else
-		strTransferRate.Format(_T("U:%.1f|D:%.1f"), m_uUpDatarate / 1024.0, m_uDownDatarate / 1024.0);
-	return strTransferRate;
-}
-
 void CemuleDlg::ShowTransferRate(bool bForceAll)
 {
 	if (bForceAll)
@@ -1071,7 +1044,7 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 	}
 
 	if (IsWindowVisible() || bForceAll) {
-		statusbar->SetText(GetStatusBarTransferRateString(), SBarUpDown, 0);
+		statusbar->SetText(strTransferRate, SBarUpDown, 0);
 		ShowTransferStateIcon();
 	}
 	if (IsWindowVisible() && thePrefs.ShowRatesOnTitle()) {
@@ -1129,10 +1102,10 @@ void CemuleDlg::SetStatusBarPartsSize()
 	statusbar->GetClientRect(&rect);
 	int aiWidths[6] =
 	{
-		rect.right - 760,
-		rect.right - 610,
-		rect.right - 440,
-		rect.right - 260,
+		rect.right - 940,
+		rect.right - 695,
+		rect.right - 450,
+		rect.right - 250,
 		rect.right - 25,
 		-1
 	};
