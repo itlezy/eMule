@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "SharedFileList.h"
 #include "KnownFileList.h"
+#include "KnownFileListSeams.h"
 #include "KnownFile.h"
 #include "opcodes.h"
 #include "Preferences.h"
@@ -414,8 +415,11 @@ void CKnownFileList::CopyKnownFileMap(CKnownFilesMap &Files_Map)
 bool CKnownFileList::ShouldPurgeAICHHashset(const CAICHHash &rAICHHash) const
 {
 	const KnonwFilesByAICHMap::CPair *pair = m_mapKnownFilesByAICH.PLookup(rAICHHash);
-	ASSERT(pair);
-	return !pair || pair->value->ShouldPartiallyPurgeFile();
+	if (pair == NULL) {
+		TRACE(_T("Purging orphaned AICH hashset %s because it is no longer indexed by known files\n"), (LPCTSTR)rAICHHash.GetString());
+		return ShouldPurgeKnownAICHHashset(false, false);
+	}
+	return ShouldPurgeKnownAICHHashset(true, pair->value->ShouldPartiallyPurgeFile());
 }
 
 void CKnownFileList::AICHHashChanged(const CAICHHash *pOldAICHHash, const CAICHHash &rNewAICHHash, CKnownFile *pFile)
