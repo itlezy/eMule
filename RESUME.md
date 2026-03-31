@@ -6,13 +6,14 @@
 - Replaced the file-backed `FILE*` hashing path in `CKnownFile` with direct long-path Win32 handles so hashing can use `CreateFileMapping` and `MapViewOfFile`.
 - Added the standalone `MappedFileReader` helper and wired it into both the app project and the shared test project.
 - Added shared regression coverage in `eMule-build-tests` to verify exact byte-range replay across allocation-granularity boundaries, multi-window reads, zero-length reads, and invalid-handle failures.
+- Extended the shared tests with actual-file full-pipeline MD4 and AICH parity coverage plus sampled `C:\tmp` benchmark reporting against both the dev and oracle workspaces.
 - Updated `docs/AUDIT-WWMOD.md` to mark `WWMOD_034` fixed.
 - Built the target workspace with both `..\23-build-emule-debug-incremental.cmd` and `..\22-build-emule-release-incremental.cmd`.
 - Built and ran the shared test suite with `..\..\eMule-build-tests\scripts\build-emule-tests.ps1 -WorkspaceRoot .. -Configuration Debug -Platform x64 -Run`.
 
 ## Current State
 
-- The tree now uses memory-mapped reads for the active large-file hashing paths and has shared regression coverage for the mapped range reader in `eMule-build-tests`.
+- The tree now uses memory-mapped reads for the active large-file hashing paths and has shared regression coverage for both the mapped range reader and the full eMule hashing artifacts in `eMule-build-tests`.
 - `docs/AUDIT-WWMOD.md` records `WWMOD_001` through `WWMOD_007`, `WWMOD_009`, `WWMOD_021`, `WWMOD_030`, `WWMOD_034`, `WWMOD_035`, `WWMOD_038`, and `WWMOD_049` as fixed, with `WWMOD_046` marked stale.
 - `WWMOD_008` and `WWMOD_019` remain the deferred CRT-hardening pair.
 
