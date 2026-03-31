@@ -91,12 +91,7 @@ BOOL CPPgDirectories::OnInitDialog()
 	LoadSettings();
 	Localize();
 	UpdateAutoRescanControls();
-	ApplyWidePageLayout({ IDC_UNCADD }, { IDC_INCFILES, IDC_TEMPFILES, IDC_SELINCDIR, IDC_SELTEMPDIR, IDC_SELTEMPDIRADD });
-	MoveControlToRight(IDC_SELINCDIR, 12);
-	StretchControlToLeftOf(IDC_INCFILES, IDC_SELINCDIR, 6);
-	MoveControlToRight(IDC_SELTEMPDIRADD, 12);
-	MoveControlLeftOf(IDC_SELTEMPDIR, IDC_SELTEMPDIRADD, 4);
-	StretchControlToLeftOf(IDC_TEMPFILES, IDC_SELTEMPDIR, 6);
+	ApplyWidePageLayout({ IDC_SELINCDIR, IDC_SELTEMPDIR, IDC_SELTEMPDIRADD, IDC_UNCADD });
 	InitializePageToolTips({
 		{ IDC_INCFILES, _T("Completed downloads are moved here and shared from here. Choosing a non-empty folder means every valid file already inside becomes part of your shared set.") },
 		{ IDC_TEMPFILES, _T("Temporary download storage. Multiple folders can be separated with the '|' character. Keep them on fast, stable local disks and never reuse the incoming directory here.") },

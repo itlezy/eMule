@@ -64,7 +64,7 @@ BOOL CPPgServer::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_EDITADR }, { IDC_SERVERRETRIES });
+	ApplyWidePageLayout({ IDC_EDITADR });
 	InitializePageToolTips({
 		{ IDC_AUTOSERVER, _T("Allows the client to refresh the server list automatically from trusted sources. Convenient, but only as good as the sources you permit elsewhere in this page.") },
 		{ IDC_UPDATESERVERCONNECT, _T("Accepts server addresses published by connected servers. This can keep the list fresh, but it also broadens who can suggest entries.") },

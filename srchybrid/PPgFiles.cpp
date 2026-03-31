@@ -77,9 +77,7 @@ BOOL CPPgFiles::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_FNC }, { IDC_VIDEOPLAYER, IDC_BROWSEV });
-	MoveControlToRight(IDC_BROWSEV, 12);
-	StretchControlToLeftOf(IDC_VIDEOPLAYER, IDC_BROWSEV, 6);
+	ApplyWidePageLayout({ IDC_BROWSEV, IDC_FNC });
 	InitializePageToolTips({
 		{ IDC_PF_TIMECALC, _T("Uses the newer time-remaining estimator, which reacts faster to changing sources and bandwidth. Disable it only if you prefer the older, slower-moving estimate style.") },
 		{ IDC_PREVIEWPRIO, _T("Temporarily prefers preview-relevant chunks so media previews become playable earlier. It can slightly reduce pure completion efficiency on some files.") },

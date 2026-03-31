@@ -95,9 +95,7 @@ BOOL CPPgNotify::OnInitDialog()
 
 	UpdateControls();
 	Localize();
-	ApplyWidePageLayout({ IDC_TEST_NOTIFICATION }, { IDC_EDIT_TBN_WAVFILE, IDC_BTN_BROWSE_WAV });
-	MoveControlToRight(IDC_BTN_BROWSE_WAV, 12);
-	StretchControlToLeftOf(IDC_EDIT_TBN_WAVFILE, IDC_BTN_BROWSE_WAV, 6);
+	ApplyWidePageLayout({ IDC_BTN_BROWSE_WAV, IDC_TEST_NOTIFICATION });
 	InitializePageToolTips({
 		{ IDC_CB_TBN_NOSOUND, _T("Disables all notification audio. Pop-up events still happen if their event checkboxes are enabled; only the sound channel is suppressed.") },
 		{ IDC_CB_TBN_USESOUND, _T("Plays a WAV file when a notification fires. The selected file should be short and local, because the sound is loaded when the event triggers.") },

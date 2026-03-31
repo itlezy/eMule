@@ -139,9 +139,7 @@ BOOL CPPgGeneral::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({}, { IDC_WEBSVEDIT, IDC_ED2KFIX });
-	MoveControlToRight(IDC_ED2KFIX, 12);
-	MoveControlLeftOf(IDC_WEBSVEDIT, IDC_ED2KFIX, 6);
+	ApplyWidePageLayout({ IDC_WEBSVEDIT, IDC_ED2KFIX });
 	InitializePageToolTips({
 		{ IDC_NICK, _T("This nickname is advertised to other eD2K and Kad peers. Keep it recognizable, avoid path-like text, and expect invalid characters to be stripped when you apply the page.") },
 		{ IDC_LANGS, _T("Changes the user-interface language after Apply or OK. English remains the safe fallback when a translation is incomplete or missing.") },
