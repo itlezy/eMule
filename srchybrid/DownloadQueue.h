@@ -85,6 +85,7 @@ public:
 	bool	IsFileExisting(const uchar *fileid, bool bLogWarnings = true) const;
 	bool	IsPartFile(const CKnownFile *file) const;
 
+	POSITION GetFileHeadPosition() const						{ return filelist.GetHeadPosition(); }
 	CPartFile* GetFileByID(const uchar *filehash) const;
 	CPartFile* GetFileNext(POSITION &pos) const; //trivial iterator
 	CPartFile* GetFileByKadFileSearchID(uint32 id) const;

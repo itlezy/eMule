@@ -88,6 +88,7 @@
 #include "TextToSpeech.h"
 #include "Collection.h"
 #include "CollectionViewDialog.h"
+#include "PipeApiServer.h"
 #include "UPnPImpl.h"
 #include "UPnPImplWrapper.h"
 #include "ExitBox.h"
@@ -171,6 +172,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(WEB_ADDDOWNLOADS, OnWebAddDownloads)
 	ON_MESSAGE(WEB_CATPRIO, OnWebSetCatPrio)
 	ON_MESSAGE(WEB_ADDREMOVEFRIEND, OnAddRemoveFriend)
+	ON_MESSAGE(UM_PIPE_API_COMMAND, OnPipeApiCommand)
 
 	// UPnP
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
@@ -490,6 +492,7 @@ BOOL CemuleDlg::OnInitDialog()
 	TrayMinimizeToTrayChange();
 
 	ShowTransferRate(true);
+	thePipeApiServer.Start();
 	searchwnd->UpdateCatTabs();
 
 	///////////////////////////////////////////////////////////////////////////
@@ -1072,6 +1075,8 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 		szBuff.Format(_T("(U:%.1f D:%.1f) eMule v%s"), m_uUpDatarate / 1024.0f, m_uDownDatarate / 1024.0f, (LPCTSTR)theApp.m_strCurVersionLong);
 		SetWindowText(szBuff);
 	}
+
+	thePipeApiServer.NotifyStatsUpdated();
 }
 
 void CemuleDlg::OnOK()
@@ -1381,6 +1386,7 @@ LRESULT CemuleDlg::OnFileCompleted(WPARAM wParam, LPARAM lParam)
 	ASSERT(partfile != NULL);
 	if (partfile)
 		partfile->PerformFileCompleteEnd((DWORD)wParam);
+	thePipeApiServer.NotifyDownloadCompleted(partfile, (wParam & FILE_COMPLETION_THREAD_SUCCESS) != 0);
 	return 0;
 }
 
@@ -1546,6 +1552,7 @@ void CemuleDlg::OnClose()
 		return;
 	}
 	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
+	thePipeApiServer.Stop();
 	notifierenabled = false;
 	//flush queued messages
 	theApp.HandleDebugLogQueue();
@@ -2894,6 +2901,11 @@ LRESULT CemuleDlg::OnWebAddDownloads(WPARAM wParam, LPARAM lParam)
 		theApp.AddEd2kLinksToDownload(link, (int)lParam);
 
 	return 0;
+}
+
+LRESULT CemuleDlg::OnPipeApiCommand(WPARAM wParam, LPARAM lParam)
+{
+	return thePipeApiServer.OnHandleCommand(wParam, lParam);
 }
 
 LRESULT CemuleDlg::OnAddRemoveFriend(WPARAM wParam, LPARAM lParam)

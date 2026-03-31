@@ -62,6 +62,7 @@
 #include "UPnPImplWrapper.h"
 #include "UploadDiskIOThread.h"
 #include "PartFileWriteThread.h"
+#include "PipeApiServer.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1232,6 +1233,8 @@ void CemuleApp::AddEd2kLinksToDownload(const CString &strLinks, int cat)
 				if (pLink->GetKind() != CED2KLink::kFile)
 					throwCStr(_T("bad link"));
 				downloadqueue->AddFileLinkToDownload(*pLink->GetFileLink(), cat);
+				if (CPartFile *pPartFile = downloadqueue->GetFileByID(pLink->GetFileLink()->GetHashKey()))
+					thePipeApiServer.NotifyDownloadAdded(pPartFile);
 				delete pLink;
 				pLink = NULL;
 			}

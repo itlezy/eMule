@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 enum EDebugLogPriority : int
 {
 	DLP_VERYLOW = 0,
@@ -46,6 +48,18 @@ void AddDebugLogLine(bool bAddToStatusBar, LPCTSTR pszLine, ...);
 void AddDebugLogLine(EDebugLogPriority Priority, bool bAddToStatusBar, LPCTSTR pszLine, ...);
 
 void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va_list argptr);
+
+/**
+ * Captures one recent log entry for the remote API surface.
+ */
+struct SRecentLogEntry
+{
+	CTime time;
+	UINT uFlags;
+	CString strText;
+};
+
+std::vector<SRecentLogEntry> GetRecentLogEntries(size_t maxEntries);
 
 
 ///////////////////////////////////////////////////////////////////////////////

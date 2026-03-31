@@ -256,6 +256,7 @@
     <ClCompile Include="Parser.cpp">
       <PrecompiledHeader />
     </ClCompile>
+    <ClCompile Include="PipeApiServer.cpp" />
     <ClCompile Include="PartFile.cpp" />
     <ClCompile Include="PartFileConvert.cpp" />
     <ClCompile Include="PartFileWriteThread.cpp" />
@@ -529,6 +530,7 @@
     <ClInclude Include="OtherFunctions.h" />
     <ClInclude Include="Packets.h" />
     <ClInclude Include="Parser.hpp" />
+    <ClInclude Include="PipeApiServer.h" />
     <ClInclude Include="PartFile.h" />
     <ClInclude Include="PartFileConvert.h" />
     <ClInclude Include="PartFileWriteThread.h" />
@@ -625,6 +627,7 @@
     <ClInclude Include="Version.h" />
     <ClInclude Include="WebServices.h" />
     <ClInclude Include="ZIPFile.h" />
+    <ClInclude Include="nlohmann\json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\all.ico" />

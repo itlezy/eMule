@@ -24,11 +24,44 @@
 #include "emuledlg.h"
 #include "StringConversion.h"
 
+#include <deque>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+static constexpr size_t MAX_RECENT_LOG_ENTRIES = 200;
+CCriticalSection g_recentLogLock;
+std::deque<SRecentLogEntry> g_recentLogEntries;
+
+/**
+ * Keeps a bounded in-memory log view for the pipe API and remote UI.
+ */
+void AddRecentLogEntry(UINT uFlags, LPCTSTR pszText)
+{
+	CSingleLock lock(&g_recentLogLock, TRUE);
+	g_recentLogEntries.push_back(SRecentLogEntry{CTime::GetCurrentTime(), uFlags, pszText});
+	while (g_recentLogEntries.size() > MAX_RECENT_LOG_ENTRIES)
+		g_recentLogEntries.pop_front();
+}
+}
+
+std::vector<SRecentLogEntry> GetRecentLogEntries(size_t maxEntries)
+{
+	CSingleLock lock(&g_recentLogLock, TRUE);
+	if (maxEntries == 0 || maxEntries > g_recentLogEntries.size())
+		maxEntries = g_recentLogEntries.size();
+
+	std::vector<SRecentLogEntry> entries;
+	entries.reserve(maxEntries);
+	for (size_t i = g_recentLogEntries.size() - maxEntries; i < g_recentLogEntries.size(); ++i)
+		entries.push_back(g_recentLogEntries[i]);
+	return entries;
+}
 
 
 void LogV(UINT uFlags, LPCTSTR pszFmt, va_list argp)
@@ -202,6 +235,7 @@ void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va
 	TCHAR szLogLine[1000];
 	_vsntprintf(szLogLine, _countof(szLogLine), pszLine, argptr);
 	szLogLine[_countof(szLogLine) - 1] = _T('\0');
+	AddRecentLogEntry(uFlags, szLogLine);
 
 	if (theApp.emuledlg)
 		theApp.emuledlg->AddLogText(uFlags, szLogLine);

@@ -38,6 +38,7 @@
 #include "TaskbarNotifier.h"
 #include "MenuCmds.h"
 #include "Log.h"
+#include "PipeApiServer.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -673,6 +674,7 @@ bool CDownloadQueue::RemoveSource(CUpDownClient *toremove, bool bDoStatsUpdate)
 void CDownloadQueue::RemoveFile(CPartFile *toremove)
 {
 	RemoveLocalServerRequest(toremove);
+	thePipeApiServer.NotifyDownloadRemoved(toremove);
 
 	POSITION pos = filelist.Find(toremove);
 	if (pos != NULL)
