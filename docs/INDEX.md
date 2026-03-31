@@ -118,9 +118,9 @@
 | ID | Summary | Status | Doc |
 |---|---|---|---|
 | FEAT_001 | Broadband upload slot controller | **[DONE]** | [FEATURE-BROADBAND](FEATURE-BROADBAND.md) |
-| FEAT_002 | CSafeKad2 import and refactor | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
-| FEAT_003 | CFastKad import and refactor | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
-| FEAT_004 | Kad integration into entry points | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
+| FEAT_002 | CSafeKad2 import and refactor | **[PARTIAL]** | [FEATURE-KAD](FEATURE-KAD.md) |
+| FEAT_003 | CFastKad import and refactor | **[PARTIAL]** | [FEATURE-KAD](FEATURE-KAD.md) |
+| FEAT_004 | Kad integration into entry points | **[PARTIAL]** | [FEATURE-KAD](FEATURE-KAD.md) |
 | FEAT_005 | Routing quality improvements | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
 | FEAT_006 | Kad observability/diagnostics | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
 | FEAT_007 | Persisted trust cache (optional) | Not started | [FEATURE-KAD](FEATURE-KAD.md) |

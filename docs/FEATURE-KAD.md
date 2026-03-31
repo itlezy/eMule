@@ -18,7 +18,7 @@
 
 ## Summary
 
-This plan modernizes the current Kad implementation in `eMulebb/eMule` with a focus on security, routing quality, search efficiency, and observability. The first execution chunk should bring in `CSafeKad2` and `CFastKad` together, but not as a verbatim copy from eMuleAI. Both modules should be refactored during import to fit the current branch better and to avoid carrying over avoidable technical debt.
+This plan modernizes the current Kad implementation in `eMulebb/eMule` with a focus on security, routing quality, search efficiency, and observability. The first execution chunk has already brought in `SafeKad` and `FastKad` in this branch, but the broader refactor, diagnostics, and validation work described below is still only partially complete.
 
 The goal is to improve Kad behavior without introducing protocol incompatibilities. All planned changes are local policy, timing, routing, and diagnostics changes. No Kad wire format changes are required.
 
@@ -26,9 +26,9 @@ The goal is to improve Kad behavior without introducing protocol incompatibiliti
 
 | ID | Feature | Status |
 |----|---------|--------|
-| FEAT_002 | CSafeKad2 import and refactor | Not started |
-| FEAT_003 | CFastKad import and refactor | Not started |
-| FEAT_004 | Kad integration into entry points | Not started |
+| FEAT_002 | CSafeKad2 import and refactor | **[PARTIAL]** — `SafeKad` is imported, compiled, and live in Kad paths; broader planned cleanup and diagnostics remain |
+| FEAT_003 | CFastKad import and refactor | **[PARTIAL]** — `FastKad` is imported, compiled, and live in Kad paths; broader planned tuning/diagnostics remain |
+| FEAT_004 | Kad integration into entry points | **[PARTIAL]** — integrated into current UDP/search/routing flow, but not all planned validation/diagnostic work is complete |
 | FEAT_005 | Routing quality improvements | Not started |
 | FEAT_006 | Kad observability/diagnostics | Not started |
 | FEAT_007 | Persisted trust cache (optional) | Not started |
@@ -215,6 +215,13 @@ eMuleAI contains working implementations of both CSafeKad2 and CFastKad that ser
 - Falls back to fixed timeout until minimum sample count is reached
 
 Both modules are logically independent and toggleable separately. During import they should be refactored to match eMulebb conventions rather than copied verbatim.
+
+Current branch note:
+
+- `SafeKad` and `FastKad` already exist under `srchybrid/kademlia/utils/`
+- both are compiled into the project and referenced from live Kad code in the UDP listener, search flow, routing, and Kad startup/shutdown paths
+- shared regression coverage also exists in `eMule-build-tests`
+- the remaining gap is not import presence, but completing the broader cleanup, diagnostics, and follow-on routing-quality work promised by this plan
 
 ## Implementation Order
 
