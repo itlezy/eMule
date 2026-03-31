@@ -3731,9 +3731,13 @@ uint32 LevenshteinDistance(const CString &str1, const CString &str2)
 	return d_del;
 }
 
-// Wrapper for _tmakepath which ensures that the output buffer does not exceed MAX_PATH
-// using a smaller buffer without checking the sizes prior calling this function is not safe
-// If the resulting path would be longer than MAX_PATH-1, it will be empty and return false (similar to PathCombine)
+/**
+ * @brief Builds a path into a MAX_PATH-sized caller buffer without overflowing it.
+ *
+ * This helper mirrors `_tmakepath`, but treats MAX_PATH overflow as a normal runtime
+ * failure instead of writing past the destination. Callers receive an empty output
+ * string and `false` when the combined path does not fit.
+ */
 bool _tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPCTSTR ext)
 {
 	if (path == NULL) {
@@ -3747,7 +3751,11 @@ bool _tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPC
 	size_t sLen = _tcslen(tchBuffer);
 	if (sLen >= MAX_PATH) {
 		path[0] = _T('\0');
-		ASSERT(0);
+		TRACE(_T("Path exceeds MAX_PATH in _tmakepathlimit: drive='%s' dir='%s' fname='%s' ext='%s'\n"),
+			drive != NULL ? drive : _T(""),
+			dir != NULL ? dir : _T(""),
+			fname != NULL ? fname : _T(""),
+			ext != NULL ? ext : _T(""));
 		return false;
 	}
 	_tcscpy(path, tchBuffer);
