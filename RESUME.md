@@ -2,11 +2,10 @@
 
 ## Last Chunk
 
-- Simplified `CKnownFile::CreateFromFile` instrumentation back onto the normal verbose logging path.
-- Removed the dedicated `eMule_CreateFromFile.trace.log` sink and the extra stage-logger wrapper from `KnownFile.cpp`.
-- Kept the `CreateFromFile` checkpoints and metadata extraction diagnostics, including in-loop hash progress markers every 256 MiB.
+- Restored `srchybrid\KnownFile.cpp` to commit `ef76b67df29a04422d1785f5c0b30293a9be5181`.
+- That puts `CKnownFile::CreateFromFile` back on the original checkpoint logging shape from `ef76b67`.
 - The new checkpoints mark `start`, `raw-hash-complete`, `aich-recalculate-*`, `aich-save-*`, `post-stat`, `metadata-*`, and `parts-info-done`.
-- Kept the more explicit metadata extraction logs in `UpdateMetaDataTags` for skip, begin, success, failure, and exception cases with elapsed milliseconds.
+- The metadata extraction logs are also back to the `ef76b67` form.
 - Added a standalone `--full-hash-probe` mode in `eMule-build-tests` to replay the offline MD4 plus AICH pipeline without launching `emule.exe` or relying on `preferences.ini`.
 
 ## Current State
@@ -21,6 +20,6 @@
 
 ## Next Chunk
 
-- Reproduce the problematic share/hash run with `Verbose=1` and inspect the last emitted `CreateFromFile checkpoint`, `hash-progress`, or `Shared meta extraction` line in the normal logs.
+- Reproduce the problematic share/hash run with `Verbose=1` and inspect the last emitted `CreateFromFile checkpoint` or `Shared meta extraction` line.
 - If the trace reaches `raw-hash-complete`, isolate post-hash work next.
 - If the trace loops before `raw-hash-complete`, compare the live `CreateFromFile` implementation against the new offline full-hash probe to identify what extra live-path behavior remains.
