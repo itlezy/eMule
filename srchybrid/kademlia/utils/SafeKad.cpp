@@ -1,3 +1,4 @@
+#include "../../Opcodes.h"
 #include "SafeKad.h"
 
 namespace Kademlia

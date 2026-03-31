@@ -732,6 +732,7 @@ on large files.
 
 **Severity:** P3
 **Files:** `srchybrid/emule.vcxproj:45`
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
 ```xml
 <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
@@ -787,6 +788,7 @@ The project enables `/Wall` (EnableAllWarnings) which is good, but:
 
 **Severity:** P3
 **Files:** `srchybrid/emule.vcxproj:78,104,129`
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
 ```xml
 <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll</DelayLoadDLLs>
@@ -1002,6 +1004,7 @@ mysterious "undeclared identifier" errors.
 
 **Severity:** P2
 **Files:** `srchybrid/emule.vcxproj:97`
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
 ```xml
 <OmitFramePointers>true</OmitFramePointers>
