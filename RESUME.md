@@ -2,19 +2,18 @@
 
 ## Last Chunk
 
-- Completed `WWMOD_021` by setting `srchybrid/emule.vcxproj` to explicit C++20.
-- Removed the `_SpecialBootstrapNodes` solution/project configuration and the `_BOOTSTRAPNODESDAT` codepaths.
-- Dropped support for the special bootstrap-only `nodes.dat` variant while keeping the normal `nodes.dat` and `nodes.fastkad.dat` flow.
-- Removed the legacy startup splash screen feature and deleted `srchybrid/SplashScreen.cpp` plus `srchybrid/SplashScreen.h`.
-- Removed `srchybrid/emule.sln` and `srchybrid/emule.slnx`, leaving `srchybrid/emule.vcxproj` as the app build entrypoint.
-- Fixed the C++20 compatibility fallout that surfaced once the language standard was made explicit.
-- Updated `docs/AUDIT-WWMOD.md` to mark `WWMOD_021` fixed.
+- Completed `WWMOD_034` by routing whole-file hashing, part verification, and AICH recovery through a shared memory-mapped file-range reader.
+- Replaced the file-backed `FILE*` hashing path in `CKnownFile` with direct long-path Win32 handles so hashing can use `CreateFileMapping` and `MapViewOfFile`.
+- Added the standalone `MappedFileReader` helper and wired it into both the app project and the shared test project.
+- Added shared regression coverage in `eMule-build-tests` to verify exact byte-range replay across allocation-granularity boundaries, multi-window reads, zero-length reads, and invalid-handle failures.
+- Updated `docs/AUDIT-WWMOD.md` to mark `WWMOD_034` fixed.
 - Built the target workspace with both `..\23-build-emule-debug-incremental.cmd` and `..\22-build-emule-release-incremental.cmd`.
+- Built and ran the shared test suite with `..\..\eMule-build-tests\scripts\build-emule-tests.ps1 -WorkspaceRoot .. -Configuration Debug -Platform x64 -Run`.
 
 ## Current State
 
-- The tree now builds under explicit C++20, no longer carries the special bootstrap build configuration, no longer ships the startup splash screen codepath, and no longer keeps app-level solution wrapper files.
-- `docs/AUDIT-WWMOD.md` records `WWMOD_001` through `WWMOD_007`, `WWMOD_009`, `WWMOD_021`, `WWMOD_030`, `WWMOD_035`, `WWMOD_038`, and `WWMOD_049` as fixed, with `WWMOD_046` marked stale.
+- The tree now uses memory-mapped reads for the active large-file hashing paths and has shared regression coverage for the mapped range reader in `eMule-build-tests`.
+- `docs/AUDIT-WWMOD.md` records `WWMOD_001` through `WWMOD_007`, `WWMOD_009`, `WWMOD_021`, `WWMOD_030`, `WWMOD_034`, `WWMOD_035`, `WWMOD_038`, and `WWMOD_049` as fixed, with `WWMOD_046` marked stale.
 - `WWMOD_008` and `WWMOD_019` remain the deferred CRT-hardening pair.
 
 ## Next Chunk

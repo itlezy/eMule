@@ -237,6 +237,9 @@
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MD4.cpp" />
     <ClCompile Include="MD5Sum.cpp" />
+    <ClCompile Include="MappedFileReader.cpp">
+      <PrecompiledHeader />
+    </ClCompile>
     <ClCompile Include="Mdump.cpp" />
     <ClCompile Include="MediaInfo.cpp" />
     <ClCompile Include="MetaDataDlg.cpp" />
@@ -508,6 +511,7 @@
     <ClInclude Include="MapKey.h" />
     <ClInclude Include="MD4.h" />
     <ClInclude Include="MD5Sum.h" />
+    <ClInclude Include="MappedFileReader.h" />
     <ClInclude Include="Mdump.h" />
     <ClInclude Include="MediaInfo.h" />
     <ClInclude Include="MemDC.h" />

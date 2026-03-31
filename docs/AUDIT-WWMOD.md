@@ -728,17 +728,20 @@ byte layout.
 ### WWMOD_034 - No Memory-Mapped I/O for Large Files
 
 **Severity:** P2
-**Files:** `PartFile.cpp`, `KnownFile.cpp`, `SHAHashSet.cpp`
+**Files:** `PartFile.cpp`, `KnownFile.cpp`
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
-File hashing, part verification, and AICH calculation all read files through buffered
-`CFile::Read` calls. For multi-gigabyte files, memory-mapped I/O would:
+File hashing, part verification, and AICH calculation used buffered file reads in the
+main hashing paths. For multi-gigabyte files, memory-mapped I/O improves the heavy
+sequential-read paths by:
 - Leverage the OS page cache more efficiently
 - Avoid double-buffering (app buffer + OS cache)
 - Enable zero-copy hashing
 
 **Action:** Use `CreateFileMapping` / `MapViewOfFile` for sequential-read-heavy
 operations (hashing, verification). Particularly impactful for AICH tree computation
-on large files.
+on large files. Shared regression coverage should verify exact byte-range replay for the
+mapped reader.
 
 ---
 

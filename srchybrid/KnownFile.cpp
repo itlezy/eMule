@@ -16,8 +16,6 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
-#include <io.h>
-#include <share.h>
 #include <sys/stat.h>
 #ifdef _DEBUG
 #include "DebugHelpers.h"
@@ -41,6 +39,7 @@
 #include "shahashset.h"
 #include "Log.h"
 #include "MD4.h"
+#include "MappedFileReader.h"
 #include "Collection.h"
 #include "emuledlg.h"
 #include "SharedFilesWnd.h"
@@ -52,6 +51,93 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+	/**
+	 * @brief Opens a shared-read Win32 handle for hashing while keeping long-path support.
+	 */
+	HANDLE OpenHashReadHandleLongPath(const CString &rstrFilePath)
+	{
+		return ::CreateFile(PreparePathForLongPath(rstrFilePath), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
+			, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+	}
+
+	/**
+	 * @brief Accumulates MD4 and AICH state while a file-backed reader streams byte spans.
+	 */
+	class CCreateHashVisitor : public IMappedFileRangeVisitor
+	{
+	public:
+		CCreateHashVisitor(uchar *pMd4HashOut, CAICHHashTree *pShaHashOut)
+			: m_pMd4HashOut(pMd4HashOut)
+			, m_pShaHashOut(pShaHashOut)
+			, m_nPosCurrentEMBlock()
+			, m_nIACHPos()
+			, m_pHashAlg((pShaHashOut != NULL) ? CAICHRecoveryHashSet::GetNewHashAlgo() : NULL)
+		{
+		}
+
+		~CCreateHashVisitor() override
+		{
+			delete m_pHashAlg;
+		}
+
+		void OnMappedFileBytes(const BYTE *pBytes, size_t nByteCount) override
+		{
+			while (nByteCount != 0) {
+				size_t nChunk = nByteCount;
+				if (m_pShaHashOut != NULL) {
+					const uint64 nBytesToBoundary = EMBLOCKSIZE - m_nIACHPos;
+					if (nChunk > nBytesToBoundary)
+						nChunk = static_cast<size_t>(nBytesToBoundary);
+					m_pHashAlg->Add(pBytes, static_cast<DWORD>(nChunk));
+					m_nIACHPos += nChunk;
+				}
+
+				if (m_pMd4HashOut != NULL)
+					m_md4.Add(pBytes, nChunk);
+
+				if (m_pShaHashOut != NULL && m_nIACHPos == EMBLOCKSIZE) {
+					m_pShaHashOut->SetBlockHash(EMBLOCKSIZE, m_nPosCurrentEMBlock, m_pHashAlg);
+					m_nPosCurrentEMBlock += EMBLOCKSIZE;
+					m_pHashAlg->Reset();
+					m_nIACHPos = 0;
+				}
+
+				pBytes += nChunk;
+				nByteCount -= nChunk;
+			}
+		}
+
+		void Finish(uint64 Length)
+		{
+			if (m_pShaHashOut != NULL) {
+				if (m_nIACHPos > 0) {
+					m_pShaHashOut->SetBlockHash(m_nIACHPos, m_nPosCurrentEMBlock, m_pHashAlg);
+					m_nPosCurrentEMBlock += m_nIACHPos;
+				}
+				ASSERT(m_nPosCurrentEMBlock == Length);
+				VERIFY(m_pShaHashOut->ReCalculateHash(m_pHashAlg, false));
+				delete m_pHashAlg;
+				m_pHashAlg = NULL;
+			}
+
+			if (m_pMd4HashOut != NULL) {
+				m_md4.Finish();
+				md4cpy(m_pMd4HashOut, m_md4.GetHash());
+			}
+		}
+
+	private:
+		uchar *m_pMd4HashOut;
+		CAICHHashTree *m_pShaHashOut;
+		uint64 m_nPosCurrentEMBlock;
+		uint64 m_nIACHPos;
+		CMD4 m_md4;
+		CAICHHashAlgo *m_pHashAlg;
+	};
+}
 
 // Meta data version
 // -----------------
@@ -372,26 +458,29 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		strFilePath += _T("\\");
 	strFilePath += in_filename;
 	SetFilePath(strFilePath);
-	FILE *file = OpenFileStreamSharedReadLongPath(strFilePath, false); // can not use _SH_DENYWR because we may access a completing part file
-	if (!file) {
-		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), _tcserror(errno));
+	HANDLE hFile = OpenHashReadHandleLongPath(strFilePath); // can not use exclusive sharing because we may access a completing part file
+	if (hFile == INVALID_HANDLE_VALUE) {
+		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), (LPCTSTR)GetErrorMessage(::GetLastError()));
 		return false;
 	}
 
 	// set file size. Zero size is valid for .part files
-	__int64 llFileSize = _filelengthi64(_fileno(file));
+	LARGE_INTEGER liFileSize = {};
+	if (!::GetFileSizeEx(hFile, &liFileSize)) {
+		LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, (LPCTSTR)GetErrorMessage(::GetLastError()));
+		VERIFY(::CloseHandle(hFile));
+		return false;
+	}
+	__int64 llFileSize = liFileSize.QuadPart;
 	if ((uint64)llFileSize > MAX_EMULE_FILE_SIZE) {
 		if (llFileSize <= 0)
-			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, _tcserror(errno));
+			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, (LPCTSTR)GetErrorMessage(ERROR_HANDLE_EOF));
 		else
 			LogError(_T("Skipped hashing file \"%s\" - File size exceeds limit."), (LPCTSTR)strFilePath);
-		fclose(file);
+		VERIFY(::CloseHandle(hFile));
 		return false; // not supported by network
 	}
 	SetFileSize((EMFileSize)(uint64)llFileSize);
-
-	// we are reading the file data later in 8K blocks, adjust the internal file stream buffer accordingly
-	::setvbuf(file, NULL, _IOFBF, 1024 * 8 * 2);
 
 	m_AvailPartFrequency.SetSize(GetPartCount());
 	if (GetPartCount())
@@ -411,15 +500,18 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 			pBlockAICHHashTree = NULL; // SHA hash tree doesn't take hash of zero-sized data
 
 		uchar *newhash = new uchar[MDX_DIGEST_SIZE];
-		if (!CreateHash(file, uSize, newhash, pBlockAICHHashTree)) {
-			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, _tcserror(errno));
-			fclose(file);
+		try {
+			CreateHash(hFile, static_cast<uint64>(hashcount) * PARTSIZE, uSize, newhash, pBlockAICHHashTree);
+		} catch (CFileException *ex) {
+			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, (LPCTSTR)CExceptionStr(*ex));
+			VERIFY(::CloseHandle(hFile));
 			delete[] newhash;
+			ex->Delete();
 			return false;
 		}
 
 		if (theApp.IsClosing()) { // in case of shutdown while still hashing
-			fclose(file);
+			VERIFY(::CloseHandle(hFile));
 			delete[] newhash;
 			return false;
 		}
@@ -439,14 +531,14 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 		if (theApp.IsClosing()) {
 			LogError(_T("Hashing cancelled (closing eMule), file \"%s\""), (LPCTSTR)strFilePath);
-			fclose(file);
+			VERIFY(::CloseHandle(hFile));
 			return false;
 		}
 		if (pvProgressParam) {
 			if (reinterpret_cast<CPartFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CPartFile))
 				&& reinterpret_cast<CPartFile*>(pvProgressParam)->IsDeleting()) {
 				LogError(_T("Hashing cancelled (pending delete), file \"%s\""), (LPCTSTR)strFilePath);
-				fclose(file);
+				VERIFY(::CloseHandle(hFile));
 				return false;
 			}
 
@@ -489,12 +581,12 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 	// set last write date
 	struct _stat64 st;
-	if (statUTC((HANDLE)_get_osfhandle(_fileno(file)), st) == 0) {
+	if (statUTC(hFile, st) == 0) {
 		m_tUtcLastModified = (time_t)st.st_mtime;
 		AdjustNTFSDaylightFileTime(m_tUtcLastModified, (LPCTSTR)strFilePath);
 	}
 
-	fclose(file);
+	VERIFY(::CloseHandle(hFile));
 
 	// Add file tags
 	UpdateMetaDataTags();
@@ -508,13 +600,11 @@ bool CKnownFile::CreateAICHHashSetOnly()
 {
 	ASSERT(!IsPartFile());
 
-	FILE *file = OpenFileStreamSharedReadLongPath(GetFilePath(), false); // can not use _SH_DENYWR because we may access a completing part file
-	if (!file) {
-		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)GetFilePath(), _T(""), _tcserror(errno));
+	HANDLE hFile = OpenHashReadHandleLongPath(GetFilePath()); // can not use exclusive sharing because we may access a completing part file
+	if (hFile == INVALID_HANDLE_VALUE) {
+		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)GetFilePath(), _T(""), (LPCTSTR)GetErrorMessage(::GetLastError()));
 		return false;
 	}
-	// we are reading the file data later in 8K blocks, adjust the internal file stream buffer accordingly
-	::setvbuf(file, NULL, _IOFBF, 1024 * 8 * 2);
 
 	// create aich hashset
 	CAICHRecoveryHashSet cAICHHashSet(this, m_nFileSize);
@@ -523,18 +613,21 @@ bool CKnownFile::CreateAICHHashSetOnly()
 		uint64 uSize = min(togo, PARTSIZE);
 		CAICHHashTree *pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash(hashcount * PARTSIZE, uSize);
 		ASSERT(pBlockAICHHashTree != NULL);
-		if (!CreateHash(file, uSize, NULL, pBlockAICHHashTree)) {
-			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)GetFilePath(), _tcserror(errno));
-			fclose(file);
+		try {
+			CreateHash(hFile, static_cast<uint64>(hashcount) * PARTSIZE, uSize, NULL, pBlockAICHHashTree);
+		} catch (CFileException *ex) {
+			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)GetFilePath(), (LPCTSTR)CExceptionStr(*ex));
+			VERIFY(::CloseHandle(hFile));
+			ex->Delete();
 			return false;
 		}
 		if (theApp.IsClosing()) { // in case of shutdown while still hashing
-			fclose(file);
+			VERIFY(::CloseHandle(hFile));
 			return false;
 		}
 		togo -= uSize;
 	}
-	fclose(file);
+	VERIFY(::CloseHandle(hFile));
 
 	cAICHHashSet.ReCalculateHash(false);
 	if (cAICHHashSet.VerifyHashTree(true)) {
@@ -941,65 +1034,32 @@ void CKnownFile::CreateHash(CFile *pFile, uint64 Length, uchar *pMd4HashOut, CAI
 	ASSERT(pMd4HashOut != NULL || pShaHashOut != NULL);
 
 	uchar   X[64 * 128];
-	uint64	posCurrentEMBlock = 0;
-	uint64	nIACHPos = 0;
-	CMD4	md4;
-	CAICHHashAlgo *pHashAlg = (pShaHashOut != NULL) ? CAICHRecoveryHashSet::GetNewHashAlgo() : NULL;
+	CCreateHashVisitor hashVisitor(pMd4HashOut, pShaHashOut);
 
 	for (uint64 Required = Length; Required;) {
 		UINT len = (UINT)(min(Required, (uint64)_countof(X)) / 64);
 		UINT uRead = len ? len * 64 : (UINT)Required;
 		VERIFY(pFile->Read(X, uRead) == uRead);
-
-		// SHA hash needs 180KB blocks
-		if (pShaHashOut != NULL) { // && pHashAlg != NULL - do not check again
-			if (nIACHPos + uRead >= EMBLOCKSIZE) {
-				uint64 nToComplete = EMBLOCKSIZE - nIACHPos;
-				pHashAlg->Add(X, (DWORD)nToComplete);
-				ASSERT(nIACHPos + nToComplete == EMBLOCKSIZE);
-				pShaHashOut->SetBlockHash(EMBLOCKSIZE, posCurrentEMBlock, pHashAlg);
-				posCurrentEMBlock += EMBLOCKSIZE;
-				pHashAlg->Reset();
-				nIACHPos = uRead - nToComplete;
-				pHashAlg->Add(X + nToComplete, (DWORD)nIACHPos);
-			} else {
-				pHashAlg->Add(X, uRead);
-				nIACHPos += uRead;
-			}
-		}
-
-		if (pMd4HashOut != NULL)
-			md4.Add(X, uRead);
-
+		hashVisitor.OnMappedFileBytes(X, uRead);
 		Required -= uRead;
 	}
 
-	if (pShaHashOut != NULL) {
-		if (nIACHPos > 0) {
-			pShaHashOut->SetBlockHash(nIACHPos, posCurrentEMBlock, pHashAlg);
-			posCurrentEMBlock += nIACHPos;
-		}
-		ASSERT(posCurrentEMBlock == Length);
-		VERIFY(pShaHashOut->ReCalculateHash(pHashAlg, false));
-		delete pHashAlg;
-	}
-
-	if (pMd4HashOut != NULL) {
-		md4.Finish();
-		md4cpy(pMd4HashOut, md4.GetHash());
-	}
+	hashVisitor.Finish(Length);
 }
 
-bool CKnownFile::CreateHash(FILE *fp, uint64 uSize, uchar *pucHash, CAICHHashTree *pShaHashOut)
+void CKnownFile::CreateHash(HANDLE hFile, uint64 nOffset, uint64 Length, uchar *pMd4HashOut, CAICHHashTree *pShaHashOut)
 {
-	try {
-		CStdioFile file(fp);
-		CreateHash(&file, uSize, pucHash, pShaHashOut);
-		return true;
-	} catch (CFileException *ex) {
-		ex->Delete();
+	ASSERT(hFile != NULL && hFile != INVALID_HANDLE_VALUE);
+	ASSERT(pMd4HashOut != NULL || pShaHashOut != NULL);
+
+	CCreateHashVisitor hashVisitor(pMd4HashOut, pShaHashOut);
+	DWORD dwError = ERROR_SUCCESS;
+	if (!VisitMappedFileRange(hFile, nOffset, Length, hashVisitor, &dwError)) {
+		if (dwError == ERROR_SUCCESS)
+			dwError = ERROR_READ_FAULT;
+		CFileException::ThrowOsError((LONG)dwError);
 	}
-	return false;
+	hashVisitor.Finish(Length);
 }
 
 bool CKnownFile::CreateHash(const uchar *pucData, uint32 uSize, uchar *pucHash, CAICHHashTree *pShaHashOut)

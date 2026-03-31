@@ -3145,8 +3145,14 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool *pbAICHReportedOK)
 	const ULONGLONG uOff = PARTSIZE * partnumber;
 	const uint64 length = mini(m_hpartfile.GetLength() - uOff, PARTSIZE);
 	uchar hashresult[MDX_DIGEST_SIZE];
-	m_hpartfile.Seek((LONGLONG)uOff, CFile::begin);
-	CreateHash(&m_hpartfile, length, hashresult, phtAICHPartHash);
+	try {
+		CreateHash((HANDLE)m_hpartfile, uOff, length, hashresult, phtAICHPartHash);
+	} catch (CFileException *ex) {
+		DebugLogError(_T("Failed to hash part %u for file %s - %s"), partnumber, (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+		delete phtAICHPartHash;
+		ex->Delete();
+		return false;
+	}
 
 	bool bMD4Error = false;
 	bool bMD4Checked = m_FileIdentifier.HasExpectedMD4HashCount();
@@ -5280,8 +5286,11 @@ void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 	}
 	CAICHHashTree htOurHash(pVerifiedHash->m_nDataSize, pVerifiedHash->m_bIsLeftBranch, pVerifiedHash->GetBaseSize());
 	try {
-		m_hpartfile.Seek((LONGLONG)uStart, CFile::begin);
-		CreateHash(&m_hpartfile, length, NULL, &htOurHash);
+		CreateHash((HANDLE)m_hpartfile, uStart, length, NULL, &htOurHash);
+	} catch (CFileException *ex) {
+		DebugLogError(_T("Processing AICH recovery data: Failed to hash part %u for file %s - %s"), nPart, (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+		ex->Delete();
+		return;
 	} catch (...) {
 		ASSERT(0);
 		return;
