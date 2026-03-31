@@ -114,8 +114,11 @@ protected:
 
 // Implementation
 	static FinderPointer CreateFinderInstance();
-	struct FindDevice : private std::unary_function<DevicePointer, bool>
+	struct FindDevice
 	{
+		using argument_type = DevicePointer;
+		using result_type = bool;
+
 		explicit FindDevice(const CComBSTR &udn)
 			: m_udn(udn)
 		{

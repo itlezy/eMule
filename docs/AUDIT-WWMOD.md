@@ -438,6 +438,7 @@ Current state:
 
 **Severity:** P1
 **Files:** `srchybrid/emule.vcxproj`
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
 The `.vcxproj` file does not set `<LanguageStandard>`. With v143, this defaults to
 C++14. The codebase could benefit from C++17 or C++20 features:
@@ -448,6 +449,16 @@ C++14. The codebase could benefit from C++17 or C++20 features:
 
 **Action:** Add `<LanguageStandard>stdcpp20</LanguageStandard>` to the project.
 Incrementally adopt modern language features.
+
+Adjacent cleanup completed with this chunk:
+- removed the legacy `_SpecialBootstrapNodes` build configuration
+- removed `_BOOTSTRAPNODESDAT` codepaths and the special bootstrap-only `nodes.dat` format
+- removed the startup splash screen feature and its dedicated source files while fixing the C++20 fallout
+
+Adjacent cleanup landed with this change:
+- removed the legacy `_SpecialBootstrapNodes` build configuration
+- removed `_BOOTSTRAPNODESDAT` codepaths and the special bootstrap-only `nodes.dat` format
+- kept the normal `nodes.dat` path and `nodes.fastkad.dat` sidecar flow
 
 ---
 

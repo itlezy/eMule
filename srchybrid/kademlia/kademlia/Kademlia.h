@@ -42,9 +42,6 @@ namespace Kademlia
 	class CKadClientSearcher;
 	class CKademlia
 	{
-#ifdef _BOOTSTRAPNODESDAT
-		friend CRoutingZone;
-#endif
 	public:
 		CKademlia();
 

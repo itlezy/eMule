@@ -261,7 +261,7 @@ bool CServer::AddTagFromFile(CFileDataIO &servermet)
 
 LPCTSTR CServer::GetAddress() const
 {
-	return m_strDynIP.IsEmpty() ? ipfull : m_strDynIP;
+	return m_strDynIP.IsEmpty() ? ipfull : static_cast<LPCTSTR>(m_strDynIP);
 }
 
 void CServer::SetIP(uint32 newip)

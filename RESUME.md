@@ -2,17 +2,18 @@
 
 ## Last Chunk
 
-- Completed the deprecated Winsock cleanup pass for `WWMOD_007` and `WWMOD_030`.
-- Removed `_WINSOCK_DEPRECATED_NO_WARNINGS` from `srchybrid/Stdafx.h`.
-- Replaced the remaining live `inet_addr` and `inet_ntoa` call sites with shared IPv4 parsing and formatting helpers.
-- Cleaned the stale hostname-resolution comments that still referenced `gethostbyname`.
-- Updated `docs/AUDIT-WWMOD.md` to mark `WWMOD_007` and `WWMOD_030` fixed.
+- Completed `WWMOD_021` by setting `srchybrid/emule.vcxproj` to explicit C++20.
+- Removed the `_SpecialBootstrapNodes` solution/project configuration and the `_BOOTSTRAPNODESDAT` codepaths.
+- Dropped support for the special bootstrap-only `nodes.dat` variant while keeping the normal `nodes.dat` and `nodes.fastkad.dat` flow.
+- Removed the legacy startup splash screen feature and deleted `srchybrid/SplashScreen.cpp` plus `srchybrid/SplashScreen.h`.
+- Fixed the C++20 compatibility fallout that surfaced once the language standard was made explicit.
+- Updated `docs/AUDIT-WWMOD.md` to mark `WWMOD_021` fixed.
 - Built the target workspace with both `..\23-build-emule-debug-incremental.cmd` and `..\22-build-emule-release-incremental.cmd`.
 
 ## Current State
 
-- The tree no longer relies on deprecated Winsock conversion APIs or the global Winsock deprecation suppression.
-- `docs/AUDIT-WWMOD.md` records `WWMOD_001` through `WWMOD_007`, `WWMOD_009`, `WWMOD_030`, `WWMOD_035`, `WWMOD_038`, and `WWMOD_049` as fixed, with `WWMOD_046` marked stale.
+- The tree now builds under explicit C++20, no longer carries the special bootstrap build configuration, and no longer ships the startup splash screen codepath.
+- `docs/AUDIT-WWMOD.md` records `WWMOD_001` through `WWMOD_007`, `WWMOD_009`, `WWMOD_021`, `WWMOD_030`, `WWMOD_035`, `WWMOD_038`, and `WWMOD_049` as fixed, with `WWMOD_046` marked stale.
 - `WWMOD_008` and `WWMOD_019` remain the deferred CRT-hardening pair.
 
 ## Next Chunk

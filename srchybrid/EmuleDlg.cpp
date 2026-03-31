@@ -53,7 +53,6 @@
 #include "ProtocolGuards.h"
 #include "SharedFileList.h"
 #include "ED2KLink.h"
-#include "Splashscreen.h"
 #include "PartFileConvert.h"
 #include "Exceptions.h"
 #include "SearchList.h"
@@ -193,7 +192,7 @@ END_MESSAGE_MAP()
 
 CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	: CTrayDialog(CemuleDlg::IDD, pParent)
-	, m_pSplashWnd()
+	, m_pAboutWnd()
 	, activewnd()
 	, status()
 	, m_wpFirstRestore()
@@ -223,7 +222,6 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_currentTBP_state(TBPF_NOPROGRESS)
 	, m_prevProgress()
 	, m_ovlIcon()
-	, m_dwSplashTime(_UI32_MAX)
 	, m_hTimer()
 	, m_hUPnPTimeOutTimer()
 	, notifierenabled()
@@ -338,10 +336,6 @@ BOOL CemuleDlg::OnInitDialog()
 	// temporary disable the 'startup minimized' option, otherwise no window will be shown at all
 	if (!thePrefs.IsFirstStart())
 		m_bStartMinimized = thePrefs.GetStartMinimized() || theApp.DidWeAutoStart();
-
-	// show splash screen as early as possible to "entertain" user while starting emule up
-	if (thePrefs.UseSplashScreen() && !m_bStartMinimized)
-		ShowSplash();
 
 	// Create global GUI objects
 	theApp.CreateAllFonts();
@@ -560,9 +554,6 @@ BOOL CemuleDlg::OnInitDialog()
 	if (thePrefs.IsUPnPEnabled())
 		StartUPnP();
 
-	if (thePrefs.IsFirstStart())
-		DestroySplash();
-
 	VERIFY(m_pDropTarget->Register(this));
 
 	// start aichsyncthread
@@ -688,9 +679,9 @@ void CemuleDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	case MP_ABOUTBOX:
 		{
 			CCreditsDlg dlgAbout;
-			m_pSplashWnd = (CSplashScreen*)&dlgAbout;
+			m_pAboutWnd = &dlgAbout;
 			dlgAbout.DoModal();
-			m_pSplashWnd = NULL;
+			m_pAboutWnd = NULL;
 			break;
 		}
 	case MP_CONNECT:
@@ -2487,43 +2478,6 @@ void InitWindowStyles(CWnd *pWnd)
 	}
 }
 
-void CemuleDlg::ShowSplash()
-{
-	ASSERT(m_pSplashWnd == NULL);
-	if (m_pSplashWnd == NULL) {
-		try {
-			m_pSplashWnd = new CSplashScreen;
-		} catch (...) {
-			return;
-		}
-		ASSERT(m_hWnd);
-		if (m_pSplashWnd->Create(CSplashScreen::IDD, this)) {
-			m_pSplashWnd->ShowWindow(SW_SHOW);
-			m_pSplashWnd->UpdateWindow();
-			m_dwSplashTime = ::GetTickCount();
-		} else {
-			delete m_pSplashWnd;
-			m_pSplashWnd = NULL;
-		}
-	}
-}
-
-void CemuleDlg::DestroySplash()
-{
-	if (m_pSplashWnd != NULL) {
-		m_pSplashWnd->EndDialog(IDOK); //deletes the dialog
-		delete m_pSplashWnd;
-		m_pSplashWnd = NULL;
-	}
-#ifdef _BETA
-	// only do it once to not be annoying given that the beta phases are expected to last longer these days
-	if (!thePrefs.IsFirstStart() && thePrefs.ShouldBetaNag()) {
-		thePrefs.SetDidBetaNagging();
-		LocMessageBox(IDS_BETANAG, MB_ICONINFORMATION | MB_OK, 0);
-	}
-#endif
-}
-
 BOOL CemuleApp::IsIdleMessage(MSG *pMsg)
 {
 	// This function is closely related to 'CemuleDlg::OnKickIdle'.
@@ -2567,16 +2521,14 @@ LRESULT CemuleDlg::OnKickIdle(WPARAM, LPARAM lIdleCount)
 {
 	LRESULT lResult = 0;
 
-	if (m_pSplashWnd) {
-		if (::GetTickCount() >= m_dwSplashTime + (DWORD)SEC2MS(2.5)) {
-			// timeout expired, destroy the splash window
-			DestroySplash();
-			UpdateWindow();
-		} else {
-			// check again later...
-			lResult = 1;
-		}
+#ifdef _BETA
+	static bool s_bDidBetaNag = false;
+	if (!s_bDidBetaNag && !thePrefs.IsFirstStart() && thePrefs.ShouldBetaNag()) {
+		s_bDidBetaNag = true;
+		thePrefs.SetDidBetaNagging();
+		LocMessageBox(IDS_BETANAG, MB_ICONINFORMATION | MB_OK, 0);
 	}
+#endif
 
 	if (m_bStartMinimized)
 		PostStartupMinimized();
@@ -2694,24 +2646,6 @@ int CemuleDlg::GetNextWindowToolbarButton(int iButtonID, int iDirection) const
 BOOL CemuleDlg::PreTranslateMessage(MSG *pMsg)
 {
 	BOOL bResult = CTrayDialog::PreTranslateMessage(pMsg);
-
-	if (m_pSplashWnd && m_pSplashWnd->m_hWnd != NULL)
-		switch (pMsg->message) {
-		case WM_SYSCOMMAND:
-			if (pMsg->wParam != SC_CLOSE)
-				break;
-		case WM_KEYDOWN:
-		case WM_SYSKEYDOWN:
-		case WM_LBUTTONDOWN:
-		case WM_RBUTTONDOWN:
-		case WM_MBUTTONDOWN:
-		case WM_NCLBUTTONDOWN:
-		case WM_NCRBUTTONDOWN:
-		case WM_NCMBUTTONDOWN:
-			DestroySplash();
-			UpdateWindow();
-			return bResult;
-		}
 
 	// Handle Ctrl+Tab and Ctrl+Shift+Tab
 	if (pMsg->message == WM_KEYDOWN)

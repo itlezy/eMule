@@ -69,7 +69,7 @@ void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrec
 
 	// wistily: UpStatusFix
 	CKnownFile *currequpfile = theApp.sharedfiles->GetFileByID(requpfileid);
-	EMFileSize filesize = currequpfile ? currequpfile->GetFileSize() : PARTSIZE * m_nUpPartCount;
+	EMFileSize filesize = currequpfile ? currequpfile->GetFileSize() : static_cast<EMFileSize>(static_cast<uint64>(PARTSIZE) * static_cast<uint64>(m_nUpPartCount));
 	// wistily: UpStatusFix
 
 	if (filesize > 0ull) {

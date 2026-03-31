@@ -178,7 +178,7 @@ void CSearchResultsWnd::OnInitialUpdate()
 
 BOOL CSearchResultsWnd::PreTranslateMessage(MSG *pMsg)
 {
-	if (theApp.emuledlg->m_pSplashWnd)
+	if (theApp.emuledlg->m_pAboutWnd)
 		return FALSE;
 	if (pMsg->message == WM_MBUTTONUP) {
 		CPoint point;

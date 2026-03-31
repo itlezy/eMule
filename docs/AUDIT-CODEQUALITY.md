@@ -174,7 +174,6 @@ target_compile_definitions(eMule PRIVATE
     SUPPORT_LARGE_FILES
     MBEDTLS_ALLOW_PRIVATE_ACCESS
     _CRT_SECURE_NO_DEPRECATE         # phase out in Phase 4 after SDL cleanup
-    $<$<CONFIG:Debug>:_BOOTSTRAPNODESDAT>
     $<$<CONFIG:Release>:NDEBUG>
 )
 

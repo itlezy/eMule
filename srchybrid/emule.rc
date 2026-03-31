@@ -268,7 +268,6 @@ BEGIN
     CONTROL         "Prompt on exit",IDC_EXIT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,84,202,10
     CONTROL         "Onlinesig",IDC_ONLINESIG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,94,202,10
     GROUPBOX        "Startup",IDC_STARTUP,3,156,223,61
-    CONTROL         "Show splash screen",IDC_SPLASHON,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,182,158,10
     CONTROL         "Startup Minimized",IDC_STARTMIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,192,190,10
     CONTROL         "Start with Windows",IDC_STARTWIN,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,202,190,10
     PUSHBUTTON      "Edit Web Services...",IDC_WEBSVEDIT,11,131,100,14
@@ -2467,7 +2466,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_PW_SPLASH           "Show splash screen"
     IDS_PW_DBLCLICK         "Download list double-click to expand"
     IDS_PW_TOOL             "Tooltip delay time [sec.]"
     IDS_PW_FRONT            "Bring to front on link click"

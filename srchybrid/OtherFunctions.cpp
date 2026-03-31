@@ -1959,12 +1959,14 @@ CString GetFormatedUInt(ULONG ulVal)
 
 	static NUMBERFMT nf;
 	if (nf.Grouping == 0) {
+		static TCHAR s_szDecimalSep[] = _T(".");
+		static TCHAR s_szThousandSep[] = _T(",");
 		nf.NumDigits = 0;
 		nf.LeadingZero = 0;
 		nf.Grouping = 3;
 		// we are hardcoding the following two format chars intentionally because the C-RTL also has the decimal sep hardcoded to '.'
-		nf.lpDecimalSep = _T(".");
-		nf.lpThousandSep = _T(",");
+		nf.lpDecimalSep = s_szDecimalSep;
+		nf.lpThousandSep = s_szThousandSep;
 		nf.NegativeOrder = 0;
 	}
 	CString strVal;
@@ -1981,12 +1983,14 @@ CString GetFormatedUInt64(ULONGLONG ullVal)
 
 	static NUMBERFMT nf;
 	if (nf.Grouping == 0) {
+		static TCHAR s_szDecimalSep[] = _T(".");
+		static TCHAR s_szThousandSep[] = _T(",");
 		nf.NumDigits = 0;
 		nf.LeadingZero = 0;
 		nf.Grouping = 3;
 		// we are hardcoding the following two format chars intentionally because the C-RTL also has the decimal sep hardcoded to '.'
-		nf.lpDecimalSep = _T(".");
-		nf.lpThousandSep = _T(",");
+		nf.lpDecimalSep = s_szDecimalSep;
+		nf.lpThousandSep = s_szThousandSep;
 		nf.NegativeOrder = 0;
 	}
 	const int iBuffSize = _countof(szVal) * 2;

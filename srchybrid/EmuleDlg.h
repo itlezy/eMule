@@ -39,7 +39,6 @@ class CPreferencesDlg;
 class CSearchDlg;
 class CServerWnd;
 class CSharedFilesWnd;
-class CSplashScreen;
 class CStatisticsDlg;
 class CTransferDlg;
 struct Status;
@@ -142,7 +141,7 @@ public:
 	CStatisticsDlg	*statisticswnd;
 	CMuleToolbarCtrl *toolbar;
 	CKademliaWnd	*kademliawnd;
-	CSplashScreen	*m_pSplashWnd;
+	CWnd			*m_pAboutWnd;
 	CWnd			*activewnd;
 	uint8			status;
 
@@ -182,11 +181,6 @@ protected:
 	TBPFLAG			m_currentTBP_state;
 	float			m_prevProgress;
 	HICON			m_ovlIcon;
-
-	// Splash screen
-	DWORD m_dwSplashTime;
-	void ShowSplash();
-	void DestroySplash();
 
 	CMap<UINT, UINT, LPCTSTR, LPCTSTR> m_mapTbarCmdToIcon;
 	void CreateToolbarCmdIconMap();

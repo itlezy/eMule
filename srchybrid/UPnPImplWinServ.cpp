@@ -1157,7 +1157,7 @@ CString translateUPnPResult(HRESULT hr)
 {
 	if (hr >= UPNP_E_ACTION_SPECIFIC_BASE && hr <= UPNP_E_ACTION_SPECIFIC_MAX)
 		return CString(_T("Action Specific Error"));
-	TCHAR *p;
+	const TCHAR *p;
 	switch (hr) {
 	case UPNP_E_ROOT_ELEMENT_EXPECTED:
 		p = _T("Root Element Expected");

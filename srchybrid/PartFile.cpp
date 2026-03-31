@@ -4898,20 +4898,28 @@ CString CPartFile::GetInfoSummary(bool bNoFormatCommands) const
 	if (!IsPartFile())
 		return CKnownFile::GetInfoSummary();
 
-	CString compl(GetResString(IDS_DL_TRANSFCOMPL));
-	compl.AppendFormat(_T(": %s/%s (%.1f%%)")
+	CString strCompleted(GetResString(IDS_DL_TRANSFCOMPL));
+	strCompleted.AppendFormat(_T(": %s/%s (%.1f%%)")
 		, (LPCTSTR)CastItoXBytes((uint64)GetCompletedSize())
 		, (LPCTSTR)CastItoXBytes((uint64)m_nFileSize)
 		, GetPercentCompleted());
 
-	const CString &lsc((lastseencomplete > 0) ? lastseencomplete.Format(thePrefs.GetDateTimeFormat()) : GetResString(IDS_NEVER));
+	CString lsc;
+	if (lastseencomplete > 0)
+		lsc = lastseencomplete.Format(thePrefs.GetDateTimeFormat());
+	else
+		lsc = GetResString(IDS_NEVER);
 
 	float availability = (GetPartCount() > 0) ? GetAvailablePartCount() * 100.0f / GetPartCount() : 0.0f;
 
 	CString avail;
 	avail.Format(GetResString(IDS_AVAIL), GetPartCount(), GetAvailablePartCount(), availability);
 
-	const CString &lastdwl(GetFileDate() ? GetCFileDate().Format(thePrefs.GetDateTimeFormat()) : GetResString(IDS_NEVER));
+	CString lastdwl;
+	if (GetFileDate())
+		lastdwl = GetCFileDate().Format(thePrefs.GetDateTimeFormat());
+	else
+		lastdwl = GetResString(IDS_NEVER);
 
 	CString sourcesinfo(GetResString(IDS_DL_SOURCES));
 	sourcesinfo += _T(": ");
@@ -4944,7 +4952,7 @@ CString CPartFile::GetInfoSummary(bool bNoFormatCommands) const
 		, bNoFormatCommands ? _T("") : _T("<br_head>")
 		, (LPCTSTR)GetResString(IDS_FD_MET), (LPCTSTR)GetPartMetFileName()
 		, (LPCTSTR)GetResString(IDS_STATUS), (LPCTSTR)sStatus
-		, (LPCTSTR)compl
+		, (LPCTSTR)strCompleted
 		, (LPCTSTR)sourcesinfo, (LPCTSTR)avail
 		, (LPCTSTR)GetResString(IDS_LASTSEENCOMPL), (LPCTSTR)lsc
 		, (LPCTSTR)GetResString(IDS_FD_LASTCHANGE), (LPCTSTR)lastdwl

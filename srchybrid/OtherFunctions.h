@@ -376,11 +376,7 @@ bool strmd4(const CString &rstr, byte *hash);
 //Designed for unsigned integral types because sgn(v0-v1) would fail.
 template <typename T> inline static int CompareUnsigned(const T v0, const T v1)
 {
-#if _MSVC_LANG == 202002L
-	return v0 <=> v1;
-#else
 	return (v0 < v1) ? -1 : static_cast<int>(v0 > v1);
-#endif
 }
 
 inline int CompareUnsignedUndefinedAtBottom(uint32 uSize1, uint32 uSize2, bool bSortAscending)

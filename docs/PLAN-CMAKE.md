@@ -872,7 +872,6 @@ set(EMULE_SOURCES
     SharedFilesCtrl.cpp
     SharedFilesWnd.cpp
     SmileySelector.cpp
-    SplashScreen.cpp
     TransferDlg.cpp
     TransferWnd.cpp
     TrayDialog.cpp

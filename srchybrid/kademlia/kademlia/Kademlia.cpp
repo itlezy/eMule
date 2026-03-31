@@ -221,15 +221,6 @@ void CKademlia::Process()
 	bool bUpdateUserFile = (tNow >= m_tStatusUpdate);
 	if (bUpdateUserFile) {
 		m_tStatusUpdate = tNow + MIN2S(1);
-#ifdef _BOOTSTRAPNODESDAT
-		// do some random lookup to fill out contact list with fresh (but for routing useless) nodes which we can
-		// use for our bootstrap nodes.dat
-		if (GetRoutingZone()->GetNumContacts() < 1500) {
-			CUInt128 uRandom;
-			uRandom.SetValueRandom();
-			CSearchManager::FindNode(uRandom, false);
-		}
-#endif
 	}
 	if (tNow >= m_tNextFirewallCheck)
 		RecheckFirewalled();

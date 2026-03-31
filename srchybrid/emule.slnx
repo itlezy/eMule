@@ -2,21 +2,16 @@
   <Configurations>
     <BuildType Name="Debug" />
     <BuildType Name="Release" />
-    <BuildType Name="_SpecialBootstrapNodes" />
     <Platform Name="ARM64" />
     <Platform Name="x64" />
   </Configurations>
   <Project Path="../../eMule-cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">
-    <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="../../eMule-miniupnp/miniupnpc/msvc/miniupnpc.vcxproj" Id="d28ce435-cb33-4bae-8a52-c6ef915956f5">
-    <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="../../eMule-ResizableLib/ResizableLib/ResizableLib.vcxproj" Id="86cec5cb-94de-4e3c-a1c6-0653d58c0625">
-    <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="../../eMule-zlib/contrib/vstudio/vc/zlib.vcxproj" Id="745dec58-ebb3-47a9-a9b8-4c6627c01bf8">
-    <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="emule.vcxproj" Id="584ea69d-3443-4197-8994-364880fc1b9b">
     <BuildDependency Project="../../eMule-cryptopp/cryptlib.vcxproj" />

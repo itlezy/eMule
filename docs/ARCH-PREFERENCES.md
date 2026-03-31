@@ -42,7 +42,6 @@ The last two groups are documented because they still live in the same file, but
 | `Language` | `eMule` | `RW` | Yes | Current OS / app default | UI language identifier. Changing it reloads most windows. |
 | `BringToFront` | `eMule` | `RW` | Yes | `false` | Bring the main window to the foreground on relevant events. |
 | `OnlineSignature` | `eMule` | `RW` | Yes | `false` | Enables the online signature/status output used by external tools or web pages. |
-| `Splashscreen` | `eMule` | `RW` | Yes | `false` | Show the splash screen during startup. |
 | `StartupMinimized` | `eMule` | `RW` | Yes | `false` | Start the main window minimized. This is persisted correctly. |
 | `AutoStart` | `eMule` | `RW` | Yes | `false` | Start eMule automatically with Windows. |
 | `PreventStandby` | `eMule` | `RW` | Yes | OS-dependent / `false` on old systems | Prevent system standby while the app is active. |

@@ -1692,12 +1692,14 @@ CString CSearchListCtrl::FormatFileSize(ULONGLONG ullFileSize) const
 
 		static NUMBERFMT nf;
 		if (nf.Grouping == 0) {
+			static TCHAR s_szDecimalSep[] = _T(".");
+			static TCHAR s_szThousandSep[] = _T(",");
 			nf.NumDigits = 2;
 			nf.LeadingZero = 1;
 			nf.Grouping = 3;
 			// we are hardcoding the following two format chars by intention because the C-RTL also has the decimal sep hardcoded to '.'
-			nf.lpDecimalSep = _T(".");
-			nf.lpThousandSep = _T(",");
+			nf.lpDecimalSep = s_szDecimalSep;
+			nf.lpThousandSep = s_szThousandSep;
 			nf.NegativeOrder = 0;
 		}
 		CString sVal, strVal;

@@ -322,7 +322,10 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		sText = GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
 		break;
 	case 19:
-		sText = client->HasValidHash() ? md4str(client->GetUserHash()) : _T("?");
+		if (client->HasValidHash())
+			sText = md4str(client->GetUserHash());
+		else
+			sText = _T("?");
 		break;
 	case 20:
 		{

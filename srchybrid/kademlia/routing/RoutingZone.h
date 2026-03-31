@@ -87,8 +87,6 @@ namespace Kademlia
 		private:
 			CRoutingZone(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index);
 			void Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index);
-			static void ReadBootstrapNodesDat(CFileDataIO &file);
-			void DbgWriteBootstrapFile();
 
 			/**
 			 * Returns the Fast Kad sidecar path stored next to the regular Kad contact snapshot.

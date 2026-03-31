@@ -48,7 +48,6 @@ BEGIN_MESSAGE_MAP(CPPgGeneral, CPropertyPage)
 	ON_BN_CLICKED(IDC_STARTWIN, OnSettingsChange)
 	ON_EN_CHANGE(IDC_NICK, OnSettingsChange)
 	ON_BN_CLICKED(IDC_EXIT, OnSettingsChange)
-	ON_BN_CLICKED(IDC_SPLASHON, OnSettingsChange)
 	ON_BN_CLICKED(IDC_BRINGTOFOREGROUND, OnSettingsChange)
 	ON_CBN_SELCHANGE(IDC_LANGS, OnLangChange)
 	ON_BN_CLICKED(IDC_ED2KFIX, OnBnClickedEd2kfix)
@@ -85,7 +84,6 @@ void CPPgGeneral::LoadSettings()
 	CheckDlgButton(IDC_BRINGTOFOREGROUND, static_cast<UINT>(thePrefs.bringtoforeground));
 	CheckDlgButton(IDC_EXIT, static_cast<UINT>(thePrefs.confirmExit));
 	CheckDlgButton(IDC_ONLINESIG, static_cast<UINT>(thePrefs.onlineSig));
-	CheckDlgButton(IDC_SPLASHON, static_cast<UINT>(thePrefs.splashscreen));
 	CheckDlgButton(IDC_STARTMIN, static_cast<UINT>(thePrefs.startMinimized));
 	CheckDlgButton(IDC_STARTWIN, static_cast<UINT>(thePrefs.m_bAutoStart));
 
@@ -103,7 +101,7 @@ BOOL CPPgGeneral::OnInitDialog()
 	thePrefs.GetLanguages(aLanguageIDs);
 	for (INT_PTR i = 0; i < aLanguageIDs.GetCount(); ++i) {
 		TCHAR szLang[128];
-		TCHAR *pLang = szLang;
+		LPCTSTR pLang = szLang;
 		int ret = GetLocaleInfo(aLanguageIDs[i], LOCALE_SLANGUAGE, szLang, _countof(szLang));
 
 		if (ret == 0)
@@ -203,7 +201,6 @@ BOOL CPPgGeneral::OnApply()
 	thePrefs.confirmExit = IsDlgButtonChecked(IDC_EXIT) != 0;
 	thePrefs.onlineSig = IsDlgButtonChecked(IDC_ONLINESIG) != 0;
 	thePrefs.m_bPreventStandby = IsDlgButtonChecked(IDC_PREVENTSTANDBY) != 0;
-	thePrefs.splashscreen = IsDlgButtonChecked(IDC_SPLASHON) != 0;
 	thePrefs.startMinimized = IsDlgButtonChecked(IDC_STARTMIN) != 0;
 	thePrefs.m_bAutoStart = IsDlgButtonChecked(IDC_STARTWIN) != 0;
 	SetAutoStart(thePrefs.m_bAutoStart);
@@ -245,7 +242,6 @@ void CPPgGeneral::Localize()
 		SetDlgItemText(IDC_WEBSVEDIT, GetResString(IDS_WEBSVEDIT));
 		SetDlgItemText(IDC_ED2KFIX, GetResString(IDS_ED2KLINKFIX));
 		SetDlgItemText(IDC_STARTUP, GetResString(IDS_STARTUP));
-		SetDlgItemText(IDC_SPLASHON, GetResString(IDS_PW_SPLASH));
 		SetDlgItemText(IDC_STARTMIN, GetResString(IDS_PREF_STARTMIN));
 		SetDlgItemText(IDC_STARTWIN, GetResString(IDS_STARTWITHWINDOWS));
 	}

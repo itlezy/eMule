@@ -282,7 +282,6 @@ bool	CPreferences::m_bIconflashOnNewMessage;
 bool	CPreferences::confirmExit;
 DWORD	CPreferences::m_adwStatsColors[15];
 bool	CPreferences::m_bHasCustomTaskIconColor;
-bool	CPreferences::splashscreen;
 bool	CPreferences::filterLANIPs;
 bool	CPreferences::m_bAllocLocalHostIP;
 bool	CPreferences::onlineSig;
@@ -1681,7 +1680,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("StoreSearches"), m_bStoreSearches);
 	ini.WriteBool(_T("AddServersFromServer"), m_bAddServersFromServer);
 	ini.WriteBool(_T("AddServersFromClient"), m_bAddServersFromClients);
-	ini.WriteBool(_T("Splashscreen"), splashscreen);
 	ini.WriteBool(_T("BringToFront"), bringtoforeground);
 	ini.WriteBool(_T("TransferDoubleClick"), transferDoubleclick);
 	ini.WriteBool(_T("ConfirmExit"), confirmExit);
@@ -2098,7 +2096,6 @@ void CPreferences::LoadPreferences()
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), true);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
-	splashscreen = ini.GetBool(_T("Splashscreen"), false);
 	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
 	transferDoubleclick = ini.GetBool(_T("TransferDoubleClick"), true);
 	beepOnError = ini.GetBool(_T("BeepOnError"), true);

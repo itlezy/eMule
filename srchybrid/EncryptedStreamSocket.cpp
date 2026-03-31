@@ -84,6 +84,7 @@ Basic Obfuscated Handshake Protocol Client <-> Server:
 #include "clientlist.h"
 #include "ServerConnect.h"
 #include "../../eMule-cryptopp/osrng.h"
+#include "../../eMule-cryptopp/modarith.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -422,7 +423,7 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing)
 		ASSERT(m_cryptDHA.MinEncodedSize() <= DHAGREEMENT_A_BITS / 8);
 		CryptoPP::Integer cryptDHPrime((byte*)dh768_p, PRIMESIZE_BYTES);  // our fixed prime
 		// calculate g^a % p
-		CryptoPP::Integer cryptDHGexpAmodP = CryptoPP::a_exp_b_mod_c(CryptoPP::Integer(2), m_cryptDHA, cryptDHPrime);
+		CryptoPP::Integer cryptDHGexpAmodP = CryptoPP::ModularArithmetic(cryptDHPrime).Exponentiate(CryptoPP::Integer(2), m_cryptDHA);
 		ASSERT(m_cryptDHA.MinEncodedSize() <= PRIMESIZE_BYTES);
 		// put the result into a buffer
 		uchar aBuffer[PRIMESIZE_BYTES];
@@ -586,7 +587,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar *pBuffer, int nLen)
 					m_pfiReceiveBuffer->Read(aBuffer, PRIMESIZE_BYTES);
 					CryptoPP::Integer cryptDHAnswer(static_cast<byte*>(aBuffer), PRIMESIZE_BYTES);
 					CryptoPP::Integer cryptDHPrime(static_cast<byte*>(dh768_p), PRIMESIZE_BYTES);  // our fixed prime
-					CryptoPP::Integer cryptResult = CryptoPP::a_exp_b_mod_c(cryptDHAnswer, m_cryptDHA, cryptDHPrime);
+					CryptoPP::Integer cryptResult = CryptoPP::ModularArithmetic(cryptDHPrime).Exponentiate(cryptDHAnswer, m_cryptDHA);
 
 					m_cryptDHA = 0;
 					DEBUG_ONLY(memset(aBuffer, 0, sizeof aBuffer));

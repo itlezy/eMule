@@ -378,7 +378,11 @@ void CMuleListCtrl::SetColors()
 	CString strBkImage;
 	const CString &sSkinProfile(thePrefs.GetSkinProfile());
 	if (!sSkinProfile.IsEmpty()) {
-		const CString strKey(m_strSkinKey.IsEmpty() ? _T("DefLv") : m_strSkinKey);
+		CString strKey;
+		if (m_strSkinKey.IsEmpty())
+			strKey = _T("DefLv");
+		else
+			strKey = m_strSkinKey;
 
 		if (theApp.LoadSkinColorAlt(strKey + _T("Bk"), _T("DefLvBk"), m_crWindow))
 			m_crWindowTextBk = m_crWindow;

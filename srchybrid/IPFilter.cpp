@@ -196,7 +196,10 @@ INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 						AddIPRange(start, end, level, desc);
 						++iFoundRanges;
 					} else {
-						DEBUG_ONLY(sbuffer.IsEmpty() ? 0 : TRACE("IP filter: ignored line %u\n", iLine));
+#ifdef _DEBUG
+						if (!sbuffer.IsEmpty())
+							TRACE("IP filter: ignored line %u\n", iLine);
+#endif
 						m_bModified = true;
 					}
 				}
@@ -410,7 +413,9 @@ bool CIPFilter::IsFiltered(uint32 ip, uint32 level) /*const*/
 
 CString CIPFilter::GetLastHit() const
 {
-	return CString(m_pLastHit ? m_pLastHit->desc : "Not available");
+	if (m_pLastHit != NULL)
+		return CString(m_pLastHit->desc);
+	return CString("Not available");
 }
 
 bool CIPFilter::RemoveIPFilter(const SIPFilter *pFilter)

@@ -166,7 +166,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 #endif
 	m_strCurVersionLong += CemuleApp::m_sPlatform;
 
-#if defined( _DEBUG) && !defined(_BOOTSTRAPNODESDAT)
+#if defined( _DEBUG)
 	m_strCurVersionLong += _T(" DEBUG");
 #endif
 #ifdef _BETA
@@ -175,10 +175,6 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 #ifdef _DEVBUILD
 	m_strCurVersionLong += _T(" DEVBUILD");
 #endif
-#ifdef _BOOTSTRAPNODESDAT
-	m_strCurVersionLong += _T(" BOOTSTRAP BUILD");
-#endif
-
 	// create the protocol version number
 	CString strTmp;
 	strTmp.Format(_T("0x%lu"), m_dwProductVersionMS);

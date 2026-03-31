@@ -163,7 +163,6 @@ public:
 	static bool		m_bHasCustomTaskIconColor;
 	static bool		m_bIconflashOnNewMessage;
 
-	static bool		splashscreen;
 	static bool		filterLANIPs;
 	static bool		m_bAllocLocalHostIP;
 	static bool		onlineSig;
@@ -864,7 +863,6 @@ public:
 	static bool		IsErrorBeepEnabled()				{ return beepOnError; }
 	static bool		IsConfirmExitEnabled()				{ return confirmExit; }
 	static void		SetConfirmExit(bool bVal)			{ confirmExit = bVal; }
-	static bool		UseSplashScreen()					{ return splashscreen; }
 	static bool		FilterLANIPs()						{ return filterLANIPs; }
 	static bool		GetAllowLocalHostIP()				{ return m_bAllocLocalHostIP; }
 	static bool		IsOnlineSignatureEnabled()			{ return onlineSig; }

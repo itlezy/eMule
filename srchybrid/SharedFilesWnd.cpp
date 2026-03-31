@@ -240,7 +240,7 @@ void CSharedFilesWnd::OnNmClickSharedFiles(LPNMHDR pNMHDR, LRESULT *pResult)
 
 BOOL CSharedFilesWnd::PreTranslateMessage(MSG *pMsg)
 {
-	if (theApp.emuledlg->m_pSplashWnd)
+	if (theApp.emuledlg->m_pAboutWnd)
 		return FALSE;
 	switch (pMsg->message) {
 	case WM_KEYDOWN:
@@ -422,7 +422,9 @@ void CSharedFilesWnd::ShowSelectedFilesDetails(bool bForce)
 			}
 		}
 		static_cast<CStatic*>(GetDlgItem(IDC_SF_FICON))->SetIcon(pFile ? icon_files : NULL);
-		const CString &sName(pFile ? pFile->GetFileName() : _T(""));
+		CString sName;
+		if (pFile != NULL)
+			sName = pFile->GetFileName();
 		SetDlgItemText(IDC_SF_FNAME, sName);
 	}
 	if (bForce || nItems != (UINT)selectedList.GetCount())
