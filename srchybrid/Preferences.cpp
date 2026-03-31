@@ -20,6 +20,7 @@
 #include <dwmapi.h>
 #include <iphlpapi.h>
 #include "emule.h"
+#include "ModernLimits.h"
 #include "Preferences.h"
 #include "Opcodes.h"
 #include "UpDownClient.h"
@@ -409,6 +410,8 @@ UINT	CPreferences::m_uTransferWnd1;
 UINT	CPreferences::m_uTransferWnd2;
 UINT	CPreferences::m_uDeadServerRetries;
 DWORD	CPreferences::m_dwServerKeepAliveTimeout;
+DWORD	CPreferences::m_dwConnectionTimeout;
+DWORD	CPreferences::m_dwDownloadTimeout;
 UINT	CPreferences::statsMax;
 UINT	CPreferences::statsAverageMinutes;
 CString	CPreferences::notifierConfiguration;
@@ -503,6 +506,7 @@ UINT	CPreferences::filterlevel;
 UINT	CPreferences::m_uFileBufferSize;
 UINT	CPreferences::m_uUDPReceiveBufferSize;
 UINT	CPreferences::m_uTCPSendBufferSize;
+UINT	CPreferences::m_uUploadClientDataRate;
 DWORD	CPreferences::m_uFileBufferTimeLimit;
 INT_PTR	CPreferences::m_iQueueSize;
 int		CPreferences::m_iCommitFiles;
@@ -1656,6 +1660,8 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("StatsFillGraphs"), m_bFillGraphs);
 	ini.WriteInt(_T("DeadServerRetry"), m_uDeadServerRetries);
 	ini.WriteInt(_T("ServerKeepAliveTimeout"), m_dwServerKeepAliveTimeout);
+	ini.WriteInt(_T("ConnectionTimeout"), static_cast<int>(ModernLimits::TimeoutMsToSeconds(m_dwConnectionTimeout)));
+	ini.WriteInt(_T("DownloadTimeout"), static_cast<int>(ModernLimits::TimeoutMsToSeconds(m_dwDownloadTimeout)));
 	ini.WriteInt(_T("SplitterbarPosition"), splitterbarPosition);
 	ini.WriteInt(_T("SplitterbarPositionServer"), splitterbarPositionSvr);
 	ini.WriteInt(_T("SplitterbarPositionStat"), splitterbarPositionStat + 1);
@@ -1764,6 +1770,7 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("FileBufferSize"), m_uFileBufferSize);
 	ini.WriteInt(_T("UDPReceiveBufferSize"), m_uUDPReceiveBufferSize);
 	ini.WriteInt(_T("BigSendBufferSize"), m_uTCPSendBufferSize);
+	ini.WriteInt(_T("UploadClientDataRate"), m_uUploadClientDataRate);
 
 	ini.WriteInt(_T("QueueSize"), (int)m_iQueueSize);
 
@@ -2043,7 +2050,7 @@ void CPreferences::LoadPreferences()
 	}
 
 	nServerUDPPort = (uint16)ini.GetInt(_T("ServerUDPPort"), -1); // 0 = Don't use UDP port for servers, -1 = use a random port (for backward compatibility)
-	maxsourceperfile = ini.GetInt(_T("MaxSourcesPerFile"), 400);
+	maxsourceperfile = ini.GetInt(_T("MaxSourcesPerFile"), ModernLimits::kDefaultMaxSourcesPerFile);
 	m_wLanguageID = ini.GetWORD(_T("Language"), 0);
 	m_iSeeShares = (EViewSharedFilesAccess)ini.GetInt(_T("SeeShare"), vsfaNobody);
 	m_iToolDelayTime = ini.GetInt(_T("ToolTipDelay"), 1);
@@ -2055,6 +2062,8 @@ void CPreferences::LoadPreferences()
 	if (m_uDeadServerRetries > MAX_SERVERFAILCOUNT)
 		m_uDeadServerRetries = MAX_SERVERFAILCOUNT;
 	m_dwServerKeepAliveTimeout = ini.GetInt(_T("ServerKeepAliveTimeout"), 0);
+	m_dwConnectionTimeout = ModernLimits::NormalizeTimeoutSeconds(ini.GetInt(_T("ConnectionTimeout"), ModernLimits::kDefaultConnectionTimeoutSeconds), ModernLimits::kDefaultConnectionTimeoutSeconds);
+	m_dwDownloadTimeout = ModernLimits::NormalizeTimeoutSeconds(ini.GetInt(_T("DownloadTimeout"), ModernLimits::kDefaultDownloadTimeoutSeconds), ModernLimits::kDefaultDownloadTimeoutSeconds);
 	splitterbarPosition = ini.GetInt(_T("SplitterbarPosition"), 75);
 	if (splitterbarPosition < 9)
 		splitterbarPosition = 9;
@@ -2216,14 +2225,15 @@ void CPreferences::LoadPreferences()
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);
 
 	// Get file buffer size.
-	m_uFileBufferSize = 2 * 1024 * 1024;
+	m_uFileBufferSize = ModernLimits::kDefaultFileBufferSize;
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
-	m_uUDPReceiveBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("UDPReceiveBufferSize"), 512 * 1024));
-	m_uTCPSendBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("BigSendBufferSize"), 512 * 1024));
-	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
+	m_uUDPReceiveBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("UDPReceiveBufferSize"), ModernLimits::kDefaultUdpReceiveBufferSize));
+	m_uTCPSendBufferSize = max(64 * 1024u, (UINT)ini.GetInt(_T("BigSendBufferSize"), ModernLimits::kDefaultTcpSendBufferSize));
+	m_uUploadClientDataRate = max(3u * 1024u, (UINT)ini.GetInt(_T("UploadClientDataRate"), ModernLimits::kDefaultUploadClientDataRate));
+	m_uFileBufferTimeLimit = ModernLimits::SecondsToMs(ini.GetInt(_T("FileBufferTimeLimit"), ModernLimits::kDefaultFileBufferTimeLimitSeconds));
 
 	// Get queue size.
-	m_iQueueSize = 50 * 100;
+	m_iQueueSize = ModernLimits::kDefaultQueueSize;
 	m_iQueueSize = ini.GetInt(_T("QueueSize"), (int)m_iQueueSize);
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving

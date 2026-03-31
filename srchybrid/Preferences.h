@@ -338,6 +338,8 @@ public:
 	//MORPH END - Added by SiRoB, Splitting Bar [O²]
 	static UINT		m_uDeadServerRetries;
 	static DWORD	m_dwServerKeepAliveTimeout;
+	static DWORD	m_dwConnectionTimeout;
+	static DWORD	m_dwDownloadTimeout;
 	// -khaos--+++> Changed data type to avoid overflows
 	static UINT		statsMax;
 	// <-----khaos-
@@ -437,6 +439,7 @@ public:
 	static UINT		m_uFileBufferSize;
 	static UINT		m_uUDPReceiveBufferSize;
 	static UINT		m_uTCPSendBufferSize;
+	static UINT		m_uUploadClientDataRate;
 	static INT_PTR	m_iQueueSize;
 	static int		m_iCommitFiles;
 	static DWORD	m_uFileBufferTimeLimit;
@@ -876,6 +879,8 @@ public:
 	static UINT		GetMaxSourcePerFileDefault()		{ return maxsourceperfile; }
 	static UINT		GetDeadServerRetries()				{ return m_uDeadServerRetries; }
 	static DWORD	GetServerKeepAliveTimeout()			{ return m_dwServerKeepAliveTimeout; }
+	static DWORD	GetConnectionTimeout()				{ return m_dwConnectionTimeout; }
+	static DWORD	GetDownloadTimeout()				{ return m_dwDownloadTimeout; }
 	static bool		GetConditionalTCPAccept()			{ return m_bConditionalTCPAccept; }
 
 	static LANGID	GetLanguageID()						{ return m_wLanguageID; }
@@ -983,6 +988,7 @@ public:
 	static UINT		GetFileBufferSize()					{ return m_uFileBufferSize; }
 	static UINT		GetUDPReceiveBufferSize()			{ return m_uUDPReceiveBufferSize; }
 	static UINT		GetBigSendBufferSize()				{ return m_uTCPSendBufferSize; }
+	static UINT		GetUploadClientDataRate()			{ return m_uUploadClientDataRate; }
 	static DWORD	GetFileBufferTimeLimit()			{ return m_uFileBufferTimeLimit; }
 	static INT_PTR	GetQueueSize()						{ return m_iQueueSize; }
 	static int		GetCommitFiles()					{ return m_iCommitFiles; }
@@ -1088,6 +1094,9 @@ public:
 	static void		SetMaxSourcesPerFile(UINT in)		{ maxsourceperfile = in; }
 	static void		SetMaxConnections(UINT in)			{ maxconnections = in; }
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
+	static void		SetConnectionTimeout(DWORD in)		{ m_dwConnectionTimeout = in; }
+	static void		SetDownloadTimeout(DWORD in)		{ m_dwDownloadTimeout = in; }
+	static void		SetUploadClientDataRate(UINT in)	{ m_uUploadClientDataRate = in; }
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }
 	static UINT		GetMsgSessionsMax()					{ return maxmsgsessions; }

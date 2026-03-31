@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "emule.h"
+#include "ModernLimits.h"
 #include "UploadQueue.h"
 #include "Packets.h"
 #include "PartFile.h"
@@ -525,7 +526,8 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
 	const BroadbandControlState state = GetBroadbandControlState();
-	const uint32 nResult = state.targetPerSlotBytesPerSec;
+	// Keep the broadband slot heuristic bounded by the configured per-client target ceiling.
+	const uint32 nResult = ModernLimits::ApplyUploadClientDataRateCap(state.targetPerSlotBytesPerSec, thePrefs.GetUploadClientDataRate());
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
 

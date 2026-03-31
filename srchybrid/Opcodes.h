@@ -60,7 +60,6 @@
 #define MAX_RESULTS				100			// max global search results
 #define	MAX_MORE_SEARCH_REQ		5			// this gives a max. total search results of (1+5)*201 = 1206 or (1+5)*300 = 1800
 #define MAX_CLIENTCONNECTIONTRY	2
-#define CONNECTION_TIMEOUT		SEC2MS(40)	//40 secs - set his lower if you want less connections at once, set it higher if you have enough sockets (edonkey has its own timeout too, so a very high value won't effect this)
 #define	FILEREASKTIME			MIN2MS(29)	//29 mins
 #define SERVERREASKTIME			MIN2MS(15)	//15 mins - don't set this too low, it won't speed up anything, but it could kill emule or your internet connection
 #define UDPSERVERREASKTIME		MIN2MS(30)	//30 mins
@@ -91,7 +90,6 @@
 #define UDPSERVSTATREASKTIME	((time_t)HR2S(4.5))	//4.5 hours (A random time of up to one hour is reduced during runtime after each ping)
 #define UDPSERVSTATMINREASKTIME	MIN2S(20)	//minimum time between two pings even when trying to force a premature ping for a new UDP key
 #define	UDPSERVERPORT			4665		//default udp port
-#define UDPMAXQUEUETIME			SEC2MS(30)	//30 Seconds
 #define RSAKEYSIZE				384			//384 bits
 #define	MAX_SOURCES_FILE_SOFT	750
 #define	MAX_SOURCES_FILE_UDP	50u
@@ -105,17 +103,14 @@
 
 #define CONFIGFOLDER			_T("config\\")
 #define MAXCONPER5SEC			50
-#define	UPLOAD_CLIENT_MAXDATARATE	(8*1024*1024) // max. heuristic per-client upload target in the legacy no-budget slot logic, 8MBps
 #define	MIN_UP_CLIENTS_ALLOWED	2			// min. clients allowed to download regardless of any other factors. Don't set this too high
 #define	MAX_UP_CLIENTS_ALLOWED	50			// max. clients allowed regardless of any other factors; cannot be below MIN_UP_CLIENTS_ALLOWED+3
-#define DOWNLOADTIMEOUT			SEC2MS(100)
 #define CONSERVTIMEOUT			SEC2MS(25)	// age limit for pending connection attempts
 #define RARE_FILE				50
 #define BADCLIENTBAN			4
 #define	MIN_REQUESTTIME			MIN2MS(10)
 #define	MAX_PURGEQUEUETIME		HR2MS(1)
 #define PURGESOURCESWAPSTOP		MIN2MS(15)	// 15 min - how long to forbid swapping a source to a certain file (NNP,...)
-#define CONNECTION_LATENCY		22050		// latency for responses
 #define MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE   SEC2MS(1)
 #define MINWAIT_BEFORE_ULDISPLAY_WINDOWUPDATE   SEC2MS(1)
 #define CLIENTBANTIME			HR2MS(2)	// 2h

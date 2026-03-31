@@ -86,7 +86,7 @@ IMPLEMENT_DYNAMIC(CEMSocket, CEncryptedStreamSocket)
 
 CEMSocket::CEMSocket()
 	: m_pProxyLayer()
-	, m_uTimeOut(CONNECTION_TIMEOUT) // default timeout for ed2k sockets
+	, m_uTimeOut(thePrefs.GetConnectionTimeout()) // default timeout for ed2k sockets
 	, byConnected(EMS_NOTCONNECTED)
 	, m_bProxyConnectFailed()
 	, downloadLimitEnable()

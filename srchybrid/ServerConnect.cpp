@@ -406,7 +406,7 @@ void CServerConnect::CheckForTimeout()
 	DWORD dwServerConnectTimeout = CONSERVTIMEOUT;
 	// If we are using a proxy, increase server connection timeout to default connection timeout
 	if (thePrefs.GetProxySettings().bUseProxy)
-		dwServerConnectTimeout = max(dwServerConnectTimeout, CONNECTION_TIMEOUT);
+		dwServerConnectTimeout = max(dwServerConnectTimeout, thePrefs.GetConnectionTimeout());
 
 	const DWORD curTick = ::GetTickCount();
 	for (POSITION pos = connectionattempts.GetStartPosition(); pos != NULL;) {

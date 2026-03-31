@@ -33,6 +33,7 @@ protected:
 	HTREEITEM m_htiBBLowRatioBonus;
 	HTREEITEM m_htiBBLowRatioThreshold;
 	HTREEITEM m_htiBBMaxUpClientsAllowed;
+	HTREEITEM m_htiBBUploadClientDataRate;
 	HTREEITEM m_htiBBSessionMaxTime;
 	HTREEITEM m_htiBBSessionMaxTimeMinutes;
 	HTREEITEM m_htiBBSessionTransferLimit;
@@ -48,9 +49,11 @@ protected:
 	HTREEITEM m_htiCommitNever;
 	HTREEITEM m_htiCommitOnShutdown;
 	HTREEITEM m_htiConditionalTCPAccept;
+	HTREEITEM m_htiConnectionTimeout;
 	HTREEITEM m_htiCreditSystem;
 	HTREEITEM m_htiDebug2Disk;
 	HTREEITEM m_htiDebugSourceExchange;
+	HTREEITEM m_htiDownloadTimeout;
 	HTREEITEM m_htiExtControls;
 	HTREEITEM m_htiHiddenDisplay;
 	HTREEITEM m_htiHiddenFile;
@@ -118,8 +121,11 @@ protected:
 	float m_fBBLowRatioThreshold;
 	INT_PTR m_iQueueSize;
 	UINT m_uFileBufferSize;
+	UINT m_uConnectionTimeoutSeconds;
+	UINT m_uDownloadTimeoutSeconds;
 	UINT m_uTCPBigSendBufferSizeKiB;
 	UINT m_uUDPReceiveBufferSizeKiB;
+	UINT m_uUploadClientDataRateKiB;
 	UINT m_uBBSessionMaxTimeMinutes;
 	UINT m_uBBSessionTransAbsoluteMiB;
 	UINT m_uServerKeepAliveTimeout;

@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "KnownFile.h"
+#include "ModernLimits.h"
 #include "DeadSourceList.h"
 #include "CorruptionBlackBox.h"
 
@@ -264,7 +265,7 @@ public:
 
 	DWORD	GetLastAnsweredTime() const					{ return m_ClientSrcAnswered; }
 	void	SetLastAnsweredTime()						{ m_ClientSrcAnswered = ::GetTickCount(); }
-	void	SetLastAnsweredTimeTimeout()				{ m_ClientSrcAnswered = ::GetTickCount() + 2 * CONNECTION_LATENCY - SOURCECLIENTREASKS; }
+	void	SetLastAnsweredTimeTimeout()				{ m_ClientSrcAnswered = ::GetTickCount() + 2 * ModernLimits::kDefaultConnectionLatencyMs - SOURCECLIENTREASKS; }
 
 	uint64	GetCorruptionLoss() const					{ return m_uCorruptionLoss; }
 	uint64	GetCompressionGain() const					{ return m_uCompressionGain; }

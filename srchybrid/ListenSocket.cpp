@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "ListenSocket.h"
+#include "ModernLimits.h"
 #include "opcodes.h"
 #include "UpDownClient.h"
 #include "ClientList.h"
@@ -137,12 +138,12 @@ bool CClientReqSocket::CheckTimeOut()
 	if (client)
 		if (client->GetKadState() == KS_CONNECTED_BUDDY)
 			uTimeout += MIN2MS(15);
-		else if (client->IsDownloading() && curTick < client->GetUpStartTime() + 4 * CONNECTION_TIMEOUT)
-			//TCP flow control might need more time to begin throttling for slow peers
-			uTimeout += 4 * CONNECTION_TIMEOUT; //2'30" or slightly more
+		else if (client->IsDownloading() && curTick < client->GetUpStartTime() + 4 * thePrefs.GetConnectionTimeout())
+			//TCP flow control might need more time to begin throttling for slow peers.
+			uTimeout += 4 * thePrefs.GetConnectionTimeout();
 		else if (client->GetChatState() != MS_NONE)
 			//We extend the timeout time here to avoid chatting people from disconnecting too fast.
-			uTimeout += CONNECTION_TIMEOUT;
+			uTimeout += thePrefs.GetConnectionTimeout();
 
 	if (curTick < timeout_timer + uTimeout)
 		return false;
@@ -983,7 +984,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 						}
 						//Although this shouldn't happen, it's just in case for any Mods that mess with version numbers.
 						if (byRequestedVersion > 0 || client->GetSourceExchange1Version() > 1) {
-							DWORD dwTimePassed = ::GetTickCount() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
+							DWORD dwTimePassed = ::GetTickCount() - client->GetLastSrcReqTime() + ModernLimits::kDefaultConnectionLatencyMs;
 							bool bNeverAskedBefore = client->GetLastSrcReqTime() == 0;
 							if ( //if not complete and file is rare
 								(reqfile->IsPartFile()
@@ -1200,7 +1201,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 					// part status which may get cleared with the call of 'SetUploadFileID'.
 					client->SetUploadFileID(reqfile);
 
-					DWORD dwTimePassed = ::GetTickCount() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
+					DWORD dwTimePassed = ::GetTickCount() - client->GetLastSrcReqTime() + ModernLimits::kDefaultConnectionLatencyMs;
 					bool bNeverAskedBefore = (client->GetLastSrcReqTime() == 0);
 					if ( //if not complete and file is rare
 						(reqfile->IsPartFile()

@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "emule.h"
+#include "ModernLimits.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
 #include "SearchDlg.h"
@@ -85,6 +86,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiBBLowRatioBonus()
 	, m_htiBBLowRatioThreshold()
 	, m_htiBBMaxUpClientsAllowed()
+	, m_htiBBUploadClientDataRate()
 	, m_htiBBSessionMaxTime()
 	, m_htiBBSessionMaxTimeMinutes()
 	, m_htiBBSessionTransferLimit()
@@ -100,9 +102,11 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiCommitNever()
 	, m_htiCommitOnShutdown()
 	, m_htiConditionalTCPAccept()
+	, m_htiConnectionTimeout()
 	, m_htiCreditSystem()
 	, m_htiDebug2Disk()
 	, m_htiDebugSourceExchange()
+	, m_htiDownloadTimeout()
 	, m_htiExtControls()
 	, m_htiHiddenDisplay()
 	, m_htiHiddenFile()
@@ -167,8 +171,11 @@ CPPgTweaks::CPPgTweaks()
 	, m_fBBLowRatioThreshold()
 	, m_fMinFreeDiskSpaceGB()
 	, m_iQueueSize()
+	, m_uConnectionTimeoutSeconds()
+	, m_uDownloadTimeoutSeconds()
 	, m_uTCPBigSendBufferSizeKiB()
 	, m_uUDPReceiveBufferSizeKiB()
+	, m_uUploadClientDataRateKiB()
 	, m_uBBSessionMaxTimeMinutes()
 	, m_uBBSessionTransAbsoluteMiB()
 	, m_uFileBufferSize()
@@ -277,6 +284,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiUDPReceiveBuffer, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiTCPBigSendBuffer = m_ctrlTreeOptions.InsertItem(GetResString(IDS_TCPBIGSENDBUFFERSIZE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiTCPBigSendBuffer, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiConnectionTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_CONNECTIONTIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiConnectionTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiDownloadTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DOWNLOADTIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiDownloadTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiConditionalTCPAccept = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_CONDTCPACCEPT), m_htiTCPGroup, m_bConditionalTCPAccept);
 		m_htiServerKeepAliveTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_SERVERKEEPALIVETIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiServerKeepAliveTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
@@ -299,6 +310,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiBroadband = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_BROADBAND), iImgDynyp, TVI_ROOT);
 		m_htiBBMaxUpClientsAllowed = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_MAX_UPLOAD_CLIENTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBroadband);
 		m_ctrlTreeOptions.AddEditBox(m_htiBBMaxUpClientsAllowed, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiBBUploadClientDataRate = m_ctrlTreeOptions.InsertItem(GetResString(IDS_UPLOADCLIENTDATARATE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBroadband);
+		m_ctrlTreeOptions.AddEditBox(m_htiBBUploadClientDataRate, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiBBSessionTransferLimit = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_BB_SESSION_TRANSFER_LIMIT), iImgDynyp, m_htiBroadband);
 		m_htiBBSessionTransDisabled = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DISABLED), m_htiBBSessionTransferLimit, m_iBBSessionTransMode == BBSTM_DISABLED);
 		m_htiBBSessionTransPercent = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_BB_PERCENT_OF_FILE_SIZE), m_htiBBSessionTransferLimit, m_iBBSessionTransMode == BBSTM_PERCENT);
@@ -441,6 +454,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDV_MinMaxInt(pDX, m_iMaxHalfOpen, 1, INT_MAX);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiUDPReceiveBuffer, m_uUDPReceiveBufferSizeKiB);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiTCPBigSendBuffer, m_uTCPBigSendBufferSizeKiB);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiConnectionTimeout, m_uConnectionTimeoutSeconds);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiDownloadTimeout, m_uDownloadTimeoutSeconds);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiConditionalTCPAccept, m_bConditionalTCPAccept);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiServerKeepAliveTimeout, m_uServerKeepAliveTimeout);
 	if (pDX->m_bSaveAndValidate) {
@@ -448,6 +463,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiUDPReceiveBuffer);
 		if (m_uTCPBigSendBufferSizeKiB < 64)
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiTCPBigSendBuffer);
+		if (m_uConnectionTimeoutSeconds < ModernLimits::kMinTimeoutSeconds)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiConnectionTimeout);
+		if (m_uDownloadTimeoutSeconds < ModernLimits::kMinTimeoutSeconds)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiDownloadTimeout);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -465,6 +484,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// Broadband group
 	//
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBMaxUpClientsAllowed, m_iBBMaxUpClientsAllowed);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBUploadClientDataRate, m_uUploadClientDataRateKiB);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferLimit, m_iBBSessionTransMode);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBSessionTransPercentValue, m_iBBSessionTransPercent);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiBBSessionTransAbsoluteValue, m_uBBSessionTransAbsoluteMiB);
@@ -478,6 +498,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	if (pDX->m_bSaveAndValidate) {
 		if (m_iBBMaxUpClientsAllowed < MIN_UP_CLIENTS_ALLOWED || m_iBBMaxUpClientsAllowed > MAX_UP_CLIENTS_ALLOWED)
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBMaxUpClientsAllowed);
+		if (m_uUploadClientDataRateKiB < 3)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBUploadClientDataRate);
 		if (m_iBBSessionTransMode == BBSTM_PERCENT && (m_iBBSessionTransPercent < 1 || m_iBBSessionTransPercent > 100))
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiBBSessionTransPercentValue);
 		if (m_iBBSessionTransMode == BBSTM_ABSOLUTE && m_uBBSessionTransAbsoluteMiB < 1)
@@ -604,8 +626,11 @@ BOOL CPPgTweaks::OnInitDialog()
 {
 	m_iMaxConnPerFive = thePrefs.GetMaxConperFive();
 	m_iMaxHalfOpen = thePrefs.GetMaxHalfConnections();
+	m_uConnectionTimeoutSeconds = max(ModernLimits::kMinTimeoutSeconds, ModernLimits::TimeoutMsToSeconds(thePrefs.GetConnectionTimeout()));
+	m_uDownloadTimeoutSeconds = max(ModernLimits::kMinTimeoutSeconds, ModernLimits::TimeoutMsToSeconds(thePrefs.GetDownloadTimeout()));
 	m_uUDPReceiveBufferSizeKiB = max(64u, thePrefs.GetUDPReceiveBufferSize() / 1024u);
 	m_uTCPBigSendBufferSizeKiB = max(64u, thePrefs.GetBigSendBufferSize() / 1024u);
+	m_uUploadClientDataRateKiB = max(3u, thePrefs.GetUploadClientDataRate() / 1024u);
 	m_bConditionalTCPAccept = thePrefs.GetConditionalTCPAccept();
 	m_bAutoTakeEd2kLinks = thePrefs.AutoTakeED2KLinks();
 	if (thePrefs.GetEnableVerboseOptions()) {
@@ -745,8 +770,11 @@ BOOL CPPgTweaks::OnApply()
 
 	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : DFLT_MAXCONPERFIVE);
 	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : DFLT_MAXHALFOPEN);
+	thePrefs.SetConnectionTimeout(ModernLimits::NormalizeTimeoutSeconds(m_uConnectionTimeoutSeconds, ModernLimits::kDefaultConnectionTimeoutSeconds));
+	thePrefs.SetDownloadTimeout(ModernLimits::NormalizeTimeoutSeconds(m_uDownloadTimeoutSeconds, ModernLimits::kDefaultDownloadTimeoutSeconds));
 	thePrefs.m_uUDPReceiveBufferSize = m_uUDPReceiveBufferSizeKiB * 1024u;
 	thePrefs.m_uTCPSendBufferSize = m_uTCPBigSendBufferSizeKiB * 1024u;
+	thePrefs.SetUploadClientDataRate(m_uUploadClientDataRateKiB * 1024u);
 	thePrefs.m_bConditionalTCPAccept = m_bConditionalTCPAccept;
 	if (theApp.clientudp != NULL)
 		theApp.clientudp->ApplyReceiveBufferSize();
@@ -921,8 +949,11 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
+		LocalizeEditLabel(m_htiConnectionTimeout, IDS_CONNECTIONTIMEOUT);
+		LocalizeEditLabel(m_htiDownloadTimeout, IDS_DOWNLOADTIMEOUT);
 		LocalizeEditLabel(m_htiUDPReceiveBuffer, IDS_UDPRECEIVEBUFFERSIZE);
 		LocalizeEditLabel(m_htiTCPBigSendBuffer, IDS_TCPBIGSENDBUFFERSIZE);
+		LocalizeEditLabel(m_htiBBUploadClientDataRate, IDS_UPLOADCLIENTDATARATE);
 		LocalizeEditLabel(m_htiMinFreeDiskSpace, IDS_MINFREEDISKSPACE);
 		LocalizeEditLabel(m_htiServerKeepAliveTimeout, IDS_SERVERKEEPALIVETIMEOUT);
 		LocalizeEditLabel(m_htiYourHostname, IDS_YOURHOSTNAME);	// itsonlyme: hostnameSource
@@ -1013,6 +1044,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiTCPGroup = NULL;
 	m_htiBroadband = NULL;
 	m_htiBBMaxUpClientsAllowed = NULL;
+	m_htiBBUploadClientDataRate = NULL;
 	m_htiBBSessionTransferLimit = NULL;
 	m_htiBBSessionTransDisabled = NULL;
 	m_htiBBSessionTransPercent = NULL;
@@ -1031,10 +1063,12 @@ void CPPgTweaks::OnDestroy()
 	m_htiTCPBigSendBuffer = NULL;
 	m_htiUDPReceiveBuffer = NULL;
 	m_htiConditionalTCPAccept = NULL;
+	m_htiConnectionTimeout = NULL;
 	m_htiAutoTakeEd2kLinks = NULL;
 	m_htiVerboseGroup = NULL;
 	m_htiVerbose = NULL;
 	m_htiDebugSourceExchange = NULL;
+	m_htiDownloadTimeout = NULL;
 	m_htiLogBannedClients = NULL;
 	m_htiLogRatingDescReceived = NULL;
 	m_htiLogSecureIdent = NULL;
