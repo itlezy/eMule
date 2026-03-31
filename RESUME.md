@@ -2,6 +2,8 @@
 
 ## Last Chunk
 
+- Added `helpers\e2e-vpn-launch.ps1` to run a clean `%LOCALAPPDATA%\eMule` end-to-end session with emule-security `nodes.dat`/`server.met`, recursive shared-directory seeding, VPN-IP binding, and disk-backed verbose logging.
+- Verified the helper against `C:\tmp\videodupez\` with bind address `10.54.218.144`: the app wrote `eMule.log` and `eMule_Verbose.log`, loaded 153 Kad contacts from `nodes.dat`, connected to `eMule Sunrise` and `eMule Security`, and started hashing the recursive share tree.
 - Fixed `CKnownFileList::ShouldPurgeAICHHashset` so orphaned known2.met AICH entries are treated as purgeable instead of tripping a debug-only assertion, and added a shared regression seam for the purge decision.
 - Fixed the debug-only `_tmakepathlimit` overflow assertion so overlong runtime paths now fail cleanly instead of stopping the app in `OtherFunctions.cpp`, and guarded log/perf-log path rotation against empty fallback paths.
 - Updated the docs/status tracking to reject `BUG_002`, `GAP_004`, `FEAT_010`, `FEAT_024`, `WWMOD_026`, `WWMOD_027`, `WWMOD_029`, and `WWMOD_041` in the audit and index markdown files.
