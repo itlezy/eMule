@@ -18,6 +18,7 @@
 #include <wininet.h>
 #include "UrlClient.h"
 #include "emule.h"
+#include "OtherFunctions.h"
 #include "PartFile.h"
 #include "Packets.h"
 #include "ListenSocket.h"
@@ -115,7 +116,9 @@ bool CUrlClient::SetUrl(LPCTSTR pszUrl, uint32 nIP)
 	SetUserName(szUrl);
 
 	//NOTE: be very careful with what is stored in the following IP/ID/Port members!
-	m_nConnectIP = nIP ? nIP : inet_addr(CStringA(szHostName));
+	m_nConnectIP = nIP;
+	if (m_nConnectIP == 0 && !ParseIPv4Address(CStringA(szHostName), m_nConnectIP))
+		m_nConnectIP = INADDR_NONE;
 //	if (m_nConnectIP == INADDR_NONE)
 //		m_nConnectIP = 0;
 	m_nUserIDHybrid = htonl(m_nConnectIP);

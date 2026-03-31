@@ -216,7 +216,8 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 							const CString &dynip(message.Mid(iDynIP, iBracket - iDynIP).Trim());
 							if (!dynip.IsEmpty() && dynip.GetLength() < 51) {
 								// Verify that we really received a DN.
-								if (pServer && inet_addr((CStringA)dynip) == INADDR_NONE) {
+								uint32 nDynIp = 0;
+								if (pServer && !ParseIPv4Address(CStringA(dynip), nDynIp)) {
 									// Update the dynIP of this server, but do not reset it's IP
 									// which we just determined during connecting.
 									const CString &strOldDynIP(pServer->GetDynIP());

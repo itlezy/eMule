@@ -530,7 +530,11 @@ bool CIPFilterDlg::FindItem(const CListCtrlX &lv, int iItem, DWORD_PTR lParam)
 
 	const CIPFilterDlg *dlg = reinterpret_cast<CIPFilterDlg*>(lParam);
 	ASSERT_VALID(dlg);
-	u_long ip = htonl(inet_addr((CStringA)lv.GetFindText()));
+	uint32 nNetworkAddress = 0;
+	if (!ParseIPv4Address(CStringA(lv.GetFindText()), nNetworkAddress))
+		return false;
+
+	u_long ip = htonl(nNetworkAddress);
 	const SIPFilter *filter = dlg->m_ppIPFilterItems[iItem];
 	return ip >= filter->start && ip <= filter->end;
 }

@@ -569,12 +569,14 @@ CString CUPnPImplWinServ::GetLocalRoutableIP(ServicePointer pService)
 		return strLocalIP;
 
 	DWORD nInterfaceIndex = 0;
-	DWORD ip = inet_addr((CStringA)strExternalIP);
+	uint32 ip = 0;
+	if (!ParseIPv4Address(CStringA(strExternalIP), ip))
+		return strLocalIP;
 
 	// Get the interface through which the UPnP device has a route
 	hr = GetBestInterface(ip, &nInterfaceIndex);
 
-	if (hr != NO_ERROR || ip == INADDR_NONE)
+	if (hr != NO_ERROR)
 		return strLocalIP;
 
 	MIB_IFROW ifRow = {};

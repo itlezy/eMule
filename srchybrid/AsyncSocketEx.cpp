@@ -63,6 +63,7 @@ to tim.kosse@filezilla-project.org
 
 #include "stdafx.h"
 #include "AsyncSocketEx.h"
+#include "OtherFunctions.h"
 
 #include "AsyncSocketExLayer.h"
 
@@ -895,8 +896,8 @@ bool CAsyncSocketEx::Connect(const CString &sHostAddress, UINT nHostPort)
 		SOCKADDR_IN sockAddr = {};
 		sockAddr.sin_family = AF_INET;
 		/**
-		 * Preserve the legacy inet_addr() behavior by falling back for
-		 * INADDR_NONE-valued input instead of treating it as a direct IPv4 literal.
+		 * Preserve the historical direct-IP path by treating INADDR_NONE-valued
+		 * input as a hostname and sending it through the async resolver instead.
 		 */
 		const int nParsedIpv4 = InetPtonA(AF_INET, sAscii, &sockAddr.sin_addr);
 
@@ -1003,7 +1004,7 @@ bool CAsyncSocketEx::GetPeerName(CString &rPeerAddress, UINT &rPeerPort)
 			rPeerAddress = Inet6AddrToString(((LPSOCKADDR_IN6)sockAddr)->sin6_addr);
 		} else {
 			rPeerPort = ntohs(((LPSOCKADDR_IN)sockAddr)->sin_port);
-			rPeerAddress = inet_ntoa(((LPSOCKADDR_IN)sockAddr)->sin_addr);
+			rPeerAddress = ipstr(((LPSOCKADDR_IN)sockAddr)->sin_addr);
 		}
 
 	delete[] sockAddr;
@@ -1031,7 +1032,7 @@ bool CAsyncSocketEx::GetSockName(CString &rSocketAddress, UINT &rSocketPort) con
 			rSocketAddress = Inet6AddrToString(((LPSOCKADDR_IN6)sockAddr)->sin6_addr);
 		} else {
 			rSocketPort = ntohs(((LPSOCKADDR_IN)sockAddr)->sin_port);
-			rSocketAddress = inet_ntoa(((LPSOCKADDR_IN)sockAddr)->sin_addr);
+			rSocketAddress = ipstr(((LPSOCKADDR_IN)sockAddr)->sin_addr);
 		}
 
 	delete[] sockAddr;

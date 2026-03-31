@@ -56,6 +56,7 @@ their client on the eMule forum.
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
 #include "kademlia/utils/SafeKad.h"
+#include "OtherFunctions.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -79,8 +80,8 @@ CKademliaUDPListener::~CKademliaUDPListener()
 void CKademliaUDPListener::Bootstrap(LPCTSTR szHost, uint16 uUDPPort)
 {
 	const CStringA sHost(szHost);
-	uint32 uRetVal = inet_addr(sHost);
-	if (uRetVal == INADDR_NONE) {
+	uint32 uRetVal = 0;
+	if (!ParseIPv4Address(sHost, uRetVal)) {
 		addrinfo hints = {};
 		hints.ai_family = AF_INET;
 		hints.ai_socktype = SOCK_DGRAM;

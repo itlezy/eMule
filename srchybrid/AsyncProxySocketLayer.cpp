@@ -730,8 +730,8 @@ bool CAsyncProxySocketLayer::Connect(const CString &sHostAddress, UINT nHostPort
 	SOCKADDR_IN sockAddr = {};
 	sockAddr.sin_family = AF_INET;
 	/**
-	 * Preserve the legacy inet_addr() behavior by resolving INADDR_NONE-valued
-	 * input through the existing hostname path instead of treating it as direct IPv4.
+	 * Preserve the historical direct-IP path by resolving INADDR_NONE-valued
+	 * input through the existing hostname path instead of treating it as IPv4.
 	 */
 	const int nParsedIpv4 = InetPtonA(AF_INET, sAscii, &sockAddr.sin_addr);
 

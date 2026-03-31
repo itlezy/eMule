@@ -456,6 +456,11 @@ CString ipstr(uint32 nIP, uint16 nPort);
 CString ipstr(LPCTSTR pszAddress, uint16 nPort);
 CStringA ipstrA(uint32 nIP);
 void ipstrA(CHAR *pszAddress, int iMaxAddress, uint32 nIP);
+bool ParseIPv4Address(LPCSTR pszAddress, uint32 &ruAddress);
+inline bool ParseIPv4Address(const CStringA &strAddress, uint32 &ruAddress)
+{
+	return ParseIPv4Address((LPCSTR)strAddress, ruAddress);
+}
 inline CString ipstr(in_addr nIP)
 {
 	return ipstr(*(uint32*)&nIP);

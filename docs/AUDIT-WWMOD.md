@@ -148,6 +148,7 @@ and `_MSC_VER >= 1400` guards are dead or always-true.
 
 **Severity:** P1
 **Files:** `srchybrid/stdafx.h:120-122`
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
 ```cpp
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -637,12 +638,13 @@ sunset period.
 
 **Severity:** P1
 **Files:** 14 files, 21+ call sites
+**Status:** Fixed on 2026-03-31 in `v0.72a-broadband-dev`.
 
-Deprecated functions in use:
+Deprecated functions that were in use before this cleanup:
 - `inet_addr()` - IPv4 only, no error reporting (returns `INADDR_NONE` on error,
   which is also a valid address `255.255.255.255`)
 - `inet_ntoa()` - Uses thread-unsafe static buffer, IPv4 only
-- `gethostbyname()` - Blocking, IPv4 only, thread-unsafe
+- `gethostbyname()` - No longer present in active code; only historical comments remained
 
 **Action:** Replace with modern equivalents:
 - `inet_addr()` -> `inet_pton(AF_INET, ...)`

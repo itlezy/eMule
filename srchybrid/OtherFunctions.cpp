@@ -2517,7 +2517,7 @@ CString ipstr(uint32 nIP, uint16 nPort)
 
 /**
  * Format an IPv4 address into a caller-provided ANSI buffer without relying on
- * Winsock's thread-local/static inet_ntoa conversion storage.
+ * Winsock's static IPv4 conversion storage.
  */
 static void FormatIPv4AddressA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
 {
@@ -2542,6 +2542,19 @@ CStringA ipstrA(uint32 nIP)
 void ipstrA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
 {
 	FormatIPv4AddressA(pszAddress, iMaxAddress, nIP);
+}
+
+bool ParseIPv4Address(LPCSTR pszAddress, uint32 &ruAddress)
+{
+	if (pszAddress == NULL || *pszAddress == '\0')
+		return false;
+
+	IN_ADDR address = {};
+	if (InetPtonA(AF_INET, pszAddress, &address) != 1 || address.s_addr == INADDR_NONE)
+		return false;
+
+	ruAddress = address.s_addr;
+	return true;
 }
 
 static bool IsDaylightSavingTimeActive(LONG &rlDaylightBias)

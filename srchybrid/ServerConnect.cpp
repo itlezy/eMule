@@ -528,17 +528,14 @@ void CServerConnect::InitLocalIP()
 {
 	m_nLocalIP = 0;
 
-	// Using 'gethostname/gethostbyname' does not solve the problem when we have more than
-	// one IP address. Using 'gethostname/gethostbyname' even seems to return the last IP
-	// address which we got. e.g. if we already got an IP from our ISP,
-	// 'gethostname/gethostbyname' will return this (primary) IP, but if we add another
-	// IP by opening a VPN connection, 'gethostname' will still return the same hostname,
-	// but 'gethostbyname' will return the 2nd IP.
+	// Using the local hostname does not solve the problem when we have more than one IP
+	// address. Hostname-based resolution can still pick the wrong interface after a VPN
+	// or other additional adapter comes up.
 	// To alleviate the problem at least for users which are binding eMule to a certain IP,
 	// we use the explicitly specified bind address as our local IP address.
 	if (thePrefs.GetBindAddrA() != NULL) {
-		unsigned long ulBindAddr = inet_addr(thePrefs.GetBindAddrA());
-		if (ulBindAddr != INADDR_ANY && ulBindAddr != INADDR_NONE) {
+		uint32 ulBindAddr = 0;
+		if (ParseIPv4Address(thePrefs.GetBindAddrA(), ulBindAddr) && ulBindAddr != INADDR_ANY) {
 			m_nLocalIP = ulBindAddr;
 			return;
 		}

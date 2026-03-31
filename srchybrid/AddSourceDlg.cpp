@@ -20,6 +20,7 @@
 #include "PartFile.h"
 #include "UpDownClient.h"
 #include "DownloadQueue.h"
+#include "OtherFunctions.h"
 #include <wininet.h>
 
 #ifdef _DEBUG
@@ -127,8 +128,8 @@ void CAddSourceDlg::OnBnClickedButton1()
 					return;
 			}
 
-			uint32 ip = inet_addr((CStringA)sip);
-			if (ip != INADDR_NONE && IsGoodIPPort(ip, port)) {
+			uint32 ip = 0;
+			if (ParseIPv4Address(CStringA(sip), ip) && IsGoodIPPort(ip, port)) {
 				CUpDownClient *toadd = new CUpDownClient(m_pFile, port, ntohl(ip), 0, 0);
 				toadd->SetSourceFrom(SF_PASSIVE);
 				theApp.downloadqueue->CheckAndAddSource(m_pFile, toadd);

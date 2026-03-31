@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include <iphlpapi.h>
 #include "BindAddressResolver.h"
+#include "OtherFunctions.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -32,7 +33,7 @@ namespace
 			return CString();
 
 		const SOCKADDR_IN *pSockAddrIn = reinterpret_cast<const SOCKADDR_IN*>(pSockAddr);
-		return CString(CA2T(inet_ntoa(pSockAddrIn->sin_addr)));
+		return ipstr(pSockAddrIn->sin_addr);
 	}
 
 	static void AddUniqueAddress(std::vector<CString> &addresses, const CString &strAddress)
