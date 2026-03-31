@@ -1035,6 +1035,18 @@ CString CemuleDlg::GetTransferRateString()
 	return szBuff;
 }
 
+CString CemuleDlg::GetStatusBarTransferRateString() const
+{
+	CString strTransferRate;
+	if (thePrefs.ShowOverhead())
+		strTransferRate.Format(_T("U:%.1f(%.1f)|D:%.1f(%.1f)")
+			, m_uUpDatarate / 1024.0, theStats.GetUpDatarateOverhead() / 1024.0
+			, m_uDownDatarate / 1024.0, theStats.GetDownDatarateOverhead() / 1024.0);
+	else
+		strTransferRate.Format(_T("U:%.1f|D:%.1f"), m_uUpDatarate / 1024.0, m_uDownDatarate / 1024.0);
+	return strTransferRate;
+}
+
 void CemuleDlg::ShowTransferRate(bool bForceAll)
 {
 	if (bForceAll)
@@ -1059,7 +1071,7 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 	}
 
 	if (IsWindowVisible() || bForceAll) {
-		statusbar->SetText(strTransferRate, SBarUpDown, 0);
+		statusbar->SetText(GetStatusBarTransferRateString(), SBarUpDown, 0);
 		ShowTransferStateIcon();
 	}
 	if (IsWindowVisible() && thePrefs.ShowRatesOnTitle()) {
@@ -1118,9 +1130,9 @@ void CemuleDlg::SetStatusBarPartsSize()
 	int aiWidths[6] =
 	{
 		rect.right - 760,
-		rect.right - 595,
-		rect.right - 405,
-		rect.right - 265,
+		rect.right - 610,
+		rect.right - 440,
+		rect.right - 260,
 		rect.right - 25,
 		-1
 	};
