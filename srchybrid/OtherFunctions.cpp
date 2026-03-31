@@ -1773,7 +1773,7 @@ LPCTSTR GetShellExecuteErrMsg(DWORD dwShellExecError)
 		_T("Application requires Microsoft Windows 32-bit extensions.")},
 	  /*22-31	 RESERVED FOR FUTURE USE. NOT RETURNED BY VERSION 3.0.*/
 	  {24,
-		_T("Command line too long.")}, // 30.03.99 []: Seen under WinNT 4.0/Win98 for a very long command line!
+		_T("Command line too long.")},
 
 	  /*non-WinExec error codes*/
 	  {/*26*/SE_ERR_SHARE,

@@ -600,8 +600,7 @@ HRGN CTaskbarNotifier::CreateRgnFromBitmap(HBITMAP hBmp, COLORREF color)
 		}
 
 		if (pRgnData) {
-			// Create region
-			// WinNT: 'ExtCreateRegion' returns NULL (by Fable@aramszu.net)
+			/** Create an empty region first and then merge the discovered rectangles into it. */
 			hRgn = ::CreateRectRgn(0, 0, 0, 0);
 			if (hRgn) {
 				LPCRECT pRects = (LPRECT)(pRgnData + 1);

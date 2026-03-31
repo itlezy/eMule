@@ -150,8 +150,6 @@ BOOL CStatisticsDlg::OnInitDialog()
 		SetDlgItemText(IDC_BNMENU, _T("6")); // show a down-arrow
 	}
 
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
-	m_stattree.SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 	if (thePrefs.GetUseSystemFontForMainControls())
 		m_stattree.SendMessage(WM_SETFONT, NULL, FALSE);
 	CreateMyTree();

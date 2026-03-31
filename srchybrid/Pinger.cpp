@@ -27,8 +27,7 @@
 * - Although the IcmpSendEcho() docs say it can return multiple
 *    responses, if I receive multiple responses (e.g. sending to
 *    a limited or subnet broadcast address) IcmpSendEcho() only
-*    returns one.  Interesting that NT4 and Win98 don't respond
-*    to broadcast pings.
+*    returns one.
 * - using winsock.h  WSOCK32.LIB and version 1.1 works as well as
 *    using winsock2.h WS2_32.LIB  and version 2.2
 *

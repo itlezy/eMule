@@ -67,35 +67,6 @@ int g_fooResult;
 
 bool SelfTest()
 {
-	// Win98/WinME PROBLEM: Those Windows version have some icon resource limit.
-	// That limit seems to be a combination of the total amount of icon (image)
-	// data which is used by all icons as well as the total number of icon resources
-	// which are listed here in that section. We already exceeded that limit and we
-	// should take care about the order of the icons in that list. We would need to
-	// place icons which are never used under Win98/WinME at the end of the list so
-	// that all other icons have a chance to get loaded. It is though not easy to
-	// find that kind of icons. So, for now, as a quick fix, the smiley icons are
-	// placed at the end of the list - as they are for sure the least important ones.
-	//
-	// However, note also that it leads to quite serious problems if some particular
-	// icons can not get loaded (under Win98/ME). If those icons are used within an
-	// image list and can not get loaded, the remaining icons in that list will
-	// change their position within the list which leads to the situation that the
-	// user will see semantically *wrong* icons (e.g. seeing the 'connected' state
-	// icon although the 'disconnect' state should be shown) - and this is actually
-	// even worse than showing no icons at all.
-	//
-	// It seems that the total amount of icon (image) must not exceed sharp 1.0 MB.
-	// All icons which are placed in the icon section of the resource file above
-	// that 1.0 MB limit can not get loaded by Win98/ME. Note also, if the icon
-	// resource section exceeds some other certain limit, the EXE file itself can
-	// not get loaded by Win98/ME any longer.
-	//
-	// (See also "CheckResources" in SelfTest.cpp)
-	//
-	// TODO: Maybe we can put the icons in different language sections in the
-	// rc file to avoid that Win98 restriction.
-	//
 #ifdef _DEBUG
 	//CheckResources();
 #endif

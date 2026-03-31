@@ -44,27 +44,13 @@
 #pragma warning(disable:4061) // enumerate in switch of enum is not explicitly handled by a case label
 #pragma warning(disable:4062) // enumerate in switch of enum is not handled
 #pragma warning(disable:4191) // 'type cast' : unsafe conversion from <this> to <that>
-#if _MSC_VER<1400
-#pragma warning(disable:4217) // <func>: member template functions cannot be used for copy-assignment or copy-construction
-#endif
 #pragma warning(disable:4263) // <func> member function does not override any base class virtual member function
 #pragma warning(disable:4264) // <func>: no override available for virtual member function from base <class>; function is hidden
 #pragma warning(disable:4265) // <class>: class has virtual functions, but destructor is not virtual
-#if _MSC_VER>=1400
 #pragma warning(disable:4266) // no override available for virtual member function from base <class>; function is hidden
-#endif
-#if _MSC_VER>=1400
 #pragma warning(disable:4365) // conversion from 'int' to 'UINT', signed/unsigned mismatch
-#endif
-#if _MSC_VER>=1900
 #pragma warning(disable:4435) // Object layout under /vd2 will change due to virtual base
-#endif
-#if _MSC_VER<1400
-#pragma warning(disable:4529) // forming a pointer-to-member requires explicit use of the address-of operator ('&') and a qualified name
-#endif
-#if _MSC_VER>=1400
 #pragma warning(disable:4571) // Informational: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught
-#endif
 #pragma warning(disable:4619) // #pragma warning : there is no warning number <n>
 #pragma warning(disable:4625) // <class> : copy constructor could not be generated because a base class copy constructor is inaccessible
 #pragma warning(disable:4626) // <class> : assignment operator could not be generated because a base class copy constructor is inaccessible
@@ -72,22 +58,17 @@
 #pragma warning(disable:4668) // <name>  is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
 #pragma warning(disable:4710) // function not inlined
 #pragma warning(disable:4711) // function <func> selected for automatic inline expansion
-#if _MSC_VER>=1400
 #pragma warning(disable:4738) // storing 32-bit float result in memory, possible loss of performance
-#endif
 #ifdef _M_ARM64
 #pragma warning(disable:4746) // volatile access of '<expression>' is subject to /volatile:[iso|ms] setting
 #endif
 #pragma warning(disable:4820) // <n> bytes padding added after member <member>
 #pragma warning(disable:4917) // a GUID can only be associated with a class, interface or namespace
-#if _MSC_VER>=1900
 #pragma warning(disable:5026) // move constructor was implicitly defined as deleted
 #pragma warning(disable:5027) // move assignment operator was implicitly defined as deleted
 #pragma warning(disable:5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #pragma warning(disable:5220) // a non-static data member with a volatile qualified type no longer implies that compiler generated copy/move constructors and copy/move assignment operators are non trivial
-#endif
 
-#if _MSC_VER>=1400
 // _CRT_SECURE_NO_DEPRECATE - Disable all warnings for not using "_s" functions.
 //
 #ifndef _CRT_SECURE_NO_DEPRECATE
@@ -121,8 +102,6 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
 
-#endif//_MSC_VER>=1400
-
 #ifdef _DEBUG
 #define _ATL_DEBUG
 #define _ATL_DEBUG_QI
@@ -146,54 +125,6 @@
 #include <afxcoll.h>
 #include <afximpl.h>
 
-
-#ifndef EWX_FORCEIFHUNG
-#define EWX_FORCEIFHUNG			0x00000010
-#endif
-
-#ifndef WS_EX_LAYOUTRTL
-#define WS_EX_LAYOUTRTL			0x00400000L // Right to left mirroring
-#endif
-
-#ifndef LAYOUT_RTL
-#define LAYOUT_RTL				0x00000001 // Right to left
-#endif
-
-#ifndef COLOR_HOTLIGHT
-#define COLOR_HOTLIGHT			26
-#endif
-
-#ifndef WS_EX_LAYERED
-#define WS_EX_LAYERED			0x00080000
-#endif
-
-#ifndef LWA_COLORKEY
-#define LWA_COLORKEY			0x00000001
-#endif
-
-#ifndef LWA_ALPHA
-#define LWA_ALPHA				0x00000002
-#endif
-
-#ifndef HDF_SORTUP
-#define HDF_SORTUP				0x0400
-#endif
-
-#ifndef HDF_SORTDOWN
-#define HDF_SORTDOWN			0x0200
-#endif
-
-#ifndef COLOR_GRADIENTACTIVECAPTION
-#define COLOR_GRADIENTACTIVECAPTION 27
-#endif
-
-#ifndef LVBKIF_TYPE_WATERMARK
-#define LVBKIF_TYPE_WATERMARK   0x10000000
-#endif
-
-#ifndef LVBKIF_FLAG_ALPHABLEND
-#define LVBKIF_FLAG_ALPHABLEND  0x20000000
-#endif
 
 #include "types.h"
 

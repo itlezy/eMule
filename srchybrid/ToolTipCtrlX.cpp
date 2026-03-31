@@ -441,7 +441,8 @@ void CToolTipCtrlX::CustomPaint(LPNMTTCUSTOMDRAW pNMCD)
 					} else {
 						// Text is written in the currently selected font. If 'nTabPositions' is 0 and 'lpnTabStopPositions' is NULL,
 						// tabs are expanded to eight times the average character width.
-						if (strLine.IsEmpty()) // Win98: To draw an empty line we need to output at least a space.
+						/** TabbedTextOut needs a visible character to render an empty line. */
+						if (strLine.IsEmpty())
 							siz = pdc->TabbedTextOut(ptText.x, ptText.y, _T(" "), 1, NULL, 0);
 						else
 							siz = pdc->TabbedTextOut(ptText.x, ptText.y, strLine, strLine.GetLength(), NULL, 0);
