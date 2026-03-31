@@ -95,6 +95,30 @@ protected:
 		MoveControlRect(uControlId, rectControl);
 	}
 
+	void MoveControlLeftOf(UINT uControlId, UINT uAnchorControlId, int iGap)
+	{
+		CRect rectControl;
+		CRect rectAnchor;
+		if (!GetPageControlRect(uControlId, rectControl) || !GetPageControlRect(uAnchorControlId, rectAnchor))
+			return;
+
+		const int iWidth = rectControl.Width();
+		rectControl.right = rectAnchor.left - iGap;
+		rectControl.left = rectControl.right - iWidth;
+		MoveControlRect(uControlId, rectControl);
+	}
+
+	void StretchControlToLeftOf(UINT uControlId, UINT uAnchorControlId, int iGap)
+	{
+		CRect rectControl;
+		CRect rectAnchor;
+		if (!GetPageControlRect(uControlId, rectControl) || !GetPageControlRect(uAnchorControlId, rectAnchor))
+			return;
+
+		rectControl.right = max(rectControl.left + 4, rectAnchor.left - iGap);
+		MoveControlRect(uControlId, rectControl);
+	}
+
 	void SetControlRect(UINT uControlId, int iLeft, int iTop, int iWidth, int iHeight)
 	{
 		CRect rectControl(iLeft, iTop, iLeft + iWidth, iTop + iHeight);

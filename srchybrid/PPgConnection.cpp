@@ -320,7 +320,9 @@ BOOL CPPgConnection::OnInitDialog()
 	LoadBindableInterfaces();
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_KBS1, IDC_KBS2, IDC_KBS3, IDC_KBS4, IDC_STARTTEST });
+	ApplyWidePageLayout(
+		{ IDC_KBS1, IDC_KBS2, IDC_KBS3, IDC_KBS4, IDC_STARTTEST },
+		{ IDC_DOWNLOAD_CAP, IDC_UPLOAD_CAP, IDC_PORT, IDC_UDPPORT, IDC_MAXSOURCEPERFILE, IDC_MAXCON });
 	InitializePageToolTips({
 		{ IDC_DOWNLOAD_CAP, _T("Download capacity is the reference ceiling used by the limiter and graphs. Enter 0 for unlimited; otherwise use a realistic line rate so automatic balancing and percentages stay meaningful.") },
 		{ IDC_UPLOAD_CAP, _T("Upload capacity is the most important bandwidth value in eMule. Enter the real sustainable upstream rate, not a marketing number, or queue fairness and protocol overhead handling will be off.") },
