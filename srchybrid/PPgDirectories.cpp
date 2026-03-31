@@ -50,7 +50,7 @@ BEGIN_MESSAGE_MAP(CPPgDirectories, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgDirectories::CPPgDirectories()
-	: CPropertyPage(CPPgDirectories::IDD)
+	: CPreferencesPage(CPPgDirectories::IDD)
 	, m_icoBrowse()
 {
 }
@@ -91,6 +91,15 @@ BOOL CPPgDirectories::OnInitDialog()
 	LoadSettings();
 	Localize();
 	UpdateAutoRescanControls();
+	ApplyWidePageLayout({ IDC_SELINCDIR, IDC_SELTEMPDIR, IDC_SELTEMPDIRADD, IDC_UNCADD });
+	InitializePageToolTips({
+		{ IDC_INCFILES, _T("Completed downloads are moved here and shared from here. Choosing a non-empty folder means every valid file already inside becomes part of your shared set.") },
+		{ IDC_TEMPFILES, _T("Temporary download storage. Multiple folders can be separated with the '|' character. Keep them on fast, stable local disks and never reuse the incoming directory here.") },
+		{ IDC_SHARESELECTOR, _T("Tree of shared folders. Tick only locations you intentionally publish; fixed shares survive rescans, and unavailable paths are handled according to the advanced tweak settings.") },
+		{ IDC_AUTORESCANSHAREDFOLDERS, _T("Automatically rescans shared folders for added or removed files. Useful for import-heavy folders, but each rescan costs disk I/O on large trees.") },
+		{ IDC_AUTORESCANSHAREDINTERVAL, _T("Seconds between automatic shared-folder rescans. The value must stay reasonably high so the scanner does not fight with active transfers or the disk cache.") },
+		{ IDC_AUTOSHARENEWSUBDIRS, _T("Extends a shared parent folder to new child folders created later. Convenient for structured libraries, but it can also expose folders you forgot would be created under that tree.") }
+	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

@@ -111,7 +111,7 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgConnection::CPPgConnection()
-	: CPropertyPage(CPPgConnection::IDD)
+	: CPreferencesPage(CPPgConnection::IDD)
 	, m_lastudp()
 {
 }
@@ -320,6 +320,19 @@ BOOL CPPgConnection::OnInitDialog()
 	LoadBindableInterfaces();
 	LoadSettings();
 	Localize();
+	ApplyWidePageLayout({ IDC_KBS1, IDC_KBS2, IDC_KBS3, IDC_KBS4, IDC_STARTTEST });
+	InitializePageToolTips({
+		{ IDC_DOWNLOAD_CAP, _T("Download capacity is the reference ceiling used by the limiter and graphs. Enter 0 for unlimited; otherwise use a realistic line rate so automatic balancing and percentages stay meaningful.") },
+		{ IDC_UPLOAD_CAP, _T("Upload capacity is the most important bandwidth value in eMule. Enter the real sustainable upstream rate, not a marketing number, or queue fairness and protocol overhead handling will be off.") },
+		{ IDC_PORT, _T("Main TCP port used for eD2K traffic and most incoming client connections. Changing it may require firewall, router, or UPnP updates before the port becomes reachable again.") },
+		{ IDC_UDPPORT, _T("UDP port used for Kad, source exchange, and several auxiliary queries. Setting it to 0 disables UDP-dependent features and limits Kad connectivity.") },
+		{ IDC_MAXCON, _T("Upper bound for simultaneously tracked socket connections. Raising it can help on fast lines, but values beyond what the machine and router can sustain just increase churn and reconnect pressure.") },
+		{ IDC_MAXSOURCEPERFILE, _T("Per-file source cap. Lower values reduce memory and socket pressure, higher values widen the candidate pool for rare files. Enter 0 to keep the protocol-level unlimited sentinel.") },
+		{ IDC_BIND_INTERFACE, _T("Pins outgoing sockets to a specific network adapter. Use this when the machine has multiple interfaces and you want eMule to stay on one of them even if routing priorities change.") },
+		{ IDC_BIND_ADDRESS, _T("Pins outgoing sockets to one concrete local IP address. Prefer interface binding unless you truly need a specific address, because addresses change more often than adapters do.") },
+		{ IDC_PREF_UPNPONSTART, _T("Attempts to create router port mappings automatically during startup. It is convenient on a trusted home router, but a manual static mapping is still the most predictable setup.") },
+		{ IDC_RANDOMIZEPORTSONSTARTUP, _T("Generates fresh TCP and UDP listening ports on every startup. This avoids fixed-port signatures, but it also means you cannot rely on static firewall or router rules.") }
+	});
 
 	ChangePorts(2); //"Test ports" button enable/disable
 

@@ -1,8 +1,9 @@
 #pragma once
+#include "PreferencesPage.h"
 
 class CCustomAutoComplete;
 
-class CPPgSecurity : public CPropertyPage
+class CPPgSecurity : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgSecurity)
 

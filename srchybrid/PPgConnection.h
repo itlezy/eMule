@@ -1,9 +1,10 @@
 #pragma once
 
 #include <vector>
+#include "PreferencesPage.h"
 #include "BindAddressResolver.h"
 
-class CPPgConnection : public CPropertyPage
+class CPPgConnection : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgConnection)
 

@@ -1,6 +1,7 @@
 #pragma once
+#include "PreferencesPage.h"
 
-class CPPgGeneral : public CPropertyPage
+class CPPgGeneral : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgGeneral)
 

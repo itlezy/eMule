@@ -1,7 +1,8 @@
 #pragma once
+#include "PreferencesPage.h"
 #include "TreeOptionsCtrlEx.h"
 
-class CPPgTweaks : public CPropertyPage
+class CPPgTweaks : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgTweaks)
 

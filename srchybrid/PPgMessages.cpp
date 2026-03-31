@@ -46,7 +46,7 @@ BEGIN_MESSAGE_MAP(CPPgMessages, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgMessages::CPPgMessages()
-	: CPropertyPage(CPPgMessages::IDD)
+	: CPreferencesPage(CPPgMessages::IDD)
 {
 }
 
@@ -75,6 +75,15 @@ BOOL CPPgMessages::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	ApplyWidePageLayout();
+	InitializePageToolTips({
+		{ IDC_FILTER, _T("Words or fragments that suppress incoming chat messages when matched. Use this for obvious spam markers, but do not make it so broad that genuine contacts disappear silently.") },
+		{ IDC_COMMENTFILTER, _T("Case-insensitive filter terms for file comments, separated with '|'. Matching comments are normalized to lower case and compared against the tokens you enter here.") },
+		{ IDC_MSGONLYFRIENDS, _T("Accepts private messages only from people in your friends list. This is the bluntest anti-spam option and also blocks legitimate messages from unknown peers.") },
+		{ IDC_ADVSPAMFILTER, _T("Enables the stronger chat spam heuristics. Use it as the default anti-spam layer; it unlocks captcha enforcement for contacts that still look suspicious.") },
+		{ IDC_USECAPTCHAS, _T("Requires suspicious chat senders to pass a captcha before their messages are accepted. This reduces automated spam, but it also adds friction for real users contacting you for the first time.") },
+		{ IDC_MSHOWSMILEYS, _T("Replaces smiley text tokens with graphics in chat windows. It is cosmetic only and can be disabled if you prefer raw text or want slightly cleaner message layout.") }
+	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -145,7 +154,7 @@ void CPPgMessages::OnDestroy()
 
 BOOL CPPgMessages::PreTranslateMessage(MSG *pMsg)
 {
-	return CPropertyPage::PreTranslateMessage(pMsg);
+	return CPreferencesPage::PreTranslateMessage(pMsg);
 }
 
 

@@ -1,7 +1,8 @@
 #pragma once
+#include "PreferencesPage.h"
 #include "ColorButton.h"
 
-class CPPgStats : public CPropertyPage
+class CPPgStats : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgStats)
 

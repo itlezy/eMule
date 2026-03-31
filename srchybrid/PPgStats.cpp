@@ -45,7 +45,7 @@ BEGIN_MESSAGE_MAP(CPPgStats, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgStats::CPPgStats()
-	: CPropertyPage(CPPgStats::IDD)
+	: CPreferencesPage(CPPgStats::IDD)
 	, m_iStatsColors()
 	, m_pdwStatsColors()
 	, m_iGraphsUpdate()
@@ -126,6 +126,16 @@ BOOL CPPgStats::OnInitDialog()
 
 	Localize();
 	SetModified(FALSE);
+	ApplyWidePageLayout({ IDC_COLOR_BUTTON });
+	InitializePageToolTips({
+		{ IDC_SLIDER, _T("Refresh interval for the traffic graphs. Lower values update more smoothly but cost more repaint work; higher values are lighter and more stable on slow machines.") },
+		{ IDC_SLIDER2, _T("Refresh interval for the statistics tree. Setting it to zero effectively freezes the live tree updates while the rest of the statistics window can still remain open.") },
+		{ IDC_SLIDER3, _T("Time window used to smooth average graph values. Short windows react quickly to bursts, long windows emphasize the overall trend.") },
+		{ IDC_CGRAPHSCALE, _T("Upper Y-axis limit for the connections graph. Values above the configured maximum connection range are clamped back automatically.") },
+		{ IDC_CRATIO, _T("Vertical compression ratio for the active-connections graph. Larger ratios make large swings fit more easily, smaller ratios show more detail in the lower range.") },
+		{ IDC_COLORSELECTOR, _T("Selects which graph or meter element the color button edits. Change the selector first, then pick the replacement color on the button beside it.") },
+		{ IDC_FILL_GRAPHS, _T("Draws the graph areas filled instead of line-only. It improves readability for some users, but uses heavier visual shading.") }
+	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

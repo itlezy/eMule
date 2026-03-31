@@ -1,7 +1,8 @@
 #pragma once
+#include "PreferencesPage.h"
 #include "Preferences.h"
 
-class CPPgProxy : public CPropertyPage
+class CPPgProxy : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgProxy)
 

@@ -1,7 +1,8 @@
 #pragma once
+#include "PreferencesPage.h"
 #include "DirectoryTreeCtrl.h"
 
-class CPPgDirectories : public CPropertyPage
+class CPPgDirectories : public CPreferencesPage
 {
 	DECLARE_DYNAMIC(CPPgDirectories)
 
