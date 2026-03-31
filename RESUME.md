@@ -9,6 +9,7 @@
 - Restored the original pre-IP pane widths for `Users`, `UpDown`, `Connected`, and `Chat`, and kept the new prepended `IP` pane by taking its width only from the elastic log area.
 - Restored the original full `Up:` / `Down:` status-bar transfer text and removed the compact fallback text for the IP pane.
 - Fixed the status-bar public-IP formatter to use the app's stored IPv4 byte order, so the pane and tooltip no longer display the eD2K-reported address with reversed octets.
+- Captured the decision to keep VPN kill-switch behavior out of eMule itself and move it into a separate external watchdog tool design in `docs\EXTRAS_VPNKILLSWITCHDESIGN.md`.
 - Added `helpers\e2e-vpn-launch.ps1` to run a clean `%LOCALAPPDATA%\eMule` end-to-end session with emule-security `nodes.dat`/`server.met`, recursive shared-directory seeding, VPN-IP binding, and disk-backed verbose logging.
 - Verified the helper against `C:\tmp\videodupez\` with bind address `10.54.218.144`: the app wrote `eMule.log` and `eMule_Verbose.log`, loaded 153 Kad contacts from `nodes.dat`, connected to `eMule Sunrise` and `eMule Security`, and started hashing the recursive share tree.
 - Fixed `CKnownFileList::ShouldPurgeAICHHashset` so orphaned known2.met AICH entries are treated as purgeable instead of tripping a debug-only assertion, and added a shared regression seam for the purge decision.
@@ -26,6 +27,7 @@
 - The main status bar now has a dedicated IP pane with compact `Bind/Public` runtime address visibility and tooltip expansion for the same data.
 - The prepended IP pane now uses the original status-bar sizing for all legacy panes and shows full `B:...|P:...` text without shortening.
 - The public-IP side of the status-bar pane now renders with the same stored-byte-order convention as the rest of the app instead of reversing octets.
+- The VPN safety direction is now documented as an external process watchdog rather than an in-process bind kill switch.
 - `FEAT_018` is implemented with persisted connection/download timeout defaults and shorter fixed UDP/source-latency constants.
 - `FEAT_019` is effectively complete for the active modern-limits knobs; the remaining advanced limit controls stay in their existing Tweaks groups or other existing UI pages.
 - `FEAT_017` is still partial because `QueueSize` remains `5000` even though `MaxSourcesPerFile` is now `600`.
@@ -34,6 +36,7 @@
 ## Next Chunk
 
 - If status-bar polish continues, consider surfacing the resolved bind interface name in the Network Info dialog or connected-pane tooltip without changing the restored legacy pane widths.
+- If VPN safety work starts, implement the external watchdog described in `docs\EXTRAS_VPNKILLSWITCHDESIGN.md` instead of reviving the in-app bind kill switch.
 - Continue with a similarly scoped modernization block:
   - take `WWMOD_050` next for typed time-conversion helper cleanup, or
   - return to the deferred CRT-hardening pair `WWMOD_019` plus `WWMOD_008`
