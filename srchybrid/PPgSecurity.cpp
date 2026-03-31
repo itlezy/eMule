@@ -65,7 +65,7 @@ BEGIN_MESSAGE_MAP(CPPgSecurity, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgSecurity::CPPgSecurity()
-	: CPreferencesPage(CPPgSecurity::IDD)
+	: CPropertyPage(CPPgSecurity::IDD)
 	, m_pacIPFilterURL()
 {
 }
@@ -123,19 +123,6 @@ BOOL CPPgSecurity::OnInitDialog()
 
 	if (GetDlgItem(IDC_UPDATEURL)->GetWindowTextLength() == 0)
 		SetDlgItemText(IDC_UPDATEURL, DEFAULT_IPFILTER_URL);
-	ApplyWidePageLayout({ IDC_RELOADFILTER, IDC_EDITFILTER, IDC_LOADURL, IDC_DD });
-	InitializePageToolTips({
-		{ IDC_FILTERLEVEL, _T("Only IP filter entries at or below this level are enforced. Lowering the value makes the filter stricter; raising it allows more borderline ranges through.") },
-		{ IDC_FILTERSERVERBYIPFILTER, _T("Removes servers whose IP addresses match the active IP filter. Enable it if you maintain a meaningful filter list; otherwise it may hide servers without giving you any real protection.") },
-		{ IDC_UPDATEURL, _T("Source URL for downloading a replacement ipfilter file. The drop-down history remembers previous URLs locally when auto-completion is enabled.") },
-		{ IDC_LOADURL, _T("Downloads the filter archive from the entered URL, unpacks it when needed, and replaces the current local filter file if validation succeeds.") },
-		{ IDC_USESECIDENT, _T("Enables secure identification where supported so credits and identity checks are tied to cryptographic keys instead of only IP or nickname assumptions.") },
-		{ IDC_DISABLEOBFUSCATION, _T("Disables protocol obfuscation support entirely. Use this only if you need predictable plain traffic for debugging or a broken network appliance.") },
-		{ IDC_ENABLEOBFUSCATION, _T("Requests obfuscated peer connections when the remote side supports them, while still allowing plain connections as a fallback.") },
-		{ IDC_ONLYOBFUSCATED, _T("Requires obfuscation for peer connections once obfuscation itself is enabled. This is the strictest mode and can reduce connectivity with clients that do not support it.") },
-		{ IDC_SEARCHSPAMFILTER, _T("Enables local filtering of suspicious search results before they are shown. It helps against obvious garbage, but it can occasionally hide odd-looking legitimate results.") },
-		{ IDC_CHECK_FILE_OPEN, _T("Verifies whether files can be opened before certain shell actions are attempted. It catches stale paths earlier, at the cost of one extra filesystem check.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
@@ -450,7 +437,7 @@ BOOL CPPgSecurity::PreTranslateMessage(MSG *pMsg)
 		}
 	}
 
-	return CPreferencesPage::PreTranslateMessage(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 void CPPgSecurity::OnEnChangeUpdateUrl()

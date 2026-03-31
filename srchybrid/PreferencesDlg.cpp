@@ -113,7 +113,7 @@ CPreferencesDlg::CPreferencesDlg()
 	// The height of the option dialog is already too large for 640x480. To show as much as
 	// possible we do not show a page caption (which is a decorative element only anyway).
 	SetTreeViewMode(TRUE, ::GetSystemMetrics(SM_CYSCREEN) >= 600, TRUE);
-	SetTreeWidth(180);
+	SetTreeWidth(170);
 
 	m_pPshStartPage = NULL;
 	m_bSaveIniFile = false;

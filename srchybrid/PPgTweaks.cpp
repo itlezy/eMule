@@ -73,7 +73,7 @@ BEGIN_MESSAGE_MAP(CPPgTweaks, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgTweaks::CPPgTweaks()
-	: CPreferencesPage(CPPgTweaks::IDD)
+	: CPropertyPage(CPPgTweaks::IDD)
 	, m_ctrlTreeOptions(theApp.m_iDfltImageListColorFlags)
 	, m_htiA4AFSaveCpu()
 	, m_htiAutoArch()
@@ -721,15 +721,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_ctlQueueSize.SetPageSize(10);
 
 	Localize();
-	ApplyWidePageLayout({ IDC_OPENPREFINI });
-	StretchControlToRight(IDC_WARNING, 12);
-	StretchControlToRight(IDC_PREFINI_STATIC, 80);
-	InitializePageToolTips({
-		{ IDC_EXT_OPTS, _T("Advanced preference tree. Most options here trade convenience against performance, safety, or compatibility; change one thing at a time and keep notes when experimenting.") },
-		{ IDC_FILEBUFFERSIZE, _T("Per-file buffered write size. Larger buffers reduce small writes and can help fast disks, but they also keep more unwritten data in memory.") },
-		{ IDC_QUEUESIZE, _T("Upload queue size budget. Higher values can keep more clients queued, but they also increase bookkeeping and can make the UI and persistence heavier.") },
-		{ IDC_OPENPREFINI, _T("Opens the raw preferences.ini file for manual inspection or emergency edits. Prefer the UI where possible, because many advanced values are validated more carefully here.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

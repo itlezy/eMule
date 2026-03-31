@@ -51,7 +51,7 @@ BEGIN_MESSAGE_MAP(CPPgNotify, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgNotify::CPPgNotify()
-	: CPreferencesPage(CPPgNotify::IDD)
+	: CPropertyPage(CPPgNotify::IDD)
 	, m_icoBrowse()
 {
 }
@@ -95,18 +95,6 @@ BOOL CPPgNotify::OnInitDialog()
 
 	UpdateControls();
 	Localize();
-	ApplyWidePageLayout({ IDC_BTN_BROWSE_WAV, IDC_TEST_NOTIFICATION });
-	InitializePageToolTips({
-		{ IDC_CB_TBN_NOSOUND, _T("Disables all notification audio. Pop-up events still happen if their event checkboxes are enabled; only the sound channel is suppressed.") },
-		{ IDC_CB_TBN_USESOUND, _T("Plays a WAV file when a notification fires. The selected file should be short and local, because the sound is loaded when the event triggers.") },
-		{ IDC_EDIT_TBN_WAVFILE, _T("Path to the WAV file used for sound notifications. Keep it local and stable so notifications do not pause on a missing share or removable drive.") },
-		{ IDC_CB_TBN_USESPEECH, _T("Uses the installed speech engine instead of a WAV file. Availability depends on the local SAPI setup; when no speech engine exists, this option is disabled.") },
-		{ IDC_CB_TBN_ONDOWNLOAD, _T("Triggers a notifier when a download finishes. This is one of the noisiest events on busy clients, so pair it with a modest sound or no sound at all.") },
-		{ IDC_CB_TBN_ONNEWDOWNLOAD, _T("Triggers a notifier when a new download is added. Useful during remote or scripted link injection, but often excessive for manual day-to-day use.") },
-		{ IDC_CB_TBN_ONCHAT, _T("Triggers a notifier when a chat arrives. The additional chat-message option below refines whether every incoming message should pop or only session starts.") },
-		{ IDC_CB_TBN_IMPORTATNT, _T("Triggers the notifier for important errors and major warnings. This is usually the safest event to keep enabled because it highlights issues that need attention.") },
-		{ IDC_TEST_NOTIFICATION, _T("Temporarily applies the current dialog settings and shows a sample notifier so you can validate sound, speech, and popup behavior before saving.") }
-	});
 
 	GetDlgItem(IDC_CB_TBN_USESPEECH)->EnableWindow(IsSpeechEngineAvailable());
 

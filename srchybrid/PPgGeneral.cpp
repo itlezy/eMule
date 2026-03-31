@@ -67,7 +67,7 @@ void CPPgGeneral::SetLangSel()
 }
 
 CPPgGeneral::CPPgGeneral()
-	: CPreferencesPage(CPPgGeneral::IDD)
+	: CPropertyPage(CPPgGeneral::IDD)
 {
 }
 
@@ -139,16 +139,6 @@ BOOL CPPgGeneral::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_WEBSVEDIT, IDC_ED2KFIX });
-	InitializePageToolTips({
-		{ IDC_NICK, _T("This nickname is advertised to other eD2K and Kad peers. Keep it recognizable, avoid path-like text, and expect invalid characters to be stripped when you apply the page.") },
-		{ IDC_LANGS, _T("Changes the user-interface language after Apply or OK. English remains the safe fallback when a translation is incomplete or missing.") },
-		{ IDC_BRINGTOFOREGROUND, _T("When another instance or an external action targets eMule, the main window is restored and brought to the front instead of staying hidden behind other programs.") },
-		{ IDC_ONLINESIG, _T("Enables the online-signature status output used by external signature images. It adds lightweight status publishing, but only matters if you actually use a signature service.") },
-		{ IDC_WEBSVEDIT, _T("Opens the configured web-services list so you can review or customize the external search and lookup targets used by context actions.") },
-		{ IDC_ED2KFIX, _T("Repairs the Windows eD2K protocol registration so ed2k:// links open in this build again. Use it if browser or shell links stopped handing off to eMule.") },
-		{ IDC_PREVENTSTANDBY, _T("Requests that Windows keeps the machine awake while eMule is busy. Enable it on machines that should not sleep during long transfers; leave it off if system power saving is more important.") }
-	});
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
 }

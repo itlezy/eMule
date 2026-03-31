@@ -57,7 +57,7 @@ BEGIN_MESSAGE_MAP(CPPgFiles, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgFiles::CPPgFiles()
-	: CPreferencesPage(CPPgFiles::IDD)
+	: CPropertyPage(CPPgFiles::IDD)
 	, m_icoBrowse()
 {
 }
@@ -77,18 +77,6 @@ BOOL CPPgFiles::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_BROWSEV, IDC_FNC });
-	InitializePageToolTips({
-		{ IDC_PF_TIMECALC, _T("Uses the newer time-remaining estimator, which reacts faster to changing sources and bandwidth. Disable it only if you prefer the older, slower-moving estimate style.") },
-		{ IDC_PREVIEWPRIO, _T("Temporarily prefers preview-relevant chunks so media previews become playable earlier. It can slightly reduce pure completion efficiency on some files.") },
-		{ IDC_FULLCHUNKTRANS, _T("Biases uploads toward full-chunk completion. This improves chunk propagation and client credit usefulness, but it may keep some upload slots on the same peer longer.") },
-		{ IDC_STARTNEXTFILE, _T("Automatically resumes another paused download when one finishes. The category sub-options refine whether the replacement can come from any category or only matching ones.") },
-		{ IDC_FNCLEANUP, _T("Cleans incoming filenames by applying your configured replacement filter. Use the edit button to inspect the token list before enabling it globally.") },
-		{ IDC_VIDEOPLAYER, _T("Path to the external player started from preview actions. Leave it blank to use the default shell association, or point it at a known executable for deterministic behavior.") },
-		{ IDC_VIDEOPLAYER_ARGS, _T("Optional command-line arguments appended when the external player is launched. Use this for flags like fullscreen or portable-profile switches.") },
-		{ IDC_REMEMBERDOWNLOADED, _T("Keeps a history of completed downloads so the client can recognize them later. Useful for duplicate awareness, but it grows local metadata over time.") },
-		{ IDC_REMEMBERCANCELLED, _T("Keeps a history of cancelled downloads to avoid re-adding them accidentally. Disable it only if you routinely cancel and later re-download the same files on purpose.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

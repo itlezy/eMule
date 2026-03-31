@@ -40,7 +40,7 @@ BEGIN_MESSAGE_MAP(CPPgDebug, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgDebug::CPPgDebug()
-	: CPreferencesPage(CPPgDebug::IDD)
+	: CPropertyPage(CPPgDebug::IDD)
 	, m_ctrlTreeOptions(theApp.m_iDfltImageListColorFlags)
 {
 	ClearAllMembers();
@@ -143,10 +143,6 @@ BOOL CPPgDebug::OnInitDialog()
 	m_ctrlTreeOptions.SetImageListColorFlags(theApp.m_iDfltImageListColorFlags);
 	CPropertyPage::OnInitDialog();
 	InitWindowStyles(this);
-	ApplyWidePageLayout();
-	InitializePageToolTips({
-		{ IDC_DEBUG_OPTS, _T("Developer-facing logging and debug controls. Raising levels increases log volume quickly and can affect performance, so keep changes narrow and temporary.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

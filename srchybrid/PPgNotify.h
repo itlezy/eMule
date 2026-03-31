@@ -12,10 +12,9 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
-#include "PreferencesPage.h"
 #include "Preferences.h"
 
-class CPPgNotify : public CPreferencesPage
+class CPPgNotify : public CPropertyPage
 {
 	DECLARE_DYNAMIC(CPPgNotify)
 

@@ -1,5 +1,4 @@
 #pragma once
-#include "PreferencesPage.h"
 #include "stdafx.h"
 #include "emule.h"
 #include "TreeOptionsCtrlEx.h"
@@ -7,7 +6,7 @@
 #define	MAX_DETAIL_ITEMS	7
 #define	MAX_INTEGER_ITEMS	1
 
-class CPPgDebug : public CPreferencesPage
+class CPPgDebug : public CPropertyPage
 {
 	DECLARE_DYNAMIC(CPPgDebug)
 

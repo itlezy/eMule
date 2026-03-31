@@ -1,9 +1,8 @@
 #pragma once
 
-#include "PreferencesPage.h"
 #include "3dpreviewcontrol.h"
 
-class CPPgDisplay : public CPreferencesPage
+class CPPgDisplay : public CPropertyPage
 {
 	DECLARE_DYNAMIC(CPPgDisplay)
 

@@ -42,7 +42,7 @@ BEGIN_MESSAGE_MAP(CPPgProxy, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgProxy::CPPgProxy()
-	: CPreferencesPage(CPPgProxy::IDD)
+	: CPropertyPage(CPPgProxy::IDD)
 	, proxy(thePrefs.GetProxySettings())
 {
 }
@@ -61,16 +61,6 @@ BOOL CPPgProxy::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout();
-	InitializePageToolTips({
-		{ IDC_ENABLEPROXY, _T("Routes outgoing network traffic through the configured proxy. Use it only when you actually need proxying, because a bad proxy setup breaks connectivity more thoroughly than a bad server list.") },
-		{ IDC_PROXYTYPE, _T("Select the protocol spoken by the proxy endpoint. Authentication support depends on this choice; unsupported combinations are disabled automatically.") },
-		{ IDC_PROXYNAME, _T("Proxy host name or literal IP address. Host:port input is accepted, but the port field is still authoritative after parsing.") },
-		{ IDC_PROXYPORT, _T("TCP port of the proxy service. If you leave it empty or invalid, the dialog falls back to the default SOCKS-style port 1080.") },
-		{ IDC_ENABLEAUTH, _T("Enables username/password authentication for proxy types that support it. Leave it off for unauthenticated local proxies.") },
-		{ IDC_USERNAME_A, _T("Proxy login name. This credential is sent to the proxy, not to peers or servers.") },
-		{ IDC_PASSWORD, _T("Proxy password. It is stored with the proxy settings, so use it only for trusted proxy endpoints.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

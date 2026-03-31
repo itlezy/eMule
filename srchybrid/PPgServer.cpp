@@ -48,7 +48,7 @@ BEGIN_MESSAGE_MAP(CPPgServer, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgServer::CPPgServer()
-	: CPreferencesPage(CPPgServer::IDD)
+	: CPropertyPage(CPPgServer::IDD)
 {
 }
 
@@ -64,17 +64,6 @@ BOOL CPPgServer::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_EDITADR });
-	InitializePageToolTips({
-		{ IDC_AUTOSERVER, _T("Allows the client to refresh the server list automatically from trusted sources. Convenient, but only as good as the sources you permit elsewhere in this page.") },
-		{ IDC_UPDATESERVERCONNECT, _T("Accepts server addresses published by connected servers. This can keep the list fresh, but it also broadens who can suggest entries.") },
-		{ IDC_UPDATESERVERCLIENT, _T("Accepts server addresses announced by clients. It increases discovery, but it is also the loosest trust path and should be enabled only if you deliberately want that tradeoff.") },
-		{ IDC_SERVERRETRIES, _T("Number of failed connection attempts before a dead server is treated as exhausted. Lower values cycle faster, higher values are more tolerant of flaky servers.") },
-		{ IDC_SAFESERVERCONNECT, _T("Slows down server switching to reduce churn and avoid burning through the list too aggressively. Useful on unstable networks or weak server lists.") },
-		{ IDC_AUTOCONNECTSTATICONLY, _T("Restricts automatic connections to the static server list. This is stricter and more predictable, but it only works well if you curate that list carefully.") },
-		{ IDC_MANUALSERVERHIGHPRIO, _T("Marks manually added servers as high priority by default, making them more likely to be tried early. Good for a curated list; bad if you add unvetted entries casually.") },
-		{ IDC_EDITADR, _T("Opens addresses.dat in your configured text editor so you can review or hand-edit the manual address list directly.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE

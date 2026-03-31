@@ -59,7 +59,7 @@ BEGIN_MESSAGE_MAP(CPPgDisplay, CPropertyPage)
 END_MESSAGE_MAP()
 
 CPPgDisplay::CPPgDisplay()
-	: CPreferencesPage(CPPgDisplay::IDD)
+	: CPropertyPage(CPPgDisplay::IDD)
 	, m_eSelectFont(sfServer)
 {
 }
@@ -107,17 +107,6 @@ BOOL CPPgDisplay::OnInitDialog()
 
 	LoadSettings();
 	Localize();
-	ApplyWidePageLayout({ IDC_SELECT_HYPERTEXT_FONT, IDC_RESETHIST });
-	InitializePageToolTips({
-		{ IDC_TOOLTIPDELAY, _T("Delay in seconds before long-lived hover tooltips appear in the main UI. Lower values feel more responsive, higher values reduce accidental popups while moving across busy lists.") },
-		{ IDC_3DDEPTH, _T("Adjusts the progress-bar style from flat to more rounded and shaded. It is purely visual and has no effect on transfer logic.") },
-		{ IDC_SHOWRATEONTITLE, _T("Shows current transfer rates in the main window title. Helpful when eMule stays minimized or behind other windows, but it makes the title text more volatile.") },
-		{ IDC_STORESEARCHES, _T("Keeps recent search terms and restores them for convenience. Disable it if you prefer less local history or often search for one-off sensitive terms.") },
-		{ IDC_DISABLEHIST, _T("Enables auto-completion history in supported edit fields. The reset button clears the stored history without changing any other display preference.") },
-		{ IDC_SELECT_HYPERTEXT_FONT, _T("Lets you pick the hyperlink font used in rich text and related UI areas. Hold Ctrl while opening it to target the log font instead of the hyperlink font.") },
-		{ IDC_TASKBARPROGRESS, _T("Mirrors transfer progress into the Windows taskbar button. Useful when the app is minimized, but it only affects the shell indicator and not the tray icon.") },
-		{ IDC_CLEARCOMPL, _T("Automatically removes finished downloads from the active transfer list after completion. The files stay on disk and remain shared unless you explicitly remove them elsewhere.") }
-	});
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
