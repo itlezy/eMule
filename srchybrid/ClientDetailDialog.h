@@ -16,8 +16,8 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 
-#include "../../eMule-ResizableLib/ResizableLib/ResizablePage.h"
-#include "../../eMule-ResizableLib/ResizableLib/ResizableSheet.h"
+#include "ResizablePage.h"
+#include "ResizableSheet.h"
 #include "ListViewWalkerPropertySheet.h"
 
 class CUpDownClient;

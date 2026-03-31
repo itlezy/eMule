@@ -29,7 +29,7 @@ their client on the eMule forum.
 */
 #include "stdafx.h"
 #include "Log.h"
-#include "resource.h"
+#include "srchybrid/Resource.h"
 #include "StringConversion.h"
 #include "SafeFile.h"
 #include "kademlia/io/DataIO.h"

@@ -1,5 +1,5 @@
 #pragma once
-#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
+#include "ResizableDialog.h"
 #include "IconStatic.h"
 #include "kademlia/routing/contact.h"
 

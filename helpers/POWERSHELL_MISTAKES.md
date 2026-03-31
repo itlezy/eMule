@@ -187,3 +187,24 @@
   pass `srchybrid` as the concrete search root and use `--glob '*.cpp' --glob '*.h'` when restricting file types.
 - 2026-03-31: g -n "ID_TOOLS|Tools|IDS_NETWORK_INFO|ShowNetworkInfo|ON_COMMAND\(|ON_BN_CLICKED\(|IDD_NETWORK_INFO|MENUITEM" .\srchybrid\emule.rc .\srchybrid\*.h .\srchybrid\*.cpp failed because ripgrep on Windows does not expand wildcard path arguments. Use a directory root such as .\srchybrid and filter with the pattern instead.
 - 2026-03-31: g -n "MP_.*TOOLS|MP_.*NETWORK|IDS_NETWORK_INFO|ShowNetworkInfo|NetworkInfo" .\srchybrid\EmuleDlg.cpp .\srchybrid\MenuCmds.h .\srchybrid\*.h failed for the same reason: ripgrep does not expand Windows wildcard path arguments. Search the .\srchybrid directory directly instead.
+
+- Error:
+  `Get-ChildItem ..\\..\\eMule-zlib`, `Get-ChildItem ..\\..\\eMule-cryptopp`, and `Get-ChildItem ..\\..\\eMule-ResizableLib` failed with path-not-found errors.
+- Cause:
+  I misapplied the workspace-root math from the `eMule` submodule working directory and probed two levels up instead of the sibling dependency repositories one level up.
+- Fix:
+  from `eMule-build\\eMule`, probe sibling dependencies with `..\\eMule-zlib`, `..\\eMule-cryptopp`, and `..\\eMule-ResizableLib`, or resolve the expected absolute path before calling `Get-ChildItem`.
+
+- Error:
+  `Select-Object -Index 576..590` failed with `Cannot bind parameter 'Index'. Cannot convert value "576..590" to type "System.Int32".`
+- Cause:
+  I passed a PowerShell range expression directly to `Select-Object -Index` instead of materializing the content slice first.
+- Fix:
+  use array slicing like `$content[576..590]`, or pass an actual integer array variable to `-Index`.
+
+- Error:
+  `Select-String` failed because I hard-coded `logs\20260331-202626-build-project-eMule-Debug-x64\eMule-Debug.log`, which did not exist.
+- Cause:
+  I assumed the latest build log timestamp instead of querying the logs directory for the current path.
+- Fix:
+  resolve the newest log directory first with `Get-ChildItem ..\logs -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1`, then read `eMule-Debug.log` from that path.

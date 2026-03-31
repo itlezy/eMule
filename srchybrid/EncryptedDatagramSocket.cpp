@@ -109,7 +109,7 @@
 #include "safefile.h"
 #include "kademlia/kademlia/prefs.h"
 #include "kademlia/kademlia/kademlia.h"
-#include "../../eMule-cryptopp/osrng.h"
+#include <osrng.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

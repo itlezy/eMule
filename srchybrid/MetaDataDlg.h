@@ -1,5 +1,5 @@
 #pragma once
-#include "../../eMule-ResizableLib/ResizableLib/ResizablePage.h"
+#include "ResizablePage.h"
 #include "ListCtrlX.h"
 #include <vector>
 

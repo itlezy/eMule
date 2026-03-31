@@ -23,9 +23,9 @@
 #include "Opcodes.h"
 #include "ServerConnect.h"
 #include "Log.h"
-#include "../../eMule-cryptopp/base64.h"
-#include "../../eMule-cryptopp/osrng.h"
-#include "../../eMule-cryptopp/files.h"
+#include <base64.h>
+#include <osrng.h>
+#include <files.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

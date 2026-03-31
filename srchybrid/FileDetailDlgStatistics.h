@@ -16,7 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "ProgressCtrlX.h"
-#include "../../eMule-ResizableLib/ResizableLib/ResizablePage.h"
+#include "ResizablePage.h"
 
 class CAbstractFile;
 

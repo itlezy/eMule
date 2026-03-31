@@ -1,6 +1,6 @@
 #pragma once
 #include "DialogMinTrayBtn.h"
-#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
+#include "ResizableDialog.h"
 
 class CTrayDialog : public CDialogMinTrayBtn<CResizableDialog>
 {

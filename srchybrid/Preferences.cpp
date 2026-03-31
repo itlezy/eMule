@@ -39,7 +39,7 @@
 #include "Log.h"
 #include "BindAddressResolver.h"
 #include "MuleToolbarCtrl.h"
-#include "../../eMule-cryptopp/osrng.h"
+#include <osrng.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

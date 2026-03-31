@@ -1,5 +1,5 @@
 #pragma once
-#include "../../eMule-ResizableLib/ResizableLib/ResizableSheet.h"
+#include "ResizableSheet.h"
 #include "ListCtrlItemWalk.h"
 
 class CListViewPropertySheet : public CResizableSheet

@@ -2,6 +2,11 @@
 
 ## Last Chunk
 
+- Normalized dependency-header resolution back into `srchybrid\emule.vcxproj` by adding `ResizableLib`, `zlib`, and `Crypto++` roots to `AdditionalIncludeDirectories` for both `Debug` and `Release`.
+- Rewrote the remaining dependency `#include` directives in `srchybrid` away from hard-coded sibling traversals such as `../../eMule-zlib/...`, `../../eMule-cryptopp/...`, and `../../eMule-ResizableLib/...`.
+- Fixed the follow-up header-name collisions caused by generic names in subdirectories by qualifying the project-local `srchybrid/Resource.h`, `srchybrid/MD4.h`, and `srchybrid/Opcodes.h` includes where needed.
+- Rebuilt the target workspace with `..\23-build-emule-debug-incremental.cmd` until the project linked cleanly again after the include-root ordering and local-header fixes.
+- Verified the successful build log is down to `0` occurrences of `warning C4464`.
 - Removed the last resizable-dialog dependency from Network Information by switching it from `CResizableDialog` to plain `CDialog`, matching the already-fixed-size resource and avoiding any further resize behavior from the class itself.
 - Rebuilt the target workspace with `..\23-build-emule-debug-incremental.cmd`.
 - Fixed the follow-up layout regression in the Network Information dialog by keeping the 3 summary panels but converting the screen back to a deliberate fixed-size layout instead of a pseudo-resizable one.
@@ -49,6 +54,9 @@
 
 ## Current State
 
+- `srchybrid` now resolves dependency headers through project include roots again instead of embedding sibling-workspace `..\..` paths for `zlib`, `Crypto++`, and `ResizableLib`.
+- The successful `..\23-build-emule-debug-incremental.cmd` build log is now clean for `warning C4464`.
+- One internal subdirectory include path was intentionally qualified through `srchybrid/...` to avoid generic-name collisions with dependency headers while keeping the dependency include directories ordered correctly.
 - The Network Information dialog is now plain `CDialog` plus fixed-size resource layout, so there is no remaining resizable helper behavior attached to that screen.
 - The Network Information dialog is now intentionally fixed-size, with the 3-panel summary preserved but packed into a tighter geometry that does not depend on resize anchors.
 - The screen no longer restores the previous broken saved rectangle, so old bad geometry should stop resurfacing for users who opened the earlier layout.
@@ -68,6 +76,8 @@
 
 ## Next Chunk
 
+- If the include cleanup continues, the next safe pass is `.rc` include normalization only; the C/C++ dependency traversal cleanup is complete.
+- If more include-path cleanup is wanted, audit other generic local header names from subdirectories before reordering include roots again, since `resource.h` / `MD4.h` collisions were the only blockers in this pass.
 - If more Network Information polish is needed, the next safe step is visual refinement only: adjust spacing/text priority inside the fixed-size panels or add tooltips for elided summary values without reintroducing resize behavior.
 - If the dialog polish continues, the next contained step is to let users copy individual summary values or add a one-click export/save action without touching the existing report generator.
 - If automated coverage for this area needs to grow, extract the new dialog summary formatting into a small helper that can be tested directly from `eMule-build-tests` instead of relying on the shared `StatusBarInfo` helper alone.

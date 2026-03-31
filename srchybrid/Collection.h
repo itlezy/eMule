@@ -16,10 +16,10 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "MapKey.h"
-#include "../../eMule-cryptopp/rsa.h"
-#include "../../eMule-cryptopp/base64.h"
-#include "../../eMule-cryptopp/osrng.h"
-#include "../../eMule-cryptopp/files.h"
+#include <rsa.h>
+#include <base64.h>
+#include <osrng.h>
+#include <files.h>
 
 #define COLLECTION_FILEEXTENSION	_T(".emulecollection")
 

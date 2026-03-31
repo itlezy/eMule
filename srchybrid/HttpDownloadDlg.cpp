@@ -41,7 +41,7 @@ const UINT WM_HTTPDOWNLOAD_THREAD_FINISHED = WM_APP + 1;
 //in the spirit of zlib, lets do something horrible with defines ;)
 #ifdef HAS_ZLIB
 
-#include "../../eMule-zlib/zlib.h"
+#include <zlib.h>
 
 static int const gz_magic[2] = {0x1f, 0x8b}; /* gzip magic header */
 

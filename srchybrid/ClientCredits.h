@@ -16,7 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "MapKey.h"
-#include "../../eMule-cryptopp/rsa.h"
+#include <rsa.h>
 
 #define	 MAXPUBKEYSIZE		80
 

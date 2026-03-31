@@ -29,7 +29,7 @@ their client on the eMule forum.
 */
 
 #include "stdafx.h"
-#include "../../../../eMule-cryptopp/osrng.h"
+#include <osrng.h>
 #include "kademlia/utils/UInt128.h"
 
 #ifdef _DEBUG

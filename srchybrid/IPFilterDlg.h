@@ -1,5 +1,5 @@
 #pragma once
-#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
+#include "ResizableDialog.h"
 #include "ListCtrlX.h"
 
 struct SIPFilter;
