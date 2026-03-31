@@ -20,8 +20,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define	PREF_INI_SECTION	_T("NetworkInfoDlg")
-
 namespace
 {
 	/**
@@ -225,14 +223,6 @@ BOOL CNetworkInfoDlg::OnInitDialog()
 {
 	CResizableDialog::OnInitDialog();
 	InitWindowStyles(this);
-
-	AddAnchor(IDC_NETWORK_CLIENT_GROUP, TOP_LEFT, TOP_RIGHT);
-	AddAnchor(IDC_NETWORK_DETAILS_GROUP, TOP_LEFT, BOTTOM_RIGHT);
-	AddAnchor(IDC_NETWORK_INFO, TOP_LEFT, BOTTOM_RIGHT);
-	AddAnchor(IDC_NETWORK_RELOAD, BOTTOM_RIGHT);
-	AddAnchor(IDC_NETWORK_COPY, BOTTOM_RIGHT);
-	AddAnchor(IDOK, BOTTOM_RIGHT);
-	EnableSaveRestore(PREF_INI_SECTION);
 
 	SetWindowText(GetResString(IDS_NETWORK_INFO));
 	SetDlgItemText(IDOK, GetResString(IDS_TREEOPTIONS_OK));

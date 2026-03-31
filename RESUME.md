@@ -2,6 +2,11 @@
 
 ## Last Chunk
 
+- Fixed the follow-up layout regression in the Network Information dialog by keeping the 3 summary panels but converting the screen back to a deliberate fixed-size layout instead of a pseudo-resizable one.
+- Removed the dialog's anchor/save-restore behavior so stale saved rectangles from the broken layout can no longer reopen the screen at an invalid size.
+- Tightened the resource geometry, moved the bind target onto the compact client row, and added ellipsis-safe static value controls so long bind/server/hash text no longer tramples adjacent fields.
+- Rebuilt the target workspace with `..\23-build-emule-debug-incremental.cmd`.
+- Re-ran the targeted shared doctest filter `--test-case=*Status bar IP pane*` successfully (`3` cases, `7` assertions).
 - Reworked the Network Information dialog into a larger summary-plus-details view with grouped client, eD2K, and Kademlia sections, while keeping the legacy rich-text report as the detailed pane.
 - Added `Reload` and `Copy` actions to the Network Information dialog and made the copied plain-text report include both the new summary rows and the legacy detailed dump.
 - Surfaced the resolved bind target in the Network Information client summary and aligned the dialog's eD2K public-IP formatting with the stored-byte-order formatter already used by the status bar IP pane.
@@ -42,6 +47,8 @@
 
 ## Current State
 
+- The Network Information dialog is now intentionally fixed-size, with the 3-panel summary preserved but packed into a tighter geometry that does not depend on resize anchors.
+- The screen no longer restores the previous broken saved rectangle, so old bad geometry should stop resurfacing for users who opened the earlier layout.
 - `Tools > Network Information...` now opens the same modal dialog that the status-bar panes already used on double-click.
 - The Network Information dialog now has an at-a-glance summary for client identity, bind target, eD2K state, and Kad state above the preserved legacy details report.
 - The dialog's eD2K public-IP display now uses the same stored-byte-order IPv4 formatter as the status-bar IP pane, avoiding divergent text for the same runtime address.
@@ -58,6 +65,7 @@
 
 ## Next Chunk
 
+- If more Network Information polish is needed, the next safe step is visual refinement only: adjust spacing/text priority inside the fixed-size panels or add tooltips for elided summary values without reintroducing resize behavior.
 - If the dialog polish continues, the next contained step is to let users copy individual summary values or add a one-click export/save action without touching the existing report generator.
 - If automated coverage for this area needs to grow, extract the new dialog summary formatting into a small helper that can be tested directly from `eMule-build-tests` instead of relying on the shared `StatusBarInfo` helper alone.
 - If the shared suite needs to go green, investigate the `mapped_file_reader.tests.cpp` sampled temp-file enumeration failures before treating unrelated UI changes as test regressions.
