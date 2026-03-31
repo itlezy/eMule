@@ -185,3 +185,5 @@
   I slipped back into Windows wildcard path arguments instead of passing a real search root and using `rg` globs for extension filtering.
 - Fix:
   pass `srchybrid` as the concrete search root and use `--glob '*.cpp' --glob '*.h'` when restricting file types.
+- 2026-03-31: g -n "ID_TOOLS|Tools|IDS_NETWORK_INFO|ShowNetworkInfo|ON_COMMAND\(|ON_BN_CLICKED\(|IDD_NETWORK_INFO|MENUITEM" .\srchybrid\emule.rc .\srchybrid\*.h .\srchybrid\*.cpp failed because ripgrep on Windows does not expand wildcard path arguments. Use a directory root such as .\srchybrid and filter with the pattern instead.
+- 2026-03-31: g -n "MP_.*TOOLS|MP_.*NETWORK|IDS_NETWORK_INFO|ShowNetworkInfo|NetworkInfo" .\srchybrid\EmuleDlg.cpp .\srchybrid\MenuCmds.h .\srchybrid\*.h failed for the same reason: ripgrep does not expand Windows wildcard path arguments. Search the .\srchybrid directory directly instead.
