@@ -47,7 +47,7 @@ cppcheck --version  # expect 2.14+
 
 ## Current State (Baseline)
 
-- Build system: `emule.vcxproj` / `emule.sln` (MSBuild, Visual Studio 2022)
+- Build system: `emule.vcxproj` (MSBuild, Visual Studio 2022)
 - Compiler: MSVC v143, x64 primary, Win32 secondary
 - C++ standard: unset (MSVC defaults to C++14 in v143 without explicit flag)
 - Warning level: `/Wall` (`EnableAllWarnings`) — already enabled

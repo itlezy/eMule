@@ -275,7 +275,7 @@ All ARM64 build configurations added in commit 3 are removed from `emule.sln` an
 
 **Rationale (from commit message):** The community workspace targets x64 only. ARM64 support requires a separate toolchain setup that the community build environment does not provide.
 
-**Assessment:** Pragmatic decision. ARM64 Windows is not a primary eMule deployment target. The `emule.slnx` and `emuleARM64.manifest` files from commit 3 remain in the tree even though the configurations are removed — minor cruft, but harmless.
+**Assessment:** Pragmatic decision. ARM64 Windows is not a primary eMule deployment target. The `emuleARM64.manifest` file from commit 3 remains in the tree as minor cruft. The `emule.slnx` wrapper was later removed once `emule.vcxproj` became the sole app build entrypoint.
 
 #### 4.2 Toolset Upgrade: `v141_xp` → `v143`
 

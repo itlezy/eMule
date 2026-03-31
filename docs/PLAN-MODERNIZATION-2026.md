@@ -1535,7 +1535,7 @@ jobs:
       - uses: microsoft/setup-msbuild@v2
       - uses: lukka/run-vcpkg@v11
         with: { vcpkgJsonGlob: vcpkg.json }
-      - run: msbuild srchybrid/emule.sln /p:Configuration=Release /p:Platform=x64
+      - run: msbuild srchybrid/emule.vcxproj /t:Build /p:Configuration=Release /p:Platform=x64
       - run: .\tests\run_smoke.ps1
 ```
 

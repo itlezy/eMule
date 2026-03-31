@@ -44,7 +44,7 @@ CMake + Ninja + vcpkg gives:
 
 | Before | After |
 |---|---|
-| `emule.vcxproj`, `emule.sln` | `eMule/srchybrid/CMakeLists.txt` |
+| `emule.vcxproj` | `eMule/srchybrid/CMakeLists.txt` |
 | Per-dep wrapper `.vcxproj` files | Per-dep `CMakeLists.txt` or `add_subdirectory` |
 | `00-setup-and-build-release.cmd` | `cmake --preset x64-release && cmake --build --preset x64-release` |
 | `$(CryptoPpRoot)` property sheet variable | vcpkg installed package, found via `find_package(cryptopp)` |
@@ -181,7 +181,6 @@ C:\prj\p2p\eMule\eMulebb\eMule-build\
 │   └── srchybrid/
 │       ├── CMakeLists.txt                  ← NEW: main app target
 │       ├── emule.vcxproj                   ← KEEP (reference) then delete
-│       ├── emule.sln                       ← DELETE after migration
 │       ├── Stdafx.h / Stdafx.cpp           ← unchanged
 │       ├── Parser.cpp / Parser.y           ← .cpp used as plain source
 │       ├── Scanner.cpp / Scanner.l         ← .cpp used as plain source

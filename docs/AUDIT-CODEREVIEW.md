@@ -304,7 +304,7 @@ Passing `-1` tells `DrawText` to compute the string length with `lstrlen()` on e
 | `CaptchaGenerator.cpp` | `CROWDEDSIZE` changed 18 → 23, increasing character overlap; any snapshot tests of CAPTCHA geometry will break |
 | `Ring.h` | Missing newline at end of file — causes warnings in some compilers and linters |
 | `DownloadListCtrl.cpp` | `DLC_BARUPDATE` changed from literal `512` to `(SEC2MS(1)/2)` = 500ms; semantically clearer but a real 12ms behavioral delta |
-| `emule.slnx`, `emuleARM64.manifest` | Leftover from the ARM64 experiment that was rolled back in `18911c5`; harmless clutter |
+| `emuleARM64.manifest` | Leftover from the ARM64 experiment that was rolled back in `18911c5`; harmless clutter after the solution wrapper cleanup |
 | `BaseClient.cpp` | `m_AverageUDR_hist(512, 512)` / `m_AverageDDR_hist(512, 512)` — 512-element initial size with 512-element growth increment means doubling on first overflow; unusual (normally increment is a fraction of initial size) |
 | `OtherFunctions.cpp` | `bmp2mem` uses `(ULONG)size` cast for `IStream_Read` — safe for typical image sizes but truncates on >4 GB input |
 | Multiple files | `#pragma code_page(65001)` added to `emule.rc2` — correct for UTF-8 source encoding but may cause issues with resource compilers older than VS2015 |
