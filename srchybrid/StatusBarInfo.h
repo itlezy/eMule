@@ -8,16 +8,17 @@ namespace StatusBarInfo
 	namespace Detail
 	{
 		/**
-		 * Converts a host-order IPv4 address into a dotted-decimal string for status UI.
+		 * Formats an IPv4 value using the app's stored byte order for dotted-decimal UI text.
 		 */
-		inline CString FormatIPv4Address(const uint32 dwIp)
+		inline CString FormatStoredIPv4Address(const uint32 dwIp)
 		{
+			const BYTE *pucIp = reinterpret_cast<const BYTE*>(&dwIp);
 			CString strIp;
 			strIp.Format(_T("%u.%u.%u.%u")
-				, (dwIp >> 24) & 0xFF
-				, (dwIp >> 16) & 0xFF
-				, (dwIp >> 8) & 0xFF
-				, dwIp & 0xFF);
+				, pucIp[0]
+				, pucIp[1]
+				, pucIp[2]
+				, pucIp[3]);
 			return strIp;
 		}
 
@@ -38,7 +39,7 @@ namespace StatusBarInfo
 		CString strPaneText;
 		strPaneText.Format(_T("B:%s|P:%s")
 			, (LPCTSTR)Detail::GetBindAddressDisplayValue(strBindAddress)
-			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatIPv4Address(dwPublicIp) : _T("?"));
+			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatStoredIPv4Address(dwPublicIp) : _T("?"));
 		return strPaneText;
 	}
 
@@ -50,7 +51,7 @@ namespace StatusBarInfo
 		CString strToolTip;
 		strToolTip.Format(_T("Bind IP: %s | Public IP: %s")
 			, strBindAddress.IsEmpty() ? _T("Any interface") : (LPCTSTR)strBindAddress
-			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatIPv4Address(dwPublicIp) : _T("Unknown"));
+			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatStoredIPv4Address(dwPublicIp) : _T("Unknown"));
 		return strToolTip;
 	}
 }

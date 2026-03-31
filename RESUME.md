@@ -8,6 +8,7 @@
 - Moved the status-bar IP pane to the left of the `Users` pane and aligned its public-IP source with the eD2K-reported public address instead of the broader Kad-aware fallback.
 - Restored the original pre-IP pane widths for `Users`, `UpDown`, `Connected`, and `Chat`, and kept the new prepended `IP` pane by taking its width only from the elastic log area.
 - Restored the original full `Up:` / `Down:` status-bar transfer text and removed the compact fallback text for the IP pane.
+- Fixed the status-bar public-IP formatter to use the app's stored IPv4 byte order, so the pane and tooltip no longer display the eD2K-reported address with reversed octets.
 - Added `helpers\e2e-vpn-launch.ps1` to run a clean `%LOCALAPPDATA%\eMule` end-to-end session with emule-security `nodes.dat`/`server.met`, recursive shared-directory seeding, VPN-IP binding, and disk-backed verbose logging.
 - Verified the helper against `C:\tmp\videodupez\` with bind address `10.54.218.144`: the app wrote `eMule.log` and `eMule_Verbose.log`, loaded 153 Kad contacts from `nodes.dat`, connected to `eMule Sunrise` and `eMule Security`, and started hashing the recursive share tree.
 - Fixed `CKnownFileList::ShouldPurgeAICHHashset` so orphaned known2.met AICH entries are treated as purgeable instead of tripping a debug-only assertion, and added a shared regression seam for the purge decision.
@@ -24,6 +25,7 @@
 
 - The main status bar now has a dedicated IP pane with compact `Bind/Public` runtime address visibility and tooltip expansion for the same data.
 - The prepended IP pane now uses the original status-bar sizing for all legacy panes and shows full `B:...|P:...` text without shortening.
+- The public-IP side of the status-bar pane now renders with the same stored-byte-order convention as the rest of the app instead of reversing octets.
 - `FEAT_018` is implemented with persisted connection/download timeout defaults and shorter fixed UDP/source-latency constants.
 - `FEAT_019` is effectively complete for the active modern-limits knobs; the remaining advanced limit controls stay in their existing Tweaks groups or other existing UI pages.
 - `FEAT_017` is still partial because `QueueSize` remains `5000` even though `MaxSourcesPerFile` is now `600`.
