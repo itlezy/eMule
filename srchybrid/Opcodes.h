@@ -91,8 +91,6 @@
 #define UDPSERVSTATMINREASKTIME	MIN2S(20)	//minimum time between two pings even when trying to force a premature ping for a new UDP key
 #define	UDPSERVERPORT			4665		//default udp port
 #define RSAKEYSIZE				384			//384 bits
-#define	MAX_SOURCES_FILE_SOFT	750
-#define	MAX_SOURCES_FILE_UDP	50u
 #define SESSIONMAXTRANS			(1024ui64*1024*1024*64) // Target to upload the entire file to a fast user
 #define SESSIONMAXTIME			HR2MS(3)	//3 hours
 #define	MAXFILECOMMENTLEN		128

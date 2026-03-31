@@ -2,6 +2,12 @@
 
 ## Last Chunk
 
+- Completed the remaining modern-limits follow-through for `FEAT_013`, `FEAT_015`, `FEAT_016`, and `FEAT_017` with the branch decision to keep `MaxConnections` at `500`.
+- Raised the default file buffer size to `64 MiB`, extended the Tweaks file-buffer slider to `512 MiB` via a mixed KiB/MiB mapping helper, and kept the existing `120s` file-buffer time limit.
+- Raised the queue default to `10000`, raised the per-file soft and UDP source caps to `1000` and `100`, and removed the now-dead source-cap macros from `Opcodes.h`.
+- Centralized the remaining modern fixed defaults in `ModernLimits.h`, including the conservative `MaxConnections=500` branch default and the completed queue/source/file-buffer targets.
+- Added shared regression coverage for the new modern-limits defaults and the file-buffer slider mapping in `eMule-build-tests`.
+- Updated `docs\FEATURE-MODERN-LIMITS.md` and `docs\INDEX.md` so they reflect the actual completed modern-limits state instead of the stale `2 MiB`, `5000`, and `1000 planned` notes.
 - Added a dedicated status-bar IP pane that shows the runtime bind target and public IP separately from the existing eD2K/Kad connection-state pane.
 - Wired the new pane to refresh on startup, normal connection-state changes, and delayed public-IP discovery, and reused the existing Network Info dialog on double-click.
 - Added a shared `StatusBarInfo` formatting helper so the compact pane text and single-line tooltip stay deterministic and regression-testable.
@@ -34,8 +40,8 @@
 - The VPN safety direction is now documented as an external process watchdog rather than an in-process bind kill switch.
 - Startup now fails closed into an offline session when the configured bind target is missing and the new connection-page startup bind-block option is enabled.
 - `FEAT_018` is implemented with persisted connection/download timeout defaults and shorter fixed UDP/source-latency constants.
-- `FEAT_019` is effectively complete for the active modern-limits knobs; the remaining advanced limit controls stay in their existing Tweaks groups or other existing UI pages.
-- `FEAT_017` is still partial because `QueueSize` remains `5000` even though `MaxSourcesPerFile` is now `600`.
+- `FEAT_013` through `FEAT_019` are now aligned with the current branch choices, including `MaxConnections=500`, `FileBufferSize=64 MiB`, `QueueSize=10000`, and the completed queue/source caps.
+- `FEAT_019` remains the active preferences-exposure shape; the modern-limits work is now mostly documentation and validation rather than missing runtime defaults.
 - `WWMOD_008`, `WWMOD_019`, and `WWMOD_050` remain available as the next low-risk modernization candidates.
 
 ## Next Chunk
@@ -46,4 +52,3 @@
 - Continue with a similarly scoped modernization block:
   - take `WWMOD_050` next for typed time-conversion helper cleanup, or
   - return to the deferred CRT-hardening pair `WWMOD_019` plus `WWMOD_008`
-- Separately, `FEAT_017` still needs the queue-size default increase to `10000` if the modern-limits track continues before the next WWMOD item.

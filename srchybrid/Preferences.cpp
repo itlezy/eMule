@@ -1611,7 +1611,7 @@ void CPreferences::CreateUserHash()
 /** Modern Windows no longer imposes a practical OS TCP cap for this preference UI. */
 UINT CPreferences::GetRecommendedMaxConnections()
 {
-	return 500;
+	return ModernLimits::kDefaultMaxConnections;
 }
 
 void CPreferences::SavePreferences()
@@ -2019,7 +2019,7 @@ void CPreferences::LoadPreferences()
 	maxGraphUploadRate = (m_maxupload != UNLIMITED) ? m_maxupload : s_uDefaultUploadLimit;
 	maxGraphDownloadRate = (m_maxdownload != UNLIMITED) ? m_maxdownload : s_uDefaultDownloadLimit;
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
-	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 50);
+	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), ModernLimits::kDefaultMaxHalfOpenConnections);
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
 
 	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
@@ -2416,7 +2416,7 @@ void CPreferences::LoadPreferences()
 
 UINT CPreferences::GetDefaultMaxConperFive()
 {
-	return MAXCONPER5SEC;
+	return ModernLimits::kDefaultMaxConnectionsPerFiveSeconds;
 }
 
 //////////////////////////////////////////////////////////

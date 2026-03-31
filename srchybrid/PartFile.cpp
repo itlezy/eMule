@@ -35,6 +35,7 @@
 #include "kademlia/kademlia/Entry.h"
 #include "DownloadQueue.h"
 #include "IPFilter.h"
+#include "ModernLimits.h"
 #include "Packets.h"
 #include "Preferences.h"
 #include "SafeFile.h"
@@ -5373,13 +5374,13 @@ UINT CPartFile::GetMaxSources() const
 UINT CPartFile::GetMaxSourcePerFileSoft() const
 {
 	UINT temp = (GetMaxSources() * 9) / 10;
-	return (temp > MAX_SOURCES_FILE_SOFT) ? MAX_SOURCES_FILE_SOFT : temp;
+	return (temp > ModernLimits::kDefaultMaxSourcesPerFileSoft) ? ModernLimits::kDefaultMaxSourcesPerFileSoft : temp;
 }
 
 UINT CPartFile::GetMaxSourcePerFileUDP() const
 {
 	UINT temp = (GetMaxSources() * 3) / 4;
-	return (temp > MAX_SOURCES_FILE_UDP) ? MAX_SOURCES_FILE_UDP : temp;
+	return (temp > ModernLimits::kDefaultMaxSourcesPerFileUdp) ? ModernLimits::kDefaultMaxSourcesPerFileUdp : temp;
 }
 
 CString CPartFile::GetTmpPath() const

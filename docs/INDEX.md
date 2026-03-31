@@ -129,11 +129,11 @@
 | FEAT_010 | CAntiNick integration | **[REJECTED]** | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
 | FEAT_011 | CShield integration | Not started | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
 | FEAT_012 | PR_TCPERRORFLOODER (listen socket DoS defense) | Not started | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
-| FEAT_013 | Connection budget defaults | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
+| FEAT_013 | Connection budget defaults | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_014 | Per-client upload cap → 8 MB/s | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
-| FEAT_015 | Socket buffer sizes | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
-| FEAT_016 | Disk buffering defaults → 2 MiB | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
-| FEAT_017 | Queue/source limits | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
+| FEAT_015 | Socket buffer sizes | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
+| FEAT_016 | Disk buffering defaults → 64 MiB | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
+| FEAT_017 | Queue/source limits | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_018 | Timeout adjustments | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_019 | Advanced tree UI exposure | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_022 | Windows Media Foundation migration | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |

@@ -7,6 +7,13 @@
 
 namespace ModernLimits
 {
+	/** Conservative branch default for the total connection budget. */
+	inline constexpr unsigned int kDefaultMaxConnections = 500;
+	/** Modern default for the half-open connection budget. */
+	inline constexpr unsigned int kDefaultMaxHalfOpenConnections = 50;
+	/** Modern default for the short burst connection budget. */
+	inline constexpr unsigned int kDefaultMaxConnectionsPerFiveSeconds = 50;
+
 	/** Minimum configurable timeout in seconds to avoid immediate disconnect loops. */
 	inline constexpr unsigned int kMinTimeoutSeconds = 5;
 
@@ -24,13 +31,19 @@ namespace ModernLimits
 	/** Modern default TCP send buffer size in bytes. */
 	inline constexpr unsigned int kDefaultTcpSendBufferSize = 512u * 1024u;
 	/** Modern default file buffer size in bytes. */
-	inline constexpr unsigned int kDefaultFileBufferSize = 2u * 1024u * 1024u;
+	inline constexpr unsigned int kDefaultFileBufferSize = 64u * 1024u * 1024u;
+	/** Maximum file buffer size exposed through the Tweaks slider. */
+	inline constexpr unsigned int kMaxFileBufferSize = 512u * 1024u * 1024u;
 	/** Modern default file buffer time limit in seconds. */
 	inline constexpr unsigned int kDefaultFileBufferTimeLimitSeconds = 120;
 	/** Modern default queue size. */
-	inline constexpr int kDefaultQueueSize = 50 * 100;
+	inline constexpr int kDefaultQueueSize = 100 * 100;
 	/** Modern default source ceiling per file. */
 	inline constexpr unsigned int kDefaultMaxSourcesPerFile = 600;
+	/** Modern default soft source ceiling per file. */
+	inline constexpr unsigned int kDefaultMaxSourcesPerFileSoft = 1000;
+	/** Modern default UDP source query ceiling per file. */
+	inline constexpr unsigned int kDefaultMaxSourcesPerFileUdp = 100u;
 	/** Modern default per-client upload target in bytes per second. */
 	inline constexpr unsigned int kDefaultUploadClientDataRate = 8u * 1024u * 1024u;
 

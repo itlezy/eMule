@@ -19,11 +19,11 @@
 
 | ID | Feature | Status |
 |----|---------|--------|
-| FEAT_013 | Connection budget defaults | **[PARTIAL]** — MaxHalfConnections=50, MaxConPerFive=50; MaxConnections still 500 (planned 1000) |
+| FEAT_013 | Connection budget defaults | **[DONE]** — MaxConnections remains 500 by branch choice; MaxHalfConnections=50; MaxConPerFive=50 |
 | FEAT_014 | Per-client upload cap | **[DONE]** — default cap is 8 MB/s and now persists through Preferences |
-| FEAT_015 | Socket buffer sizes | **[PARTIAL]** — UDP recv buffer=512 KiB [DONE]; TCP big send buffer status TBD |
-| FEAT_016 | Disk buffering defaults | **[DONE]** — FileBufferSize=2 MiB |
-| FEAT_017 | Queue/source limits | **[PARTIAL]** — QueueSize still 5000 (planned 10000); MaxSourcesPerFile is now 600 |
+| FEAT_015 | Socket buffer sizes | **[DONE]** — UDP recv buffer=512 KiB; TCP big send buffer=512 KiB |
+| FEAT_016 | Disk buffering defaults | **[DONE]** — FileBufferSize=64 MiB, slider max=512 MiB, FileBufferTimeLimit=120s |
+| FEAT_017 | Queue/source limits | **[DONE]** — QueueSize=10000; MaxSourcesPerFile=600; soft/UDP caps=1000/100 |
 | FEAT_018 | Timeout adjustments | **[DONE]** — ConnectionTimeout=30s, DownloadTimeout=75s, UDP queue expiry=20s, ConnectionLatency=15000 |
 | FEAT_019 | Advanced tree UI exposure | **[DONE]** — Tweaks exposes the remaining active timeout and upload-cap knobs without adding a new subtree |
 
@@ -98,11 +98,11 @@ The code still carries several 20-year-old fixed assumptions which are too conse
 
 Current code:
 
-- recommended max connections still effectively lands at `500` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L1631)
-- `MaxHalfConnections` still defaults to `9` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2142)
-- the fallback burst limit is still `20` in [`Opcodes.h`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Opcodes.h#L106) and [`PPgTweaks.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/PPgTweaks.cpp#L41)
+- recommended max connections stays at `500` by branch choice
+- `MaxHalfConnections` now defaults to `50`
+- `MaxConnectionsPerFiveSeconds` now defaults to `50`
 
-These values were tuned for old Windows TCP stacks and much weaker home hardware.
+The remaining design choice here is deliberate conservatism on total connections, not an unfinished legacy fallback.
 
 ### 2. Per-Client Upload Ceiling Is Too Low (FEAT_014)
 
@@ -117,31 +117,31 @@ For a broadband branch, `1 MB/s` per client is an obsolete ceiling.
 
 Current code:
 
-- UDP receive buffer is forced to `64 KiB` in [`ClientUDPSocket.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/ClientUDPSocket.cpp#L533)
-- TCP "big send buffer" is only `128 KiB` in [`EMSocket.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/EMSocket.cpp#L1092)
+- UDP receive buffer defaults to `512 KiB`
+- TCP "big send buffer" defaults to `512 KiB`
 
-Those values are low for modern WAN throughput and modern memory budgets.
+This feature area is complete for the current fixed-value modernization target.
 
 ### 4. Disk Buffering Defaults Are Conservative (FEAT_016)
 
 Current code:
 
-- file buffer size defaults to `512 KiB` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2388)
-- file buffer time limit defaults to `60s` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2393)
-- part files flush on size/time in [`PartFile.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/PartFile.cpp#L2189)
-- part files also force periodic flushes while active in [`PartFile.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/PartFile.cpp#L2193)
+- file buffer size defaults to `64 MiB`
+- file buffer time limit defaults to `120s`
+- the Tweaks slider now reaches `512 MiB`
+- part files still flush on the same size/time triggers in `PartFile.cpp`
 
-This is still safe, but leaves performance on the table for SSD/NVMe systems.
+This area now favors modern storage throughput while keeping the existing flush policy.
 
 ### 5. Queue And Source Limits Are Still Small (FEAT_017)
 
 Current code:
 
-- default `MaxSourcesPerFile` is now `600` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2187)
-- source soft/UDP caps are `750` and `50` in [`Opcodes.h`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Opcodes.h#L96)
-- queue default path still effectively lands around `5000` in [`Preferences.cpp`](/C:/prj/p2p/eMulebb/eMule/srchybrid/Preferences.cpp#L2396)
+- default `MaxSourcesPerFile` is `600`
+- source soft/UDP caps are `1000` and `100`
+- queue default is `10000`
 
-These values were designed for older swarm sizes, older RAM sizes, and weaker CPUs.
+This feature area is complete for the current branch target.
 
 ### 6. Several Timeouts Are Long And Old (FEAT_018)
 
@@ -172,7 +172,7 @@ These are proposed **branch defaults**, not hard requirements for every user.
 
 | Setting | Current | Proposed |
 | --- | --- | --- |
-| `MaxConnections` default recommendation | `500`-style cap | `1000` |
+| `MaxConnections` default recommendation | `500`-style cap | `500` |
 | `MaxHalfConnections` default | `9` | `50` |
 | `MaxConnectionsPerFiveSeconds` default | `20` | `50` |
 | per-client upload cap | `1 MB/s` | `8 MB/s` |
@@ -181,7 +181,7 @@ These are proposed **branch defaults**, not hard requirements for every user.
 
 Notes:
 
-- `1000` is a conservative modern default, not an aggressive "max everything" value
+- `500` remains the branch default by explicit choice while the burst and half-open budgets use the broader modern values
 - `50` half-open keeps the value modern without turning connection bursts into a free-for-all
 - `8 MB/s` per-client cap is large enough not to cripple modern uplinks while still remaining bounded
 
@@ -189,7 +189,7 @@ Notes:
 
 | Setting | Current | Proposed |
 | --- | --- | --- |
-| `FileBufferSize` | `512 KiB` | `2 MiB` |
+| `FileBufferSize` | `512 KiB` | `64 MiB` |
 | `FileBufferTimeLimit` | `60s` | `120s` |
 | `QueueSize` | ~`5000` effective path | `10000` |
 | `MaxSourcesPerFile` | `400` | `600` |
@@ -198,7 +198,7 @@ Notes:
 
 Notes:
 
-- `2 MiB` is still reasonable on modest systems and much less stale than `512 KiB`
+- `64 MiB` is intentionally SSD/NVMe-friendly for this broadband branch, while the Tweaks slider now tops out at `512 MiB`
 - `120s` is long enough to reduce churn but still bounded
 - `600` sources/file is a moderate modernization, not an extreme one
 
@@ -295,9 +295,9 @@ Current:
 
 Action:
 
-- change the recommendation path to return `1000` as the fixed modern default on current supported systems
+- keep the recommendation path at `500` as the fixed branch default
 - keep existing user-specified values unchanged
-- update any UI helper text if it still implies older-era recommendations
+- treat the higher half-open and burst budgets as the main connection-budget modernization
 
 Risk:
 
@@ -392,8 +392,9 @@ Current:
 
 Action:
 
-- change default to `2 MiB`
-- preserve existing user-configured values
+- change default to `64 MiB`
+- extend the Tweaks slider max to `512 MiB`
+- preserve existing user-configured values unless the user reopens Tweaks and accepts the new clamped slider range
 
 Risk:
 
@@ -437,7 +438,7 @@ Current:
 
 Action:
 
-- raise default to `600`
+- keep default `MaxSourcesPerFile` at `600`
 - raise soft cap to `1000`
 - raise UDP cap to `100`
 

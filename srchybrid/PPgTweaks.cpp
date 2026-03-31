@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "emule.h"
+#include "FileBufferSlider.h"
 #include "ModernLimits.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
@@ -38,9 +39,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-
-#define	DFLT_MAXCONPERFIVE	50
-#define DFLT_MAXHALFOPEN	50
 
 namespace
 {
@@ -730,14 +728,21 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
 
 	m_uFileBufferSize = thePrefs.m_uFileBufferSize;
-	m_ctlFileBuffSize.SetRange(16, 4096, TRUE);
-	int iMin, iMax;
-	m_ctlFileBuffSize.GetRange(iMin, iMax);
-	m_ctlFileBuffSize.SetPos(m_uFileBufferSize / 1024);
-	int iPage = 128;
-	for (int i = ((iMin + iPage - 1) / iPage) * iPage; i < iMax; i += iPage)
-		m_ctlFileBuffSize.SetTic(i);
-	m_ctlFileBuffSize.SetPageSize(iPage);
+	m_ctlFileBuffSize.SetRange(FileBufferSlider::kMinPosition, FileBufferSlider::kMaxPosition, TRUE);
+	m_ctlFileBuffSize.SetPos(FileBufferSlider::BytesToPosition(m_uFileBufferSize));
+	m_uFileBufferSize = FileBufferSlider::PositionToBytes(m_ctlFileBuffSize.GetPos());
+	static const int aiFileBufferTics[] = {
+		16, 64, 256, 1024,
+		FileBufferSlider::BytesToPosition(8u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(32u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(ModernLimits::kDefaultFileBufferSize),
+		FileBufferSlider::BytesToPosition(128u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(256u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(ModernLimits::kMaxFileBufferSize)
+	};
+	for (size_t i = 0; i < _countof(aiFileBufferTics); ++i)
+		m_ctlFileBuffSize.SetTic(aiFileBufferTics[i]);
+	m_ctlFileBuffSize.SetPageSize(32);
 
 	m_iQueueSize = thePrefs.m_iQueueSize;
 	m_ctlQueueSize.SetRange(20, 100, TRUE);
@@ -768,8 +773,8 @@ BOOL CPPgTweaks::OnApply()
 	if (!UpdateData())
 		return FALSE;
 
-	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : DFLT_MAXCONPERFIVE);
-	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : DFLT_MAXHALFOPEN);
+	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : ModernLimits::kDefaultMaxConnectionsPerFiveSeconds);
+	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : ModernLimits::kDefaultMaxHalfOpenConnections);
 	thePrefs.SetConnectionTimeout(ModernLimits::NormalizeTimeoutSeconds(m_uConnectionTimeoutSeconds, ModernLimits::kDefaultConnectionTimeoutSeconds));
 	thePrefs.SetDownloadTimeout(ModernLimits::NormalizeTimeoutSeconds(m_uDownloadTimeoutSeconds, ModernLimits::kDefaultDownloadTimeoutSeconds));
 	thePrefs.m_uUDPReceiveBufferSize = m_uUDPReceiveBufferSizeKiB * 1024u;
@@ -901,7 +906,7 @@ BOOL CPPgTweaks::OnApply()
 void CPPgTweaks::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar *pScrollBar)
 {
 	if (pScrollBar->GetSafeHwnd() == m_ctlFileBuffSize.m_hWnd) {
-		m_uFileBufferSize = m_ctlFileBuffSize.GetPos() * 1024;
+		m_uFileBufferSize = FileBufferSlider::PositionToBytes(m_ctlFileBuffSize.GetPos());
 		CString temp(GetResString(IDS_FILEBUFFERSIZE));
 		temp.AppendFormat(_T(": %s"), (LPCTSTR)CastItoXBytes(m_uFileBufferSize));
 		SetDlgItemText(IDC_FILEBUFFERSIZE_STATIC, temp);
