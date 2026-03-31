@@ -670,7 +670,7 @@ bool CServerWnd::SaveServerMetStrings()
 
 void CServerWnd::ShowNetworkInfo()
 {
-	CNetworkInfoDlg dlg;
+	CNetworkInfoDlg dlg(this);
 	dlg.DoModal();
 }
 

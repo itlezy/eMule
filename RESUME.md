@@ -2,6 +2,14 @@
 
 ## Last Chunk
 
+- Reworked the Network Information dialog into a larger summary-plus-details view with grouped client, eD2K, and Kademlia sections, while keeping the legacy rich-text report as the detailed pane.
+- Added `Reload` and `Copy` actions to the Network Information dialog and made the copied plain-text report include both the new summary rows and the legacy detailed dump.
+- Surfaced the resolved bind target in the Network Information client summary and aligned the dialog's eD2K public-IP formatting with the stored-byte-order formatter already used by the status bar IP pane.
+- Added a new `Tools > Network Information...` command in the dynamic Tools popup and wired it to reuse the existing modal dialog entry point.
+- Updated the shared `status_bar_info` regression coverage so the stored-byte-order IPv4 formatter used by both the status bar and the dialog remains pinned.
+- Built the target workspace with `..\23-build-emule-debug-incremental.cmd`.
+- Built the shared test binary and ran the targeted doctest filter `--test-case=*Status bar IP pane*` successfully (`3` cases, `7` assertions).
+- The full shared test suite still fails in the pre-existing sampled temp-file scans from `mapped_file_reader.tests.cpp` because `recursive_directory_iterator` hits a missing path during the filesystem-backed parity/benchmark cases.
 - Completed the remaining modern-limits follow-through for `FEAT_013`, `FEAT_015`, `FEAT_016`, and `FEAT_017` with the branch decision to keep `MaxConnections` at `500`.
 - Raised the default file buffer size to `64 MiB`, extended the Tweaks file-buffer slider to `512 MiB` via a mixed KiB/MiB mapping helper, and kept the existing `120s` file-buffer time limit.
 - Raised the queue default to `10000`, raised the per-file soft and UDP source caps to `1000` and `100`, and removed the now-dead source-cap macros from `Opcodes.h`.
@@ -34,6 +42,10 @@
 
 ## Current State
 
+- `Tools > Network Information...` now opens the same modal dialog that the status-bar panes already used on double-click.
+- The Network Information dialog now has an at-a-glance summary for client identity, bind target, eD2K state, and Kad state above the preserved legacy details report.
+- The dialog's eD2K public-IP display now uses the same stored-byte-order IPv4 formatter as the status-bar IP pane, avoiding divergent text for the same runtime address.
+- Shared regression coverage now explicitly checks that formatter, but the full shared suite remains noisy because the filesystem-backed `mapped_file_reader` sampling cases are currently environment-sensitive.
 - The main status bar now has a dedicated IP pane with compact `Bind/Public` runtime address visibility and tooltip expansion for the same data.
 - The prepended IP pane now uses the original status-bar sizing for all legacy panes and shows full `B:...|P:...` text without shortening.
 - The public-IP side of the status-bar pane now renders with the same stored-byte-order convention as the rest of the app instead of reversing octets.
@@ -46,6 +58,9 @@
 
 ## Next Chunk
 
+- If the dialog polish continues, the next contained step is to let users copy individual summary values or add a one-click export/save action without touching the existing report generator.
+- If automated coverage for this area needs to grow, extract the new dialog summary formatting into a small helper that can be tested directly from `eMule-build-tests` instead of relying on the shared `StatusBarInfo` helper alone.
+- If the shared suite needs to go green, investigate the `mapped_file_reader.tests.cpp` sampled temp-file enumeration failures before treating unrelated UI changes as test regressions.
 - If status-bar polish continues, consider surfacing the resolved bind interface name in the Network Info dialog or connected-pane tooltip without changing the restored legacy pane widths.
 - If VPN safety work starts, implement the external watchdog described in `docs\EXTRAS_VPNKILLSWITCHDESIGN.md` instead of reviving the in-app bind kill switch.
 - If bind safety continues inside eMule, the next contained step would be runtime bind-target monitoring; the current guard is startup-only.

@@ -2344,6 +2344,10 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 			CDirectDownloadDlg dlg;
 			dlg.DoModal();
 		}
+		break;
+	case MP_HM_NETWORK_INFO:
+		serverwnd->ShowNetworkInfo();
+		break;
 	}
 	if (wParam >= MP_WEBURL && wParam <= MP_WEBURL + 99)
 		theWebServices.RunURL(NULL, (UINT)wParam);
@@ -2412,6 +2416,7 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	menu.AppendMenu(MF_STRING, MP_HM_CONVERTPF, GetResString(IDS_IMPORTSPLPF) + _T("..."), _T("CONVERT"));
 	menu.AppendMenu(MF_STRING, MP_HM_IPFILTER, GetResString(IDS_IPFILTER) + _T("..."), _T("IPFILTER"));
 	menu.AppendMenu(MF_STRING, MP_HM_DIRECT_DOWNLOAD, GetResString(IDS_SW_DIRECTDOWNLOAD) + _T("..."), _T("PASTELINK"));
+	menu.AppendMenu(MF_STRING, MP_HM_NETWORK_INFO, GetResString(IDS_NETWORK_INFO) + _T("..."), _T("INFO"));
 
 	menu.AppendMenu(MF_SEPARATOR);
 	menu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)Links.m_hMenu, GetResString(IDS_LINKS), _T("WEB"));
