@@ -6,6 +6,23 @@
 
 ---
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [1. MFC-Specific Dead Code Patterns](#1-mfc-specific-dead-code-patterns)
+- [2. Deprecated Protocol Code](#2-deprecated-protocol-code)
+- [3. ASSERT(0) Dead / Unhandled Code Paths](#3-assert0-dead--unhandled-code-paths)
+- [4. TODO / FIXME — Abandoned Work Inventory](#4-todo--fixme--abandoned-work-inventory)
+- [5. Stale Compatibility Comments](#5-stale-compatibility-comments--deadlake-proxysupport)
+- [6. Legacy Windows Compatibility Code](#6-legacy-windows-compatibility-code)
+- [7. Commented-Out Code Blocks (Large)](#7-commented-out-code-blocks-large)
+- [8. Upload Compression Removal](#8-upload-compression-removal-done) **[DONE]**
+- [9. Files With the Highest Dead Code Density](#9-files-with-the-highest-dead-code-density)
+- [10. Summary Metrics](#10-summary-metrics)
+- [11. Recommendations](#11-recommendations)
+
+---
+
 ## Executive Summary
 
 This report covers MFC-specific patterns, deprecated protocol handlers, dead code, abandoned features, and technical debt across the eMule codebase. The code shows clear signs of long iterative evolution: backward-compatibility layers accumulate, features are partially removed, and protocol deprecations are flagged but never followed through to completion.
@@ -23,7 +40,8 @@ Many Priority-1 items have been completed:
 - **[DONE]** Windows 95 detection — removed (REFAC_015, commit `1771c30`)
 - **[DONE]** Legacy INI key reads — removed (REFAC_016, commit `bf41753`)
 - **[PARTIAL]** Encryption ASSERT(0) audit — most converted (REFAC_017, commit `2b9837c`)
-- **Remaining:** Source Exchange v1 branches (REFAC_013), compression remnants (REFAC_018)
+- **[DONE]** Upload compression remnants — audited (REFAC_018, commit `683d19e`)
+- **Remaining:** Source Exchange v1 branches (REFAC_013)
 
 ---
 
@@ -309,15 +327,11 @@ Beyond `#if 0` blocks, several large sections are commented out with `//`:
 
 ---
 
-## 8. Upload Compression Removal (In Progress)
+## 8. Upload Compression Removal [DONE]
 
-The commit history shows active work:
+**Status:** Completed (REFAC_018, commit `683d19e`).
 
-> `6c6fd3f WIP remove upload compression for broadband parity`
-
-Upload compression code may still have partial stubs or conditional paths that are transitionally dead. Once the compression removal is complete, the remaining compression infrastructure (e.g., `OP_PACKEDPROT` handling in `EMSocket.cpp`, zlib calls) should be audited to confirm full removal.
-
-**Action:** After the WIP commit is finalized, do a grep for `zlib`, `compress`, `uncompress`, `OP_PACKEDPROT` and remove any now-dead references.
+The upload compression audit was finalized. The unused `GetDataCompressionVersion()` accessor was removed. Live protocol compression infrastructure (`OP_PACKEDPROT` receive, source-exchange compression, server `OP_OFFERFILES` compression, Kad UDP packed-packet support) was intentionally kept. See REFAC_018 in REFACTOR-TASKS.md for the full scope.
 
 ---
 

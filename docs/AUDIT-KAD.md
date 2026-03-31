@@ -1,5 +1,13 @@
 # Kad Audit
 
+## Table of Contents
+
+- [Metadata](#metadata)
+- [Executive Summary](#executive-summary)
+- [Audit Item Register](#audit-item-register) (AUD_KAD_001–022)
+- [Scope and Method](#scope-and-method)
+- [Architectural Summary by Tree](#architectural-summary-by-tree)
+
 ## Metadata
 
 - Date: 2026-03-31

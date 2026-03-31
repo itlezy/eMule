@@ -1,5 +1,16 @@
 # Restructure Guidance
 
+## Table of Contents
+
+- [Current problem](#current-problem)
+- [Main recommendation](#main-recommendation)
+- [Suggested module layout](#suggested-module-layout)
+- [Highest-value split targets](#highest-value-split-targets)
+- [Dependency rules](#dependency-rules)
+- [Refactoring principles](#refactoring-principles)
+- [Recommended sequence](#recommended-sequence)
+- [Feature Identifier](#feature-identifier) (PLAN_001)
+
 ## Current problem
 
 The main structural issue is not only file size, but that too much code still lives flat under `srchybrid`.

@@ -8,6 +8,19 @@
 
 ---
 
+## Table of Contents
+
+- [Overview](#overview)
+- [Part 1: v0.60d → v0.70b](#part-1-v060d--v070b)
+  - [Commit 1 — ef58358 (IOCP, UNC paths, GUI)](#commit-1--ef58358-2023-08-18)
+  - [Commit 2 — 1398352 (TLS 1.3, PeerCache removal, UNC redesign)](#commit-2--1398352-2024-08-16)
+- [Part 2: v0.70b → v0.72a](#part-2-v070b--v072a)
+  - [Commit 3 — 24d1de7 (ARM64, CxImage removal, MbedTLS 4.0)](#commit-3--24d1de7-2026-01-05)
+  - [Commit 4 — 18911c5 (VS2022 x64 porting)](#commit-4--18911c5-2026-03-23)
+- [Summary and Risk Matrix](#summary-and-risk-matrix)
+
+---
+
 ## Overview
 
 There are exactly **4 commits** bridging v0.60d to v0.72a, spanning from August 2023 to March 2026. Two commits correspond to the v0.70b release cycle, two to the v0.72a release cycle.

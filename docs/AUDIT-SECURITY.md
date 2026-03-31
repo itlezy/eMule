@@ -6,6 +6,23 @@
 
 ---
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [1. TLS / SSL / HTTPS](#1-tls--ssl--https) — **[STALE]** web server + SMTP removed
+- [2. Cryptographic Algorithms](#2-cryptographic-algorithms)
+- [3. Random Number Generation](#3-random-number-generation)
+- [4. Buffer Overflow & Memory Safety](#4-buffer-overflow--memory-safety)
+- [5. Network Security](#5-network-security)
+- [6. Protocol Obfuscation — Detailed Analysis](#6-protocol-obfuscation--detailed-analysis)
+- [7. Input Validation & Injection](#7-input-validation--injection)
+- [8. Hardcoded Values & Secrets](#8-hardcoded-values--secrets)
+- [9. Known Issues & TODOs in Code](#9-known-issues--todos-in-code)
+- [10. Consolidated Findings Table](#10-consolidated-findings-table)
+- [11. Recommendations](#11-recommendations)
+
+---
+
 ## Executive Summary
 
 This eMule P2P application implements custom obfuscation/encryption, protocol handling, and an embedded web server. The codebase shows awareness of security best practices in many areas (use of `strcpy_s`, Crypto++ `AutoSeededRandomPool`, proper mutex locking, packet size guards) but has notable inconsistencies in application — particularly mixing weak `rand()` with CSPRNG, and the deep entanglement of broken hash algorithms (MD4/MD5) inherited from the eDonkey/eMule protocol specification.
@@ -14,28 +31,25 @@ This eMule P2P application implements custom obfuscation/encryption, protocol ha
 
 - Cryptographic limitations (MD4, MD5, RC4, 768-bit DH) are protocol-legacy artifacts, not new mistakes
 - No externally-authenticated session or login mechanism exposed to the network
-- Local web server uses modern TLS (mbedTLS) with self-signed certs — acceptable for private use
 - Several fixable issues existed: weak RNG for crypto values, one unguarded `strcpy`, deprecated socket API
 - **Update 2026-03-30:** BUG_001 (strcpy) fixed in commit `0cb4d1e`; GAP_002 (`inet_addr`) fixed in commit `768559c`; BUG_003 (srand) fix attempted and intentionally reverted — accepted as low-priority legacy risk
+- **Update 2026-03-31 (staleness review):** The embedded web server and SMTP notifier were fully removed (commit `6a1c440`). This makes GAP_001 (3DES in SMTP), GAP_003 (XSS in web templates), and all TLS/web server findings **stale**. They are kept below for historical reference only.
 
 ---
 
 ## 1. TLS / SSL / HTTPS
 
-### 1.1 Local Web Server — mbedTLS (GOOD)
+### 1.1 Local Web Server — mbedTLS ~~(GOOD)~~ **[STALE — REMOVED]**
 
-**Files:** `srchybrid/PPgWebServer.cpp`, `srchybrid/WebSocket.h`
+**Status:** The embedded web server and all associated TLS code were fully removed (commit `6a1c440`). This section is kept for historical reference only.
 
-- Uses **mbedTLS** with the PSA Crypto API (modern approach)
-- Generates a self-signed **RSA 2048-bit** certificate signed with **SHA-256**
-- Certificate validity period is configurable
-- Self-signed is intentional and acceptable for a locally-hosted UI
+~~**Files:** `srchybrid/PPgWebServer.cpp`, `srchybrid/WebSocket.h`~~
 
-**Severity: LOW** — Modern implementation; self-signed is appropriate for local use.
+### 1.2 SMTP Email — ~~mbedTLS + Windows Crypto API~~ **[STALE — REMOVED]**
 
-### 1.2 SMTP Email — mbedTLS + Windows Crypto API
+**Status:** The SMTP notifier was fully removed (commit `6a1c440`). GAP_001 is no longer applicable.
 
-**Files:** `srchybrid/SendMail.cpp`
+~~**Files:** `srchybrid/SendMail.cpp`~~
 
 ```cpp
 #include "mbedtls/net_sockets.h"
@@ -47,7 +61,7 @@ This eMule P2P application implements custom obfuscation/encryption, protocol ha
 - **Triple-DES (3DES/DES3-CBC)** referenced for symmetric encryption
 - Certificate lookup via `CertOpenSystemStore(hCryptProv, pszCertStore)` (Windows AddressBook store)
 
-**Severity: MEDIUM** — **`GAP_001`** 3DES is deprecated (NIST SP 800-131A Rev. 2 disallows it after 2023). Should be replaced with AES-128 or AES-256.
+~~**Severity: MEDIUM** — **`GAP_001`** 3DES is deprecated (NIST SP 800-131A Rev. 2 disallows it after 2023). Should be replaced with AES-128 or AES-256.~~ **[STALE — feature removed]**
 
 ### 1.3 Protocol Obfuscation — NOT TLS
 
@@ -415,7 +429,7 @@ if (::InternetCrackUrl(...) && Url.dwHostNameLength > 0 &&
 - File names from peers could contain HTML/JS characters
 - No explicit HTML-escaping code observed in the agent's scan
 
-**Severity: MEDIUM** — **`GAP_003`** If file names or peer-supplied strings are injected into HTML responses without escaping, reflected XSS is possible in the local web UI.
+~~**Severity: MEDIUM** — **`GAP_003`** If file names or peer-supplied strings are injected into HTML responses without escaping, reflected XSS is possible in the local web UI.~~ **[STALE — WebServer removed]**
 
 ### 7.3 Shell Execution
 
@@ -496,9 +510,9 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 | 6 | — | **HIGH** | Hash | SHA-1 used in AICH (deprecated) | `srchybrid/SHA.h`, `SHAHashSet.h` |
 | 7 | **GAP_004** | **MEDIUM** | DH | 768-bit DH parameters (weak) | `srchybrid/EncryptedStreamSocket.cpp:101-110` |
 | 8 | — | **MEDIUM** | Cipher | RC4 deprecated cipher for obfuscation | `srchybrid/EncryptedDatagramSocket.cpp` |
-| 9 | **GAP_001** | **MEDIUM** | Crypto | 3DES (DES3-CBC) in SMTP | `srchybrid/SendMail.cpp` |
+| 9 | **GAP_001** **[STALE]** | ~~MEDIUM~~ | Crypto | ~~3DES (DES3-CBC) in SMTP~~ — SendMail removed | ~~`srchybrid/SendMail.cpp`~~ |
 | 10 | **GAP_002** **[DONE]** | **MEDIUM** | Network | `inet_addr()` deprecated API | `srchybrid/AsyncProxySocketLayer.cpp:732`, `AsyncSocketEx.cpp:897` |
-| 11 | **GAP_003** | **MEDIUM** | Web | Potential XSS in web server templates | `srchybrid/WebServer.cpp` |
+| 11 | **GAP_003** **[STALE]** | ~~MEDIUM~~ | Web | ~~Potential XSS in web server templates~~ — WebServer removed | ~~`srchybrid/WebServer.cpp`~~ |
 | 12 | — | **LOW** | TLS | Self-signed cert for local web server | `srchybrid/PPgWebServer.cpp` |
 | 13 | — | **LOW** | RNG | `rand()` for timing jitter (non-crypto) | `srchybrid/BaseClient.cpp:237` |
 | 14 | — | **INFO** | Design | Custom obfuscation protocol (not TLS) | `srchybrid/EncryptedStreamSocket.cpp` |
@@ -518,11 +532,11 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 
 ### Priority 2 — Should Fix
 
-4. **`GAP_001`** **`srchybrid/SendMail.cpp`** — Replace 3DES (DES3-CBC) with AES-128-CBC or AES-256-GCM.
+4. **`GAP_001`** ~~**`srchybrid/SendMail.cpp`** — Replace 3DES (DES3-CBC) with AES-128-CBC or AES-256-GCM.~~ **[STALE — SendMail removed]**
 
 5. **`GAP_002`** **[DONE]** (commit `768559c`) — `inet_addr()` replaced with `InetPtonA()` in `srchybrid/AsyncProxySocketLayer.cpp` and `srchybrid/AsyncSocketEx.cpp`.
 
-6. **`GAP_003`** **`srchybrid/WebServer.cpp`** — Audit all template variable insertions to ensure HTML encoding is applied to peer-supplied strings (file names, search results, IP addresses rendered in HTML context).
+6. **`GAP_003`** ~~**`srchybrid/WebServer.cpp`** — Audit all template variable insertions to ensure HTML encoding is applied to peer-supplied strings (file names, search results, IP addresses rendered in HTML context).~~ **[STALE — WebServer removed]**
 
 ### Priority 3 — Consider for Future Releases
 
@@ -540,7 +554,7 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 
 12. Address FIXME/TODO items related to Kad encryption negotiation (`ClientList.cpp:607`, `BaseClient.cpp:1458`).
 
-13. Add `Content-Security-Policy` and `X-Content-Type-Options` headers to the embedded web server.
+13. ~~Add `Content-Security-Policy` and `X-Content-Type-Options` headers to the embedded web server.~~ **[STALE — WebServer removed]**
 
 ---
 

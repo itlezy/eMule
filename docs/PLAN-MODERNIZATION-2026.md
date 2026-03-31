@@ -57,7 +57,7 @@ Where we have proven implementations to port from, we say so. Where we are propo
 |------|--------|
 | VS 2022 + v143 toolset, x64 primary | ✅ Done |
 | Windows 10+ baseline (XP/Vista shims removed) | ✅ Done |
-| TLS 1.3 via mbedTLS 4.0 + PSA Crypto | ✅ Done |
+| ~~TLS 1.3 via mbedTLS 4.0 + PSA Crypto~~ | Removed (web server + SMTP purged, commit `6a1c440`) |
 | CxImage/libpng → GDI+ | ✅ Done |
 | IOCP async file writes (PartFileWriteThread) | ✅ Done |
 | Async overlapped upload disk reads | ✅ Done |
@@ -81,9 +81,9 @@ Where we have proven implementations to port from, we say so. Where we are propo
 | D-03 | `rand()` for crypto challenge value | `ClientUDPSocket.cpp` | HIGH |
 | D-04 | `inet_addr()` deprecated **[DONE]** | 2 socket files | MEDIUM |
 | D-05 | Upload overhead counters don't persist (INI key mismatch) | `Preferences.cpp` | MEDIUM |
-| D-06 | Web server allowed IPs not saved back | `PPgWebServer.cpp` | MEDIUM |
+| ~~D-06~~ | ~~Web server allowed IPs not saved back~~ | ~~`PPgWebServer.cpp`~~ | **STALE** — removed |
 | D-07 | 19+ hidden prefs loaded but not saved | `Preferences.cpp` | MEDIUM |
-| D-08 | `MBEDTLS_ALLOW_PRIVATE_ACCESS` technical debt | `WebSocket.cpp` | LOW |
+| ~~D-08~~ | ~~`MBEDTLS_ALLOW_PRIVATE_ACCESS` technical debt~~ | ~~`WebSocket.cpp`~~ | **STALE** — removed |
 | D-09 | GDI handle leak in CAPTCHA generator | `CaptchaGenerator.cpp` | LOW |
 | D-10 | UNC share prepend missing in sorted insertion | `SharedFileList.cpp` | LOW |
 

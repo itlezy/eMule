@@ -6,6 +6,21 @@
 
 ---
 
+## Table of Contents
+
+- [Context](#context)
+- [Dependency Inventory](#dependency-inventory)
+- [1. Crypto++ 8.9.0](#1-crypto-890--dep_001) — Medium risk
+- [2. id3lib 3.9.1](#2-id3lib-391--dep_002) — Do not convert
+- [3. miniupnpc 2.3.3](#3-miniupnpc-233--dep_003) — **Good DLL candidate**
+- [4. ResizableLib](#4-resizablelib-master--v153--dep_005) — Incompatible
+- [5. zlib 1.3.2](#5-zlib-132--dep_004) — **Good DLL candidate**
+- [6. MbedTLS + TF-PSA-Crypto](#6-mbedtls-400--tf-psa-crypto-100--dep_006-stale--removed) — **[STALE — REMOVED]**
+- [Summary Table](#summary-table)
+- [Recommended Action Plan](#recommended-action-plan)
+
+---
+
 ## Context
 
 All current dependencies are linked as **static `.lib`** files. This document evaluates whether each
@@ -26,8 +41,8 @@ pointer truncation, old SDK API shims) and simplifies the feasibility analysis.
 | 3 | **miniupnpc** | 2.3.3 | Static `.lib` | UPnP port mapping / NAT traversal | `DEP_003` in DEP-REMOVAL.md |
 | 4 | **ResizableLib** | master | Static `.lib` | MFC resizable dialogs | `DEP_005` in DEP-REMOVAL.md |
 | 5 | **zlib** | 1.3.2 | Static `.lib` (CMake) | Deflate/gzip compression | `DEP_004` in DEP-REMOVAL.md |
-| 6 | **MbedTLS** | 4.0.0 | Static `.lib` (6-part CMake) | TLS 1.3, X.509, WebSocket security | `DEP_006` in DEP-REMOVAL.md |
-| 7 | **TF-PSA-Crypto** | 1.0.0 | Static `.lib` (coupled to MbedTLS) | PSA Crypto API layer under MbedTLS | `DEP_006` in DEP-REMOVAL.md |
+| 6 | ~~**MbedTLS**~~ | ~~4.0.0~~ | ~~Static `.lib`~~ | ~~TLS 1.3, X.509, WebSocket security~~ **[REMOVED]** | `DEP_006` in DEP-REMOVAL.md |
+| 7 | ~~**TF-PSA-Crypto**~~ | ~~1.0.0~~ | ~~Static `.lib`~~ | ~~PSA Crypto API layer under MbedTLS~~ **[REMOVED]** | `DEP_006` in DEP-REMOVAL.md |
 
 ---
 
@@ -243,9 +258,11 @@ applications and some Windows components).
 
 ---
 
-## 6. MbedTLS 4.0.0 + TF-PSA-Crypto 1.0.0 — `DEP_006`
+## 6. MbedTLS 4.0.0 + TF-PSA-Crypto 1.0.0 — `DEP_006` **[STALE — REMOVED]**
 
-### Current setup
+**Status:** Both MbedTLS and TF-PSA-Crypto were fully removed in commit `6a1c440` as part of the SMTP + embedded web-server purge. This entire section is kept for historical reference only.
+
+### Current setup (historical)
 Six static libraries combined via `lib.exe /OUT:` into one aggregate `mbedtls.lib`:
 
 | Sub-library | Source | Role |
@@ -325,7 +342,7 @@ the risk is reduced from VERY HIGH to HIGH (threading and version lock concerns 
 | **Crypto++** | 8.9.0 | Yes (official) | Medium | Medium | Consider — test ABI | `DEP_001` |
 | **id3lib** | 3.9.1 | No (dead upstream) | Low | Very High | **Keep static** | `DEP_002` |
 | **ResizableLib** | master | No | None | N/A | **Incompatible** | `DEP_005` |
-| **MbedTLS + TF-PSA** | 4.0.0 / 1.0.0 | Yes but complex | Very Low | Very High | **Keep static** | `DEP_006` |
+| ~~**MbedTLS + TF-PSA**~~ | ~~4.0.0 / 1.0.0~~ | N/A | N/A | N/A | **[REMOVED]** | `DEP_006` |
 
 ---
 
@@ -367,13 +384,11 @@ Preconditions:
 - Ensure no `CryptoPP::` heap objects are allocated in one module and freed in another
 - Test RSA credit verification end-to-end against a known-good peer after conversion
 
-### Phase 3 — Future (requires code changes first)
+### ~~Phase 3 — Future~~ **[STALE — REMOVED]**
 
-#### MbedTLS → DLL (blocked) (`DEP_006`)
+~~#### MbedTLS → DLL (blocked) (`DEP_006`)~~
 
-Blocked until `MBEDTLS_ALLOW_PRIVATE_ACCESS` usage is removed from eMule source. See `GAP_005` in AUDIT-CODEREVIEW.md. File a
-separate task to migrate affected SHA1 code to the PSA Crypto API (`psa_hash_compute`,
-`psa_hash_setup`, etc.), then re-evaluate DLL feasibility.
+MbedTLS and TF-PSA-Crypto were fully removed in commit `6a1c440`. This phase is no longer applicable.
 
 ---
 

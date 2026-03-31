@@ -1,5 +1,21 @@
 # Kad Improvement Plan
 
+## Table of Contents
+
+- [Summary](#summary)
+- [Feature Tracking](#feature-tracking)
+- [Primary Goals](#primary-goals)
+- [Guiding Principles](#guiding-principles)
+- [Phase 1: Bring In CSafeKad2 and CFastKad](#phase-1-bring-in-csafekad2-and-cfastkad-feat_002-feat_003)
+- [Phase 2: Refactor the Imported Implementations](#phase-2-refactor-the-imported-implementations-feat_002-feat_003)
+- [Phase 3: Integrate into Current Kad Entry Points](#phase-3-integrate-into-current-kad-entry-points-feat_004)
+- [Phase 4: Improve Routing Quality Beyond eMuleAI](#phase-4-improve-routing-quality-beyond-emuleai-feat_005)
+- [Phase 5: Observability and Debuggability](#phase-5-observability-and-debuggability-feat_006)
+- [Phase 6: Optional Advanced Improvements](#phase-6-optional-advanced-improvements-feat_007-feat_008)
+- [eMuleAI Reference Implementation](#emuleai-reference-implementation)
+- [Implementation Order](#implementation-order)
+- [Validation Plan](#validation-plan)
+
 ## Summary
 
 This plan modernizes the current Kad implementation in `eMulebb/eMule` with a focus on security, routing quality, search efficiency, and observability. The first execution chunk should bring in `CSafeKad2` and `CFastKad` together, but not as a verbatim copy from eMuleAI. Both modules should be refactored during import to fit the current branch better and to avoid carrying over avoidable technical debt.

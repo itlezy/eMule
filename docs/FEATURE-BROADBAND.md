@@ -1,5 +1,18 @@
 # FEAT_001 — Broadband Upload Slot Control [DONE]
 
+## Table of Contents
+
+- [Goal](#goal)
+- [Problem in Stock v0.72a](#problem-in-stock-v072a)
+- [Why the Legacy Logic No Longer Works Well](#why-the-legacy-logic-no-longer-works-well)
+- [What Was Useful in v0.60d-dev](#what-was-useful-in-v060d-dev)
+- [What This Branch Keeps](#what-this-branch-keeps)
+- [What This Branch Does Not Port](#what-this-branch-does-not-port)
+- [New Controller Design](#new-controller-design)
+- [Expected Outcome](#expected-outcome)
+- [Files Touched](#files-touched-by-the-implementation)
+- [Design Notes](#design-notes)
+
 ## Goal
 
 This branch keeps the broadband-oriented idea from `v0.60d-dev`: cap the normal

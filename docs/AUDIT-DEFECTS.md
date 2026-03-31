@@ -1,5 +1,12 @@
 # Defects
 
+## Table of Contents
+
+- [Definite Bugs](#definite-bugs)
+- [Load-Only Hidden Or Legacy Prefs](#load-only-hidden-or-legacy-prefs)
+- [Follow-Up: Purpose And Current Use](#follow-up-purpose-and-current-use)
+- [Not Counted As Bugs](#not-counted-as-bugs)
+
 ## Preferences Persistence Audit
 
 Date: 2026-03-24
@@ -13,10 +20,8 @@ Date: 2026-03-24
   - Loaded as `UpOverHeadTotalPackets` in `srchybrid/Preferences.cpp`.
   - Effect: those two counters are effectively not persisted.
 
-- **`BUG_011`** Web server allowed IPs are load-only.
-  - `AllowedIPs` is parsed from `preferences.ini` in `srchybrid/Preferences.cpp`.
-  - No matching write-back path was found in the save logic.
-  - Effect: runtime changes to the allowed remote access list are not persisted.
+- **`BUG_011`** ~~Web server allowed IPs are load-only.~~ **[STALE — WebServer removed]**
+  - The embedded web server was fully removed (commit `6a1c440`). The `AllowedIPs` preference no longer exists.
 
 ### Load-Only Hidden Or Legacy Prefs
 

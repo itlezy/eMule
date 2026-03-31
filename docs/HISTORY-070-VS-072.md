@@ -7,6 +7,22 @@
 
 ---
 
+## Table of Contents
+
+- [1. File Inventory](#1-file-inventory)
+- [2. Version Information](#2-version-information)
+- [3. Major Feature Additions](#3-major-feature-additions) (Ring buffer, ARM64, new protocol tags)
+- [4. Major Refactoring](#4-major-refactoring) (CList→CRing, CxImage→GDI+, API modernization)
+- [5. Bug Fixes & Code Corrections](#5-bug-fixes--code-corrections)
+- [6. Code Quality / Style Improvements](#6-code-quality--style-improvements)
+- [7. Protocol & Networking](#7-protocol--networking)
+- [8. UI / UX](#8-ui--ux)
+- [9. Security Notes](#9-security-notes)
+- [10. Key Changed Files](#10-key-changed-files-summary)
+- [11. Overall Development Trend](#11-overall-development-trend)
+
+---
+
 ## 1. File Inventory
 
 | Metric | 0.70b | 0.72a |

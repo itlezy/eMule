@@ -9,6 +9,21 @@ It is based on:
 - the `PPg*.cpp` preference pages
 - [DEFECTS.md](/C:/prj/p2p/eMulebb/eMule/DEFECTS.md)
 
+## Table of Contents
+
+- [Scope](#scope)
+- [Legend](#legend)
+- [UI-Exposed Preferences](#ui-exposed-preferences)
+  - [General](#general) — [Connection And Throughput](#connection-and-throughput) — [Server / eD2k / Kad](#server--ed2k--kad) — [Directories, Files, And Download Behavior](#directories-files-and-download-behavior) — [Display / UI / Toolbar](#display--ui--toolbar) — [Security, Privacy, And Obfuscation](#security-privacy-and-obfuscation) — [Messaging / Chat](#messaging--chat) — [Notifications](#notifications) — [Proxy](#proxy) — [UPnP](#upnp) — [Broadband Branch Controls](#broadband-branch-controls)
+- [Hidden Runtime Preferences](#hidden-runtime-preferences)
+- [Hidden Or Legacy Keys Which Look Stale](#hidden-or-legacy-keys-which-look-stale-transitional-or-import-only)
+- [UI Defaults Which Are Not First-Class CPreferences Keys](#ui-defaults-which-are-not-first-class-cpreferences-keys)
+- [Technical Notes For Non-Obvious Settings](#technical-notes-for-non-obvious-settings)
+  - [Throughput And Connection Control](#throughput-and-connection-control) — [Server / Kad Behavior](#server--kad-behavior) — [File I/O And Download Mechanics](#file-io-and-download-mechanics) — [Security / Messaging / Obfuscation](#security--messaging--obfuscation) — [UI / Rendering Internals](#ui--rendering-internals) — [Broadband Branch Controls](#broadband-branch-controls-1) — [Hidden Maintenance / Legacy Behavior Knobs](#hidden-maintenance--legacy-behavior-knobs)
+- [Counters, Statistics, And State Stored In The Same INI](#counters-statistics-and-state-stored-in-the-same-ini)
+- [TODO](#todo)
+- [Practical Reading Guide](#practical-reading-guide)
+
 ## Scope
 
 This document separates four different things which all live in `preferences.ini`:

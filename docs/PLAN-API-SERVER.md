@@ -5,6 +5,29 @@
 
 ---
 
+## Table of Contents
+
+- [1. Overview](#1-overview)
+- [2. Why a Sidecar Instead of In-Process](#2-why-a-sidecar-instead-of-in-process)
+- [3. Architecture](#3-architecture)
+- [4. Named Pipe Protocol](#4-named-pipe-protocol)
+  - [4.1 Transport](#41-transport)
+  - [4.2 Message Types](#42-message-types)
+  - [4.3 Command Reference](#43-command-reference)
+  - [4.4 Event Reference](#44-event-reference)
+- [5. Data Types](#5-data-types)
+- [6. REST API Endpoints](#6-rest-api-endpoints)
+  - [6.1 Auth](#61-auth) — [6.2 Application](#62-application) — [6.3 Transfer Info](#63-transfer-info-global-speeds) — [6.4 Torrents](#64-torrents-downloads) — [6.5 Sync](#65-sync-polling-alternative-to-sse) — [6.6 Log](#66-log) — [6.7 Search](#67-search) — [6.8 Events (SSE)](#68-events-sse) — [6.9 eMule Extensions](#69-emule-extensions)
+- [7. TypeScript Project Structure](#7-typescript-project-structure)
+- [8. C++ Side — CPipeApiServer](#8-c-side--cpipeapiserver)
+  - [8.1 Class Design](#81-class-design) — [8.2 Pipe Lifecycle](#82-pipe-lifecycle) — [8.3 Event Hook Points](#83-event-hook-points-in-emule) — [8.4 Thread Safety](#84-thread-safety-model) — [8.5 JSON Library](#85-json-library)
+- [9. HTTP Error Convention](#9-http-error-convention)
+- [10. Implementation Order](#10-implementation-order)
+- [11. Out of Scope](#11-out-of-scope)
+- [Feature Identifier](#feature-identifier) (PLAN_004)
+
+---
+
 ## 1. Overview
 
 Rather than extending the built-in HTML web server (see `WEB_APIs.md`), this document describes an alternative architecture: a **named pipe IPC channel** inside eMule paired with a standalone **Node.js/TypeScript sidecar process** that owns the HTTP surface.

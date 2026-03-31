@@ -6,6 +6,24 @@ C++17 target. Solo project. No CI/CD in scope for now.
 
 ---
 
+## Table of Contents
+
+- [Toolchain Inventory](#toolchain-inventory)
+- [Current State (Baseline)](#current-state-baseline)
+- [Phase 1 — CMake Migration](#phase-1--cmake-migration-foundation)
+- [Phase 2 — Code Formatting (clang-format)](#phase-2--code-formatting-clang-format)
+- [Phase 3 — MSVC Compiler Hardening](#phase-3--msvc-compiler-hardening)
+- [Phase 4 — clang-tidy](#phase-4--clang-tidy)
+- [Phase 5 — cppcheck](#phase-5--cppcheck)
+- [Phase 6 — MSVC AddressSanitizer](#phase-6--msvc-addresssanitizer-debug-builds-only)
+- [Phase 7 — scan-build (Clang Static Analyzer)](#phase-7--scan-build-clang-static-analyzer)
+- [Phase 8 — clang-include-cleaner](#phase-8--clang-include-cleaner)
+- [Recommended Execution Order](#recommended-execution-order)
+- [Quick Reference — Tool Command Summary](#quick-reference--tool-command-summary)
+- [Feature Identifier](#feature-identifier) (PLAN_005)
+
+---
+
 ## Toolchain Inventory
 
 ### Installed (ready to use)
@@ -53,8 +71,9 @@ cppcheck --version  # expect 2.14+
 - Warning level: `/Wall` (`EnableAllWarnings`) — already enabled
 - Runtime: `/MTd` debug, `/MT` release (static CRT, no DLL dependency)
 - PCH: `stdafx.h` / `stdafx.cpp`
-- Defines: `ID3LIB_LINKOPTION=1`, `MINIUPNP_STATICLIB`, `SUPPORT_LARGE_FILES`,
-  `MBEDTLS_ALLOW_PRIVATE_ACCESS`, `_CRT_SECURE_NO_DEPRECATE`, `UNICODE`, `_UNICODE`
+- Defines: `MINIUPNP_STATICLIB`, `SUPPORT_LARGE_FILES`,
+  `_CRT_SECURE_NO_DEPRECATE`, `UNICODE`, `_UNICODE`
+- **Note (2026-03-31):** `ID3LIB_LINKOPTION=1` and `MBEDTLS_ALLOW_PRIVATE_ACCESS` were removed when id3lib and MbedTLS were purged from the build.
 - Existing linters/formatters/sanitizers: **none**
 - Existing `.editorconfig`: tab-indent, CRLF for C++ sources
 

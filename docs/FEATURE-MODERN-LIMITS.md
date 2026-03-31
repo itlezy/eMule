@@ -1,5 +1,20 @@
 # Modern Limits Plan
 
+## Table of Contents
+
+- [Feature Tracking](#feature-tracking)
+- [Purpose](#purpose)
+- [Design Direction](#design-direction)
+- [Scope Boundary](#scope-boundary)
+- [Current Problem Areas](#current-problem-areas)
+- [Recommended Fixed Defaults](#recommended-fixed-defaults)
+- [Settings To Expose In The Advanced Tree](#settings-to-expose-in-the-advanced-tree-feat_019)
+- [Implementation Guidance](#implementation-guidance)
+- [Detailed Target Changes](#detailed-target-changes)
+- [Risk Ranking](#risk-ranking)
+- [Validation Plan](#validation-plan)
+- [Preferred Execution Order](#preferred-execution-order)
+
 ## Feature Tracking
 
 | ID | Feature | Status |

@@ -6,6 +6,22 @@
 
 ---
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [1. Socket Class Hierarchy](#1-socket-class-hierarchy)
+- [2. Async I/O Model — WSAAsyncSelect + Helper Windows](#2-async-io-model--wsaasyncselect--helper-windows)
+- [3. Send Queue Architecture](#3-send-queue-architecture)
+- [4. Packet Framing and Protocol Parsing](#4-packet-framing-and-protocol-parsing)
+- [5. Upload Bandwidth Throttler](#5-upload-bandwidth-throttler)
+- [6. UPnP NAT Traversal](#6-upnp-nat-traversal)
+- [7. SOCKS/HTTP Proxy Layer](#7-sockshttp-proxy-layer)
+- [8. Encrypted Streams and Datagrams](#8-encrypted-streams-and-datagrams)
+- [9. DNS Resolution](#9-dns-resolution)
+- [10. Known Issues and Recommendations](#10-known-issues-and-recommendations)
+
+---
+
 ## Executive Summary
 
 The eMule networking stack is a mature **Windows-native asynchronous I/O architecture** built entirely on `WSAAsyncSelect` with a layered socket abstraction. It handles hundreds of simultaneous P2P connections through a message-pump–driven notification model, a dedicated upload bandwidth throttler thread, dual TCP/UDP encrypted transports, a SOCKS/HTTP proxy layer, and two independent UPnP implementations. The overall design is sound and well-suited to its use case. This report documents every major subsystem with file and line references, identifies architectural limitations, and calls out specific issues.

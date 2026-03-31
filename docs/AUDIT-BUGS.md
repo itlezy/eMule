@@ -7,6 +7,17 @@
 
 ---
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [Current Triage Status](#current-triage-status)
+- [CRITICAL Findings](#critical-findings) (BBUG_001–007)
+- [HIGH Findings](#high-findings)
+- [MEDIUM Findings](#medium-findings)
+- [LOW Findings](#low-findings)
+
+---
+
 ## Executive Summary
 
 | Category | CRITICAL | HIGH | MEDIUM | LOW | Total |

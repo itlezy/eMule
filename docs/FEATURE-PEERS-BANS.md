@@ -6,6 +6,15 @@
 
 eMuleAI has two distinct peer banning systems and one lightweight identity guard. All three are independent from the UI/theme/translation scope.
 
+## Table of Contents
+
+- [Feature Tracking](#feature-tracking)
+- [1. CShield — ED2K Anti-Leecher Engine](#1-cshield----ed2k-anti-leecher-engine-feat_011-feat_012)
+- [2. SafeKad2 — Kademlia Node ID Spoofing Detection](#2-safekad2----kademlia-node-id-spoofing-detection-feat_009)
+- [3. CAntiNick — Username Theft Detection](#3-cantinick----username-theft-detection-feat_010)
+- [Integration Priority](#integration-priority)
+- [Future Peer Management Features](#future-peer-management-features-from-emuleai-bringin-analysis)
+
 ## Feature Tracking
 
 | ID | Feature | Status |

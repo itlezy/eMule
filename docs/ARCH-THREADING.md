@@ -6,6 +6,24 @@
 
 ---
 
+## Table of Contents
+
+- [Executive Summary](#executive-summary)
+- [1. Thread Inventory](#1-thread-inventory)
+- [2. The Central Timer Tick](#2-the-central-timer-tick)
+- [3. The AsyncSocketEx Helper Window in Detail](#3-the-asyncsocketex-helper-window-in-detail)
+- [4. Synchronization Primitives in Use](#4-synchronization-primitives-in-use)
+- [5. I/O Completion Port Usage](#5-io-completion-port-usage-good-patterns-to-extend)
+- [6. Inter-Thread Message Types](#6-inter-thread-message-types)
+- [7. Known Bugs in Current Threading](#7-known-bugs-in-current-threading)
+- [8. Path to a Real Threading Model](#8-path-to-a-real-threading-model)
+- [9. Migration Sequence](#9-migration-sequence)
+- [10. What Stays the Same](#10-what-stays-the-same)
+- [11. Estimated Impact](#11-estimated-impact)
+- [12. Feature Identifiers](#12-feature-identifiers) (FEAT_029, FEAT_030)
+
+---
+
 ## Executive Summary
 
 eMule uses a hybrid threading model: a handful of background worker threads for file I/O, combined
