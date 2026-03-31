@@ -201,13 +201,13 @@ namespace
 
 IMPLEMENT_DYNAMIC(CNetworkInfoDlg, CDialog)
 
-BEGIN_MESSAGE_MAP(CNetworkInfoDlg, CResizableDialog)
+BEGIN_MESSAGE_MAP(CNetworkInfoDlg, CDialog)
 	ON_BN_CLICKED(IDC_NETWORK_RELOAD, OnBnClickedReload)
 	ON_BN_CLICKED(IDC_NETWORK_COPY, OnBnClickedCopy)
 END_MESSAGE_MAP()
 
 CNetworkInfoDlg::CNetworkInfoDlg(CWnd *pParent /*=NULL*/)
-	: CResizableDialog(CNetworkInfoDlg::IDD, pParent)
+	: CDialog(CNetworkInfoDlg::IDD, pParent)
 	, m_cfDef()
 	, m_cfBold()
 {
@@ -215,13 +215,13 @@ CNetworkInfoDlg::CNetworkInfoDlg(CWnd *pParent /*=NULL*/)
 
 void CNetworkInfoDlg::DoDataExchange(CDataExchange *pDX)
 {
-	CResizableDialog::DoDataExchange(pDX);
+	CDialog::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_NETWORK_INFO, m_info);
 }
 
 BOOL CNetworkInfoDlg::OnInitDialog()
 {
-	CResizableDialog::OnInitDialog();
+	CDialog::OnInitDialog();
 	InitWindowStyles(this);
 
 	SetWindowText(GetResString(IDS_NETWORK_INFO));

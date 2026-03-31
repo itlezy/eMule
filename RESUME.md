@@ -2,6 +2,8 @@
 
 ## Last Chunk
 
+- Removed the last resizable-dialog dependency from Network Information by switching it from `CResizableDialog` to plain `CDialog`, matching the already-fixed-size resource and avoiding any further resize behavior from the class itself.
+- Rebuilt the target workspace with `..\23-build-emule-debug-incremental.cmd`.
 - Fixed the follow-up layout regression in the Network Information dialog by keeping the 3 summary panels but converting the screen back to a deliberate fixed-size layout instead of a pseudo-resizable one.
 - Removed the dialog's anchor/save-restore behavior so stale saved rectangles from the broken layout can no longer reopen the screen at an invalid size.
 - Tightened the resource geometry, moved the bind target onto the compact client row, and added ellipsis-safe static value controls so long bind/server/hash text no longer tramples adjacent fields.
@@ -47,6 +49,7 @@
 
 ## Current State
 
+- The Network Information dialog is now plain `CDialog` plus fixed-size resource layout, so there is no remaining resizable helper behavior attached to that screen.
 - The Network Information dialog is now intentionally fixed-size, with the 3-panel summary preserved but packed into a tighter geometry that does not depend on resize anchors.
 - The screen no longer restores the previous broken saved rectangle, so old bad geometry should stop resurfacing for users who opened the earlier layout.
 - `Tools > Network Information...` now opens the same modal dialog that the status-bar panes already used on double-click.

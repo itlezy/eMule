@@ -1,11 +1,11 @@
 #pragma once
 
-#include "../../eMule-ResizableLib/ResizableLib/ResizableDialog.h"
+#include <afxwin.h>
 #include "RichEditCtrlX.h"
 
 // CNetworkInfoDlg dialog
 
-class CNetworkInfoDlg : public CResizableDialog
+class CNetworkInfoDlg : public CDialog
 {
 	DECLARE_DYNAMIC(CNetworkInfoDlg)
 
