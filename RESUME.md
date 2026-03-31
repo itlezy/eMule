@@ -2,6 +2,8 @@
 
 ## Last Chunk
 
+- Fixed a debug-only UPnP shutdown/discovery assertion in `UPnPImplMiniLib.cpp` by replacing the stale `ASSERT(!thePrefs.IsUPnPEnabled())` invariant with a warning-and-skip path when no valid IGD control endpoint is available.
+- Rebuilt the target workspace with `..\23-build-emule-debug-incremental.cmd`.
 - Normalized dependency-header resolution back into `srchybrid\emule.vcxproj` by adding `ResizableLib`, `zlib`, and `Crypto++` roots to `AdditionalIncludeDirectories` for both `Debug` and `Release`.
 - Rewrote the remaining dependency `#include` directives in `srchybrid` away from hard-coded sibling traversals such as `../../eMule-zlib/...`, `../../eMule-cryptopp/...`, and `../../eMule-ResizableLib/...`.
 - Fixed the follow-up header-name collisions caused by generic names in subdirectories by qualifying the project-local `srchybrid/Resource.h`, `srchybrid/MD4.h`, and `srchybrid/Opcodes.h` includes where needed.
@@ -54,6 +56,7 @@
 
 ## Current State
 
+- `CUPnPImplMiniLib::DeletePorts(bool)` now tolerates enabled-UPnP sessions that never produced a valid IGD control URL or already cleaned up their discovery data, and logs a warning instead of tripping a CRT assertion.
 - `srchybrid` now resolves dependency headers through project include roots again instead of embedding sibling-workspace `..\..` paths for `zlib`, `Crypto++`, and `ResizableLib`.
 - The successful `..\23-build-emule-debug-incremental.cmd` build log is now clean for `warning C4464`.
 - One internal subdirectory include path was intentionally qualified through `srchybrid/...` to avoid generic-name collisions with dependency headers while keeping the dependency include directories ordered correctly.
@@ -76,6 +79,7 @@
 
 ## Next Chunk
 
+- If UPnP issues continue, the next contained step is to log the exact discovery/cleanup state transitions around `StartDiscovery`, `DeletePorts`, and `Cleanup` so shutdown timing can be audited without relying on debug assertions.
 - If the include cleanup continues, the next safe pass is `.rc` include normalization only; the C/C++ dependency traversal cleanup is complete.
 - If more include-path cleanup is wanted, audit other generic local header names from subdirectories before reordering include roots again, since `resource.h` / `MD4.h` collisions were the only blockers in this pass.
 - If more Network Information polish is needed, the next safe step is visual refinement only: adjust spacing/text priority inside the fixed-size panels or add tooltips for elided summary values without reintroducing resize behavior.
