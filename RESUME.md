@@ -2,19 +2,19 @@
 
 ## Last Chunk
 
-- Added a standalone `--hash-probe` mode to `eMule-build-tests\build\<tag>\x64\Debug\emule-tests.exe`.
-- The probe runs outside the GUI app and compares buffered reads against the shared `MappedFileReader` path on an arbitrary Unicode/long file path.
-- Verified the long-path `videodupez` MP4 (`prepared-path-length=363`) completes in both buffered and mapped modes in about 24.5 seconds with identical digests.
-- This rules out `CreateFile` long-path handling and `VisitMappedFileRange` itself as the source of the observed 100% CPU loop during full eMule share hashing.
+- Added durable verbose checkpoint logs to `CKnownFile::CreateFromFile`.
+- The new checkpoints mark `start`, `raw-hash-complete`, `aich-recalculate-*`, `aich-save-*`, `post-stat`, `metadata-*`, and `parts-info-done`.
+- Added more explicit metadata extraction logs in `UpdateMetaDataTags` for skip, begin, success, failure, and exception cases with elapsed milliseconds.
+- Verified the instrumentation builds successfully with `..\23-build-emule-debug-incremental.cmd`.
 
 ## Current State
 
-- The isolated non-UI scanner can now be used against any suspect path with:
-  `eMule-build-tests\build\eMule-build\x64\Debug\emule-tests.exe --hash-probe "<path>"`.
-- The problematic `videodupez` long-path file is not getting stuck in raw buffered or mapped sequential scanning.
-- The remaining suspect area is higher in the startup/share pipeline: AICH tree integration, metadata extraction, or another post-read stage that only runs inside full eMule shared-file processing.
+- The isolated non-UI scanner still shows the problematic long-path file is fine in both buffered and mapped raw reads.
+- The full eMule pipeline now has enough logging to tell whether the 100% CPU loop is before or after metadata extraction.
+- To see the new checkpoints clearly, keep `Verbose=1` while reproducing the hashing/share issue.
 
 ## Next Chunk
 
-- Instrument or isolate the next stage above raw scanning, starting with the `CKnownFile::CreateFromFile` pipeline after `CreateHash`.
-- Compare pure scan timing against AICH-tree population and metadata-tag extraction on the same long-path file.
+- Reproduce the problematic share/hash run and inspect the last emitted `CreateFromFile checkpoint` or `Shared meta extraction` line.
+- If the last line is `metadata-begin`, isolate `GetMediaInfoDllInfo` further or disable metadata extraction for an A/B confirmation.
+- If the last line is earlier, break down the AICH finalize/save path next.
