@@ -128,9 +128,9 @@ void CUPnPImplMiniLib::DeletePorts(bool bSkipLock)
 	// before going on anyway. It might be called from the non-blocking StartDiscovery() function too however
 	CSingleLock lockTest(&m_mutBusy);
 	if (bSkipLock || lockTest.Lock(0)) {
-		if (m_pURLs == NULL || m_pURLs->controlURL == NULL || m_pIGDData == NULL)
-			ASSERT(!thePrefs.IsUPnPEnabled());
-		else {
+		if (m_pURLs == NULL || m_pURLs->controlURL == NULL || m_pIGDData == NULL) {
+			DebugLogWarning(_T("Skipping UPnP port removal because no valid IGD control endpoint is available"));
+		} else {
 			DeletePort(m_nOldTCPPort, sTCP);
 			DeletePort(m_nOldUDPPort, sUDP);
 			DeletePort(m_nOldTCPWebPort, sTCP);
