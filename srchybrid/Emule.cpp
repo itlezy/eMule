@@ -51,6 +51,7 @@
 #include "KnownFileList.h"
 #include "Server.h"
 #include "ED2KLink.h"
+#include "BindStartupPolicy.h"
 #include "Preferences.h"
 #include "SafeFile.h"
 #include "emuleDlg.h"
@@ -139,6 +140,8 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_sizBigSystemIcon(32, 32)
 	, m_strDefaultFontFaceName(_T("MS Shell Dlg 2"))
 	, m_dwPublicIP()
+	, m_bStartupBindBlocked()
+	, m_strStartupBindBlockReason()
 	, m_bGuardClipboardPrompt()
 	, m_bAutoStart()
 	, m_bStandbyOff()
@@ -314,6 +317,7 @@ BOOL CemuleApp::InitInstance()
 
 	// create & initialize all the important stuff
 	thePrefs.Init();
+	RefreshStartupBindBlockState();
 	theStats.Init();
 
 	if (thePrefs.GetRTLWindowsLayout())
@@ -430,6 +434,14 @@ int CemuleApp::ExitInstance()
 		timeEndPeriod(m_wTimerRes);
 
 	return CWinApp::ExitInstance();
+}
+
+void CemuleApp::RefreshStartupBindBlockState()
+{
+	m_bStartupBindBlocked = BindStartupPolicy::ShouldBlockSessionNetworking(thePrefs.GetBindInterface()
+		, thePrefs.GetConfiguredBindAddr(), thePrefs.GetBindAddressResolveResult());
+	m_strStartupBindBlockReason = BindStartupPolicy::FormatStartupBlockReason(thePrefs.GetBindInterfaceName()
+		, thePrefs.GetBindInterface(), thePrefs.GetConfiguredBindAddr(), thePrefs.GetBindAddressResolveResult());
 }
 
 #ifdef _DEBUG

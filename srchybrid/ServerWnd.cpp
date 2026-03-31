@@ -684,10 +684,16 @@ void CServerWnd::UpdateControlsState()
 	else
 		uid = IDS_MAIN_BTN_CONNECT;
 	SetDlgItemText(IDC_ED2KCONNECT, GetResNoAmp(uid));
+	GetDlgItem(IDC_ED2KCONNECT)->EnableWindow(!theApp.IsStartupBindBlocked());
 }
 
 void CServerWnd::OnBnConnect()
 {
+	if (theApp.IsStartupBindBlocked()) {
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	if (theApp.serverconnect->IsConnected())
 		theApp.serverconnect->Disconnect();
 	else if (theApp.serverconnect->IsConnecting())

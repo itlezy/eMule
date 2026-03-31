@@ -131,12 +131,16 @@ namespace
 				, !strInterfaceName.IsEmpty() ? (LPCTSTR)strInterfaceName : (LPCTSTR)strInterfaceId
 				, (LPCTSTR)strResolvedAddress);
 			break;
+		case BARR_AddressNotFound:
+			DebugLogWarning(_T("%s binding address %s is no longer present on any live interface"), pszBindingName
+				, (LPCTSTR)strConfiguredAddress);
+			break;
 		default:
 			ASSERT(0);
 		}
 	}
 
-	static void ResolveConfiguredBinding(LPCTSTR pszBindingName
+	static EBindAddressResolveResult ResolveConfiguredBinding(LPCTSTR pszBindingName
 		, const CString &strInterfaceId
 		, CString &rstrInterfaceName
 		, const CString &strConfiguredAddress
@@ -158,6 +162,7 @@ namespace
 
 		SetResolvedBindAddress(strResolvedAddress, rstrBindAddrW, rpszBindAddrW, rstrBindAddrA, rpszBindAddrA);
 		LogBindAddressResolution(pszBindingName, strInterfaceId, rstrInterfaceName, strConfiguredAddress, eResult, strResolvedAddress);
+		return eResult;
 	}
 
 	static uint16 GetRandomStartupTCPPort(bool bReserveUdpPair)
@@ -242,6 +247,7 @@ LPCSTR	CPreferences::m_pszBindAddrA;
 CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
 CStringW CPreferences::m_strBindAddrW;
+EBindAddressResolveResult CPreferences::m_eBindAddrResolveResult = BARR_Default;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
 uint16	CPreferences::nServerUDPPort;
@@ -2017,7 +2023,7 @@ void CPreferences::LoadPreferences()
 	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
 	m_strBindInterfaceName = ini.GetString(_T("BindInterfaceName")).Trim();
 	m_strConfiguredBindAddr = ini.GetString(_T("BindAddr")).Trim();
-	ResolveConfiguredBinding(_T("P2P"), m_strBindInterface, m_strBindInterfaceName, m_strConfiguredBindAddr
+	m_eBindAddrResolveResult = ResolveConfiguredBinding(_T("P2P"), m_strBindInterface, m_strBindInterfaceName, m_strConfiguredBindAddr
 		, m_strBindAddrW, m_pszBindAddrW, m_strBindAddrA, m_pszBindAddrA);
 	m_bRandomizePortsOnStartup = ini.GetBool(_T("RandomizePortsOnStartup"), false);
 

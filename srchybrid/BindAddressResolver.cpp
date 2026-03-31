@@ -106,8 +106,23 @@ EBindAddressResolveResult CBindAddressResolver::ResolveBindAddress(const CString
 		pstrResolvedInterfaceName->Empty();
 
 	if (strInterfaceId.IsEmpty()) {
-		strResolvedAddress = strConfiguredAddress;
-		return strConfiguredAddress.IsEmpty() ? BARR_Default : BARR_Resolved;
+		if (strConfiguredAddress.IsEmpty())
+			return BARR_Default;
+
+		const std::vector<BindableNetworkInterface> interfaces = GetBindableInterfaces();
+		for (std::vector<BindableNetworkInterface>::const_iterator it = interfaces.begin(); it != interfaces.end(); ++it) {
+			for (std::vector<CString>::const_iterator itAddress = it->addresses.begin(); itAddress != it->addresses.end(); ++itAddress) {
+				if (itAddress->CompareNoCase(strConfiguredAddress))
+					continue;
+
+				strResolvedAddress = *itAddress;
+				if (pstrResolvedInterfaceName != NULL)
+					*pstrResolvedInterfaceName = it->strName;
+				return BARR_Resolved;
+			}
+		}
+
+		return BARR_AddressNotFound;
 	}
 
 	const std::vector<BindableNetworkInterface> interfaces = GetBindableInterfaces();

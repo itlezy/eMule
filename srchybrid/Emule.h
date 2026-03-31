@@ -66,6 +66,8 @@ public:
 	// Barry - To find out if app is running or shutting/shut down
 	bool IsRunning() const	{ return m_app_state == APP_STATE_RUNNING || m_app_state == APP_STATE_ASKCLOSE; }
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
+	bool IsStartupBindBlocked() const						{ return m_bStartupBindBlocked; }
+	const CString& GetStartupBindBlockReason() const		{ return m_strStartupBindBlockReason; }
 
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	CIP2Country			*ip2country;
@@ -154,6 +156,7 @@ public:
 	uint32		GetED2KPublicIP() const							{ return m_dwPublicIP; }
 	uint32		GetPublicIP() const;		// return current (valid) public IP or 0 if unknown
 	void		SetPublicIP(const uint32 dwIP);
+	void		RefreshStartupBindBlockState();
 	void		ResetStandByIdleTimer();
 
 	// because nearly all icons we are loading are 16x16, the default size is specified as 16 and not as 32 nor LR_DEFAULTSIZE
@@ -216,6 +219,8 @@ protected:
 
 	WSADATA		m_wsaData;
 	uint32		m_dwPublicIP;
+	bool		m_bStartupBindBlocked;
+	CString		m_strStartupBindBlockReason;
 	bool		m_bGuardClipboardPrompt;
 	bool		m_bAutoStart;
 

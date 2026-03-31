@@ -70,6 +70,12 @@ void CServerConnect::TryAnotherConnectionRequest()
 
 void CServerConnect::ConnectToAnyServer(INT_PTR startAt, bool prioSort, bool isAuto, bool bNoCrypt)
 {
+	if (theApp.IsStartupBindBlocked()) {
+		if (!isAuto)
+			LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	StopConnectionTry();
 	Disconnect();
 	connecting = true;
@@ -114,6 +120,11 @@ void CServerConnect::ConnectToAnyServer(INT_PTR startAt, bool prioSort, bool isA
 
 void CServerConnect::ConnectToServer(CServer *server, bool multiconnect, bool bNoCrypt)
 {
+	if (theApp.IsStartupBindBlocked()) {
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	if (!multiconnect) {
 		StopConnectionTry();
 		Disconnect();
@@ -464,11 +475,14 @@ CServerConnect::CServerConnect()
 	, m_bTryObfuscated()
 {
 	if (thePrefs.GetServerUDPPort() != 0) {
-		udpsocket = new CUDPSocket(); // initialize socket for udp packets
-		if (!udpsocket->Create()) {
-			delete udpsocket;
+		if (!theApp.IsStartupBindBlocked()) {
+			udpsocket = new CUDPSocket(); // initialize socket for udp packets
+			if (!udpsocket->Create()) {
+				delete udpsocket;
+				udpsocket = NULL;
+			}
+		} else
 			udpsocket = NULL;
-		}
 	} else
 		udpsocket = NULL;
 	InitLocalIP();

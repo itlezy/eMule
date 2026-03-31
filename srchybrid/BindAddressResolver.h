@@ -16,7 +16,8 @@ enum EBindAddressResolveResult
 	BARR_Resolved,
 	BARR_InterfaceNotFound,
 	BARR_InterfaceHasNoAddress,
-	BARR_AddressNotFoundOnInterface
+	BARR_AddressNotFoundOnInterface,
+	BARR_AddressNotFound
 };
 
 class CBindAddressResolver

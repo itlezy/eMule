@@ -316,6 +316,11 @@ void CKademliaWnd::OnBnClickedFirewallcheckbutton()
 
 void CKademliaWnd::OnBnConnect()
 {
+	if (theApp.IsStartupBindBlocked()) {
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	if (Kademlia::CKademlia::IsConnected() || Kademlia::CKademlia::IsRunning())
 		Kademlia::CKademlia::Stop();
 	else
@@ -404,7 +409,7 @@ void CKademliaWnd::UpdateControlsState()
 	else
 		uid = IDS_MAIN_BTN_CONNECT;
 	SetDlgItemText(IDC_KADCONNECT, GetResNoAmp(uid));
-	GetDlgItem(IDC_KADCONNECT)->EnableWindow(theApp.IsRunning());
+	GetDlgItem(IDC_KADCONNECT)->EnableWindow(theApp.IsRunning() && !theApp.IsStartupBindBlocked());
 	GetDlgItem(IDC_FIREWALLCHECKBUTTON)->EnableWindow(Kademlia::CKademlia::IsConnected());
 
 	CString strBootstrapIP;

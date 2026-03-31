@@ -552,8 +552,8 @@ BOOL CemuleDlg::OnInitDialog()
 	if (thePrefs.GetVerbose() && !m_hTimer)
 		AddDebugLogLine(true, _T("Failed to create 'startup' timer - %s"), (LPCTSTR)GetErrorMessage(::GetLastError()));
 
-	// Start UPnP port forwarding
-	if (thePrefs.IsUPnPEnabled())
+	// The startup bind guard keeps the session fully offline if the configured bind target is unavailable.
+	if (thePrefs.IsUPnPEnabled() && !theApp.IsStartupBindBlocked())
 		StartUPnP();
 
 	VERIFY(m_pDropTarget->Register(this));
@@ -606,34 +606,39 @@ void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*
 					LogError(LOG_STATUSBAR, _T("Failed to initialize download queue - Unknown exception"));
 					bError = true;
 				}
-				if (!theApp.listensocket->StartListening()) {
-					CString strError;
-					strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetPort());
-					LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
-					if (thePrefs.GetNotifierOnImportantError())
-						theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
-					bError = true;
-				}
-				if (!theApp.clientudp->Create()) {
-					CString strError;
-					strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetUDPPort());
-					LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
-					if (thePrefs.GetNotifierOnImportantError())
-						theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
-				}
+				if (theApp.IsStartupBindBlocked()) {
+					LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+				} else {
+					if (!theApp.listensocket->StartListening()) {
+						CString strError;
+						strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetPort());
+						LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
+						if (thePrefs.GetNotifierOnImportantError())
+							theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
+						bError = true;
+					}
+					if (!theApp.clientudp->Create()) {
+						CString strError;
+						strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetUDPPort());
+						LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
+						if (thePrefs.GetNotifierOnImportantError())
+							theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
+					}
 
-				if (!bError) // show the success msg, only if we had no serious error
-					AddLogLine(true, GetResString(IDS_MAIN_READY), (LPCTSTR)theApp.m_strCurVersionLong);
+					if (!bError) // show the success msg, only if we had no serious error
+						AddLogLine(true, GetResString(IDS_MAIN_READY), (LPCTSTR)theApp.m_strCurVersionLong);
+				}
 
 				theApp.m_app_state = APP_STATE_RUNNING; //initialization completed
-				theApp.emuledlg->toolbar->EnableButton(TBBTN_CONNECT, TRUE);
-				theApp.emuledlg->m_SysMenuOptions.EnableMenuItem(MP_CONNECT, MF_ENABLED);
-				theApp.emuledlg->serverwnd->GetDlgItem(IDC_ED2KCONNECT)->EnableWindow();
+				theApp.emuledlg->toolbar->EnableButton(TBBTN_CONNECT, !theApp.IsStartupBindBlocked());
+				theApp.emuledlg->m_SysMenuOptions.EnableMenuItem(MP_CONNECT, theApp.IsStartupBindBlocked() ? MF_GRAYED : MF_ENABLED);
+				theApp.emuledlg->serverwnd->GetDlgItem(IDC_ED2KCONNECT)->EnableWindow(!theApp.IsStartupBindBlocked());
 				theApp.emuledlg->kademliawnd->UpdateControlsState(); //application state change is not tracked - force update
 
-				if (thePrefs.DoAutoConnect())
+				if (!theApp.IsStartupBindBlocked() && thePrefs.DoAutoConnect())
 					theApp.emuledlg->OnBnClickedConnect();
 
+				theApp.emuledlg->ShowConnectionState();
 				theApp.emuledlg->UpdateStatusBarProgress();
 			}
 			break;
@@ -875,6 +880,9 @@ void CemuleDlg::ShowConnectionStateIcon()
 
 CString CemuleDlg::GetConnectionStateString()
 {
+	if (theApp.IsStartupBindBlocked())
+		return _T("eD2K:Blocked|Kad:Blocked");
+
 	UINT ed2k, kad;
 	if (theApp.serverconnect->IsConnected())
 		ed2k = IDS_CONNECTED;
@@ -928,6 +936,18 @@ void CemuleDlg::ShowConnectionState()
 	TBBUTTONINFO tbbi;
 	tbbi.cbSize = (UINT)sizeof(TBBUTTONINFO);
 	tbbi.dwMask = TBIF_IMAGE | TBIF_TEXT;
+
+	if (theApp.IsStartupBindBlocked()) {
+		CString strPane(GetResString(IDS_MAIN_BTN_CONNECT));
+		tbbi.iImage = 0;
+		tbbi.pszText = const_cast<LPTSTR>((LPCTSTR)strPane);
+		toolbar->SetButtonInfo(TBBTN_CONNECT, &tbbi);
+		toolbar->EnableButton(TBBTN_CONNECT, FALSE);
+		m_SysMenuOptions.EnableMenuItem(MP_CONNECT, MF_GRAYED);
+		ShowUserCount();
+		UpdateThumbBarButtons();
+		return;
+	}
 
 	if (theApp.IsConnected()) {
 		CString strPane(GetResString(IDS_MAIN_BTN_DISCONNECT));
@@ -1761,6 +1781,12 @@ void CemuleDlg::AddSpeedSelectorMenus(CMenu *addToMenu)
 
 void CemuleDlg::StartConnection()
 {
+	if (theApp.IsStartupBindBlocked()) {
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		ShowConnectionState();
+		return;
+	}
+
 	if ((!theApp.serverconnect->IsConnecting() && !theApp.serverconnect->IsConnected()) || !Kademlia::CKademlia::IsRunning()) {
 		// UPnP is still trying to open the ports. In order to not get a LowID by connecting to the servers / kad before
 		// the ports are opened we delay the connection until UPnP gets a result or the timeout is reached
@@ -3076,6 +3102,9 @@ LRESULT CemuleDlg::OnPowerBroadcast(WPARAM wParam, LPARAM lParam)
 
 void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPort)
 {
+	if (theApp.IsStartupBindBlocked())
+		return;
+
 	if (theApp.m_pUPnPFinder != NULL && (m_hUPnPTimeOutTimer == 0 || !bReset)) {
 		if (bReset) {
 			theApp.m_pUPnPFinder->Reset();
@@ -3102,6 +3131,9 @@ void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPor
 
 void CemuleDlg::RefreshUPnP(bool bRequestAnswer)
 {
+	if (theApp.IsStartupBindBlocked())
+		return;
+
 	if (!thePrefs.IsUPnPEnabled())
 		return;
 	if (theApp.m_pUPnPFinder != NULL && m_hUPnPTimeOutTimer == 0) {

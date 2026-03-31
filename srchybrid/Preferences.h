@@ -16,6 +16,8 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 
+#include "BindAddressResolver.h"
+
 extern LPCTSTR const strDefaultToolbar;
 
 enum EViewSharedFilesAccess
@@ -121,6 +123,7 @@ public:
 	static CString	m_strBindInterfaceName;
 	static CStringA m_strBindAddrA;
 	static CStringW m_strBindAddrW;
+	static EBindAddressResolveResult m_eBindAddrResolveResult;
 	static uint16	port;
 	static uint16	udpport;
 	static uint16	nServerUDPPort;
@@ -601,6 +604,7 @@ public:
 	static const CString& GetConfiguredBindAddr()		{ return m_strConfiguredBindAddr; }
 	static const CString& GetBindInterface()			{ return m_strBindInterface; }
 	static const CString& GetBindInterfaceName()		{ return m_strBindInterfaceName; }
+	static EBindAddressResolveResult GetBindAddressResolveResult() { return m_eBindAddrResolveResult; }
 	static void		SetBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress);
 #ifdef UNICODE
 #define GetBindAddr  GetBindAddrW
