@@ -23,6 +23,7 @@ class CPPgConnection : public CPropertyPage
 	CString GetSelectedBindInterfaceId() const;
 	CString GetSelectedBindInterfaceName() const;
 	CString GetSelectedBindAddress() const;
+	void SyncStartupBindBlockCheck();
 
 public:
 	CPPgConnection();
@@ -57,4 +58,5 @@ protected:
 	afx_msg void OnEnKillFocusTCP();
 	afx_msg void OnEnKillFocusUDP();
 	afx_msg void OnCbnSelChangeBindInterface();
+	afx_msg void OnCbnSelChangeBindAddress();
 };

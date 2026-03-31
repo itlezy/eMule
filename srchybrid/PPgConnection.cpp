@@ -108,7 +108,7 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
 	ON_CBN_SELCHANGE(IDC_BIND_INTERFACE, OnCbnSelChangeBindInterface)
-	ON_CBN_SELCHANGE(IDC_BIND_ADDRESS, OnSettingsChange)
+	ON_CBN_SELCHANGE(IDC_BIND_ADDRESS, OnCbnSelChangeBindAddress)
 END_MESSAGE_MAP()
 
 CPPgConnection::CPPgConnection()
@@ -244,6 +244,16 @@ CString CPPgConnection::GetSelectedBindAddress() const
 	CString strAddress;
 	m_bindAddress.GetLBText(iSel, strAddress);
 	return strAddress;
+}
+
+void CPPgConnection::SyncStartupBindBlockCheck()
+{
+	/**
+	 * Selecting a concrete bind target implies the startup bind block should be
+	 * enabled unless the user explicitly chose not to bind at all.
+	 */
+	if (!GetSelectedBindInterfaceId().IsEmpty() || !GetSelectedBindAddress().IsEmpty())
+		CheckDlgButton(IDC_STARTUP_BIND_BLOCK, BST_CHECKED);
 }
 
 void CPPgConnection::DoDataExchange(CDataExchange *pDX)
@@ -606,7 +616,14 @@ BOOL CPPgConnection::OnHelpInfo(HELPINFO*)
 void CPPgConnection::OnCbnSelChangeBindInterface()
 {
 	FillBindAddressCombo(GetSelectedBindAddress());
-	SetModified();
+	SyncStartupBindBlockCheck();
+	OnSettingsChange();
+}
+
+void CPPgConnection::OnCbnSelChangeBindAddress()
+{
+	SyncStartupBindBlockCheck();
+	OnSettingsChange();
 }
 
 void CPPgConnection::OnStartPortTest()
