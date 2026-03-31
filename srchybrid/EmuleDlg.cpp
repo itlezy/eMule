@@ -909,7 +909,22 @@ void CemuleDlg::ShowNetworkAddressState()
 {
 	if (theApp.IsClosing() || statusbar == NULL || !::IsWindow(statusbar->m_hWnd))
 		return;
-	statusbar->SetText(GetNetworkAddressStateString(), SBarIP, 0);
+
+	CString strPaneText(GetNetworkAddressStateString());
+	CRect rectPane;
+	if (statusbar->GetRect(SBarIP, &rectPane) && rectPane.Width() < 260) {
+		CString strBindAddress;
+		if (thePrefs.GetBindAddr() != NULL)
+			strBindAddress = thePrefs.GetBindAddr();
+
+		const CString strBindPaneValue = strBindAddress.IsEmpty() ? CString(_T("Any")) : strBindAddress;
+		const CString strPublicPaneValue = theApp.GetPublicIP() != 0
+			? StatusBarInfo::Detail::FormatIPv4Address(theApp.GetPublicIP())
+			: CString(_T("?"));
+		strPaneText.Format(_T("%s/%s"), (LPCTSTR)strBindPaneValue, (LPCTSTR)strPublicPaneValue);
+	}
+
+	statusbar->SetText(strPaneText, SBarIP, 0);
 }
 
 void CemuleDlg::ShowConnectionState()
@@ -1102,10 +1117,10 @@ void CemuleDlg::SetStatusBarPartsSize()
 	statusbar->GetClientRect(&rect);
 	int aiWidths[6] =
 	{
-		rect.right - 860,
-		rect.right - 615,
-		rect.right - 415,
-		rect.right - 255,
+		rect.right - 940,
+		rect.right - 690,
+		rect.right - 500,
+		rect.right - 265,
 		rect.right - 25,
 		-1
 	};
