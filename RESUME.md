@@ -6,6 +6,7 @@
 - The override is parsed before any startup profile reads, so `preferences.ini`, `IgnoreInstances`, `Port`, and mutex naming all come from `<base-dir>\config\preferences.ini` when `-c` is present.
 - `Preferences.cpp` now treats that base dir as authoritative for `EMULE_CONFIGBASEDIR`, `EMULE_CONFIGDIR`, and `EMULE_LOGDIR`, while leaving incoming/temp and the rest of the directory model unchanged.
 - Added shared regression coverage in `eMule-build-tests` for the `-c` parser and path normalization.
+- Added explicit `@todo` comments in `CemuleApp::ProcessCommandline()` around the legacy port-mutex and WM_COPYDATA shell-forwarding branches to mark them as future cleanup targets.
 
 ## Current State
 

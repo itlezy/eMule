@@ -565,6 +565,10 @@ bool CemuleApp::ProcessCommandline()
 	CEmuleCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
+	/**
+	 * @todo Replace this profile-backed port mutex with a cleaner startup coordinator once the
+	 * legacy single-instance forwarding path is removed or redesigned.
+	 */
 	// If we create our TCP listen socket with SO_REUSEADDR, we have to ensure that there are
 	// no 2 eMules are running on the same port.
 	// NOTE: This will not prevent from some other application using that port!
@@ -578,6 +582,10 @@ bool CemuleApp::ProcessCommandline()
 	//this code part is to determine special cases when we do add a link to our eMule
 	//because in this case it would be nonsense to start another instance!
 	bool bAlreadyRunning = false;
+	/**
+	 * @todo Remove this special-case override when command/link handoff is moved out of this
+	 * startup function and into a dedicated launch/IPC path.
+	 */
 	if (bIgnoreRunningInstances
 		&& cmdInfo.m_nShellCommand == CCommandLineInfo::FileOpen
 		&& (command.Find(_T("://")) > 0 || command.Find(_T("magnet:?")) >= 0 || CCollection::HasCollectionExtention(command)))
@@ -593,6 +601,10 @@ bool CemuleApp::ProcessCommandline()
 			EnumWindows(SearchEmuleWindow, (LPARAM)&maininst);
 		}
 
+	/**
+	 * @todo Split this legacy WM_COPYDATA shell-command forwarding into a separate component so
+	 * startup parsing, instance detection, and command dispatch no longer live in one function.
+	 */
 	if (cmdInfo.m_nShellCommand == CCommandLineInfo::FileOpen) {
 		if (command.Find(_T("://")) > 0 || command.Find(_T("magnet:?")) >= 0) {
 			sendstruct.cbData = static_cast<DWORD>((command.GetLength() + 1) * sizeof(TCHAR));
