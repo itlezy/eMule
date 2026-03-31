@@ -31,6 +31,7 @@
 #include "ServerWnd.h"
 #include "HelpIDs.h"
 #include "Log.h"
+#include "PipeApiServer.h"
 #include "UserMsgs.h"
 
 #ifdef _DEBUG
@@ -118,6 +119,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiImportParts()
 	, m_htiInspectAllFileTypes()
 	, m_htiLog2Disk()
+	, m_htiEnablePipeApiServer()
 	, m_htiLogA4AF()
 	, m_htiLogBannedClients()
 	, m_htiLogFileSaving()
@@ -221,6 +223,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bBanBadKadNodes()
 	, m_bMessageFromValidSourcesOnly()
 	, m_bPartiallyPurgeOldKnownFiles()
+	, m_bEnablePipeApiServer(false)
 	, m_bPreviewCopiedArchives()
 	, m_bPreviewOnIconDblClk()
 	, m_bRearrangeKadSearchKeywords()
@@ -390,6 +393,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		// Hidden runtime groups
 		//
 		m_htiHiddenStartup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_STARTUP), iImgConnection, TVI_ROOT);
+		m_htiEnablePipeApiServer = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLEPIPEAPISERVER), m_htiHiddenStartup, m_bEnablePipeApiServer);
 		m_htiRestoreLastMainWndDlg = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTMAINWNDDLG), m_htiHiddenStartup, m_bRestoreLastMainWndDlg);
 		m_htiRestoreLastLogPane = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTLOGPANE), m_htiHiddenStartup, m_bRestoreLastLogPane);
 
@@ -531,6 +535,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastMainWndDlg, m_bRestoreLastMainWndDlg);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastLogPane, m_bRestoreLastLogPane);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiEnablePipeApiServer, m_bEnablePipeApiServer);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferTimeLimit, m_uFileBufferTimeLimitSeconds);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDateTimeFormat4Lists, m_sDateTimeFormat4Lists);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewCopiedArchives, m_bPreviewCopiedArchives);
@@ -702,6 +707,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bA4AFSaveCpu = thePrefs.GetA4AFSaveCpu();
 	m_bRestoreLastMainWndDlg = thePrefs.GetRestoreLastMainWndDlg();
 	m_bRestoreLastLogPane = thePrefs.GetRestoreLastLogPane();
+	m_bEnablePipeApiServer = thePrefs.IsPipeApiServerEnabled();
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
 	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
@@ -873,6 +879,15 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bA4AFSaveCpu = m_bA4AFSaveCpu;
 	thePrefs.m_bRestoreLastMainWndDlg = m_bRestoreLastMainWndDlg;
 	thePrefs.m_bRestoreLastLogPane = m_bRestoreLastLogPane;
+	/** Apply the pipe API server toggle immediately so runtime isolation does not require a restart. */
+	if (thePrefs.IsPipeApiServerEnabled() != m_bEnablePipeApiServer)
+	{
+		thePrefs.SetPipeApiServerEnabled(m_bEnablePipeApiServer);
+		if (m_bEnablePipeApiServer)
+			thePipeApiServer.Start();
+		else
+			thePipeApiServer.Stop();
+	}
 	thePrefs.m_uFileBufferTimeLimit = SEC2MS(m_uFileBufferTimeLimitSeconds);
 	thePrefs.m_strDateTimeFormat4Lists = m_sDateTimeFormat4Lists;
 	thePrefs.m_bPreviewCopiedArchives = m_bPreviewCopiedArchives;
@@ -1014,6 +1029,7 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiRearrangeKadSearchKeywords, IDS_REARRANGEKADSEARCHKEYWORDS);
 		LocalizeItemText(m_htiReBarToolbar, IDS_REBARTOOLBAR);
 		LocalizeItemText(m_htiResolveShellLinks, IDS_RESOLVELINKS);
+		LocalizeItemText(m_htiEnablePipeApiServer, IDS_ENABLEPIPEAPISERVER);
 		LocalizeItemText(m_htiRestoreLastLogPane, IDS_RESTORELASTLOGPANE);
 		LocalizeItemText(m_htiRestoreLastMainWndDlg, IDS_RESTORELASTMAINWNDDLG);
 		LocalizeItemText(m_htiShareeMule, IDS_SHAREEMULELABEL);
@@ -1108,6 +1124,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiRearrangeKadSearchKeywords = NULL;
 	m_htiMessageFromValidSourcesOnly = NULL;
 	m_htiFileBufferTimeLimit = NULL;
+	m_htiEnablePipeApiServer = NULL;
 	m_htiRestoreLastLogPane = NULL;
 	m_htiRestoreLastMainWndDlg = NULL;
 	m_htiCommit = NULL;

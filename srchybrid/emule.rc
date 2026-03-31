@@ -3722,6 +3722,7 @@ BEGIN
     IDS_BIND_ANY_INTERFACE  "Any interface"
     IDS_BIND_ALL_ADDRESSES  "All addresses"
     IDS_HIDDENRUNTIME_STARTUP "Startup and session"
+    IDS_ENABLEPIPEAPISERVER "Enable local pipe API server"
     IDS_HIDDENRUNTIME_FILE  "Hidden file and preview"
     IDS_HIDDENRUNTIME_DISPLAY "Hidden display and rendering"
     IDS_HIDDENRUNTIME_SECURITY "Hidden security, messaging, and Kad"

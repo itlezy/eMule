@@ -492,7 +492,9 @@ BOOL CemuleDlg::OnInitDialog()
 	TrayMinimizeToTrayChange();
 
 	ShowTransferRate(true);
-	thePipeApiServer.Start();
+	/** Start the local pipe API server only when the persisted runtime toggle allows it. */
+	if (thePrefs.IsPipeApiServerEnabled())
+		thePipeApiServer.Start();
 	searchwnd->UpdateCatTabs();
 
 	///////////////////////////////////////////////////////////////////////////

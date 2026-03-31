@@ -68,6 +68,7 @@ protected:
 	HTREEITEM m_htiImportParts;
 	HTREEITEM m_htiInspectAllFileTypes;
 	HTREEITEM m_htiLog2Disk;
+	HTREEITEM m_htiEnablePipeApiServer;
 	HTREEITEM m_htiLogA4AF;
 	HTREEITEM m_htiLogBannedClients;
 	HTREEITEM m_htiLogFileSaving;
@@ -187,6 +188,7 @@ protected:
 	bool m_bUseSystemFontForMainControls;
 	bool m_bVerbose;
 	bool m_bAdjustNTFSDaylightFileTime;
+	bool m_bEnablePipeApiServer;
 	bool m_bExtraPreviewWithMenu;
 	bool m_bForceSpeedsToKB;
 

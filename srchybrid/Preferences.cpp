@@ -605,6 +605,7 @@ bool	CPreferences::m_bEnableUPnP;
 bool	CPreferences::m_bCloseUPnPOnExit;
 bool	CPreferences::m_bIsWinServImplDisabled;
 bool	CPreferences::m_bIsMinilibImplDisabled;
+bool	CPreferences::m_bEnablePipeApiServer;
 int		CPreferences::m_nLastWorkingImpl;
 
 bool	CPreferences::m_bEnableSearchResultFilter;
@@ -1899,6 +1900,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("SkipWANPPPSetup"), m_bSkipWANPPPSetup);
 	ini.WriteBool(_T("CloseUPnPOnExit"), m_bCloseUPnPOnExit);
 	ini.WriteInt(_T("LastWorkingImplementation"), m_nLastWorkingImpl);
+	ini.WriteBool(_T("EnablePipeApiServer"), m_bEnablePipeApiServer, _T("Remote"));
 }
 
 void CPreferences::ResetStatsColor(int index)
@@ -2409,6 +2411,7 @@ void CPreferences::LoadPreferences()
 	m_nLastWorkingImpl = ini.GetInt(_T("LastWorkingImplementation"), 1 /*MiniUPnPLib*/);
 	m_bIsMinilibImplDisabled = ini.GetBool(_T("DisableMiniUPNPLibImpl"), false);
 	m_bIsWinServImplDisabled = ini.GetBool(_T("DisableWinServImpl"), false);
+	m_bEnablePipeApiServer = ini.GetBool(_T("EnablePipeApiServer"), false, _T("Remote"));
 
 	LoadCats();
 	SetLanguage();

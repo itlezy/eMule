@@ -548,6 +548,7 @@ public:
 	static bool		m_bCloseUPnPOnExit;
 	static bool		m_bIsWinServImplDisabled;
 	static bool		m_bIsMinilibImplDisabled;
+	static bool		m_bEnablePipeApiServer;
 	static int		m_nLastWorkingImpl;
 
 	// Spam
@@ -1242,6 +1243,8 @@ public:
 	static void		SetSkipWANIPSetup(bool nv)			{ m_bSkipWANIPSetup = nv; }
 	static void		SetSkipWANPPPSetup(bool nv)			{ m_bSkipWANPPPSetup = nv; }
 	static bool		CloseUPnPOnExit()					{ return m_bCloseUPnPOnExit; }
+	static bool		IsPipeApiServerEnabled()			{ return m_bEnablePipeApiServer; }
+	static void		SetPipeApiServerEnabled(bool nv)	{ m_bEnablePipeApiServer = nv; }
 	static bool		IsWinServUPnPImplDisabled()			{ return m_bIsWinServImplDisabled; }
 	static bool		IsMinilibUPnPImplDisabled()			{ return m_bIsMinilibImplDisabled; }
 	static int		GetLastWorkingUPnPImpl()			{ return m_nLastWorkingImpl; }
