@@ -16,11 +16,12 @@ namespace BindStartupPolicy
 	/**
 	 * Decides whether startup networking must be blocked for the current session.
 	 */
-	inline bool ShouldBlockSessionNetworking(const CString &strInterfaceId
+	inline bool ShouldBlockSessionNetworking(bool bEnabled
+		, const CString &strInterfaceId
 		, const CString &strConfiguredAddress
 		, EBindAddressResolveResult eResult)
 	{
-		return HasExplicitBindSelection(strInterfaceId, strConfiguredAddress) && eResult != BARR_Resolved;
+		return bEnabled && HasExplicitBindSelection(strInterfaceId, strConfiguredAddress) && eResult != BARR_Resolved;
 	}
 
 	/**

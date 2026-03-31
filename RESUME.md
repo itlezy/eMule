@@ -12,6 +12,7 @@
 - Captured the decision to keep VPN kill-switch behavior out of eMule itself and move it into a separate external watchdog tool design in `docs\EXTRAS_VPNKILLSWITCHDESIGN.md`.
 - Added a startup bind guard that keeps the whole session offline when an explicit bind interface or bind IP is unavailable at launch, including address-only selections that are no longer present on any live interface.
 - Blocked startup socket bring-up, startup UPnP, autoconnect, manual eD2K/Kad connect actions, and server UDP socket creation while the startup bind guard is active, and added shared regression coverage for the bind policy.
+- Added a `Settings > Connection` checkbox to opt into that startup bind guard, persisted in `preferences.ini`, with restart-required semantics like the other bind-selection changes.
 - Added `helpers\e2e-vpn-launch.ps1` to run a clean `%LOCALAPPDATA%\eMule` end-to-end session with emule-security `nodes.dat`/`server.met`, recursive shared-directory seeding, VPN-IP binding, and disk-backed verbose logging.
 - Verified the helper against `C:\tmp\videodupez\` with bind address `10.54.218.144`: the app wrote `eMule.log` and `eMule_Verbose.log`, loaded 153 Kad contacts from `nodes.dat`, connected to `eMule Sunrise` and `eMule Security`, and started hashing the recursive share tree.
 - Fixed `CKnownFileList::ShouldPurgeAICHHashset` so orphaned known2.met AICH entries are treated as purgeable instead of tripping a debug-only assertion, and added a shared regression seam for the purge decision.
@@ -30,7 +31,7 @@
 - The prepended IP pane now uses the original status-bar sizing for all legacy panes and shows full `B:...|P:...` text without shortening.
 - The public-IP side of the status-bar pane now renders with the same stored-byte-order convention as the rest of the app instead of reversing octets.
 - The VPN safety direction is now documented as an external process watchdog rather than an in-process bind kill switch.
-- Startup now fails closed into an offline session when the configured bind target is missing, instead of silently proceeding with network bring-up.
+- Startup now fails closed into an offline session when the configured bind target is missing and the new connection-page startup bind-block option is enabled.
 - `FEAT_018` is implemented with persisted connection/download timeout defaults and shorter fixed UDP/source-latency constants.
 - `FEAT_019` is effectively complete for the active modern-limits knobs; the remaining advanced limit controls stay in their existing Tweaks groups or other existing UI pages.
 - `FEAT_017` is still partial because `QueueSize` remains `5000` even though `MaxSourcesPerFile` is now `600`.

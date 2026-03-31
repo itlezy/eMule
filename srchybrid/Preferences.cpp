@@ -248,6 +248,7 @@ CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
 CStringW CPreferences::m_strBindAddrW;
 EBindAddressResolveResult CPreferences::m_eBindAddrResolveResult = BARR_Default;
+bool CPreferences::m_bBlockNetworkWhenBindUnavailableAtStartup;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
 uint16	CPreferences::nServerUDPPort;
@@ -1655,6 +1656,7 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("BindInterface"), m_strBindInterface);
 	ini.WriteString(_T("BindInterfaceName"), m_strBindInterfaceName);
 	ini.WriteString(_T("BindAddr"), m_strConfiguredBindAddr);
+	ini.WriteBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), m_bBlockNetworkWhenBindUnavailableAtStartup);
 	ini.WriteBool(_T("RandomizePortsOnStartup"), m_bRandomizePortsOnStartup);
 	ini.WriteInt(_T("ServerUDPPort"), nServerUDPPort);
 	ini.WriteInt(_T("MaxSourcesPerFile"), maxsourceperfile);
@@ -2023,6 +2025,7 @@ void CPreferences::LoadPreferences()
 	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
 	m_strBindInterfaceName = ini.GetString(_T("BindInterfaceName")).Trim();
 	m_strConfiguredBindAddr = ini.GetString(_T("BindAddr")).Trim();
+	m_bBlockNetworkWhenBindUnavailableAtStartup = ini.GetBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), false);
 	m_eBindAddrResolveResult = ResolveConfiguredBinding(_T("P2P"), m_strBindInterface, m_strBindInterfaceName, m_strConfiguredBindAddr
 		, m_strBindAddrW, m_pszBindAddrW, m_strBindAddrA, m_pszBindAddrA);
 	m_bRandomizePortsOnStartup = ini.GetBool(_T("RandomizePortsOnStartup"), false);

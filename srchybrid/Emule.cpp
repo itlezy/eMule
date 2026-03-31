@@ -438,8 +438,8 @@ int CemuleApp::ExitInstance()
 
 void CemuleApp::RefreshStartupBindBlockState()
 {
-	m_bStartupBindBlocked = BindStartupPolicy::ShouldBlockSessionNetworking(thePrefs.GetBindInterface()
-		, thePrefs.GetConfiguredBindAddr(), thePrefs.GetBindAddressResolveResult());
+	m_bStartupBindBlocked = BindStartupPolicy::ShouldBlockSessionNetworking(thePrefs.IsStartupBindBlockEnabled()
+		, thePrefs.GetBindInterface(), thePrefs.GetConfiguredBindAddr(), thePrefs.GetBindAddressResolveResult());
 	m_strStartupBindBlockReason = BindStartupPolicy::FormatStartupBlockReason(thePrefs.GetBindInterfaceName()
 		, thePrefs.GetBindInterface(), thePrefs.GetConfiguredBindAddr(), thePrefs.GetBindAddressResolveResult());
 }

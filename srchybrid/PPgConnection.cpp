@@ -100,6 +100,7 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_AUTOCONNECT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RECONN, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RANDOMIZEPORTSONSTARTUP, OnSettingsChange)
+	ON_BN_CLICKED(IDC_STARTUP_BIND_BLOCK, OnSettingsChange)
 	ON_BN_CLICKED(IDC_NETWORK_ED2K, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWOVERHEAD, OnSettingsChange)
 	ON_WM_HSCROLL()
@@ -353,6 +354,7 @@ void CPPgConnection::LoadSettings()
 		CheckDlgButton(IDC_SHOWOVERHEAD, static_cast<UINT>(thePrefs.m_bshowoverhead));
 		CheckDlgButton(IDC_AUTOCONNECT, static_cast<UINT>(thePrefs.autoconnect));
 		CheckDlgButton(IDC_RANDOMIZEPORTSONSTARTUP, static_cast<UINT>(thePrefs.IsRandomizePortsOnStartupEnabled()));
+		CheckDlgButton(IDC_STARTUP_BIND_BLOCK, static_cast<UINT>(thePrefs.IsStartupBindBlockEnabled()));
 		CheckDlgButton(IDC_NETWORK_KADEMLIA, static_cast<UINT>(thePrefs.GetNetworkKademlia()));
 		GetDlgItem(IDC_NETWORK_KADEMLIA)->EnableWindow(thePrefs.GetUDPPort() > 0);
 		CheckDlgButton(IDC_NETWORK_ED2K, static_cast<UINT>(thePrefs.networked2k));
@@ -416,6 +418,10 @@ BOOL CPPgConnection::OnApply()
 		|| thePrefs.GetConfiguredBindAddr().CompareNoCase(strBindAddress)) {
 		// The P2P sockets use the resolved bind address during startup, so interface changes take effect after restart.
 		thePrefs.SetBindNetworkSelection(strBindInterfaceId, strBindInterfaceName, strBindAddress);
+		bBindRestartRequired = true;
+	}
+	if (thePrefs.IsStartupBindBlockEnabled() != (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0)) {
+		thePrefs.m_bBlockNetworkWhenBindUnavailableAtStartup = (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
 		bBindRestartRequired = true;
 	}
 
@@ -497,6 +503,7 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));
 		SetDlgItemText(IDC_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE) + _T(':'));
 		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS) + _T(':'));
+		SetDlgItemText(IDC_STARTUP_BIND_BLOCK, _T("Keep networking offline if the bind target is unavailable at startup"));
 		ShowLimitValues();
 	}
 }

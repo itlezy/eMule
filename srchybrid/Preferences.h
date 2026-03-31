@@ -124,6 +124,7 @@ public:
 	static CStringA m_strBindAddrA;
 	static CStringW m_strBindAddrW;
 	static EBindAddressResolveResult m_eBindAddrResolveResult;
+	static bool		m_bBlockNetworkWhenBindUnavailableAtStartup;
 	static uint16	port;
 	static uint16	udpport;
 	static uint16	nServerUDPPort;
@@ -605,6 +606,7 @@ public:
 	static const CString& GetBindInterface()			{ return m_strBindInterface; }
 	static const CString& GetBindInterfaceName()		{ return m_strBindInterfaceName; }
 	static EBindAddressResolveResult GetBindAddressResolveResult() { return m_eBindAddrResolveResult; }
+	static bool		IsStartupBindBlockEnabled()			{ return m_bBlockNetworkWhenBindUnavailableAtStartup; }
 	static void		SetBindNetworkSelection(const CString &strInterfaceId, const CString &strInterfaceName, const CString &strAddress);
 #ifdef UNICODE
 #define GetBindAddr  GetBindAddrW
