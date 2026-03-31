@@ -201,9 +201,9 @@
 
 | ID | Summary | Status | Doc |
 |---|---|---|---|
-| AUD_KAD_001 | Default nodes.dat bootstrap still uses plain HTTP | Open | [AUDIT-KAD](AUDIT-KAD.md) |
-| AUD_KAD_002 | Add authenticated bootstrap sources | Open | [AUDIT-KAD](AUDIT-KAD.md) |
-| AUD_KAD_003 | Treat imported bootstrap contacts as probationary | Open | [AUDIT-KAD](AUDIT-KAD.md) |
+| AUD_KAD_001 | Default nodes.dat bootstrap still uses plain HTTP | **[REJECTED]** | [AUDIT-KAD](AUDIT-KAD.md) |
+| AUD_KAD_002 | Add authenticated bootstrap sources | **[REJECTED]** | [AUDIT-KAD](AUDIT-KAD.md) |
+| AUD_KAD_003 | Treat imported bootstrap contacts as probationary | **[REJECTED]** | [AUDIT-KAD](AUDIT-KAD.md) |
 | AUD_KAD_004 | Keep and extend FastKad | Open | [AUDIT-KAD](AUDIT-KAD.md) |
 | AUD_KAD_005 | FastKad bootstrap ranking diversity-aware | Open | [AUDIT-KAD](AUDIT-KAD.md) |
 | AUD_KAD_006 | Same-IP rejection too blunt for CGNAT | Open | [AUDIT-KAD](AUDIT-KAD.md) |

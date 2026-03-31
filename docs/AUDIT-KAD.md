@@ -63,9 +63,9 @@ This register assigns stable IDs to the concrete Kad audit items in this documen
 
 | ID | Category | Summary |
 |----|----------|---------|
-| `AUD_KAD_001` | Security | Default `nodes.dat` bootstrap still uses plain HTTP |
-| `AUD_KAD_002` | Security | Add authenticated bootstrap sources such as HTTPS mirrors and optional signatures |
-| `AUD_KAD_003` | Hardening | Treat imported bootstrap contacts as probationary and merge them with local trusted candidates |
+| `AUD_KAD_001` | Security | **[REJECTED]** Default `nodes.dat` bootstrap still uses plain HTTP |
+| `AUD_KAD_002` | Security | **[REJECTED]** Add authenticated bootstrap sources such as HTTPS mirrors and optional signatures |
+| `AUD_KAD_003` | Hardening | **[REJECTED]** Treat imported bootstrap contacts as probationary and merge them with local trusted candidates |
 | `AUD_KAD_004` | Routing | Keep and extend `FastKad` as a protocol-safe local optimization |
 | `AUD_KAD_005` | Routing | Make `FastKad` bootstrap ranking diversity-aware and age stale sidecar trust more aggressively |
 | `AUD_KAD_006` | Security/Scalability | Same-IP Kad rejection is too blunt for CGNAT-heavy modern networks |
