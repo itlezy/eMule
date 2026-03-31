@@ -56,6 +56,8 @@
 #include "SafeFile.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
+#include "OtherFunctions.h"
+#include "StartupConfigOverride.h"
 #include "StringConversion.h"
 #include "Log.h"
 #include "Collection.h"
@@ -120,6 +122,43 @@ static void CALLBACK myLogHandler(LPCSTR lpMsg)
 static const UINT UWM_ARE_YOU_EMULE = RegisterWindowMessage(EMULE_GUID);
 
 BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) noexcept;
+
+namespace
+{
+	/**
+	 * @brief Command-line parser which skips the `-c <base-dir>` pair before handing the rest to MFC.
+	 */
+	class CEmuleCommandLineInfo : public CCommandLineInfo
+	{
+	public:
+		void ParseParam(const TCHAR *pszParam, BOOL bFlag, BOOL bLast) override
+		{
+			if (m_bSkipNextParam) {
+				m_bSkipNextParam = false;
+				return;
+			}
+
+			if (bFlag && pszParam != NULL && _tcsicmp(pszParam, _T("c")) == 0) {
+				m_bSkipNextParam = !bLast;
+				return;
+			}
+
+			CCommandLineInfo::ParseParam(pszParam, bFlag, bLast);
+		}
+
+	private:
+		bool m_bSkipNextParam = false;
+	};
+
+	/**
+	 * @brief Reports whether the supplied path already exists and is a directory.
+	 */
+	bool IsExistingDirectoryPath(const CString &strDirectory)
+	{
+		const DWORD dwAttributes = ::GetFileAttributes(PreparePathForLongPath(strDirectory));
+		return dwAttributes != INVALID_FILE_ATTRIBUTES && (dwAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CemuleApp
@@ -481,6 +520,33 @@ int eMuleAllocHook(int mode, void *pUserData, size_t nSize, int nBlockUse, long 
 
 bool CemuleApp::ProcessCommandline()
 {
+	CString strStartupConfigBaseDir;
+	CString strStartupConfigError;
+	if (!StartupConfigOverride::TryParseConfigBaseDirOverride(__argc, __targv, strStartupConfigBaseDir, strStartupConfigError)) {
+		AfxMessageBox(strStartupConfigError, MB_OK | MB_ICONSTOP);
+		return true;
+	}
+	if (!strStartupConfigBaseDir.IsEmpty()) {
+		const CString strConfigDir(StartupConfigOverride::GetConfigDirectoryFromBaseDir(strStartupConfigBaseDir));
+		if (!IsExistingDirectoryPath(strStartupConfigBaseDir)) {
+			CString strError;
+			strError.Format(_T("The -c base directory does not exist: %s"), (LPCTSTR)strStartupConfigBaseDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return true;
+		}
+		if (!IsExistingDirectoryPath(strConfigDir)) {
+			CString strError;
+			strError.Format(_T("The -c override requires an existing config directory: %s"), (LPCTSTR)strConfigDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return true;
+		}
+
+		m_strStartupConfigBaseDir = strStartupConfigBaseDir;
+		free((void*)m_pszProfileName);
+		m_pszProfileName = _tcsdup(StartupConfigOverride::GetPreferencesIniPathFromBaseDir(m_strStartupConfigBaseDir));
+	} else
+		m_strStartupConfigBaseDir.Empty();
+
 	bool bIgnoreRunningInstances = (GetProfileInt(_T("eMule"), _T("IgnoreInstances"), 0) != 0);
 	for (int i = 1; i < __argc; ++i) {
 		LPCTSTR pszParam = __targv[i];
@@ -496,7 +562,7 @@ bool CemuleApp::ProcessCommandline()
 		}
 	}
 
-	CCommandLineInfo cmdInfo;
+	CEmuleCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
 	// If we create our TCP listen socket with SO_REUSEADDR, we have to ensure that there are

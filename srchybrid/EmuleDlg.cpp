@@ -567,7 +567,10 @@ BOOL CemuleDlg::OnInitDialog()
 	AfxBeginThread(RUNTIME_CLASS(CAICHSyncThread), THREAD_PRIORITY_IDLE, 0);
 
 	// debug info
-	DebugLog(_T("Using '%s' as config directory"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
+	if (theApp.HasStartupConfigBaseDirOverride())
+		DebugLog(_T("Using '%s' as config directory (-c override)"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
+	else
+		DebugLog(_T("Using '%s' as config directory"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 
 	if (!thePrefs.HasCustomTaskIconColor())
 		SetTaskbarIconColor();

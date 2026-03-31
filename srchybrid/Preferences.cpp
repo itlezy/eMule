@@ -30,6 +30,7 @@
 #include "Statistics.h"
 #include "MD5Sum.h"
 #include "PartFile.h"
+#include "StartupConfigOverride.h"
 #include "ServerConnect.h"
 #include "ListenSocket.h"
 #include "ServerList.h"
@@ -2890,11 +2891,18 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		::CoTaskMemFree(pszPublicDownloads);
 		::CoTaskMemFree(pszProgramData);
 
+		if (theApp.HasStartupConfigBaseDirOverride())
+			strSelectedConfigBaseDirectory = theApp.GetStartupConfigBaseDirOverride();
+
 		// All the directories (categories also) should have a trailing backslash
-		m_astrDefaultDirs[EMULE_CONFIGDIR] = strSelectedConfigBaseDirectory + CONFIGFOLDER;
+		m_astrDefaultDirs[EMULE_CONFIGDIR] = theApp.HasStartupConfigBaseDirOverride()
+			? StartupConfigOverride::GetConfigDirectoryFromBaseDir(strSelectedConfigBaseDirectory)
+			: strSelectedConfigBaseDirectory + CONFIGFOLDER;
 		m_astrDefaultDirs[EMULE_TEMPDIR] = strSelectedDataBaseDirectory + _T("Temp\\");
 		m_astrDefaultDirs[EMULE_INCOMINGDIR] = strSelectedDataBaseDirectory + _T("Incoming\\");
-		m_astrDefaultDirs[EMULE_LOGDIR] = strSelectedConfigBaseDirectory + _T("logs\\");
+		m_astrDefaultDirs[EMULE_LOGDIR] = theApp.HasStartupConfigBaseDirOverride()
+			? StartupConfigOverride::GetLogDirectoryFromBaseDir(strSelectedConfigBaseDirectory)
+			: strSelectedConfigBaseDirectory + _T("logs\\");
 		m_astrDefaultDirs[EMULE_ADDLANGDIR] = strSelectedExpansionBaseDirectory + _T("lang\\");
 		m_astrDefaultDirs[EMULE_INSTLANGDIR] = m_astrDefaultDirs[EMULE_EXECUTABLEDIR] + _T("lang\\");
 		m_astrDefaultDirs[EMULE_SKINDIR] = strSelectedExpansionBaseDirectory + _T("skins\\");

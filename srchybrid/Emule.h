@@ -68,6 +68,8 @@ public:
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
 	bool IsStartupBindBlocked() const						{ return m_bStartupBindBlocked; }
 	const CString& GetStartupBindBlockReason() const		{ return m_strStartupBindBlockReason; }
+	bool HasStartupConfigBaseDirOverride() const			{ return !m_strStartupConfigBaseDir.IsEmpty(); }
+	const CString& GetStartupConfigBaseDirOverride() const	{ return m_strStartupConfigBaseDir; }
 
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	CIP2Country			*ip2country;
@@ -221,6 +223,7 @@ protected:
 	uint32		m_dwPublicIP;
 	bool		m_bStartupBindBlocked;
 	CString		m_strStartupBindBlockReason;
+	CString		m_strStartupConfigBaseDir;
 	bool		m_bGuardClipboardPrompt;
 	bool		m_bAutoStart;
 
