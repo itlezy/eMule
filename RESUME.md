@@ -2,6 +2,7 @@
 
 ## Last Chunk
 
+- Updated the docs/status tracking to reject `BUG_002`, `GAP_004`, `FEAT_010`, `FEAT_024`, `WWMOD_026`, `WWMOD_027`, `WWMOD_029`, and `WWMOD_041` in the audit and index markdown files.
 - Completed `FEAT_018` by moving connection and download timeouts into persisted preferences, reducing their defaults to `30s` and `75s`, and tightening the remaining fixed UDP/source-latency constants to `20s` and `15000`.
 - Completed the active `FEAT_019` exposure work by adding `Connection timeout`, `Download timeout`, and `Per-client upload cap` to `Preferences > Tweaks` while reusing the existing `TCP/IP` and `Broadband` groups.
 - Raised the `MaxSourcesPerFile` default to `600`, removed the now-dead timeout/upload-cap compile-time macros from `Opcodes.h`, and kept `KADEMLIAASKTIME`, `ServerKeepAliveTimeout`, and `UPNP_TIMEOUT` unchanged.

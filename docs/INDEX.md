@@ -126,7 +126,7 @@
 | FEAT_007 | Persisted trust cache (optional) | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
 | FEAT_008 | Search-mode adaptation (optional) | Not started | [FEATURE-KAD](FEATURE-KAD.md) |
 | FEAT_009 | SafeKad2 integration (peer banning) | Not started | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
-| FEAT_010 | CAntiNick integration | Not started | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
+| FEAT_010 | CAntiNick integration | **[REJECTED]** | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
 | FEAT_011 | CShield integration | Not started | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
 | FEAT_012 | PR_TCPERRORFLOODER (listen socket DoS defense) | Not started | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) |
 | FEAT_013 | Connection budget defaults | **[PARTIAL]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
@@ -138,7 +138,7 @@
 | FEAT_019 | Advanced tree UI exposure | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_022 | Windows Media Foundation migration | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
 | FEAT_023 | FFmpeg alternative (long-term) | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
-| FEAT_024 | MediaInfo static embedding | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
+| FEAT_024 | MediaInfo static embedding | **[REJECTED]** | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
 | FEAT_029 | Track B — Worker thread hygiene | Not started | [ARCH-THREADING](ARCH-THREADING.md) |
 | FEAT_030 | Track A — Network IOCP migration | Not started | [ARCH-THREADING](ARCH-THREADING.md) |
 
@@ -147,14 +147,14 @@
 | ID | Summary | Status | Doc |
 |---|---|---|---|
 | BUG_001 | `strcpy()` without bounds in Emule.cpp | **[DONE]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
-| BUG_002 | `rand()` for crypto challenge value | Open | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
+| BUG_002 | `rand()` for crypto challenge value | **[REJECTED]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | BUG_003 | `srand(time(NULL))` predictable seed | **[ACCEPTED]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | BUG_010 | Upload overhead INI key mismatch | **[DONE]** | [AUDIT-DEFECTS](AUDIT-DEFECTS.md) |
 | BUG_011 | Web server allowed IPs load-only | **[STALE]** WebServer removed | [AUDIT-DEFECTS](AUDIT-DEFECTS.md) |
 | GAP_001 | 3DES in SMTP SendMail | **[STALE]** SendMail removed | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | GAP_002 | `inet_addr()` deprecated API | **[DONE]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | GAP_003 | Potential XSS in web server templates | **[STALE]** WebServer removed | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
-| GAP_004 | 768-bit DH parameters (weak) | Open | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
+| GAP_004 | 768-bit DH parameters (weak) | **[REJECTED]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 
 ### Code Review (CODEREV_)
 
@@ -257,9 +257,9 @@
 | WWMOD_022–023 | #define → constexpr, no /permissive- | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_024 | MAX_PATH (260) path length limit | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_025 | IPv4-only networking | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_026–027 | 9.28 MB part size, 256 GB max file size | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_026–027 | 9.28 MB part size, 256 GB max file size | **[REJECTED]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_028 | Conservative connection/queue limits | **[PARTIAL]** via FEAT_013–019 | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_029 | 384-bit RSA keys | Open (protocol) | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_029 | 384-bit RSA keys | **[REJECTED]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_030 | Deprecated Winsock APIs | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_031 | _T()/TCHAR dual-path macros | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_032 | No ETW/structured logging | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
@@ -271,7 +271,7 @@
 | WWMOD_038 | Delay-loaded DLLs that are always present | **[DONE]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_039 | qedit.h bundled header | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_040 | ResizableLib third-party dep | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_041 | No accessibility support | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_041 | No accessibility support | **[REJECTED]** | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_042 | CAsyncSocketEx custom socket library | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_043 | Pinger.cpp raw ICMP | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_044 | No HTTP/2 or modern TLS for HTTP downloads | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |

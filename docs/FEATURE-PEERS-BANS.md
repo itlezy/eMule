@@ -20,7 +20,7 @@ eMuleAI has two distinct peer banning systems and one lightweight identity guard
 | ID | Feature | Status |
 |----|---------|--------|
 | FEAT_009 | SafeKad2 integration (see also [FEATURE-KAD.md](FEATURE-KAD.md) FEAT_002) | Not started |
-| FEAT_010 | CAntiNick integration | Not started |
+| FEAT_010 | CAntiNick integration | **[REJECTED]** |
 | FEAT_011 | CShield integration | Not started |
 | FEAT_012 | PR_TCPERRORFLOODER (highest networking impact) | Not started |
 

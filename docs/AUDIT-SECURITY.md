@@ -124,7 +124,7 @@ static unsigned char dh768_p[PRIMESIZE_BYTES] = {
 - **768-bit DH is broken** — NIST and IETF deprecate anything below 2048 bits
 - Comment in code explicitly states this is an obfuscation layer, not a security guarantee
 
-**Severity: MEDIUM** — **`GAP_004`** 768-bit is weak but the protocol is obfuscation-only, not authenticated encryption. Future protocol version should increase to 2048-bit.
+**Severity: MEDIUM** — **`GAP_004`** **[REJECTED]** 768-bit is weak but the protocol is obfuscation-only, not authenticated encryption. A larger DH group was considered and explicitly rejected for this branch because it would break compatibility with older peers.
 
 ### 2.4 Crypto++ Usage — Summary
 
@@ -166,7 +166,7 @@ m_dwCryptRndChallengeFor = dwRandom;
 - Using weak `rand()` (seeded with time) for a crypto challenge significantly reduces its security
 - The codebase already has `GetRandomUInt32()` backed by `AutoSeededRandomPool` — this should be used here instead
 
-**Severity: HIGH** — **`BUG_002`**
+**Severity: HIGH** — **`BUG_002`** **[REJECTED]**
 
 ### 3.3 `rand()` for Timing Jitter
 
@@ -505,10 +505,10 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 | 1 | — | **CRITICAL** | Hash | MD4 cryptographically broken (protocol-required) | `srchybrid/MD4.h` throughout |
 | 2 | — | **CRITICAL** | Hash | MD5 used for key derivation (broken) | `srchybrid/EncryptedStreamSocket.cpp` |
 | 3 | **BUG_003** | **HIGH** | RNG | `srand(time(NULL))` — predictable seed | `srchybrid/Emule.cpp:304` |
-| 4 | **BUG_002** | **HIGH** | RNG | `rand()` used for cryptographic challenge | `srchybrid/BaseClient.cpp:2004-2005` |
+| 4 | **BUG_002** **[REJECTED]** | **HIGH** | RNG | `rand()` used for cryptographic challenge | `srchybrid/BaseClient.cpp:2004-2005` |
 | 5 | **BUG_001** | **HIGH** | Memory | `strcpy()` without bounds | `srchybrid/Emule.cpp:844` |
 | 6 | — | **HIGH** | Hash | SHA-1 used in AICH (deprecated) | `srchybrid/SHA.h`, `SHAHashSet.h` |
-| 7 | **GAP_004** | **MEDIUM** | DH | 768-bit DH parameters (weak) | `srchybrid/EncryptedStreamSocket.cpp:101-110` |
+| 7 | **GAP_004** **[REJECTED]** | **MEDIUM** | DH | 768-bit DH parameters (weak) | `srchybrid/EncryptedStreamSocket.cpp:101-110` |
 | 8 | — | **MEDIUM** | Cipher | RC4 deprecated cipher for obfuscation | `srchybrid/EncryptedDatagramSocket.cpp` |
 | 9 | **GAP_001** **[STALE]** | ~~MEDIUM~~ | Crypto | ~~3DES (DES3-CBC) in SMTP~~ — SendMail removed | ~~`srchybrid/SendMail.cpp`~~ |
 | 10 | **GAP_002** **[DONE]** | **MEDIUM** | Network | `inet_addr()` deprecated API | `srchybrid/AsyncProxySocketLayer.cpp:732`, `AsyncSocketEx.cpp:897` |
@@ -528,7 +528,7 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 
 2. **`BUG_003`** **[ACCEPTED RISK]** — Fix attempted (commit `71e298d`) and intentionally reverted (commit `e9e0be6`). The `srand((unsigned)time(NULL))` seed is kept for legacy `rand()` callers. All crypto-sensitive operations already use `AutoSeededRandomPool`. The remaining `rand()` usage is non-crypto timing jitter only.
 
-3. **`BUG_002`** **`srchybrid/BaseClient.cpp:2004-2005`** — Replace `rand()` in `m_dwCryptRndChallengeFor` assignment with `GetRandomUInt32()` or equivalent CSPRNG call. This is a crypto challenge value.
+3. **`BUG_002`** **[REJECTED]** — Keep the legacy challenge RNG unchanged for this branch.
 
 ### Priority 2 — Should Fix
 
@@ -540,7 +540,7 @@ The following are explicitly flagged in the codebase and represent acknowledged 
 
 ### Priority 3 — Consider for Future Releases
 
-7. **`GAP_004`** **DH parameters** — Increase from 768-bit to 2048-bit prime in `EncryptedStreamSocket.cpp`. This breaks compatibility with old clients that expect the existing prime.
+7. **`GAP_004`** **[REJECTED]** — Keep the legacy DH group unchanged for protocol compatibility with older peers.
 
 8. **MD5 key derivation** — Replace MD5 with HKDF-SHA256 for RC4 key derivation when designing the next protocol version.
 

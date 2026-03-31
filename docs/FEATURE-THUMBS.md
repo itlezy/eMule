@@ -16,7 +16,7 @@
 |----|---------|--------|
 | FEAT_022 | Windows Media Foundation migration (recommended) | Not started |
 | FEAT_023 | FFmpeg alternative (long-term) | Not started |
-| FEAT_024 | MediaInfo static embedding | Not started |
+| FEAT_024 | MediaInfo static embedding | **[REJECTED]** |
 
 ## Background
 

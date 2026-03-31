@@ -568,6 +568,7 @@ Key files: `AsyncSocketEx.cpp`, `Pinger.cpp`, `ServerSocket.cpp`, `UDPSocket.cpp
 ### WWMOD_026 - 9.28 MB Fixed Part Size
 
 **Severity:** P1 (protocol constraint limits action)
+**Status:** Rejected.
 **Files:** `srchybrid/Opcodes.h:101`
 
 ```cpp
@@ -581,16 +582,14 @@ tracking, and UI representation. Modern networks could use 64 MB or 256 MB parts
 Protocol constraint: changing PARTSIZE breaks interoperability with all existing
 clients and hash databases.
 
-**Action:**
-- **Cannot change** for ed2k protocol compatibility
-- Consider a "large part" extension for Kad-only transfers between modern clients
-- Document the performance implications in code comments
+**Disposition:** Rejected. Keep the current part size for ed2k protocol compatibility.
 
 ---
 
 ### WWMOD_027 - 256 GB Maximum File Size
 
 **Severity:** P2
+**Status:** Rejected.
 **Files:** `srchybrid/Opcodes.h:102`
 
 ```cpp
@@ -601,9 +600,7 @@ While this was a massive improvement over the original 4 GB limit, modern use ca
 include Linux ISOs, game bundles, and datasets exceeding 256 GB. The limit is
 artificial.
 
-**Action:** Evaluate raising to 2^48 (256 TB) or removing the limit entirely.
-Verify that part count calculations, progress arrays, and UI rendering can handle
-the resulting number of parts.
+**Disposition:** Rejected. Keep the current maximum file size instead of widening the compatibility surface for this branch.
 
 ---
 
@@ -639,6 +636,7 @@ negotiation with peers. Others (like `KADEMLIAMAXINDEX`) are purely local.
 ### WWMOD_029 - 384-bit RSA Keys
 
 **Severity:** P0
+**Status:** Rejected.
 **Files:** `srchybrid/Opcodes.h:95`
 
 ```cpp
@@ -648,9 +646,7 @@ negotiation with peers. Others (like `KADEMLIAMAXINDEX`) are purely local.
 A 384-bit RSA key can be factored in seconds on modern hardware. This is used for the
 eMule credit system's client identity. Any peer can forge another peer's credits.
 
-**Action:** Raise minimum to 2048 bits. Implement key migration protocol that accepts
-both old and new key sizes during transition. Reject 384-bit keys from peers after a
-sunset period.
+**Disposition:** Rejected. Keep the legacy RSA key size for protocol compatibility with the existing credit-system identity model.
 
 ---
 
@@ -873,6 +869,7 @@ eliminate an external build dependency.
 ### WWMOD_041 - No Accessibility Support
 
 **Severity:** P2
+**Status:** Rejected.
 **Files:** Throughout UI code
 
 The application has no MSAA (Microsoft Active Accessibility) or UIA (UI Automation)
@@ -882,11 +879,7 @@ implementations are invisible to screen readers.
 The delay-loaded `oleacc.dll` suggests some awareness of accessibility, but no
 actual implementation.
 
-**Action:**
-- Ensure all custom controls implement `IAccessible` or UIA patterns
-- Add keyboard navigation for all UI elements
-- Support high-contrast themes
-- Test with Windows Narrator
+**Disposition:** Rejected. No accessibility implementation work is planned for this branch.
 
 ---
 
