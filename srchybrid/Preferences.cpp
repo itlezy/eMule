@@ -569,7 +569,6 @@ bool	CPreferences::m_bExtraPreviewWithMenu;
 bool    CPreferences::m_bA4AFSaveCpu;
 // ZZ:DownloadManager <--
 bool    CPreferences::m_bHighresTimer;
-bool	CPreferences::m_bResolveSharedShellLinks;
 bool	CPreferences::m_bAutoRescanSharedFolders;
 UINT	CPreferences::m_uAutoRescanSharedFoldersIntervalSec;
 bool	CPreferences::m_bAutoShareNewSharedSubdirs;
@@ -1713,7 +1712,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("CheckDiskspace"), checkDiskspace);
 	ini.WriteInt(_T("MinFreeDiskSpace"), m_uMinFreeDiskSpace);
 	ini.WriteBool(_T("SparsePartFiles"), m_bSparsePartFiles);
-	ini.WriteBool(_T("ResolveSharedShellLinks"), m_bResolveSharedShellLinks);
 	ini.WriteBool(_T("AutoRescanSharedFolders"), m_bAutoRescanSharedFolders);
 	ini.WriteInt(_T("AutoRescanSharedFoldersIntervalSec"), max(600u, m_uAutoRescanSharedFoldersIntervalSec));
 	ini.WriteBool(_T("AutoShareNewSharedSubdirs"), m_bAutoShareNewSharedSubdirs);
@@ -2141,7 +2139,6 @@ void CPreferences::LoadPreferences()
 	checkDiskspace = ini.GetBool(_T("CheckDiskspace"), false);
 	m_uMinFreeDiskSpace = ini.GetInt(_T("MinFreeDiskSpace"), 5 * 1024 * 1024 * 1024);
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
-	m_bResolveSharedShellLinks = ini.GetBool(_T("ResolveSharedShellLinks"), false);
 	m_bAutoRescanSharedFolders = ini.GetBool(_T("AutoRescanSharedFolders"), true);
 	m_uAutoRescanSharedFoldersIntervalSec = max(600, ini.GetInt(_T("AutoRescanSharedFoldersIntervalSec"), 1200));
 	m_bAutoShareNewSharedSubdirs = ini.GetBool(_T("AutoShareNewSharedSubdirs"), true);

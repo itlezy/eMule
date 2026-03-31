@@ -511,7 +511,6 @@ public:
 
 	static bool		m_bHighresTimer;
 
-	static bool		m_bResolveSharedShellLinks;
 	static bool		m_bAutoRescanSharedFolders;
 	static UINT		m_uAutoRescanSharedFoldersIntervalSec;
 	static bool		m_bAutoShareNewSharedSubdirs;
@@ -1048,7 +1047,6 @@ public:
 	static UINT		GetMinFreeDiskSpace()				{ return m_uMinFreeDiskSpace; }
 	static bool		GetSparsePartFiles();
 	static void		SetSparsePartFiles(bool bEnable)	{ m_bSparsePartFiles = bEnable; }
-	static bool		GetResolveSharedShellLinks()		{ return m_bResolveSharedShellLinks; }
 	static bool		IsShowUpDownIconInTaskbar()			{ return m_bShowUpDownIconInTaskbar; }
 	static bool		IsTaskbarProgressEnabled()		{ return m_bShowTaskbarProgress; }
 	static void		SetTaskbarProgressEnabled(bool flag)	{ m_bShowTaskbarProgress = flag; }

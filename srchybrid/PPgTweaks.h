@@ -82,7 +82,6 @@ protected:
 	HTREEITEM m_htiTCPBigSendBuffer;
 	HTREEITEM m_htiUDPReceiveBuffer;
 	HTREEITEM m_htiMinFreeDiskSpace;
-	HTREEITEM m_htiResolveShellLinks;
 	HTREEITEM m_htiRestoreLastLogPane;
 	HTREEITEM m_htiRestoreLastMainWndDlg;
 	HTREEITEM m_htiServerKeepAliveTimeout;
@@ -177,7 +176,6 @@ protected:
 	bool m_bReBarToolbar;
 	bool m_bRestoreLastLogPane;
 	bool m_bRestoreLastMainWndDlg;
-	bool m_bResolveShellLinks;
 	bool m_bShowActiveDownloadsBold;
 	bool m_bShowedWarning;
 	bool m_bShowUpDownIconInTaskbar;

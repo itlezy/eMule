@@ -151,7 +151,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiRearrangeKadSearchKeywords()
 	, m_htiMessageFromValidSourcesOnly()
 	, m_htiFileBufferTimeLimit()
-	, m_htiResolveShellLinks()
 	, m_htiRestoreLastLogPane()
 	, m_htiRestoreLastMainWndDlg()
 	, m_htiServerKeepAliveTimeout()
@@ -230,7 +229,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bReBarToolbar()
 	, m_bRestoreLastLogPane()
 	, m_bRestoreLastMainWndDlg()
-	, m_bResolveShellLinks()
 	, m_bShowActiveDownloadsBold()
 	, m_bShowedWarning()
 	, m_bShowUpDownIconInTaskbar()
@@ -349,8 +347,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiExtractMetaDataNever = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_NEVER), m_htiExtractMetaData, m_iExtractMetaData == 0);
 		m_htiExtractMetaDataID3Lib = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_META_DATA_ID3LIB), m_htiExtractMetaData, m_iExtractMetaData == 1);
 		//m_htiExtractMetaDataMediaDet = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_META_DATA_MEDIADET), m_htiExtractMetaData, m_iExtractMetaData == 2);
-		m_htiResolveShellLinks = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESOLVELINKS), TVI_ROOT, m_bResolveShellLinks);
-
 		/////////////////////////////////////////////////////////////////////////////
 		// Logging group
 		//
@@ -528,11 +524,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDV_MinMaxFloat(pDX, m_fMinFreeDiskSpaceGB, 0.0, _UI32_MAX / (1024.0f * 1024.0f * 1024.0f));
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiExtractMetaData, m_iExtractMetaData);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiResolveShellLinks, m_bResolveShellLinks);
-
-	/////////////////////////////////////////////////////////////////////////////
-	// Hidden runtime groups
-	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastMainWndDlg, m_bRestoreLastMainWndDlg);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastLogPane, m_bRestoreLastLogPane);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiEnablePipeApiServer, m_bEnablePipeApiServer);
@@ -660,7 +651,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bImportParts = thePrefs.m_bImportParts;
 	m_bFullAlloc = thePrefs.m_bAllocFull;
 	m_bCheckDiskspace = thePrefs.checkDiskspace;
-	m_bResolveShellLinks = thePrefs.GetResolveSharedShellLinks();
 	m_fMinFreeDiskSpaceGB = (float)(thePrefs.m_uMinFreeDiskSpace / (1024.0 * 1024.0 * 1024.0));
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
@@ -862,7 +852,6 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
 	thePrefs.checkDiskspace = m_bCheckDiskspace;
-	thePrefs.m_bResolveSharedShellLinks = m_bResolveShellLinks;
 	thePrefs.m_uMinFreeDiskSpace = (UINT)(m_fMinFreeDiskSpaceGB * (1024 * 1024 * 1024));
 	if (thePrefs.GetYourHostname() != m_sYourHostname) {
 		thePrefs.SetYourHostname(m_sYourHostname);
@@ -1028,7 +1017,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiPreviewOnIconDblClk, IDS_PREVIEWONICONDBLCLK);
 		LocalizeItemText(m_htiRearrangeKadSearchKeywords, IDS_REARRANGEKADSEARCHKEYWORDS);
 		LocalizeItemText(m_htiReBarToolbar, IDS_REBARTOOLBAR);
-		LocalizeItemText(m_htiResolveShellLinks, IDS_RESOLVELINKS);
 		LocalizeItemText(m_htiEnablePipeApiServer, IDS_ENABLEPIPEAPISERVER);
 		LocalizeItemText(m_htiRestoreLastLogPane, IDS_RESTORELASTLOGPANE);
 		LocalizeItemText(m_htiRestoreLastMainWndDlg, IDS_RESTORELASTMAINWNDDLG);
@@ -1154,8 +1142,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiShareeMulePublicUser = NULL;
 	m_htiShareeMuleOldStyle = NULL;
 	//m_htiExtractMetaDataMediaDet = NULL;
-	m_htiResolveShellLinks = NULL;
-
 	CPropertyPage::OnDestroy();
 }
 
