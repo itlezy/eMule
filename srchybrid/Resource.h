@@ -2355,6 +2355,7 @@
 #define IDS_CONNECTIONTIMEOUT          1676
 #define IDS_DOWNLOADTIMEOUT            1677
 #define IDS_UPLOADCLIENTDATARATE       1678
+#define IDS_ENABLEPIPEAPISERVER        1679
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2364,7 +2365,7 @@
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3087
-#define _APS_NEXT_SYMED_VALUE           1679
+#define _APS_NEXT_SYMED_VALUE           1680
 #endif
 #endif
 
