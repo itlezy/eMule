@@ -1347,12 +1347,12 @@ bool CPreferences::LoadStats(int loadBackUp)
 	cumDownOverheadKadPackets = ini.GetUInt64(_T("DownOverheadKadPackets"));
 
 	// Load stats for cumulative upline overhead
-	cumUpOverheadTotal = ini.GetUInt64(_T("UpOverHeadTotal"));
+	cumUpOverheadTotal = ini.GetUInt64(_T("UpOverheadTotal"));
 	cumUpOverheadFileReq = ini.GetUInt64(_T("UpOverheadFileReq"));
 	cumUpOverheadSrcEx = ini.GetUInt64(_T("UpOverheadSrcEx"));
 	cumUpOverheadServer = ini.GetUInt64(_T("UpOverheadServer"));
 	cumUpOverheadKad = ini.GetUInt64(_T("UpOverheadKad"));
-	cumUpOverheadTotalPackets = ini.GetUInt64(_T("UpOverHeadTotalPackets"));
+	cumUpOverheadTotalPackets = ini.GetUInt64(_T("UpOverheadTotalPackets"));
 	cumUpOverheadFileReqPackets = ini.GetUInt64(_T("UpOverheadFileReqPackets"));
 	cumUpOverheadSrcExPackets = ini.GetUInt64(_T("UpOverheadSrcExPackets"));
 	cumUpOverheadServerPackets = ini.GetUInt64(_T("UpOverheadServerPackets"));

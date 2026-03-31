@@ -13,12 +13,10 @@ Date: 2026-03-24
 
 ### Definite Bugs
 
-- **`BUG_010`** Upload overhead totals do not round-trip because the saved and loaded INI keys do not match.
-  - Saved as `UpOverheadTotal` in `srchybrid/Preferences.cpp`.
-  - Loaded as `UpOverHeadTotal` in `srchybrid/Preferences.cpp`.
-  - Saved as `UpOverheadTotalPackets` in `srchybrid/Preferences.cpp`.
-  - Loaded as `UpOverHeadTotalPackets` in `srchybrid/Preferences.cpp`.
-  - Effect: those two counters are effectively not persisted.
+- **`BUG_010`** ~~Upload overhead totals do not round-trip because the saved and loaded INI keys do not match.~~ **[DONE]**
+  - The load path now uses the same canonical keys as the save path:
+    `UpOverheadTotal` and `UpOverheadTotalPackets`.
+  - Effect: upload-overhead byte and packet totals round-trip correctly again.
 
 - **`BUG_011`** ~~Web server allowed IPs are load-only.~~ **[STALE — WebServer removed]**
   - The embedded web server was fully removed (commit `6a1c440`). The `AllowedIPs` preference no longer exists.

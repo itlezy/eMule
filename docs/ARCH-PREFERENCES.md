@@ -390,7 +390,7 @@ These are persisted, but they are not really "preferences". They are state, tele
 | Key family | Explanation |
 | --- | --- |
 | `DownOverhead*` | Download-side protocol overhead counters. |
-| `UpOverhead*` | Upload-side protocol overhead counters. Note the known key mismatch defect documented in `DEFECTS.md`. |
+| `UpOverhead*` | Upload-side protocol overhead counters. |
 
 ### Connection And Server Statistics
 
@@ -432,8 +432,6 @@ The unresolved issues from [DEFECTS.md](/C:/prj/p2p/eMulebb/eMule/DEFECTS.md) th
 
 | Item | Why it matters | Suggested follow-up |
 | --- | --- | --- |
-| `UpOverheadTotal` / `UpOverHeadTotal` mismatch | Upload overhead totals do not round-trip. | Normalize save/load spelling and optionally migrate old keys. |
-| `UpOverheadTotalPackets` / `UpOverHeadTotalPackets` mismatch | Packet-overhead totals do not round-trip. | Same fix as above. |
 | `AllowedIPs` load-only behavior | Web allowed-IP list is not written back. | Add save support or remove the feature explicitly. |
 | Hidden runtime prefs listed above | They are now exposed in the Advanced tree and written back, but they still need selective runtime verification because several are niche or internal. | Verify each edited setting in the affected subsystem before treating the UI as fully validated. |
 | `AICHTrustEveryHash` | Likely stale hidden knob. | Confirm intent and then either wire it back up or remove it. |

@@ -149,7 +149,7 @@
 | BUG_001 | `strcpy()` without bounds in Emule.cpp | **[DONE]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | BUG_002 | `rand()` for crypto challenge value | Open | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | BUG_003 | `srand(time(NULL))` predictable seed | **[ACCEPTED]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
-| BUG_010 | Upload overhead INI key mismatch | Open | [AUDIT-DEFECTS](AUDIT-DEFECTS.md) |
+| BUG_010 | Upload overhead INI key mismatch | **[DONE]** | [AUDIT-DEFECTS](AUDIT-DEFECTS.md) |
 | BUG_011 | Web server allowed IPs load-only | **[STALE]** WebServer removed | [AUDIT-DEFECTS](AUDIT-DEFECTS.md) |
 | GAP_001 | 3DES in SMTP SendMail | **[STALE]** SendMail removed | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
 | GAP_002 | `inet_addr()` deprecated API | **[DONE]** | [AUDIT-SECURITY](AUDIT-SECURITY.md) |
@@ -291,7 +291,7 @@
 |---|---|---|---|---|---|
 | REFAC_ | 18 | 12 | 1 | 0 | 5 |
 | FEAT_ | 22 | 3 | 4 | 0 | 15 |
-| BUG_/GAP_ | 8 | 2 | 0 | 3 | 3 |
+| BUG_/GAP_ | 8 | 3 | 0 | 3 | 2 |
 | CODEREV_ | 12 | 3 | 0 | 2 | 7 |
 | BBUG_ | 50 | 42 | 0 | 8 | 0 |
 | AUD_KAD_ | 22 | 0 | 0 | 0 | 22 |
