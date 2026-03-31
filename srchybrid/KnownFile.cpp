@@ -64,87 +64,6 @@ namespace
 	}
 
 	/**
-	 * @brief Appends one UTF-16 checkpoint line to a dedicated trace file which does not depend on the normal log startup path.
-	 */
-	void AppendCreateFromFileTraceLine(LPCTSTR pszLine)
-	{
-		const CString strTracePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_CreateFromFile.trace.log"));
-		HANDLE hFile = ::CreateFile(PreparePathForLongPath(strTracePath), FILE_APPEND_DATA, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-			NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile == INVALID_HANDLE_VALUE)
-			return;
-
-		LARGE_INTEGER fileSize = {};
-		const bool bWriteBom = ::GetFileSizeEx(hFile, &fileSize) != FALSE && fileSize.QuadPart == 0;
-		if (bWriteBom) {
-			static const WORD wBOM = 0xFEFF;
-			DWORD dwWritten = 0;
-			::WriteFile(hFile, &wBOM, sizeof(wBOM), &dwWritten, NULL);
-		}
-
-		const CString strTimestamp(CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()));
-		const CString strTraceLine(strTimestamp + _T(": ") + pszLine + _T("\r\n"));
-		DWORD dwWritten = 0;
-		::WriteFile(hFile, (LPCTSTR)strTraceLine, static_cast<DWORD>(strTraceLine.GetLength() * sizeof(TCHAR)), &dwWritten, NULL);
-		::CloseHandle(hFile);
-	}
-
-	/**
-	 * @brief Emits durable verbose checkpoints so long-running shared-file hashing stages can be isolated in logs.
-	 */
-	class CCreateFromFileStageLogger
-	{
-	public:
-		explicit CCreateFromFileStageLogger(const CString &rstrFilePath)
-			: m_strFilePath(rstrFilePath)
-			, m_ullStartTick(::GetTickCount64())
-			, m_ullLastTick(m_ullStartTick)
-			, m_nNextProgressBytes(256ull * 1024ull * 1024ull)
-			, m_bEnabled(thePrefs.GetVerbose())
-		{
-		}
-
-		void Log(LPCTSTR pszStage, uint64 nBytesProcessed = 0, uint64 nTotalBytes = 0)
-		{
-			if (!m_bEnabled)
-				return;
-
-			const ULONGLONG ullNow = ::GetTickCount64();
-			CString strLine;
-			strLine.Format(_T("CreateFromFile checkpoint: stage=%s elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
-				pszStage, ullNow - m_ullStartTick, ullNow - m_ullLastTick, nBytesProcessed, nTotalBytes, (LPCTSTR)m_strFilePath);
-			AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
-			AppendCreateFromFileTraceLine(strLine);
-			m_ullLastTick = ullNow;
-		}
-
-		void LogHashProgress(uint64 nBytesProcessed, uint64 nTotalBytes, UINT nPartIndex, UINT nPartSize)
-		{
-			if (!m_bEnabled)
-				return;
-
-			while (nBytesProcessed >= m_nNextProgressBytes && m_nNextProgressBytes != 0) {
-				CString strStage;
-				strStage.Format(_T("hash-progress part=%u partBytes=%u"), nPartIndex, nPartSize);
-				Log(strStage, nBytesProcessed, nTotalBytes);
-
-				if (m_nNextProgressBytes > _UI64_MAX - (256ull * 1024ull * 1024ull)) {
-					m_nNextProgressBytes = 0;
-					break;
-				}
-				m_nNextProgressBytes += 256ull * 1024ull * 1024ull;
-			}
-		}
-
-	private:
-		CString m_strFilePath;
-		ULONGLONG m_ullStartTick;
-		ULONGLONG m_ullLastTick;
-		uint64 m_nNextProgressBytes;
-		bool m_bEnabled;
-	};
-
-	/**
 	 * @brief Accumulates MD4 and AICH state while a file-backed reader streams byte spans.
 	 */
 	class CCreateHashVisitor : public IMappedFileRangeVisitor
@@ -539,8 +458,16 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		strFilePath += _T("\\");
 	strFilePath += in_filename;
 	SetFilePath(strFilePath);
-	CCreateFromFileStageLogger stageLogger(strFilePath);
-	stageLogger.Log(_T("start"));
+	const bool bVerboseCreateFromFile = thePrefs.GetVerbose() != 0;
+	const ULONGLONG ullCreateFromFileStartTick = ::GetTickCount64();
+	ULONGLONG ullCreateFromFileLastTick = ullCreateFromFileStartTick;
+	uint64 nNextHashProgressBytes = 256ull * 1024ull * 1024ull;
+	if (bVerboseCreateFromFile) {
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=start elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			0ull, 0ull, 0ull, 0ull, (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+	}
 	HANDLE hFile = OpenHashReadHandleLongPath(strFilePath); // can not use exclusive sharing because we may access a completing part file
 	if (hFile == INVALID_HANDLE_VALUE) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), (LPCTSTR)GetErrorMessage(::GetLastError()));
@@ -636,16 +563,56 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 		const uint64 nFileSize = static_cast<uint64>(GetFileSize());
 		const uint64 nBytesHashedAfterPart = nFileSize >= togo ? nFileSize - togo : 0;
-		stageLogger.LogHashProgress(nBytesHashedAfterPart, nFileSize, hashcount, uSize);
+		if (bVerboseCreateFromFile) {
+			while (nBytesHashedAfterPart >= nNextHashProgressBytes && nNextHashProgressBytes != 0) {
+				const ULONGLONG ullNow = ::GetTickCount64();
+				CString strLine;
+				strLine.Format(_T("CreateFromFile checkpoint: stage=hash-progress part=%u partBytes=%u elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+					hashcount, uSize, ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+					nBytesHashedAfterPart, nFileSize, (LPCTSTR)strFilePath);
+				AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+				ullCreateFromFileLastTick = ullNow;
+
+				if (nNextHashProgressBytes > _UI64_MAX - (256ull * 1024ull * 1024ull)) {
+					nNextHashProgressBytes = 0;
+					break;
+				}
+				nNextHashProgressBytes += 256ull * 1024ull * 1024ull;
+			}
+		}
 	}
-	stageLogger.Log(_T("raw-hash-complete"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=raw-hash-complete elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+		ullCreateFromFileLastTick = ullNow;
+	}
 
 	if (hashcount)
 		m_FileIdentifier.CalculateMD4HashByHashSet(false);
 
-	stageLogger.Log(_T("aich-recalculate-begin"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=aich-recalculate-begin elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+		ullCreateFromFileLastTick = ullNow;
+	}
 	cAICHHashSet.ReCalculateHash(false);
-	stageLogger.Log(_T("aich-recalculate-done"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=aich-recalculate-done elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+		ullCreateFromFileLastTick = ullNow;
+	}
 	if (cAICHHashSet.VerifyHashTree(true)) {
 		cAICHHashSet.SetStatus(AICH_HASHSETCOMPLETE);
 		m_FileIdentifier.SetAICHHash(cAICHHashSet.GetMasterHash());
@@ -653,12 +620,28 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 			ASSERT(0);
 			DebugLogError(_T("CreateFromFile() - failed to create AICH PartHashSet out of RecoveryHashSet - %s"), (LPCTSTR)GetFileName());
 		}
-		stageLogger.Log(_T("aich-save-begin"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+		if (bVerboseCreateFromFile) {
+			const ULONGLONG ullNow = ::GetTickCount64();
+			CString strLine;
+			strLine.Format(_T("CreateFromFile checkpoint: stage=aich-save-begin elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+				ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+				static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+			AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+			ullCreateFromFileLastTick = ullNow;
+		}
 		if (!cAICHHashSet.SaveHashSet())
 			LogError(LOG_STATUSBAR, GetResString(IDS_SAVEACFAILED));
 		else
 			SetAICHRecoverHashSetAvailable(true);
-		stageLogger.Log(_T("aich-save-done"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+		if (bVerboseCreateFromFile) {
+			const ULONGLONG ullNow = ::GetTickCount64();
+			CString strLine;
+			strLine.Format(_T("CreateFromFile checkpoint: stage=aich-save-done elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+				ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+				static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+			AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+			ullCreateFromFileLastTick = ullNow;
+		}
 	} else
 		// now something went pretty wrong
 		DebugLogError(LOG_STATUSBAR, _T("Failed to calculate AICH Hashset from file %s"), (LPCTSTR)GetFileName());
@@ -677,17 +660,48 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		m_tUtcLastModified = (time_t)st.st_mtime;
 		AdjustNTFSDaylightFileTime(m_tUtcLastModified, (LPCTSTR)strFilePath);
 	}
-	stageLogger.Log(_T("post-stat"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=post-stat elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+		ullCreateFromFileLastTick = ullNow;
+	}
 
 	VERIFY(::CloseHandle(hFile));
 
 	// Add file tags
-	stageLogger.Log(_T("metadata-begin"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=metadata-begin elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+		ullCreateFromFileLastTick = ullNow;
+	}
 	UpdateMetaDataTags();
-	stageLogger.Log(_T("metadata-done"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=metadata-done elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+		ullCreateFromFileLastTick = ullNow;
+	}
 
 	UpdatePartsInfo();
-	stageLogger.Log(_T("parts-info-done"), static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()));
+	if (bVerboseCreateFromFile) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		CString strLine;
+		strLine.Format(_T("CreateFromFile checkpoint: stage=parts-info-done elapsedMs=%I64u deltaMs=%I64u bytes=%I64u/%I64u file=\"%s\""),
+			ullNow - ullCreateFromFileStartTick, ullNow - ullCreateFromFileLastTick,
+			static_cast<uint64>(GetFileSize()), static_cast<uint64>(GetFileSize()), (LPCTSTR)strFilePath);
+		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strLine);
+	}
 
 	return true;
 }
@@ -1464,19 +1478,15 @@ void CKnownFile::UpdateMetaDataTags()
 	RemoveMetaDataTags();
 
 	if (thePrefs.GetExtractMetaData() == 0) {
-		if (thePrefs.GetVerbose()) {
+		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Shared meta extraction skipped: disabled for \"%s\""), (LPCTSTR)GetFilePath());
-			AppendCreateFromFileTraceLine(CString(_T("Shared meta extraction skipped: disabled for \"")) + GetFilePath() + _T("\""));
-		}
 		return;
 	}
 
 	const EED2KFileType eFileType = GetED2KFileTypeID(GetFileName());
 	if (eFileType != ED2KFT_AUDIO && eFileType != ED2KFT_VIDEO) {
-		if (thePrefs.GetVerbose()) {
+		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Shared meta extraction skipped: unsupported file type for \"%s\""), (LPCTSTR)GetFilePath());
-			AppendCreateFromFileTraceLine(CString(_T("Shared meta extraction skipped: unsupported file type for \"")) + GetFilePath() + _T("\""));
-		}
 		return;
 	}
 
@@ -1486,10 +1496,8 @@ void CKnownFile::UpdateMetaDataTags()
 		mi.strFileName = GetFileName();
 		bool bMediaInfoAvailable = false;
 		const ULONGLONG ullMediaInfoStart = ::GetTickCount64();
-		if (thePrefs.GetVerbose()) {
+		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Shared meta extraction begin: \"%s\""), (LPCTSTR)strFullPath);
-			AppendCreateFromFileTraceLine(CString(_T("Shared meta extraction begin: \"")) + strFullPath + _T("\""));
-		}
 		try {
 			if (GetMediaInfoDllInfo(strFullPath, GetFileSize(), &mi, false, true, &bMediaInfoAvailable)) {
 				mi.InitFileLength();
@@ -1551,31 +1559,17 @@ void CKnownFile::UpdateMetaDataTags()
 						, ::GetTickCount64() - ullMediaInfoStart
 						, (LPCTSTR)strFullPath, uLengthSec, (LPCTSTR)strCodec
 						, (LPCTSTR)mi.strTitle, (LPCTSTR)mi.strAuthor, (LPCTSTR)mi.strAlbum);
-					CString strTraceLine;
-					strTraceLine.Format(_T("Shared meta extraction success: elapsedMs=%I64u path=\"%s\" length=%u codec=\"%s\" title=\"%s\" artist=\"%s\" album=\"%s\"")
-						, ::GetTickCount64() - ullMediaInfoStart
-						, (LPCTSTR)strFullPath, uLengthSec, (LPCTSTR)strCodec
-						, (LPCTSTR)mi.strTitle, (LPCTSTR)mi.strAuthor, (LPCTSTR)mi.strAlbum);
-					AppendCreateFromFileTraceLine(strTraceLine);
 				}
 			} else if (thePrefs.GetVerbose()) {
-				CString strTraceLine;
 				if (!bMediaInfoAvailable) {
 					AddDebugLogLine(false, _T("Shared meta extraction failed: elapsedMs=%I64u MediaInfo.dll missing or incompatible for \"%s\""), ::GetTickCount64() - ullMediaInfoStart, (LPCTSTR)strFullPath);
-					strTraceLine.Format(_T("Shared meta extraction failed: elapsedMs=%I64u MediaInfo.dll missing or incompatible for \"%s\""), ::GetTickCount64() - ullMediaInfoStart, (LPCTSTR)strFullPath);
 				} else {
 					AddDebugLogLine(false, _T("Shared meta extraction failed: elapsedMs=%I64u no MediaInfo data found for \"%s\""), ::GetTickCount64() - ullMediaInfoStart, (LPCTSTR)strFullPath);
-					strTraceLine.Format(_T("Shared meta extraction failed: elapsedMs=%I64u no MediaInfo data found for \"%s\""), ::GetTickCount64() - ullMediaInfoStart, (LPCTSTR)strFullPath);
 				}
-				AppendCreateFromFileTraceLine(strTraceLine);
 			}
 		} catch (...) {
-			if (thePrefs.GetVerbose()) {
+			if (thePrefs.GetVerbose())
 				AddDebugLogLine(false, _T("Shared meta extraction exception: elapsedMs=%I64u path=\"%s\""), ::GetTickCount64() - ullMediaInfoStart, (LPCTSTR)strFullPath);
-				CString strTraceLine;
-				strTraceLine.Format(_T("Shared meta extraction exception: elapsedMs=%I64u path=\"%s\""), ::GetTickCount64() - ullMediaInfoStart, (LPCTSTR)strFullPath);
-				AppendCreateFromFileTraceLine(strTraceLine);
-			}
 			ASSERT(0);
 		}
 	}
