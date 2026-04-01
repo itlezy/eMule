@@ -617,6 +617,7 @@ public:
 	static uint16	GetServerUDPPort()					{ return nServerUDPPort; }
 	static uchar*	GetUserHash()						{ return userhash; }
 	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
+	static void		SetMaxUpClientsAllowed(uint32 in)	{ m_maxUpClientsAllowed = max((uint32)MIN_UP_CLIENTS_ALLOWED, min((uint32)MAX_UP_CLIENTS_ALLOWED, in)); }
 	static uint64	GetBBSessionMaxTrans()				{ return m_bbSessionMaxTrans; }
 	static uint64	GetBBSessionMaxTime()				{ return m_bbSessionMaxTime; }
 	static float	GetBBBoostLowRatioFiles()			{ return m_bbBoostLowRatioFiles; }
@@ -995,6 +996,7 @@ public:
 	static UINT		GetUploadClientDataRate()			{ return m_uUploadClientDataRate; }
 	static DWORD	GetFileBufferTimeLimit()			{ return m_uFileBufferTimeLimit; }
 	static INT_PTR	GetQueueSize()						{ return m_iQueueSize; }
+	static void		SetQueueSize(INT_PTR in)			{ m_iQueueSize = max((INT_PTR)100, in); }
 	static int		GetCommitFiles()					{ return m_iCommitFiles; }
 	static bool		GetShowCopyEd2kLinkCmd()			{ return m_bShowCopyEd2kLinkCmd; }
 

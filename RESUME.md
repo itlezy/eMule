@@ -2,31 +2,41 @@
 
 ## Last Chunk
 
-- Added a startup-only `-c <base-dir>` override which points eMule at an explicit config base directory.
-- The override is parsed before any startup profile reads, so `preferences.ini`, `IgnoreInstances`, `Port`, and mutex naming all come from `<base-dir>\config\preferences.ini` when `-c` is present.
-- `Preferences.cpp` now treats that base dir as authoritative for `EMULE_CONFIGBASEDIR`, `EMULE_CONFIGDIR`, and `EMULE_LOGDIR`, while leaving incoming/temp and the rest of the directory model unchanged.
-- Added shared regression coverage in `eMule-build-tests` for the `-c` parser and path normalization.
-- Added explicit `@todo` comments in `CemuleApp::ProcessCommandline()` around the legacy port-mutex and WM_COPYDATA shell-forwarding branches to mark them as future cleanup targets.
-- Captured a live high-CPU profile for `emule.exe -c C:\tmp\emule-testing` while hashing the problematic shared tree under `C:\tmp\videodupez\`.
+- Marked [`docs/PLAN-API-SERVER.md`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\docs\PLAN-API-SERVER.md) as the implemented canonical contract for the local pipe and grouped `/api/v2/...` sidecar surface.
+- Expanded the local pipe server in [`srchybrid/PipeApiServer.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\PipeApiServer.cpp) with:
+  - broader curated `app/preferences/get|set` coverage,
+  - strict rejection of unsupported mutable preference keys,
+  - `shared/add` and `shared/remove`,
+  - `uploads/remove` and `uploads/release_slot`.
+- Added stable seam helpers in [`srchybrid/PipeApiSurfaceSeams.h`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\PipeApiSurfaceSeams.h) for the expanded mutable-preference vocabulary and shared-file removal policy.
+- Added the missing preference setters in [`srchybrid/Preferences.h`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\Preferences.h) needed by the pipe API for upload-slot and queue sizing.
+- Added regression coverage in [`pipe_api.tests.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build-tests\src\pipe_api.tests.cpp) for the expanded preference vocabulary and shared-file removal guard.
 
 ## Current State
 
-- Startup config resolution is now explicit when `-c` is supplied and no longer depends on registry or auto-detected config roots for the config/log side of the profile.
-- Invalid `-c` usage fails fast instead of silently falling back to another config location.
-- Shared tests cover supported and rejected `-c` forms.
-- The isolated non-UI probes still show:
-  - raw buffered reads are fine
-  - raw mapped reads are fine
-  - offline full MD4+AICH hashing is fine
-- The live ETW capture artifact is at `C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260401-013112-largefile-cpu-profile`.
-- That capture shows `emule.exe` consuming roughly one full core for an extended period, and the hot samples are dominated by:
-  - `emule.exe!CryptoPP::Weak1::MD4::Transform`
-  - `emule.exe!CryptoPP::'anonymous namespace'::SHA1_HashBlock_CXX`
-  - small `CAICHHashTree::*` activity
-- Current evidence points to active hashing work in the live share path, not an idle UI loop and not the previous logging path.
+- The pipe surface now covers:
+  - `app/*`
+  - `stats/*`
+  - `transfers/*`
+  - `uploads/*`
+  - `servers/*`
+  - `kad/*`
+  - `shared/*`
+  - `search/*`
+  - `log/*`
+- The canonical contract and the implementation now both include share-management mutations and minimal upload queue / slot controls.
+- Builds currently pass with `..\23-build-emule-debug-incremental.cmd`.
+- Shared tests currently pass with:
+  - `MSBuild C:\prj\p2p\eMule\eMulebb\eMule-build-tests\emule-tests.vcxproj /p:Configuration=Debug /p:Platform=x64 /m`
+  - `C:\prj\p2p\eMule\eMulebb\eMule-build-tests\build\default\x64\Debug\emule-tests.exe --source-file='*pipe_api.tests.cpp'`
 
 ## Next Chunk
 
-- Use the existing ETW artifact and a debugger-capable tool path to recover the higher-level caller above the Crypto++ hashing leaf functions in the live process.
-- Keep using `-c C:\tmp\emule-testing`, VPN bind, and file logging for every live `emule.exe` run.
-- Prefer ETW sampling, dump capture, or debugger attachment before adding any more logging when investigating the hashing hot-loop.
+- Run a live `eMule-remote` smoke pass against the expanded pipe surface, especially:
+  - `shared/add`
+  - `shared/remove`
+  - `uploads/remove`
+  - `uploads/release_slot`
+  - expanded `app/preferences/set`
+- Decide whether the remote HTTP layer should expose the new share/upload mutations immediately or hold them until a UI pass is ready.
+- If the API is considered stable after live smoke coverage, close out the API refactor and shift focus back to runtime stability review only.

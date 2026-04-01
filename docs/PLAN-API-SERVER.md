@@ -1,6 +1,6 @@
 # eMule REST API Server — Named Pipe + Node.js Sidecar
 
-**Status:** Design / Planning
+**Status:** Implemented / Canonical Contract
 **Related:** `WEB_APIs.md` (in-process approach analysis)
 
 ---
@@ -17,7 +17,7 @@
   - [4.4 Event Reference](#44-event-reference)
 - [5. Data Types](#5-data-types)
 - [6. REST API Endpoints](#6-rest-api-endpoints)
-  - [6.1 Auth](#61-auth) — [6.2 Application](#62-application) — [6.3 Transfer Info](#63-transfer-info-global-speeds) — [6.4 Torrents](#64-torrents-downloads) — [6.5 Sync](#65-sync-polling-alternative-to-sse) — [6.6 Log](#66-log) — [6.7 Search](#67-search) — [6.8 Events (SSE)](#68-events-sse) — [6.9 eMule Extensions](#69-emule-extensions)
+  - [6.1 Auth](#61-auth) — [6.2 Application](#62-application) — [6.3 Stats](#63-stats) — [6.4 Transfers](#64-transfers) — [6.5 Uploads, Servers, Kad, Shared](#65-uploads-servers-kad-shared) — [6.6 Log](#66-log) — [6.7 Search](#67-search) — [6.8 Events (SSE)](#68-events-sse) — [6.9 eMule Extensions](#69-emule-extensions)
 - [7. TypeScript Project Structure](#7-typescript-project-structure)
 - [8. C++ Side — CPipeApiServer](#8-c-side--cpipeapiserver)
   - [8.1 Class Design](#81-class-design) — [8.2 Pipe Lifecycle](#82-pipe-lifecycle) — [8.3 Event Hook Points](#83-event-hook-points-in-emule) — [8.4 Thread Safety](#84-thread-safety-model) — [8.5 JSON Library](#85-json-library)
@@ -32,7 +32,7 @@
 
 Rather than extending the built-in HTML web server (see `WEB_APIs.md`), this document describes an alternative architecture: a **named pipe IPC channel** inside eMule paired with a standalone **Node.js/TypeScript sidecar process** that owns the HTTP surface.
 
-The sidecar exposes a grouped `/api/v2/...` REST API backed by the local pipe contract. Push notifications (download complete, speed stats, etc.) are delivered to HTTP clients via **Server-Sent Events (SSE)**.
+The sidecar exposes a grouped `/api/v2/...` REST API backed by the local pipe contract. Push notifications (download complete, speed stats, etc.) are delivered to HTTP clients via **Server-Sent Events (SSE)**. This document is the canonical published contract for both the in-process pipe server and the sibling `eMule-remote` sidecar.
 
 ---
 
@@ -127,7 +127,7 @@ Three distinct message shapes share the same wire format:
 
 // 2. Response  (eMule → sidecar)
 { "id": "<uuid>", "result": { ... } }
-{ "id": "<uuid>", "error": "<message>" }
+{ "id": "<uuid>", "error": { "code": "<code>", "message": "<message>" } }
 
 // 3. Event  (eMule → sidecar, unsolicited, no id)
 { "event": "<event-name>", "data": { ... } }
@@ -161,6 +161,8 @@ All commands are sent by the sidecar. eMule replies with a matching `id`.
 |---|---|---|
 | `uploads/list` | — | `Upload[]` (active slots) |
 | `uploads/queue` | — | `QueueEntry[]` (waiting) |
+| `uploads/remove` | `{ userHash?: string, ip?: string, port?: number }` | `{ ok: true, removed: 'queue'\|'slot' }` |
+| `uploads/release_slot` | `{ userHash?: string, ip?: string, port?: number }` | `{ ok: true }` |
 
 #### Shared Files
 
@@ -168,6 +170,8 @@ All commands are sent by the sidecar. eMule replies with a matching `id`.
 |---|---|---|
 | `shared/list` | — | `SharedFile[]` |
 | `shared/get` | `{ hash: string }` | `SharedFile` |
+| `shared/add` | `{ path: string }` | `{ ok: true, path: string, alreadyShared: boolean, queued: boolean, file: SharedFile \| null }` |
+| `shared/remove` | `{ hash?: string, path?: string }` | `{ ok: true, path: string, hash: string \| null }` |
 
 #### Servers (ED2K)
 
@@ -370,6 +374,30 @@ interface GlobalStats {
 }
 ```
 
+### Preferences
+
+`app/preferences/get` and `app/preferences/set` expose a curated runtime subset only. Unsupported keys must be rejected rather than ignored.
+
+```typescript
+interface Preferences {
+  maxUploadKiB: number;
+  maxDownloadKiB: number;
+  maxConnections: number;
+  maxConPerFive: number;
+  maxSourcesPerFile: number;
+  uploadClientDataRate: number;
+  maxUploadSlots: number;
+  queueSize: number;
+  autoConnect: boolean;
+  newAutoUp: boolean;
+  newAutoDown: boolean;
+  creditSystem: boolean;
+  safeServerConnect: boolean;
+  networkKademlia: boolean;
+  networkEd2k: boolean;
+}
+```
+
 ---
 
 ## 6. REST API Endpoints
@@ -471,6 +499,14 @@ GET  /api/v2/uploads/list
 GET  /api/v2/uploads/queue
   200: QueueEntry[]
 
+POST /api/v2/uploads/remove
+  body: { userHash?: string, ip?: string, port?: number }
+  200: { ok: true, removed: 'queue' | 'slot' }
+
+POST /api/v2/uploads/release_slot
+  body: { userHash?: string, ip?: string, port?: number }
+  200: { ok: true }
+
 GET  /api/v2/servers/list
   200: Server[]
 
@@ -509,6 +545,14 @@ GET  /api/v2/shared/list
 
 GET  /api/v2/shared/:hash
   200: SharedFile
+
+POST /api/v2/shared/add
+  body: { path: string }
+  200: { ok: true, path: string, alreadyShared: boolean, queued: boolean, file: SharedFile | null }
+
+POST /api/v2/shared/remove
+  body: { hash?: string, path?: string }
+  200: { ok: true, path: string, hash: string | null }
 ```
 
 ### 6.6 Log

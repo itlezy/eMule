@@ -23,6 +23,7 @@
 #include <vector>
 
 #include "ClientStateDefs.h"
+#include "ClientList.h"
 #include "ED2KLink.h"
 #include "Emule.h"
 #include "EmuleDlg.h"
@@ -41,6 +42,7 @@
 #include "ServerList.h"
 #include "ServerWnd.h"
 #include "SharedFileList.h"
+#include "SharedFilesWnd.h"
 #include "Statistics.h"
 #include "StringConversion.h"
 #include "TransferDlg.h"
@@ -82,6 +84,24 @@ struct SPipeApiError
 struct SPipeApiServerEndpoint
 {
 	CString strAddress;
+	uint16 uPort;
+};
+
+struct SPipeApiClientSelector
+{
+	SPipeApiClientSelector()
+		: bHasUserHash(false)
+		, bHasEndpoint(false)
+		, dwIp(0)
+		, uPort(0)
+	{
+		md4clr(aucUserHash);
+	}
+
+	uchar aucUserHash[MDX_DIGEST_SIZE];
+	bool bHasUserHash;
+	bool bHasEndpoint;
+	uint32 dwIp;
 	uint16 uPort;
 };
 
@@ -453,8 +473,18 @@ json BuildPreferencesJson()
 		{"maxUploadKiB", thePrefs.GetMaxUpload()},
 		{"maxDownloadKiB", thePrefs.GetMaxDownload()},
 		{"maxConnections", thePrefs.GetMaxConnections()},
+		{"maxConPerFive", thePrefs.GetMaxConperFive()},
+		{"maxSourcesPerFile", thePrefs.GetMaxSourcePerFileDefault()},
+		{"uploadClientDataRate", thePrefs.GetUploadClientDataRate()},
+		{"maxUploadSlots", thePrefs.GetMaxUpClientsAllowed()},
+		{"queueSize", static_cast<int64_t>(thePrefs.GetQueueSize())},
 		{"autoConnect", thePrefs.DoAutoConnect()},
-		{"newAutoUp", thePrefs.GetNewAutoUp()}
+		{"newAutoUp", thePrefs.GetNewAutoUp()},
+		{"newAutoDown", thePrefs.GetNewAutoDown()},
+		{"creditSystem", thePrefs.UseCreditSystem()},
+		{"safeServerConnect", thePrefs.IsSafeServerConnectEnabled()},
+		{"networkKademlia", thePrefs.GetNetworkKademlia()},
+		{"networkEd2k", thePrefs.GetNetworkED2K()}
 	};
 }
 
@@ -468,6 +498,14 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 		rError.strCode = "INVALID_ARGUMENT";
 		rError.strMessage = _T("prefs must be an object");
 		return false;
+	}
+
+	for (json::const_iterator it = rPrefs.begin(); it != rPrefs.end(); ++it) {
+		if (PipeApiSurfaceSeams::ParseMutablePreferenceName(it.key().c_str()) == PipeApiSurfaceSeams::EMutablePreference::Invalid) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage.Format(_T("unsupported preference key: %hs"), it.key().c_str());
+			return false;
+		}
 	}
 
 	if (rPrefs.contains("maxUploadKiB")) {
@@ -497,6 +535,51 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 		thePrefs.SetMaxConnections(static_cast<UINT>(rPrefs["maxConnections"].get<unsigned>()));
 	}
 
+	if (rPrefs.contains("maxConPerFive")) {
+		if (!rPrefs["maxConPerFive"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxConPerFive must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetMaxConsPerFive(static_cast<UINT>(rPrefs["maxConPerFive"].get<unsigned>()));
+	}
+
+	if (rPrefs.contains("maxSourcesPerFile")) {
+		if (!rPrefs["maxSourcesPerFile"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxSourcesPerFile must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetMaxSourcesPerFile(static_cast<UINT>(rPrefs["maxSourcesPerFile"].get<unsigned>()));
+	}
+
+	if (rPrefs.contains("uploadClientDataRate")) {
+		if (!rPrefs["uploadClientDataRate"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("uploadClientDataRate must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetUploadClientDataRate(static_cast<UINT>(rPrefs["uploadClientDataRate"].get<unsigned>()));
+	}
+
+	if (rPrefs.contains("maxUploadSlots")) {
+		if (!rPrefs["maxUploadSlots"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxUploadSlots must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetMaxUpClientsAllowed(rPrefs["maxUploadSlots"].get<uint32>());
+	}
+
+	if (rPrefs.contains("queueSize")) {
+		if (!rPrefs["queueSize"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("queueSize must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetQueueSize(static_cast<INT_PTR>(rPrefs["queueSize"].get<unsigned>()));
+	}
+
 	if (rPrefs.contains("autoConnect")) {
 		if (!rPrefs["autoConnect"].is_boolean()) {
 			rError.strCode = "INVALID_ARGUMENT";
@@ -515,8 +598,54 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 		thePrefs.SetNewAutoUp(rPrefs["newAutoUp"].get<bool>());
 	}
 
+	if (rPrefs.contains("newAutoDown")) {
+		if (!rPrefs["newAutoDown"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("newAutoDown must be a boolean");
+			return false;
+		}
+		thePrefs.SetNewAutoDown(rPrefs["newAutoDown"].get<bool>());
+	}
+
+	if (rPrefs.contains("creditSystem")) {
+		if (!rPrefs["creditSystem"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("creditSystem must be a boolean");
+			return false;
+		}
+		thePrefs.SetCreditSystem(rPrefs["creditSystem"].get<bool>());
+	}
+
+	if (rPrefs.contains("safeServerConnect")) {
+		if (!rPrefs["safeServerConnect"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("safeServerConnect must be a boolean");
+			return false;
+		}
+		thePrefs.SetSafeServerConnectEnabled(rPrefs["safeServerConnect"].get<bool>());
+	}
+
+	if (rPrefs.contains("networkKademlia")) {
+		if (!rPrefs["networkKademlia"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("networkKademlia must be a boolean");
+			return false;
+		}
+		thePrefs.SetNetworkKademlia(rPrefs["networkKademlia"].get<bool>());
+	}
+
+	if (rPrefs.contains("networkEd2k")) {
+		if (!rPrefs["networkEd2k"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("networkEd2k must be a boolean");
+			return false;
+		}
+		thePrefs.SetNetworkED2K(rPrefs["networkEd2k"].get<bool>());
+	}
+
 	thePrefs.Save();
 	theApp.emuledlg->ShowTransferRate(true);
+	theApp.emuledlg->ShowConnectionState();
 	return true;
 }
 
@@ -706,6 +835,121 @@ CPartFile* FindPartFileByHash(const json &rValue, SPipeApiError &rError)
 		rError.strMessage = _T("transfer not found");
 	}
 	return pPartFile;
+}
+
+/**
+ * Parses one non-empty UTF-8 path parameter from a pipe command.
+ */
+bool TryGetPathParam(const json &rValue, const char *pszFieldName, CString &rPath, SPipeApiError &rError)
+{
+	if (!rValue.is_string()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage.Format(_T("%hs must be a non-empty string path"), pszFieldName);
+		return false;
+	}
+
+	rPath = CStringFromStdUtf8(rValue.get<std::string>());
+	rPath.Trim();
+	if (rPath.IsEmpty()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage.Format(_T("%hs must not be empty"), pszFieldName);
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Finds one shared file by full normalized path.
+ */
+CKnownFile* FindSharedFileByPath(const CString &rFilePath)
+{
+	CKnownFilesMap sharedFiles;
+	theApp.sharedfiles->CopySharedFileMap(sharedFiles);
+	for (const CKnownFilesMap::CPair *pair = sharedFiles.PGetFirstAssoc(); pair != NULL; pair = sharedFiles.PGetNextAssoc(pair)) {
+		if (pair->value != NULL && pair->value->GetFilePath().CompareNoCase(rFilePath) == 0)
+			return pair->value;
+	}
+	return NULL;
+}
+
+/**
+ * Refreshes the shared-files widgets after one explicit share mutation.
+ */
+void RefreshSharedFilesUi()
+{
+	if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL) {
+		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ReloadFileList();
+		theApp.emuledlg->sharedfileswnd->OnSingleFileShareStatusChanged();
+	}
+}
+
+/**
+ * Parses one upload-control client selector from a pipe payload.
+ */
+bool TryGetUploadClientSelector(const json &rParams, SPipeApiClientSelector &rSelector, SPipeApiError &rError)
+{
+	const bool bHasUserHash = rParams.contains("userHash");
+	const bool bHasIp = rParams.contains("ip");
+	const bool bHasPort = rParams.contains("port");
+	if (!bHasUserHash && !bHasIp && !bHasPort) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("userHash or ip and port are required");
+		return false;
+	}
+
+	if (bHasIp != bHasPort) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("ip and port must be provided together");
+		return false;
+	}
+
+	if (bHasUserHash) {
+		if (!TryDecodeHash(rParams["userHash"], rSelector.aucUserHash, rError)) {
+			rError.strMessage = _T("userHash must be a valid 32-character lowercase hex string");
+			return false;
+		}
+		rSelector.bHasUserHash = true;
+	}
+
+	if (bHasIp) {
+		if (!rParams["ip"].is_string() || !rParams["port"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("ip must be a string and port must be an unsigned number");
+			return false;
+		}
+
+		const std::string strIp = rParams["ip"].get<std::string>();
+		const unsigned uPort = rParams["port"].get<unsigned>();
+		if (uPort == 0 || uPort > 0xFFFFu || !ParseIPv4Address(strIp.c_str(), rSelector.dwIp)) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("ip must be a valid IPv4 address and port must be in the range 1..65535");
+			return false;
+		}
+
+		rSelector.bHasEndpoint = true;
+		rSelector.uPort = static_cast<uint16>(uPort);
+	}
+
+	return true;
+}
+
+/**
+ * Resolves one upload-control selector to a live client instance.
+ */
+CUpDownClient* FindClientForUploadControl(const SPipeApiClientSelector &rSelector, SPipeApiError &rError)
+{
+	CUpDownClient *pClient = NULL;
+	if (rSelector.bHasUserHash)
+		pClient = theApp.clientlist->FindClientByUserHash(rSelector.aucUserHash, rSelector.bHasEndpoint ? rSelector.dwIp : 0, rSelector.bHasEndpoint ? rSelector.uPort : 0);
+	else if (rSelector.bHasEndpoint)
+		pClient = theApp.clientlist->FindClientByIP(rSelector.dwIp, rSelector.uPort);
+
+	if (pClient == NULL) {
+		rError.strCode = "NOT_FOUND";
+		rError.strMessage = _T("upload client not found");
+	}
+	return pClient;
 }
 
 /**
@@ -972,6 +1216,47 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		return result;
 	}
 
+	if (strCommand == "shared/add") {
+		CString strFilePath;
+		if (!TryGetPathParam(params.contains("path") ? params["path"] : json(), "path", strFilePath, rError))
+			return json();
+
+		const int iSlash = strFilePath.ReverseFind(_T('\\'));
+		const CString strDirectory = iSlash >= 0 ? strFilePath.Left(iSlash) : CString();
+		if (strDirectory.IsEmpty() || !thePrefs.IsShareableDirectory(strDirectory)) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("path must point to a file inside a shareable directory");
+			return json();
+		}
+
+		CKnownFile *const pExistingFile = FindSharedFileByPath(strFilePath);
+		if (theApp.sharedfiles->ShouldBeShared(strDirectory, strFilePath, false)) {
+			return json{
+				{"ok", true},
+				{"path", StdUtf8FromCString(strFilePath)},
+				{"alreadyShared", true},
+				{"queued", false},
+				{"file", pExistingFile != NULL ? BuildSharedFileJson(*pExistingFile) : json(nullptr)}
+			};
+		}
+
+		if (!theApp.sharedfiles->AddSingleSharedFile(strFilePath)) {
+			rError.strCode = "EMULE_ERROR";
+			rError.strMessage = _T("failed to queue shared file");
+			return json();
+		}
+
+		RefreshSharedFilesUi();
+		CKnownFile *const pSharedFile = FindSharedFileByPath(strFilePath);
+		return json{
+			{"ok", true},
+			{"path", StdUtf8FromCString(strFilePath)},
+			{"alreadyShared", false},
+			{"queued", pSharedFile == NULL},
+			{"file", pSharedFile != NULL ? BuildSharedFileJson(*pSharedFile) : json(nullptr)}
+		};
+	}
+
 	if (strCommand == "shared/get") {
 		uchar hash[MDX_DIGEST_SIZE];
 		if (!TryDecodeHash(params.contains("hash") ? params["hash"] : json(), hash, rError))
@@ -984,6 +1269,63 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 		}
 		return BuildSharedFileJson(*pKnownFile);
+	}
+
+	if (strCommand == "shared/remove") {
+		const bool bHasHash = params.contains("hash");
+		const bool bHasPath = params.contains("path");
+		if (bHasHash == bHasPath) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("exactly one of hash or path is required");
+			return json();
+		}
+
+		CString strFilePath;
+		CKnownFile *pKnownFile = NULL;
+		if (bHasHash) {
+			uchar hash[MDX_DIGEST_SIZE];
+			if (!TryDecodeHash(params["hash"], hash, rError))
+				return json();
+
+			pKnownFile = theApp.sharedfiles->GetFileByID(hash);
+			if (pKnownFile == NULL) {
+				rError.strCode = "NOT_FOUND";
+				rError.strMessage = _T("shared file not found");
+				return json();
+			}
+			strFilePath = pKnownFile->GetFilePath();
+		} else {
+			if (!TryGetPathParam(params["path"], "path", strFilePath, rError))
+				return json();
+			pKnownFile = FindSharedFileByPath(strFilePath);
+		}
+
+		const int iSlash = strFilePath.ReverseFind(_T('\\'));
+		const CString strDirectory = iSlash >= 0 ? strFilePath.Left(iSlash) : CString();
+		const bool bIsShared = !strDirectory.IsEmpty() && theApp.sharedfiles->ShouldBeShared(strDirectory, strFilePath, false);
+		const bool bMustRemainShared = !strDirectory.IsEmpty() && theApp.sharedfiles->ShouldBeShared(strDirectory, strFilePath, true);
+		if (pKnownFile != NULL && pKnownFile->IsPartFile()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("part files cannot be unshared individually");
+			return json();
+		}
+		if (!PipeApiSurfaceSeams::CanRemoveSharedFile(bIsShared, bMustRemainShared)) {
+			rError.strCode = bMustRemainShared ? "INVALID_ARGUMENT" : "NOT_FOUND";
+			rError.strMessage = bMustRemainShared ? _T("file belongs to a mandatory shared directory") : _T("shared file not found");
+			return json();
+		}
+		if (!theApp.sharedfiles->ExcludeFile(strFilePath)) {
+			rError.strCode = "EMULE_ERROR";
+			rError.strMessage = _T("failed to remove shared file");
+			return json();
+		}
+
+		RefreshSharedFilesUi();
+		return json{
+			{"ok", true},
+			{"path", StdUtf8FromCString(strFilePath)},
+			{"hash", pKnownFile != NULL ? JsonHashOrNull(pKnownFile->GetFileHash()) : json(nullptr)}
+		};
 	}
 
 	if (strCommand == "uploads/list" || strCommand == "uploads/queue") {
@@ -1003,6 +1345,34 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			}
 		}
 		return result;
+	}
+
+	if (strCommand == "uploads/remove" || strCommand == "uploads/release_slot") {
+		SPipeApiClientSelector selector;
+		if (!TryGetUploadClientSelector(params, selector, rError))
+			return json();
+
+		CUpDownClient *const pClient = FindClientForUploadControl(selector, rError);
+		if (pClient == NULL)
+			return json();
+
+		if (strCommand == "uploads/remove") {
+			if (theApp.uploadqueue->RemoveFromWaitingQueue(pClient, true))
+				return json{{"ok", true}, {"removed", "queue"}};
+			if (theApp.uploadqueue->RemoveFromUploadQueue(pClient, _T("Removed by pipe API"), true, true))
+				return json{{"ok", true}, {"removed", "slot"}};
+
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("upload client is not active or queued");
+			return json();
+		}
+
+		if (!theApp.uploadqueue->RemoveFromUploadQueue(pClient, _T("Released upload slot by pipe API"), true, true)) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("client does not currently hold an upload slot");
+			return json();
+		}
+		return json{{"ok", true}};
 	}
 
 	if (strCommand == "transfers/list") {
