@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "KnownFileList.h"
 #include "SharedFileList.h"
+#include "SharedFileListSeams.h"
 #include "Packets.h"
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "kademlia/kademlia/search.h"
@@ -985,7 +986,16 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 {
 	ASSERT(pFile->GetFileIdentifier().HasExpectedMD4HashCount());
 	ASSERT(!pFile->IsKindOf(RUNTIME_CLASS(CPartFile)) || !static_cast<CPartFile*>(pFile)->m_bMD4HashsetNeeded);
-	ASSERT(ShouldBeShared(pFile->GetPath(), NULL, false));
+	/** Accept files shared by directory rules and files explicitly shared by full path. */
+	const bool bSharedByDirectory = ShouldBeShared(pFile->GetPath(), NULL, false);
+	const bool bSharedByExactPath = !pFile->GetFilePath().IsEmpty() && ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), false);
+	const bool bShouldBeShared = SharedFileListSeams::CanAddSharedFile(bSharedByDirectory, bSharedByExactPath);
+	ASSERT(bShouldBeShared);
+	if (!bShouldBeShared) {
+		DebugLogWarning(_T("Rejected shared-file add for unshared path: \"%s\""), (LPCTSTR)pFile->GetFilePath());
+		return false;
+	}
+
 	CCKey key(pFile->GetFileHash());
 	CKnownFile *pFileInMap;
 	if (m_Files_map.Lookup(key, pFileInMap)) {
