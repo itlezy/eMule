@@ -138,13 +138,6 @@
 
 #define UNLIMITED				_UI32_MAX
 
-#define PROXYTYPE_NOPROXY	0
-#define PROXYTYPE_SOCKS4	1
-#define PROXYTYPE_SOCKS4A	2
-#define PROXYTYPE_SOCKS5	3
-#define PROXYTYPE_HTTP10	4
-#define PROXYTYPE_HTTP11	5
-
 // client <-> server
 #define OP_LOGINREQUEST			0x01	//<HASH 16><ID 4><PORT 2><1 Tag_set>
 #define OP_REJECT				0x05	//(null)

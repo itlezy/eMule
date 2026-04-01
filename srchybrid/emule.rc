@@ -206,27 +206,6 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
 END
 
-IDD_PPG_PROXY DIALOGEX 0, 0, 300, 350
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Proxy"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "Settings",IDC_AUTH_LBL2,4,2,223,75
-    CONTROL         "Enable proxy",IDC_ENABLEPROXY,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,13,178,9
-    RTEXT           "Proxy Type",IDC_PROXYTYPE_LBL,11,27,58,8
-    COMBOBOX        IDC_PROXYTYPE,73,26,147,71,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    RTEXT           "Proxy Address",IDC_PROXYNAME_LBL,11,43,58,8
-    EDITTEXT        IDC_PROXYNAME,73,42,147,13,ES_AUTOHSCROLL
-    RTEXT           "Proxy Port",IDC_PROXYPORT_LBL,11,59,58,8
-    EDITTEXT        IDC_PROXYPORT,73,58,34,13,ES_AUTOHSCROLL | ES_NUMBER
-    GROUPBOX        "Authentication",IDC_AUTH_LBL,4,79,223,60
-    CONTROL         "Enable authentication",IDC_ENABLEAUTH,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,90,187,9
-    RTEXT           "User Name",IDC_USERNAME_LBL,11,105,58,8
-    EDITTEXT        IDC_USERNAME_A,73,104,147,13,ES_AUTOHSCROLL
-    RTEXT           "Password",IDC_PASSWORD_LBL,11,121,58,8
-    EDITTEXT        IDC_PASSWORD,73,120,147,13,ES_PASSWORD | ES_AUTOHSCROLL
-END
-
 IDD_PPG_SERVER DIALOGEX 0, 0, 300, 350
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Server"
@@ -1713,24 +1692,6 @@ IDR_WIDECHARLOWERMAP    WIDECHARMAP             "res\\WideCharLowerMap.bin"
 // Dialog Info
 //
 
-IDD_PPG_PROXY DLGINIT
-BEGIN
-    IDC_PROXYTYPE, 0x403, 9, 0
-0x6f4e, 0x5020, 0x6f72, 0x7978, "\000"
-    IDC_PROXYTYPE, 0x403, 8, 0
-0x6f53, 0x6b63, 0x2073, 0x0034,
-    IDC_PROXYTYPE, 0x403, 9, 0
-0x6f53, 0x6b63, 0x2073, 0x6134, "\000"
-    IDC_PROXYTYPE, 0x403, 8, 0
-0x6f53, 0x6b63, 0x2073, 0x0035,
-    IDC_PROXYTYPE, 0x403, 9, 0
-0x5448, 0x5054, 0x3120, 0x302e, "\000"
-    IDC_PROXYTYPE, 0x403, 9, 0
-0x5448, 0x5054, 0x3120, 0x312e, "\000"
-    0
-END
-
-
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -3024,12 +2985,6 @@ BEGIN
     IDS_WEBSRV              "Web Interface"
     IDS_SW_REFETCHRES       "Refetch Results"
     IDS_FILEHASH            "File Hash"
-    IDS_PW_PROXY            "Proxy"
-    IDS_PROXY_ENABLE        "Enable proxy"
-    IDS_PROXY_TYPE          "Proxy type:"
-    IDS_PROXY_HOST          "Proxy host:"
-    IDS_PROXY_PORT          "Proxy port:"
-    IDS_PROXY_AUTH          "Enable authentication"
     IDS_AUTH                "Authentication"
     IDS_SHOWCATINFO         "Show download info on category tabs"
     IDS_SW_SEARCHINGINFO    "Search in progress. Refetch results in a moment!"

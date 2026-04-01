@@ -534,7 +534,6 @@ bool	CPreferences::m_bAdjustNTFSDaylightFileTime = false; //'true' causes rehash
 bool	CPreferences::m_bRearrangeKadSearchKeywords;
 bool	CPreferences::m_bBanBadKadNodes;
 
-ProxySettings CPreferences::proxy;
 bool	CPreferences::showCatTabInfos;
 bool	CPreferences::resumeSameCat;
 bool	CPreferences::dontRecreateGraphs;
@@ -1860,19 +1859,6 @@ void CPreferences::SavePreferences()
 
 	ini.WriteBool(_T("EnableSearchResultSpamFilter"), m_bEnableSearchResultFilter);
 
-
-	///////////////////////////////////////////////////////////////////////////
-	// Section: "Proxy"
-	//
-	ini.WriteBool(_T("ProxyEnablePassword"), proxy.bEnablePassword, _T("Proxy"));
-	ini.WriteBool(_T("ProxyEnableProxy"), proxy.bUseProxy, _T("Proxy"));
-	ini.WriteString(_T("ProxyName"), proxy.host, _T("Proxy"));
-	ini.WriteString(_T("ProxyPassword"), proxy.password, _T("Proxy"));
-	ini.WriteString(_T("ProxyUser"), proxy.user, _T("Proxy"));
-	ini.WriteInt(_T("ProxyPort"), proxy.port, _T("Proxy"));
-	ini.WriteInt(_T("ProxyType"), proxy.type, _T("Proxy"));
-
-
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Statistics"
 	//
@@ -2357,19 +2343,6 @@ void CPreferences::LoadPreferences()
 	m_byCryptTCPPaddingLength = (uint8)min(nTmp, 254);
 
 	m_bEnableSearchResultFilter = ini.GetBool(_T("EnableSearchResultSpamFilter"), true);
-
-	///////////////////////////////////////////////////////////////////////////
-	// Section: "Proxy"
-	//
-	proxy.bEnablePassword = ini.GetBool(_T("ProxyEnablePassword"), false, _T("Proxy"));
-	proxy.bUseProxy = ini.GetBool(_T("ProxyEnableProxy"), false);
-	proxy.host = ini.GetString(_T("ProxyName"), _T(""));
-	proxy.user = ini.GetString(_T("ProxyUser"), _T(""));
-	proxy.password = ini.GetString(_T("ProxyPassword"), _T(""));
-	proxy.port = (uint16)ini.GetInt(_T("ProxyPort"), 1080);
-	proxy.type = (uint16)ini.GetInt(_T("ProxyType"), PROXYTYPE_NOPROXY);
-
-
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Statistics"
 	//

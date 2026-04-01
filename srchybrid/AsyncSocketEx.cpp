@@ -802,12 +802,6 @@ void CAsyncSocketEx::RemoveAllLayers()
 {
 }
 
-BOOL CAsyncSocketEx::AddLayer(CAsyncSocketExLayer * /*pLayer*/)
-{
-	WSASetLastError(WSAEOPNOTSUPP);
-	return FALSE;
-}
-
 BOOL CAsyncSocketEx::GetSockOpt(int nOptionName, void *lpOptionValue, int *lpOptionLen, int nLevel) const
 {
 	return getsockopt(m_SocketData.hSocket, nLevel, nOptionName, static_cast<char*>(lpOptionValue), lpOptionLen) != SOCKET_ERROR;

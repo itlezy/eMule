@@ -265,7 +265,6 @@
     <ClCompile Include="PPgGeneral.cpp" />
     <ClCompile Include="PPgMessages.cpp" />
     <ClCompile Include="PPgNotify.cpp" />
-    <ClCompile Include="PPgProxy.cpp" />
     <ClCompile Include="PPgSecurity.cpp" />
     <ClCompile Include="PPgServer.cpp" />
     <ClCompile Include="PPgStats.cpp" />
@@ -371,9 +370,7 @@
     <ClInclude Include="AddFriend.h" />
     <ClInclude Include="AddSourceDlg.h" />
     <ClInclude Include="AICHSyncThread.h" />
-    <ClInclude Include="AsyncProxySocketLayer.h" />
     <ClInclude Include="AsyncSocketEx.h" />
-    <ClInclude Include="AsyncSocketExLayer.h" />
     <ClInclude Include="BindAddressResolver.h" />
     <ClInclude Include="BarShader.h" />
     <ClInclude Include="ButtonsTabCtrl.h" />
@@ -535,7 +532,6 @@
     <ClInclude Include="PPgGeneral.h" />
     <ClInclude Include="PPgMessages.h" />
     <ClInclude Include="PPgNotify.h" />
-    <ClInclude Include="PPgProxy.h" />
     <ClInclude Include="PPgSecurity.h" />
     <ClInclude Include="PPgServer.h" />
     <ClInclude Include="PPgStats.h" />
@@ -555,6 +551,7 @@
     <ClInclude Include="SafeFile.h" />
     <ClInclude Include="Scanner.h" />
     <ClInclude Include="SearchDlg.h" />
+    <ClInclude Include="SocketPolicySeams.h" />
     <ClInclude Include="SearchExpr.h" />
     <ClInclude Include="SearchFile.h" />
     <ClInclude Include="SearchList.h" />

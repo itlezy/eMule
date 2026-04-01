@@ -16,8 +16,6 @@
 #include <atomic>
 #include <memory>
 #include "AsyncSocketExSeams.h"
-
-class CAsyncSocketExLayer;
 struct CAsyncSocketPollEntry;
 class CSocketPoller;
 
@@ -75,8 +73,6 @@ public:
 	virtual bool OnHostNameResolved(const SOCKADDR_IN *pSockAddr);
 
 	virtual void RemoveAllLayers();
-	BOOL AddLayer(CAsyncSocketExLayer *pLayer);
-	bool IsLayerAttached() const { return false; }
 
 	SOCKET GetSocketHandle() const { return m_SocketData.hSocket; }
 	BOOL TriggerEvent(long lEvent);

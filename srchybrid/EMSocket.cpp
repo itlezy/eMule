@@ -86,7 +86,6 @@ IMPLEMENT_DYNAMIC(CEMSocket, CEncryptedStreamSocket)
 CEMSocket::CEMSocket()
 	: m_uTimeOut(thePrefs.GetConnectionTimeout()) // default timeout for ed2k sockets
 	, byConnected(EMS_NOTCONNECTED)
-	, m_bProxyConnectFailed()
 	, downloadLimitEnable()
 	, pendingOnReceive()
 	, downloadLimit()
@@ -132,40 +131,20 @@ CEMSocket::~CEMSocket()
 	theApp.uploadBandwidthThrottler->RemoveFromAllQueues(this);
 
 	ClearQueues();
-	CEMSocket::RemoveAllLayers();
+	CEncryptedStreamSocket::RemoveAllLayers();
 	AsyncSelect(0);
 }
 
 // Connection initialization is handled by the socket class itself.
 bool CEMSocket::Connect(const CString &sHostAddress, UINT nHostPort)
 {
-	InitProxySupport();
-	if (m_bProxyConnectFailed)
-		return false;
 	return CEncryptedStreamSocket::Connect(sHostAddress, nHostPort);
 }
 
 // Connection initialization is handled by the socket class itself.
 BOOL CEMSocket::Connect(const LPSOCKADDR pSockAddr, int iSockAddrLen)
 {
-	InitProxySupport();
-	if (m_bProxyConnectFailed)
-		return FALSE;
 	return CEncryptedStreamSocket::Connect(pSockAddr, iSockAddrLen);
-}
-
-void CEMSocket::InitProxySupport()
-{
-	m_strLastProxyError.Empty();
-	m_bProxyConnectFailed = false;
-
-	const ProxySettings &settings = thePrefs.GetProxySettings();
-	if (settings.bUseProxy && settings.type != PROXYTYPE_NOPROXY) {
-		m_bProxyConnectFailed = true;
-		m_strLastProxyError = _T("Proxy support is not available with the WSAPoll TCP backend");
-		LogWarning(LOG_DEFAULT, _T("%s"), (LPCTSTR)m_strLastProxyError);
-		WSASetLastError(WSAEOPNOTSUPP);
-	}
 }
 
 void CEMSocket::ClearQueues()
@@ -212,7 +191,7 @@ void CEMSocket::OnClose(int nErrorCode)
 	theApp.uploadBandwidthThrottler->RemoveFromAllQueues(this);
 
 	CEncryptedStreamSocket::OnClose(nErrorCode);
-	RemoveAllLayers();
+	CEncryptedStreamSocket::RemoveAllLayers();
 	ClearQueues();
 }
 
@@ -955,11 +934,6 @@ int CEMSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 	return recvRetCode;
 }
 
-void CEMSocket::RemoveAllLayers()
-{
-	CEncryptedStreamSocket::RemoveAllLayers();
-}
-
 /**
  * Removes all packets from the standard queue that don't have to be sent for the socket to be able to send a control packet.
  *
@@ -989,7 +963,6 @@ void CEMSocket::AssertValid() const
 	const_cast<CEMSocket*>(this)->sendLocker.Lock();
 
 	ASSERT(byConnected == EMS_DISCONNECTED || byConnected == EMS_NOTCONNECTED || byConnected == EMS_CONNECTED);
-	CHECK_BOOL(m_bProxyConnectFailed);
 	(void)downloadLimit;
 	CHECK_BOOL(downloadLimitEnable);
 	CHECK_BOOL(pendingOnReceive);
@@ -1029,18 +1002,7 @@ CString CEMSocket::GetFullErrorMessage(DWORD dwError) const
 {
 	CString strError;
 
-	// Proxy error
-	if (!GetLastProxyError().IsEmpty()) {
-		strError = GetLastProxyError();
-		// If we had a proxy error and the socket error is WSAECONNABORTED, we just 'aborted'
-		// the TCP connection ourself - no need to add that self-created error too.
-		if (dwError == WSAECONNABORTED)
-			return strError;
-	}
-	// Winsock error
 	if (dwError) {
-		if (!strError.IsEmpty())
-			strError += _T(": ");
 		strError += GetErrorMessage(dwError, 1);
 	}
 

@@ -100,7 +100,6 @@
 #define eMule_FAQ_Preferences_General	101
 #define eMule_FAQ_Preferences_Notifications	103
 #define eMule_FAQ_Preferences_Preferences_ini	104
-#define eMule_FAQ_Preferences_Proxy	105
 #define eMule_FAQ_Preferences_Security	107
 #define eMule_FAQ_Preferences_Server	108
 #define eMule_FAQ_Preferences_Statistics	109

@@ -17,6 +17,7 @@
 #pragma once
 
 #include "BindAddressResolver.h"
+#include "Opcodes.h"
 
 extern LPCTSTR const strDefaultToolbar;
 
@@ -63,17 +64,6 @@ struct Preferences_Ext_Struct
 	WINDOWPLACEMENT EmuleWindowPlacement;
 };
 #pragma pack(pop)
-
-struct ProxySettings
-{
-	CString	host;
-	CString	user;
-	CString	password;
-	uint16	type;
-	uint16	port;
-	bool	bEnablePassword;
-	bool	bUseProxy;
-};
 
 struct Category_Struct
 {
@@ -470,7 +460,6 @@ public:
 	static bool		m_bForceSpeedsToKB;
 	static bool		m_bAutoShowLookups;
 	static bool		m_bExtraPreviewWithMenu;
-	static ProxySettings proxy;
 
 	static bool		showCatTabInfos;
 	static bool		resumeSameCat;
@@ -1111,9 +1100,6 @@ public:
 	static void		SetNetworkKademlia(bool val)		{ networkkademlia = val; }
 	static bool		GetNetworkED2K()					{ return networked2k; }
 	static void		SetNetworkED2K(bool val)			{ networked2k = val; }
-
-	static const ProxySettings& GetProxySettings()		{ return proxy; }
-	static void		SetProxySettings(const ProxySettings &proxysettings) { proxy = proxysettings; }
 
 	static bool		ShowCatTabInfos()					{ return showCatTabInfos; }
 	static void		ShowCatTabInfos(bool in)			{ showCatTabInfos = in; }

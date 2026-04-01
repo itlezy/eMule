@@ -124,13 +124,6 @@ void CServerSocket::OnConnect(int nErrorCode)
 	case WSAEADDRINUSE:
 		state = CS_SERVERDEAD;
 		break;
-	case WSAECONNABORTED:
-		if (m_bProxyConnectFailed) {
-			m_bProxyConnectFailed = false;
-			state = CS_SERVERDEAD;
-			break;
-		}
-		/* fall through */
 	default:
 		state = CS_FATALERROR;
 	}

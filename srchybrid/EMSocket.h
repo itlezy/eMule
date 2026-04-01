@@ -62,11 +62,6 @@ public:
 	virtual void OnSend(int nErrorCode);
 	virtual void OnReceive(int nErrorCode);
 
-	void InitProxySupport();
-	virtual void RemoveAllLayers();
-	const CString GetLastProxyError() const					{ return m_strLastProxyError; }
-	bool GetProxyConnectFailed() const						{ return m_bProxyConnectFailed; }
-
 	CString GetFullErrorMessage(DWORD dwError) const;
 
 	DWORD GetLastCalledSend() const							{ return lastCalledSend; }
@@ -90,10 +85,8 @@ protected:
 	virtual void	DataReceived(const BYTE *pcData, UINT uSize);
 	virtual bool	PacketReceived(Packet *packet) = 0;
 	virtual void	OnError(int nErrorCode) = 0;
-	CString m_strLastProxyError;
 	UINT	m_uTimeOut;
 	uint8	byConnected;
-	bool	m_bProxyConnectFailed;
 
 private:
 	virtual SocketSentBytes SendEM(uint32 maxNumberOfBytesToSend, uint32 minFragSize, bool onlyAllowedToSendControlPacket);

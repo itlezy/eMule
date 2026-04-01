@@ -33,6 +33,7 @@
 #include "IPFilter.h"
 #include "IP2Country.h"
 #include "Friend.h"
+#include "SocketPolicySeams.h"
 #include "Statistics.h"
 #include "ServerConnect.h"
 #include "ServerConnectionGuards.h"
@@ -1195,12 +1196,7 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 	// to the 'dead sources' lists so we don't waste resources and bandwidth to connect
 	// to that client again within the next hour.
 	//
-	// But, if we were just connecting to a proxy and failed to do so, that client IP
-	// is supposed to be valid until the proxy itself tells us that the IP can not be
-	// connected to (e.g. 504 Bad Gateway)
-	//
-	if ((m_eConnectingState != CCS_NONE && !(socket && socket->GetProxyConnectFailed()))
-		|| m_eDownloadState == DS_ERROR)
+	if (ShouldMarkClientAsDeadSource(m_eConnectingState != CCS_NONE, m_eDownloadState == DS_ERROR))
 	{
 		if (m_eDownloadState != DS_NONE) // Unable to connect = Remove any download state
 			theApp.downloadqueue->RemoveSource(this);

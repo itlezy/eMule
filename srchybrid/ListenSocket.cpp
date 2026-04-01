@@ -32,6 +32,7 @@
 #include "ServerList.h"
 #include "Server.h"
 #include "ServerConnect.h"
+#include "SocketPolicySeams.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "ClientListCtrl.h"
@@ -1659,7 +1660,7 @@ void CClientReqSocket::OnConnect(int nErrorCode)
 	if (nErrorCode) {
 		if (thePrefs.GetVerbose()) {
 			const CString &strTCPError(GetFullErrorMessage(nErrorCode));
-			if ((nErrorCode != WSAECONNREFUSED && nErrorCode != WSAETIMEDOUT) || !GetLastProxyError().IsEmpty())
+			if (ShouldLogVerboseClientConnectError(nErrorCode))
 				DebugLogError(_T("Client TCP socket (OnConnect): %s; %s"), (LPCTSTR)strTCPError, (LPCTSTR)DbgGetClientInfo());
 			Disconnect(strTCPError);
 		} else
@@ -1922,7 +1923,7 @@ bool CListenSocket::StartListening()
 	// it's still less than not using SO_CONDITIONAL_ACCEPT. But, we have to lookup
 	// the IP 3 times instead of 1 time.
 
-	//if (thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().bUseProxy) {
+	//if (thePrefs.GetConditionalTCPAccept()) {
 	//	int iOptVal = 1;
 	//	VERIFY( SetSockOpt(SO_CONDITIONAL_ACCEPT, &iOptVal, sizeof iOptVal) );
 	//}

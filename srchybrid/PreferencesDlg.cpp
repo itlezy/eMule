@@ -72,7 +72,6 @@ CPreferencesDlg::CPreferencesDlg()
 	m_wndStats.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndTweaks.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndSecurity.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndProxy.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndMessages.m_psp.dwFlags &= ~PSH_HASHELP;
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
 	m_wndDebug.m_psp.dwFlags &= ~PSH_HASHELP;
@@ -81,7 +80,6 @@ CPreferencesDlg::CPreferencesDlg()
 	CTreePropSheet::SetPageIcon(&m_wndGeneral, _T("Preferences"));
 	CTreePropSheet::SetPageIcon(&m_wndDisplay, _T("DISPLAY"));
 	CTreePropSheet::SetPageIcon(&m_wndConnection, _T("CONNECTION"));
-	CTreePropSheet::SetPageIcon(&m_wndProxy, _T("PROXY"));
 	CTreePropSheet::SetPageIcon(&m_wndServer, _T("SERVER"));
 	CTreePropSheet::SetPageIcon(&m_wndDirectories, _T("FOLDERS"));
 	CTreePropSheet::SetPageIcon(&m_wndFiles, _T("Transfer"));
@@ -97,7 +95,6 @@ CPreferencesDlg::CPreferencesDlg()
 	AddPage(&m_wndGeneral);
 	AddPage(&m_wndDisplay);
 	AddPage(&m_wndConnection);
-	AddPage(&m_wndProxy);
 	AddPage(&m_wndServer);
 	AddPage(&m_wndDirectories);
 	AddPage(&m_wndFiles);
@@ -165,13 +162,12 @@ void CPreferencesDlg::Localize()
 	m_wndNotify.Localize();
 	m_wndSecurity.Localize();
 	m_wndTweaks.Localize();
-	m_wndProxy.Localize();
 	m_wndMessages.Localize();
 
 	if (GetPageTreeControl()) {
-		static const UINT uids[12] =
+		static const UINT uids[] =
 		{
-			IDS_PW_GENERAL, IDS_PW_DISPLAY, IDS_CONNECTION, IDS_PW_PROXY, IDS_PW_SERVER,
+			IDS_PW_GENERAL, IDS_PW_DISPLAY, IDS_CONNECTION, IDS_PW_SERVER,
 			IDS_PW_DIR, IDS_PW_FILES, IDS_PW_EKDEV_OPTIONS, IDS_STATSSETUPINFO,
 			IDS_MESSAGESCOMMENTS, IDS_SECURITY, IDS_PW_TWEAK
 		};
