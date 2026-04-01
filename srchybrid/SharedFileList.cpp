@@ -986,10 +986,10 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 {
 	ASSERT(pFile->GetFileIdentifier().HasExpectedMD4HashCount());
 	ASSERT(!pFile->IsKindOf(RUNTIME_CLASS(CPartFile)) || !static_cast<CPartFile*>(pFile)->m_bMD4HashsetNeeded);
-	/** Accept files shared by directory rules and files explicitly shared by full path. */
+	/** Accept part files plus files shared by directory rules or explicit full-path entries. */
 	const bool bSharedByDirectory = ShouldBeShared(pFile->GetPath(), NULL, false);
 	const bool bSharedByExactPath = !pFile->GetFilePath().IsEmpty() && ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), false);
-	const bool bShouldBeShared = SharedFileListSeams::CanAddSharedFile(bSharedByDirectory, bSharedByExactPath);
+	const bool bShouldBeShared = SharedFileListSeams::CanAddSharedFile(pFile->IsPartFile(), bSharedByDirectory, bSharedByExactPath);
 	ASSERT(bShouldBeShared);
 	if (!bShouldBeShared) {
 		DebugLogWarning(_T("Rejected shared-file add for unshared path: \"%s\""), (LPCTSTR)pFile->GetFilePath());

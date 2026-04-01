@@ -11,6 +11,15 @@
 - Expanded the architecture notes in [`docs/ARCH-THREADING.md`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\docs\ARCH-THREADING.md) and linked the audit note from [`docs/AUDIT-WWMOD.md`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\docs\AUDIT-WWMOD.md).
 - Added the header-only seam [`srchybrid/AsyncSocketExSeams.h`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\AsyncSocketExSeams.h) to pin the `WSAPoll` event-selection and close-classification rules in unit tests.
 - Added the first shared backend regression file [`src/async_socket_ex.tests.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build-tests\src\async_socket_ex.tests.cpp) and wired it into [`emule-tests.vcxproj`](C:\prj\p2p\eMule\eMulebb\eMule-build-tests\emule-tests.vcxproj).
+- Hardened the runtime validation workflow with [`helpers/helper-runtime-wsapoll-smoke.ps1`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\helpers\helper-runtime-wsapoll-smoke.ps1), including explicit `-c` profile cloning, `hide.me` bind enforcement, sampled socket/window state capture, and failure checks for startup assertion dialogs or zero observed socket activity.
+- Fixed the `WSAPoll` bring-up regressions found during live validation:
+  - restored the required static-MFC socket thread-state bootstrap in [`srchybrid/Emule.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\Emule.cpp) for UDP `CAsyncSocket` startup,
+  - corrected [`srchybrid/SharedFileList.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\SharedFileList.cpp) so part files still bypass normal shared-directory checks,
+  - corrected the delayed server-handshake send transition in [`srchybrid/EncryptedStreamSocket.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\EncryptedStreamSocket.cpp),
+  - serialized [`srchybrid/EMSocket.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\EMSocket.cpp) receive reassembly to prevent races between the poll thread and legacy download-limit receive pokes.
+- Added new seam coverage for the runtime fixes:
+  - [`srchybrid/SharedFileListSeams.h`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\SharedFileListSeams.h) plus updated [`src/shared_file_list.tests.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build-tests\src\shared_file_list.tests.cpp) now cover part-file admission,
+  - [`srchybrid/EncryptedStreamSocketSeams.h`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\EncryptedStreamSocketSeams.h) plus [`src/encrypted_stream_socket.tests.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build-tests\src\encrypted_stream_socket.tests.cpp) now cover the delayed-server-send completion rule.
 
 ## Current State
 
@@ -18,13 +27,21 @@
 - `Release|x64` is currently blocked by an unrelated pre-existing issue in [`srchybrid/Preferences.h`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\srchybrid\Preferences.h) where `MIN_UP_CLIENTS_ALLOWED` and `MAX_UP_CLIENTS_ALLOWED` are undefined; that was not introduced by the socket refactor.
 - Shared regression coverage now exists for the new TCP backend event-classification rules:
   - `emule-tests.exe --source-file='*async_socket_ex.tests.cpp'` passes.
+  - `emule-tests.exe --source-file='*shared_file_list.tests.cpp'` passes.
+  - `emule-tests.exe --source-file='*encrypted_stream_socket.tests.cpp'` passes.
   - the shared suite also passes with `--source-file-exclude='*mapped_file_reader.tests.cpp'`.
 - The remaining shared-suite failure is pre-existing and environment-sensitive in [`src/mapped_file_reader.tests.cpp`](C:\prj\p2p\eMule\eMulebb\eMule-build-tests\src\mapped_file_reader.tests.cpp), where recursive enumeration of sampled temp files threw `recursive_directory_iterator::operator++: The system cannot find the path specified.`
-- Runtime validation is still open. The highest-risk areas are callback ordering, close/read draining, event-mask updates racing the poll thread, and socket teardown during in-flight callbacks.
+- Runtime smoke validation now passes:
+  - [`helpers/helper-runtime-wsapoll-smoke.ps1`](C:\prj\p2p\eMule\eMulebb\eMule-build\eMule\helpers\helper-runtime-wsapoll-smoke.ps1) completes successfully against the debug build with explicit `-c` profile, `hide.me` binding, observed TCP/UDP socket activity, non-empty logs, no crash dumps, no startup failure window, and graceful shutdown.
+  - the passing smoke artifact is [`logs/20260401-184019-wsapoll-smoke`](C:\prj\p2p\eMule\eMulebb\eMule-build\logs\20260401-184019-wsapoll-smoke).
+- The `WSAPoll` TCP backend is now compile-clean, seam-tested, and smoke-validated for the current debug workflow, but it has not yet been stress-tested under heavier concurrency or long-duration live traffic.
 
 ## Next Chunk
 
-- Commit the socket seam and the first shared regression batch as a separate WIP/FIX block.
-- Broaden shared coverage beyond pure classification into connect retry, accept burst, and close/drain execution seams without binding the tests to the full UI runtime.
-- Run a live `emule.exe -c ...` smoke pass with explicit config root, VPN bind preference, and file logging enabled to catch thread-affinity or lifecycle issues that unit coverage will not expose.
+- Commit the runtime-hardening fixes in granular source and shared-test commits.
+- Add deeper regression coverage for execution behavior that is still only smoke-covered:
+  - receive/write interleaving around `CEMSocket`,
+  - connect / delayed-send lifecycle around `CEncryptedStreamSocket`,
+  - close/drain ordering and callback serialization in the poller.
+- Run a longer soak or targeted traffic replay against the passing smoke profile to look for CPU spin, stale callback delivery, or teardown races that do not show up in the bounded 90-second run.
 - Decide whether to stabilize or quarantine the `mapped_file_reader` sampled-temp-file suite so it stops masking unrelated regressions during full shared-suite runs.

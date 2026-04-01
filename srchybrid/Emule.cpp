@@ -260,6 +260,25 @@ static BOOL InitWinsock2(WSADATA *lpwsaData)
 		// setup for termination of sockets
 		pState->m_pfnSockTerm = &AfxSocketTerm;
 	}
+#ifndef _AFXDLL
+	/**
+	 * @brief Bootstraps the MFC socket thread-state maps still required by UDP `CAsyncSocket` users.
+	 *
+	 * The new TCP backend no longer depends on the legacy helper-window socket path, but the
+	 * startup UDP sockets still call into `CAsyncSocket::Create()` on the main thread. Static MFC
+	 * builds do not populate those per-thread maps unless we do it here, and removing that setup
+	 * trips the `CMapPtrToPtr::GetValueAt` assertion inside `CAsyncSocket::LookupHandle`.
+	 */
+	{
+		AFX_MODULE_THREAD_STATE *pThreadState = AfxGetModuleThreadState();
+		if (pThreadState->m_pmapSocketHandle == NULL)
+			pThreadState->m_pmapSocketHandle = new CMapPtrToPtr;
+		if (pThreadState->m_pmapDeadSockets == NULL)
+			pThreadState->m_pmapDeadSockets = new CMapPtrToPtr;
+		if (pThreadState->m_plistSocketNotifications == NULL)
+			pThreadState->m_plistSocketNotifications = new CPtrList;
+	}
+#endif
 	return TRUE;
 }
 

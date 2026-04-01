@@ -231,3 +231,52 @@
   I used a regex alternation for literal strings that contained metacharacters instead of switching to fixed-string or separate searches.
 - Fix:
   use `rg -F` for literal tokens, or split the searches into separate `rg` / `Select-String` calls when the literals are not safe regex input.
+
+- Error:
+  `rg` failed with `unrecognized flag -|`.
+- Cause:
+  I passed a pattern beginning with `-` as a bare positional argument, so `rg` parsed the search pattern as another command-line flag.
+- Fix:
+  pass `--` before patterns that may begin with `-`, or use `rg -e '<pattern>' ...` to force explicit pattern parsing.
+
+- Error:
+  `helper-runtime-wsapoll-smoke.ps1` failed with `Cannot find an overload for "new" and the argument count: "1".`
+- Cause:
+  I tried to construct `System.Collections.Generic.List[string]` directly from the `Get-Content` result, but that constructor overload was not available in the active PowerShell/.NET binding.
+- Fix:
+  create the generic list with the parameterless constructor and append file lines explicitly before mutating the INI content.
+
+- Error:
+  `helper-runtime-wsapoll-smoke.ps1` failed with `Cannot bind argument to parameter 'Value' because it is an empty string.`
+- Cause:
+  I declared the INI `Value` parameter as a mandatory string without allowing empty-string input, but the smoke profile intentionally writes empty values such as `BindInterface=` and `TempDirs=`.
+- Fix:
+  add `[AllowEmptyString()]` to the parameter declaration when empty INI values are valid and expected.
+
+- Error:
+  `Select-Object -Index 160..190` failed with `Cannot bind parameter 'Index'. Cannot convert value "160..190" to type "System.Int32".`
+- Cause:
+  I again passed a PowerShell range expression directly to `Select-Object -Index` instead of materializing the slice first.
+- Fix:
+  use array slicing like `$content[160..190]`, or pass an actual integer array variable to `-Index`.
+
+- Error:
+  `cdb.exe -pv -p <pid>` failed with `Unable to examine process id <pid>, Win32 error 0n87`.
+- Cause:
+  I tried to use a non-invasive attach mode that was not accepted for that live debug target / process state.
+- Fix:
+  prefer a regular attach when safe, or fall back to `-assertfile`, dump capture, or other diagnostics instead of assuming `-pv` will work.
+
+- Error:
+  `rg` failed with `regex parse error: unclosed group` when I searched for several literal tokens around `Send(NULL|SendNegotiatingData...`.
+- Cause:
+  I again used a regex alternation for literal search text containing metacharacters instead of switching to fixed-string or split searches.
+- Fix:
+  use separate `rg -F` searches or `Select-String` for these literal code probes.
+
+- Error:
+  `rg` failed with `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed `...\AsyncSocketEx.*` as a target path.
+- Cause:
+  I slipped back into using a wildcard path argument with `rg`, which expects a concrete path plus `--glob` filters rather than Windows wildcard filenames.
+- Fix:
+  pass the real directory or file path, and add `--glob` only when filename filtering is actually needed.

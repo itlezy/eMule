@@ -74,6 +74,7 @@ Basic Obfuscated Handshake Protocol Client <-> Server:
 */
 #include "stdafx.h"
 #include "EncryptedStreamSocket.h"
+#include "EncryptedStreamSocketSeams.h"
 #include "emule.h"
 #include "md5sum.h"
 #include "Log.h"
@@ -385,6 +386,8 @@ void CEncryptedStreamSocket::OnSend(int)
 	if (m_pfiSendBuffer != NULL) {
 		ASSERT(m_StreamCryptState >= ECS_NEGOTIATING);
 		SendNegotiatingData(NULL, 0);
+		if (EncryptedStreamSocketSeams::ShouldCompleteDelayedServerSendAfterFlush(m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING, m_pfiSendBuffer != NULL))
+			m_NegotiatingState = ONS_COMPLETE;
 	}
 }
 

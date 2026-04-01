@@ -231,6 +231,15 @@ BOOL CEMSocket::AsyncSelect(long lEvent)
 
 void CEMSocket::OnReceive(int nErrorCode)
 {
+	/**
+	 * @brief Serializes packet reassembly across poll-thread callbacks and manual receive pokes.
+	 *
+	 * The legacy bandwidth-limit path can still call `OnReceive(0)` directly when buffered data should
+	 * be drained immediately. With the WSAPoll backend, real readiness callbacks now arrive from the
+	 * dedicated network thread, so protect the packet parser state from concurrent entry.
+	 */
+	CSingleLock receiveLock(&receiveLocker, TRUE);
+
 	// the 2 meg size was taken from another place
 	static char GlobalReadBuffer[2000000];
 

@@ -127,6 +127,7 @@ private:
 	CTypedPtrList<CPtrList, Packet*> controlpacket_queue;
 	CList<StandardPacketQueueEntry> standardpacket_queue;
 	CCriticalSection sendLocker;
+	CCriticalSection receiveLocker;
 	uint64	m_numberOfSentBytesCompleteFile;
 	uint64	m_numberOfSentBytesPartFile;
 	//uint64	m_numberOfSentBytesControlPacket;
