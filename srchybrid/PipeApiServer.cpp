@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "PipeApiServer.h"
 
+#include <algorithm>
 #include <vector>
 
 #include "ClientStateDefs.h"
@@ -55,6 +56,8 @@ namespace
 {
 static constexpr LPCWSTR PIPE_API_NAME = L"\\\\.\\pipe\\emule-api";
 static constexpr DWORD PIPE_API_BUFFER_SIZE = 64 * 1024;
+static constexpr DWORD PIPE_API_COMMAND_TIMEOUT_MS = SEC2MS(30);
+static constexpr DWORD PIPE_API_COMMAND_POLL_MS = 100;
 
 struct SPipeApiError
 {
@@ -605,6 +608,18 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 CPipeApiServer thePipeApiServer;
 
+SPipeApiCommandRequest::SPipeApiCommandRequest()
+	: hCompletedEvent(::CreateEvent(NULL, TRUE, FALSE, NULL))
+	, bCancelled(false)
+{
+}
+
+SPipeApiCommandRequest::~SPipeApiCommandRequest()
+{
+	if (hCompletedEvent != NULL)
+		VERIFY(::CloseHandle(hCompletedEvent));
+}
+
 CPipeApiServer::CPipeApiServer()
 	: m_bStopRequested(false)
 	, m_bConnected(false)
@@ -624,18 +639,24 @@ void CPipeApiServer::Start()
 		return;
 
 	m_bStopRequested.store(false);
+	m_writeWorker = std::thread(&CPipeApiServer::RunWriteWorker, this);
 	m_worker = std::thread(&CPipeApiServer::RunWorker, this);
 }
 
 void CPipeApiServer::Stop()
 {
 	m_bStopRequested.store(true);
+	m_writeCondition.notify_all();
 	WakePendingConnect();
 	DisconnectPipe();
 
 	if (m_worker.joinable()) {
 		::CancelSynchronousIo((HANDLE)m_worker.native_handle());
 		m_worker.join();
+	}
+	if (m_writeWorker.joinable()) {
+		::CancelSynchronousIo((HANDLE)m_writeWorker.native_handle());
+		m_writeWorker.join();
 	}
 
 	m_bConnected.store(false);
@@ -646,6 +667,26 @@ LRESULT CPipeApiServer::OnHandleCommand(WPARAM, LPARAM lParam)
 	SPipeApiCommandContext *pContext = reinterpret_cast<SPipeApiCommandContext*>(lParam);
 	if (pContext != NULL)
 		DispatchCommandLine(pContext->strRequestLine, pContext->strResponseLine);
+
+	for (;;) {
+		std::shared_ptr<SPipeApiCommandRequest> pRequest;
+		{
+			const std::lock_guard<std::mutex> commandLock(m_commandMutex);
+			if (m_pendingCommands.empty())
+				break;
+
+			pRequest = m_pendingCommands.front();
+			m_pendingCommands.pop_front();
+		}
+
+		if (pRequest == NULL)
+			continue;
+
+		if (!pRequest->bCancelled.load())
+			DispatchCommandLine(pRequest->strRequestLine, pRequest->strResponseLine);
+		if (pRequest->hCompletedEvent != NULL)
+			VERIFY(::SetEvent(pRequest->hCompletedEvent));
+	}
 	return 0;
 }
 
@@ -721,10 +762,45 @@ void CPipeApiServer::RunWorker()
 
 		m_bConnected.store(true);
 		m_strReadBuffer.clear();
+		m_writeCondition.notify_all();
 		NotifyStatsUpdated(true);
 		ProcessClient(hPipe);
 		m_bConnected.store(false);
 		DisconnectPipe();
+	}
+}
+
+void CPipeApiServer::RunWriteWorker()
+{
+	for (;;) {
+		CStringA strSerializedLine;
+		{
+			std::unique_lock<std::mutex> writeQueueLock(m_writeQueueMutex);
+			m_writeCondition.wait(writeQueueLock, [this]()
+			{
+				return m_bStopRequested.load() || !m_pendingWrites.empty();
+			});
+
+			if (m_bStopRequested.load())
+				return;
+
+			strSerializedLine = m_pendingWrites.front();
+			m_pendingWrites.pop_front();
+		}
+
+		HANDLE hPipe = INVALID_HANDLE_VALUE;
+		{
+			const std::lock_guard<std::mutex> pipeLock(m_pipeMutex);
+			hPipe = m_hPipe;
+		}
+
+		if (hPipe == INVALID_HANDLE_VALUE || !IsConnected())
+			continue;
+
+		if (!WriteUtf8Line(hPipe, strSerializedLine)) {
+			m_bConnected.store(false);
+			DisconnectPipe();
+		}
 	}
 }
 
@@ -735,19 +811,26 @@ bool CPipeApiServer::ProcessClient(HANDLE hPipe)
 		if (!ReadNextLine(hPipe, strRequestLine))
 			return false;
 
-		SPipeApiCommandContext context;
-		context.strRequestLine = strRequestLine;
+		CStringA strResponseLine;
+		std::shared_ptr<SPipeApiCommandRequest> pRequest = std::make_shared<SPipeApiCommandRequest>();
+		pRequest->strRequestLine = strRequestLine;
 
-		if (theApp.emuledlg != NULL && ::IsWindow(theApp.emuledlg->GetSafeHwnd()))
-			theApp.emuledlg->SendMessage(UM_PIPE_API_COMMAND, 0, reinterpret_cast<LPARAM>(&context));
-		else {
+		if (pRequest->hCompletedEvent == NULL || !QueueCommandRequest(pRequest)) {
 			SPipeApiError error;
+			error.strId = CStringA();
 			error.strCode = "EMULE_UNAVAILABLE";
 			error.strMessage = _T("eMule main window is not available");
-			context.strResponseLine = SerializeErrorLine(error);
+			strResponseLine = SerializeErrorLine(error);
+		} else if (!WaitForCommandResponse(pRequest, strResponseLine)) {
+			SPipeApiError error;
+			error.strCode = m_bStopRequested.load() ? "EMULE_UNAVAILABLE" : "EMULE_TIMEOUT";
+			error.strMessage = m_bStopRequested.load()
+				? _T("pipe API server is stopping")
+				: _T("pipe command timed out");
+			strResponseLine = SerializeErrorLine(error);
 		}
 
-		if (!context.strResponseLine.IsEmpty() && !WriteUtf8Line(hPipe, context.strResponseLine))
+		if (!strResponseLine.IsEmpty() && !WriteUtf8Line(hPipe, strResponseLine))
 			return false;
 	}
 	return true;
@@ -802,6 +885,69 @@ void CPipeApiServer::DispatchCommandLine(const CStringA &rLine, CStringA &rRespo
 	}
 }
 
+bool CPipeApiServer::QueueCommandRequest(const std::shared_ptr<SPipeApiCommandRequest> &pRequest)
+{
+	if (pRequest == NULL || theApp.emuledlg == NULL || !::IsWindow(theApp.emuledlg->GetSafeHwnd()))
+		return false;
+
+	{
+		const std::lock_guard<std::mutex> commandLock(m_commandMutex);
+		m_pendingCommands.push_back(pRequest);
+	}
+
+	if (theApp.emuledlg->PostMessage(UM_PIPE_API_COMMAND, 0, 0))
+		return true;
+
+	{
+		const std::lock_guard<std::mutex> commandLock(m_commandMutex);
+		const auto it = std::find(m_pendingCommands.begin(), m_pendingCommands.end(), pRequest);
+		if (it != m_pendingCommands.end())
+			m_pendingCommands.erase(it);
+	}
+	return false;
+}
+
+bool CPipeApiServer::WaitForCommandResponse(const std::shared_ptr<SPipeApiCommandRequest> &pRequest, CStringA &rResponseLine) const
+{
+	if (pRequest == NULL || pRequest->hCompletedEvent == NULL)
+		return false;
+
+	const DWORD dwStartTick = ::GetTickCount();
+	for (;;) {
+		if (m_bStopRequested.load()) {
+			pRequest->bCancelled.store(true);
+			return false;
+		}
+
+		const DWORD dwWaitResult = ::WaitForSingleObject(pRequest->hCompletedEvent, PIPE_API_COMMAND_POLL_MS);
+		if (dwWaitResult == WAIT_OBJECT_0) {
+			rResponseLine = pRequest->strResponseLine;
+			return true;
+		}
+		if (dwWaitResult == WAIT_FAILED) {
+			pRequest->bCancelled.store(true);
+			return false;
+		}
+		if (::GetTickCount() - dwStartTick >= PIPE_API_COMMAND_TIMEOUT_MS) {
+			pRequest->bCancelled.store(true);
+			return false;
+		}
+	}
+}
+
+bool CPipeApiServer::EnqueuePipeLine(const CStringA &rSerializedLine)
+{
+	if (!IsConnected())
+		return false;
+
+	{
+		const std::lock_guard<std::mutex> writeQueueLock(m_writeQueueMutex);
+		m_pendingWrites.push_back(rSerializedLine);
+	}
+	m_writeCondition.notify_one();
+	return true;
+}
+
 bool CPipeApiServer::WriteUtf8Line(HANDLE hPipe, const CStringA &rSerializedLine)
 {
 	const std::lock_guard<std::mutex> writeLock(m_writeMutex);
@@ -818,16 +964,7 @@ bool CPipeApiServer::WriteUtf8Line(HANDLE hPipe, const CStringA &rSerializedLine
 
 bool CPipeApiServer::WriteCurrentPipeLine(const CStringA &rSerializedLine)
 {
-	if (!IsConnected())
-		return false;
-
-	HANDLE hPipe = INVALID_HANDLE_VALUE;
-	{
-		const std::lock_guard<std::mutex> pipeLock(m_pipeMutex);
-		hPipe = m_hPipe;
-	}
-
-	return hPipe != INVALID_HANDLE_VALUE && WriteUtf8Line(hPipe, rSerializedLine);
+	return EnqueuePipeLine(rSerializedLine);
 }
 
 void CPipeApiServer::DisconnectPipe()
@@ -843,6 +980,11 @@ void CPipeApiServer::DisconnectPipe()
 		::CancelIoEx(hPipe, NULL);
 		::DisconnectNamedPipe(hPipe);
 		::CloseHandle(hPipe);
+	}
+
+	{
+		const std::lock_guard<std::mutex> writeQueueLock(m_writeQueueMutex);
+		m_pendingWrites.clear();
 	}
 }
 
