@@ -342,7 +342,6 @@ public:
 	uint16	net_stats[3];
 	uint8	m_TotalSearchesKad;
 	volatile bool m_bPreviewing;
-	volatile bool m_bRecoveringArchive; // Is archive recovery in progress
 	bool	m_bLocalSrcReqQueued;
 	bool	srcarevisible;				// used for downloadlistctrl
 	bool	m_bMD4HashsetNeeded;

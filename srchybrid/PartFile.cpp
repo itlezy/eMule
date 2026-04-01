@@ -27,7 +27,6 @@
 #include "UrlClient.h"
 #include "ED2KLink.h"
 #include "Preview.h"
-#include "ArchiveRecovery.h"
 #include "SearchFile.h"
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "kademlia/kademlia/search.h"
@@ -235,7 +234,6 @@ void CPartFile::Init()
 	memset(net_stats, 0, sizeof net_stats);
 	m_TotalSearchesKad = 0;
 	m_bPreviewing = false;
-	m_bRecoveringArchive = false;
 	m_bLocalSrcReqQueued = false;
 	srcarevisible = false;
 	m_bMD4HashsetNeeded = true;
@@ -321,7 +319,6 @@ void CPartFile::AssertValid() const
 	(void)net_stats;
 	(void)m_TotalSearchesKad;
 	CHECK_BOOL(m_bPreviewing);
-	CHECK_BOOL(m_bRecoveringArchive);
 	CHECK_BOOL(m_bLocalSrcReqQueued);
 	CHECK_BOOL(srcarevisible);
 	CHECK_BOOL(m_bMD4HashsetNeeded);
@@ -3506,8 +3503,7 @@ void CPartFile::PreviewFile()
 		return;
 
 	if (IsArchive(true)) {
-		if (!m_bRecoveringArchive && !m_bPreviewing)
-			CArchiveRecovery::recover(this, true, thePrefs.GetPreviewCopiedArchives());
+		/** Archive recovery was retired; archives now rely on external preview tools only. */
 		return;
 	}
 
@@ -3534,30 +3530,6 @@ bool CPartFile::IsReadyForPreview() const
 		return ePreviewAppsRes == CPreviewApps::Yes;
 
 	EPartFileStatus uStatus = GetStatus();
-	// Barry - Allow preview of archives only if length > 1k
-	if (IsArchive(true)) {
-		// check if we are already trying archive recovery on this part file
-		if (m_bRecoveringArchive)
-			return false;
-
-		// check part file state
-		if (inSet(uStatus, PS_COMPLETE, PS_COMPLETING))
-			return false;
-
-		// check available data size
-		if ((uint64)GetCompletedSize() < 1024)
-			return false;
-
-		// check free disk space
-		uint64 uMinFreeDiskSpace = (thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0)
-			? thePrefs.GetMinFreeDiskSpace()
-			: 20 * 1024 * 1024;
-		if (thePrefs.GetPreviewCopiedArchives())
-			uMinFreeDiskSpace += (uint64)m_nFileSize * 2;
-		else
-			uMinFreeDiskSpace += (uint64)GetCompletedSize() + 16 * 1024;
-		return GetFreeDiskSpaceX(GetTmpPath()) >= uMinFreeDiskSpace;
-	}
 
 	if (m_bPreviewing)
 		return false;

@@ -76,7 +76,6 @@ CPPgTweaks::CPPgTweaks()
 	: CPropertyPage(CPPgTweaks::IDD)
 	, m_ctrlTreeOptions(theApp.m_iDfltImageListColorFlags)
 	, m_htiA4AFSaveCpu()
-	, m_htiAutoArch()
 	, m_htiAutoTakeEd2kLinks()
 	, m_htiBroadband()
 	, m_htiBBLowIDDeboost()
@@ -134,7 +133,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiUDPReceiveBuffer()
 	, m_htiMinFreeDiskSpace()
 	, m_htiDateTimeFormat4Lists()
-	, m_htiPreviewCopiedArchives()
 	, m_htiPreviewOnIconDblClk()
 	, m_htiShowActiveDownloadsBold()
 	, m_htiUseSystemFontForMainControls()
@@ -193,7 +191,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_sDateTimeFormat4Lists()
 	, m_bA4AFSaveCpu()
 	, m_bAdjustNTFSDaylightFileTime()
-	, m_bAutoArchDisable(true)
 	, m_bAutoTakeEd2kLinks()
 	, m_bBBLowIDDeboost()
 	, m_bBBLowRatioBoost()
@@ -223,7 +220,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bMessageFromValidSourcesOnly()
 	, m_bPartiallyPurgeOldKnownFiles()
 	, m_bEnablePipeApiServer(false)
-	, m_bPreviewCopiedArchives()
 	, m_bPreviewOnIconDblClk()
 	, m_bRearrangeKadSearchKeywords()
 	, m_bReBarToolbar()
@@ -299,7 +295,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiFilterLANIPs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PW_FILTER), TVI_ROOT, m_bFilterLANIPs);
 		m_htiExtControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWEXTSETTINGS), TVI_ROOT, m_bExtControls);
 		m_htiA4AFSaveCpu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_A4AF_SAVE_CPU), TVI_ROOT, m_bA4AFSaveCpu); // ZZ:DownloadManager
-		m_htiAutoArch = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DISABLE_AUTOARCHPREV), TVI_ROOT, m_bAutoArchDisable);
 		m_htiYourHostname = m_ctrlTreeOptions.InsertItem(GetResString(IDS_YOURHOSTNAME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
 		m_ctrlTreeOptions.AddEditBox(m_htiYourHostname, RUNTIME_CLASS(CTreeOptionsEditEx));
 
@@ -398,7 +393,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferTimeLimit, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiDateTimeFormat4Lists = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DATETIMEFORMAT4LISTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
 		m_ctrlTreeOptions.AddEditBox(m_htiDateTimeFormat4Lists, RUNTIME_CLASS(CTreeOptionsEditEx));
-		m_htiPreviewCopiedArchives = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWCOPIEDARCHIVES), m_htiHiddenFile, m_bPreviewCopiedArchives);
 		m_htiInspectAllFileTypes = m_ctrlTreeOptions.InsertItem(GetResString(IDS_INSPECTALLFILETYPES), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
 		m_ctrlTreeOptions.AddEditBox(m_htiInspectAllFileTypes, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiPreviewOnIconDblClk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWONICONDBLCLK), m_htiHiddenFile, m_bPreviewOnIconDblClk);
@@ -476,7 +470,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtControls, m_bExtControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiA4AFSaveCpu, m_bA4AFSaveCpu);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiYourHostname, m_sYourHostname);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoArch, m_bAutoArchDisable);
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Broadband group
@@ -529,7 +522,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiEnablePipeApiServer, m_bEnablePipeApiServer);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferTimeLimit, m_uFileBufferTimeLimitSeconds);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDateTimeFormat4Lists, m_sDateTimeFormat4Lists);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewCopiedArchives, m_bPreviewCopiedArchives);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiInspectAllFileTypes, m_iInspectAllFileTypes);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewOnIconDblClk, m_bPreviewOnIconDblClk);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtraPreviewWithMenu, m_bExtraPreviewWithMenu);
@@ -653,7 +645,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bCheckDiskspace = thePrefs.checkDiskspace;
 	m_fMinFreeDiskSpaceGB = (float)(thePrefs.m_uMinFreeDiskSpace / (1024.0 * 1024.0 * 1024.0));
 	m_sYourHostname = thePrefs.GetYourHostname();
-	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
 	m_iBBMaxUpClientsAllowed = static_cast<int>(thePrefs.GetMaxUpClientsAllowed());
 	const uint64 uBBSessionMaxTrans = thePrefs.GetBBSessionMaxTrans();
 	if (uBBSessionMaxTrans == 0) {
@@ -700,7 +691,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bEnablePipeApiServer = thePrefs.IsPipeApiServerEnabled();
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
-	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
 	m_iInspectAllFileTypes = thePrefs.GetInspectAllFileTypes();
 	m_bPreviewOnIconDblClk = thePrefs.GetPreviewOnIconDblClk();
 	m_bShowActiveDownloadsBold = thePrefs.GetShowActiveDownloadsBold();
@@ -857,8 +847,6 @@ BOOL CPPgTweaks::OnApply()
 		thePrefs.SetYourHostname(m_sYourHostname);
 		theApp.emuledlg->serverwnd->UpdateMyInfo();
 	}
-	thePrefs.m_bAutomaticArcPreviewStart = !m_bAutoArchDisable;
-
 	thePrefs.m_bCloseUPnPOnExit = m_bCloseUPnPOnExit;
 	thePrefs.SetSkipWANIPSetup(m_bSkipWANIPSetup);
 	thePrefs.SetSkipWANPPPSetup(m_bSkipWANPPPSetup);
@@ -879,7 +867,6 @@ BOOL CPPgTweaks::OnApply()
 	}
 	thePrefs.m_uFileBufferTimeLimit = SEC2MS(m_uFileBufferTimeLimitSeconds);
 	thePrefs.m_strDateTimeFormat4Lists = m_sDateTimeFormat4Lists;
-	thePrefs.m_bPreviewCopiedArchives = m_bPreviewCopiedArchives;
 	thePrefs.m_iInspectAllFileTypes = m_iInspectAllFileTypes;
 	thePrefs.m_bPreviewOnIconDblClk = m_bPreviewOnIconDblClk;
 	thePrefs.m_bShowActiveDownloadsBold = m_bShowActiveDownloadsBold;
@@ -967,7 +954,6 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiServerKeepAliveTimeout, IDS_SERVERKEEPALIVETIMEOUT);
 		LocalizeEditLabel(m_htiYourHostname, IDS_YOURHOSTNAME);	// itsonlyme: hostnameSource
 		LocalizeItemText(m_htiA4AFSaveCpu, IDS_A4AF_SAVE_CPU);
-		LocalizeItemText(m_htiAutoArch, IDS_DISABLE_AUTOARCHPREV);
 		LocalizeItemText(m_htiAutoTakeEd2kLinks, IDS_AUTOTAKEED2KLINKS);
 		LocalizeItemText(m_htiBroadband, IDS_BROADBAND);
 		LocalizeItemText(m_htiBBSessionTransferLimit, IDS_BB_SESSION_TRANSFER_LIMIT);
@@ -1013,7 +999,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiLogUlDlEvents, IDS_LOG_ULDL_EVENTS);
 		LocalizeItemText(m_htiMessageFromValidSourcesOnly, IDS_MESSAGEFROMVALIDSOURCESONLY);
 		LocalizeItemText(m_htiPartiallyPurgeOldKnownFiles, IDS_PARTIALLYPURGEOLDKNOWNFILES);
-		LocalizeItemText(m_htiPreviewCopiedArchives, IDS_PREVIEWCOPIEDARCHIVES);
 		LocalizeItemText(m_htiPreviewOnIconDblClk, IDS_PREVIEWONICONDBLCLK);
 		LocalizeItemText(m_htiRearrangeKadSearchKeywords, IDS_REARRANGEKADSEARCHKEYWORDS);
 		LocalizeItemText(m_htiReBarToolbar, IDS_REBARTOOLBAR);
@@ -1094,7 +1079,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiHiddenSecurity = NULL;
 	m_htiHiddenStartup = NULL;
 	m_htiDateTimeFormat4Lists = NULL;
-	m_htiPreviewCopiedArchives = NULL;
 	m_htiInspectAllFileTypes = NULL;
 	m_htiPreviewOnIconDblClk = NULL;
 	m_htiShowActiveDownloadsBold = NULL;
@@ -1132,7 +1116,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiExtractMetaData = NULL;
 	m_htiExtractMetaDataNever = NULL;
 	m_htiExtractMetaDataID3Lib = NULL;
-	m_htiAutoArch = NULL;
 	m_htiUPnP = NULL;
 	m_htiCloseUPnPPorts = NULL;
 	m_htiSkipWANIPSetup = NULL;

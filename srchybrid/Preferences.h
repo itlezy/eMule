@@ -419,7 +419,6 @@ public:
 	static CString	m_strVideoPlayerArgs;
 	static bool		m_bMoviePreviewBackup;
 	static int		m_iPreviewSmallBlocks;
-	static bool		m_bPreviewCopiedArchives;
 	static int		m_iInspectAllFileTypes;
 	static bool		m_bPreviewOnIconDblClk;
 	static bool		m_bCheckFileOpen;
@@ -505,7 +504,6 @@ public:
 
 	//preview
 	static bool		m_bPreviewEnabled;
-	static bool		m_bAutomaticArcPreviewStart;
 
 	static bool		m_bA4AFSaveCpu; // ZZ:DownloadManager
 
@@ -1032,7 +1030,6 @@ public:
 	static void		SetSafeServerConnectEnabled(bool in) { m_bSafeServerConnect = in; }
 	static bool		IsMoviePreviewBackup()				{ return m_bMoviePreviewBackup; }
 	static int		GetPreviewSmallBlocks()				{ return m_iPreviewSmallBlocks; }
-	static bool		GetPreviewCopiedArchives()			{ return m_bPreviewCopiedArchives; }
 	static int		GetInspectAllFileTypes()			{ return m_iInspectAllFileTypes; }
 	static int		GetExtractMetaData()				{ return m_iExtractMetaData; }
 	static bool		GetAdjustNTFSDaylightFileTime()		{ return m_bAdjustNTFSDaylightFileTime; }

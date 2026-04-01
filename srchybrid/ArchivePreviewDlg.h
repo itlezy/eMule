@@ -17,11 +17,8 @@
 #pragma once
 #include "ResizablePage.h"
 #include "ListCtrlX.h"
-#include "ArchiveRecovery.h"
 
-class CKnownFile;
-
-static void FreeMemory(void *arg);
+class CShareableFile;
 
 ///////////////////////////////////////////////////////////////////////////////
 // CArchivePreviewDlg
@@ -34,7 +31,9 @@ class CArchivePreviewDlg : public CResizablePage
 	{
 		IDD = IDD_ARCHPREV
 	};
-	CShareableFile *m_pFile; //archive contents was displayed for this file
+
+	CShareableFile *m_pFile; // archive page state belongs to this file
+
 public:
 	CArchivePreviewDlg();
 	virtual BOOL OnInitDialog();
@@ -45,21 +44,13 @@ public:
 
 protected:
 	const CSimpleArray<CObject*> *m_paFiles;
-	archiveScannerThreadParams_s *m_activeTParams;
 
 	CListCtrlX	m_ContentList;
-	int			m_StoredColWidth2, m_StoredColWidth5;
 	bool		m_bDataChanged;
 	bool		m_bReducedDlg;
 
-	void UpdateArchiveDisplay(bool doscan);
-	int ShowISOResults(int succ, archiveScannerThreadParams_s *tp);
-	int ShowZipResults(int succ, archiveScannerThreadParams_s *tp);
-	int ShowRarResults(int succ, archiveScannerThreadParams_s *tp);
-	int ShowAceResults(int succ, archiveScannerThreadParams_s *tp);
-	LRESULT ShowScanResults(WPARAM, LPARAM lParam);
-
-	static UINT RunArchiveScanner(LPVOID pParam);
+	/** Refreshes the archive page after archive recovery support was retired. */
+	void UpdateArchiveDisplay();
 
 	virtual void DoDataExchange(CDataExchange *pDX);	// DDX/DDV support
 	virtual BOOL OnSetActive();
@@ -67,12 +58,8 @@ protected:
 	CProgressCtrl m_progressbar;
 
 	DECLARE_MESSAGE_MAP()
-	afx_msg void OnBnClickedRead();
-	afx_msg void OnBnClickedCreateRestored();
 	afx_msg void OnBnExplain();
 	afx_msg LRESULT OnDataChanged(WPARAM, LPARAM);
 	afx_msg void OnDestroy();
-	afx_msg void OnLvnDeleteAllItemsArchiveEntries(LPNMHDR pNMHDR, LRESULT *pResult);
-	afx_msg void OnNMCustomDrawArchiveEntries(LPNMHDR pNMHDR, LRESULT *pResult);
 	afx_msg void OnContextMenu(CWnd *pWnd, CPoint point);
 };

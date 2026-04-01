@@ -24,7 +24,6 @@ protected:
 	CString m_sYourHostname;
 
 	HTREEITEM m_htiA4AFSaveCpu;
-	HTREEITEM m_htiAutoArch;
 	HTREEITEM m_htiAutoTakeEd2kLinks;
 	HTREEITEM m_htiBroadband;
 	HTREEITEM m_htiBBLowIDDeboost;
@@ -90,7 +89,6 @@ protected:
 	HTREEITEM m_htiShareeMuleOldStyle;
 	HTREEITEM m_htiShareeMulePublicUser;
 	HTREEITEM m_htiDateTimeFormat4Lists;
-	HTREEITEM m_htiPreviewCopiedArchives;
 	HTREEITEM m_htiPreviewOnIconDblClk;
 	HTREEITEM m_htiShowActiveDownloadsBold;
 	HTREEITEM m_htiUseSystemFontForMainControls;
@@ -142,7 +140,6 @@ protected:
 	int m_iShareeMule;
 
 	bool m_bA4AFSaveCpu;
-	bool m_bAutoArchDisable;
 	bool m_bAutoTakeEd2kLinks;
 	bool m_bBBLowIDDeboost;
 	bool m_bBBLowRatioBoost;
@@ -170,7 +167,6 @@ protected:
 	bool m_bBanBadKadNodes;
 	bool m_bMessageFromValidSourcesOnly;
 	bool m_bPartiallyPurgeOldKnownFiles;
-	bool m_bPreviewCopiedArchives;
 	bool m_bPreviewOnIconDblClk;
 	bool m_bRearrangeKadSearchKeywords;
 	bool m_bReBarToolbar;
