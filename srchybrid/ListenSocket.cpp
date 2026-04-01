@@ -2004,7 +2004,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 			CClientReqSocket *newclient;
 			SOCKADDR_IN SockAddr = {};
 			int iSockAddrLen = sizeof SockAddr;
-			if (thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().bUseProxy) {
+			if (thePrefs.GetConditionalTCPAccept()) {
 				s_iAcceptConnectionCondRejected = 0;
 				SOCKET sNew = WSAAccept(m_SocketData.hSocket, (LPSOCKADDR)&SockAddr, &iSockAddrLen, AcceptConnectionCond, 0);
 				if (sNew == INVALID_SOCKET) {

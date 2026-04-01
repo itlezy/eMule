@@ -1345,7 +1345,7 @@ void CUpDownClient::UDPReaskForDownload()
 		return;
 
 	if (GetUDPPort() != 0 && GetUDPVersion() != 0 && thePrefs.GetUDPPort() != 0
-		&& !theApp.IsFirewalled() && !(socket && socket->IsConnected()) && !thePrefs.GetProxySettings().bUseProxy)
+		&& !theApp.IsFirewalled() && !(socket && socket->IsConnected()))
 	{
 		if (!HasLowID()) {
 			//don't use udp to ask for sources

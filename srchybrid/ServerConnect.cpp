@@ -415,9 +415,6 @@ VOID CALLBACK CServerConnect::RetryConnectTimer(HWND /*hWnd*/, UINT /*nMsg*/, UI
 void CServerConnect::CheckForTimeout()
 {
 	DWORD dwServerConnectTimeout = CONSERVTIMEOUT;
-	// If we are using a proxy, increase server connection timeout to default connection timeout
-	if (thePrefs.GetProxySettings().bUseProxy)
-		dwServerConnectTimeout = max(dwServerConnectTimeout, thePrefs.GetConnectionTimeout());
 
 	const DWORD curTick = ::GetTickCount();
 	for (POSITION pos = connectionattempts.GetStartPosition(); pos != NULL;) {

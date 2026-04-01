@@ -383,6 +383,260 @@ The changes fall into two independent tracks:
 
 ---
 
+### Track A0: Replace WSAAsyncSelect with WSAPoll on a Dedicated Network Thread
+
+`WSAPoll` is the smallest Windows-native step away from helper-window socket dispatch. It keeps the
+code in the classic non-overlapped `socket`/`connect`/`send`/`recv`/`accept` style, but removes the
+hard dependency on an `HWND`, `WM_SOCKETEX_NOTIFY`, and the UI thread's message pump.
+
+This is a valid **transitional backend** if the immediate goal is:
+
+- stop running network readiness detection on the UI thread
+- remove the hidden helper window and `WSAAsyncSelect` plumbing
+- preserve most of the current `CAsyncSocketEx` external contract while deferring a full IOCP rewrite
+
+It is **not** the final high-scale Windows design. `WSAPoll` is still an `O(n)` readiness scan and
+still requires manual interest-mask management for every socket.
+
+#### A0.1 What Changes and What Stays the Same
+
+**What changes:**
+
+- `CAsyncSocketEx` no longer calls `WSAAsyncSelect(...)`
+- there is no helper window and no `WM_SOCKETEX_NOTIFY + index` dispatch path
+- a dedicated network thread owns the poll loop and calls socket handlers explicitly
+- socket readiness becomes "pull from a `WSAPOLLFD[]` set" instead of "receive a Win32 message"
+
+**What can stay the same:**
+
+- the public `CAsyncSocketEx` API (`Create`, `Connect`, `AsyncSelect`, `Send`, `Receive`, `Close`)
+- the virtual callback shape (`OnReceive`, `OnSend`, `OnConnect`, `OnAccept`, `OnClose`)
+- the higher-level protocol classes (`CEMSocket`, `CClientReqSocket`, `CServerSocket`) if the backend
+  still invokes those callbacks in the same semantic order
+
+#### A0.2 Why This Is Not a Drop-In API Swap
+
+The current backend relies on more than "readable / writable / closed":
+
+- `AsyncSocketEx.cpp` keeps per-socket state (`connecting`, `connected`, `listening`, `attached`,
+  `aborted`, `closed`) and transitions it inside the helper-window dispatcher.
+- `m_nPendingEvents` stores `FD_READ` / `FD_WRITE` that arrived while a nonblocking connect is still
+  pending, then replays them after `FD_CONNECT`.
+- `FD_CLOSE` is special-cased: if bytes are still available, the code resends a close notification
+  and invokes `OnReceive(WSAESHUTDOWN)` before `OnClose`.
+- the layer chain (`CAsyncSocketExLayer`, `CAsyncProxySocketLayer`) assumes the backend can deliver
+  synthetic `FD_*` events, not just raw socket readiness bits.
+
+`WSAPoll` gives only `revents` flags. It does **not** reproduce any of that behavior automatically.
+The backend must rebuild it explicitly.
+
+#### A0.3 Required Backend Shape in This Codebase
+
+The minimum viable `WSAPoll` backend looks like this:
+
+```text
+[Network Thread]
+  owns vector<WSAPOLLFD>
+  owns vector<CAsyncSocketEx*>
+  owns command queue (add socket / remove socket / change interest mask / stop)
+  loop:
+      apply queued commands
+      build pollfd.events from each socket's current desired state
+      rc = WSAPoll(pollfds.data(), pollfds.size(), timeout_ms)
+      for each ready socket:
+          translate revents -> FD_* semantic events
+          call backend dispatcher
+          possibly queue UI work / protocol work
+
+[UI Thread]
+  no WSAAsyncSelect
+  ideally no direct socket calls
+  receives marshalled UI updates only
+```
+
+Key implementation point: `AsyncSelect(long lEvent)` should survive as the **public interest-mask
+API**, but internally it should only update desired state on the socket object and enqueue a command
+to the poll thread. It must no longer touch WinSock notification APIs directly.
+
+#### A0.4 Event Mapping from Current FD_* Semantics to WSAPoll
+
+| Current semantic event | Current source | `WSAPoll` interest | Backend action |
+|------------------------|----------------|--------------------|----------------|
+| `FD_ACCEPT` | Helper-window `FD_ACCEPT` | `POLLIN` on listening socket | Loop `accept()` until `WSAEWOULDBLOCK`; call `OnAccept(0)` or synthetic accept dispatcher |
+| `FD_CONNECT` | Helper-window `FD_CONNECT` | `POLLOUT` while connect is pending | Use `getsockopt(SO_ERROR)` to determine connect result; call `OnConnect(err)` |
+| `FD_READ` | Helper-window `FD_READ` | `POLLIN` | Call `OnReceive(0)` or layer `CallEvent(FD_READ, 0)` |
+| `FD_WRITE` | Helper-window `FD_WRITE` | `POLLOUT` only when send queue is non-empty or connect is pending | Call `OnSend(0)` when writable work exists |
+| `FD_CLOSE` | Helper-window `FD_CLOSE` | `POLLHUP`, `POLLERR`, failed `recv`, or `recv == 0` | Preserve current "drain readable bytes before close" behavior, then call `OnClose(err)` |
+
+Important detail: unlike `FD_WRITE` message delivery, `POLLOUT` will often remain continuously true
+for a healthy connected TCP socket. If the backend leaves `POLLOUT` armed all the time, the poll loop
+will wake almost constantly and spin. Therefore:
+
+- only arm write interest while a nonblocking connect is pending
+- or while a socket actually has queued outbound data that could not be fully sent earlier
+
+That single rule determines whether a `WSAPoll` backend is efficient or noisy.
+
+#### A0.5 Callback Translation Rules
+
+To preserve current behavior, the poll backend must apply the following rules:
+
+1. **Connect completion**
+   - When `connect()` returns `WSAEWOULDBLOCK`, mark `connectPending = true` and arm `POLLOUT`.
+   - On `POLLOUT`, call `getsockopt(SOL_SOCKET, SO_ERROR, ...)`.
+   - If `SO_ERROR == 0`, transition to `connected`, invoke `OnConnect(0)`, then replay any deferred
+     read/write events exactly like the current `m_nPendingEvents` logic.
+   - If `SO_ERROR != 0`, invoke `OnConnect(error)` and close or retry according to existing rules.
+
+2. **Readable data**
+   - `POLLIN` means "some read-side progress is possible", not "exactly one packet is ready".
+   - Keep sockets nonblocking and let `OnReceive` / lower layers pull until they hit `WSAEWOULDBLOCK`,
+     just like today.
+
+3. **Close ordering**
+   - If hangup/error arrives but `FIONREAD` still reports unread bytes, preserve the current close
+     contract: deliver read-side work first, then a close notification.
+   - This matters because `CEMSocket` still expects to finish packet reassembly before final close.
+
+4. **Listening sockets**
+   - `POLLIN` on a listening socket means "one or more accepts are possible".
+   - The backend should loop `accept()` until `WSAEWOULDBLOCK` instead of issuing one accept per poll
+     cycle, otherwise connection bursts will backlog unnecessarily.
+
+5. **Layer chain**
+   - If `m_pFirstLayer` exists, the poll backend should continue dispatching synthetic `FD_*` semantic
+     events into `m_pLastLayer->CallEvent(...)`.
+   - The layer chain is a semantic consumer of event types; it should not be forced to interpret raw
+     `WSAPOLLFD::revents` bits.
+
+#### A0.6 UDP Scope
+
+A full migration cannot stop at `CAsyncSocketEx` alone:
+
+- `CUDPSocket` derives from plain `CAsyncSocket`
+- `CClientUDPSocket` also derives from plain `CAsyncSocket`
+
+So there are two realistic options:
+
+- **TCP-only interim migration**: move `CAsyncSocketEx` users to `WSAPoll`, leave UDP on MFC
+  `CAsyncSocket` temporarily. This reduces TCP/UI coupling but keeps mixed socket models in the app.
+- **Full poll-thread migration**: wrap both UDP classes into the poll backend too, so one network
+  thread owns both TCP and UDP readiness dispatch.
+
+The second option is cleaner. The first option is lower-risk but only partially solves the "UI thread
+is the network thread" problem.
+
+#### A0.7 Poll Loop Sketch
+
+```cpp
+for (;;) {
+    ApplyQueuedCommands(); // add/remove sockets, update interest masks, stop flag
+
+    BuildPollArrayFromSocketState();
+
+    const int rc = WSAPoll(m_pollfds.data(), static_cast<ULONG>(m_pollfds.size()), m_timeoutMs);
+    if (m_stopRequested)
+        break;
+    if (rc <= 0)
+        continue; // timeout or transient error handling
+
+    for (size_t i = 0; i < m_pollfds.size(); ++i) {
+        WSAPOLLFD &pfd = m_pollfds[i];
+        if (!pfd.revents)
+            continue;
+
+        CAsyncSocketEx *sock = m_socketByIndex[i];
+        if (!sock)
+            continue;
+
+        if (sock->IsConnectPending() && (pfd.revents & (POLLOUT | POLLERR | POLLHUP))) {
+            HandleConnectCompletion(*sock);
+            continue;
+        }
+
+        if (sock->IsListening() && (pfd.revents & POLLIN))
+            HandleAcceptBurst(*sock);
+
+        if (pfd.revents & POLLIN)
+            DispatchSemanticEvent(*sock, FD_READ, 0);
+
+        if ((pfd.revents & POLLOUT) && sock->WantsWrite())
+            DispatchSemanticEvent(*sock, FD_WRITE, 0);
+
+        if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL))
+            HandleReadableThenClose(*sock);
+    }
+}
+```
+
+The exact function boundaries can differ, but the control flow above is the essential replacement for
+the current `CAsyncSocketExHelperWindow::WindowProc`.
+
+#### A0.8 State That the Backend Must Own Explicitly
+
+`WSAAsyncSelect` currently hides some of the "which events are armed?" bookkeeping inside WinSock.
+A poll backend must surface that state in the socket object or backend record:
+
+- `desiredEvents` or reuse of `m_lEvent`
+- `connectPending`
+- `wantWrite` or "send queue non-empty"
+- `closeNotified`
+- `isListening`
+- `isUdp`
+- deferred read/write bits currently represented by `m_nPendingEvents`
+
+This means the backend rewrite is not just a new thread class. It also requires refactoring
+`CAsyncSocketEx` from "WinSock owns readiness subscriptions" to "our backend owns readiness intent".
+
+#### A0.9 Threading Consequences
+
+Moving readiness detection to a poll thread only helps if protocol processing moves with it.
+
+There are two possible designs:
+
+- **Poll thread only, but marshal every callback back to UI**:
+  preserves more legacy assumptions, but the UI thread still parses packets and remains the real
+  bottleneck. This removes `WSAAsyncSelect` but does not remove the architectural problem.
+- **Poll thread owns readiness and protocol callbacks directly**:
+  this actually decouples networking from the UI, but it requires the same shared-state locking work
+  that the IOCP track requires.
+
+For this codebase, the second model is the only version worth implementing.
+
+#### A0.10 Strengths and Weaknesses Versus IOCP
+
+**Why `WSAPoll` is attractive:**
+
+- much smaller conceptual jump from current synchronous-style socket code
+- no overlapped I/O structures
+- easier to debug initially
+- easier to stage behind the existing `CAsyncSocketEx` callback interface
+
+**Why `WSAPoll` is still second-best:**
+
+- readiness scanning is still linear in the number of sockets
+- no kernel completion queue
+- manual write-interest management is mandatory
+- burst handling is less efficient than overlapped accept / recv / send
+- once locking is added for off-UI-thread protocol work, much of the hard concurrency work has
+  already been paid, so the remaining jump to IOCP is smaller than it first appears
+
+#### A0.11 Recommendation
+
+`WSAPoll` is a reasonable **bridge**, not the final target.
+
+Choose it only if the immediate requirement is:
+
+- remove hidden-window / message-pump socket dispatch quickly
+- keep the current `send` / `recv` / `accept` style code for one migration stage
+- accept that a second backend migration to IOCP may still follow later
+
+Skip it and go straight to IOCP if the real goal is:
+
+- highest Windows scalability
+- minimum per-socket CPU overhead
+- a backend that will not need replacing again
+
 ### Track A: Replace WSAAsyncSelect with I/O Completion Ports
 
 #### A1. The Root Change
@@ -661,11 +915,12 @@ Step 3 — DNS modernization (independent of Step 2)
     3b. Remove WM_HOSTNAMERESOLVED handler and OnHostnameResolved message map entry
 
 Step 4 — Network thread (largest change, requires Step 1 complete)
-    4a. Build IOCP-backed network thread class alongside existing CAsyncSocketEx (don't delete yet)
-    4b. Port ListenSocket, CEMSocket, ClientUDPSocket to post work items to network thread
+    4a. Optional bridge: build a WSAPoll-backed network thread first, preserving the current callback contract
+    4b. Port ListenSocket, CEMSocket, ClientUDPSocket to post work items to the network thread
     4c. Add locking to all shared objects touched from OnReceive (CDownloadQueue, CClientList, etc.)
     4d. Validate on a test build: UI thread must make zero socket calls
-    4e. Delete old CAsyncSocketExHelperWindow, remove all WM_SOCKETEX_* messages
+    4e. Final backend: replace the poll loop with IOCP overlapped operations if proceeding to the end-state design
+    4f. Delete old CAsyncSocketExHelperWindow, remove all WM_SOCKETEX_* messages
 
 Step 5 — CWinThread → std::jthread (optional, cosmetic, low risk)
     5a. Replace fire-and-forget threads with std::async
@@ -719,7 +974,8 @@ Covers the Track B improvements described in sections 8.2 (B1-B6) of this docume
 
 ### FEAT_030: Track A — Network IOCP Migration
 
-Covers the Track A changes described in sections 8.1 (A1-A5) of this document:
+Covers the Track A changes described above. The `WSAPoll` bridge in Track A0 is optional; FEAT_030
+targets the final IOCP end state:
 
 - Replace `WSAAsyncSelect` + helper window with a dedicated IOCP network thread (A1)
 - Rewrite `CAsyncSocketEx` backend from message-based to overlapped I/O (A2)

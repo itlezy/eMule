@@ -21,7 +21,6 @@
 #include "emule.h"
 #include <timeapi.h>
 #include "emsocket.h"
-#include "AsyncProxySocketLayer.h"
 #include "Packets.h"
 #include "ProtocolGuards.h"
 #include "OtherFunctions.h"
@@ -85,8 +84,7 @@ namespace
 IMPLEMENT_DYNAMIC(CEMSocket, CEncryptedStreamSocket)
 
 CEMSocket::CEMSocket()
-	: m_pProxyLayer()
-	, m_uTimeOut(thePrefs.GetConnectionTimeout()) // default timeout for ed2k sockets
+	: m_uTimeOut(thePrefs.GetConnectionTimeout()) // default timeout for ed2k sockets
 	, byConnected(EMS_NOTCONNECTED)
 	, m_bProxyConnectFailed()
 	, downloadLimitEnable()
@@ -142,6 +140,8 @@ CEMSocket::~CEMSocket()
 bool CEMSocket::Connect(const CString &sHostAddress, UINT nHostPort)
 {
 	InitProxySupport();
+	if (m_bProxyConnectFailed)
+		return false;
 	return CEncryptedStreamSocket::Connect(sHostAddress, nHostPort);
 }
 
@@ -149,41 +149,22 @@ bool CEMSocket::Connect(const CString &sHostAddress, UINT nHostPort)
 BOOL CEMSocket::Connect(const LPSOCKADDR pSockAddr, int iSockAddrLen)
 {
 	InitProxySupport();
+	if (m_bProxyConnectFailed)
+		return FALSE;
 	return CEncryptedStreamSocket::Connect(pSockAddr, iSockAddrLen);
 }
 
 void CEMSocket::InitProxySupport()
 {
+	m_strLastProxyError.Empty();
 	m_bProxyConnectFailed = false;
 
-	// Proxy Initialization
 	const ProxySettings &settings = thePrefs.GetProxySettings();
 	if (settings.bUseProxy && settings.type != PROXYTYPE_NOPROXY) {
-		m_bUseOverlappedSend = false;
-		Close();
-
-		m_pProxyLayer = new CAsyncProxySocketLayer;
-		switch (settings.type) {
-		case PROXYTYPE_SOCKS4:
-		case PROXYTYPE_SOCKS4A:
-			m_pProxyLayer->SetProxy(settings.type, settings.host, settings.port);
-			break;
-		case PROXYTYPE_SOCKS5:
-		case PROXYTYPE_HTTP10:
-		case PROXYTYPE_HTTP11:
-			if (settings.bEnablePassword)
-				m_pProxyLayer->SetProxy(settings.type, settings.host, settings.port, settings.user, settings.password);
-			else
-				m_pProxyLayer->SetProxy(settings.type, settings.host, settings.port);
-			break;
-		default:
-			ASSERT(0);
-		}
-		AddLayer(m_pProxyLayer);
-
-		// Connection Initialization
-		Create(0, SOCK_STREAM, FD_DEFAULT, thePrefs.GetBindAddr());
-		AsyncSelect(FD_DEFAULT);
+		m_bProxyConnectFailed = true;
+		m_strLastProxyError = _T("Proxy support is not available with the WSAPoll TCP backend");
+		LogWarning(LOG_DEFAULT, _T("%s"), (LPCTSTR)m_strLastProxyError);
+		WSASetLastError(WSAEOPNOTSUPP);
 	}
 }
 
@@ -714,7 +695,6 @@ SocketSentBytes CEMSocket::SendStd(uint32 maxNumberOfBytesToSend, uint32 minFrag
 SocketSentBytes CEMSocket::SendOv(uint32 maxNumberOfBytesToSend, uint32 minFragSize, bool onlyAllowedToSendControlPacket)
 {
 	//EMTrace("CEMSocket::Send controlcount %i, standardcount %i, isbusy: %i", controlpacket_queue.GetCount(), standardpacket_queue.GetCount(), IsBusy());
-	ASSERT(m_pProxyLayer == NULL);
 	SocketSentBytes ret = {0, 0, true};
 
 	sendLocker.Lock();
@@ -969,31 +949,6 @@ int CEMSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 void CEMSocket::RemoveAllLayers()
 {
 	CEncryptedStreamSocket::RemoveAllLayers();
-	delete m_pProxyLayer;
-	m_pProxyLayer = NULL;
-}
-
-int CEMSocket::OnLayerCallback(std::vector<t_callbackMsg> &callbacks)
-{
-	for (std::vector<t_callbackMsg>::const_iterator iter = callbacks.begin(); iter != callbacks.end(); ++iter) {
-		if (iter->nType == LAYERCALLBACK_LAYERSPECIFIC) {
-			if (iter->pLayer == m_pProxyLayer) {
-				m_strLastProxyError = GetProxyError((int)iter->wParam);
-				switch (iter->wParam) {
-				case PROXYERROR_NOCONN:
-					// We failed to connect to the proxy.
-					m_bProxyConnectFailed = true;
-				case PROXYERROR_REQUESTFAILED:
-					// We are connected to the proxy but it failed to connect to the peer.
-					if (thePrefs.GetVerbose() && iter->str && iter->str[0] != '\0')
-						m_strLastProxyError.AppendFormat(_T(" - %hs"), iter->str);
-				}
-				LogWarning(LOG_DEFAULT, _T("Proxy Error: %s"), (LPCTSTR)m_strLastProxyError);
-			}
-		}
-		delete[] iter->str;
-	}
-	return 0;
 }
 
 /**
@@ -1026,7 +981,6 @@ void CEMSocket::AssertValid() const
 
 	ASSERT(byConnected == EMS_DISCONNECTED || byConnected == EMS_NOTCONNECTED || byConnected == EMS_CONNECTED);
 	CHECK_BOOL(m_bProxyConnectFailed);
-	CHECK_PTR(m_pProxyLayer);
 	(void)downloadLimit;
 	CHECK_BOOL(downloadLimitEnable);
 	CHECK_BOOL(pendingOnReceive);

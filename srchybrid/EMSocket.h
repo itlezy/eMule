@@ -19,8 +19,6 @@
 #include "EncryptedStreamSocket.h"
 #include "ThrottledSocket.h" // ZZ:UploadBandWithThrottler (UDP)
 
-class CAsyncProxySocketLayer;
-
 #define EMS_DISCONNECTED	0xFF
 #define EMS_NOTCONNECTED	0x00
 #define EMS_CONNECTED		0x01
@@ -89,12 +87,9 @@ public:
 #endif
 
 protected:
-	virtual int	OnLayerCallback(std::vector<t_callbackMsg> &callbacks);
-
 	virtual void	DataReceived(const BYTE *pcData, UINT uSize);
 	virtual bool	PacketReceived(Packet *packet) = 0;
 	virtual void	OnError(int nErrorCode) = 0;
-	CAsyncProxySocketLayer *m_pProxyLayer;
 	CString m_strLastProxyError;
 	UINT	m_uTimeOut;
 	uint8	byConnected;

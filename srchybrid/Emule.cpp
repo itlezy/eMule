@@ -260,18 +260,6 @@ static BOOL InitWinsock2(WSADATA *lpwsaData)
 		// setup for termination of sockets
 		pState->m_pfnSockTerm = &AfxSocketTerm;
 	}
-#ifndef _AFXDLL
-	//BLOCK: setup maps and lists specific to socket state
-	{
-		_AFX_SOCK_THREAD_STATE *pThreadState = _afxSockThreadState;
-		if (pThreadState->m_pmapSocketHandle == NULL)
-			pThreadState->m_pmapSocketHandle = new CMapPtrToPtr;
-		if (pThreadState->m_pmapDeadSockets == NULL)
-			pThreadState->m_pmapDeadSockets = new CMapPtrToPtr;
-		if (pThreadState->m_plistSocketNotifications == NULL)
-			pThreadState->m_plistSocketNotifications = new CPtrList;
-	}
-#endif
 	return TRUE;
 }
 

@@ -108,9 +108,7 @@
     <ClCompile Include="AddFriend.cpp" />
     <ClCompile Include="AddSourceDlg.cpp" />
     <ClCompile Include="AICHSyncThread.cpp" />
-    <ClCompile Include="AsyncProxySocketLayer.cpp" />
     <ClCompile Include="AsyncSocketEx.cpp" />
-    <ClCompile Include="AsyncSocketExLayer.cpp" />
     <ClCompile Include="BindAddressResolver.cpp" />
     <ClCompile Include="BarShader.cpp" />
     <ClCompile Include="BaseClient.cpp" />

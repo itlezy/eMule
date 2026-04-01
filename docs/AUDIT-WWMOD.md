@@ -281,7 +281,7 @@ through a hidden window's message loop. This ties all network I/O to the UI thre
 message pump and limits scalability.
 
 **Modern alternatives:**
-- `WSAPoll` (Win Vista+) for a poll-based model
+- `WSAPoll` (Win Vista+) for a poll-based model; see `ARCH-THREADING.md`, Track A0 for the codebase-specific migration shape
 - I/O Completion Ports (`CreateIoCompletionPort`) for high-performance async I/O
 - Registered I/O (RIO) for ultra-low-latency scenarios
 

@@ -208,3 +208,26 @@
   I assumed the latest build log timestamp instead of querying the logs directory for the current path.
 - Fix:
   resolve the newest log directory first with `Get-ChildItem ..\logs -Directory | Sort-Object LastWriteTime -Descending | Select-Object -First 1`, then read `eMule-Debug.log` from that path.
+
+## 2026-04-01
+
+- Error:
+  `msbuild` failed with `The term 'msbuild' is not recognized as a name of a cmdlet, function, script file, or executable program.`
+- Cause:
+  I assumed `MSBuild.exe` was available on `PATH` in the current PowerShell environment instead of resolving the installed Visual Studio path first.
+- Fix:
+  probe the Visual Studio installation with `Get-ChildItem 'C:\Program Files\Microsoft Visual Studio' -Recurse -Filter MSBuild.exe` and invoke the explicit executable path once discovered.
+
+- Error:
+  `rg` reported `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed literal targets like `C:\...\srchybrid\*.cpp` and `C:\...\srchybrid\*.h`.
+- Cause:
+  I again passed Windows wildcard path arguments directly to `rg`, which expects a real search root plus optional `--glob` filters.
+- Fix:
+  pass the concrete root directory, for example `C:\...\srchybrid`, and use `--glob '*.cpp' --glob '*.h'` only when file filtering is required.
+
+- Error:
+  `rg` failed with `regex parse error: unclosed group` while I bundled multiple literal search tokens into one pattern.
+- Cause:
+  I used a regex alternation for literal strings that contained metacharacters instead of switching to fixed-string or separate searches.
+- Fix:
+  use `rg -F` for literal tokens, or split the searches into separate `rg` / `Select-String` calls when the literals are not safe regex input.
