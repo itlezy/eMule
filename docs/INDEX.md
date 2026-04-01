@@ -23,7 +23,7 @@
 
 | Document | Description |
 |---|---|
-| [ARCH-NETWORKING](ARCH-NETWORKING.md) | Full networking stack analysis — sockets, WSAAsyncSelect, UPnP, throttling, proxy, encryption |
+| [ARCH-NETWORKING](ARCH-NETWORKING.md) | Full networking stack analysis — sockets, `WSAPoll`, UPnP, throttling, encryption |
 | [ARCH-THREADING](ARCH-THREADING.md) | Threading model analysis — thread inventory, sync primitives, IOCP patterns, migration roadmap (FEAT_029, FEAT_030) |
 | [ARCH-PREFERENCES](ARCH-PREFERENCES.md) | Preferences reference — all INI keys, UI exposure, hidden prefs, modes, defaults |
 

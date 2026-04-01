@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-24
 **Branch:** v0.72a-broadband-dev
-**Scope:** Full networking stack — `srchybrid/` (TCP, UDP, encryption, UPnP, throttling, proxy, Kademlia)
+**Scope:** Full networking stack — `srchybrid/` (TCP, UDP, encryption, UPnP, throttling, Kademlia)
 
 ---
 
@@ -15,7 +15,6 @@
 - [4. Packet Framing and Protocol Parsing](#4-packet-framing-and-protocol-parsing)
 - [5. Upload Bandwidth Throttler](#5-upload-bandwidth-throttler)
 - [6. UPnP NAT Traversal](#6-upnp-nat-traversal)
-- [7. SOCKS/HTTP Proxy Layer](#7-sockshttp-proxy-layer)
 - [8. Encrypted Streams and Datagrams](#8-encrypted-streams-and-datagrams)
 - [9. DNS Resolution](#9-dns-resolution)
 - [10. Known Issues and Recommendations](#10-known-issues-and-recommendations)
@@ -24,7 +23,7 @@
 
 ## Executive Summary
 
-The eMule networking stack is a mature **Windows-native asynchronous I/O architecture** built entirely on `WSAAsyncSelect` with a layered socket abstraction. It handles hundreds of simultaneous P2P connections through a message-pump–driven notification model, a dedicated upload bandwidth throttler thread, dual TCP/UDP encrypted transports, a SOCKS/HTTP proxy layer, and two independent UPnP implementations. The overall design is sound and well-suited to its use case. This report documents every major subsystem with file and line references, identifies architectural limitations, and calls out specific issues.
+The eMule networking stack is a mature **Windows-native asynchronous I/O architecture** centered on the current `WSAPoll` TCP backend, a dedicated upload bandwidth throttler thread, dual TCP/UDP encrypted transports, and two independent UPnP implementations. This report documents the major subsystems which remain in the current tree, identifies architectural limitations, and calls out specific issues.
 
 ---
 
@@ -48,29 +47,17 @@ CAsyncSocket  (MFC — used for simpler sockets)
     └── [implements CEncryptedDatagramSocket + ThrottledControlSocket]
 ```
 
-### 1.2 Layered Socket Middleware
+### 1.2 Legacy Socket Layering (Removed)
 
-A separate **layer chain** can be inserted between `CAsyncSocketEx` and the raw socket:
-
-```
-Application (CEncryptedStreamSocket / CEMSocket)
-     ↕  virtual Send/Receive + event callbacks
-CAsyncSocketExLayer  (AsyncSocketExLayer.h:67)
-     ↕  doubly-linked list: m_pNextLayer / m_pPrevLayer
-CAsyncProxySocketLayer  (AsyncProxySocketLayer.h — SOCKS4/5, HTTP proxy)
-     ↕
-Raw WinSock2 socket
-```
-
-Only one layer is currently used in practice (proxy). The design supports arbitrary stacking — a TLS layer could be inserted without changing higher-level code.
+The historic `CAsyncSocketExLayer` and `CAsyncProxySocketLayer` chain has been removed. The current
+tree keeps `CAsyncSocketEx` as the direct TCP backend under `CEncryptedStreamSocket` and `CEMSocket`
+without middleware layers or proxy negotiation.
 
 **Key files:**
 
 | File | Role |
 |------|------|
 | `srchybrid/AsyncSocketEx.h/.cpp` | Base socket; per-thread helper window; WM dispatch |
-| `srchybrid/AsyncSocketExLayer.h/.cpp` | Abstract layer base; chain management |
-| `srchybrid/AsyncProxySocketLayer.h/.cpp` | SOCKS4/4A/5 + HTTP 1.0/1.1 proxy middleware |
 | `srchybrid/EncryptedStreamSocket.h/.cpp` | RC4 obfuscation layer for TCP |
 | `srchybrid/EncryptedDatagramSocket.h/.cpp` | Stateless RC4 encryption for UDP |
 | `srchybrid/EMSocket.h/.cpp` | Packet framing, dual send queues, rate control |
@@ -113,19 +100,10 @@ Inbound WM_ message with socket index
 
 **Maximum sockets per thread:** `(0xBFFF - 0x0101) = 49,150` theoretically; the code caps the array at `0xBAFD` = 47,869 (`AsyncSocketEx.h:82–86`).
 
-### 2.3 Layered Socket Event Flow
+### 2.3 Socket Event Flow
 
-When a proxy layer is present, raw socket events are intercepted by the lowest layer:
-
-```
-WinSock event fires for raw socket
-  → helper window dispatches to layer chain bottom
-  → CAsyncProxySocketLayer::OnReceive / OnSend
-  → Layer processes SOCKS handshake bytes
-  → On negotiation complete: posts WM_SOCKETEX_TRIGGER to helper window
-  → Helper window dispatches t_LayerNotifyMsg* up the chain
-  → CEncryptedStreamSocket / CEMSocket receives event
-```
+The current TCP path dispatches readiness directly from `CAsyncSocketEx` into the encrypted-stream
+and packet-framing layers. There is no longer a proxy or middleware interception stage in the live tree.
 
 Three special messages are used (`AsyncSocketEx.h`):
 
@@ -308,69 +286,10 @@ Lines 150, 168, 181, 195, 300, 325, 432, 444, 471, 642, 655, 688, 700, 742 — 1
 
 ---
 
-## 5. Proxy Support — `CAsyncProxySocketLayer`
+## 5. Proxy Support (Removed)
 
-### 5.1 Supported Proxy Types
-
-```cpp
-// AsyncProxySocketLayer.h:22
-PROXYTYPE_NOPROXY  = 0
-PROXYTYPE_SOCKS4   = 1
-PROXYTYPE_SOCKS4A  = 2   // hostname via proxy DNS
-PROXYTYPE_SOCKS5   = 3   // username/password auth (RFC 1929)
-PROXYTYPE_HTTP10   = 4
-PROXYTYPE_HTTP11   = 5
-```
-
-### 5.2 SOCKS4 Handshake (`AsyncProxySocketLayer.cpp:263–310`)
-
-```
-Client → Proxy: [0x04][0x01][port_BE_2][ip_4][userid\0]
-Proxy → Client: [0x00][status][port_2][ip_4]
-  Status 90 = granted; 91-93 = rejected (server failure / identd / user mismatch)
-```
-
-### 5.3 SOCKS5 Authentication (`AsyncProxySocketLayer.cpp:363–400+`)
-
-Two-phase:
-
-1. **Method negotiation:** Client offers `{NO_AUTH, USERNAME_PASSWORD}`, proxy selects one.
-2. **Auth (if selected):**
-   ```
-   Client → Proxy: [0x01][ulen][username][plen][password]
-   Proxy → Client: [0x01][0x00=OK / other=fail]
-   ```
-
-On success, the layer triggers `FD_CONNECT + FD_READ + FD_WRITE` to the application. On failure, `FD_CONNECT + error_code`.
-
-### 5.4 HTTP CONNECT Proxy (`AsyncProxySocketLayer.cpp`)
-
-```
-Client → Proxy: "CONNECT host:port HTTP/1.1\r\nHost: host:port\r\n\r\n"
-Proxy → Client: "HTTP/1.1 200 Connection established\r\n\r\n"
-```
-
-### 5.5 Proxy Initialization (`EMSocket.cpp:158–191`)
-
-```cpp
-void CEMSocket::InitProxySupport() {
-    if (settings.bUseProxy && settings.type != PROXYTYPE_NOPROXY) {
-        m_bUseOverlappedSend = false;    // overlapped send incompatible with proxy
-        Close();
-        m_pProxyLayer = new CAsyncProxySocketLayer;
-        m_pProxyLayer->SetProxy(type, host, port, user, pass);
-        AddLayer(m_pProxyLayer);
-        Create(…);
-        AsyncSelect(FD_DEFAULT);
-    }
-}
-```
-
-**Important:** When proxy is enabled, overlapped I/O is disabled. The proxy layer expects synchronous `Send()` semantics because it may need to intercept and buffer sends during the SOCKS negotiation phase. This makes proxy connections measurably slower than direct connections, particularly for the initial handshake.
-
-### 5.6 UDP Through Proxy
-
-UDP proxying is **not implemented**. SOCKS5 supports UDP associate (command `0x03`) but this codebase does not use it. Kademlia and peer UDP traffic always goes direct, bypassing the proxy. This means proxy users leak their real IP address on UDP. This is a known limitation of essentially all eMule variants.
+Proxy support and the associated socket-layer chain were removed during the `WSAPoll` TCP migration.
+The current branch has no proxy settings, no proxy negotiation layer, and no proxy-specific transport path.
 
 ---
 
@@ -610,7 +529,6 @@ volatile TRISTATE m_bUPnPPortsForwarded;
 | `TerminateThread()` on stuck miniupnpc thread | Medium | `UPnPImplMiniLib.cpp:79` |
 | `WinServ` impl does not support `CheckAndRefresh()` | Low | `UPnPImplWinServ.h:86` |
 | `sprintf` instead of `sprintf_s` in `DeletePort()` | Low | `UPnPImplMiniLib.cpp:103` |
-| UDP proxy bypass (real IP leaked) | Medium (by design) | `AsyncProxySocketLayer.*` |
 
 ---
 
@@ -925,8 +843,6 @@ Minor consistency fix — the rest of the codebase uses `_s` variants.
 | Component | Class | Files | Technology |
 |-----------|-------|-------|------------|
 | Base async socket | `CAsyncSocketEx` | `AsyncSocketEx.h/.cpp` | WSAAsyncSelect + helper window |
-| Socket middleware | `CAsyncSocketExLayer` | `AsyncSocketExLayer.h/.cpp` | Doubly-linked layer chain |
-| Proxy middleware | `CAsyncProxySocketLayer` | `AsyncProxySocketLayer.h/.cpp` | SOCKS4/5 + HTTP CONNECT |
 | TCP obfuscation | `CEncryptedStreamSocket` | `EncryptedStreamSocket.h/.cpp` | RC4 + MD5 / DH-768 handshake |
 | P2P TCP | `CEMSocket` | `EMSocket.h/.cpp` | Packet framing, dual queues |
 | Peer TCP | `CClientReqSocket` | `ListenSocket.h/.cpp` | Timeout management, deferred delete |

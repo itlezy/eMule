@@ -711,9 +711,7 @@ set(EMULE_SOURCES
     UploadListCtrl.cpp
 
     # Network / sockets
-    AsyncProxySocketLayer.cpp
     AsyncSocketEx.cpp
-    AsyncSocketExLayer.cpp
     ClientUDPSocket.cpp
     EMSocket.cpp
     EncryptedDatagramSocket.cpp
@@ -803,7 +801,6 @@ set(EMULE_SOURCES
     PPgIRC.cpp
     PPgMessages.cpp
     PPgNotify.cpp
-    PPgProxy.cpp
     PPgScheduler.cpp
     PPgSecurity.cpp
     PPgServer.cpp

@@ -424,8 +424,8 @@ The current backend relies on more than "readable / writable / closed":
   pending, then replays them after `FD_CONNECT`.
 - `FD_CLOSE` is special-cased: if bytes are still available, the code resends a close notification
   and invokes `OnReceive(WSAESHUTDOWN)` before `OnClose`.
-- the layer chain (`CAsyncSocketExLayer`, `CAsyncProxySocketLayer`) assumes the backend can deliver
-  synthetic `FD_*` events, not just raw socket readiness bits.
+- older layer-chain code assumed the backend could deliver synthetic `FD_*` events, not just raw
+  socket readiness bits. That compatibility burden is gone now that the proxy/layer path has been removed.
 
 `WSAPoll` gives only `revents` flags. It does **not** reproduce any of that behavior automatically.
 The backend must rebuild it explicitly.

@@ -14,7 +14,7 @@ It is based on:
 - [Scope](#scope)
 - [Legend](#legend)
 - [UI-Exposed Preferences](#ui-exposed-preferences)
-  - [General](#general) — [Connection And Throughput](#connection-and-throughput) — [Server / eD2k / Kad](#server--ed2k--kad) — [Directories, Files, And Download Behavior](#directories-files-and-download-behavior) — [Display / UI / Toolbar](#display--ui--toolbar) — [Security, Privacy, And Obfuscation](#security-privacy-and-obfuscation) — [Messaging / Chat](#messaging--chat) — [Notifications](#notifications) — [Proxy](#proxy) — [UPnP](#upnp) — [Broadband Branch Controls](#broadband-branch-controls)
+  - [General](#general) — [Connection And Throughput](#connection-and-throughput) — [Server / eD2k / Kad](#server--ed2k--kad) — [Directories, Files, And Download Behavior](#directories-files-and-download-behavior) — [Display / UI / Toolbar](#display--ui--toolbar) — [Security, Privacy, And Obfuscation](#security-privacy-and-obfuscation) — [Messaging / Chat](#messaging--chat) — [Notifications](#notifications) — [UPnP](#upnp) — [Broadband Branch Controls](#broadband-branch-controls)
 - [Hidden Runtime Preferences](#hidden-runtime-preferences)
 - [Hidden Or Legacy Keys Which Look Stale](#hidden-or-legacy-keys-which-look-stale-transitional-or-import-only)
 - [UI Defaults Which Are Not First-Class CPreferences Keys](#ui-defaults-which-are-not-first-class-cpreferences-keys)
@@ -193,18 +193,6 @@ The last two groups are documented because they still live in the same file, but
 | `NotifierPopEveryChatMessage` | `eMule` | `RW` | Yes | `false` | Pop every chat message, not just first/important ones. |
 | `NotifierUseSound` | `eMule` | `RW` | Yes | `ntfstNoSound` | Select notifier sound mode. |
 | `NotifierSoundPath` | `eMule` | `RW` | Yes | empty | Custom sound file path. |
-
-### Proxy
-
-| INI key | Section | Mode | UI | Default | Explanation |
-| --- | --- | --- | --- | --- | --- |
-| `ProxyEnableProxy` | `Proxy` / legacy read path | Mixed | Yes | `false` | Master proxy on/off. The save path now targets the `Proxy` section, but older keys are still read from legacy places. |
-| `ProxyType` | `Proxy` / legacy read path | Mixed | Yes | `PROXYTYPE_NOPROXY` | Proxy type. |
-| `ProxyName` | `Proxy` / legacy read path | Mixed | Yes | empty | Proxy host. |
-| `ProxyPort` | `Proxy` / legacy read path | Mixed | Yes | `1080` | Proxy port. |
-| `ProxyUser` | `Proxy` / legacy read path | Mixed | Yes | empty | Proxy username. |
-| `ProxyPassword` | `Proxy` / legacy read path | Mixed | Yes | empty | Proxy password. |
-| `ProxyEnablePassword` | `Proxy` | `RW` | Yes | `false` | Enable proxy password use. |
 
 ### UPnP
 
