@@ -1,24 +1,26 @@
 # Rules
-- this is a sub-module of the parent directory
+- this is a sub-module of the main build workspace that lives in the parent directory `c:\prj\p2p\eMule\eMulebb\eMule-build`
 - dependencies and build scripts are in the parent directory, use `..\23-build-emule-debug-incremental.cmd` to build
 - keep a consistent code-style as the existing code base
 - comment the code that you add so it is clear and easy to identify its purpose
-- use Doxygen-style comments for new code and for existing code that you edit when comments are added or clarified
+- use Doxygen-style comments for new code and for existing code that you edit when comments are added or clarified, add comments when you make code edits
 - "eMule broadband v0.60d-dev" is at https://github.com/itlezy/eMule/tree/v0.60d-dev
 - "eMule Community v60d" is at https://github.com/irwir/eMule/tree/v0.60d
 - compare the branches to identify changes that were made in "eMule broadband v0.60d-dev" vs "eMule Community v60d"
 - do NOT keep wrappers, unused code, compatibility mapping when refactoring
 - this is a development alpha branch, it is ok to make breaking changes when refactoring
-- ensure to perform commits for each block of edits to offer a granular history of changes, prefix them appropriately like WIP, BUG, FIX, DOC, etc..
+- ensure to perform commits for each block of edits to offer a granular history of changes, with detailed description, prefix them appropriately like WIP, BUG, FIX, DOC, etc..
 - ensure to implement regression and parity test when touching core features
 - test suites live only here `c:\prj\p2p\eMule\eMulebb\eMule-build-tests`
 - treat `c:\prj\p2p\eMule\eMulebb\eMule-build-tests` as the single source of truth for all test code, scripts, and reports
+- eMule "oracle" version and its build workspace live here `c:\prj\p2p\eMule\eMulebb\eMule-build-oracle` and it is the reference implementation to compare against for parity and regressions
 - do not recreate or edit per-workspace `tests\` directories under `eMule-build` or `eMule-build-oracle`
+- eMule remote is a web-ui that lives here `c:\prj\p2p\eMule\eMulebb\eMule-remote`
 - keep the fixed sibling layout `eMule-build`, `eMule-build-oracle`, and `eMule-build-tests`, and make the shared tests build against the target workspace via explicit paths
-- save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
+- only for major changes save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
 - load and strictly follow the PowerShell guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
 - when launching the `emule.exe` UI, always pass `-c` to make the config root explicit; disposable profiles may be created under `c:\tmp`, and a ready-made profile is available as `-c c:\tmp\emule-testing`
-- when running `emule.exe`, always bind to the VPN IP, enable all logging, and persist logs to file
-- when investigating hot loops or 100% CPU in `emule.exe`, prefer ETW sampling, dump capture, or debugger attachment before adding more logging instrumentation
+- when running `emule.exe`, always bind to the VPN IP `BindInterfaceName=hide.me`, enable all logging, and persist logs to file
+- when investigating hot loops or 100% CPU in `emule.exe`, prefer ETW sampling, windbg, cdb, procdump, dump capture, or debugger attachment before adding more logging instrumentation
 - when checking UPNP mapping, ensure to launch `c:\bin\overrides\miniupnpc.exe -l` and verify that the required port is in the list
 - when comparing features ensure to check the local repos `eMuleAI` at `c:\prj\p2p\eMule\analysis\eMuleAI` and `eMule-mods-archive` at `c:\prj\p2p\eMule\analysis\eMule-mods-archive`
