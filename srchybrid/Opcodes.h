@@ -247,8 +247,6 @@
 #define OP_PUBLICKEY			0x85	// <len 1><pubkey len>
 #define OP_SIGNATURE			0x86	// v1: <len 1><signature len>  v2:<len 1><signature len><sigIPused 1>
 #define OP_SECIDENTSTATE		0x87	// <state 1><rndchallenge 4>
-#define OP_REQUESTPREVIEW		0x90	// <HASH 16>
-#define OP_PREVIEWANSWER		0x91	// <HASH 16><frames 1>{frames * <len 4><frame len>}
 #define OP_MULTIPACKET			0x92	// *DEPRECATED*
 #define OP_MULTIPACKETANSWER	0x93	// *DEPRECATED*
 #define	OP_PUBLICIP_REQ			0x97

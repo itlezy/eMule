@@ -56,7 +56,7 @@
 | [FEATURE-KAD](FEATURE-KAD.md) | Kad improvement plan — SafeKad2, FastKad, routing quality, observability | FEAT_002–008 |
 | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) | Modern limits plan — connection budget, socket buffers, queue/source caps, timeouts | FEAT_013–019 |
 | [FEATURE-PEERS-BANS](FEATURE-PEERS-BANS.md) | Peer banning analysis from eMuleAI — CShield, SafeKad2, CAntiNick | FEAT_009–012 |
-| [FEATURE-THUMBS](FEATURE-THUMBS.md) | Frame grabber replacement — IMediaDet → MF or FFmpeg; MediaInfo static embedding | FEAT_022–024 |
+| [FEATURE-THUMBS](FEATURE-THUMBS.md) | Retired thumbnail-preview capability notes and remaining MediaInfo context | FEAT_022–024 |
 
 ## Guides
 
@@ -136,8 +136,8 @@
 | FEAT_017 | Queue/source limits | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_018 | Timeout adjustments | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
 | FEAT_019 | Advanced tree UI exposure | **[DONE]** | [FEATURE-MODERN-LIMITS](FEATURE-MODERN-LIMITS.md) |
-| FEAT_022 | Windows Media Foundation migration | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
-| FEAT_023 | FFmpeg alternative (long-term) | Not started | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
+| FEAT_022 | Windows Media Foundation migration | **[REJECTED]** thumbnail preview retired | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
+| FEAT_023 | FFmpeg alternative (long-term) | **[REJECTED]** thumbnail preview retired | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
 | FEAT_024 | MediaInfo static embedding | **[REJECTED]** | [FEATURE-THUMBS](FEATURE-THUMBS.md) |
 | FEAT_029 | Track B — Worker thread hygiene | Not started | [ARCH-THREADING](ARCH-THREADING.md) |
 | FEAT_030 | Track A — Network IOCP migration | Not started | [ARCH-THREADING](ARCH-THREADING.md) |

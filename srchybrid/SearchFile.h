@@ -147,11 +147,6 @@ public:
 	const CSimpleArray<SServer>& GetServers() const			{ return m_aServers; }
 	SServer &GetServerAt(int iServer)						{ return m_aServers[iServer]; }
 
-	void	AddPreviewImg(HBITMAP img)						{ m_listFrames.Add(img); }
-	const CSimpleArray<HBITMAP>& GetPreviews() const		{ return m_listFrames; }
-	bool	IsPreviewPossible() const						{ return m_bPreviewPossible; }
-	void	SetPreviewPossible(bool in)						{ m_bPreviewPossible = in; }
-
 	enum EKnownType
 	{
 		NotDetermined,
@@ -184,7 +179,6 @@ private:
 	uint16	m_nClientPort;
 	CSimpleArray<SClient> m_aClients;
 	CSimpleArray<SServer> m_aServers;
-	CSimpleArray<HBITMAP> m_listFrames;
 	LPTSTR	m_pszDirectory;
 	// spam filter
 	CString	m_strNameWithoutKeywords;
@@ -194,7 +188,6 @@ private:
 	UINT		m_list_childcount;
 	CSearchFile	*m_list_parent;
 	EKnownType	m_eKnown;
-	bool		m_bPreviewPossible;
 	bool		m_list_bExpanded;
 };
 

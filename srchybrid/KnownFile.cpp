@@ -27,7 +27,6 @@
 #include "ClientList.h"
 #include "opcodes.h"
 #include "ini2.h"
-#include "FrameGrabThread.h"
 #include "Preferences.h"
 #include "PartFile.h"
 #include "Packets.h"
@@ -1498,41 +1497,6 @@ bool CKnownFile::PublishSrc()
 bool CKnownFile::IsMovie() const
 {
 	return GetED2KFileTypeID(GetFileName()) == ED2KFT_VIDEO;
-}
-
-// function assumes that this file is shared and that any needed permission to preview exists. checks have to be done before calling!
-/**
- * @todo Long-path support for preview and thumbnail generation is intentionally deferred.
- */
-bool CKnownFile::GrabImage(uint8 nFramesToGrab, double dStartTime, bool bReduceColor, uint16 nMaxWidth, void *pSender)
-{
-	return GrabImage(GetFilePath(), nFramesToGrab, dStartTime, bReduceColor, nMaxWidth, pSender);
-}
-
-bool CKnownFile::GrabImage(const CString &strFileName, uint8 nFramesToGrab, double dStartTime, bool bReduceColor, uint16 nMaxWidth, void *pSender)
-{
-	if (!IsMovie())
-		return false;
-	CFrameGrabThread *framegrabthread = static_cast<CFrameGrabThread*>(AfxBeginThread(RUNTIME_CLASS(CFrameGrabThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
-	framegrabthread->SetValues(this, strFileName, nFramesToGrab, dStartTime, bReduceColor, nMaxWidth, pSender);
-	framegrabthread->ResumeThread();
-	return true;
-}
-
-// imgResults[i] can be NULL
-void CKnownFile::GrabbingFinished(HBITMAP *imgResults, uint8 nFramesGrabbed, void *pSender)
-{
-	// continue processing
-	if (theApp.clientlist->IsValidClient(reinterpret_cast<CUpDownClient*>(pSender)))
-		reinterpret_cast<CUpDownClient*>(pSender)->SendPreviewAnswer(this, imgResults, nFramesGrabbed);
-	else if (thePrefs.GetVerbose()) //probably the client got deleted while grabbing the frames
-		AddDebugLogLine(false, _T("Couldn't find Sender of FrameGrabbing Request"));
-
-	//cleanup
-	for (int i = nFramesGrabbed; --i >= 0;)
-		if (imgResults[i])
-			::DeleteObject(imgResults[i]);
-	delete[] imgResults;
 }
 
 bool CKnownFile::ImportParts()

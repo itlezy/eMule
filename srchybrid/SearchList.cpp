@@ -213,7 +213,6 @@ UINT CSearchList::ProcessSearchAnswer(const uchar *in_packet, uint32 size
 			server.m_uAvail = 1;
 			toadd->AddServer(server);
 		}
-		toadd->SetPreviewPossible(sender.GetPreviewSupport() && ED2KFT_VIDEO == GetED2KFileTypeID(toadd->GetFileName()));
 		AddToList(toadd, true);
 	}
 	if (outputwnd)

@@ -1527,13 +1527,10 @@
 #define IDC_LOADURL                     2063
 #define IDC_WSRELOADTMPL                2064
 #define IDC_BOOTSTRAPBUTTON             2065
-#define IDC_PV_EXIT                     2066
 #define IDC_DEBUG_OPTS                  2067
 #define IDC_TRAFFIC_TEXT                2069
 #define IDC_SEARCH_RESET                2076
-#define IDC_PV_NEXT                     2078
 #define IDC_CONVREMOVE                  2080
-#define IDC_PV_PRIOR                    2084
 #define IDC_SERVLIST_TEXT               2085
 #define IDC_SERVLIST                    2091
 #define IDC_CANCELS                     2093
@@ -2026,7 +2023,6 @@
 #define IDC_KADSEARCHLAB                2753
 #define IDC_KADCONTACTLAB               2754
 #define IDC_BOOTSTRAPPORT               2760
-#define IDC_PV_IMAGE                    2761
 #define IDC_CONNECTION_NETWORK          2762
 #define IDC_WIZARD_NETWORK              2763
 #define IDC_WIZARD_ED2K                 2764
@@ -2039,8 +2035,6 @@
 #define IDC_TOTAL_TAGS                  2772
 #define IDC_MAXUP_SLIDER                2774
 #define IDC_MAXDOWN_SLIDER              2775
-#define IDD_PREVIEWDIALOG               2776
-#define IDC_PREVIEW_INFO                2777
 #define IDC_HIDECONVDLG                 2778
 #define IDC_HASHSET                     2779
 #define IDC_JOBLIST                     2780

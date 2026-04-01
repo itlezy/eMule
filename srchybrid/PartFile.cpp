@@ -4981,28 +4981,6 @@ bool CPartFile::CopyPartFile(CArray<Gap_Struct> &raFilled, const CString &tempFi
 	return false;
 }
 
-bool CPartFile::GrabImage(uint8 nFramesToGrab, double dStartTime, bool bReduceColor, uint16 nMaxWidth, void *pSender)
-{
-	if (IsPartFile()) {
-		if (!inSet(GetStatus(), PS_READY, PS_PAUSED) || m_bPreviewing || GetPartCount() < 2 || !IsCompleteBD(0))
-			return false;
-		m_bPreviewing = m_FileCompleteMutex.Lock(100);
-		if (!m_bPreviewing)
-			return false;
-	}
-	const CString &sFile(IsPartFile() ? RemoveFileExtension(m_fullname) : GetFilePath());
-	return CKnownFile::GrabImage(sFile, nFramesToGrab, dStartTime, bReduceColor, nMaxWidth, pSender);
-}
-
-void CPartFile::GrabbingFinished(HBITMAP *imgResults, uint8 nFramesGrabbed, void *pSender)
-{
-	if (IsPartFile()) {
-		m_bPreviewing = false;
-		m_FileCompleteMutex.Unlock(); // unlock the file and continue processing
-	}
-	CKnownFile::GrabbingFinished(imgResults, nFramesGrabbed, pSender);
-}
-
 void CPartFile::GetLeftToTransferAndAdditionalNeededSpace(uint64 &rui64LeftToTransfer
 	, uint64 &rui64AdditionalNeededSpace) const
 {

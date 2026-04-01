@@ -53,7 +53,6 @@
 #include "ServerWnd.h"
 #include "TransferDlg.h"
 #include "ChatWnd.h"
-#include "PreviewDlg.h"
 #include "Exceptions.h"
 #include "ClientUDPSocket.h"
 #include "ProtocolGuards.h"
@@ -247,9 +246,6 @@ void CUpDownClient::Init()
 	m_fSharedDirectories = 0;
 	m_fSentCancelTransfer = 0;
 	m_fNoViewSharedFiles = 0;
-	m_fSupportsPreview = 0;
-	m_fPreviewReqPending = 0;
-	m_fPreviewAnsPending = 0;
 	m_fIsSpammer = 0;
 	m_fMessageFiltered = 0;
 	m_fPeerCache = 0;
@@ -336,7 +332,6 @@ void CUpDownClient::ClearHelloProperties()
 	m_byCompatibleClient = 0;
 	m_nKadPort = 0;
 	m_bySupportSecIdent = 0;
-	m_fSupportsPreview = 0;
 	m_nClientVersion = 0;
 	m_fSharedDirectories = 0;
 	m_bMultiPacket = 0;
@@ -487,7 +482,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 			//	1 PeerChache supported
 			//	1 No 'View Shared Files' supported
 			//	1 MultiPacket - deprecated with FileIdentifiers/MultipacketExt2
-			//  1 Preview
+			//  1 Reserved
 			if (temptag.IsInt()) {
 				m_fSupportsAICH = (temptag.GetInt() >> 29) & 0x07;
 				m_bUnicodeSupport = (temptag.GetInt() >> 28) & 0x01;
@@ -500,13 +495,12 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 				m_fPeerCache = (temptag.GetInt() >> 3) & 0x01;
 				m_fNoViewSharedFiles = (temptag.GetInt() >> 2) & 0x01;
 				m_bMultiPacket = (temptag.GetInt() >> 1) & 0x01;
-				m_fSupportsPreview = (temptag.GetInt() >> 0) & 0x01;
 				dwEmuleTags |= 2;
 				if (bDbgInfo) {
 					m_strHelloInfo.AppendFormat(_T("\n  PeerCache=%u  UDPVer=%u  DataComp=%u  SecIdent=%u  SrcExchg=%u")
-						_T("  ExtReq=%u  Commnt=%u  Preview=%u  NoViewFiles=%u  Unicode=%u")
+						_T("  ExtReq=%u  Commnt=%u  NoViewFiles=%u  Unicode=%u")
 						, m_fPeerCache, m_byUDPVer, m_byDataCompVer, m_bySupportSecIdent, m_bySourceExchange1Ver
-						, m_byExtendedRequestsVer, m_byAcceptCommentVer, m_fSupportsPreview, m_fNoViewSharedFiles, m_bUnicodeSupport);
+						, m_byExtendedRequestsVer, m_byAcceptCommentVer, m_fNoViewSharedFiles, m_bUnicodeSupport);
 				}
 			} else if (bDbgInfo)
 				m_strHelloInfo.AppendFormat(_T("\n  ***UnkType=%s"), (LPCTSTR)temptag.GetFullInfo());
@@ -739,8 +733,6 @@ void CUpDownClient::SendMuleInfoPacket(bool bAnswer)
 	tag6.WriteTagToFile(data);
 
 	uint32 dwTagValue = (theApp.clientcredits->CryptoAvailable() ? 3 : 0);
-	if (thePrefs.CanSeeShares() != vsfaNobody) // set 'Preview supported' only if 'View Shared Files' allowed
-		dwTagValue |= 0x80;
 	CTag tag7(ET_FEATURES, dwTagValue);
 	tag7.WriteTagToFile(data);
 
@@ -869,13 +861,12 @@ void CUpDownClient::ProcessMuleInfoPacket(const uchar *pachPacket, uint32 nSize)
 			break;
 		case ET_FEATURES:
 			// Bits 31- 8: 0 - reserved
-			// Bit	7: Preview
+			// Bit	7: Reserved
 			// Bit  6- 0: secure identification
 			if (temptag.IsInt()) {
 				m_bySupportSecIdent = (uint8)((temptag.GetInt()) & 3);
-				m_fSupportsPreview = (temptag.GetInt() >> 7) & 1;
 				if (bDbgInfo)
-					m_strMuleInfo.AppendFormat(_T("\n  SecIdent=%u  Preview=%u"), m_bySupportSecIdent, m_fSupportsPreview);
+					m_strMuleInfo.AppendFormat(_T("\n  SecIdent=%u"), m_bySupportSecIdent);
 			} else if (bDbgInfo)
 				m_strMuleInfo.AppendFormat(_T("\n  ***UnkType=%s"), (LPCTSTR)temptag.GetFullInfo());
 			break;
@@ -996,7 +987,6 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 	const UINT uAcceptCommentVer = 1;
 	const UINT uNoViewSharedFiles = static_cast<int>(thePrefs.CanSeeShares() == vsfaNobody); // for backward compatibility this has to be a 'negative' flag
 	const UINT uMultiPacket = 1;
-	const UINT uSupportPreview = static_cast<int>(thePrefs.CanSeeShares() != vsfaNobody); // set 'Preview supported' only if 'View Shared Files' allowed
 	const UINT uPeerCache = 0;
 	const UINT uUnicodeSupport = 1;
 	const UINT nAICHVer = 1;
@@ -1011,8 +1001,7 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 				(uAcceptCommentVer	  <<  4) |
 				(uPeerCache			  <<  3) |
 				(uNoViewSharedFiles	  <<  2) |
-				(uMultiPacket		  <<  1) |
-				(uSupportPreview	  <<  0)
+				(uMultiPacket		  <<  1)
 				);
 	tagMisOptions1.WriteTagToFile(data);
 
@@ -2067,128 +2056,6 @@ void CUpDownClient::ResetFileStatusInfo()
 bool CUpDownClient::IsBanned() const
 {
 	return theApp.clientlist->IsBannedClient(GetIP());
-}
-
-void CUpDownClient::SendPreviewRequest(const CAbstractFile &rForFile)
-{
-	if (m_fPreviewReqPending == 0) {
-		m_fPreviewReqPending = 1;
-		if (thePrefs.GetDebugClientTCPLevel() > 0)
-			DebugSend("OP_RequestPreview", this, rForFile.GetFileHash());
-		Packet *packet = new Packet(OP_REQUESTPREVIEW, 16, OP_EMULEPROT);
-		md4cpy(packet->pBuffer, rForFile.GetFileHash());
-		theStats.AddUpDataOverheadOther(packet->size);
-		SafeConnectAndSendPacket(packet);
-	} else
-		LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_PREVIEWALREADY));
-}
-
-void CUpDownClient::SendPreviewAnswer(const CKnownFile *pForFile, HBITMAP *imgFrames, uint8 nCount)
-{
-	m_fPreviewAnsPending = 0;
-	if (imgFrames == NULL) {
-		ASSERT(0);
-		return;
-	}
-	CSafeMemFile data(1024);
-	if (pForFile)
-		data.WriteHash16(pForFile->GetFileHash());
-	else {
-		static const uchar _aucZeroHash[MDX_DIGEST_SIZE] = {};
-		data.WriteHash16(_aucZeroHash);
-	}
-	data.WriteUInt8(nCount);
-	bool bSend = true;
-	for (int i = 0; i < nCount; ++i) {
-		HBITMAP bmp_frame = imgFrames[i];
-		if (bmp_frame) {
-			if (bSend) {
-				size_t nFrameSize;
-				byte *byFrameBuffer = bmp2mem(bmp_frame, nFrameSize, Gdiplus::ImageFormatPNG);
-				if (byFrameBuffer) {
-					data.WriteUInt32((uint32)nFrameSize);
-					data.Write(byFrameBuffer, (UINT)nFrameSize);
-					delete[] byFrameBuffer;
-				} else {
-					ASSERT(0);
-					bSend = false;
-				}
-			}
-			::DeleteObject(bmp_frame);
-			imgFrames[i] = 0;
-		} else {
-			ASSERT(0);
-			bSend = false;
-		}
-	}
-	if (!bSend)
-		return;
-
-	Packet *packet = new Packet(data, OP_EMULEPROT);
-	packet->opcode = OP_PREVIEWANSWER;
-	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		DebugSend("OP_PreviewAnswer", this, (uchar*)packet->pBuffer);
-	theStats.AddUpDataOverheadOther(packet->size);
-	SafeConnectAndSendPacket(packet);
-}
-
-void CUpDownClient::ProcessPreviewReq(const uchar *pachPacket, uint32 nSize)
-{
-	if (nSize < 16)
-		throw GetResString(IDS_ERR_WRONGPACKETSIZE);
-
-	if (m_fPreviewAnsPending || thePrefs.CanSeeShares() == vsfaNobody || (thePrefs.CanSeeShares() == vsfaFriends && !IsFriend()))
-		return;
-
-	m_fPreviewAnsPending = 1;
-	CKnownFile *previewFile = theApp.sharedfiles->GetFileByID(pachPacket);
-	if (previewFile == NULL)
-		SendPreviewAnswer(NULL, NULL, 0);
-	else
-		previewFile->GrabImage(4, 15.0, true, 450, this); //do not start at 0 because videos commonly begin with blank screens
-}
-
-void CUpDownClient::ProcessPreviewAnswer(const uchar *pachPacket, uint32 nSize)
-{
-	if (m_fPreviewReqPending == 0)
-		return;
-	m_fPreviewReqPending = 0;
-	CSafeMemFile data(pachPacket, nSize);
-	uchar Hash[MDX_DIGEST_SIZE];
-	data.ReadHash16(Hash);
-	uint8 nCount = data.ReadUInt8();
-	if (nCount == 0) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_PREVIEWFAILED), GetUserName());
-		return;
-	}
-	CSearchFile *sfile = theApp.searchlist->GetSearchFileByHash(Hash);
-	if (sfile == NULL)	//could be already deleted
-		return;
-
-	byte *pBuffer = NULL;
-	HBITMAP image = 0;
-	try {
-		for (int i = 0; i < nCount; ++i) {
-			uint32 nImgSize = data.ReadUInt32();
-			if (nImgSize > nSize)
-				throwCStr(_T("CUpDownClient::ProcessPreviewAnswer - Provided image size exceeds limit"));
-			pBuffer = new byte[nImgSize];
-			data.Read(pBuffer, nImgSize);
-			image = mem2bmp(pBuffer, nImgSize);
-			if (image) {
-				sfile->AddPreviewImg(image);
-				image = 0; //do not delete on exception
-			}
-			delete[] pBuffer;
-			pBuffer = NULL;
-		}
-	} catch (...) {
-		if (image)
-			::DeleteObject(image);
-		delete[] pBuffer;
-		throw;
-	}
-	(new PreviewDlg())->SetFile(sfile);
 }
 
 // Sends a packet. If needed, it will establish a connection before.

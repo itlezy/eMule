@@ -203,7 +203,7 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 		::SetPixel(hdc.Get(), rand() % nWidth, rand() % nHeight, RGB(0, 0, 0));
 
 	m_hbmpCaptcha = (HBITMAP)hbmpCaptcha.Release();
-#if TEST_FRAMEGRABBER //reusing macro from FrameGrabThread
+#if TEST_FRAMEGRABBER // legacy debug-only image export hook
 	CImage captcha;
 	captcha.Attach(m_hbmpCaptcha);
 	captcha.Save(_T("\\tmp\\CaptchaTest.bmp"), Gdiplus::ImageFormatBMP);

@@ -26,7 +26,6 @@
 #include "SearchDlg.h"
 #include "SearchParams.h"
 #include "ClosableTabCtrl.h"
-#include "PreviewDlg.h"
 #include "UpDownClient.h"
 #include "ClientList.h"
 #include "MemDC.h"
@@ -676,13 +675,11 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 {
 	int iSelected = 0;
 	int iToDownload = 0;
-	int iToPreview = 0;
 	bool bContainsNotSpamFile = false;
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
 		const CSearchFile *pFile = reinterpret_cast<CSearchFile*>(GetItemData(GetNextSelectedItem(pos)));
 		if (pFile) {
 			++iSelected;
-			iToPreview += static_cast<int>(pFile->IsPreviewPossible());
 			iToDownload += static_cast<int>(!theApp.downloadqueue->IsFileExisting(pFile->GetFileHash(), false));
 			if (!pFile->IsConsideredSpam())
 				bContainsNotSpamFile = true;
@@ -701,11 +698,6 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 	m_SearchFileMenu.EnableMenuItem(MP_REMOVE, theApp.emuledlg->searchwnd->CanDeleteSearches() ? MF_ENABLED : MF_GRAYED);
 	m_SearchFileMenu.EnableMenuItem(MP_REMOVEALL, theApp.emuledlg->searchwnd->CanDeleteSearches() ? MF_ENABLED : MF_GRAYED);
 	m_SearchFileMenu.EnableMenuItem(MP_SEARCHRELATED, iSelected > 0 && theApp.emuledlg->searchwnd->CanSearchRelatedFiles() ? MF_ENABLED : MF_GRAYED);
-	UINT uInsertedMenuItem = 0;
-	if (iToPreview == 1) {
-		if (m_SearchFileMenu.InsertMenu(MP_FIND, MF_STRING | MF_ENABLED, MP_PREVIEW, GetResString(IDS_DL_PREVIEW), _T("Preview")))
-			uInsertedMenuItem = MP_PREVIEW;
-	}
 	m_SearchFileMenu.EnableMenuItem(MP_FIND, GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED);
 
 	UINT uInsertedMenuItem2 = 0;
@@ -727,8 +719,6 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 
 	GetPopupMenuPos(*this, point);
 	m_SearchFileMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
-	if (uInsertedMenuItem)
-		VERIFY(m_SearchFileMenu.RemoveMenu(uInsertedMenuItem, MF_BYCOMMAND));
 	if (uInsertedMenuItem2)
 		VERIFY(m_SearchFileMenu.RemoveMenu(uInsertedMenuItem2, MF_BYCOMMAND));
 	m_SearchFileMenu.RemoveMenu(m_SearchFileMenu.GetMenuItemCount() - 1, MF_BYPOSITION);
@@ -817,22 +807,6 @@ BOOL CSearchListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			{
 				CSearchResultFileDetailSheet sheet(selectedList, (wParam == MP_CMT ? IDD_COMMENTLST : 0), this);
 				sheet.DoModal();
-			}
-			return TRUE;
-		case MP_PREVIEW:
-			if (file) {
-				if (file->GetPreviews().GetSize() > 0) {
-					// already have previews
-					(new PreviewDlg())->SetFile(file);
-				} else {
-					CUpDownClient *newclient = new CUpDownClient(NULL, file->GetClientPort(), file->GetClientID(), file->GetClientServerIP(), file->GetClientServerPort(), true);
-					if (!theApp.clientlist->AttachToAlreadyKnown(&newclient, NULL))
-						theApp.clientlist->AddClient(newclient);
-
-					newclient->SendPreviewRequest(*file);
-					// add to res - later
-					AddLogLine(true, _T("Preview Requested - Please wait"));
-				}
 			}
 			return TRUE;
 		case MP_SEARCHRELATED:

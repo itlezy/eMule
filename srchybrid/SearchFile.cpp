@@ -113,7 +113,6 @@ IMPLEMENT_DYNAMIC(CSearchFile, CAbstractFile)
 CSearchFile::CSearchFile(const CSearchFile *copyfrom)
 	: CAbstractFile(copyfrom)
 	, m_list_childcount()
-	, m_bPreviewPossible()
 	, m_list_bExpanded()
 {
 	CSearchFile::UpdateFileRatingCommentAvail();
@@ -160,7 +159,6 @@ CSearchFile::CSearchFile(CFileDataIO &in_data, bool bOptUTF8, uint32 nSearchID, 
 	, m_list_childcount()
 	, m_list_parent()
 	, m_eKnown(NotDetermined)
-	, m_bPreviewPossible()
 	, m_list_bExpanded()
 {
 	m_FileIdentifier.SetMD4Hash(in_data);
@@ -294,9 +292,6 @@ CSearchFile::CSearchFile(CFileDataIO &in_data, bool bOptUTF8, uint32 nSearchID, 
 CSearchFile::~CSearchFile()
 {
 	free(m_pszDirectory);
-	for (int i = m_listFrames.GetSize(); --i >= 0;)
-		if (m_listFrames[i])
-			::DeleteObject(m_listFrames[i]);
 }
 
 void CSearchFile::StoreToFile(CFileDataIO &rFile) const

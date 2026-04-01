@@ -1258,30 +1258,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 
 		client->ProcessMuleCommentPacket(packet, size);
 		return;
-	case OP_REQUESTPREVIEW:
-		if (thePrefs.GetDebugClientTCPLevel() > 0)
-			DebugRecv("OP_RequestPreView", client, (size >= 16) ? packet : NULL);
-		theStats.AddDownDataOverheadOther(uRawSize);
-		//client->CheckHandshakeFinished();
-
-		if (thePrefs.CanSeeShares() == vsfaEverybody || (thePrefs.CanSeeShares() == vsfaFriends && client->IsFriend())) {
-			if (thePrefs.GetVerbose())
-				AddDebugLogLine(true, _T("Client '%s' (%s) requested Preview - accepted"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP()));
-			client->ProcessPreviewReq(packet, size);
-		} else {
-			// we don't send any answer here, because the client should know that he was not allowed to ask
-			if (thePrefs.GetVerbose())
-				AddDebugLogLine(true, _T("Client '%s' (%s) requested Preview - denied"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP()));
-		}
-		return;
-	case OP_PREVIEWANSWER:
-		if (thePrefs.GetDebugClientTCPLevel() > 0)
-			DebugRecv("OP_PreviewAnswer", client, (size >= 16) ? packet : NULL);
-		theStats.AddDownDataOverheadOther(uRawSize);
-		//client->CheckHandshakeFinished();
-
-		client->ProcessPreviewAnswer(packet, size);
-		return;
 	case OP_PUBLICIP_ANSWER:
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugRecv("OP_PublicIPAns", client);

@@ -1,4 +1,6 @@
-# Frame Grabber Replacement -- Impact Analysis & Plan
+# Retired Thumbnail Preview Capability
+
+This document is retained as feature history only. The internal thumbnail-preview capability was removed from this branch instead of being migrated to Media Foundation or FFmpeg.
 
 ## Table of Contents
 
@@ -14,18 +16,15 @@
 
 | ID | Feature | Status |
 |----|---------|--------|
-| FEAT_022 | Windows Media Foundation migration (recommended) | Not started |
-| FEAT_023 | FFmpeg alternative (long-term) | Not started |
+| FEAT_022 | Windows Media Foundation migration (recommended) | **[REJECTED]** thumbnail preview capability retired |
+| FEAT_023 | FFmpeg alternative (long-term) | **[REJECTED]** thumbnail preview capability retired |
 | FEAT_024 | MediaInfo static embedding | **[REJECTED]** |
 
 ## Background
 
-`FrameGrabThread.cpp` uses DirectShow `IMediaDet` (via a bundled `qedit.h`) to extract
-video frame thumbnails. `IMediaDet` was deprecated in Windows Vista and `qedit.h` was
-removed from the Windows SDK after version 7.1. The bundled header is a workaround that
-keeps this alive, but it is fragile and unmaintained.
+The old capability used `FrameGrabThread.cpp` plus DirectShow `IMediaDet` through the bundled `qedit.h` header to generate video thumbnails for remote preview exchange. That feature is no longer part of the product.
 
-Two viable replacement paths are analysed below.
+`qedit.h` remains in the tree only because `MediaInfo.h` still includes it for separate media-info probing. Removing that dependency is a different task from the retired thumbnail-preview feature.
 
 ---
 

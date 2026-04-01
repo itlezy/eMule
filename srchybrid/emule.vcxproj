@@ -168,7 +168,6 @@
     <ClCompile Include="FileDetailDlgStatistics.cpp" />
     <ClCompile Include="FileIdentifier.cpp" />
     <ClCompile Include="FileInfoDialog.cpp" />
-    <ClCompile Include="FrameGrabThread.cpp" />
     <ClCompile Include="Friend.cpp" />
     <ClCompile Include="FriendList.cpp" />
     <ClCompile Include="FriendListCtrl.cpp" />
@@ -276,7 +275,6 @@
     <ClCompile Include="Preferences.cpp" />
     <ClCompile Include="PreferencesDlg.cpp" />
     <ClCompile Include="Preview.cpp" />
-    <ClCompile Include="PreviewDlg.cpp" />
     <ClCompile Include="ProgressCtrlX.cpp" />
     <ClCompile Include="Quantize.cpp" />
     <ClCompile Include="QueueListCtrl.cpp" />
@@ -438,7 +436,6 @@
     <ClInclude Include="FileDetailDlgStatistics.h" />
     <ClInclude Include="FileIdentifier.h" />
     <ClInclude Include="FileInfoDialog.h" />
-    <ClInclude Include="FrameGrabThread.h" />
     <ClInclude Include="Friend.h" />
     <ClInclude Include="FriendList.h" />
     <ClInclude Include="FriendListCtrl.h" />
@@ -548,7 +545,6 @@
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="PreferencesDlg.h" />
     <ClInclude Include="Preview.h" />
-    <ClInclude Include="PreviewDlg.h" />
     <ClInclude Include="ProgressCtrlX.h" />
     <ClInclude Include="QArray.h" />
     <ClInclude Include="Quantize.h" />

@@ -57,7 +57,6 @@
 #include "Exceptions.h"
 #include "SearchList.h"
 #include "HTRichEditCtrl.h"
-#include "FrameGrabThread.h"
 #include "kademlia/kademlia/kademlia.h"
 #include "PerfLog.h"
 #include "DropTarget.h"
@@ -184,7 +183,6 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(TM_FILEOPPROGRESS, OnFileOpProgress)
 	ON_MESSAGE(TM_HASHFAILED, OnHashFailed)
 	ON_MESSAGE(TM_IMPORTPART, OnImportPart)
-	ON_MESSAGE(TM_FRAMEGRABFINISHED, OnFrameGrabFinished)
 	ON_MESSAGE(TM_FILEALLOCEXC, OnFileAllocExc)
 	ON_MESSAGE(TM_FILECOMPLETED, OnFileCompleted)
 	ON_MESSAGE(TM_CONSOLETHREADEVENT, OnConsoleThreadEvent)
@@ -2461,20 +2459,6 @@ void CemuleDlg::ApplyLogFont(LPLOGFONT pFont)
 		serverwnd->logbox->SetFont(&theApp.m_fontLog);
 		serverwnd->debuglog->SetFont(&theApp.m_fontLog);
 	}
-}
-
-LRESULT CemuleDlg::OnFrameGrabFinished(WPARAM wParam, LPARAM lParam)
-{
-	CKnownFile *pOwner = reinterpret_cast<CKnownFile*>(wParam);
-	FrameGrabResult_Struct *result = (FrameGrabResult_Struct*)lParam;
-
-	if (theApp.knownfiles->IsKnownFile(pOwner) || theApp.downloadqueue->IsPartFile(pOwner))
-		pOwner->GrabbingFinished(result->imgResults, result->nImagesGrabbed, result->pSender);
-	else
-		ASSERT(0);
-
-	delete result;
-	return 0;
 }
 
 static void StraightWindowStyles(CWnd *pWnd)

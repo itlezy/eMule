@@ -107,10 +107,7 @@ public:
 	void	RemoveMetaDataTags(UINT uTagType = 0);
 	void	RemoveBrokenUnicodeMetaDataTags();
 
-	// preview
 	bool	IsMovie() const;
-	virtual bool GrabImage(uint8 nFramesToGrab, double dStartTime, bool bReduceColor, uint16 nMaxWidth, void *pSender);
-	virtual void GrabbingFinished(HBITMAP *imgResults, uint8 nFramesGrabbed, void *pSender);
 
 	bool	ImportParts();
 
@@ -151,8 +148,6 @@ public:
 #endif
 
 protected:
-	//preview
-	bool	GrabImage(const CString &strFileName, uint8 nFramesToGrab, double dStartTime, bool bReduceColor, uint16 nMaxWidth, void *pSender);
 	bool	LoadTagsFromFile(CFileDataIO &file);
 	bool	LoadDateFromFile(CFileDataIO &file);
 	static void	CreateHash(CFile *pFile, uint64 Length, uchar *pucHash, CAICHHashTree *pShaHashOut = NULL);

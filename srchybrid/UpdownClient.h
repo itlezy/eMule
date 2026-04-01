@@ -203,12 +203,6 @@ public:
 	uint8			GetInfoPacketsReceived() const					{ return m_byInfopacketsReceived; }
 	void			InfoPacketsReceived();
 	bool			HasPassedSecureIdent(bool bPassIfUnavailable) const;
-	// preview
-	void			SendPreviewRequest(const CAbstractFile &rForFile);
-	void			SendPreviewAnswer(const CKnownFile *pForFile, HBITMAP *imgFrames, uint8 nCount);
-	void			ProcessPreviewReq(const uchar *pachPacket, uint32 nSize);
-	void			ProcessPreviewAnswer(const uchar *pachPacket, uint32 nSize);
-	bool			GetPreviewSupport() const						{ return m_fSupportsPreview && GetViewSharedFilesSupport(); }
 	bool			GetViewSharedFilesSupport() const				{ return m_fNoViewSharedFiles==0; }
 	bool			SafeConnectAndSendPacket(Packet *packet);
 	bool			SendPacket(Packet *packet, bool bVerifyConnection = false);
@@ -652,9 +646,6 @@ protected:
 		 m_fSharedDirectories : 1, // client supports OP_ASKSHAREDIRS opcodes
 		 m_fSentCancelTransfer: 1, // we have sent an OP_CANCELTRANSFER in the current connection
 		 m_fNoViewSharedFiles : 1, // client has disabled the 'View Shared Files' feature, if this flag is not set, we just know that we don't know for sure if it is enabled
-		 m_fSupportsPreview   : 1,
-		 m_fPreviewReqPending : 1,
-		 m_fPreviewAnsPending : 1,
 		 m_fIsSpammer		  : 1,
 		 m_fMessageFiltered   : 1,
 		 m_fPeerCache		  : 1,

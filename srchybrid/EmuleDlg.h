@@ -263,9 +263,6 @@ protected:
 	afx_msg LRESULT OnFileOpProgress(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnImportPart(WPARAM wParam,LPARAM lParam);
 
-	//Frame grabbing
-	afx_msg LRESULT OnFrameGrabFinished(WPARAM wParam, LPARAM lParam);
-
 	afx_msg LRESULT OnAreYouEmule(WPARAM, LPARAM);
 
 	afx_msg LRESULT OnTaskbarBtnCreated(WPARAM, LPARAM);
@@ -302,7 +299,6 @@ enum EEMuleAppMsgs
 	TM_FINISHEDHASHING = WM_APP + 10,
 	TM_HASHFAILED,
 	TM_IMPORTPART,
-	TM_FRAMEGRABFINISHED,
 	TM_FILEALLOCEXC,
 	TM_FILECOMPLETED,
 	TM_FILEOPPROGRESS,
