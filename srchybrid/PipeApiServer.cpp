@@ -368,12 +368,19 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 {
 	const std::string strCommand = rRequest.value("cmd", std::string());
 	const json params = rRequest.value("params", json::object());
+#ifdef _DEBUG
+	/** Reports the compile-time build flavor for the Pipe API version response. */
+	const char *const pszBuildFlavor = "debug";
+#else
+	/** Reports the compile-time build flavor for the Pipe API version response. */
+	const char *const pszBuildFlavor = "release";
+#endif
 
 	if (strCommand == "system/version") {
 		return json{
 			{"appName", "eMule"},
 			{"version", StdUtf8FromCString(theApp.m_strCurVersionLong)},
-			{"build", _DEBUG ? "debug" : "release"},
+			{"build", pszBuildFlavor},
 #if defined(_M_ARM64)
 			{"platform", "arm64"}
 #else
