@@ -111,6 +111,11 @@ public:
 
 	LRESULT OnHandleCommand(WPARAM wParam, LPARAM lParam);
 	void NotifyStatsUpdated(bool bForce = false);
+	/**
+	 * Emits the server and Kad state-change events after the main window
+	 * already refreshed its normal connection widgets.
+	 */
+	void NotifyConnectionStateChanged();
 	void NotifyDownloadAdded(const CPartFile *pPartFile);
 	void NotifyDownloadRemoved(const CPartFile *pPartFile);
 	void NotifyDownloadCompleted(const CPartFile *pPartFile, bool bSucceeded);
@@ -150,7 +155,16 @@ private:
 	void CancelPendingCommands();
 	void ClearPendingWrites();
 	bool ForceDisconnectCurrentPipe(LPCTSTR pszReason, bool bLogWarning = true);
+	/**
+	 * Captures the current network snapshot without emitting events so a newly
+	 * connected sidecar starts from a clean baseline.
+	 */
+	void CaptureConnectionStateSnapshot();
 	void DisconnectPipe();
+	/**
+	 * Drops any remembered server and Kad state after disconnect or shutdown.
+	 */
+	void ResetConnectionStateSnapshot();
 	void WakePendingConnect() const;
 
 	std::thread m_worker;
@@ -174,6 +188,14 @@ private:
 	std::string m_strReadBuffer;
 	HANDLE m_hPipe;
 	DWORD m_dwLastStatsEventTick;
+	bool m_bHasServerSnapshot;
+	CString m_strLastServerAddress;
+	uint16 m_uLastServerPort;
+	bool m_bHasKadSnapshot;
+	bool m_bLastKadRunning;
+	bool m_bLastKadConnected;
+	int m_iLastKadFirewalled;
+	uint32 m_uLastKadBootstrapProgress;
 };
 
 extern CPipeApiServer thePipeApiServer;

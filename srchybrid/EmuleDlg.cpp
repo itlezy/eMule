@@ -938,6 +938,8 @@ void CemuleDlg::ShowConnectionState()
 	ShowConnectionStateIcon();
 	statusbar->SetText(GetConnectionStateString(), SBarConnected, 0);
 	ShowNetworkAddressState();
+	/** Mirror the existing UI connection-state refresh into the local pipe API event stream. */
+	thePipeApiServer.NotifyConnectionStateChanged();
 
 	TBBUTTONINFO tbbi;
 	tbbi.cbSize = (UINT)sizeof(TBBUTTONINFO);

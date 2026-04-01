@@ -27,8 +27,12 @@
 #include "Log.h"
 #include "OtherFunctions.h"
 #include "PartFile.h"
+#include "PipeApiSurfaceSeams.h"
 #include "Preferences.h"
+#include "Server.h"
 #include "ServerConnect.h"
+#include "ServerList.h"
+#include "ServerWnd.h"
 #include "SharedFileList.h"
 #include "Statistics.h"
 #include "StringConversion.h"
@@ -65,6 +69,12 @@ struct SPipeApiError
 	CStringA strId;
 	CStringA strCode;
 	CString strMessage;
+};
+
+struct SPipeApiServerEndpoint
+{
+	CString strAddress;
+	uint16 uPort;
 };
 
 /**
@@ -114,6 +124,16 @@ CString HashToHex(const uchar *pHash)
 	CString strHash(EncodeBase16(pHash, MDX_DIGEST_SIZE));
 	strHash.MakeLower();
 	return strHash;
+}
+
+/**
+ * Returns a JSON hash string or null when the caller has no valid MD4.
+ */
+json JsonHashOrNull(const uchar *pHash)
+{
+	if (pHash == NULL || isnulmd4(pHash))
+		return json(nullptr);
+	return StdUtf8FromCString(HashToHex(pHash));
 }
 
 /**
@@ -168,6 +188,37 @@ CString GetPriorityName(const CPartFile &rPartFile)
 }
 
 /**
+ * Maps the shared-file upload priority into the public API string.
+ */
+CString GetUploadPriorityName(const CKnownFile &rKnownFile)
+{
+	if (rKnownFile.IsAutoUpPriority())
+		return _T("auto");
+
+	switch (rKnownFile.GetUpPriority()) {
+	case PR_VERYLOW:
+		return _T("very_low");
+	case PR_LOW:
+		return _T("low");
+	case PR_HIGH:
+		return _T("high");
+	case PR_VERYHIGH:
+		return _T("very_high");
+	case PR_NORMAL:
+	default:
+		return _T("normal");
+	}
+}
+
+/**
+ * Maps the current upload state into a stable API string.
+ */
+CString GetUploadStateName(const CUpDownClient &rClient)
+{
+	return CString(PipeApiSurfaceSeams::GetUploadStateName(static_cast<uint8_t>(rClient.GetUploadState())));
+}
+
+/**
  * Returns a JSON timestamp or null when the source value is not available.
  */
 json JsonTimeOrNull(time_t value)
@@ -182,6 +233,71 @@ CString GetClientIpString(const CUpDownClient &rClient)
 {
 	const uint32 dwIp = rClient.GetIP() != 0 ? rClient.GetIP() : rClient.GetConnectIP();
 	return dwIp != 0 ? ipstr(dwIp) : CString();
+}
+
+/**
+ * Serializes one server entry together with current connection flags.
+ */
+json BuildServerJson(const CServer &rServer)
+{
+	const CServer *const pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	const bool bIsCurrent = pCurrentServer == &rServer;
+	const bool bConnected = bIsCurrent && theApp.serverconnect->IsConnected();
+	const bool bConnecting = bIsCurrent && theApp.serverconnect->IsConnecting();
+	return json{
+		{"name", StdUtf8FromCString(rServer.GetListName())},
+		{"address", StdUtf8FromCString(rServer.GetAddress())},
+		{"port", rServer.GetPort()},
+		{"ip", StdUtf8FromCString(rServer.GetIP() != 0 ? ipstr(rServer.GetIP()) : CString())},
+		{"dynIp", StdUtf8FromCString(rServer.GetDynIP())},
+		{"description", StdUtf8FromCString(rServer.GetDescription())},
+		{"version", StdUtf8FromCString(rServer.GetVersion())},
+		{"users", rServer.GetUsers()},
+		{"files", rServer.GetFiles()},
+		{"softFiles", rServer.GetSoftFiles()},
+		{"hardFiles", rServer.GetHardFiles()},
+		{"ping", rServer.GetPing()},
+		{"failedCount", rServer.GetFailedCount()},
+		{"priority", PipeApiSurfaceSeams::GetServerPriorityName(rServer.GetPreference())},
+		{"static", rServer.IsStaticMember()},
+		{"current", bIsCurrent},
+		{"connected", bConnected},
+		{"connecting", bConnecting}
+	};
+}
+
+/**
+ * Serializes the current eD2K connection state and active server details.
+ */
+json BuildServerStatusJson()
+{
+	CServer *const pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	return json{
+		{"connected", theApp.serverconnect->IsConnected()},
+		{"connecting", theApp.serverconnect->IsConnecting()},
+		{"lowId", theApp.serverconnect->IsConnected() ? json(theApp.serverconnect->IsLowID()) : json(nullptr)},
+		{"serverCount", static_cast<int64_t>(theApp.serverlist->GetServerCount())},
+		{"currentServer", pCurrentServer != NULL ? BuildServerJson(*pCurrentServer) : json(nullptr)}
+	};
+}
+
+/**
+ * Serializes the current Kad runtime status.
+ */
+json BuildKadStatusJson()
+{
+	const bool bRunning = Kademlia::CKademlia::IsRunning();
+	const bool bConnected = Kademlia::CKademlia::IsConnected();
+	const bool bBootstrapping = Kademlia::CKademlia::IsBootstrapping();
+	return json{
+		{"running", bRunning},
+		{"connected", bConnected},
+		{"firewalled", bConnected ? json(Kademlia::CKademlia::IsFirewalled()) : json(nullptr)},
+		{"bootstrapping", bBootstrapping},
+		{"bootstrapProgress", bBootstrapping ? json(Kademlia::CKademlia::GetBootstrapProgressPercent()) : json(0)},
+		{"users", bConnected ? json(Kademlia::CKademlia::GetKademliaUsers()) : json(nullptr)},
+		{"files", bConnected ? json(Kademlia::CKademlia::GetKademliaFiles()) : json(nullptr)}
+	};
 }
 
 /**
@@ -232,6 +348,68 @@ json BuildSourceJson(const CUpDownClient &rClient)
 		{"serverPort", rClient.GetServerPort()},
 		{"lowId", rClient.HasLowID()},
 		{"queueRank", rClient.GetRemoteQueueRank()}
+	};
+}
+
+/**
+ * Serializes one shared file with non-localized counters and share metadata.
+ */
+json BuildSharedFileJson(const CKnownFile &rKnownFile)
+{
+	return json{
+		{"hash", StdUtf8FromCString(HashToHex(rKnownFile.GetFileHash()))},
+		{"name", StdUtf8FromCString(rKnownFile.GetFileName())},
+		{"path", StdUtf8FromCString(rKnownFile.GetFilePath())},
+		{"directory", StdUtf8FromCString(rKnownFile.GetPath())},
+		{"size", static_cast<uint64>(rKnownFile.GetFileSize())},
+		{"uploadPriority", StdUtf8FromCString(GetUploadPriorityName(rKnownFile))},
+		{"autoUploadPriority", rKnownFile.IsAutoUpPriority()},
+		{"requests", static_cast<int64_t>(rKnownFile.statistic.GetRequests())},
+		{"accepts", static_cast<int64_t>(rKnownFile.statistic.GetAccepts())},
+		{"transferred", static_cast<uint64>(rKnownFile.statistic.GetTransferred())},
+		{"allTimeRequests", static_cast<int64_t>(rKnownFile.statistic.GetAllTimeRequests())},
+		{"allTimeAccepts", static_cast<int64_t>(rKnownFile.statistic.GetAllTimeAccepts())},
+		{"allTimeTransferred", static_cast<uint64>(rKnownFile.statistic.GetAllTimeTransferred())},
+		{"partCount", rKnownFile.GetPartCount()},
+		{"partFile", rKnownFile.IsPartFile()},
+		{"complete", !rKnownFile.IsPartFile()},
+		{"publishedEd2k", rKnownFile.GetPublishedED2K()},
+		{"sharedByRule", theApp.sharedfiles->ShouldBeShared(rKnownFile.GetPath(), rKnownFile.GetFilePath(), false)}
+	};
+}
+
+/**
+ * Serializes one upload or waiting-queue client together with its file hash.
+ */
+json BuildUploadJson(const CUpDownClient &rClient, const bool bWaitingQueue)
+{
+	const CString strUserName(rClient.GetUserName() != NULL ? rClient.GetUserName() : _T(""));
+	const uchar *const pUploadFileHash = rClient.GetUploadFileID();
+	const CKnownFile *const pUploadFile = pUploadFileHash != NULL ? theApp.sharedfiles->GetFileByID(pUploadFileHash) : NULL;
+	return json{
+		{"userName", StdUtf8FromCString(strUserName)},
+		{"userHash", JsonHashOrNull(rClient.HasValidHash() ? rClient.GetUserHash() : NULL)},
+		{"clientSoftware", StdUtf8FromCString(rClient.GetClientSoftVer())},
+		{"clientMod", StdUtf8FromCString(rClient.GetClientModVer())},
+		{"uploadState", StdUtf8FromCString(GetUploadStateName(rClient))},
+		{"uploadSpeed", rClient.GetUploadDatarate()},
+		{"sessionUploaded", static_cast<uint64>(rClient.GetSessionUp())},
+		{"queueSessionUploaded", static_cast<uint64>(rClient.GetQueueSessionPayloadUp())},
+		{"payloadBuffered", static_cast<uint64>(rClient.GetPayloadInBuffer())},
+		{"waitTimeMs", static_cast<uint64>(rClient.GetWaitTime())},
+		{"waitStartedTick", static_cast<uint64>(rClient.GetWaitStartTime())},
+		{"score", static_cast<int64_t>(rClient.GetScore(false, rClient.IsDownloading()))},
+		{"ip", StdUtf8FromCString(GetClientIpString(rClient))},
+		{"port", rClient.GetUserPort()},
+		{"serverIp", StdUtf8FromCString(rClient.GetServerIP() != 0 ? ipstr(rClient.GetServerIP()) : CString())},
+		{"serverPort", rClient.GetServerPort()},
+		{"lowId", rClient.HasLowID()},
+		{"friendSlot", rClient.GetFriendSlot()},
+		{"uploading", rClient.IsDownloading()},
+		{"waitingQueue", bWaitingQueue},
+		{"requestedFileHash", JsonHashOrNull(pUploadFileHash)},
+		{"requestedFileName", pUploadFile != NULL ? json(StdUtf8FromCString(pUploadFile->GetFileName())) : json(nullptr)},
+		{"requestedFileSize", pUploadFile != NULL ? json(static_cast<uint64>(pUploadFile->GetFileSize())) : json(nullptr)}
 	};
 }
 
@@ -355,6 +533,53 @@ CPartFile* FindPartFileByHash(const json &rValue, SPipeApiError &rError)
 }
 
 /**
+ * Parses one optional { addr, port } server endpoint from a command payload.
+ */
+bool TryGetServerEndpoint(const json &rParams, SPipeApiServerEndpoint &rEndpoint, bool &rbHasEndpoint, SPipeApiError &rError)
+{
+	const bool bHasAddress = rParams.contains("addr");
+	const bool bHasPort = rParams.contains("port");
+	if (!bHasAddress && !bHasPort) {
+		rbHasEndpoint = false;
+		return true;
+	}
+
+	if (!bHasAddress || !bHasPort || !rParams["addr"].is_string() || !rParams["port"].is_number_unsigned()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("addr and port must be provided together");
+		return false;
+	}
+
+	const unsigned uPort = rParams["port"].get<unsigned>();
+	rEndpoint.strAddress = CStringFromStdUtf8(rParams["addr"].get<std::string>());
+	rEndpoint.strAddress.Trim();
+	if (rEndpoint.strAddress.IsEmpty() || uPort == 0 || uPort > 0xFFFFu) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("addr must be non-empty and port must be in the range 1..65535");
+		return false;
+	}
+
+	rEndpoint.uPort = static_cast<uint16>(uPort);
+	rbHasEndpoint = true;
+	return true;
+}
+
+/**
+ * Resolves one server endpoint against the current server list.
+ */
+CServer* FindServerByEndpoint(const SPipeApiServerEndpoint &rEndpoint)
+{
+	CServer *pServer = theApp.serverlist->GetServerByAddress(rEndpoint.strAddress, rEndpoint.uPort);
+	if (pServer != NULL)
+		return pServer;
+
+	const CStringA strAddressA(CT2A(rEndpoint.strAddress));
+	IN_ADDR address = {};
+	const uint32 dwIp = InetPtonA(AF_INET, strAddressA, &address) == 1 ? address.s_addr : INADDR_NONE;
+	return dwIp != INADDR_NONE ? theApp.serverlist->GetServerByIPTCP(dwIp, rEndpoint.uPort) : NULL;
+}
+
+/**
  * Starts the existing eMule rehash flow for a part file.
  */
 bool StartPartFileRecheck(CPartFile &rPartFile, SPipeApiError &rError)
@@ -425,6 +650,172 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	if (strCommand == "system/stats")
 		return BuildSystemStatsJson();
+
+	if (strCommand == "servers/list") {
+		json result = json::array();
+		for (INT_PTR i = 0; i < theApp.serverlist->GetServerCount(); ++i) {
+			CServer *const pServer = theApp.serverlist->GetServerAt(i);
+			if (pServer != NULL)
+				result.push_back(BuildServerJson(*pServer));
+		}
+		return result;
+	}
+
+	if (strCommand == "servers/status")
+		return BuildServerStatusJson();
+
+	if (strCommand == "servers/connect") {
+		SPipeApiServerEndpoint endpoint;
+		bool bHasEndpoint = false;
+		if (!TryGetServerEndpoint(params, endpoint, bHasEndpoint, rError))
+			return json();
+
+		if (bHasEndpoint) {
+			CServer *const pServer = FindServerByEndpoint(endpoint);
+			if (pServer == NULL) {
+				rError.strCode = "NOT_FOUND";
+				rError.strMessage = _T("server not found");
+				return json();
+			}
+			theApp.serverconnect->ConnectToServer(pServer);
+		} else
+			theApp.serverconnect->ConnectToAnyServer();
+
+		theApp.emuledlg->ShowConnectionState();
+		return BuildServerStatusJson();
+	}
+
+	if (strCommand == "servers/disconnect") {
+		theApp.serverconnect->Disconnect();
+		theApp.emuledlg->ShowConnectionState();
+		return BuildServerStatusJson();
+	}
+
+	if (strCommand == "servers/add") {
+		SPipeApiServerEndpoint endpoint;
+		bool bHasEndpoint = false;
+		if (!TryGetServerEndpoint(params, endpoint, bHasEndpoint, rError))
+			return json();
+		if (!bHasEndpoint) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("addr and port are required");
+			return json();
+		}
+
+		CString strName;
+		if (params.contains("name")) {
+			if (!params["name"].is_string()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("name must be a string when provided");
+				return json();
+			}
+			strName = CStringFromStdUtf8(params["name"].get<std::string>());
+		}
+
+		if (theApp.emuledlg->serverwnd == NULL || !theApp.emuledlg->serverwnd->AddServer(endpoint.uPort, endpoint.strAddress, strName, false)) {
+			rError.strCode = "EMULE_ERROR";
+			rError.strMessage = _T("failed to add server");
+			return json();
+		}
+
+		CServer *const pServer = FindServerByEndpoint(endpoint);
+		return pServer != NULL ? BuildServerJson(*pServer) : json{
+			{"name", StdUtf8FromCString(strName)},
+			{"address", StdUtf8FromCString(endpoint.strAddress)},
+			{"port", endpoint.uPort}
+		};
+	}
+
+	if (strCommand == "servers/remove") {
+		SPipeApiServerEndpoint endpoint;
+		bool bHasEndpoint = false;
+		if (!TryGetServerEndpoint(params, endpoint, bHasEndpoint, rError))
+			return json();
+		if (!bHasEndpoint) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("addr and port are required");
+			return json();
+		}
+
+		CServer *const pServer = FindServerByEndpoint(endpoint);
+		if (pServer == NULL) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("server not found");
+			return json();
+		}
+
+		const json result = BuildServerJson(*pServer);
+		theApp.emuledlg->serverwnd->serverlistctrl.RemoveServer(pServer);
+		theApp.emuledlg->ShowConnectionState();
+		return result;
+	}
+
+	if (strCommand == "kad/status")
+		return BuildKadStatusJson();
+
+	if (strCommand == "kad/connect") {
+		Kademlia::CKademlia::Start();
+		theApp.emuledlg->ShowConnectionState();
+		return BuildKadStatusJson();
+	}
+
+	if (strCommand == "kad/disconnect") {
+		Kademlia::CKademlia::Stop();
+		theApp.emuledlg->ShowConnectionState();
+		return BuildKadStatusJson();
+	}
+
+	if (strCommand == "kad/recheck_firewall") {
+		Kademlia::CKademlia::RecheckFirewalled();
+		theApp.emuledlg->ShowConnectionState();
+		return BuildKadStatusJson();
+	}
+
+	if (strCommand == "shared/list") {
+		CKnownFilesMap sharedFiles;
+		theApp.sharedfiles->CopySharedFileMap(sharedFiles);
+		json result = json::array();
+		for (const CKnownFilesMap::CPair *pair = sharedFiles.PGetFirstAssoc(); pair != NULL; pair = sharedFiles.PGetNextAssoc(pair)) {
+			if (pair->value != NULL)
+				result.push_back(BuildSharedFileJson(*pair->value));
+		}
+		return result;
+	}
+
+	if (strCommand == "shared/get") {
+		uchar hash[MDX_DIGEST_SIZE];
+		if (!TryDecodeHash(params.contains("hash") ? params["hash"] : json(), hash, rError))
+			return json();
+
+		CKnownFile *const pKnownFile = theApp.sharedfiles->GetFileByID(hash);
+		if (pKnownFile == NULL) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("shared file not found");
+			return json();
+		}
+		return BuildSharedFileJson(*pKnownFile);
+	}
+
+	if (strCommand == "uploads/active" || strCommand == "uploads/waiting" || strCommand == "uploads/all") {
+		const bool bIncludeActive = strCommand != "uploads/waiting";
+		const bool bIncludeWaiting = strCommand != "uploads/active";
+		json result = json::array();
+		if (bIncludeActive) {
+			for (POSITION pos = theApp.uploadqueue->GetFirstFromUploadList(); pos != NULL;) {
+				CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromUploadList(pos);
+				if (pClient != NULL)
+					result.push_back(BuildUploadJson(*pClient, false));
+			}
+		}
+		if (bIncludeWaiting) {
+			for (POSITION pos = theApp.uploadqueue->GetFirstFromWaitingList(); pos != NULL;) {
+				CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromWaitingList(pos);
+				if (pClient != NULL)
+					result.push_back(BuildUploadJson(*pClient, true));
+			}
+		}
+		return result;
+	}
 
 	if (strCommand == "downloads/list") {
 		json result = json::array();
@@ -664,6 +1055,13 @@ CPipeApiServer::CPipeApiServer()
 	, m_uPendingWriteBytes(0)
 	, m_hPipe(INVALID_HANDLE_VALUE)
 	, m_dwLastStatsEventTick()
+	, m_bHasServerSnapshot(false)
+	, m_uLastServerPort(0)
+	, m_bHasKadSnapshot(false)
+	, m_bLastKadRunning(false)
+	, m_bLastKadConnected(false)
+	, m_iLastKadFirewalled(-1)
+	, m_uLastKadBootstrapProgress(0)
 {
 }
 
@@ -701,6 +1099,7 @@ void CPipeApiServer::Stop()
 
 	m_bConnected.store(false);
 	SetLifecycleState(EPipeApiLifecycleState::Stopped);
+	ResetConnectionStateSnapshot();
 }
 
 LRESULT CPipeApiServer::OnHandleCommand(WPARAM, LPARAM lParam)
@@ -743,6 +1142,52 @@ void CPipeApiServer::NotifyStatsUpdated(bool bForce)
 
 	m_dwLastStatsEventTick = dwNow;
 	(void)WriteCurrentPipeLine(SerializeEventLine("stats_updated", BuildSystemStatsJson()), PipeApiPolicy::EWriteKind::Stats);
+}
+
+void CPipeApiServer::NotifyConnectionStateChanged()
+{
+	if (!IsConnected())
+		return;
+
+	CServer *const pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	const bool bServerConnected = theApp.serverconnect->IsConnected() && pCurrentServer != NULL;
+	CString strServerAddress;
+	if (bServerConnected)
+		strServerAddress = pCurrentServer->GetAddress();
+	const uint16 uServerPort = bServerConnected ? pCurrentServer->GetPort() : 0;
+	const bool bServerChanged = bServerConnected != m_bHasServerSnapshot
+		|| (bServerConnected && (uServerPort != m_uLastServerPort || strServerAddress.CompareNoCase(m_strLastServerAddress) != 0));
+	if (bServerChanged) {
+		if (bServerConnected) {
+			(void)WriteCurrentPipeLine(SerializeEventLine("server_connected", BuildServerJson(*pCurrentServer)), PipeApiPolicy::EWriteKind::Structural);
+		} else if (!m_strLastServerAddress.IsEmpty() || m_uLastServerPort != 0) {
+			(void)WriteCurrentPipeLine(SerializeEventLine("server_disconnected", json{
+				{"address", StdUtf8FromCString(m_strLastServerAddress)},
+				{"port", m_uLastServerPort}
+			}), PipeApiPolicy::EWriteKind::Structural);
+		}
+	}
+	m_bHasServerSnapshot = bServerConnected;
+	m_strLastServerAddress = strServerAddress;
+	m_uLastServerPort = uServerPort;
+
+	const bool bKadRunning = Kademlia::CKademlia::IsRunning();
+	const bool bKadConnected = Kademlia::CKademlia::IsConnected();
+	const int iKadFirewalled = bKadConnected ? (Kademlia::CKademlia::IsFirewalled() ? 1 : 0) : -1;
+	const uint32 uKadBootstrapProgress = Kademlia::CKademlia::IsBootstrapping() ? Kademlia::CKademlia::GetBootstrapProgressPercent() : 0;
+	const bool bKadChanged = !m_bHasKadSnapshot
+		|| bKadRunning != m_bLastKadRunning
+		|| bKadConnected != m_bLastKadConnected
+		|| iKadFirewalled != m_iLastKadFirewalled
+		|| uKadBootstrapProgress != m_uLastKadBootstrapProgress;
+	if (bKadChanged)
+		(void)WriteCurrentPipeLine(SerializeEventLine("kad_status_changed", BuildKadStatusJson()), PipeApiPolicy::EWriteKind::Structural);
+
+	m_bHasKadSnapshot = true;
+	m_bLastKadRunning = bKadRunning;
+	m_bLastKadConnected = bKadConnected;
+	m_iLastKadFirewalled = iKadFirewalled;
+	m_uLastKadBootstrapProgress = uKadBootstrapProgress;
 }
 
 void CPipeApiServer::NotifyDownloadAdded(const CPartFile *pPartFile)
@@ -807,6 +1252,7 @@ void CPipeApiServer::RunWorker()
 		m_uConsecutiveCommandTimeouts.store(0);
 		SetLifecycleState(EPipeApiLifecycleState::Connected);
 		m_strReadBuffer.clear();
+		CaptureConnectionStateSnapshot();
 		m_writeCondition.notify_all();
 		NotifyStatsUpdated(true);
 		ProcessClient(hPipe);
@@ -1140,6 +1586,7 @@ void CPipeApiServer::DisconnectPipe()
 	CancelPendingCommands();
 	ClearPendingWrites();
 	m_uConsecutiveCommandTimeouts.store(0);
+	ResetConnectionStateSnapshot();
 
 	if (hPipe != INVALID_HANDLE_VALUE) {
 		::CancelIoEx(hPipe, NULL);
@@ -1147,6 +1594,34 @@ void CPipeApiServer::DisconnectPipe()
 		::CloseHandle(hPipe);
 	}
 	SetLifecycleState(m_bStopRequested.load() ? EPipeApiLifecycleState::Stopped : EPipeApiLifecycleState::Listening);
+}
+
+void CPipeApiServer::CaptureConnectionStateSnapshot()
+{
+	CServer *const pCurrentServer = theApp.serverconnect->GetCurrentServer();
+	m_bHasServerSnapshot = theApp.serverconnect->IsConnected() && pCurrentServer != NULL;
+	if (m_bHasServerSnapshot)
+		m_strLastServerAddress = pCurrentServer->GetAddress();
+	else
+		m_strLastServerAddress.Empty();
+	m_uLastServerPort = m_bHasServerSnapshot ? pCurrentServer->GetPort() : 0;
+	m_bHasKadSnapshot = true;
+	m_bLastKadRunning = Kademlia::CKademlia::IsRunning();
+	m_bLastKadConnected = Kademlia::CKademlia::IsConnected();
+	m_iLastKadFirewalled = m_bLastKadConnected ? (Kademlia::CKademlia::IsFirewalled() ? 1 : 0) : -1;
+	m_uLastKadBootstrapProgress = Kademlia::CKademlia::IsBootstrapping() ? Kademlia::CKademlia::GetBootstrapProgressPercent() : 0;
+}
+
+void CPipeApiServer::ResetConnectionStateSnapshot()
+{
+	m_bHasServerSnapshot = false;
+	m_strLastServerAddress.Empty();
+	m_uLastServerPort = 0;
+	m_bHasKadSnapshot = false;
+	m_bLastKadRunning = false;
+	m_bLastKadConnected = false;
+	m_iLastKadFirewalled = -1;
+	m_uLastKadBootstrapProgress = 0;
 }
 
 void CPipeApiServer::WakePendingConnect() const
