@@ -2197,7 +2197,6 @@
 #define IDC_OBFUSCATION_STAT            2977
 #define IDC_STATIC_LANGUAGE             2978
 #define IDD_PPG_MESSAGES                2981
-#define IDC_ARCHPROGRESS                2982
 #define IDC_FILL_GRAPHS                 2983
 #define IDC_GENERAL                     2984
 #define IDC_LBL_UPDATE_SERVERS          2985
