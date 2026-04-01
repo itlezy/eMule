@@ -32,7 +32,7 @@ The eMule networking stack is a mature **Windows-native asynchronous I/O archite
 ### 1.1 Full Inheritance Chain
 
 ```
-CAsyncSocketEx  (AsyncSocketEx.h — base, wraps WSAAsyncSelect)
+CAsyncSocketEx  (AsyncSocketEx.h — base, wraps the shared WSAPoll backend for TCP)
 ├── CEncryptedStreamSocket  (EncryptedStreamSocket.h — adds RC4 obfuscation)
 │   ├── CEMSocket  (EMSocket.h — adds packet framing + dual send queues)
 │   │   ├── CClientReqSocket  (ListenSocket.h — incoming peer TCP connections)
@@ -40,7 +40,7 @@ CAsyncSocketEx  (AsyncSocketEx.h — base, wraps WSAAsyncSelect)
 │   └── [implements ThrottledFileSocket interface]
 └── CListenSocket  (ListenSocket.h — accepts new peer connections on TCP port)
 
-CAsyncSocket  (MFC — used for simpler sockets)
+CAsyncDatagramSocket  (AsyncDatagramSocket.h — wraps the shared WSAPoll backend for UDP)
 ├── CClientUDPSocket  (ClientUDPSocket.h — peer UDP + Kademlia, throttled)
 │   └── [implements CEncryptedDatagramSocket + ThrottledControlSocket]
 └── CUDPSocket  (UDPSocket.h — server UDP control/queries)
@@ -57,7 +57,8 @@ without middleware layers or proxy negotiation.
 
 | File | Role |
 |------|------|
-| `srchybrid/AsyncSocketEx.h/.cpp` | Base socket; per-thread helper window; WM dispatch |
+| `srchybrid/AsyncSocketEx.h/.cpp` | Base TCP socket; shared `WSAPoll` network thread |
+| `srchybrid/AsyncDatagramSocket.h/.cpp` | Base UDP socket; shared `WSAPoll` backend with app-thread dispatch |
 | `srchybrid/EncryptedStreamSocket.h/.cpp` | RC4 obfuscation layer for TCP |
 | `srchybrid/EncryptedDatagramSocket.h/.cpp` | Stateless RC4 encryption for UDP |
 | `srchybrid/EMSocket.h/.cpp` | Packet framing, dual send queues, rate control |
@@ -65,27 +66,26 @@ without middleware layers or proxy negotiation.
 | `srchybrid/ServerConnect.h/.cpp` | Server connection state machine |
 | `srchybrid/ClientUDPSocket.h/.cpp` | Peer UDP socket |
 | `srchybrid/UDPSocket.h/.cpp` | Server UDP socket |
+| `srchybrid/DownloadQueue.h/.cpp` | Hostname source queue; worker-thread DNS + main-thread source insertion |
 | `srchybrid/ThrottledSocket.h` | Abstract throttle interface |
 | `srchybrid/UploadBandwidthThrottler.h/.cpp` | Dedicated throttler thread |
 
 ---
 
-## 2. Async I/O Model — WSAAsyncSelect + Helper Windows
+## 2. Async I/O Model — Shared `WSAPoll` Backend
 
 ### 2.1 Design Overview
 
-All TCP sockets use `WSAAsyncSelect` rather than `WSAEventSelect` or Windows IOCP. Each thread that creates sockets gets its own **invisible helper window** (`CAsyncSocketExHelperWindow`) which receives socket event messages from WinSock and dispatches them to the correct socket object.
+The live tree uses a shared `WSAPoll` backend for both TCP and UDP transports. TCP readiness is
+owned by a dedicated network thread under `CAsyncSocketEx`; UDP sockets use the same backend
+through `CAsyncDatagramSocket` and marshal receive/send work back to the app thread.
 
-**Per-thread data structure** (`AsyncSocketEx.h:261`):
+Hostname resolution is no longer tied to WinSock window messages. Server UDP resolves hostnames on
+its own resolver worker, and `CDownloadQueue` now resolves source hostnames on a dedicated worker
+thread before draining completions during `CDownloadQueue::Process()`.
 
-```cpp
-struct t_AsyncSocketExThreadData {
-    CAsyncSocketExHelperWindow *pHelperWindow;
-    int nInstanceCount;
-    DWORD nThreadId;
-    CAsyncSocketEx **pAllocatedSockets;  // direct array indexed by socket message offset
-};
-```
+The remaining architectural limitation is not helper-window coupling anymore; it is that
+`WSAPoll` is still an `O(n)` readiness scan and not the final IOCP-shaped design.
 
 ### 2.2 Message Assignment and Dispatch (`AsyncSocketEx.cpp:80–497`)
 
@@ -539,7 +539,7 @@ volatile TRISTATE m_bUPnPPortsForwarded;
 **File:** `srchybrid/ClientUDPSocket.h:38`
 
 ```cpp
-class CClientUDPSocket : public CAsyncSocket,
+class CClientUDPSocket : public CAsyncDatagramSocket,
                           public CEncryptedDatagramSocket,
                           public ThrottledControlSocket
 {
@@ -571,7 +571,9 @@ Packets are removed from the queue if `dwTime` is too old — prevents stale UDP
 
 **File:** `srchybrid/UDPSocket.h:51`
 
-Similar to `CClientUDPSocket` but sends `SServerUDPPacket` structs to ed2k servers. Uses `CUDPSocketWnd` (a message-only window) for async DNS resolution.
+Similar to `CClientUDPSocket` but sends `SServerUDPPacket` structs to ed2k servers. The live tree
+no longer uses `CUDPSocketWnd`; unresolved server hostnames are resolved by an owned worker and the
+socket stays on the shared `WSAPoll` backend.
 
 ### 8.3 UDP Encryption — `CEncryptedDatagramSocket`
 

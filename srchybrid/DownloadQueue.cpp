@@ -37,6 +37,7 @@
 #include "TransferDlg.h"
 #include "TaskbarNotifier.h"
 #include "MenuCmds.h"
+#include "DownloadQueueHostnameResolverSeams.h"
 #include "Log.h"
 #include "PipeApiServer.h"
 
@@ -142,7 +143,6 @@ void CDownloadQueue::Init()
 		SortByPriority();
 		CheckDiskspace();
 	}
-	VERIFY(m_srcwnd.CreateEx(0, AfxRegisterWndClass(0), _T("eMule Async DNS Resolve Socket Wnd #2"), WS_OVERLAPPED, 0, 0, 0, 0, NULL, NULL));
 
 	ExportPartMetFilesOverview();
 }
@@ -151,7 +151,6 @@ CDownloadQueue::~CDownloadQueue()
 {
 	while (!filelist.IsEmpty())
 		delete filelist.RemoveHead();
-	m_srcwnd.DestroyWindow(); // just to avoid an MFC warning
 }
 
 void CDownloadQueue::AddSearchToDownload(CSearchFile *toadd, uint8 paused, int cat)
@@ -293,14 +292,14 @@ void CDownloadQueue::AddFileLinkToDownload(const CED2KFileLink &Link, int cat)
 	if (Link.HasHostnameSources())
 		for (POSITION pos = Link.m_HostnameSourcesList.GetHeadPosition(); pos != NULL;) {
 			const SUnresolvedHostname *pUnresHost = Link.m_HostnameSourcesList.GetNext(pos);
-			m_srcwnd.AddToResolve(Link.GetHashKey(), pUnresHost->strHostname, pUnresHost->nPort, pUnresHost->strURL);
+			m_hostnameResolver.AddToResolve(Link.GetHashKey(), pUnresHost->strHostname, pUnresHost->nPort, pUnresHost->strURL);
 		}
 }
 
 void CDownloadQueue::AddToResolved(const CPartFile *pFile, SUnresolvedHostname *pUH)
 {
 	if (pFile && pUH)
-		m_srcwnd.AddToResolve(pFile->GetFileHash(), pUH->strHostname, pUH->nPort, pUH->strURL);
+		m_hostnameResolver.AddToResolve(pFile->GetFileHash(), pUH->strHostname, pUH->nPort, pUH->strURL);
 }
 
 void CDownloadQueue::AddDownload(CPartFile *newfile, bool paused)
@@ -346,6 +345,7 @@ bool CDownloadQueue::IsFileExisting(const uchar *fileid, bool bLogWarnings) cons
 //This method is called every 100 ms
 void CDownloadQueue::Process()
 {
+	m_hostnameResolver.DrainResolved(*this);
 	ProcessLocalRequests(); // send src requests to local server
 
 	uint32 downspeed;
@@ -1424,89 +1424,128 @@ int CDownloadQueue::GetDownloadFilesStats(uint64 &rui64TotalFileSize
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// CSourceHostnameResolveWnd
+// CSourceHostnameResolver
 
-//It is safer to keep all message codes different (see also AsyncSocketEx.h and UserMsgs.h)
-#define WM_HOSTNAMERESOLVED		(WM_USER+0x105)	// does not need to be placed in "UserMsgs.h"
-
-BEGIN_MESSAGE_MAP(CSourceHostnameResolveWnd, CWnd)
-	ON_MESSAGE(WM_HOSTNAMERESOLVED, OnHostnameResolved)
-END_MESSAGE_MAP()
-
-CSourceHostnameResolveWnd::CSourceHostnameResolveWnd()
-	: m_aucHostnameBuffer()
+CSourceHostnameResolver::CSourceHostnameResolver()
+	: m_bStopping(false)
+	, m_worker(&CSourceHostnameResolver::WorkerMain, this)
 {
 }
 
-CSourceHostnameResolveWnd::~CSourceHostnameResolveWnd()
+CSourceHostnameResolver::~CSourceHostnameResolver()
 {
-	while (!m_toresolve.IsEmpty())
-		delete m_toresolve.RemoveHead();
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_bStopping = true;
+	}
+	m_workAvailable.notify_one();
+	if (m_worker.joinable())
+		m_worker.join();
 }
 
-void CSourceHostnameResolveWnd::AddToResolve(const uchar *fileid, LPCSTR pszHostname, uint16 port, LPCTSTR pszURL)
+void CSourceHostnameResolver::AddToResolve(const uchar *fileid, LPCSTR pszHostname, uint16 port, LPCTSTR pszURL)
 {
-	// double checking
+	// Double check that the download still exists before queueing the lookup.
 	if (!theApp.downloadqueue->GetFileByID(fileid))
 		return;
 
-	bool bResolving = !m_toresolve.IsEmpty();
+	HostnameResolveRequest entry = {};
+	md4cpy(entry.fileid, fileid);
+	entry.strHostname = pszHostname;
+	entry.port = port;
+	entry.strURL = pszURL;
 
-	Hostname_Entry *entry = new Hostname_Entry;
-	md4cpy(entry->fileid, fileid);
-	entry->strHostname = pszHostname;
-	entry->port = port;
-	entry->strURL = pszURL;
-	m_toresolve.AddTail(entry);
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_pending.emplace_back(std::move(entry));
+	}
+	m_workAvailable.notify_one();
+}
 
-	if (bResolving)
-		return;
+void CSourceHostnameResolver::DrainResolved(CDownloadQueue &downloadQueue)
+{
+	std::deque<HostnameResolveResult> resolvedEntries;
+	{
+		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_resolved.empty())
+			return;
+		resolvedEntries.swap(m_resolved);
+	}
 
-	memset(m_aucHostnameBuffer, 0, sizeof m_aucHostnameBuffer);
-	if (!WSAAsyncGetHostByName(m_hWnd, WM_HOSTNAMERESOLVED, entry->strHostname, m_aucHostnameBuffer, sizeof m_aucHostnameBuffer)) {
-		m_toresolve.RemoveTail();
-		delete entry;
+	while (!resolvedEntries.empty()) {
+		HostnameResolveResult resolved = std::move(resolvedEntries.front());
+		resolvedEntries.pop_front();
+
+		CPartFile *file = downloadQueue.GetFileByID(resolved.fileid);
+		const EDownloadHostnameResolveDispatch eDispatch = GetDownloadHostnameResolveDispatch(
+			file != NULL,
+			resolved.bLookupSucceeded,
+			resolved.bHasIpv4Address,
+			!resolved.strURL.IsEmpty());
+		if (eDispatch == EDownloadHostnameResolveDispatch::Drop)
+			continue;
+
+		if (eDispatch == EDownloadHostnameResolveDispatch::AddPackedSource) {
+			CSafeMemFile sources(1 + 4 + 2);
+			sources.WriteUInt8(1);
+			sources.WriteUInt32(resolved.nIP);
+			sources.WriteUInt16(resolved.port);
+			sources.SeekToBegin();
+			file->AddSources(&sources, 0, 0, false);
+			continue;
+		}
+
+		file->AddSource(resolved.strURL, resolved.nIP);
 	}
 }
 
-LRESULT CSourceHostnameResolveWnd::OnHostnameResolved(WPARAM, LPARAM lParam)
+bool CSourceHostnameResolver::TryResolveHostnameIPv4(const CStringA &strHostname, uint32 &nAddress)
 {
-	if (m_toresolve.IsEmpty())
-		return TRUE;
-	Hostname_Entry *resolved = m_toresolve.RemoveHead();
-	if (WSAGETASYNCERROR(lParam) == 0) {
-		unsigned iBufLen = WSAGETASYNCBUFLEN(lParam);
-		if (iBufLen >= sizeof(HOSTENT)) {
-			LPHOSTENT pHost = (LPHOSTENT)m_aucHostnameBuffer;
-			if (pHost->h_length == 4 && pHost->h_addr_list && pHost->h_addr_list[0]) {
-				uint32 nIP = ((LPIN_ADDR)(pHost->h_addr_list[0]))->s_addr;
+	addrinfo hints = {};
+	hints.ai_family = AF_INET;
 
-				CPartFile *file = theApp.downloadqueue->GetFileByID(resolved->fileid);
-				if (file)
-					if (resolved->strURL.IsEmpty()) {
-						CSafeMemFile sources(1 + 4 + 2);
-						sources.WriteUInt8(1);
-						sources.WriteUInt32(nIP);
-						sources.WriteUInt16(resolved->port);
-						sources.SeekToBegin();
-						file->AddSources(&sources, 0, 0, false);
-					} else
-						file->AddSource(resolved->strURL, nIP);
+	addrinfo *pResult = NULL;
+	if (getaddrinfo(strHostname.GetString(), NULL, &hints, &pResult) != 0)
+		return false;
 
-			}
+	bool bHasIpv4Address = false;
+	for (addrinfo *pCurrent = pResult; pCurrent != NULL; pCurrent = pCurrent->ai_next) {
+		if (pCurrent->ai_family != AF_INET || pCurrent->ai_addr == NULL || pCurrent->ai_addrlen < sizeof(sockaddr_in))
+			continue;
+
+		nAddress = reinterpret_cast<sockaddr_in*>(pCurrent->ai_addr)->sin_addr.s_addr;
+		bHasIpv4Address = true;
+		break;
+	}
+
+	freeaddrinfo(pResult);
+	return bHasIpv4Address;
+}
+
+void CSourceHostnameResolver::WorkerMain()
+{
+	for (;;) {
+		HostnameResolveRequest request = {};
+		{
+			std::unique_lock<std::mutex> lock(m_mutex);
+			m_workAvailable.wait(lock, [this]() { return m_bStopping || !m_pending.empty(); });
+			if (m_bStopping && m_pending.empty())
+				break;
+
+			request = std::move(m_pending.front());
+			m_pending.pop_front();
 		}
-	}
-	delete resolved;
 
-	while (!m_toresolve.IsEmpty()) {
-		Hostname_Entry *entry = m_toresolve.GetHead();
-		memset(m_aucHostnameBuffer, 0, sizeof m_aucHostnameBuffer);
-		if (WSAAsyncGetHostByName(m_hWnd, WM_HOSTNAMERESOLVED, entry->strHostname, m_aucHostnameBuffer, sizeof m_aucHostnameBuffer) != 0)
-			break;
-		m_toresolve.RemoveHead();
-		delete entry;
+		HostnameResolveResult resolved = {};
+		md4cpy(resolved.fileid, request.fileid);
+		resolved.port = request.port;
+		resolved.strURL = request.strURL;
+		resolved.bLookupSucceeded = TryResolveHostnameIPv4(request.strHostname, resolved.nIP);
+		resolved.bHasIpv4Address = resolved.bLookupSucceeded;
+
+		std::lock_guard<std::mutex> lock(m_mutex);
+		m_resolved.emplace_back(std::move(resolved));
 	}
-	return TRUE;
 }
 
 bool CDownloadQueue::DoKademliaFileRequest() const

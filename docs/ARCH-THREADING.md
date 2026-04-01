@@ -26,16 +26,15 @@
 
 ## Executive Summary
 
-eMule uses a hybrid threading model: a handful of background worker threads for file I/O, combined
-with a **single-threaded event loop on the UI thread** that drives all network I/O, all protocol
-processing, Kademlia, download/upload scheduling, and everything else. The socket layer
-(`CAsyncSocketEx`) is built on `WSAAsyncSelect`, which converts network events into Windows
-messages dispatched to a message-only "helper window" — also on the UI thread.
+eMule now uses a hybrid threading model with a dedicated `WSAPoll` network backend for live socket
+readiness, while the UI thread still drives protocol scheduling, rendering, and most high-level app
+state. TCP and UDP socket ownership no longer lives on the UI thread; socket readiness is owned by
+the shared poll backend, and UDP dispatch is marshalled back to the app thread where needed.
 
-The result is that the UI thread is the network thread, the protocol thread, and the rendering
-thread simultaneously. This is architecturally sound for a 2002-era Win32 app, but
-produces serious bottlenecks at modern connection counts, blocks the UI whenever any one operation
-stalls, and makes the code hard to reason about under load.
+The result is materially better than the original helper-window model, but the UI thread still owns
+download/upload scheduling, Kademlia processing, and a large amount of shared mutable state. That
+means responsiveness and reasoning under load are improved on the transport side, but the app is
+not yet at the final IOCP-style architecture described later in this document.
 
 ---
 
@@ -59,18 +58,21 @@ stalls, and makes the code hard to reason about under load.
 
 ### 1.2 Everything Else: The UI Thread
 
-**All** of the following runs on the UI thread, driven by a 100ms `SetTimer` and `WSAAsyncSelect`
-message dispatch:
+The UI thread still owns the 100ms `SetTimer` loop and the bulk of protocol scheduling work:
 
-- TCP socket accept, receive, send (`ListenSocket`, `CEMSocket`, `CClientReqSocket`)
-- UDP packet receive and dispatch (`CClientUDPSocket`)
 - All eMule protocol parsing and processing
 - Kademlia routing, search, bootstrap, firewall check (`CKademlia::Process`)
 - Download queue scheduling (`CDownloadQueue::Process`)
 - Upload queue scheduling (`CUploadQueue::Process`)
 - Server connection management (`CServerConnect`)
 - Known file list, client list, credit processing
-- DNS resolution via `WSAAsyncGetHostByName` → WM_HOSTNAMERESOLVED
+
+The live socket and resolver backends are now off the UI thread:
+
+- TCP accept, connect, receive, send readiness (`ListenSocket`, `CEMSocket`, `CClientReqSocket`) via `WSAPoll`
+- UDP receive/send readiness (`CClientUDPSocket`, `CUDPSocket`) via `WSAPoll`
+- Source hostname DNS resolution via the `CDownloadQueue` resolver worker
+- Server UDP hostname DNS resolution via the `CUDPSocket` resolver worker
 
 ---
 
@@ -729,26 +731,26 @@ The main interactions Kademlia has with the rest of eMule:
 
 #### A5. DNS Resolution
 
-Currently uses `WSAAsyncGetHostByName` → `WM_HOSTNAMERESOLVED` message on UI thread:
+The live tree no longer uses `WSAAsyncGetHostByName`. Named endpoints now resolve off-thread and
+hand completed IPv4 results back to the owning component:
+
+- `CUDPSocket` resolves dynIP/server hostnames on its resolver worker before queued UDP sends.
+- `CDownloadQueue` resolves unresolved source hostnames on a dedicated worker and drains the
+  completions during `CDownloadQueue::Process()`.
+
+That removes the last hidden resolver windows from the live networking path while preserving
+main-thread mutation of `CPartFile` and download-queue state.
+
+The remaining modernization choice is about the API shape, not the architecture baseline:
 
 ```cpp
-// DownloadQueue.cpp:1496
-WSAAsyncGetHostByName(m_hWnd, WM_HOSTNAMERESOLVED, hostname, buf, len);
-```
+// Option 1: keep worker-thread getaddrinfo for simple serialized queues
+addrinfo *res = nullptr;
+getaddrinfo(hostname, NULL, &hints, &res);
 
-`WSAAsyncGetHostByName` is deprecated. Replacement on Windows 10+:
-
-```cpp
-// Option 1: GetAddrInfoExW with completion callback (non-blocking, Win8+)
+// Option 2: adopt GetAddrInfoExW cancellation/completion if finer-grained resolver control is needed
 GetAddrInfoExW(hostname, NULL, NS_DNS, NULL, &hints, &result, NULL,
                &overlapped, CompletionCallback, &cancelHandle);
-
-// Option 2: std::async + getaddrinfo (blocking in thread pool)
-auto fut = std::async(std::launch::async, [hostname]() {
-    addrinfo *res = nullptr;
-    getaddrinfo(hostname, nullptr, nullptr, &res);
-    return res;
-});
 ```
 
 ---

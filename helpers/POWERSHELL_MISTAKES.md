@@ -280,3 +280,24 @@
   I slipped back into using a wildcard path argument with `rg`, which expects a concrete path plus `--glob` filters rather than Windows wildcard filenames.
 - Fix:
   pass the real directory or file path, and add `--glob` only when filename filtering is actually needed.
+
+- Error:
+  `& 'C:\prj\p2p\eMule\eMulebb\23-build-emule-debug-incremental.cmd'` failed with `The term ... is not recognized`.
+- Cause:
+  I launched the parent build script from the repo root instead of the actual `eMule-build` sibling directory called out by `AGENTS.md`.
+- Fix:
+  resolve helper/build script locations from the real sibling workspace layout first, and call `eMule-build\23-build-emule-debug-incremental.cmd` from there.
+
+- Error:
+  `& msbuild ...` failed with `The term 'msbuild' is not recognized`.
+- Cause:
+  I assumed Visual Studio build tools were exposed on `PATH` instead of using the repo's existing wrapper scripts that bootstrap the right environment.
+- Fix:
+  prefer the checked-in `26-build-emule-tests-debug.cmd` and related workspace scripts unless I have already confirmed the toolchain executable path.
+
+- Error:
+  `Select-String` failed with `Cannot find path '...eMule-build\helpers\helper-runtime-wsapoll-smoke.ps1' because it does not exist.`
+- Cause:
+  I again forgot that repo helpers live under `eMule-build\eMule\helpers`, not directly under `eMule-build\helpers`.
+- Fix:
+  resolve helper paths from the actual repo root (`eMule-build\eMule`) before probing or invoking them.
