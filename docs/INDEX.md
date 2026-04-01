@@ -247,7 +247,7 @@
 | WWMOD_010 | No DPI awareness (P0) | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_011 | Legacy MFC list controls (no virtual mode) | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_012 | Legacy CPropertySheet preferences | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
-| WWMOD_013 | WSAAsyncSelect networking model | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
+| WWMOD_013 | Historical WSAAsyncSelect networking model | **[PARTIAL]** helper-window migration done; IOCP/soak follow-up remains | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_014–015 | MFC sync primitives, AfxBeginThread | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_016–017 | Custom type aliases, MFC containers | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |
 | WWMOD_018 | GDI-only drawing (no Direct2D) | Open | [AUDIT-WWMOD](AUDIT-WWMOD.md) |

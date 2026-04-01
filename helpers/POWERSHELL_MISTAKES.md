@@ -308,3 +308,10 @@
   I passed multiple ranges directly to `Select-Object -Index` instead of materializing one combined index list or reading the slices separately.
 - Fix:
   use array slicing on the loaded content or issue separate read commands per range when inspecting non-contiguous sections.
+
+- Error:
+  `Select-Object -Index (80..125),(826..850)` failed for the same reason while sampling multiple doc ranges.
+- Cause:
+  I repeated the same mistake by passing multiple PowerShell ranges directly to `Select-Object -Index`.
+- Fix:
+  load the file once and use array slicing, or run separate reads for each range instead of combining them in `-Index`.

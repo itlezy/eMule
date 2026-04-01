@@ -272,26 +272,22 @@ third-party dependency and gain native visual style support.
 
 ### WWMOD_013 - WSAAsyncSelect Networking Model
 
-**Severity:** P1
-**Files:** `srchybrid/AsyncSocketEx.cpp` (660, 1071, 1084, 1169, 1227),
-`srchybrid/AsyncSocketExLayer.cpp` (315, 601, 741)
+**Severity:** P1 historically, P3 for remaining follow-up
+**Files:** historical `srchybrid/AsyncSocketEx.cpp`, removed `srchybrid/AsyncSocketExLayer.cpp`
 
-The entire networking stack is built on `WSAAsyncSelect`, which pumps socket events
-through a hidden window's message loop. This ties all network I/O to the UI thread's
-message pump and limits scalability.
+This finding described the pre-migration networking stack, where `WSAAsyncSelect` pumped socket
+events through a hidden helper window on the UI thread. That architecture has been removed in the
+current branch: live TCP and UDP transport now sit on the shared `WSAPoll` backend, and the old
+proxy/layer chain is gone.
 
 **Modern alternatives:**
-- `WSAPoll` (Win Vista+) for a poll-based model; see `ARCH-THREADING.md`, Track A0 for the codebase-specific migration shape
+- `WSAPoll` (Win Vista+) for a poll-based bridge model; this is the current branch state
 - I/O Completion Ports (`CreateIoCompletionPort`) for high-performance async I/O
 - Registered I/O (RIO) for ultra-low-latency scenarios
 
-The `CAsyncSocketEx` class is a heavily modified fork of a 2000s-era library. It
-handles proxy layers (SOCKS4/5, HTTP) through a layer chain.
-
-**Action:** Long-term: replace `WSAAsyncSelect` with IOCP-based async I/O on
-dedicated network threads. This decouples networking from the UI message loop and
-enables handling thousands of concurrent connections efficiently. Short-term: ensure
-the hidden window does not become a bottleneck for high connection counts.
+**Action:** Treat the helper-window migration as done. The remaining networking action is
+long-term IOCP consideration and operational soak/stress validation of the current `WSAPoll`
+backend, not further `WSAAsyncSelect` removal.
 
 ---
 

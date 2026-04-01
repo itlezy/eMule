@@ -10,7 +10,7 @@
 
 - [Executive Summary](#executive-summary)
 - [1. Socket Class Hierarchy](#1-socket-class-hierarchy)
-- [2. Async I/O Model — WSAAsyncSelect + Helper Windows](#2-async-io-model--wsaasyncselect--helper-windows)
+- [2. Async I/O Model — WSAPoll Backend](#2-async-io-model--shared-wsapoll-backend)
 - [3. Send Queue Architecture](#3-send-queue-architecture)
 - [4. Packet Framing and Protocol Parsing](#4-packet-framing-and-protocol-parsing)
 - [5. Upload Bandwidth Throttler](#5-upload-bandwidth-throttler)
@@ -87,37 +87,36 @@ thread before draining completions during `CDownloadQueue::Process()`.
 The remaining architectural limitation is not helper-window coupling anymore; it is that
 `WSAPoll` is still an `O(n)` readiness scan and not the final IOCP-shaped design.
 
-### 2.2 Message Assignment and Dispatch (`AsyncSocketEx.cpp:80–497`)
+### 2.2 Current Dispatch Shape
 
-When a socket is created it is assigned a unique offset into `pAllocatedSockets`. `WSAAsyncSelect` is called with a message `WM_USER + 0x101 + offset`. The helper window's `WindowProc` receives this message, looks up the socket in O(1) by index, and calls the appropriate virtual handler.
+The live branch no longer assigns sockets to helper-window message slots. `CAsyncSocketEx` keeps
+socket interest state in the poll backend, and the dedicated network thread dispatches
+`OnReceive` / `OnSend` / `OnConnect` / `OnClose` directly from `WSAPoll` readiness results.
 
-```
-Inbound WM_ message with socket index
-  → pAllocatedSockets[index]->OnReceive / OnSend / OnConnect / OnClose
-```
+UDP uses the same backend through `CAsyncDatagramSocket`, but marshals actual datagram processing
+back to the app thread via `UM_WSAPOLL_UDP_SOCKET` so the existing protocol code can stay on its
+current thread-affinity model.
 
-**Comparison with MFC `CAsyncSocket`:** MFC uses a single `WM_SOCKET_NOTIFY` for all sockets plus a `CMapWordToPtr` lookup — O(log n). eMule's approach is O(1) at the cost of pre-allocating an array slot per socket.
+### 2.3 Historical Context: Pre-WSAPoll Helper Window Model
 
-**Maximum sockets per thread:** `(0xBFFF - 0x0101) = 49,150` theoretically; the code caps the array at `0xBAFD` = 47,869 (`AsyncSocketEx.h:82–86`).
+Before the `WSAPoll` migration, `CAsyncSocketEx` used `WSAAsyncSelect` plus a hidden helper window
+to translate socket events into `WM_SOCKETEX_NOTIFY + index` messages. That historical model is
+kept here only to explain earlier audits and migration notes; it is not the current runtime path.
 
-### 2.3 Socket Event Flow
+### 2.4 Current Socket Event Flow
 
 The current TCP path dispatches readiness directly from `CAsyncSocketEx` into the encrypted-stream
 and packet-framing layers. There is no longer a proxy or middleware interception stage in the live tree.
 
-Three special messages are used (`AsyncSocketEx.h`):
+The only remaining networking message used in the live tree is the app-thread UDP dispatch post.
+The historical `WM_SOCKETEX_*` and `WM_HOSTNAMERESOLVED` message routes have been removed from the
+runtime path.
 
-| Message | Value | Purpose |
-|---------|-------|---------|
-| `WM_SOCKETEX_NOTIFY` | `0x0504` | Raw socket event from WinSock |
-| `WM_SOCKETEX_TRIGGER` | `0x0501` | Layer-generated synthetic event |
-| `WM_SOCKETEX_GETHOST` | `0x0502` | Async DNS resolution reply |
+### 2.5 Architectural Limitations of the Current WSAPoll Bridge
 
-### 2.4 Architectural Limitations of WSAAsyncSelect
-
-- **Not IOCP:** `WSAAsyncSelect` posts a Windows message per event; under high load the message queue can become congested. IOCP (`WSAIoctl` + completion ports) would scale better on Windows Vista+ with hundreds of simultaneous active connections.
-- **Single-threaded dispatch:** All socket callbacks for a given thread run on that thread's message pump. A slow `OnReceive` handler blocks all other socket events on that thread.
-- **Message queue overflow:** If the queue fills (hard limit ~10,000 messages in classic Win32), events are dropped silently. The custom message range mitigates this by keeping socket messages separate from UI messages, but doesn't eliminate the risk under extreme load.
+- **Not IOCP:** `WSAPoll` is still an `O(n)` readiness scan and not the final Windows-native high-scale design.
+- **Mixed thread-affinity above transport:** readiness is off the UI thread, but a large amount of protocol and scheduling logic still lives there.
+- **Further hardening is operational, not architectural:** the remaining work is soak/stress validation rather than more transport migration.
 
 ---
 
@@ -828,11 +827,14 @@ The upload throttler runs a tight loop with no yield when no sockets are active.
 
 **14.9 IOCP migration**
 
-`WSAAsyncSelect` is functional but `WSAIoctl` + completion ports (IOCP) would deliver better scalability on Windows Vista+ for very high connection counts. This is a significant rewrite but would allow moving socket I/O off the main UI thread entirely.
+The current `WSAPoll` bridge is functional and already moves live socket ownership off the UI
+thread. The remaining long-term scalability step is `WSAIoctl` + completion ports (IOCP), which
+would replace the poll loop rather than the removed helper-window model.
 
 **14.10 Separate socket I/O from UI thread**
 
-All socket callbacks currently run on the main thread. A dedicated network I/O thread feeding a lock-free command queue to the UI thread would prevent socket event handling from stalling UI rendering.
+Live socket readiness no longer runs on the main thread. The remaining UI-thread bottleneck is the
+higher-level protocol and scheduling work that still executes there after transport dispatch.
 
 **14.11 Replace `sprintf` with `sprintf_s` in `UPnPImplMiniLib.cpp:103`**
 
@@ -844,7 +846,7 @@ Minor consistency fix — the rest of the codebase uses `_s` variants.
 
 | Component | Class | Files | Technology |
 |-----------|-------|-------|------------|
-| Base async socket | `CAsyncSocketEx` | `AsyncSocketEx.h/.cpp` | WSAAsyncSelect + helper window |
+| Base async socket | `CAsyncSocketEx` | `AsyncSocketEx.h/.cpp` | `WSAPoll` network thread |
 | TCP obfuscation | `CEncryptedStreamSocket` | `EncryptedStreamSocket.h/.cpp` | RC4 + MD5 / DH-768 handshake |
 | P2P TCP | `CEMSocket` | `EMSocket.h/.cpp` | Packet framing, dual queues |
 | Peer TCP | `CClientReqSocket` | `ListenSocket.h/.cpp` | Timeout management, deferred delete |

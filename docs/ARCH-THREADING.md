@@ -11,7 +11,7 @@
 - [Executive Summary](#executive-summary)
 - [1. Thread Inventory](#1-thread-inventory)
 - [2. The Central Timer Tick](#2-the-central-timer-tick)
-- [3. The AsyncSocketEx Helper Window in Detail](#3-the-asyncsocketex-helper-window-in-detail)
+- [3. Historical: The AsyncSocketEx Helper Window Model](#3-historical-the-asyncsocketex-helper-window-model)
 - [4. Synchronization Primitives in Use](#4-synchronization-primitives-in-use)
 - [5. I/O Completion Port Usage](#5-io-completion-port-usage-good-patterns-to-extend)
 - [6. Inter-Thread Message Types](#6-inter-thread-message-types)
@@ -119,14 +119,13 @@ UploadTimer (100ms)
     └─ statisticswnd->ShowStatistics()
 ```
 
-Every one of these runs synchronously on the UI thread, one after another, before the message
-pump can process any socket events.
+Every one of these runs synchronously on the UI thread, one after another, before the app can
+return to ordinary message processing.
 
-### 2.2 Socket Events Interleaved with Timer Ticks
+### 2.2 Live Socket Dispatch Relative to Timer Ticks
 
-Between timer ticks the message pump dispatches `WM_SOCKETEX_NOTIFY+N` messages from the
-`CAsyncSocketExHelperWindow`. Each message triggers one call into a socket's `OnReceive`,
-`OnSend`, `OnAccept`, or `OnClose` handler — again on the UI thread.
+Between timer ticks, live TCP readiness is handled by the dedicated `WSAPoll` network thread and
+live UDP readiness is posted back to the app thread through `UM_WSAPOLL_UDP_SOCKET`.
 
 A single `CEMSocket::OnReceive` call reads up to **2 MB** from the socket into a static global
 buffer:
@@ -136,16 +135,20 @@ buffer:
 static char GlobalReadBuffer[2000000];
 ```
 
-All protocol parsing, packet queuing, and state transitions happen inline in that call before
-returning to the message pump. Under heavy load (hundreds of connections) this means the message
-pump is essentially always occupied with socket handlers.
+Once control reaches the existing protocol handlers, packet parsing and state transitions still
+happen inline on the owning thread. Under heavy load this means the UI thread can still spend long
+stretches inside protocol work even though transport readiness is no longer helper-window driven.
 
 ---
 
-## 3. The AsyncSocketEx Helper Window in Detail
+## 3. Historical: The AsyncSocketEx Helper Window Model
 
-`CAsyncSocketEx` uses **`WSAAsyncSelect`** — the oldest Windows async socket API, dating to
-Winsock 1.1. It works by posting a window message for each socket event to a registered `HWND`.
+This section describes the pre-`WSAPoll` helper-window design that earlier audits and migration
+notes refer to. It is historical branch context, not the current live transport path.
+
+Before the transport migration, `CAsyncSocketEx` used **`WSAAsyncSelect`** — the oldest Windows
+async socket API, dating to Winsock 1.1. It worked by posting a window message for each socket
+event to a registered `HWND`.
 
 ```
 WSAAsyncSelect(socket, hHelperWnd, WM_SOCKETEX_NOTIFY + nSocketIndex, FD_READ|FD_WRITE|...)
@@ -174,7 +177,7 @@ The socket-to-message-ID mapping uses a flat array:
 #define MAX_SOCKETS          (0xBFFF - WM_SOCKETEX_NOTIFY + 1)  // max ~47 869 sockets
 ```
 
-### 3.1 Why This Is the Core Problem
+### 3.1 Why This Was the Core Problem
 
 `WSAAsyncSelect` forces all socket notifications through the message pump of the thread that
 registered the socket. In eMule that thread is the UI thread. There is no way to split socket
@@ -319,7 +322,7 @@ control events, archive scan completion, etc.
 
 ```cpp
 WM_SOCKETEX_TRIGGER  = WM_USER + 0x101      // layer notification
-WM_SOCKETEX_GETHOST  = WM_USER + 0x102      // WSAAsyncGetHostByName reply
+WM_SOCKETEX_GETHOST  = WM_USER + 0x102      // historical WSAAsyncGetHostByName reply
 WM_SOCKETEX_CALLBACK = WM_USER + 0x103      // pending callback dispatch
 WM_SOCKETEX_NOTIFY   = WM_USER + 0x104      // FD_READ/WRITE/ACCEPT/CLOSE per socket
 // + WM_SOCKETEX_NOTIFY + nSocketIndex for each of up to 47869 sockets
@@ -376,16 +379,16 @@ disk this can hang the UI for seconds.
 
 ---
 
-## 8. Path to a Real Threading Model
+## 8. Remaining Path to a Real Threading Model
 
 The changes fall into two independent tracks:
 
-- **Track A** — move network I/O off the UI thread (replaces `WSAAsyncSelect`)
+- **Track A** — continue from the current `WSAPoll` bridge toward a final IOCP model
 - **Track B** — clean up worker thread hygiene (safer, easier, independent of Track A)
 
 ---
 
-### Track A0: Replace WSAAsyncSelect with WSAPoll on a Dedicated Network Thread
+### Track A0: Historical Bridge Step Completed
 
 `WSAPoll` is the smallest Windows-native step away from helper-window socket dispatch. It keeps the
 code in the classic non-overlapped `socket`/`connect`/`send`/`recv`/`accept` style, but removes the
@@ -399,6 +402,9 @@ This is a valid **transitional backend** if the immediate goal is:
 
 It is **not** the final high-scale Windows design. `WSAPoll` is still an `O(n)` readiness scan and
 still requires manual interest-mask management for every socket.
+
+This track is complete in the current branch: live TCP and UDP transport now sit on the shared
+`WSAPoll` backend, and the old helper-window resolver/message routes are gone from the runtime path.
 
 #### A0.1 What Changes and What Stays the Same
 
@@ -513,10 +519,10 @@ To preserve current behavior, the poll backend must apply the following rules:
 
 #### A0.6 UDP Scope
 
-A full migration cannot stop at `CAsyncSocketEx` alone:
+A full migration could not stop at `CAsyncSocketEx` alone:
 
-- `CUDPSocket` derives from plain `CAsyncSocket`
-- `CClientUDPSocket` also derives from plain `CAsyncSocket`
+- historically `CUDPSocket` derived from plain `CAsyncSocket`
+- historically `CClientUDPSocket` also derived from plain `CAsyncSocket`
 
 So there are two realistic options:
 
@@ -894,9 +900,10 @@ m_bNewData.store(0, std::memory_order_relaxed);  // or acquire/release as needed
 
 ---
 
-## 9. Migration Sequence
+## 9. Historical Migration Sequence and Remaining Steps
 
-The safest order to make these changes without destabilizing the app:
+The sequence below started as the safest way to land the transport migration. Several early steps
+are now complete and are kept here as historical context for the branch:
 
 ```
 Step 1 — Track B (no architecture change, pure cleanup)
@@ -912,17 +919,17 @@ Step 2 — Kademlia thread isolation
     2c. Make UPnP refresh call thread-safe (PostMessage instead of direct call)
     2d. Validate: all Kademlia-sourced calls to downloadqueue/clientlist are now marshalled
 
-Step 3 — DNS modernization (independent of Step 2)
-    3a. Replace WSAAsyncGetHostByName with GetAddrInfoExW + completion callback
+Step 3 — DNS modernization (completed in current branch)
+    3a. Replace WSAAsyncGetHostByName with worker-thread getaddrinfo-based resolution
     3b. Remove WM_HOSTNAMERESOLVED handler and OnHostnameResolved message map entry
 
-Step 4 — Network thread (largest change, requires Step 1 complete)
-    4a. Optional bridge: build a WSAPoll-backed network thread first, preserving the current callback contract
+Step 4 — Network thread (WSAPoll bridge completed; IOCP follow-up remains)
+    4a. WSAPoll-backed network thread landed for TCP and UDP
     4b. Port ListenSocket, CEMSocket, ClientUDPSocket to post work items to the network thread
     4c. Add locking to all shared objects touched from OnReceive (CDownloadQueue, CClientList, etc.)
     4d. Validate on a test build: UI thread must make zero socket calls
     4e. Final backend: replace the poll loop with IOCP overlapped operations if proceeding to the end-state design
-    4f. Delete old CAsyncSocketExHelperWindow, remove all WM_SOCKETEX_* messages
+    4f. Old CAsyncSocketExHelperWindow and WM_SOCKETEX_* runtime path already removed
 
 Step 5 — CWinThread → std::jthread (optional, cosmetic, low risk)
     5a. Replace fire-and-forget threads with std::async
@@ -983,6 +990,6 @@ targets the final IOCP end state:
 - Rewrite `CAsyncSocketEx` backend from message-based to overlapped I/O (A2)
 - Add thread-safe locking to protocol objects (`CDownloadQueue`, `CClientList`, etc.) (A3)
 - Move Kademlia processing to its own `std::jthread` (A4)
-- Replace deprecated `WSAAsyncGetHostByName` with `GetAddrInfoExW` (A5)
+- Keep the current worker-thread DNS path or move to `GetAddrInfoExW` only if cancellation/completion semantics become necessary (A5)
 
-**Status:** Not yet started. This is the largest architectural change and depends on FEAT_029 (Track B) being complete first.
+**Status:** Transport bridge complete, final IOCP end-state not started. The main remaining socket-side work is operational hardening and any future IOCP decision, not helper-window migration.
