@@ -38,7 +38,7 @@ public:
 	BOOL Attach(SOCKET hSocket, long lEvent = FD_DEFAULT);
 	SOCKET Detach();
 
-	static int GetLastError() { return WSAGetLastError(); }
+	static int GetSocketLastError() { return WSAGetLastError(); }
 
 	bool GetPeerName(CString &rPeerAddress, UINT &rPeerPort);
 	BOOL GetPeerName(LPSOCKADDR lpSockAddr, int *lpSockAddrLen);
@@ -65,7 +65,7 @@ public:
 	int ReceiveFrom(void *lpBuf, int nBufLen, LPSOCKADDR lpSockAddr, int *lpSockAddrLen, int nFlags = 0);
 	virtual int Send(const void *lpBuf, int nBufLen, int nFlags = 0);
 	int SendTo(const void *lpBuf, int nBufLen, const SOCKADDR *lpSockAddr, int nSockAddrLen, int nFlags = 0);
-	BOOL ShutDown(int nHow = CAsyncSocket::sends);
+	BOOL Shutdown(int nHow = SD_SEND);
 
 	virtual void OnAccept(int nErrorCode);
 	virtual void OnClose(int nErrorCode);

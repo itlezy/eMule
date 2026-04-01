@@ -682,7 +682,7 @@ The 4× multiplier for `SS_Half` exists specifically to accommodate Windows XP S
 ```cpp
 void CClientReqSocket::Safe_Delete() {
     AsyncSelect(FD_CLOSE);     // suppress further event notifications
-    ShutDown(both);            // TCP FIN
+    Shutdown(SD_BOTH);         // TCP FIN
     deltimer = GetTickCount();
     deletethis = true;         // deferred: actual delete after 10 seconds
 }

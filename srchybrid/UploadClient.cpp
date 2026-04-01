@@ -696,7 +696,7 @@ void CUpDownClient::Ban(LPCTSTR pszReason)
 	theApp.emuledlg->transferwnd->ShowQueueCount(theApp.uploadqueue->GetWaitingUserCount());
 	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(this);
 	if (socket != NULL && socket->IsConnected())
-		socket->ShutDown(CAsyncSocket::receives); // let the socket timeout, since we don't want to risk to delete the client right now. This isn't actually perfect, could be changed later
+		socket->Shutdown(SD_RECEIVE); // let the socket timeout, since we don't want to risk to delete the client right now. This isn't actually perfect, could be changed later
 }
 
 DWORD CUpDownClient::GetWaitStartTime() const

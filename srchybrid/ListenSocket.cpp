@@ -199,7 +199,7 @@ void CClientReqSocket::Safe_Delete()
 	AsyncSelect(FD_CLOSE);
 	deltimer = ::GetTickCount();
 	if (m_SocketData.hSocket != INVALID_SOCKET)
-		ShutDown(CAsyncSocket::both);
+		Shutdown(SD_BOTH);
 	if (client) {
 		client->socket = NULL;
 		client = NULL;
@@ -2009,7 +2009,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 				s_iAcceptConnectionCondRejected = 0;
 				SOCKET sNew = WSAAccept(m_SocketData.hSocket, (LPSOCKADDR)&SockAddr, &iSockAddrLen, AcceptConnectionCond, 0);
 				if (sNew == INVALID_SOCKET) {
-					DWORD nError = CAsyncSocket::GetLastError();
+					DWORD nError = CAsyncSocketEx::GetSocketLastError();
 					if (nError == WSAEWOULDBLOCK) {
 						DebugLogError(LOG_STATUSBAR, _T("%hs: Backlog counter says %u connections waiting, Accept() says WSAEWOULDBLOCK - setting counter to zero!"), __FUNCTION__, m_nPendingConnections);
 						m_nPendingConnections = 0;
@@ -2044,7 +2044,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 				newclient = new CClientReqSocket;
 				if (!Accept(*newclient, (LPSOCKADDR)&SockAddr, &iSockAddrLen)) {
 					newclient->Safe_Delete();
-					DWORD nError = CAsyncSocket::GetLastError();
+					DWORD nError = CAsyncSocketEx::GetSocketLastError();
 					if (nError == WSAEWOULDBLOCK) {
 						DebugLogError(LOG_STATUSBAR, _T("%hs: Backlog counter says %u connections waiting, Accept() says WSAEWOULDBLOCK - setting counter to zero!"), __FUNCTION__, m_nPendingConnections);
 						m_nPendingConnections = 0;

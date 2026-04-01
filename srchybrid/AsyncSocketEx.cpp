@@ -712,7 +712,7 @@ BOOL CAsyncSocketEx::GetSockName(LPSOCKADDR lpSockAddr, int *lpSockAddrLen) cons
 	return getsockname(m_SocketData.hSocket, lpSockAddr, lpSockAddrLen) != SOCKET_ERROR;
 }
 
-BOOL CAsyncSocketEx::ShutDown(int nHow)
+BOOL CAsyncSocketEx::Shutdown(int nHow)
 {
 	return shutdown(m_SocketData.hSocket, nHow) != SOCKET_ERROR;
 }

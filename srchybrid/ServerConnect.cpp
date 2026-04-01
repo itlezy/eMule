@@ -524,7 +524,7 @@ void CServerConnect::DestroySocket(CServerSocket *pSock)
 		m_lstOpenSockets.RemoveAt(pos);
 	if (pSock->m_SocketData.hSocket != INVALID_SOCKET) {
 		pSock->AsyncSelect(FD_CLOSE);
-		pSock->ShutDown(CAsyncSocket::both);
+		pSock->Shutdown(SD_BOTH);
 		pSock->Close();
 	}
 	delete pSock;

@@ -301,3 +301,10 @@
   I again forgot that repo helpers live under `eMule-build\eMule\helpers`, not directly under `eMule-build\helpers`.
 - Fix:
   resolve helper paths from the actual repo root (`eMule-build\eMule`) before probing or invoking them.
+
+- Error:
+  `Get-Content ... | Select-Object -Index (190..210),(2004..2055)` failed because `-Index` expects one integer array, not multiple range arguments.
+- Cause:
+  I passed multiple ranges directly to `Select-Object -Index` instead of materializing one combined index list or reading the slices separately.
+- Fix:
+  use array slicing on the loaded content or issue separate read commands per range when inspecting non-contiguous sections.

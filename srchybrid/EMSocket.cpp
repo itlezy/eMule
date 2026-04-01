@@ -601,7 +601,7 @@ SocketSentBytes CEMSocket::SendStd(uint32 maxNumberOfBytesToSend, uint32 minFrag
 
 				uint32 result = CEncryptedStreamSocket::Send(sendbuffer + sent, tosend);
 				if (result == (uint32)SOCKET_ERROR) {
-					uint32 error = (uint32)CAsyncSocket::GetLastError();
+					uint32 error = (uint32)CAsyncSocketEx::GetSocketLastError();
 					if (error == WSAEWOULDBLOCK) {
 						m_bBusy = true;
 
@@ -881,14 +881,15 @@ int CEMSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 			// FIN received on socket // Connection is being closed by peer
 			//ASSERT (false);
 			if (!AsyncSelect(FD_CLOSE | FD_WRITE)) { // no more READ notifications...
-				//int waserr = CAsyncSocket::GetLastError(); // oops, AsyncSelect failed !!!
+				//int waserr = CAsyncSocketEx::GetSocketLastError(); // oops, AsyncSelect failed !!!
 				ASSERT(0);
 			}
 		}
 		break;
 	case SOCKET_ERROR:
 		const char *p = NULL;
-		switch (CAsyncSocket::GetLastError()) {
+		const int nSocketError = CAsyncSocketEx::GetSocketLastError();
+		switch (nSocketError) {
 		case WSANOTINITIALISED:
 			ASSERT(0);
 			EMTrace("%sA successful AfxSocketInit must occur before using this API.");
@@ -911,7 +912,7 @@ int CEMSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 			break;
 		case WSAEOPNOTSUPP:		// MSG_OOB was specified, but the socket is not of type SOCK_STREAM.
 			break;
-		case WSAESHUTDOWN:		// The socket has been shut down; it is impossible to call Receive on a socket after ShutDown(0) or ShutDown(2) has been invoked.
+		case WSAESHUTDOWN:		// The socket has been shut down; it is impossible to call Receive after Shutdown(SD_RECEIVE) or Shutdown(SD_BOTH).
 			p = "%sThe socket %u has been shut down";
 			break;
 		case WSAEMSGSIZE:		// The datagram was too large to fit into the specified buffer and was truncated.
@@ -923,7 +924,7 @@ int CEMSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 			p = "%sThe socket %u has not been bound";
 			break;
 		default:
-			EMTrace("CEMSocket::OnReceive: Unexpected socket error %x on socket %u", CAsyncSocket::GetLastError(), (SOCKET)this);
+			EMTrace("CEMSocket::OnReceive: Unexpected socket error %x on socket %u", nSocketError, (SOCKET)this);
 		}
 		if (p)
 			EMTrace(p, "CEMSocket::OnReceive: ", (SOCKET)this);

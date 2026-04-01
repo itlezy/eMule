@@ -666,7 +666,7 @@ void CServerSocket::ConnectTo(CServer *server, bool bNoCrypt)
 	//
 	SetConnectionState(CS_CONNECTING);
 	if (!Connect(server->GetAddress(), nPort)) {
-		DWORD dwError = CAsyncSocket::GetLastError();
+		DWORD dwError = CAsyncSocketEx::GetSocketLastError();
 		if (dwError != WSAEWOULDBLOCK) {
 			LogError(GetResString(IDS_ERR_CONNECTIONERROR), (LPCTSTR)cur_server->GetListName(), cur_server->GetAddress(), nPort, (LPCTSTR)GetFullErrorMessage(dwError));
 			SetConnectionState(CS_FATALERROR);

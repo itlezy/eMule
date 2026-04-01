@@ -493,7 +493,7 @@ int CClientUDPSocket::SendTo(uchar *lpBuf, int nBufLen, uint32 dwIP, uint16 nPor
 	sockAddr.sin_port = htons(nPort);
 	int result = CAsyncSocketEx::SendTo(lpBuf, nBufLen, reinterpret_cast<const SOCKADDR*>(&sockAddr), sizeof sockAddr);
 	if (result == SOCKET_ERROR) {
-		DWORD dwError = (DWORD)CAsyncSocketEx::GetLastError();
+		DWORD dwError = (DWORD)CAsyncSocketEx::GetSocketLastError();
 		if (dwError == WSAEWOULDBLOCK) {
 			m_bWouldBlock = true;
 			SetWriteInterestEnabled(true);

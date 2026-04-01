@@ -130,7 +130,7 @@ bool CUDPSocket::Create()
 	if (thePrefs.GetServerUDPPort()) {
 		if (CreateDatagram(thePrefs.GetServerUDPPort() == _UI16_MAX ? 0 : thePrefs.GetServerUDPPort(), thePrefs.GetBindAddrW()))
 			return true;
-		LogError(LOG_STATUSBAR, _T("Error: Server UDP socket: Failed to create server UDP socket - %s"), (LPCTSTR)GetErrorMessage(CAsyncSocketEx::GetLastError()));
+		LogError(LOG_STATUSBAR, _T("Error: Server UDP socket: Failed to create server UDP socket - %s"), (LPCTSTR)GetErrorMessage(CAsyncSocketEx::GetSocketLastError()));
 	}
 	return false;
 }
@@ -751,7 +751,7 @@ int CUDPSocket::SendTo(BYTE *lpBuf, int nBufLen, uint32 dwIP, uint16 nPort)
 	sockAddr.sin_port = htons(nPort);
 	int result = CAsyncSocketEx::SendTo(lpBuf, nBufLen, reinterpret_cast<const SOCKADDR*>(&sockAddr), sizeof sockAddr);
 	if (result == SOCKET_ERROR) {
-		DWORD dwError = (DWORD)CAsyncSocketEx::GetLastError();
+		DWORD dwError = (DWORD)CAsyncSocketEx::GetSocketLastError();
 		if (dwError == WSAEWOULDBLOCK) {
 			m_bWouldBlock = true;
 			SetWriteInterestEnabled(true);
