@@ -18,6 +18,8 @@
 #include "PipeApiServer.h"
 
 #include <algorithm>
+#include <cerrno>
+#include <cstdlib>
 #include <vector>
 
 #include "ClientStateDefs.h"
@@ -29,6 +31,11 @@
 #include "PartFile.h"
 #include "PipeApiSurfaceSeams.h"
 #include "Preferences.h"
+#include "SearchDlg.h"
+#include "SearchFile.h"
+#include "SearchList.h"
+#include "SearchParams.h"
+#include "SearchResultsWnd.h"
 #include "Server.h"
 #include "ServerConnect.h"
 #include "ServerList.h"
@@ -42,6 +49,7 @@
 #include "UploadQueue.h"
 #include "UserMsgs.h"
 #include "DownloadQueue.h"
+#include "Opcodes.h"
 #include "kademlia/kademlia/Kademlia.h"
 
 #pragma warning(push, 0)
@@ -137,9 +145,9 @@ json JsonHashOrNull(const uchar *pHash)
 }
 
 /**
- * Maps the existing CPartFile states to the remote API state names.
+ * Maps the existing CPartFile states to the stable transfer state names.
  */
-CString GetDownloadStateName(const CPartFile &rPartFile)
+CString GetTransferStateName(const CPartFile &rPartFile)
 {
 	switch (rPartFile.GetStatus()) {
 	case PS_WAITINGFORHASH:
@@ -165,9 +173,9 @@ CString GetDownloadStateName(const CPartFile &rPartFile)
 }
 
 /**
- * Maps the numeric priority into a stable API string.
+ * Maps the numeric download priority into the stable transfer vocabulary.
  */
-CString GetPriorityName(const CPartFile &rPartFile)
+CString GetTransferPriorityName(const CPartFile &rPartFile)
 {
 	if (rPartFile.IsAutoDownPriority())
 		return _T("auto");
@@ -301,9 +309,9 @@ json BuildKadStatusJson()
 }
 
 /**
- * Serializes one part file into the API download shape.
+ * Serializes one part file into the stable transfer payload.
  */
-json BuildDownloadJson(const CPartFile &rPartFile)
+json BuildTransferJson(const CPartFile &rPartFile)
 {
 	const time_t eta = rPartFile.getTimeRemaining();
 	return json{
@@ -312,9 +320,10 @@ json BuildDownloadJson(const CPartFile &rPartFile)
 		{"size", static_cast<uint64>(rPartFile.GetFileSize())},
 		{"sizeDone", static_cast<uint64>(rPartFile.GetCompletedSize())},
 		{"progress", rPartFile.GetPercentCompleted() / 100.0},
-		{"state", StdUtf8FromCString(GetDownloadStateName(rPartFile))},
-		{"priority", StdUtf8FromCString(GetPriorityName(rPartFile))},
+		{"state", StdUtf8FromCString(GetTransferStateName(rPartFile))},
+		{"priority", StdUtf8FromCString(GetTransferPriorityName(rPartFile))},
 		{"autoPriority", rPartFile.IsAutoDownPriority()},
+		{"category", const_cast<CPartFile&>(rPartFile).GetCategory()},
 		{"downloadSpeed", rPartFile.GetDatarate()},
 		{"uploadSpeed", 0},
 		{"sources", rPartFile.GetSourceCount()},
@@ -414,9 +423,9 @@ json BuildUploadJson(const CUpDownClient &rClient, const bool bWaitingQueue)
 }
 
 /**
- * Builds the shared system stats payload used by polling and SSE.
+ * Builds the shared global stats payload used by polling and push events.
  */
-json BuildSystemStatsJson()
+json BuildGlobalStatsJson()
 {
 	return json{
 		{"connected", theApp.IsConnected()},
@@ -432,6 +441,173 @@ json BuildSystemStatsJson()
 		{"kadRunning", Kademlia::CKademlia::IsRunning()},
 		{"kadConnected", Kademlia::CKademlia::IsConnected()},
 		{"kadFirewalled", Kademlia::CKademlia::IsConnected() ? json(Kademlia::CKademlia::IsFirewalled()) : json(nullptr)}
+	};
+}
+
+/**
+ * Serializes the curated runtime preferences exposed over the local pipe.
+ */
+json BuildPreferencesJson()
+{
+	return json{
+		{"maxUploadKiB", thePrefs.GetMaxUpload()},
+		{"maxDownloadKiB", thePrefs.GetMaxDownload()},
+		{"maxConnections", thePrefs.GetMaxConnections()},
+		{"autoConnect", thePrefs.DoAutoConnect()},
+		{"newAutoUp", thePrefs.GetNewAutoUp()}
+	};
+}
+
+/**
+ * Applies the curated mutable preferences and persists them through the
+ * normal preferences save path.
+ */
+bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
+{
+	if (!rPrefs.is_object()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("prefs must be an object");
+		return false;
+	}
+
+	if (rPrefs.contains("maxUploadKiB")) {
+		if (!rPrefs["maxUploadKiB"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxUploadKiB must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetMaxUpload(rPrefs["maxUploadKiB"].get<uint32>());
+	}
+
+	if (rPrefs.contains("maxDownloadKiB")) {
+		if (!rPrefs["maxDownloadKiB"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxDownloadKiB must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetMaxDownload(rPrefs["maxDownloadKiB"].get<uint32>());
+	}
+
+	if (rPrefs.contains("maxConnections")) {
+		if (!rPrefs["maxConnections"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxConnections must be an unsigned number");
+			return false;
+		}
+		thePrefs.SetMaxConnections(static_cast<UINT>(rPrefs["maxConnections"].get<unsigned>()));
+	}
+
+	if (rPrefs.contains("autoConnect")) {
+		if (!rPrefs["autoConnect"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("autoConnect must be a boolean");
+			return false;
+		}
+		thePrefs.SetAutoConnect(rPrefs["autoConnect"].get<bool>());
+	}
+
+	if (rPrefs.contains("newAutoUp")) {
+		if (!rPrefs["newAutoUp"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("newAutoUp must be a boolean");
+			return false;
+		}
+		thePrefs.SetNewAutoUp(rPrefs["newAutoUp"].get<bool>());
+	}
+
+	thePrefs.Save();
+	theApp.emuledlg->ShowTransferRate(true);
+	return true;
+}
+
+/**
+ * Formats one internal search identifier for the public pipe payload.
+ */
+CString FormatSearchId(const uint32 uSearchID)
+{
+	CString strSearchId;
+	strSearchId.Format(_T("%u"), uSearchID);
+	return strSearchId;
+}
+
+/**
+ * Parses the public decimal search id into the native uint32 identifier.
+ */
+bool TryGetSearchId(const json &rValue, uint32 &ruSearchID, SPipeApiError &rError)
+{
+	if (!rValue.is_string()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("search_id must be a decimal string");
+		return false;
+	}
+
+	const std::string strValue = rValue.get<std::string>();
+	if (strValue.empty()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("search_id must not be empty");
+		return false;
+	}
+
+	char *pEnd = NULL;
+	errno = 0;
+	const unsigned long uValue = strtoul(strValue.c_str(), &pEnd, 10);
+	if (errno != 0 || pEnd == NULL || *pEnd != '\0' || uValue > _UI32_MAX) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("search_id must be a valid uint32 decimal string");
+		return false;
+	}
+
+	ruSearchID = static_cast<uint32>(uValue);
+	return true;
+}
+
+/**
+ * Maps search result known-file state into stable pipe vocabulary.
+ */
+CString GetSearchKnownTypeName(const CSearchFile &rSearchFile)
+{
+	switch (rSearchFile.GetKnownType()) {
+	case CSearchFile::Shared:
+		return _T("shared");
+	case CSearchFile::Downloading:
+		return _T("downloading");
+	case CSearchFile::Downloaded:
+		return _T("downloaded");
+	case CSearchFile::Cancelled:
+		return _T("cancelled");
+	case CSearchFile::Unknown:
+		return _T("unknown");
+	case CSearchFile::NotDetermined:
+	default:
+		return _T("undetermined");
+	}
+}
+
+/**
+ * Serializes one top-level search result entry into the pipe payload shape.
+ */
+json BuildSearchResultJson(const CSearchFile &rSearchFile)
+{
+	const int iComplete = rSearchFile.IsComplete();
+	return json{
+		{"searchId", StdUtf8FromCString(FormatSearchId(rSearchFile.GetSearchID()))},
+		{"hash", StdUtf8FromCString(HashToHex(rSearchFile.GetFileHash()))},
+		{"name", StdUtf8FromCString(rSearchFile.GetFileName())},
+		{"size", static_cast<uint64>(rSearchFile.GetFileSize())},
+		{"fileType", StdUtf8FromCString(rSearchFile.GetFileType())},
+		{"sources", rSearchFile.GetSourceCount()},
+		{"completeSources", rSearchFile.GetCompleteSourceCount()},
+		{"complete", iComplete >= 0 ? json(iComplete != 0) : json(nullptr)},
+		{"knownType", StdUtf8FromCString(GetSearchKnownTypeName(rSearchFile))},
+		{"directory", rSearchFile.GetDirectory() != NULL ? json(StdUtf8FromCString(rSearchFile.GetDirectory())) : json(nullptr)},
+		{"clientIp", StdUtf8FromCString(rSearchFile.GetClientID() != 0 ? ipstr(rSearchFile.GetClientID()) : CString())},
+		{"clientPort", rSearchFile.GetClientPort()},
+		{"serverIp", StdUtf8FromCString(rSearchFile.GetClientServerIP() != 0 ? ipstr(rSearchFile.GetClientServerIP()) : CString())},
+		{"serverPort", rSearchFile.GetClientServerPort()},
+		{"clientCount", rSearchFile.GetClientsCount()},
+		{"serverCount", rSearchFile.GetServers().GetSize()},
+		{"kadPublishInfo", rSearchFile.GetKadPublishInfo()},
+		{"spam", rSearchFile.IsConsideredSpam()}
 	};
 }
 
@@ -515,7 +691,7 @@ bool TryDecodeHash(const json &rValue, uchar *pOutHash, SPipeApiError &rError)
 }
 
 /**
- * Looks up a download by hash and populates a standard NOT_FOUND error when
+ * Looks up a transfer by hash and populates a standard NOT_FOUND error when
  * the entry does not exist.
  */
 CPartFile* FindPartFileByHash(const json &rValue, SPipeApiError &rError)
@@ -527,7 +703,7 @@ CPartFile* FindPartFileByHash(const json &rValue, SPipeApiError &rError)
 	CPartFile *pPartFile = theApp.downloadqueue->GetFileByID(hash);
 	if (pPartFile == NULL) {
 		rError.strCode = "NOT_FOUND";
-		rError.strMessage = _T("download not found");
+		rError.strMessage = _T("transfer not found");
 	}
 	return pPartFile;
 }
@@ -586,7 +762,7 @@ bool StartPartFileRecheck(CPartFile &rPartFile, SPipeApiError &rError)
 {
 	if (inSet(rPartFile.GetStatus(), PS_WAITINGFORHASH, PS_HASHING, PS_COMPLETING)) {
 		rError.strCode = "INVALID_ARGUMENT";
-		rError.strMessage = _T("download is already being hashed or completed");
+		rError.strMessage = _T("transfer is already being hashed or completed");
 		return false;
 	}
 
@@ -635,7 +811,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	const char *const pszBuildFlavor = "release";
 #endif
 
-	if (strCommand == "system/version") {
+	if (strCommand == "app/version") {
 		return json{
 			{"appName", "eMule"},
 			{"version", StdUtf8FromCString(theApp.m_strCurVersionLong)},
@@ -648,8 +824,22 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		};
 	}
 
-	if (strCommand == "system/stats")
-		return BuildSystemStatsJson();
+	if (strCommand == "app/preferences/get")
+		return BuildPreferencesJson();
+
+	if (strCommand == "app/preferences/set") {
+		if (!ApplyPreferencesJson(params.contains("prefs") ? params["prefs"] : json(), rError))
+			return json();
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "app/shutdown") {
+		theApp.emuledlg->PostMessage(WM_CLOSE);
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "stats/global")
+		return BuildGlobalStatsJson();
 
 	if (strCommand == "servers/list") {
 		json result = json::array();
@@ -796,18 +986,16 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		return BuildSharedFileJson(*pKnownFile);
 	}
 
-	if (strCommand == "uploads/active" || strCommand == "uploads/waiting" || strCommand == "uploads/all") {
-		const bool bIncludeActive = strCommand != "uploads/waiting";
-		const bool bIncludeWaiting = strCommand != "uploads/active";
+	if (strCommand == "uploads/list" || strCommand == "uploads/queue") {
+		const bool bWaitingQueue = strCommand == "uploads/queue";
 		json result = json::array();
-		if (bIncludeActive) {
+		if (!bWaitingQueue) {
 			for (POSITION pos = theApp.uploadqueue->GetFirstFromUploadList(); pos != NULL;) {
 				CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromUploadList(pos);
 				if (pClient != NULL)
 					result.push_back(BuildUploadJson(*pClient, false));
 			}
-		}
-		if (bIncludeWaiting) {
+		} else {
 			for (POSITION pos = theApp.uploadqueue->GetFirstFromWaitingList(); pos != NULL;) {
 				CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromWaitingList(pos);
 				if (pClient != NULL)
@@ -817,22 +1005,60 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		return result;
 	}
 
-	if (strCommand == "downloads/list") {
+	if (strCommand == "transfers/list") {
+		CString strFilter;
+		UINT uCategory = 0;
+		bool bHasCategory = false;
+		if (params.contains("filter")) {
+			if (!params["filter"].is_string()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("filter must be a string when provided");
+				return json();
+			}
+			strFilter = CStringFromStdUtf8(params["filter"].get<std::string>());
+			strFilter.MakeLower();
+		}
+		if (params.contains("category")) {
+			if (!params["category"].is_number_unsigned()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("category must be an unsigned number");
+				return json();
+			}
+			uCategory = static_cast<UINT>(params["category"].get<unsigned>());
+			if (uCategory >= thePrefs.GetCatCount()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("category is out of range");
+				return json();
+			}
+			bHasCategory = true;
+		}
+
 		json result = json::array();
 		for (POSITION pos = theApp.downloadqueue->GetFileHeadPosition(); pos != NULL;) {
 			CPartFile *pPartFile = theApp.downloadqueue->GetFileNext(pos);
-			if (pPartFile != NULL)
-				result.push_back(BuildDownloadJson(*pPartFile));
+			if (pPartFile == NULL)
+				continue;
+			if (bHasCategory && pPartFile->GetCategory() != uCategory)
+				continue;
+			if (!strFilter.IsEmpty()) {
+				CString strName(pPartFile->GetFileName());
+				strName.MakeLower();
+				CString strState(GetTransferStateName(*pPartFile));
+				strState.MakeLower();
+				if (strName.Find(strFilter) < 0 && strState.Find(strFilter) < 0)
+					continue;
+			}
+			result.push_back(BuildTransferJson(*pPartFile));
 		}
 		return result;
 	}
 
-	if (strCommand == "downloads/get") {
+	if (strCommand == "transfers/get") {
 		CPartFile *pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
-		return pPartFile != NULL ? BuildDownloadJson(*pPartFile) : json();
+		return pPartFile != NULL ? BuildTransferJson(*pPartFile) : json();
 	}
 
-	if (strCommand == "downloads/sources") {
+	if (strCommand == "transfers/sources") {
 		CPartFile *pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
 		if (pPartFile == NULL)
 			return json();
@@ -843,57 +1069,49 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		return result;
 	}
 
-	if (strCommand == "downloads/add") {
-		if (!params.contains("links") || !params["links"].is_array()) {
+	if (strCommand == "transfers/add") {
+		if (!params.contains("link") || !params["link"].is_string()) {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("links must be a string array");
+			rError.strMessage = _T("link must be a string");
 			return json();
 		}
 
-		json results = json::array();
-		for (const json &linkValue : params["links"]) {
-			if (!linkValue.is_string()) {
-				results.push_back(json{{"ok", false}, {"error", "link must be a string"}});
-				continue;
+		CED2KLink *pLink = NULL;
+		try {
+			CString strLink(CStringFromStdUtf8(params["link"].get<std::string>()));
+			strLink.Trim();
+			if (strLink.IsEmpty()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("link must not be empty");
+				return json();
 			}
 
-			CED2KLink *pLink = NULL;
-			try {
-				CString strLink(CStringFromStdUtf8(linkValue.get<std::string>()));
-				strLink.Trim();
-				if (strLink.IsEmpty()) {
-					results.push_back(json{{"ok", false}, {"error", "link must not be empty"}});
-					continue;
-				}
+			const bool bSlash = (strLink[strLink.GetLength() - 1] == _T('/'));
+			pLink = CED2KLink::CreateLinkFromUrl(bSlash ? strLink : strLink + _T('/'));
+			if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
+				throw CString(_T("invalid ed2k link"));
 
-				const bool bSlash = (strLink[strLink.GetLength() - 1] == _T('/'));
-				pLink = CED2KLink::CreateLinkFromUrl(bSlash ? strLink : strLink + _T('/'));
-				if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
-					throw CString(_T("invalid ed2k link"));
+			const CED2KFileLink *const pFileLink = pLink->GetFileLink();
+			theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, 0);
+			CPartFile *const pPartFile = theApp.downloadqueue->GetFileByID(pFileLink->GetHashKey());
+			if (pPartFile != NULL)
+				thePipeApiServer.NotifyTransferAdded(pPartFile);
 
-				const CED2KFileLink *pFileLink = pLink->GetFileLink();
-				theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, 0);
-				CPartFile *pPartFile = theApp.downloadqueue->GetFileByID(pFileLink->GetHashKey());
-				if (pPartFile != NULL)
-					thePipeApiServer.NotifyDownloadAdded(pPartFile);
-
-				results.push_back(json{
-					{"ok", true},
-					{"hash", StdUtf8FromCString(HashToHex(pFileLink->GetHashKey()))},
-					{"name", StdUtf8FromCString(pFileLink->GetName())}
-				});
-			} catch (const CString &rLinkError) {
-				results.push_back(json{
-					{"ok", false},
-					{"error", StdUtf8FromCString(rLinkError)}
-				});
-			}
+			const json result{
+				{"hash", StdUtf8FromCString(HashToHex(pFileLink->GetHashKey()))},
+				{"name", StdUtf8FromCString(pFileLink->GetName())}
+			};
 			delete pLink;
+			return result;
+		} catch (const CString &rLinkError) {
+			delete pLink;
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = rLinkError;
+			return json();
 		}
-		return json{{"results", results}};
 	}
 
-	auto handleBulkMutation = [&](LPCTSTR pszAction) -> json
+	auto handleTransferBulkMutation = [&](LPCTSTR pszAction) -> json
 	{
 		if (!params.contains("hashes") || !params["hashes"].is_array()) {
 			rError.strCode = "INVALID_ARGUMENT";
@@ -924,7 +1142,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 					pPartFile->PauseFile();
 					bOk = true;
 				} else
-					strErrorText = _T("download cannot be paused");
+					strErrorText = _T("transfer cannot be paused");
 			} else if (_tcscmp(pszAction, _T("resume")) == 0) {
 				if (pPartFile->CanResumeFile()) {
 					if (pPartFile->GetStatus() == PS_INSUFFICIENT)
@@ -933,19 +1151,19 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 						pPartFile->ResumeFile();
 					bOk = true;
 				} else
-					strErrorText = _T("download cannot be resumed");
+					strErrorText = _T("transfer cannot be resumed");
 			} else if (_tcscmp(pszAction, _T("stop")) == 0) {
 				if (pPartFile->CanStopFile()) {
 					pPartFile->StopFile();
 					bOk = true;
 					bUpdateTabs = true;
 				} else
-					strErrorText = _T("download cannot be stopped");
+					strErrorText = _T("transfer cannot be stopped");
 			} else if (_tcscmp(pszAction, _T("delete")) == 0) {
-				const bool bDeleteFiles = params.value("deleteFiles", false);
+				const bool bDeleteFiles = params.value("deleteFiles", params.value("delete_files", false));
 				if (pPartFile->GetStatus() == PS_COMPLETE) {
 					if (!bDeleteFiles) {
-						strErrorText = _T("completed download deletion requires deleteFiles=true");
+						strErrorText = _T("completed transfer deletion requires delete_files=true");
 					} else if (!ShellDeleteFile(pPartFile->GetFilePath())) {
 						strErrorText = GetErrorMessage(::GetLastError());
 					} else {
@@ -955,7 +1173,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 						bOk = true;
 					}
 				} else if (!bDeleteFiles) {
-					strErrorText = _T("partial download deletion requires deleteFiles=true");
+					strErrorText = _T("partial transfer deletion requires delete_files=true");
 				} else {
 					pPartFile->DeletePartFile();
 					bOk = true;
@@ -964,7 +1182,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 			results.push_back(BuildMutationResult(strHash, bOk, bOk ? NULL : strErrorText));
 			if (bOk && _tcscmp(pszAction, _T("delete")) != 0)
-				thePipeApiServer.NotifyDownloadUpdated(pPartFile);
+				thePipeApiServer.NotifyTransferUpdated(pPartFile);
 		}
 
 		if (bUpdateTabs)
@@ -973,22 +1191,269 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		return json{{"results", results}};
 	};
 
-	if (strCommand == "downloads/pause")
-		return handleBulkMutation(_T("pause"));
-	if (strCommand == "downloads/resume")
-		return handleBulkMutation(_T("resume"));
-	if (strCommand == "downloads/stop")
-		return handleBulkMutation(_T("stop"));
-	if (strCommand == "downloads/delete")
-		return handleBulkMutation(_T("delete"));
+	if (strCommand == "transfers/pause")
+		return handleTransferBulkMutation(_T("pause"));
+	if (strCommand == "transfers/resume")
+		return handleTransferBulkMutation(_T("resume"));
+	if (strCommand == "transfers/stop")
+		return handleTransferBulkMutation(_T("stop"));
+	if (strCommand == "transfers/delete")
+		return handleTransferBulkMutation(_T("delete"));
 
-	if (strCommand == "downloads/recheck") {
+	if (strCommand == "transfers/recheck") {
 		CPartFile *pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
 		if (pPartFile == NULL)
 			return json();
 		if (!StartPartFileRecheck(*pPartFile, rError))
 			return json();
-		thePipeApiServer.NotifyDownloadUpdated(pPartFile);
+		thePipeApiServer.NotifyTransferUpdated(pPartFile);
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "transfers/set_priority") {
+		CPartFile *const pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pPartFile == NULL)
+			return json();
+		if (!params.contains("priority") || !params["priority"].is_string()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("priority must be a string");
+			return json();
+		}
+
+		switch (PipeApiSurfaceSeams::ParseTransferPriorityName(params["priority"].get_ref<const std::string&>().c_str())) {
+		case PipeApiSurfaceSeams::ETransferPriority::Auto:
+			pPartFile->SetAutoDownPriority(true);
+			break;
+		case PipeApiSurfaceSeams::ETransferPriority::VeryLow:
+			pPartFile->SetAutoDownPriority(false);
+			pPartFile->SetDownPriority(PR_VERYLOW);
+			break;
+		case PipeApiSurfaceSeams::ETransferPriority::Low:
+			pPartFile->SetAutoDownPriority(false);
+			pPartFile->SetDownPriority(PR_LOW);
+			break;
+		case PipeApiSurfaceSeams::ETransferPriority::Normal:
+			pPartFile->SetAutoDownPriority(false);
+			pPartFile->SetDownPriority(PR_NORMAL);
+			break;
+		case PipeApiSurfaceSeams::ETransferPriority::High:
+			pPartFile->SetAutoDownPriority(false);
+			pPartFile->SetDownPriority(PR_HIGH);
+			break;
+		case PipeApiSurfaceSeams::ETransferPriority::VeryHigh:
+			pPartFile->SetAutoDownPriority(false);
+			pPartFile->SetDownPriority(PR_VERYHIGH);
+			break;
+		case PipeApiSurfaceSeams::ETransferPriority::Invalid:
+		default:
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("priority must be one of auto, very_low, low, normal, high, very_high");
+			return json();
+		}
+
+		pPartFile->UpdateDisplayedInfo(true);
+		thePipeApiServer.NotifyTransferUpdated(pPartFile);
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "transfers/set_category") {
+		CPartFile *const pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pPartFile == NULL)
+			return json();
+		if (!params.contains("category") || !params["category"].is_number_unsigned()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("category must be an unsigned number");
+			return json();
+		}
+
+		const UINT uCategory = static_cast<UINT>(params["category"].get<unsigned>());
+		if (uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("category is out of range");
+			return json();
+		}
+
+		pPartFile->SetCategory(uCategory);
+		pPartFile->UpdateDisplayedInfo(true);
+		theApp.emuledlg->transferwnd->UpdateCatTabTitles();
+		thePipeApiServer.NotifyTransferUpdated(pPartFile);
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "search/start") {
+		CSearchResultsWnd *const pSearchResults = theApp.emuledlg->searchwnd != NULL ? theApp.emuledlg->searchwnd->m_pwndResults : NULL;
+		if (pSearchResults == NULL) {
+			rError.strCode = "EMULE_UNAVAILABLE";
+			rError.strMessage = _T("search window is not available");
+			return json();
+		}
+		if (!params.contains("query") || !params["query"].is_string()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("query must be a string");
+			return json();
+		}
+
+		SSearchParams *const pSearchParams = new SSearchParams;
+		pSearchParams->strExpression = CStringFromStdUtf8(params["query"].get<std::string>());
+		pSearchParams->strExpression.Trim();
+		if (pSearchParams->strExpression.IsEmpty()) {
+			delete pSearchParams;
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("query must not be empty");
+			return json();
+		}
+
+		if (params.contains("method")) {
+			if (!params["method"].is_string()) {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("method must be a string");
+				return json();
+			}
+			CString strMethod(CStringFromStdUtf8(params["method"].get<std::string>()));
+			strMethod.MakeLower();
+			if (strMethod == _T("automatic"))
+				pSearchParams->eType = SearchTypeAutomatic;
+			else if (strMethod == _T("server"))
+				pSearchParams->eType = SearchTypeEd2kServer;
+			else if (strMethod == _T("global"))
+				pSearchParams->eType = SearchTypeEd2kGlobal;
+			else if (strMethod == _T("kad"))
+				pSearchParams->eType = SearchTypeKademlia;
+			else {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("method must be one of automatic, server, global, kad");
+				return json();
+			}
+		} else
+			pSearchParams->eType = SearchTypeAutomatic;
+
+		if (params.contains("type")) {
+			if (!params["type"].is_string()) {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("type must be a string");
+				return json();
+			}
+			CString strType(CStringFromStdUtf8(params["type"].get<std::string>()));
+			strType.MakeLower();
+			if (strType.IsEmpty() || strType == _T("any"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_ANY);
+			else if (strType == _T("archive"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_ARCHIVE);
+			else if (strType == _T("audio"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_AUDIO);
+			else if (strType == _T("cdimage") || strType == _T("iso"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_CDIMAGE);
+			else if (strType == _T("image"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_IMAGE);
+			else if (strType == _T("program"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_PROGRAM);
+			else if (strType == _T("video"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_VIDEO);
+			else if (strType == _T("document"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_DOCUMENT);
+			else if (strType == _T("emulecollection"))
+				pSearchParams->strFileType = _T(ED2KFTSTR_EMULECOLLECTION);
+			else {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("type is not supported");
+				return json();
+			}
+		}
+
+		if (params.contains("ext")) {
+			if (!params["ext"].is_string()) {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("ext must be a string");
+				return json();
+			}
+			pSearchParams->strExtension = CStringFromStdUtf8(params["ext"].get<std::string>());
+		}
+
+		if (params.contains("min_size")) {
+			if (!params["min_size"].is_number_unsigned()) {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("min_size must be an unsigned number");
+				return json();
+			}
+			pSearchParams->ullMinSize = params["min_size"].get<uint64>();
+		}
+
+		if (params.contains("max_size")) {
+			if (!params["max_size"].is_number_unsigned()) {
+				delete pSearchParams;
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("max_size must be an unsigned number");
+				return json();
+			}
+			pSearchParams->ullMaxSize = params["max_size"].get<uint64>();
+		}
+
+		CString strSearchError;
+		if (!pSearchResults->StartSearchFromApi(pSearchParams, strSearchError)) {
+			rError.strCode = "EMULE_ERROR";
+			rError.strMessage = strSearchError.IsEmpty() ? CString(_T("failed to start search")) : strSearchError;
+			return json();
+		}
+
+		return json{{"search_id", StdUtf8FromCString(FormatSearchId(pSearchParams->dwSearchID))}};
+	}
+
+	if (strCommand == "search/results") {
+		if (theApp.emuledlg->searchwnd == NULL || theApp.emuledlg->searchwnd->m_pwndResults == NULL) {
+			rError.strCode = "EMULE_UNAVAILABLE";
+			rError.strMessage = _T("search window is not available");
+			return json();
+		}
+
+		uint32 uSearchID = 0;
+		if (!TryGetSearchId(params.contains("search_id") ? params["search_id"] : json(), uSearchID, rError))
+			return json();
+		if (theApp.emuledlg->searchwnd->m_pwndResults->GetSearchResultsParams(uSearchID) == NULL) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("search not found");
+			return json();
+		}
+
+		CArray<const CSearchFile*, const CSearchFile*> aResults;
+		if (!theApp.searchlist->GetVisibleResults(uSearchID, aResults)) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("search not found");
+			return json();
+		}
+
+		json results = json::array();
+		for (INT_PTR i = 0; i < aResults.GetCount(); ++i)
+			results.push_back(BuildSearchResultJson(*aResults[i]));
+
+		return json{
+			{"status", theApp.emuledlg->searchwnd->m_pwndResults->IsSearchRunning(uSearchID) ? "running" : "complete"},
+			{"results", results}
+		};
+	}
+
+	if (strCommand == "search/stop") {
+		if (theApp.emuledlg->searchwnd == NULL || theApp.emuledlg->searchwnd->m_pwndResults == NULL) {
+			rError.strCode = "EMULE_UNAVAILABLE";
+			rError.strMessage = _T("search window is not available");
+			return json();
+		}
+
+		uint32 uSearchID = 0;
+		if (!TryGetSearchId(params.contains("search_id") ? params["search_id"] : json(), uSearchID, rError))
+			return json();
+		if (theApp.emuledlg->searchwnd->m_pwndResults->GetSearchResultsParams(uSearchID) == NULL) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("search not found");
+			return json();
+		}
+
+		theApp.emuledlg->searchwnd->m_pwndResults->CancelSearch(uSearchID);
 		return json{{"ok", true}};
 	}
 
@@ -1141,7 +1606,7 @@ void CPipeApiServer::NotifyStatsUpdated(bool bForce)
 		return;
 
 	m_dwLastStatsEventTick = dwNow;
-	(void)WriteCurrentPipeLine(SerializeEventLine("stats_updated", BuildSystemStatsJson()), PipeApiPolicy::EWriteKind::Stats);
+	(void)WriteCurrentPipeLine(SerializeEventLine("stats_updated", BuildGlobalStatsJson()), PipeApiPolicy::EWriteKind::Stats);
 }
 
 void CPipeApiServer::NotifyConnectionStateChanged()
@@ -1190,33 +1655,44 @@ void CPipeApiServer::NotifyConnectionStateChanged()
 	m_uLastKadBootstrapProgress = uKadBootstrapProgress;
 }
 
-void CPipeApiServer::NotifyDownloadAdded(const CPartFile *pPartFile)
+void CPipeApiServer::NotifyTransferAdded(const CPartFile *pPartFile)
 {
 	if (pPartFile != NULL)
-		(void)WriteCurrentPipeLine(SerializeEventLine("download_added", BuildDownloadJson(*pPartFile)), PipeApiPolicy::EWriteKind::Structural);
+		(void)WriteCurrentPipeLine(SerializeEventLine("transfer_added", BuildTransferJson(*pPartFile)), PipeApiPolicy::EWriteKind::Structural);
 }
 
-void CPipeApiServer::NotifyDownloadRemoved(const CPartFile *pPartFile)
+void CPipeApiServer::NotifyTransferRemoved(const CPartFile *pPartFile)
 {
 	if (pPartFile == NULL)
 		return;
 
-	(void)WriteCurrentPipeLine(SerializeEventLine("download_removed", json{
+	(void)WriteCurrentPipeLine(SerializeEventLine("transfer_removed", json{
 		{"hash", StdUtf8FromCString(HashToHex(pPartFile->GetFileHash()))},
 		{"name", StdUtf8FromCString(pPartFile->GetFileName())}
 	}), PipeApiPolicy::EWriteKind::Structural);
 }
 
-void CPipeApiServer::NotifyDownloadCompleted(const CPartFile *pPartFile, bool bSucceeded)
+void CPipeApiServer::NotifyTransferCompleted(const CPartFile *pPartFile, bool bSucceeded)
 {
 	if (pPartFile != NULL)
-		(void)WriteCurrentPipeLine(SerializeEventLine(bSucceeded ? "download_completed" : "download_error", BuildDownloadJson(*pPartFile)), PipeApiPolicy::EWriteKind::Structural);
+		(void)WriteCurrentPipeLine(SerializeEventLine(bSucceeded ? "transfer_completed" : "transfer_error", BuildTransferJson(*pPartFile)), PipeApiPolicy::EWriteKind::Structural);
 }
 
-void CPipeApiServer::NotifyDownloadUpdated(const CPartFile *pPartFile)
+void CPipeApiServer::NotifyTransferUpdated(const CPartFile *pPartFile)
 {
 	if (pPartFile != NULL)
-		(void)WriteCurrentPipeLine(SerializeEventLine("download_updated", BuildDownloadJson(*pPartFile)), PipeApiPolicy::EWriteKind::Structural);
+		(void)WriteCurrentPipeLine(SerializeEventLine("transfer_updated", BuildTransferJson(*pPartFile)), PipeApiPolicy::EWriteKind::Structural);
+}
+
+void CPipeApiServer::NotifySearchResultAdded(const CSearchFile *pSearchFile)
+{
+	if (pSearchFile == NULL || pSearchFile->GetListParent() != NULL || !IsConnected())
+		return;
+
+	(void)WriteCurrentPipeLine(SerializeEventLine("search_results", json{
+		{"search_id", StdUtf8FromCString(FormatSearchId(pSearchFile->GetSearchID()))},
+		{"results", json::array({BuildSearchResultJson(*pSearchFile)})}
+	}), PipeApiPolicy::EWriteKind::Structural);
 }
 
 void CPipeApiServer::RunWorker()

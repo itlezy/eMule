@@ -144,10 +144,10 @@ All commands are sent by the sidecar. eMule replies with a matching `id`.
 |---|---|---|
 | `transfers/list` | `{ filter?: string, category?: number }` | `Transfer[]` |
 | `transfers/get` | `{ hash: string }` | `Transfer` |
-| `transfers/pause` | `{ hashes: string[] }` | `{ ok: true }` |
-| `transfers/resume` | `{ hashes: string[] }` | `{ ok: true }` |
-| `transfers/stop` | `{ hashes: string[] }` | `{ ok: true }` |
-| `transfers/delete` | `{ hashes: string[], delete_files?: bool }` | `{ ok: true }` |
+| `transfers/pause` | `{ hashes: string[] }` | `{ results: MutationResult[] }` |
+| `transfers/resume` | `{ hashes: string[] }` | `{ results: MutationResult[] }` |
+| `transfers/stop` | `{ hashes: string[] }` | `{ results: MutationResult[] }` |
+| `transfers/delete` | `{ hashes: string[], delete_files?: bool }` | `{ results: MutationResult[] }` |
 | `transfers/add` | `{ link: string }` | `{ hash: string, name: string }` |
 | `transfers/set_priority` | `{ hash: string, priority: string }` | `{ ok: true }` |
 | `transfers/set_category` | `{ hash: string, category: number }` | `{ ok: true }` |
@@ -166,25 +166,27 @@ All commands are sent by the sidecar. eMule replies with a matching `id`.
 | Command | Params | Result |
 |---|---|---|
 | `shared/list` | — | `SharedFile[]` |
+| `shared/get` | `{ hash: string }` | `SharedFile` |
 
 #### Servers (ED2K)
 
 | Command | Params | Result |
 |---|---|---|
 | `servers/list` | — | `Server[]` |
-| `servers/connect` | `{ addr: string, port: number }` | `{ ok: true }` |
-| `servers/disconnect` | — | `{ ok: true }` |
-| `servers/add` | `{ addr: string, port: number, name?: string }` | `{ ok: true }` |
-| `servers/remove` | `{ addr: string, port: number }` | `{ ok: true }` |
+| `servers/status` | — | `ServerStatus` |
+| `servers/connect` | `{ addr?: string, port?: number }` | `ServerStatus` |
+| `servers/disconnect` | — | `ServerStatus` |
+| `servers/add` | `{ addr: string, port: number, name?: string }` | `Server` |
+| `servers/remove` | `{ addr: string, port: number }` | `Server` |
 
 #### Kademlia
 
 | Command | Params | Result |
 |---|---|---|
 | `kad/status` | — | `KadStatus` |
-| `kad/connect` | — | `{ ok: true }` |
-| `kad/disconnect` | — | `{ ok: true }` |
-| `kad/recheck_firewall` | — | `{ ok: true }` |
+| `kad/connect` | — | `KadStatus` |
+| `kad/disconnect` | — | `KadStatus` |
+| `kad/recheck_firewall` | — | `KadStatus` |
 
 #### Search
 
@@ -202,8 +204,8 @@ All commands are sent by the sidecar. eMule replies with a matching `id`.
 | `app/version` | — | `{ version: string, build: string }` |
 | `app/preferences/get` | — | `Preferences` |
 | `app/preferences/set` | `{ prefs: Partial<Preferences> }` | `{ ok: true }` |
-| `app/shutdown` | — | *(no response — eMule exits)* |
-| `log/get` | `{ count?: number }` | `{ entries: LogEntry[] }` |
+| `app/shutdown` | — | `{ ok: true }` |
+| `log/get` | `{ limit?: number }` | `LogEntry[]` |
 
 ### 4.4 Event Reference
 
@@ -211,15 +213,14 @@ Events are pushed by eMule at any time. The sidecar forwards them to SSE clients
 
 | Event | Data | Trigger |
 |---|---|---|
-| `download_complete` | `{ hash, name, size }` | `TM_FILECOMPLETED` (success) |
-| `download_added` | `{ hash, name }` | File added to queue |
-| `download_error` | `{ hash, name }` | `TM_FILECOMPLETED` (failure) |
-| `download_paused` | `{ hash }` | User pause |
-| `download_resumed` | `{ hash }` | User resume |
-| `transfer_stats` | `{ dl_speed, ul_speed, dl_session, ul_session, connected_clients }` | Periodic ~1 s |
+| `transfer_completed` | `Transfer` | `TM_FILECOMPLETED` (success) |
+| `transfer_added` | `Transfer` | File added to queue |
+| `transfer_error` | `Transfer` | `TM_FILECOMPLETED` (failure) |
+| `transfer_removed` | `{ hash, name }` | File removed from queue |
+| `transfer_updated` | `Transfer` | Transfer state/priority/category changes |
+| `stats_updated` | `GlobalStats` | Periodic ~1 s |
 | `server_connected` | `{ name, addr, port, users, files }` | `CServerConnect::OnConnected` |
 | `server_disconnected` | `{}` | Server disconnect |
-| `server_failed` | `{ addr, port }` | Connection failure |
 | `kad_status_changed` | `{ running, connected, firewalled }` | Kad state change |
 | `search_results` | `{ search_id, results: SearchResult[] }` | New search results batch |
 
@@ -481,7 +482,7 @@ GET /api/v2/sync/maindata
   }
 ```
 
-The sidecar maintains a change log driven by pipe events and the periodic `transfer_stats` event.
+The sidecar maintains a change log driven by pipe events and the periodic `stats_updated` event.
 
 ### 6.6 Log
 
@@ -546,11 +547,11 @@ GET /api/v2/events
 Each SSE message carries a single pipe event as JSON in the `data` field:
 
 ```
-event: download_complete
+event: transfer_completed
 data: {"hash":"a1b2c3...","name":"example.mkv","size":1073741824}
 
-event: transfer_stats
-data: {"dl_speed":102400,"ul_speed":51200,"dl_session":536870912,...}
+event: stats_updated
+data: {"downloadSpeed":102400,"uploadSpeed":51200,"sessionDownloaded":536870912,...}
 
 event: server_connected
 data: {"name":"eMule Security","addr":"1.2.3.4","port":4661,"users":150000,"files":8000000}
@@ -909,13 +910,13 @@ void CPipeApiServer::SendLine(const std::string& json) {
 LRESULT CemuleDlg::OnFileCompleted(WPARAM wParam, LPARAM lParam) {
     CPartFile* pFile = reinterpret_cast<CPartFile*>(lParam);
     if (wParam & FILE_COMPLETION_THREAD_SUCCESS) {
-        thePipeApiServer.PostEvent("download_complete", {
+        thePipeApiServer.PostEvent("transfer_completed", {
             {"hash", CPipeApiServer::HashToHex(pFile->GetFileHash())},
             {"name", CStringToUtf8(pFile->GetFileName())},
             {"size", pFile->GetFileSize()}
         });
     } else {
-        thePipeApiServer.PostEvent("download_error", {
+        thePipeApiServer.PostEvent("transfer_error", {
             {"hash", CPipeApiServer::HashToHex(pFile->GetFileHash())},
             {"name", CStringToUtf8(pFile->GetFileName())}
         });
@@ -933,13 +934,13 @@ thePipeApiServer.PostEvent("server_connected", {
 });
 
 // Existing stats timer (e.g. CemuleDlg::OnTimer or CStatistics::RecordRate)
-thePipeApiServer.PostEvent("transfer_stats", {
-    {"dl_speed", (int)theStats.rateDown},
-    {"ul_speed", (int)theStats.rateUp},
-    {"dl_session", theStats.sessionReceivedBytes},
-    {"ul_session", theStats.sessionSentBytes},
-    {"upload_slots",  theApp.uploadqueue->GetActiveUploadsCount()},
-    {"queue_size",    theApp.uploadqueue->GetWaitingUserCount()}
+thePipeApiServer.PostEvent("stats_updated", {
+    {"downloadSpeed", (int)theStats.rateDown},
+    {"uploadSpeed", (int)theStats.rateUp},
+    {"sessionDownloaded", theStats.sessionReceivedBytes},
+    {"sessionUploaded", theStats.sessionSentBytes},
+    {"activeUploads",  theApp.uploadqueue->GetActiveUploadsCount()},
+    {"waitingUploads", theApp.uploadqueue->GetWaitingUserCount()}
 });
 ```
 
@@ -999,9 +1000,9 @@ Requests that target multiple hashes (pause, resume, delete) proceed best-effort
 - `log/get`
 
 ### Phase 3 — Events
-- `download_complete` / `download_error` from `TM_FILECOMPLETED`
+- `transfer_completed` / `transfer_error` from `TM_FILECOMPLETED`
 - `server_connected` / `server_disconnected`
-- `transfer_stats` from stats timer
+- `stats_updated` from stats timer
 - `kad_status_changed`
 
 ### Phase 4 — Mutating commands

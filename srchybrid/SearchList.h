@@ -76,6 +76,11 @@ public:
 	void	RemoveResult(CSearchFile *todel);
 	void	ShowResults(uint32 nSearchID);
 	void	GetWebList(CQArray<SearchFileStruct, SearchFileStruct> *SearchFileArray, int iSortBy) const;
+	/**
+	 * Collects the visible top-level result rows for one search without
+	 * exposing the mutable internal storage to callers.
+	 */
+	bool	GetVisibleResults(uint32 nSearchID, CArray<const CSearchFile*, const CSearchFile*> &rResults) const;
 
 	void	AddFileToDownloadByHash(const uchar *hash)	{ AddFileToDownloadByHash(hash, 0); }
 	void	AddFileToDownloadByHash(const uchar *hash, int cat);
@@ -110,6 +115,7 @@ public:
 
 protected:
 	SearchList* GetSearchListForID(uint32 nSearchID);
+	const SearchList* FindSearchListForID(uint32 nSearchID) const;
 	uint32	GetSpamFilenameRatings(const CSearchFile *pSearchFile, bool bMarkAsNoSpam);
 	void	LoadSpamFilter();
 

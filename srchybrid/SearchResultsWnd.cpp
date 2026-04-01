@@ -229,6 +229,84 @@ void CSearchResultsWnd::StartSearch(SSearchParams *pParams)
 	}
 }
 
+bool CSearchResultsWnd::StartSearchFromApi(SSearchParams *pParams, CString &rError)
+{
+	if (pParams == NULL) {
+		rError = _T("search parameters are required");
+		return false;
+	}
+
+	if (pParams->eType == SearchTypeAutomatic) {
+		// Mirror the UI auto-selection logic so the pipe API targets the same
+		// network that an interactive search would choose.
+		if (!theApp.serverconnect->IsConnected() && Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected())
+			pParams->eType = SearchTypeKademlia;
+		else if (theApp.serverconnect->IsConnected() && (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected()))
+			pParams->eType = SearchTypeEd2kServer;
+		else {
+			if (!theApp.serverconnect->IsConnected() && (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected())) {
+				rError = _T("not connected to eD2k or Kad");
+				delete pParams;
+				return false;
+			}
+
+			const CServer *const pCurrentServer = theApp.serverconnect->GetCurrentServer();
+			pParams->eType = (theApp.serverconnect->IsConnected()
+				&& pCurrentServer != NULL
+				&& (pCurrentServer->IsStaticMember()
+					|| (pCurrentServer->GetUsers() > 40000
+						&& theApp.serverlist->GetServerCount() < 40
+						&& pCurrentServer->GetUsers() < 2000000
+						&& pCurrentServer->GetFiles() > 5000000)))
+				? SearchTypeEd2kServer
+				: SearchTypeKademlia;
+		}
+	}
+
+	try {
+		switch (pParams->eType) {
+		case SearchTypeEd2kServer:
+		case SearchTypeEd2kGlobal:
+			if (!theApp.serverconnect->IsConnected()) {
+				rError = _T("not connected to an eD2k server");
+				delete pParams;
+				return false;
+			}
+			if (!DoNewEd2kSearch(pParams)) {
+				rError = _T("failed to start eD2k search");
+				delete pParams;
+				return false;
+			}
+			SearchStarted();
+			return true;
+
+		case SearchTypeKademlia:
+			if (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected()) {
+				rError = _T("Kad is not connected");
+				delete pParams;
+				return false;
+			}
+			if (!DoNewKadSearch(pParams)) {
+				rError = _T("failed to start Kad search");
+				delete pParams;
+				return false;
+			}
+			SearchStarted();
+			return true;
+
+		default:
+			rError = _T("unsupported search method");
+			delete pParams;
+			return false;
+		}
+	} catch (CMsgBoxException *pException) {
+		rError = pException->m_strMsg;
+		pException->Delete();
+		delete pParams;
+		return false;
+	}
+}
+
 void CSearchResultsWnd::OnTimer(UINT_PTR nIDEvent)
 {
 	CResizableFormView::OnTimer(nIDEvent);
@@ -362,6 +440,24 @@ SSearchParams* CSearchResultsWnd::GetSearchResultsParams(uint32 uSearchID) const
 			return reinterpret_cast<SSearchParams*>(ti.lParam);
 
 	return NULL;
+}
+
+bool CSearchResultsWnd::IsSearchRunning(uint32 uSearchID) const
+{
+	const SSearchParams *const pParams = GetSearchResultsParams(uSearchID);
+	if (pParams == NULL)
+		return false;
+
+	switch (pParams->eType) {
+	case SearchTypeEd2kServer:
+	case SearchTypeEd2kGlobal:
+		return uSearchID == m_nEd2kSearchID && !m_cancelled
+			&& (m_uTimerLocalServer != 0 || global_search_timer != 0 || m_searchpacket != NULL);
+	case SearchTypeKademlia:
+		return Kademlia::CSearchManager::IsSearching(uSearchID);
+	default:
+		return false;
+	}
 }
 
 void CSearchResultsWnd::CancelSearch(uint32 uSearchID)

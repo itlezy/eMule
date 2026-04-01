@@ -1327,7 +1327,7 @@ void CemuleApp::AddEd2kLinksToDownload(const CString &strLinks, int cat)
 					throwCStr(_T("bad link"));
 				downloadqueue->AddFileLinkToDownload(*pLink->GetFileLink(), cat);
 				if (CPartFile *pPartFile = downloadqueue->GetFileByID(pLink->GetFileLink()->GetHashKey()))
-					thePipeApiServer.NotifyDownloadAdded(pPartFile);
+					thePipeApiServer.NotifyTransferAdded(pPartFile);
 				delete pLink;
 				pLink = NULL;
 			}

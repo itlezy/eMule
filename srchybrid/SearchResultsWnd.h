@@ -75,8 +75,14 @@ public:
 	void	Localize();
 
 	void	StartSearch(SSearchParams *pParams);
+	/**
+	 * Starts a search without UI message boxes so transport callers can return
+	 * structured errors instead of blocking on interactive prompts.
+	 */
+	bool	StartSearchFromApi(SSearchParams *pParams, CString &rError);
 	bool	SearchMore();
 	void	CancelSearch(uint32 uSearchID = 0);
+	bool	IsSearchRunning(uint32 uSearchID) const;
 
 	bool	DoNewEd2kSearch(SSearchParams *pParams);
 	void	CancelEd2kSearch();

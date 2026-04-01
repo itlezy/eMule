@@ -1391,7 +1391,7 @@ LRESULT CemuleDlg::OnFileCompleted(WPARAM wParam, LPARAM lParam)
 	ASSERT(partfile != NULL);
 	if (partfile)
 		partfile->PerformFileCompleteEnd((DWORD)wParam);
-	thePipeApiServer.NotifyDownloadCompleted(partfile, (wParam & FILE_COMPLETION_THREAD_SUCCESS) != 0);
+	thePipeApiServer.NotifyTransferCompleted(partfile, (wParam & FILE_COMPLETION_THREAD_SUCCESS) != 0);
 	return 0;
 }
 

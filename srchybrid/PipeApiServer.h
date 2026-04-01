@@ -27,6 +27,7 @@
 #include "PipeApiServerPolicy.h"
 
 class CPartFile;
+class CSearchFile;
 
 /**
  * Carries one UTF-8 JSON command line from the pipe worker thread into the UI
@@ -116,10 +117,15 @@ public:
 	 * already refreshed its normal connection widgets.
 	 */
 	void NotifyConnectionStateChanged();
-	void NotifyDownloadAdded(const CPartFile *pPartFile);
-	void NotifyDownloadRemoved(const CPartFile *pPartFile);
-	void NotifyDownloadCompleted(const CPartFile *pPartFile, bool bSucceeded);
-	void NotifyDownloadUpdated(const CPartFile *pPartFile);
+	void NotifyTransferAdded(const CPartFile *pPartFile);
+	void NotifyTransferRemoved(const CPartFile *pPartFile);
+	void NotifyTransferCompleted(const CPartFile *pPartFile, bool bSucceeded);
+	void NotifyTransferUpdated(const CPartFile *pPartFile);
+	/**
+	 * Emits a one-result search batch whenever the live search model adds or
+	 * merges a visible result row.
+	 */
+	void NotifySearchResultAdded(const CSearchFile *pSearchFile);
 
 private:
 	/**

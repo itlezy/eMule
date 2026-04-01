@@ -674,7 +674,7 @@ bool CDownloadQueue::RemoveSource(CUpDownClient *toremove, bool bDoStatsUpdate)
 void CDownloadQueue::RemoveFile(CPartFile *toremove)
 {
 	RemoveLocalServerRequest(toremove);
-	thePipeApiServer.NotifyDownloadRemoved(toremove);
+	thePipeApiServer.NotifyTransferRemoved(toremove);
 
 	POSITION pos = filelist.Find(toremove);
 	if (pos != NULL)
