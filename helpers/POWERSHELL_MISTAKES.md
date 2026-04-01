@@ -315,3 +315,17 @@
   I repeated the same mistake by passing multiple PowerShell ranges directly to `Select-Object -Index`.
 - Fix:
   load the file once and use array slicing, or run separate reads for each range instead of combining them in `-Index`.
+
+- Error:
+  `rg` returned `The filename, directory name, or volume label syntax is incorrect. (os error 123)` when I passed paths like `C:\...\srchybrid\*.h` and `C:\...\srchybrid\*.cpp`.
+- Cause:
+  I again mixed Windows wildcard path arguments into `rg` instead of searching a concrete directory and filtering with `--glob`.
+- Fix:
+  pass the actual root directory such as `C:\...\srchybrid` to `rg` and use `--glob '*.h' --glob '*.cpp'` only when file-name filtering is needed.
+
+- Error:
+  `Get-Content` failed for `...\srchybrid\BaseClient.h` because that header does not exist in the live tree.
+- Cause:
+  I assumed there was a dedicated `BaseClient.h` without checking the current repo layout first.
+- Fix:
+  confirm the live file path with `rg --files` or `Test-Path` before issuing a targeted file read against a guessed header name.
