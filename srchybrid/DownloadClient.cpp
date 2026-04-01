@@ -28,11 +28,13 @@
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
 #include "emuledlg.h"
+#include "UserMsgs.h"
 #include "TransferDlg.h"
 #include "clientlist.h"
 #include "SHAHashSet.h"
 #include "SharedFileList.h"
 #include "Log.h"
+#include "DisplayRefreshSeams.h"
 #include <zlib.h>
 
 #ifdef _DEBUG
@@ -1406,15 +1408,52 @@ void CUpDownClient::UpdateDisplayedInfo(bool force)
 {
 	const DWORD curTick = ::GetTickCount();
 #ifndef _DEBUG
-	if (!force && curTick < m_lastRefreshedDLDisplay + MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE + m_random_update_wait)
+	if (!ShouldRunDisplayRefresh(force, curTick, m_lastRefreshedDLDisplay, MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE, m_random_update_wait))
 		return;
 #else
 	UNREFERENCED_PARAMETER(force);
 #endif
-	theApp.emuledlg->transferwnd->GetDownloadList()->UpdateItem(this);
-	theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(this);
-	theApp.emuledlg->transferwnd->GetDownloadClientsList()->RefreshClient(this);
 	m_lastRefreshedDLDisplay = curTick;
+	QueueDisplayUpdate(DISPLAY_REFRESH_DOWNLOAD_LIST | DISPLAY_REFRESH_CLIENT_LIST | DISPLAY_REFRESH_DOWNLOAD_CLIENTS);
+}
+
+void CUpDownClient::QueueDisplayUpdate(uint32 nMask)
+{
+	if (theApp.IsClosing() || nMask == DISPLAY_REFRESH_NONE)
+		return;
+
+	if (ShouldQueueDisplayRefresh(::GetCurrentThreadId(), g_uMainThreadId)) {
+		if (AccumulatePendingDisplayMask(&m_nPendingDisplayUpdateMask, static_cast<LONG>(nMask)) == 0) {
+			CClientDisplayUpdateRequest *pRequest = new CClientDisplayUpdateRequest;
+			md4cpy(pRequest->userHash, GetUserHash());
+			pRequest->connectIP = GetConnectIP();
+			pRequest->userPort = GetUserPort();
+			pRequest->reserved = 0;
+			if (theApp.emuledlg == NULL || !theApp.emuledlg->PostMessage(UM_CLIENT_DISPLAY_UPDATE, reinterpret_cast<WPARAM>(pRequest), 0)) {
+				delete pRequest;
+				InterlockedExchange(&m_nPendingDisplayUpdateMask, 0);
+			}
+		}
+		return;
+	}
+
+	if ((nMask & DISPLAY_REFRESH_DOWNLOAD_LIST) != 0)
+		theApp.emuledlg->transferwnd->GetDownloadList()->UpdateItem(this);
+	if ((nMask & DISPLAY_REFRESH_CLIENT_LIST) != 0)
+		theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(this);
+	if ((nMask & DISPLAY_REFRESH_DOWNLOAD_CLIENTS) != 0)
+		theApp.emuledlg->transferwnd->GetDownloadClientsList()->RefreshClient(this);
+	if ((nMask & DISPLAY_REFRESH_UPLOAD_LIST) != 0)
+		theApp.emuledlg->transferwnd->GetUploadList()->RefreshClient(this);
+	if ((nMask & DISPLAY_REFRESH_QUEUE_LIST) != 0)
+		theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(this);
+}
+
+void CUpDownClient::DispatchQueuedDisplayUpdate()
+{
+	const LONG nMask = InterlockedExchange(&m_nPendingDisplayUpdateMask, 0);
+	if (nMask != 0)
+		QueueDisplayUpdate(static_cast<uint32>(nMask));
 }
 
 bool CUpDownClient::IsInNoNeededList(const CPartFile *fileToCheck) const

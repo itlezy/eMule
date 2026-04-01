@@ -24,6 +24,7 @@
 #include "Exceptions.h"
 #include "PerfLog.h"
 #include "UploadBandwidthThrottler.h"
+#include "DisplayRefreshSeams.h"
 #include "ClientList.h"
 #include "DownloadQueue.h"
 #include "FriendList.h"
@@ -634,7 +635,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 				AddUpNextClient(_T("Adding ****lowid when reconnecting."), client);
 			} else {
 				client->SendRankingInfo();
-				theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
+				client->QueueDisplayUpdate(DISPLAY_REFRESH_QUEUE_LIST);
 			}
 			return;
 		}

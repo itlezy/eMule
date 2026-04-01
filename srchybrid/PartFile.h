@@ -281,6 +281,7 @@ public:
 	CString GetInfoSummary(bool bNoFormatCommands = false) const;
 
 	void	UpdateDisplayedInfo(bool force = false);
+	void	DispatchQueuedDisplayUpdate();
 
 	UINT	GetCategory() /*const*/;
 	void	SetCategory(UINT cat);
@@ -389,6 +390,7 @@ private:
 	DWORD	m_nFileFlushTime; //if file is idle long enough, flush new data to disk
 	DWORD	m_dwFileAttributes;
 	DWORD	m_random_update_wait;
+	volatile LONG m_nPendingDisplayUpdate;
 	UINT	m_anStates[STATES_COUNT];
 	UINT	m_category;
 	UINT	m_uMaxSources;

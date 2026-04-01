@@ -24,6 +24,8 @@
 #include "sharedfilelist.h"
 #include "knownfilelist.h"
 #include "sharedfileswnd.h"
+#include "DownloadQueue.h"
+#include "PartFile.h"
 #include "Log.h"
 
 #ifdef _DEBUG
@@ -31,6 +33,25 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+	/**
+	 * @brief Reports whether a part file is queued for a foreground-style hash pass.
+	 */
+	bool HasPendingPartFileHashing()
+	{
+		if (theApp.downloadqueue == NULL)
+			return false;
+
+		for (POSITION pos = theApp.downloadqueue->GetFileHeadPosition(); pos != NULL;) {
+			const CPartFile *pPartFile = theApp.downloadqueue->GetFileNext(pos);
+			if (pPartFile != NULL && (pPartFile->GetStatus() == PS_WAITINGFORHASH || pPartFile->GetStatus() == PS_HASHING))
+				return true;
+		}
+		return false;
+	}
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -268,18 +289,19 @@ int CAICHSyncThread::Run()
 	if (!m_liToHash.IsEmpty()) {
 		theApp.QueueLogLine(true, GetResString(IDS_AICH_SYNCTOTAL), m_liToHash.GetCount());
 		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.SetAICHHashing(m_liToHash.GetCount());
-		// first let all normal hashing be done before starting out sync hashing
-		CSingleLock sLock1(&theApp.hashing_mut); // only one file hash at a time
-		while (theApp.sharedfiles->GetHashingCount() != 0) {
-			if (theApp.IsClosing())
-				return 0;
-			::Sleep(100);
-		}
-		sLock1.Lock();
 		INT_PTR cDone = 0;
 		for (POSITION pos = m_liToHash.GetHeadPosition(); pos != NULL; ++cDone) {
 			if (theApp.IsClosing()) // in case of shutdown while still hashing
 				return 0;
+
+			// Let foreground hashing work, including crash-recovery part files, use the shared hash lane first.
+			while (theApp.sharedfiles->GetHashingCount() != 0 || HasPendingPartFileHashing()) {
+				if (theApp.IsClosing())
+					return 0;
+				::Sleep(100);
+			}
+
+			CSingleLock hashingLock(&theApp.hashing_mut, TRUE); // only one file hash at a time
 
 			theApp.emuledlg->sharedfileswnd->sharedfilesctrl.SetAICHHashing(m_liToHash.GetCount() - cDone);
 			if (theApp.emuledlg->sharedfileswnd->sharedfilesctrl.m_hWnd != NULL)
@@ -296,7 +318,6 @@ int CAICHSyncThread::Run()
 		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.SetAICHHashing(0);
 		if (theApp.emuledlg->sharedfileswnd->sharedfilesctrl.m_hWnd != NULL)
 			theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ShowFilesCount();
-		sLock1.Unlock();
 	}
 
 	theApp.QueueDebugLogLine(false, _T("AICHSyncThread finished"));

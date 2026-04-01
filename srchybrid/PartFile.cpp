@@ -45,6 +45,7 @@
 #include "Server.h"
 #include "KnownFileList.h"
 #include "emuledlg.h"
+#include "UserMsgs.h"
 #include "TransferDlg.h"
 #include "TaskbarNotifier.h"
 #include "ClientList.h"
@@ -54,6 +55,7 @@
 #include "CollectionViewDialog.h"
 #include "uploaddiskiothread.h"
 #include "PartFileWriteThread.h"
+#include "DisplayRefreshSeams.h"
 #include <urlmon.h>
 
 #ifdef _DEBUG
@@ -257,6 +259,7 @@ void CPartFile::Init()
 	m_nFileFlushTime = 0; //nothing to flush
 	m_dwFileAttributes = 0;
 	m_random_update_wait = (DWORD)(rand() % SEC2MS(1));
+	m_nPendingDisplayUpdate = 0;
 	memset(m_anStates, 0, sizeof m_anStates);
 	m_category = 0;
 	m_uMaxSources = 0;
@@ -4390,11 +4393,28 @@ void CPartFile::UpdateDisplayedInfo(bool force)
 	if (!theApp.IsClosing()) {
 		const DWORD curTick = ::GetTickCount();
 
-		if (force || curTick >= m_lastRefreshedDLDisplay + MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE + m_random_update_wait) {
-			theApp.emuledlg->transferwnd->GetDownloadList()->UpdateItem(this);
+		if (ShouldRunDisplayRefresh(force, curTick, m_lastRefreshedDLDisplay, MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE, m_random_update_wait)) {
 			m_lastRefreshedDLDisplay = curTick;
+			if (ShouldQueueDisplayRefresh(::GetCurrentThreadId(), g_uMainThreadId)) {
+				if (AccumulatePendingDisplayMask(&m_nPendingDisplayUpdate, 1) == 0) {
+					CPartFileDisplayUpdateRequest *pRequest = new CPartFileDisplayUpdateRequest;
+					md4cpy(pRequest->fileHash, GetFileHash());
+					if (theApp.emuledlg == NULL || !theApp.emuledlg->PostMessage(UM_PARTFILE_DISPLAY_UPDATE, reinterpret_cast<WPARAM>(pRequest), 0)) {
+						delete pRequest;
+						InterlockedExchange(&m_nPendingDisplayUpdate, 0);
+					}
+				}
+			} else
+				theApp.emuledlg->transferwnd->GetDownloadList()->UpdateItem(this);
 		}
 	}
+}
+
+void CPartFile::DispatchQueuedDisplayUpdate()
+{
+	InterlockedExchange(&m_nPendingDisplayUpdate, 0);
+	if (!theApp.IsClosing())
+		theApp.emuledlg->transferwnd->GetDownloadList()->UpdateItem(this);
 }
 
 void CPartFile::UpdateAutoDownPriority()

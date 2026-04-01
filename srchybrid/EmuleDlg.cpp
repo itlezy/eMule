@@ -48,6 +48,7 @@
 #include "PreferencesDlg.h"
 #include "ServerConnect.h"
 #include "UDPSocket.h"
+#include "UpDownClient.h"
 #include "KnownFileList.h"
 #include "ServerList.h"
 #include "Opcodes.h"
@@ -85,6 +86,7 @@
 #include "aichsyncthread.h"
 #include "Log.h"
 #include "UserMsgs.h"
+#include "DisplayRefreshSeams.h"
 #include "TextToSpeech.h"
 #include "Collection.h"
 #include "CollectionViewDialog.h"
@@ -110,6 +112,26 @@ UINT g_uMainThreadId = 0;
 static const UINT UWM_ARE_YOU_EMULE = RegisterWindowMessage(EMULE_GUID);
 
 static const UINT UWM_TASK_BUTTON_CREATED = RegisterWindowMessage(_T("TaskbarButtonCreated"));
+
+namespace
+{
+	CUpDownClient* ResolveQueuedClient(const CClientDisplayUpdateRequest &request)
+	{
+		if (theApp.clientlist == NULL)
+			return NULL;
+		if (!isnulmd4(request.userHash)) {
+			if (CUpDownClient *pClient = theApp.clientlist->FindClientByUserHash(request.userHash, request.connectIP, request.userPort))
+				return pClient;
+		}
+		if (request.connectIP != 0 && request.userPort != 0) {
+			if (CUpDownClient *pClient = theApp.clientlist->FindClientByIP(request.connectIP, request.userPort))
+				return pClient;
+		}
+		if (request.connectIP != 0)
+			return theApp.clientlist->FindClientByIP(request.connectIP);
+		return NULL;
+	}
+}
 
 
 
@@ -177,6 +199,8 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	// UPnP
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
 	ON_MESSAGE(UM_WSAPOLL_UDP_SOCKET, OnWSAPollUDPSocket)
+	ON_MESSAGE(UM_PARTFILE_DISPLAY_UPDATE, OnPartFileDisplayUpdate)
+	ON_MESSAGE(UM_CLIENT_DISPLAY_UPDATE, OnClientDisplayUpdate)
 
 	///////////////////////////////////////////////////////////////////////////
 	// WM_APP messages
@@ -563,9 +587,6 @@ BOOL CemuleDlg::OnInitDialog()
 
 	VERIFY(m_pDropTarget->Register(this));
 
-	// start aichsyncthread
-	AfxBeginThread(RUNTIME_CLASS(CAICHSyncThread), THREAD_PRIORITY_IDLE, 0);
-
 	// debug info
 	if (theApp.HasStartupConfigBaseDirOverride())
 		DebugLog(_T("Using '%s' as config directory (-c override)"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
@@ -652,6 +673,7 @@ void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*
 			break;
 		case 5:
 			++theApp.emuledlg->status;
+			AfxBeginThread(RUNTIME_CLASS(CAICHSyncThread), THREAD_PRIORITY_IDLE, 0);
 			if (thePrefs.IsStoringSearchesEnabled())
 				theApp.searchlist->LoadSearches();
 			break;
@@ -2914,6 +2936,34 @@ LRESULT CemuleDlg::OnWSAPollUDPSocket(WPARAM, LPARAM)
 			pServerUDPSocket->DispatchQueuedWork();
 	}
 
+	return 0;
+}
+
+LRESULT CemuleDlg::OnPartFileDisplayUpdate(WPARAM wParam, LPARAM)
+{
+	CPartFileDisplayUpdateRequest *pRequest = reinterpret_cast<CPartFileDisplayUpdateRequest*>(wParam);
+	if (pRequest == NULL)
+		return 0;
+
+	CPartFile *pPartFile = theApp.downloadqueue != NULL ? theApp.downloadqueue->GetFileByID(pRequest->fileHash) : NULL;
+	delete pRequest;
+
+	if (pPartFile != NULL)
+		pPartFile->DispatchQueuedDisplayUpdate();
+	return 0;
+}
+
+LRESULT CemuleDlg::OnClientDisplayUpdate(WPARAM wParam, LPARAM)
+{
+	CClientDisplayUpdateRequest *pRequest = reinterpret_cast<CClientDisplayUpdateRequest*>(wParam);
+	if (pRequest == NULL)
+		return 0;
+
+	CUpDownClient *pClient = ResolveQueuedClient(*pRequest);
+	delete pRequest;
+
+	if (pClient != NULL)
+		pClient->DispatchQueuedDisplayUpdate();
 	return 0;
 }
 
