@@ -552,9 +552,19 @@ int CAsyncSocketEx::Receive(void *lpBuf, int nBufLen, int nFlags)
 	return recv(m_SocketData.hSocket, static_cast<char*>(lpBuf), nBufLen, nFlags);
 }
 
+int CAsyncSocketEx::ReceiveFrom(void *lpBuf, int nBufLen, LPSOCKADDR lpSockAddr, int *lpSockAddrLen, int nFlags)
+{
+	return recvfrom(m_SocketData.hSocket, static_cast<char*>(lpBuf), nBufLen, nFlags, lpSockAddr, lpSockAddrLen);
+}
+
 int CAsyncSocketEx::Send(const void *lpBuf, int nBufLen, int nFlags)
 {
 	return send(m_SocketData.hSocket, static_cast<const char*>(lpBuf), nBufLen, nFlags);
+}
+
+int CAsyncSocketEx::SendTo(const void *lpBuf, int nBufLen, const SOCKADDR *lpSockAddr, int nSockAddrLen, int nFlags)
+{
+	return sendto(m_SocketData.hSocket, static_cast<const char*>(lpBuf), nBufLen, nFlags, lpSockAddr, nSockAddrLen);
 }
 
 bool CAsyncSocketEx::Connect(const CString &sHostAddress, UINT nHostPort)

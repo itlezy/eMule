@@ -108,6 +108,7 @@
     <ClCompile Include="AddFriend.cpp" />
     <ClCompile Include="AddSourceDlg.cpp" />
     <ClCompile Include="AICHSyncThread.cpp" />
+    <ClCompile Include="AsyncDatagramSocket.cpp" />
     <ClCompile Include="AsyncSocketEx.cpp" />
     <ClCompile Include="BindAddressResolver.cpp" />
     <ClCompile Include="BarShader.cpp" />
@@ -370,6 +371,8 @@
     <ClInclude Include="AddFriend.h" />
     <ClInclude Include="AddSourceDlg.h" />
     <ClInclude Include="AICHSyncThread.h" />
+    <ClInclude Include="AsyncDatagramSocket.h" />
+    <ClInclude Include="AsyncDatagramSocketSeams.h" />
     <ClInclude Include="AsyncSocketEx.h" />
     <ClInclude Include="BindAddressResolver.h" />
     <ClInclude Include="BarShader.h" />

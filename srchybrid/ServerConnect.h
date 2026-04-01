@@ -56,6 +56,7 @@ public:
 	void	DestroySocket(CServerSocket *pSock);	// safe socket closure and destruction
 	bool	SendPacket(Packet *packet, CServerSocket *to = NULL);
 	bool	IsUDPSocketAvailable() const	{ return udpsocket != NULL; }
+	CUDPSocket* GetUDPSocket() const		{ return udpsocket; }
 	bool	SendUDPPacket(Packet *packet, CServer *host, bool bDelPacket/* = false*/, uint16 nSpecialPort = 0, BYTE *pRawPacket = NULL, uint32 nLen = 0);
 	void	KeepConnectionAlive();
 	bool	Disconnect();

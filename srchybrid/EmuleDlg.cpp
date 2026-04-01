@@ -47,6 +47,7 @@
 #include "CreditsDlg.h"
 #include "PreferencesDlg.h"
 #include "ServerConnect.h"
+#include "UDPSocket.h"
 #include "KnownFileList.h"
 #include "ServerList.h"
 #include "Opcodes.h"
@@ -175,6 +176,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 
 	// UPnP
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
+	ON_MESSAGE(UM_WSAPOLL_UDP_SOCKET, OnWSAPollUDPSocket)
 
 	///////////////////////////////////////////////////////////////////////////
 	// WM_APP messages
@@ -2897,6 +2899,22 @@ LRESULT CemuleDlg::OnWebAddDownloads(WPARAM wParam, LPARAM lParam)
 LRESULT CemuleDlg::OnPipeApiCommand(WPARAM wParam, LPARAM lParam)
 {
 	return thePipeApiServer.OnHandleCommand(wParam, lParam);
+}
+
+LRESULT CemuleDlg::OnWSAPollUDPSocket(WPARAM, LPARAM)
+{
+	/**
+	 * @brief Drain the UDP readiness and DNS completions on the main thread to preserve legacy affinity.
+	 */
+	if (theApp.clientudp != NULL)
+		theApp.clientudp->DispatchQueuedSocketEvents();
+
+	if (theApp.serverconnect != NULL) {
+		if (CUDPSocket *pServerUDPSocket = theApp.serverconnect->GetUDPSocket())
+			pServerUDPSocket->DispatchQueuedWork();
+	}
+
+	return 0;
 }
 
 LRESULT CemuleDlg::OnAddRemoveFriend(WPARAM wParam, LPARAM lParam)

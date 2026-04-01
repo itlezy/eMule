@@ -64,133 +64,134 @@ CClientUDPSocket::~CClientUDPSocket()
 	}
 }
 
-void CClientUDPSocket::OnReceive(int nErrorCode)
+void CClientUDPSocket::OnDatagramReceive(int nErrorCode)
 {
 	if (nErrorCode) {
 		if (thePrefs.GetVerbose())
 			DebugLogError(_T("Error: Client UDP socket, error on receive event: %s"), (LPCTSTR)GetErrorMessage(nErrorCode, 1));
 	}
 
-	BYTE buffer[8192]; //5000 was too low sometimes
-	SOCKADDR_IN sockAddr = {};
-	int iSockAddrLen = sizeof sockAddr;
-	int nRealLen = ReceiveFrom(buffer, sizeof buffer, (LPSOCKADDR)&sockAddr, &iSockAddrLen);
-	if (theApp.ipfilter->IsFiltered(sockAddr.sin_addr.s_addr) || theApp.clientlist->IsBannedClient(sockAddr.sin_addr.s_addr) || !sockAddr.sin_port)
-		return;
-
-	BYTE *pBuffer;
-	uint32 nReceiverVerifyKey;
-	uint32 nSenderVerifyKey;
-	int nPacketLen = DecryptReceivedClient(buffer, nRealLen, &pBuffer, sockAddr.sin_addr.s_addr, &nReceiverVerifyKey, &nSenderVerifyKey);
-	if (nPacketLen > 0) {
-		CString strError;
-		try {
-			switch (pBuffer[0]) {
-			case OP_EMULEPROT:
-				if (nPacketLen < 2)
-					strError = _T("eMule packet too short");
-				else
-					ProcessPacket(pBuffer + 2, nPacketLen - 2, pBuffer[1], sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
+	for (;;) {
+		BYTE buffer[8192]; //5000 was too low sometimes
+		SOCKADDR_IN sockAddr = {};
+		int iSockAddrLen = sizeof sockAddr;
+		int nRealLen = ReceiveFrom(buffer, sizeof buffer, (LPSOCKADDR)&sockAddr, &iSockAddrLen);
+		if (nRealLen == SOCKET_ERROR) {
+			const DWORD dwError = WSAGetLastError();
+			if (dwError == WSAEWOULDBLOCK)
 				break;
-			case OP_KADEMLIAPACKEDPROT:
-				theStats.AddDownDataOverheadKad(nPacketLen);
-				if (!HasCompressedUdpPayload(static_cast<UINT>(nPacketLen)))
-					strError = _T("Kad packet (compressed) too short");
-				else {
-					BYTE *unpack = NULL;
-					uLongf unpackedsize = 0;
-					uint32 nNewSize = nPacketLen * 10 + 300;
-					int iZLibResult = Z_OK;
-					do {
-						delete[] unpack;
-						unpack = new BYTE[nNewSize];
-						unpackedsize = nNewSize - 2;
-						iZLibResult = uncompress(unpack + 2, &unpackedsize, pBuffer + 2, nPacketLen - 2);
-						nNewSize *= 2; // size for the next try if needed
-					} while (iZLibResult == Z_BUF_ERROR && nNewSize < 250000);
-
-					if (iZLibResult != Z_OK) {
-						delete[] unpack;
-						strError.Format(_T("Failed to uncompress Kad packet: zip error: %d (%hs)"), iZLibResult, zError(iZLibResult));
-					} else {
-						unpack[0] = OP_KADEMLIAHEADER;
-						unpack[1] = pBuffer[1];
-						try {
-							Kademlia::CKademlia::ProcessPacket(unpack, unpackedsize + 2
-								, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
-								, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
-								, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
-						} catch (...) {
-							delete[] unpack;
-							throw;
-						}
-						delete[] unpack;
-					}
-				}
-				break;
-			case OP_KADEMLIAHEADER:
-				theStats.AddDownDataOverheadKad(nPacketLen);
-				if (nPacketLen < 2)
-					strError = _T("Kad packet too short");
-				else
-					Kademlia::CKademlia::ProcessPacket(pBuffer, nPacketLen, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
-						, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
-						, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
-				break;
-			default:
-				strError.Format(_T("Unknown protocol 0x%02x"), pBuffer[0]);
+			if (dwError == WSAECONNRESET)
+				continue;
+			if (thePrefs.GetVerbose()) {
+				CString strClientInfo;
+				if (iSockAddrLen > 0 && sockAddr.sin_addr.s_addr != 0 && sockAddr.sin_addr.s_addr != INADDR_NONE)
+					strClientInfo.Format(_T(" from %s:%u"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
+				DebugLogError(_T("Error: Client UDP socket, failed to receive data%s: %s"), (LPCTSTR)strClientInfo, (LPCTSTR)GetErrorMessage(dwError, 1));
 			}
-			//code above does not need to throw strError
-		} catch (CFileException *ex) {
-			ex->Delete();
-			strError = _T("Invalid packet received");
-		} catch (CMemoryException *ex) {
-			ex->Delete();
-			strError = _T("Memory exception");
-		} catch (const CString &ex) {
-			strError = ex;
-		} catch (Kademlia::CIOException *ex) {
-			ex->Delete();
-			strError = _T("Invalid packet received");
-		} catch (CException *ex) {
-			ex->Delete();
-			strError = _T("General packet error");
-#ifndef _DEBUG
-		} catch (...) {
-			strError = _T("Unknown exception");
-			ASSERT(0);
-#endif
+			break;
 		}
-		if (thePrefs.GetVerbose() && !strError.IsEmpty()) {
-			CString strClientInfo;
-			CUpDownClient *client;
-			if (pBuffer[0] == OP_EMULEPROT)
-				client = theApp.clientlist->FindClientByIP_UDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
-			else
-				client = theApp.clientlist->FindClientByIP_KadPort(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
-			if (client)
-				strClientInfo = client->DbgGetClientInfo();
-			else
-				strClientInfo.Format(_T("%s:%hu"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
 
-			DebugLogWarning(_T("Client UDP socket: prot=0x%02x  opcode=0x%02x  sizeaftercrypt=%u realsize=%u  %s: %s"), pBuffer[0], pBuffer[1], nPacketLen, nRealLen, (LPCTSTR)strError, (LPCTSTR)strClientInfo);
-		}
-	} else if (nPacketLen == SOCKET_ERROR) {
-		DWORD dwError = WSAGetLastError();
-		if (dwError == WSAECONNRESET) {
-			// Depending on local and remote OS and depending on used local (remote?) router we may receive
-			// WSAECONNRESET errors. According to some KB articles, this is a special way of winsock to report
-			// that a sent UDP packet was not received by the remote host because it was not listening on
-			// the specified port -> no eMule running there.
-			//
-			// TODO: So, actually we should do something with this information and drop the related Kad node
-			// or eMule client...
-			;
-		} else if (thePrefs.GetVerbose()) {
-			CString strClientInfo;
-			if (iSockAddrLen > 0 && sockAddr.sin_addr.s_addr != 0 && sockAddr.sin_addr.s_addr != INADDR_NONE)
-				strClientInfo.Format(_T(" from %s:%u"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
-			DebugLogError(_T("Error: Client UDP socket, failed to receive data%s: %s"), (LPCTSTR)strClientInfo, (LPCTSTR)GetErrorMessage(dwError, 1));
+		if (theApp.ipfilter->IsFiltered(sockAddr.sin_addr.s_addr) || theApp.clientlist->IsBannedClient(sockAddr.sin_addr.s_addr) || !sockAddr.sin_port)
+			continue;
+
+		BYTE *pBuffer;
+		uint32 nReceiverVerifyKey;
+		uint32 nSenderVerifyKey;
+		int nPacketLen = DecryptReceivedClient(buffer, nRealLen, &pBuffer, sockAddr.sin_addr.s_addr, &nReceiverVerifyKey, &nSenderVerifyKey);
+		if (nPacketLen > 0) {
+			CString strError;
+			try {
+				switch (pBuffer[0]) {
+				case OP_EMULEPROT:
+					if (nPacketLen < 2)
+						strError = _T("eMule packet too short");
+					else
+						ProcessPacket(pBuffer + 2, nPacketLen - 2, pBuffer[1], sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
+					break;
+				case OP_KADEMLIAPACKEDPROT:
+					theStats.AddDownDataOverheadKad(nPacketLen);
+					if (!HasCompressedUdpPayload(static_cast<UINT>(nPacketLen)))
+						strError = _T("Kad packet (compressed) too short");
+					else {
+						BYTE *unpack = NULL;
+						uLongf unpackedsize = 0;
+						uint32 nNewSize = nPacketLen * 10 + 300;
+						int iZLibResult = Z_OK;
+						do {
+							delete[] unpack;
+							unpack = new BYTE[nNewSize];
+							unpackedsize = nNewSize - 2;
+							iZLibResult = uncompress(unpack + 2, &unpackedsize, pBuffer + 2, nPacketLen - 2);
+							nNewSize *= 2; // size for the next try if needed
+						} while (iZLibResult == Z_BUF_ERROR && nNewSize < 250000);
+
+						if (iZLibResult != Z_OK) {
+							delete[] unpack;
+							strError.Format(_T("Failed to uncompress Kad packet: zip error: %d (%hs)"), iZLibResult, zError(iZLibResult));
+						} else {
+							unpack[0] = OP_KADEMLIAHEADER;
+							unpack[1] = pBuffer[1];
+							try {
+								Kademlia::CKademlia::ProcessPacket(unpack, unpackedsize + 2
+									, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
+									, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
+									, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
+							} catch (...) {
+								delete[] unpack;
+								throw;
+							}
+							delete[] unpack;
+						}
+					}
+					break;
+				case OP_KADEMLIAHEADER:
+					theStats.AddDownDataOverheadKad(nPacketLen);
+					if (nPacketLen < 2)
+						strError = _T("Kad packet too short");
+					else
+						Kademlia::CKademlia::ProcessPacket(pBuffer, nPacketLen, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
+							, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
+							, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
+					break;
+				default:
+					strError.Format(_T("Unknown protocol 0x%02x"), pBuffer[0]);
+				}
+				//code above does not need to throw strError
+			} catch (CFileException *ex) {
+				ex->Delete();
+				strError = _T("Invalid packet received");
+			} catch (CMemoryException *ex) {
+				ex->Delete();
+				strError = _T("Memory exception");
+			} catch (const CString &ex) {
+				strError = ex;
+			} catch (Kademlia::CIOException *ex) {
+				ex->Delete();
+				strError = _T("Invalid packet received");
+			} catch (CException *ex) {
+				ex->Delete();
+				strError = _T("General packet error");
+#ifndef _DEBUG
+			} catch (...) {
+				strError = _T("Unknown exception");
+				ASSERT(0);
+#endif
+			}
+			if (thePrefs.GetVerbose() && !strError.IsEmpty()) {
+				CString strClientInfo;
+				CUpDownClient *client;
+				if (pBuffer[0] == OP_EMULEPROT)
+					client = theApp.clientlist->FindClientByIP_UDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
+				else
+					client = theApp.clientlist->FindClientByIP_KadPort(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
+				if (client)
+					strClientInfo = client->DbgGetClientInfo();
+				else
+					strClientInfo.Format(_T("%s:%hu"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
+
+				const BYTE nOpcode = (nPacketLen > 1) ? pBuffer[1] : 0;
+				DebugLogWarning(_T("Client UDP socket: prot=0x%02x  opcode=0x%02x  sizeaftercrypt=%u realsize=%u  %s: %s"), pBuffer[0], nOpcode, nPacketLen, nRealLen, (LPCTSTR)strError, (LPCTSTR)strClientInfo);
+			}
 		}
 	}
 }
@@ -412,7 +413,7 @@ bool CClientUDPSocket::ProcessPacket(const BYTE *packet, UINT size, uint8 opcode
 	return true;
 }
 
-void CClientUDPSocket::OnSend(int nErrorCode)
+void CClientUDPSocket::OnDatagramSend(int nErrorCode)
 {
 	if (nErrorCode) {
 		if (thePrefs.GetVerbose())
@@ -423,6 +424,7 @@ void CClientUDPSocket::OnSend(int nErrorCode)
 // ZZ:UploadBandWithThrottler (UDP) -->
 	sendLocker.Lock();
 	m_bWouldBlock = false;
+	SetWriteInterestEnabled(false);
 
 	if (!controlpacket_queue.IsEmpty())
 		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
@@ -485,11 +487,16 @@ int CClientUDPSocket::SendTo(uchar *lpBuf, int nBufLen, uint32 dwIP, uint16 nPor
 {
 	// NOTE: *** This function is invoked from a *different* thread!
 	//Currently called only locally; sendLocker must be locked by the caller
-	int result = CAsyncSocket::SendTo(lpBuf, nBufLen, nPort, ipstr(dwIP));
+	SOCKADDR_IN sockAddr = {};
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = dwIP;
+	sockAddr.sin_port = htons(nPort);
+	int result = CAsyncSocketEx::SendTo(lpBuf, nBufLen, reinterpret_cast<const SOCKADDR*>(&sockAddr), sizeof sockAddr);
 	if (result == SOCKET_ERROR) {
-		DWORD dwError = (DWORD)CAsyncSocket::GetLastError();
+		DWORD dwError = (DWORD)CAsyncSocketEx::GetLastError();
 		if (dwError == WSAEWOULDBLOCK) {
 			m_bWouldBlock = true;
+			SetWriteInterestEnabled(true);
 			return -1; //blocked
 		}
 		if (thePrefs.GetVerbose())
@@ -533,7 +540,7 @@ bool CClientUDPSocket::Create()
 {
 	//TODO: is this block needed?
 	/// Allow first-start setup to pre-open the UDP socket before the normal startup sequence runs.
-	if (m_hSocket != INVALID_SOCKET) {
+	if (GetSocketHandle() != INVALID_SOCKET) {
 		if (m_port == thePrefs.GetUDPPort())
 			return true;
 		WSASetLastError(WSAEALREADY);
@@ -541,7 +548,7 @@ bool CClientUDPSocket::Create()
 	}
 
 	if (thePrefs.GetUDPPort()) {
-		if (!CAsyncSocket::Create(thePrefs.GetUDPPort(), SOCK_DGRAM, FD_READ | FD_WRITE, thePrefs.GetBindAddr()))
+		if (!CreateDatagram(thePrefs.GetUDPPort(), thePrefs.GetBindAddr()))
 			return false;
 		m_port = thePrefs.GetUDPPort();
 		if (!ApplyReceiveBufferSize())

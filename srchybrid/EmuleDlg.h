@@ -279,6 +279,7 @@ protected:
 	afx_msg LRESULT OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam);
 	// UPnP
 	afx_msg LRESULT OnUPnPResult(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnWSAPollUDPSocket(WPARAM wParam, LPARAM lParam);
 };
 
 #ifdef _DEBUG

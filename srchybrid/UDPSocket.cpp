@@ -35,6 +35,10 @@
 #include "SearchDlg.h"
 #include "Log.h"
 #include "ServerConnect.h"
+#include "UserMsgs.h"
+
+#include <algorithm>
+#include <atomic>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -72,44 +76,31 @@ struct SRawServerPacket
 
 struct SServerDNSRequest
 {
-	SServerDNSRequest(HANDLE hDNSTask, CServer *pServer)
+	explicit SServerDNSRequest(CServer *pServer)
 		: m_dwCreated(::GetTickCount())
-		, m_hDNSTask(hDNSTask)
-		, m_DnsHostBuffer()
 		, m_pServer(pServer)
+		, m_nResolvedIP(INADDR_NONE)
+		, m_nResolveError()
+		, m_bCancelled()
 	{
 	}
 	~SServerDNSRequest()
 	{
-		if (m_hDNSTask)
-			WSACancelAsyncRequest(m_hDNSTask);
-		delete m_pServer;
-		while (!m_aPackets.IsEmpty())
-			delete m_aPackets.RemoveHead();
+		while (!m_aPackets.empty())
+			m_aPackets.pop_front();
 	}
 	DWORD m_dwCreated;
-	HANDLE m_hDNSTask;
-	char m_DnsHostBuffer[MAXGETHOSTSTRUCT];
-	CServer *m_pServer;
-	CTypedPtrList<CPtrList, SRawServerPacket*> m_aPackets;
+	std::unique_ptr<CServer> m_pServer;
+	std::list<std::unique_ptr<SRawServerPacket>> m_aPackets;
+	uint32 m_nResolvedIP;
+	int m_nResolveError;
+	std::atomic<bool> m_bCancelled;
 };
 
-//Safer to keep all message codes different (see also AsyncSocketEx.h and UserMsgs.h)
-#define WM_DNSLOOKUPDONE	(WM_USER+0x106)
-
-BEGIN_MESSAGE_MAP(CUDPSocketWnd, CWnd)
-	ON_MESSAGE(WM_DNSLOOKUPDONE, OnDNSLookupDone)
-END_MESSAGE_MAP()
-
-LRESULT CUDPSocketWnd::OnDNSLookupDone(WPARAM wParam, LPARAM lParam)
-{
-	m_pOwner->DnsLookupDone(wParam, lParam);
-	return true;
-}
-
 CUDPSocket::CUDPSocket()
-	: m_hWndResolveMessage()
+	: m_bStopDnsResolver()
 	, m_bWouldBlock()
+	, m_dnsResolverThread(&CUDPSocket::DnsResolverThreadMain, this)
 {
 }
 
@@ -117,31 +108,40 @@ CUDPSocket::~CUDPSocket()
 {
 	theApp.uploadBandwidthThrottler->RemoveFromAllQueuesLocked(this); // ZZ:UploadBandWithThrottler (UDP)
 
+	{
+		std::lock_guard<std::mutex> lock(m_dnsMutex);
+		m_bStopDnsResolver = true;
+		for (const std::shared_ptr<SServerDNSRequest> &pDNSReq : m_dnsRequests)
+			pDNSReq->m_bCancelled.store(true, std::memory_order_release);
+	}
+	m_dnsWorkReady.notify_all();
+	if (m_dnsResolverThread.joinable())
+		m_dnsResolverThread.join();
+
 	while (!controlpacket_queue.IsEmpty()) {
 		const SServerUDPPacket *p = controlpacket_queue.RemoveHead();
 		delete[] p->packet;
 		delete p;
 	}
-	m_udpwnd.DestroyWindow();
-
-	while (!m_aDNSReqs.IsEmpty())
-		delete m_aDNSReqs.RemoveHead();
 }
 
 bool CUDPSocket::Create()
 {
 	if (thePrefs.GetServerUDPPort()) {
-		VERIFY(m_udpwnd.CreateEx(0, AfxRegisterWndClass(0), _T("eMule Async DNS Resolver Socket #1"), 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, 0));
-		m_hWndResolveMessage = m_udpwnd.m_hWnd;
-		m_udpwnd.m_pOwner = this;
-		if (CAsyncSocket::Create(thePrefs.GetServerUDPPort() == _UI16_MAX ? 0 : thePrefs.GetServerUDPPort(), SOCK_DGRAM, FD_READ | FD_WRITE, thePrefs.GetBindAddrW()))
+		if (CreateDatagram(thePrefs.GetServerUDPPort() == _UI16_MAX ? 0 : thePrefs.GetServerUDPPort(), thePrefs.GetBindAddrW()))
 			return true;
-		LogError(LOG_STATUSBAR, _T("Error: Server UDP socket: Failed to create server UDP socket - %s"), (LPCTSTR)GetErrorMessage(CAsyncSocket::GetLastError()));
+		LogError(LOG_STATUSBAR, _T("Error: Server UDP socket: Failed to create server UDP socket - %s"), (LPCTSTR)GetErrorMessage(CAsyncSocketEx::GetLastError()));
 	}
 	return false;
 }
 
-void CUDPSocket::OnReceive(int nErrorCode)
+void CUDPSocket::DispatchQueuedWork()
+{
+	DispatchQueuedSocketEvents();
+	ProcessCompletedDnsRequests();
+}
+
+void CUDPSocket::OnDatagramReceive(int nErrorCode)
 {
 	if (nErrorCode) {
 		if (thePrefs.GetDebugServerUDPLevel() > 0)
@@ -150,12 +150,45 @@ void CUDPSocket::OnReceive(int nErrorCode)
 			DebugLogError(_T("Error: Server UDP socket: Receive failed - %s"), (LPCTSTR)GetErrorMessage(nErrorCode, 1));
 	}
 
-	BYTE buffer[5000];
-	BYTE *pBuffer = buffer;
-	SOCKADDR_IN sockAddr = {};
-	int iSockAddrLen = sizeof sockAddr;
-	int length = ReceiveFrom(buffer, sizeof buffer, (LPSOCKADDR)&sockAddr, &iSockAddrLen);
-	if (length != SOCKET_ERROR) {
+	for (;;) {
+		BYTE buffer[5000];
+		BYTE *pBuffer = buffer;
+		SOCKADDR_IN sockAddr = {};
+		int iSockAddrLen = sizeof sockAddr;
+		int length = ReceiveFrom(buffer, sizeof buffer, (LPSOCKADDR)&sockAddr, &iSockAddrLen);
+		if (length == SOCKET_ERROR) {
+			const DWORD dwError = WSAGetLastError();
+			if (dwError == WSAEWOULDBLOCK)
+				break;
+			if (thePrefs.GetDebugServerUDPLevel() > 0) {
+				CString strServerInfo;
+				if (iSockAddrLen > 0 && sockAddr.sin_addr.s_addr != 0 && sockAddr.sin_addr.s_addr != INADDR_NONE)
+					strServerInfo.Format(_T(" from %s:%d"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4);
+				Debug(_T("Error: Server UDP socket: Failed to receive data%s: %s\n"), (LPCTSTR)strServerInfo, (LPCTSTR)GetErrorMessage(dwError, 1));
+			}
+			if (dwError == WSAECONNRESET) {
+				// Depending on local and remote OS and depending on used local (remote?) router we may receive
+				// WSAECONNRESET errors. According some KB articles, this is a special way of winsock to report
+				// that a sent UDP packet was not received by the remote host because it was not listening on
+				// the specified port -> no server running there.
+				CServer *pServer = theApp.serverlist->GetServerByIPUDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), true);
+				if (pServer)
+					if (!pServer->GetCryptPingReplyPending() && ::GetTickCount() >= pServer->GetLastPinged() + SEC2MS(30)) {
+						pServer->IncFailedCount();
+						theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
+					} else if (pServer->GetCryptPingReplyPending())
+						DEBUG_ONLY(DebugLog(_T("CryptPing failed (WSACONNRESET) for server %s"), (LPCTSTR)pServer->GetListName()));
+				continue;
+			}
+			if (thePrefs.GetVerbose()) {
+				CString strServerInfo;
+				if (iSockAddrLen > 0 && sockAddr.sin_addr.s_addr != 0 && sockAddr.sin_addr.s_addr != INADDR_NONE)
+					strServerInfo.Format(_T(" from %s:%d"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4);
+				DebugLogError(_T("Error: Server UDP socket: Failed to receive data%s: %s"), (LPCTSTR)strServerInfo, (LPCTSTR)GetErrorMessage(dwError, 1));
+			}
+			break;
+		}
+
 		int nPayLoadLen = length;
 		CServer *pServer = theApp.serverlist->GetServerByIPUDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), true);
 		if (pServer != NULL && thePrefs.IsCryptLayerEnabled()
@@ -184,35 +217,6 @@ void CUDPSocket::OnReceive(int nErrorCode)
 			ProcessPacket(pBuffer + 2, nPayLoadLen - 2, pBuffer[1], sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
 		else if (thePrefs.GetDebugServerUDPLevel() > 0)
 			Debug(_T("***NOTE: ServerUDPMessage from %s:%u - Unknown protocol 0x%02x, Encrypted: %s\n"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4, pBuffer[0], (nPayLoadLen == length) ? _T("Yes") : _T("No"));
-	} else {
-		DWORD dwError = WSAGetLastError();
-		if (thePrefs.GetDebugServerUDPLevel() > 0) {
-			CString strServerInfo;
-			if (iSockAddrLen > 0 && sockAddr.sin_addr.s_addr != 0 && sockAddr.sin_addr.s_addr != INADDR_NONE)
-				strServerInfo.Format(_T(" from %s:%d"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4);
-			Debug(_T("Error: Server UDP socket: Failed to receive data%s: %s\n"), (LPCTSTR)strServerInfo, (LPCTSTR)GetErrorMessage(dwError, 1));
-		}
-		if (dwError == WSAECONNRESET) {
-			// Depending on local and remote OS and depending on used local (remote?) router we may receive
-			// WSAECONNRESET errors. According some KB articles, this is a special way of winsock to report
-			// that a sent UDP packet was not received by the remote host because it was not listening on
-			// the specified port -> no server running there.
-
-			// If we are not currently pinging this server, increase the failure counter
-			CServer *pServer = theApp.serverlist->GetServerByIPUDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), true);
-			if (pServer)
-				if (!pServer->GetCryptPingReplyPending() && ::GetTickCount() >= pServer->GetLastPinged() + SEC2MS(30)) {
-					pServer->IncFailedCount();
-					theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
-				} else if (pServer->GetCryptPingReplyPending())
-					DEBUG_ONLY(DebugLog(_T("CryptPing failed (WSACONNRESET) for server %s"), (LPCTSTR)pServer->GetListName()));
-
-		} else if (thePrefs.GetVerbose()) {
-			CString strServerInfo;
-			if (iSockAddrLen > 0 && sockAddr.sin_addr.s_addr != 0 && sockAddr.sin_addr.s_addr != INADDR_NONE)
-				strServerInfo.Format(_T(" from %s:%d"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4);
-			DebugLogError(_T("Error: Server UDP socket: Failed to receive data%s: %s"), (LPCTSTR)strServerInfo, (LPCTSTR)GetErrorMessage(dwError, 1));
-		}
 	}
 }
 
@@ -560,107 +564,144 @@ void CUDPSocket::ProcessPacketError(UINT size, UINT opcode, uint32 nIP, uint16 n
 	}
 }
 
-void CUDPSocket::DnsLookupDone(WPARAM wp, LPARAM lp)
+void CUDPSocket::ProcessCompletedDnsRequests()
 {
-	// A Winsock DNS task has completed. Search the according application data for that
-	// task handle.
-	SServerDNSRequest *pDNSReq = NULL;
-	HANDLE hDNSTask = (HANDLE)wp;
-	for (POSITION pos = m_aDNSReqs.GetHeadPosition(); pos != NULL;) {
-		POSITION posPrev = pos;
-		SServerDNSRequest *pCurDNSReq = m_aDNSReqs.GetNext(pos);
-		if (pCurDNSReq->m_hDNSTask == hDNSTask) {
-			// Remove this DNS task from our list
-			m_aDNSReqs.RemoveAt(posPrev);
-			pDNSReq = pCurDNSReq;
-			break;
+	std::deque<std::shared_ptr<SServerDNSRequest>> completedRequests;
+	{
+		std::lock_guard<std::mutex> lock(m_dnsMutex);
+		completedRequests.swap(m_dnsCompletedQueue);
+	}
+
+	for (const std::shared_ptr<SServerDNSRequest> &pDNSReq : completedRequests) {
+		{
+			std::lock_guard<std::mutex> lock(m_dnsMutex);
+			const auto it = std::find(m_dnsRequests.begin(), m_dnsRequests.end(), pDNSReq);
+			if (it == m_dnsRequests.end())
+				continue;
+			m_dnsRequests.erase(it);
 		}
-	}
-	if (pDNSReq == NULL) {
-		if (thePrefs.GetVerbose())
-			DebugLogError(_T("Error: Server UDP socket: Unknown DNS task completed"));
-		return;
-	}
 
-	// DNS task did complete successfully?
-	if (WSAGETASYNCERROR(lp) != 0) {
-		if (thePrefs.GetVerbose())
-			DebugLogWarning(_T("Error: Server UDP socket: Failed to resolve address for server '%s' (%s) - %s"), (LPCTSTR)pDNSReq->m_pServer->GetListName(), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)GetErrorMessage(WSAGETASYNCERROR(lp), 1));
-		delete pDNSReq;
-		return;
-	}
+		if (pDNSReq->m_bCancelled.load(std::memory_order_acquire))
+			continue;
 
-	// Get the IP value
-	uint32 nIP = INADDR_NONE;
-	WORD iBufLen = WSAGETASYNCBUFLEN(lp);
-	if (iBufLen >= sizeof(HOSTENT)) {
-		LPHOSTENT pHost = (LPHOSTENT)pDNSReq->m_DnsHostBuffer;
-		if (pHost->h_length == 4 && pHost->h_addr_list && pHost->h_addr_list[0])
-			nIP = ((LPIN_ADDR)(pHost->h_addr_list[0]))->s_addr;
-	}
+		if (pDNSReq->m_nResolveError != 0) {
+			if (thePrefs.GetVerbose())
+				DebugLogWarning(_T("Error: Server UDP socket: Failed to resolve address for server '%s' (%s) - %s"), (LPCTSTR)pDNSReq->m_pServer->GetListName(), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)GetErrorMessage(pDNSReq->m_nResolveError, 1));
+			continue;
+		}
 
-	if (nIP != INADDR_NONE) {
-		DEBUG_ONLY(DebugLog(_T("Resolved DN for server '%s': IP=%s"), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)ipstr(nIP)));
+		const uint32 nIP = pDNSReq->m_nResolvedIP;
+		if (nIP != INADDR_NONE) {
+			DEBUG_ONLY(DebugLog(_T("Resolved DN for server '%s': IP=%s"), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)ipstr(nIP)));
 
-		bool bRemoveServer = false;
-		if (!IsGoodIP(nIP)) {
-			// However, if we are currently connected to a "not-good-ip", that IP can't
-			// be that bad -- may only happen when debugging in a LAN.
-			CServer *pConnectedServer = theApp.serverconnect->GetCurrentServer();
-			if (!pConnectedServer || pConnectedServer->GetIP() != nIP) {
+			bool bRemoveServer = false;
+			if (!IsGoodIP(nIP)) {
+				CServer *pConnectedServer = theApp.serverconnect->GetCurrentServer();
+				if (!pConnectedServer || pConnectedServer->GetIP() != nIP) {
+					if (thePrefs.GetLogFilteredIPs())
+						AddDebugLogLine(false, _T("IPFilter(UDP/DNSResolve): Filtered server \"%s\" (IP=%s) - Invalid IP or LAN address."), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)ipstr(nIP));
+					bRemoveServer = true;
+				}
+			}
+			if (!bRemoveServer && thePrefs.GetFilterServerByIP() && theApp.ipfilter->IsFiltered(nIP)) {
 				if (thePrefs.GetLogFilteredIPs())
-					AddDebugLogLine(false, _T("IPFilter(UDP/DNSResolve): Filtered server \"%s\" (IP=%s) - Invalid IP or LAN address."), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)ipstr(nIP));
+					AddDebugLogLine(false, _T("IPFilter(UDP/DNSResolve): Filtered server \"%s\" (IP=%s) - IP filter (%s)"), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)ipstr(nIP), (LPCTSTR)theApp.ipfilter->GetLastHit());
 				bRemoveServer = true;
 			}
-		}
-		if (!bRemoveServer && thePrefs.GetFilterServerByIP() && theApp.ipfilter->IsFiltered(nIP)) {
-			if (thePrefs.GetLogFilteredIPs())
-				AddDebugLogLine(false, _T("IPFilter(UDP/DNSResolve): Filtered server \"%s\" (IP=%s) - IP filter (%s)"), pDNSReq->m_pServer->GetAddress(), (LPCTSTR)ipstr(nIP), (LPCTSTR)theApp.ipfilter->GetLastHit());
-			bRemoveServer = true;
-		}
 
-		CServer *pServer = theApp.serverlist->GetServerByAddress(pDNSReq->m_pServer->GetAddress(), pDNSReq->m_pServer->GetPort());
-		if (pServer) {
-			pServer->SetIP(nIP);
-			// If we already have entries in the server list (dynIP-servers without a DN)
-			// with the same IP as this dynIP-server, remove the duplicates.
-			theApp.serverlist->RemoveDuplicatesByIP(pServer);
-		}
+			CServer *pServer = theApp.serverlist->GetServerByAddress(pDNSReq->m_pServer->GetAddress(), pDNSReq->m_pServer->GetPort());
+			if (pServer) {
+				pServer->SetIP(nIP);
+				// If we already have entries in the server list (dynIP-servers without a DN)
+				// with the same IP as this dynIP-server, remove the duplicates.
+				theApp.serverlist->RemoveDuplicatesByIP(pServer);
+			}
 
-		if (bRemoveServer) {
-			if (pServer)
-				theApp.emuledlg->serverwnd->serverlistctrl.RemoveServer(pServer);
-			delete pDNSReq;
-			return;
-		}
+			if (bRemoveServer) {
+				if (pServer)
+					theApp.emuledlg->serverwnd->serverlistctrl.RemoveServer(pServer);
+				continue;
+			}
 
-		// Send all of the queued packets for this server.
-		for (POSITION posPacket = pDNSReq->m_aPackets.GetHeadPosition(); posPacket;) {
-			SRawServerPacket *pServerPacket = pDNSReq->m_aPackets.GetNext(posPacket);
-			SendBuffer(nIP, pServerPacket->m_nPort, pServerPacket->m_pPacket, pServerPacket->m_uSize);
-			// Detach packet data
-			pServerPacket->m_pPacket = NULL;
-			pServerPacket->m_uSize = 0;
-		}
-	} else {
-		// still no valid IP for this server
-		if (thePrefs.GetVerbose())
+			for (std::unique_ptr<SRawServerPacket> &pServerPacket : pDNSReq->m_aPackets) {
+				SendBuffer(nIP, pServerPacket->m_nPort, pServerPacket->m_pPacket, pServerPacket->m_uSize);
+				pServerPacket->m_pPacket = NULL;
+				pServerPacket->m_uSize = 0;
+			}
+		} else if (thePrefs.GetVerbose())
 			DebugLogWarning(_T("Error: Server UDP socket: Failed to resolve address for server '%s' (%s)"), (LPCTSTR)pDNSReq->m_pServer->GetListName(), pDNSReq->m_pServer->GetAddress());
 	}
-	delete pDNSReq;
 }
 
-void CUDPSocket::OnSend(int nErrorCode)
+void CUDPSocket::DnsResolverThreadMain()
+{
+	for (;;) {
+		std::shared_ptr<SServerDNSRequest> pDNSReq;
+		{
+			std::unique_lock<std::mutex> lock(m_dnsMutex);
+			m_dnsWorkReady.wait(lock, [this] { return m_bStopDnsResolver || !m_dnsWorkQueue.empty(); });
+			if (m_bStopDnsResolver && m_dnsWorkQueue.empty())
+				return;
+			pDNSReq = m_dnsWorkQueue.front();
+			m_dnsWorkQueue.pop_front();
+		}
+
+		if (!pDNSReq || pDNSReq->m_bCancelled.load(std::memory_order_acquire))
+			continue;
+
+		addrinfo hints = {};
+		hints.ai_family = AF_INET;
+		hints.ai_socktype = SOCK_DGRAM;
+
+		addrinfo *res0 = NULL;
+		const CStringA sHostAddress(pDNSReq->m_pServer->GetAddress());
+		const int nResolveError = getaddrinfo(sHostAddress, NULL, &hints, &res0);
+		pDNSReq->m_nResolveError = nResolveError;
+		pDNSReq->m_nResolvedIP = INADDR_NONE;
+		if (nResolveError == 0 && res0 != NULL) {
+			for (addrinfo *res = res0; res != NULL; res = res->ai_next) {
+				if (res->ai_family == AF_INET && res->ai_addrlen >= sizeof(sockaddr_in)) {
+					pDNSReq->m_nResolvedIP = reinterpret_cast<const sockaddr_in*>(res->ai_addr)->sin_addr.s_addr;
+					break;
+				}
+			}
+			freeaddrinfo(res0);
+		}
+
+		{
+			std::lock_guard<std::mutex> lock(m_dnsMutex);
+			if (m_bStopDnsResolver || pDNSReq->m_bCancelled.load(std::memory_order_acquire))
+				continue;
+			m_dnsCompletedQueue.push_back(pDNSReq);
+		}
+		CAsyncDatagramSocket::PostDatagramDispatchMessage();
+	}
+}
+
+void CUDPSocket::ExpireDnsRequests(DWORD dwNow)
+{
+	std::lock_guard<std::mutex> lock(m_dnsMutex);
+	for (auto it = m_dnsRequests.begin(); it != m_dnsRequests.end();) {
+		if (dwNow >= (*it)->m_dwCreated + MIN2MS(2)) {
+			(*it)->m_bCancelled.store(true, std::memory_order_release);
+			it = m_dnsRequests.erase(it);
+		} else
+			++it;
+	}
+}
+
+void CUDPSocket::OnDatagramSend(int nErrorCode)
 {
 	if (nErrorCode) {
 		if (thePrefs.GetVerbose())
 			DebugLogError(_T("Error: Server UDP socket: Failed to send packet - %s"), (LPCTSTR)GetErrorMessage(nErrorCode, 1));
 		return;
 	}
-	m_bWouldBlock = false;
 
 // ZZ:UploadBandWithThrottler (UDP) -->
 	sendLocker.Lock();
+	m_bWouldBlock = false;
+	SetWriteInterestEnabled(false);
 	if (!controlpacket_queue.IsEmpty())
 		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 
@@ -704,11 +745,16 @@ int CUDPSocket::SendTo(BYTE *lpBuf, int nBufLen, uint32 dwIP, uint16 nPort)
 {
 	// NOTE: *** This function is invoked from a *different* thread!
 	//Currently called only locally; sendLocker must be locked by the caller
-	int result = CAsyncSocket::SendTo(lpBuf, nBufLen, nPort, ipstr(dwIP));
+	SOCKADDR_IN sockAddr = {};
+	sockAddr.sin_family = AF_INET;
+	sockAddr.sin_addr.s_addr = dwIP;
+	sockAddr.sin_port = htons(nPort);
+	int result = CAsyncSocketEx::SendTo(lpBuf, nBufLen, reinterpret_cast<const SOCKADDR*>(&sockAddr), sizeof sockAddr);
 	if (result == SOCKET_ERROR) {
-		DWORD dwError = (DWORD)CAsyncSocket::GetLastError();
+		DWORD dwError = (DWORD)CAsyncSocketEx::GetLastError();
 		if (dwError == WSAEWOULDBLOCK) {
 			m_bWouldBlock = true;
+			SetWriteInterestEnabled(true);
 			return -1; //blocked
 		}
 		if (thePrefs.GetVerbose())
@@ -737,15 +783,7 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 {
 	// Just for safety.
 	// Ensure that there are no stalled DNS queries and/or packets hanging endlessly in the queue.
-	const DWORD curTick = ::GetTickCount();
-	for (POSITION pos = m_aDNSReqs.GetHeadPosition(); pos != NULL;) {
-		POSITION posPrev = pos;
-		const SServerDNSRequest *pDNSReq = m_aDNSReqs.GetNext(pos);
-		if (curTick >= pDNSReq->m_dwCreated + MIN2MS(2)) {
-			delete pDNSReq;
-			m_aDNSReqs.RemoveAt(posPrev);
-		}
-	}
+	ExpireDnsRequests(::GetTickCount());
 
 	// Create raw UDP packet
 	BYTE *pRawPacket;
@@ -782,32 +820,27 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 	CStringA pszHostAddressA(pServer->GetAddress());
 	uint32 nIP = 0;
 	if (!ParseIPv4Address(pszHostAddressA, nIP)) {
-		// If there is already a DNS query ongoing or queued for this server, append the
-		// current packet to this DNS query. The packet(s) will be sent later after the DNS
-		// query has completed.
-		for (POSITION reqpos = m_aDNSReqs.GetHeadPosition(); reqpos != NULL;) {
-			SServerDNSRequest *pDNSReq = m_aDNSReqs.GetNext(reqpos);
-			if (_tcsicmp(pDNSReq->m_pServer->GetAddress(), pServer->GetAddress()) == 0) {
-				SRawServerPacket *pServerPacket = new SRawServerPacket(pRawPacket, uRawPacketSize, nPort);
-				pDNSReq->m_aPackets.AddTail(pServerPacket);
-				return;
+		std::shared_ptr<SServerDNSRequest> pDNSReq;
+		{
+			std::lock_guard<std::mutex> lock(m_dnsMutex);
+			for (const std::shared_ptr<SServerDNSRequest> &pCurrentReq : m_dnsRequests) {
+				if (!pCurrentReq->m_bCancelled.load(std::memory_order_acquire)
+					&& _tcsicmp(pCurrentReq->m_pServer->GetAddress(), pServer->GetAddress()) == 0)
+				{
+					pDNSReq = pCurrentReq;
+					break;
+				}
 			}
-		}
 
-		// Create a new DNS query for this server
-		SServerDNSRequest *pDNSReq = new SServerDNSRequest(0, new CServer(pServer));
-		pDNSReq->m_hDNSTask = WSAAsyncGetHostByName(m_hWndResolveMessage, WM_DNSLOOKUPDONE
-			, pszHostAddressA, pDNSReq->m_DnsHostBuffer, sizeof pDNSReq->m_DnsHostBuffer);
-		if (pDNSReq->m_hDNSTask == NULL) {
-			if (thePrefs.GetVerbose())
-				DebugLogWarning(_T("Error: Server UDP socket: Failed to resolve address for '%s' - %s"), (LPCSTR)pServer->GetAddress(), (LPCTSTR)GetErrorMessage(CAsyncSocket::GetLastError(), 1));
-			delete pDNSReq;
-			delete[] pRawPacket;
-			return;
+			if (!pDNSReq) {
+				pDNSReq = std::make_shared<SServerDNSRequest>(new CServer(pServer));
+				m_dnsRequests.push_back(pDNSReq);
+				m_dnsWorkQueue.push_back(pDNSReq);
+			}
+
+			pDNSReq->m_aPackets.push_back(std::make_unique<SRawServerPacket>(pRawPacket, uRawPacketSize, nPort));
 		}
-		SRawServerPacket *pServerPacket = new SRawServerPacket(pRawPacket, uRawPacketSize, nPort);
-		pDNSReq->m_aPackets.AddTail(pServerPacket);
-		m_aDNSReqs.AddTail(pDNSReq);
+		m_dnsWorkReady.notify_one();
 	} else {
 		// No DNS query needed for this server. Just send the packet.
 		SendBuffer(nIP, nPort, pRawPacket, uRawPacketSize);

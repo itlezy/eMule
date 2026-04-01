@@ -47,6 +47,7 @@ enum EUserWndMessages
 
 	// UPnP
 	, UM_UPNP_RESULT //+32
+	, UM_WSAPOLL_UDP_SOCKET
 
 	// TreeOptionsCtrl
 	, WM_TOC_SETFOCUS_TO_CHILD //+33

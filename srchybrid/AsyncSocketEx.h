@@ -62,7 +62,9 @@ public:
 	BOOL IOCtl(long lCommand, DWORD *lpArgument);
 	BOOL Listen(int nConnectionBacklog = 5);
 	virtual int Receive(void *lpBuf, int nBufLen, int nFlags = 0);
+	int ReceiveFrom(void *lpBuf, int nBufLen, LPSOCKADDR lpSockAddr, int *lpSockAddrLen, int nFlags = 0);
 	virtual int Send(const void *lpBuf, int nBufLen, int nFlags = 0);
+	int SendTo(const void *lpBuf, int nBufLen, const SOCKADDR *lpSockAddr, int nSockAddrLen, int nFlags = 0);
 	BOOL ShutDown(int nHow = CAsyncSocket::sends);
 
 	virtual void OnAccept(int nErrorCode);

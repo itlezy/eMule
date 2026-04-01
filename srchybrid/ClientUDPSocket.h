@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "UploadBandwidthThrottler.h" // ZZ:UploadBandWithThrottler (UDP)
+#include "AsyncDatagramSocket.h"
 #include "EncryptedDatagramSocket.h"
 
 class Packet;
@@ -35,7 +36,7 @@ struct UDPPack
 };
 #pragma pack(pop)
 
-class CClientUDPSocket : public CAsyncSocket, public CEncryptedDatagramSocket, public ThrottledControlSocket // ZZ:UploadBandWithThrottler (UDP)
+class CClientUDPSocket : public CAsyncDatagramSocket, public CEncryptedDatagramSocket, public ThrottledControlSocket // ZZ:UploadBandWithThrottler (UDP)
 {
 public:
 	CClientUDPSocket();
@@ -51,8 +52,8 @@ public:
 protected:
 	bool	ProcessPacket(const BYTE *packet, UINT size, uint8 opcode, uint32 ip, uint16 port);
 
-	virtual void	OnSend(int nErrorCode);
-	virtual void	OnReceive(int nErrorCode);
+	virtual void OnDatagramSend(int nErrorCode) override;
+	virtual void OnDatagramReceive(int nErrorCode) override;
 
 private:
 	int		SendTo(uchar *lpBuf, int nBufLen, uint32 dwIP, uint16 nPort);
