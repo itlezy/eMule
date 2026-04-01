@@ -287,6 +287,9 @@ BOOL CemuleApp::InitInstance()
 	// output all ASSERT messages to debug device
 	_CrtSetReportMode(_CRT_ASSERT, _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_REPORT_MODE) | _CRTDBG_MODE_DEBUG);
 #endif
+	if (!InitializeStartupConfigBaseDirOverride())
+		return FALSE;
+
 	free((void*)m_pszProfileName);
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	m_pszProfileName = _tcsdup(sConfDir + _T("preferences.ini"));
@@ -476,6 +479,38 @@ int CemuleApp::ExitInstance()
 	return CWinApp::ExitInstance();
 }
 
+/**
+ * @brief Parses and validates the optional `-c <base-dir>` override before startup touches any profile-backed directories.
+ */
+bool CemuleApp::InitializeStartupConfigBaseDirOverride()
+{
+	CString strStartupConfigBaseDir;
+	CString strStartupConfigError;
+	if (!StartupConfigOverride::TryParseConfigBaseDirOverride(__argc, __targv, strStartupConfigBaseDir, strStartupConfigError)) {
+		AfxMessageBox(strStartupConfigError, MB_OK | MB_ICONSTOP);
+		return false;
+	}
+
+	if (!strStartupConfigBaseDir.IsEmpty()) {
+		const CString strConfigDir(StartupConfigOverride::GetConfigDirectoryFromBaseDir(strStartupConfigBaseDir));
+		if (!IsExistingDirectoryPath(strStartupConfigBaseDir)) {
+			CString strError;
+			strError.Format(_T("The -c base directory does not exist: %s"), (LPCTSTR)strStartupConfigBaseDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+		if (!IsExistingDirectoryPath(strConfigDir)) {
+			CString strError;
+			strError.Format(_T("The -c override requires an existing config directory: %s"), (LPCTSTR)strConfigDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+	}
+
+	m_strStartupConfigBaseDir = strStartupConfigBaseDir;
+	return true;
+}
+
 void CemuleApp::RefreshStartupBindBlockState()
 {
 	m_bStartupBindBlocked = BindStartupPolicy::ShouldBlockSessionNetworking(thePrefs.IsStartupBindBlockEnabled()
@@ -520,32 +555,12 @@ int eMuleAllocHook(int mode, void *pUserData, size_t nSize, int nBlockUse, long 
 
 bool CemuleApp::ProcessCommandline()
 {
-	CString strStartupConfigBaseDir;
-	CString strStartupConfigError;
-	if (!StartupConfigOverride::TryParseConfigBaseDirOverride(__argc, __targv, strStartupConfigBaseDir, strStartupConfigError)) {
-		AfxMessageBox(strStartupConfigError, MB_OK | MB_ICONSTOP);
+	if (!InitializeStartupConfigBaseDirOverride())
 		return true;
-	}
-	if (!strStartupConfigBaseDir.IsEmpty()) {
-		const CString strConfigDir(StartupConfigOverride::GetConfigDirectoryFromBaseDir(strStartupConfigBaseDir));
-		if (!IsExistingDirectoryPath(strStartupConfigBaseDir)) {
-			CString strError;
-			strError.Format(_T("The -c base directory does not exist: %s"), (LPCTSTR)strStartupConfigBaseDir);
-			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
-			return true;
-		}
-		if (!IsExistingDirectoryPath(strConfigDir)) {
-			CString strError;
-			strError.Format(_T("The -c override requires an existing config directory: %s"), (LPCTSTR)strConfigDir);
-			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
-			return true;
-		}
-
-		m_strStartupConfigBaseDir = strStartupConfigBaseDir;
-		free((void*)m_pszProfileName);
-		m_pszProfileName = _tcsdup(StartupConfigOverride::GetPreferencesIniPathFromBaseDir(m_strStartupConfigBaseDir));
-	} else
-		m_strStartupConfigBaseDir.Empty();
+	free((void*)m_pszProfileName);
+	m_pszProfileName = _tcsdup(theApp.HasStartupConfigBaseDirOverride()
+		? StartupConfigOverride::GetPreferencesIniPathFromBaseDir(m_strStartupConfigBaseDir)
+		: thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("preferences.ini"));
 
 	bool bIgnoreRunningInstances = (GetProfileInt(_T("eMule"), _T("IgnoreInstances"), 0) != 0);
 	for (int i = 1; i < __argc; ++i) {

@@ -197,6 +197,10 @@ public:
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
+	/**
+	 * @brief Parses and validates the optional startup config-root override before any profile-backed settings are read.
+	 */
+	bool InitializeStartupConfigBaseDirOverride();
 	bool ProcessCommandline();
 	void SetTimeOnTransfer();
 	static BOOL CALLBACK SearchEmuleWindow(HWND hWnd, LPARAM lParam) noexcept;
