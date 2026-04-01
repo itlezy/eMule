@@ -32,7 +32,7 @@
 
 Rather than extending the built-in HTML web server (see `WEB_APIs.md`), this document describes an alternative architecture: a **named pipe IPC channel** inside eMule paired with a standalone **Node.js/TypeScript sidecar process** that owns the HTTP surface.
 
-The sidecar exposes a REST API modelled after the **qBittorrent Web API v2**, with eMule-specific extensions under `/api/v2/emule/`. Push notifications (download complete, speed stats, etc.) are delivered to HTTP clients via **Server-Sent Events (SSE)**.
+The sidecar exposes a grouped `/api/v2/...` REST API backed by the local pipe contract. Push notifications (download complete, speed stats, etc.) are delivered to HTTP clients via **Server-Sent Events (SSE)**.
 
 ---
 
@@ -84,14 +84,15 @@ The named pipe is **local-only** (same machine), so there is no network attack s
 │  EventBus  ──→  SseManager  ──→  SSE HTTP clients   │
 │                                                     │
 │  Fastify HTTP server                                │
-│  ├── /api/v2/auth/*                                 │
 │  ├── /api/v2/app/*                                  │
-│  ├── /api/v2/transfer/*                             │
-│  ├── /api/v2/torrents/*                             │
-│  ├── /api/v2/sync/maindata                          │
-│  ├── /api/v2/log/*                                  │
+│  ├── /api/v2/stats/*                                │
+│  ├── /api/v2/transfers*                             │
+│  ├── /api/v2/uploads/*                              │
+│  ├── /api/v2/servers/*                              │
+│  ├── /api/v2/kad/*                                  │
+│  ├── /api/v2/shared/*                               │
+│  ├── /api/v2/log*                                   │
 │  ├── /api/v2/search/*                               │
-│  ├── /api/v2/emule/*   (eMule-specific extensions)  │
 │  └── /api/v2/events    (SSE stream)                 │
 └─────────────────────────────────────────────────────┘
                    │  HTTP / HTTPS
@@ -395,107 +396,133 @@ Token is a random 256-bit hex string. Stored in an in-memory map in the sidecar.
 
 ```
 GET  /api/v2/app/version
-  200: { version: "0.72a", build_date: "..." }
-
-GET  /api/v2/app/webapiVersion
-  200: { version: "2.0" }
+  200: { appName, version, build, platform }
 
 GET  /api/v2/app/preferences
   200: Preferences
 
-POST /api/v2/app/setPreferences
-  body: Partial<Preferences>
+POST /api/v2/app/preferences
+  body: { prefs: Partial<Preferences> }
   200: { ok: true }
 
 POST /api/v2/app/shutdown
   200: { ok: true }
 ```
 
-### 6.3 Transfer Info (global speeds)
+### 6.3 Stats
 
 ```
-GET /api/v2/transfer/info
+GET /api/v2/stats/global
   200: GlobalStats
 ```
 
-### 6.4 Torrents (Downloads)
+### 6.4 Transfers
 
 ```
-GET  /api/v2/torrents/info
-  query: filter=downloading|seeding|paused|stopped|error|checking|all
+GET  /api/v2/transfers
+  query: filter=<string>
          category=<id>
-         hashes=<h1>|<h2>|...
   200: Transfer[]
 
-GET  /api/v2/torrents/properties
-  query: hash=<hash>
+GET  /api/v2/transfers/:hash
   200: Transfer
-  404: { error: "HASH_NOT_FOUND" }
 
-GET  /api/v2/torrents/sources
-  query: hash=<hash>
+GET  /api/v2/transfers/:hash/sources
   200: Source[]
 
-POST /api/v2/torrents/add
-  body: { urls: string }     ← one ed2k:// link per line, same as qBit
-  200: { ok: true }
-  400: { error: "INVALID_LINK" }
+POST /api/v2/transfers/add
+  body: { links: string[] }
+  200: { results: MutationResult[] }
 
-POST /api/v2/torrents/delete
-  body: { hashes: string, deleteFiles: bool }   ← | separated, qBit style
+POST /api/v2/transfers/pause
+  body: { hashes: string[] }
+  200: { results: MutationResult[] }
+
+POST /api/v2/transfers/resume
+  body: { hashes: string[] }
+  200: { results: MutationResult[] }
+
+POST /api/v2/transfers/stop
+  body: { hashes: string[] }
+  200: { results: MutationResult[] }
+
+POST /api/v2/transfers/delete
+  body: { hashes: string[], deleteFiles?: bool }
+  200: { results: MutationResult[] }
+
+POST /api/v2/transfers/:hash/priority
+  body: { priority: string }
   200: { ok: true }
 
-POST /api/v2/torrents/pause
-  body: { hashes: string }
+POST /api/v2/transfers/:hash/category
+  body: { category: number }
   200: { ok: true }
 
-POST /api/v2/torrents/resume
-  body: { hashes: string }
-  200: { ok: true }
-
-POST /api/v2/torrents/setCategory
-  body: { hashes: string, category: string }
-  200: { ok: true }
-
-POST /api/v2/torrents/setDownloadLimit
-  body: { hashes: string, limit: number }   ← bytes/s, 0 = unlimited
-  200: { ok: true }
-
-POST /api/v2/torrents/recheck
-  body: { hashes: string }
+POST /api/v2/transfers/:hash/recheck
   200: { ok: true }
 ```
 
-### 6.5 Sync (polling alternative to SSE)
-
-Follows qBittorrent's incremental sync pattern. Clients poll with a `rid` counter; the response includes only what changed since that `rid`.
+### 6.5 Uploads, Servers, Kad, Shared
 
 ```
-GET /api/v2/sync/maindata
-  query: rid=<number>   (0 = full refresh)
-  200: {
-    rid: number,
-    full_update: boolean,
-    torrents: { [hash]: Partial<Transfer> },
-    torrents_removed: string[],
-    server_state: Partial<GlobalStats>
-  }
-```
+GET  /api/v2/uploads/list
+  200: Upload[]
 
-The sidecar maintains a change log driven by pipe events and the periodic `stats_updated` event.
+GET  /api/v2/uploads/queue
+  200: QueueEntry[]
+
+GET  /api/v2/servers/list
+  200: Server[]
+
+GET  /api/v2/servers/status
+  200: ServerStatus
+
+POST /api/v2/servers/connect
+  body: { addr?: string, port?: number }
+  200: ServerStatus
+
+POST /api/v2/servers/disconnect
+  200: ServerStatus
+
+POST /api/v2/servers/add
+  body: { addr: string, port: number, name?: string }
+  200: Server
+
+POST /api/v2/servers/remove
+  body: { addr: string, port: number }
+  200: Server
+
+GET  /api/v2/kad/status
+  200: KadStatus
+
+POST /api/v2/kad/connect
+  200: KadStatus
+
+POST /api/v2/kad/disconnect
+  200: KadStatus
+
+POST /api/v2/kad/recheck_firewall
+  200: KadStatus
+
+GET  /api/v2/shared/list
+  200: SharedFile[]
+
+GET  /api/v2/shared/:hash
+  200: SharedFile
+```
 
 ### 6.6 Log
 
 ```
-GET /api/v2/log/main
-  query: last_known_id=<number>   (0 = last 100 entries)
+GET /api/v2/log
+  query: limit=<number>
   200: LogEntry[]
 
 interface LogEntry {
-  id:        number;
   message:   string;
   timestamp: number;
-  type:      'normal' | 'warning' | 'critical';
+  level:     'info' | 'warning' | 'error' | 'success';
+  debug:     boolean;
 }
 ```
 
@@ -504,35 +531,35 @@ interface LogEntry {
 ```
 POST /api/v2/search/start
   body: {
-    pattern: string,
-    plugins: string,   ← "server" | "kademlia" | "all"
-    category: string   ← "all" | "audio" | "video" | "image" | "document" | "archive" | "program"
+    query: string,
+    method?: string,
+    type?: string,
+    min_size?: number,
+    max_size?: number,
+    ext?: string
   }
-  200: { id: number }
+  200: { search_id: string }
 
 GET /api/v2/search/results
-  query: id=<number>&limit=<n>&offset=<n>
+  query: search_id=<string>
   200: {
-    status: 'Running' | 'Stopped',
+    status: 'running' | 'complete',
     results: SearchResult[]
   }
 
 POST /api/v2/search/stop
-  body: { id: number }
-  200: { ok: true }
-
-POST /api/v2/search/delete
-  body: { id: number }
+  body: { search_id: string }
   200: { ok: true }
 
 interface SearchResult {
-  descrLink: string;   ← ed2k:// link
-  fileName:  string;
-  fileSize:  number;
-  nbSeeders: number;   ← complete sources
-  nbLeechers: number;  ← incomplete sources
-  engineName: string;  ← "server" | "kademlia"
-  fileUrl:   string;   ← same as descrLink
+  hash:            string;
+  name:            string;
+  size:            number;
+  fileType:        string;
+  sources:         number;
+  completeSources: number;
+  complete:        boolean | null;
+  knownType:       string;
 }
 ```
 
@@ -559,50 +586,7 @@ data: {"name":"eMule Security","addr":"1.2.3.4","port":4661,"users":150000,"file
 
 ### 6.9 eMule Extensions
 
-These have no qBittorrent equivalent and live under `/api/v2/emule/`.
-
-```
-── ED2K Servers ──────────────────────────────────────
-GET  /api/v2/emule/servers
-  200: Server[]
-
-POST /api/v2/emule/servers/add
-  body: { addr: string, port: number, name?: string }
-  200: { ok: true }
-
-POST /api/v2/emule/servers/remove
-  body: { addr: string, port: number }
-  200: { ok: true }
-
-POST /api/v2/emule/servers/connect
-  body: { addr: string, port: number }
-  200: { ok: true }
-
-POST /api/v2/emule/servers/disconnect
-  200: { ok: true }
-
-── Kademlia ──────────────────────────────────────────
-GET  /api/v2/emule/kad
-  200: KadStatus
-
-POST /api/v2/emule/kad/connect
-  200: { ok: true }
-
-POST /api/v2/emule/kad/disconnect
-  200: { ok: true }
-
-POST /api/v2/emule/kad/recheck_firewall
-  200: { ok: true }
-
-── Shared Files ──────────────────────────────────────
-GET  /api/v2/emule/shared
-  200: SharedFile[]
-
-── Upload Queue ──────────────────────────────────────
-GET  /api/v2/emule/uploads
-  query: queue=active|waiting|all
-  200: { active: Upload[], waiting: QueueEntry[] }
-```
+The grouped `/api/v2/uploads/*`, `/api/v2/servers/*`, `/api/v2/kad/*`, and `/api/v2/shared/*` routes above are the eMule-specific HTTP surface. There is no separate `/api/v2/emule/*` namespace in the current implementation.
 
 ---
 
@@ -624,21 +608,18 @@ emule-sidecar/
 │   │   ├── auth.ts             token map, login/logout, Bearer middleware
 │   │   └── routes/
 │   │       ├── app.ts          /api/v2/app/*
-│   │       ├── transfer.ts     /api/v2/transfer/info
-│   │       ├── torrents.ts     /api/v2/torrents/*
-│   │       ├── sync.ts         /api/v2/sync/maindata  + rid state
-│   │       ├── log.ts          /api/v2/log/*
+│   │       ├── stats.ts        /api/v2/stats/*
+│   │       ├── transfers.ts    /api/v2/transfers*
+│   │       ├── uploads.ts      /api/v2/uploads/*
+│   │       ├── servers.ts      /api/v2/servers/*
+│   │       ├── kad.ts          /api/v2/kad/*
+│   │       ├── shared.ts       /api/v2/shared/*
+│   │       ├── log.ts          /api/v2/log*
 │   │       ├── search.ts       /api/v2/search/*
 │   │       ├── events.ts       /api/v2/events  (SSE)
-│   │       └── emule/
-│   │           ├── servers.ts  /api/v2/emule/servers/*
-│   │           ├── kad.ts      /api/v2/emule/kad/*
-│   │           ├── shared.ts   /api/v2/emule/shared
-│   │           └── uploads.ts  /api/v2/emule/uploads
 │   │
 │   ├── types/
-│   │   ├── qbittorrent.ts      qBit-compatible response shapes
-│   │   └── emule.ts            eMule-specific types (ed2k hash, priority enum, etc.)
+│   │   └── emule.ts            shared HTTP and pipe-facing types
 │   │
 │   └── index.ts                wire PipeClient + Fastify + EventBus, read .env, start
 │
@@ -1021,11 +1002,9 @@ Requests that target multiple hashes (pause, resume, delete) proceed best-effort
 - Project scaffold: Fastify + TypeScript + Zod
 - `PipeClient.ts` with reconnect
 - `EventBus.ts` + `SseManager.ts`
-- Auth routes (`/api/v2/auth/*`)
-- All read-only REST routes
+- All grouped `/api/v2/app|stats|transfers|uploads|servers|kad|shared|log|search` routes
 - SSE endpoint (`/api/v2/events`)
 - Mutating routes
-- `sync/maindata` with `rid` state
 
 ---
 
