@@ -134,31 +134,13 @@ private:
 					continue;
 
 				const long lEvent = pEntry->lEventMask.load(std::memory_order_acquire);
-				short nPollEvents = 0;
 
 #ifndef NOSOCKETSTATES
 				const AsyncSocketExState state = pOwner->GetState();
 #else
 				const AsyncSocketExState state = connected;
 #endif
-
-				if (state == listening) {
-					if (lEvent & FD_ACCEPT)
-						nPollEvents |= POLLIN;
-					if (lEvent & FD_CLOSE)
-						nPollEvents |= POLLIN;
-				} else if (state == connecting) {
-					nPollEvents |= POLLOUT;
-					if (lEvent & FD_READ)
-						nPollEvents |= POLLIN;
-				} else if (state == connected || state == attached) {
-					if (lEvent & FD_READ)
-						nPollEvents |= POLLIN;
-					if (lEvent & FD_WRITE)
-						nPollEvents |= POLLOUT;
-					if (lEvent & FD_CLOSE)
-						nPollEvents |= POLLIN;
-				}
+				const short nPollEvents = GetAsyncSocketPollEvents(state, lEvent);
 
 				if (nPollEvents == 0)
 					continue;
@@ -230,7 +212,7 @@ private:
 		const AsyncSocketExState state = connected;
 #endif
 
-		if (state == connecting && (pfd.revents & (POLLOUT | POLLERR | POLLHUP | POLLNVAL))) {
+		if (ShouldCompleteAsyncSocketConnect(state, pfd.revents)) {
 			const int nError = (pfd.revents & POLLNVAL) ? WSAENOTSOCK : QuerySocketError(pEntry->hSocket);
 			if (nError != 0 && pOwner->TryNextProtocol()) {
 				ReleaseOwner(pEntry);
@@ -246,13 +228,13 @@ private:
 			return;
 		}
 
-		if ((state == listening) && (pfd.revents & POLLIN) && (lEvent & FD_ACCEPT)) {
+		if (ShouldDispatchAsyncSocketAccept(state, lEvent, pfd.revents)) {
 			pOwner->OnAccept(0);
 			ReleaseOwner(pEntry);
 			return;
 		}
 
-		if ((pfd.revents & POLLIN) && (lEvent & FD_READ) && (state == connected || state == attached))
+		if (ShouldDispatchAsyncSocketRead(state, lEvent, pfd.revents))
 			pOwner->OnReceive(0);
 
 		ReleaseOwner(pEntry);
@@ -267,13 +249,12 @@ private:
 		const AsyncSocketExState refreshedState = connected;
 #endif
 
-		if ((pfd.revents & POLLOUT) && (lEvent & FD_WRITE) && (refreshedState == connected || refreshedState == attached))
+		if (ShouldDispatchAsyncSocketWrite(refreshedState, lEvent, pfd.revents))
 			pOwner->OnSend(0);
 
 		ReleaseOwner(pEntry);
 
-		const short closeMask = static_cast<short>(POLLERR | POLLHUP | POLLNVAL);
-		if ((pfd.revents & closeMask) == 0)
+		if (!HasAsyncSocketCloseSignal(pfd.revents))
 			return;
 
 		pOwner = AcquireOwner(pEntry);
@@ -286,7 +267,8 @@ private:
 
 		DWORD nBytes = 0;
 		const bool bHasPendingData = (lEvent & FD_READ) && pOwner->IOCtl(FIONREAD, &nBytes) && nBytes > 0;
-		if (bHasPendingData) {
+		const AsyncSocketExCloseAction closeAction = ClassifyAsyncSocketClose(refreshedState, lEvent, pfd.revents, bHasPendingData);
+		if (closeAction.bShouldReadDrain) {
 			pOwner->m_SocketData.bIsClosing = true;
 			pOwner->OnReceive(WSAESHUTDOWN);
 			ReleaseOwner(pEntry);
@@ -299,7 +281,8 @@ private:
 #ifndef NOSOCKETSTATES
 		pOwner->SetState(nError != 0 ? aborted : closed);
 #endif
-		pOwner->OnClose(nError);
+		if (closeAction.bShouldClose)
+			pOwner->OnClose(nError);
 		ReleaseOwner(pEntry);
 	}
 

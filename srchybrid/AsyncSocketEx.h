@@ -15,25 +15,11 @@
 
 #include <atomic>
 #include <memory>
-
-#define FD_FORCEREAD (1<<15)
-#define FD_DEFAULT (FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE)
+#include "AsyncSocketExSeams.h"
 
 class CAsyncSocketExLayer;
 struct CAsyncSocketPollEntry;
 class CSocketPoller;
-
-enum AsyncSocketExState : uint8
-{
-	notsock,
-	unconnected,
-	connecting,
-	listening,
-	connected,
-	closed,
-	aborted,
-	attached
-};
 
 class CAsyncSocketEx : public CObject
 {
