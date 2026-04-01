@@ -23,7 +23,6 @@
 #include "FileInfoDialog.h"
 #include "MetaDataDlg.h"
 #include "ED2kLinkDlg.h"
-#include "ArchivePreviewDlg.h"
 #include "CommentDialog.h"
 #include "HighColorTab.hpp"
 #include "ListViewWalkerPropertySheet.h"
@@ -58,11 +57,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-bool NeedArchiveInfoPage(const CSimpleArray<CObject*> *paItems);
-void UpdateFileDetailsPages(CListViewPropertySheet *pSheet
-	, CResizablePage *pArchiveInfo, CResizablePage *pMediaInfo, CResizablePage *pFileLink);
-
-
 //////////////////////////////////////////////////////////////////////////////
 // CSharedFileDetailsSheet
 
@@ -75,7 +69,6 @@ public:
 	CSharedFileDetailsSheet(CTypedPtrList<CPtrList, CShareableFile*> &aFiles, UINT uInvokePage = 0, CListCtrlItemWalk *pListCtrl = NULL);
 
 protected:
-	CArchivePreviewDlg	m_wndArchiveInfo;
 	CCommentDialog		m_wndFileComments;
 	CED2kLinkDlg		m_wndFileLink;
 	CFileInfoDialog		m_wndMediaInfo;
@@ -113,8 +106,6 @@ void CSharedFileDetailsSheet::Localize()
 	SetTabTitle(IDS_SW_LINK, &m_wndFileLink, this);
 	m_wndFileComments.Localize();
 	SetTabTitle(IDS_COMMENT, &m_wndFileComments, this);
-	m_wndArchiveInfo.Localize();
-	SetTabTitle(IDS_CONTENT_INFO, &m_wndArchiveInfo, this);
 }
 
 CSharedFileDetailsSheet::CSharedFileDetailsSheet(CTypedPtrList<CPtrList, CShareableFile*> &aFiles, UINT uInvokePage, CListCtrlItemWalk *pListCtrl)
@@ -131,19 +122,11 @@ CSharedFileDetailsSheet::CSharedFileDetailsSheet(CTypedPtrList<CPtrList, CSharea
 	m_wndFileComments.SetFiles(&m_aItems);
 	AddPage(&m_wndFileComments);
 
-	m_wndArchiveInfo.m_psp.dwFlags &= ~PSP_HASHELP;
-	m_wndArchiveInfo.m_psp.dwFlags |= PSP_USEICONID;
-	m_wndArchiveInfo.m_psp.pszIcon = _T("ARCHIVE_PREVIEW");
-	m_wndArchiveInfo.SetFiles(&m_aItems);
-
 	m_wndMediaInfo.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMediaInfo.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMediaInfo.m_psp.pszIcon = _T("MEDIAINFO");
 	m_wndMediaInfo.SetFiles(&m_aItems);
-	if (NeedArchiveInfoPage(&m_aItems))
-		AddPage(&m_wndArchiveInfo);
-	else
-		AddPage(&m_wndMediaInfo);
+	AddPage(&m_wndMediaInfo);
 
 	m_wndMetaData.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMetaData.m_psp.dwFlags |= PSP_USEICONID;
@@ -191,7 +174,11 @@ BOOL CSharedFileDetailsSheet::OnInitDialog()
 LRESULT CSharedFileDetailsSheet::OnDataChanged(WPARAM, LPARAM)
 {
 	UpdateTitle();
-	UpdateFileDetailsPages(this, &m_wndArchiveInfo, &m_wndMediaInfo, &m_wndFileLink);
+	/** Keep dependent tabs in sync after the archive page removal. */
+	if (m_wndMediaInfo.m_hWnd)
+		m_wndMediaInfo.SendMessage(UM_DATA_CHANGED);
+	if (m_wndFileLink.m_hWnd)
+		m_wndFileLink.SendMessage(UM_DATA_CHANGED);
 	return 1;
 }
 

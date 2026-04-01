@@ -108,7 +108,6 @@
     <ClCompile Include="AddFriend.cpp" />
     <ClCompile Include="AddSourceDlg.cpp" />
     <ClCompile Include="AICHSyncThread.cpp" />
-    <ClCompile Include="ArchivePreviewDlg.cpp" />
     <ClCompile Include="AsyncProxySocketLayer.cpp" />
     <ClCompile Include="AsyncSocketEx.cpp" />
     <ClCompile Include="AsyncSocketExLayer.cpp" />
@@ -376,7 +375,6 @@
     <ClInclude Include="AddFriend.h" />
     <ClInclude Include="AddSourceDlg.h" />
     <ClInclude Include="AICHSyncThread.h" />
-    <ClInclude Include="ArchivePreviewDlg.h" />
     <ClInclude Include="AsyncProxySocketLayer.h" />
     <ClInclude Include="AsyncSocketEx.h" />
     <ClInclude Include="AsyncSocketExLayer.h" />

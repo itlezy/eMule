@@ -23,7 +23,6 @@
 #include "ListViewWalkerPropertySheet.h"
 #include "filedetaildlgstatistics.h"
 #include "ED2kLinkDlg.h"
-#include "ArchivePreviewDlg.h"
 #include "FileInfoDialog.h"
 #include "MetaDataDlg.h"
 
@@ -43,7 +42,6 @@ public:
 	void SetFiles(CTypedPtrList<CPtrList, CShareableFile*> &aFiles);
 	void Localize();
 protected:
-	CArchivePreviewDlg			m_wndArchiveInfo;
 	CED2kLinkDlg				m_wndFileLink;
 	CFileDetailDlgStatistics	m_wndStatistics;
 	CFileInfoDialog				m_wndMediaInfo;

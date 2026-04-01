@@ -31,71 +31,6 @@ static char THIS_FILE[] = __FILE__;
 //////////////////////////////////////////////////////////////////////////////
 // Helper Functions for FileDetail and SharedFileDetailsSheet dialogs
 
-bool NeedArchiveInfoPage(const CSimpleArray<CObject*> *paItems)
-{
-	if (paItems->GetSize() == 1) {
-		CShareableFile *pFile = static_cast<CShareableFile*>((*paItems)[0]);
-		switch (GetFileTypeEx(pFile)) {
-		case ARCHIVE_ZIP:
-		case ARCHIVE_RAR:
-		case ARCHIVE_ACE:
-		case ARCHIVE_7Z:
-		case IMAGE_ISO:
-			return true;
-		}
-		return ED2KFT_ARCHIVE == GetED2KFileTypeID(pFile->GetFileName());
-	}
-	return false;
-}
-
-void UpdateFileDetailsPages(CListViewPropertySheet *pSheet
-	, CResizablePage *pArchiveInfo, CResizablePage *pMediaInfo, CResizablePage *pFileLink)
-{
-	if (pSheet->GetItems().GetSize() == 1) {
-		CPropertyPage *pActivePage = pSheet->GetActivePage();
-		CResizablePage *pToShow, *pToHide;
-		if (NeedArchiveInfoPage(&pSheet->GetItems())) {
-			pToHide = pMediaInfo;
-			pToShow = pArchiveInfo;
-		} else {
-			pToHide = pArchiveInfo;
-			pToShow = pMediaInfo;
-		}
-
-		int iPage = pSheet->GetPageIndex(pToHide);
-		bool bUpdateWindow = (iPage >= 0);
-		if (bUpdateWindow) {
-			pSheet->SetRedraw(FALSE);
-			pSheet->RemovePage(pToHide);
-		}
-
-		bool bFound = false;
-		for (INT_PTR i = pSheet->GetPages().GetCount(); --i >= 0;)
-			if (pSheet->GetPages()[i] == pToShow) {
-				bFound = true;
-				break;
-			}
-
-		if (!bFound) {
-			if (!bUpdateWindow) {
-				pSheet->SetRedraw(FALSE);
-				bUpdateWindow = true;
-			}
-			pSheet->InsertPage(iPage, pToShow);
-			if (pActivePage == pToHide)
-				pSheet->SetActivePage(iPage);
-		}
-
-		if (bUpdateWindow) {
-			pSheet->SetRedraw(TRUE);
-			pSheet->Invalidate();
-			pSheet->UpdateWindow();
-		}
-	}
-	if (pFileLink && pFileLink->m_hWnd)
-		pFileLink->SendMessage(UM_DATA_CHANGED);
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // CFileDetailDialog
 
@@ -122,8 +57,6 @@ void CFileDetailDialog::Localize()
 	SetTabTitle(IDS_META_DATA, &m_wndMetaData, this);
 	m_wndFileLink.Localize();
 	SetTabTitle(IDS_SW_LINK, &m_wndFileLink, this);
-	m_wndArchiveInfo.Localize();
-	SetTabTitle(IDS_CONTENT_INFO, &m_wndArchiveInfo, this);
 }
 
 CFileDetailDialog::CFileDetailDialog(const CSimpleArray<CPartFile*> *paFiles, UINT uInvokePage, CListCtrlItemWalk *pListCtrl)
@@ -154,19 +87,11 @@ CFileDetailDialog::CFileDetailDialog(const CSimpleArray<CPartFile*> *paFiles, UI
 	m_wndComments.SetFiles(&m_aItems);
 	AddPage(&m_wndComments);
 
-	m_wndArchiveInfo.m_psp.dwFlags &= ~PSP_HASHELP;
-	m_wndArchiveInfo.m_psp.dwFlags |= PSP_USEICONID;
-	m_wndArchiveInfo.m_psp.pszIcon = _T("ARCHIVE_PREVIEW");
-	m_wndArchiveInfo.SetFiles(&m_aItems);
-
 	m_wndMediaInfo.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMediaInfo.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMediaInfo.m_psp.pszIcon = _T("MEDIAINFO");
 	m_wndMediaInfo.SetFiles(&m_aItems);
-	if (NeedArchiveInfoPage(&m_aItems))
-		AddPage(&m_wndArchiveInfo);
-	else
-		AddPage(&m_wndMediaInfo);
+	AddPage(&m_wndMediaInfo);
 
 	m_wndMetaData.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMetaData.m_psp.dwFlags |= PSP_USEICONID;
@@ -214,7 +139,11 @@ BOOL CFileDetailDialog::OnInitDialog()
 LRESULT CFileDetailDialog::OnDataChanged(WPARAM, LPARAM)
 {
 	UpdateTitle();
-	UpdateFileDetailsPages(this, &m_wndArchiveInfo, &m_wndMediaInfo, &m_wndFileLink);
+	/** Keep dependent tabs in sync after the archive page removal. */
+	if (m_wndMediaInfo.m_hWnd)
+		m_wndMediaInfo.SendMessage(UM_DATA_CHANGED);
+	if (m_wndFileLink.m_hWnd)
+		m_wndFileLink.SendMessage(UM_DATA_CHANGED);
 	return 1;
 }
 

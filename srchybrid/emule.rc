@@ -1128,26 +1128,6 @@ BEGIN
     GROUPBOX        "Options",IDC_VCOLL_OPTIONS,7,201,404,25
 END
 
-IDD_ARCHPREV DIALOGEX 0, 0, 407, 180
-STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
-CAPTION "Archive"
-FONT 8, "MS Shell Dlg", 0, 0, 0x0
-BEGIN
-    GROUPBOX        "Static",IDC_APV_FILEINFO,7,1,394,32
-    RTEXT           "Archive type:",IDC_ARCP_TYPE,13,10,72,8
-    LTEXT           "???",IDC_INFO_TYPE,89,10,125,8
-    RTEXT           "Status:",IDC_ARCP_STATUS,13,20,72,8
-    LTEXT           "???",IDC_INFO_STATUS,89,20,305,8,SS_ENDELLIPSIS
-    RTEXT           "Info:",IDC_ARCP_ATTRIBS,223,10,45,8
-    LTEXT           "???",IDC_INFO_ATTR,273,10,122,8,SS_ENDELLIPSIS
-    CONTROL         "",IDC_FILELIST,"SysListView32",LVS_REPORT | LVS_SINGLESEL | LVS_SORTASCENDING | LVS_SHAREIMAGELISTS | LVS_ALIGNLEFT | LVS_NOSORTHEADER | WS_BORDER | WS_TABSTOP,7,37,394,113
-    CONTROL         "",IDC_ARCHPROGRESS,"msctls_progress32",WS_BORDER,7,151,394,7
-    PUSHBUTTON      "Reread",IDC_READARCH,7,159,86,14
-    PUSHBUTTON      "Restore archive",IDC_RESTOREARCH,98,159,117,14
-    PUSHBUTTON      "?",IDC_AP_EXPLAIN,219,159,17,14
-    RTEXT           "1233333",IDC_INFO_FILECOUNT,295,159,105,8
-END
-
 IDD_PPG_MESSAGES DIALOGEX 0, 0, 300, 350
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "Messages and Comments"
@@ -1411,7 +1391,6 @@ INCOMING                ICON                    "res\\Incoming.ico"
 SEARCHEDIT              ICON                    "res\\SearchEdit.ico"
 FILTERCLEAR2            ICON                    "res\\clear2.ico"
 FILTERCLEAR1            ICON                    "res\\clear1.ico"
-ARCHIVE_PREVIEW         ICON                    "res\\ArchivePreview.ico"
 OVERLAYSECUREOBFU       ICON                    "res\\Clientsecurehasobfuhovl.ico"
 OVERLAYOBFU             ICON                    "res\\Clientobfuovl.ico"
 SHAREDFOLDEROVL         ICON                    "res\\SharedFolderOvl.ico"

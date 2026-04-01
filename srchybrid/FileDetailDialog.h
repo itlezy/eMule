@@ -22,7 +22,6 @@
 #include "FileInfoDialog.h"
 #include "MetaDataDlg.h"
 #include "ED2kLinkDlg.h"
-#include "ArchivePreviewDlg.h"
 
 class CFileDetailDialog : public CListViewWalkerPropertySheet
 {
@@ -35,7 +34,6 @@ public:
 	virtual BOOL OnInitDialog();
 
 protected:
-	CArchivePreviewDlg		m_wndArchiveInfo;
 	CCommentDialogLst		m_wndComments;
 	CED2kLinkDlg			m_wndFileLink;
 	CFileDetailDialogInfo	m_wndInfo;

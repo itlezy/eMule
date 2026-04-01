@@ -509,10 +509,6 @@ int CSharedFileDetailsModelessSheet::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	return CPropertySheet::OnCreate(lpCreateStruct);
 }
 
-bool NeedArchiveInfoPage(const CSimpleArray<CObject*> *paItems);
-void UpdateFileDetailsPages(CListViewPropertySheet *pSheet, CResizablePage *pArchiveInfo
-		, CResizablePage *pMediaInfo, CResizablePage *pFileLink);
-
 CSharedFileDetailsModelessSheet::CSharedFileDetailsModelessSheet()
 {
 	m_psh.dwFlags &= ~PSH_HASHELP;
@@ -524,21 +520,12 @@ CSharedFileDetailsModelessSheet::CSharedFileDetailsModelessSheet()
 	m_wndStatistics.SetFiles(&m_aItems);
 	AddPage(&m_wndStatistics);
 
-	m_wndArchiveInfo.m_psp.dwFlags &= ~PSP_HASHELP;
-	m_wndArchiveInfo.m_psp.dwFlags |= PSP_USEICONID;
-	m_wndArchiveInfo.m_psp.pszIcon = _T("ARCHIVE_PREVIEW");
-	m_wndArchiveInfo.SetReducedDialog();
-	m_wndArchiveInfo.SetFiles(&m_aItems);
-
 	m_wndMediaInfo.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMediaInfo.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMediaInfo.m_psp.pszIcon = _T("MEDIAINFO");
 	m_wndMediaInfo.SetReducedDialog();
 	m_wndMediaInfo.SetFiles(&m_aItems);
-	if (NeedArchiveInfoPage(&m_aItems))
-		AddPage(&m_wndArchiveInfo);
-	else
-		AddPage(&m_wndMediaInfo);
+	AddPage(&m_wndMediaInfo);
 
 	m_wndFileLink.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndFileLink.m_psp.dwFlags |= PSP_USEICONID;
@@ -587,8 +574,6 @@ void CSharedFileDetailsModelessSheet::Localize()
 	SetTabTitle(IDS_SF_STATISTICS, &m_wndStatistics, this);
 	m_wndFileLink.Localize();
 	SetTabTitle(IDS_SW_LINK, &m_wndFileLink, this);
-	m_wndArchiveInfo.Localize();
-	SetTabTitle(IDS_CONTENT_INFO, &m_wndArchiveInfo, this);
 	m_wndMediaInfo.Localize();
 	SetTabTitle(IDS_CONTENT_INFO, &m_wndMediaInfo, this);
 	m_wndMetaData.Localize();
@@ -597,9 +582,12 @@ void CSharedFileDetailsModelessSheet::Localize()
 
 LRESULT CSharedFileDetailsModelessSheet::OnDataChanged(WPARAM, LPARAM)
 {
-	//When using up/down keys in shared files list, "Content" tab grabs focus on archives
+	// Keep focus in the list while the remaining detail pages refresh.
 	CWnd *pFocused = GetFocus();
-	UpdateFileDetailsPages(this, &m_wndArchiveInfo, &m_wndMediaInfo, &m_wndFileLink);
+	if (m_wndMediaInfo.m_hWnd)
+		m_wndMediaInfo.SendMessage(UM_DATA_CHANGED);
+	if (m_wndFileLink.m_hWnd)
+		m_wndFileLink.SendMessage(UM_DATA_CHANGED);
 	if (pFocused) //try to stay in file list
 		pFocused->SetFocus();
 	return TRUE;
