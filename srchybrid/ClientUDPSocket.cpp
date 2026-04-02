@@ -206,7 +206,7 @@ bool CClientUDPSocket::ProcessPacket(const BYTE *packet, UINT size, uint8 opcode
 			theStats.AddDownDataOverheadOther(size);
 			CUpDownClient *buddy = theApp.clientlist->GetBuddy();
 			if (buddy) {
-				if (size < 17 || buddy->socket == NULL)
+				if (!HasUdpCallbackPayload(size) || buddy->socket == NULL)
 					break;
 
 				/** Preserve the fixed 10-byte callback prefix before rewriting and forwarding the payload. */

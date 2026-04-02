@@ -241,6 +241,12 @@ void CEMSocket::OnReceive(int nErrorCode)
 		return;
 	}
 
+	/** Reject impossible partial-header carry-over before reusing the shared read buffer. */
+	if (!CanRestoreTcpPendingHeader(pendingHeaderSize, PACKET_HEADER_SIZE, sizeof GlobalReadBuffer)) {
+		OnError(ERR_WRONGHEADER);
+		return;
+	}
+
 	// Remark: an overflow can not occur here
 	size_t readMax = sizeof GlobalReadBuffer - pendingHeaderSize;
 	if (downloadLimitEnable && readMax > downloadLimit && nErrorCode != WSAESHUTDOWN)
@@ -265,6 +271,11 @@ void CEMSocket::OnReceive(int nErrorCode)
 
 	// Copy back the partial header into the global read buffer for processing
 	if (pendingHeaderSize > 0) {
+		if (!CanRestoreTcpPendingHeader(pendingHeaderSize, PACKET_HEADER_SIZE, sizeof GlobalReadBuffer)) {
+			OnError(ERR_WRONGHEADER);
+			return;
+		}
+
 		memcpy(GlobalReadBuffer, pendingHeader, pendingHeaderSize);
 		ret += (int)pendingHeaderSize;
 		pendingHeaderSize = 0;
@@ -329,13 +340,29 @@ void CEMSocket::OnReceive(int nErrorCode)
 			// Init data buffer
 			pendingPacket = new Packet(rptr);	// Create new packet container.
 			rptr += PACKET_HEADER_SIZE;			// Only the header is initialized so far
-			pendingPacket->pBuffer = new char[pendingPacket->size + 1];
+			size_t nPacketBufferSize = 0;
+			if (!TryAddSize(static_cast<size_t>(pendingPacket->size), 1u, &nPacketBufferSize)) {
+				delete pendingPacket;
+				pendingPacket = NULL;
+				OnError(ERR_TOOBIG);
+				return;
+			}
+			pendingPacket->pBuffer = new char[nPacketBufferSize];
 			pendingPacketSize = 0;
 		}
 
 		// Bytes ready to be copied into packet's internal buffer
 		ASSERT(rptr <= rend);
-		uint32 toCopy = min(pendingPacket->size - pendingPacketSize, (uint32)(rend - rptr));
+		if (!CanContinuePacketAssembly(pendingPacket->size, pendingPacketSize)) {
+			delete pendingPacket;
+			pendingPacket = NULL;
+			pendingPacketSize = 0;
+			OnError(ERR_WRONGHEADER);
+			return;
+		}
+
+		const uint32 nRemainingPacketBytes = pendingPacket->size - pendingPacketSize;
+		const uint32 toCopy = static_cast<uint32>(min(static_cast<size_t>(nRemainingPacketBytes), static_cast<size_t>(rend - rptr)));
 
 		// Copy bytes from Global buffer to packet's internal buffer
 		memcpy(&pendingPacket->pBuffer[pendingPacketSize], rptr, toCopy);
@@ -365,7 +392,12 @@ void CEMSocket::OnReceive(int nErrorCode)
 	ASSERT(rend - rptr < PACKET_HEADER_SIZE);
 	if (rptr < rend) {
 		// Keep the partial head
-		pendingHeaderSize = rend - rptr;
+		const size_t nTrailingBytes = static_cast<size_t>(rend - rptr);
+		if (!CanStoreTcpPendingHeader(nTrailingBytes, PACKET_HEADER_SIZE)) {
+			OnError(ERR_WRONGHEADER);
+			return;
+		}
+		pendingHeaderSize = nTrailingBytes;
 		memcpy(pendingHeader, rptr, pendingHeaderSize);
 	}
 }

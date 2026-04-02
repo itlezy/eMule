@@ -17,6 +17,7 @@
 #pragma once
 
 #include <cstddef>
+#include <limits>
 #include "types.h"
 
 /**
@@ -35,6 +36,68 @@ inline uint32 GetPacketPayloadSize(uint32 packetlength)
 inline bool CanReadTcpPacketPayload(uint32 packetlength, size_t readBufferSize)
 {
 	return packetlength > 0 && static_cast<size_t>(packetlength - 1) <= readBufferSize;
+}
+
+/**
+ * Reports whether a serialized byte span fits fully within a packet buffer.
+ */
+inline bool CanReadPacketSpan(size_t packetSize, size_t offset, size_t spanSize)
+{
+	return offset <= packetSize && spanSize <= packetSize - offset;
+}
+
+/**
+ * Reports whether a saved partial TCP header can be restored into the shared
+ * receive buffer without overrunning the header scratch area or the read buffer.
+ */
+inline bool CanRestoreTcpPendingHeader(size_t pendingHeaderSize, size_t packetHeaderSize, size_t readBufferSize)
+{
+	return pendingHeaderSize <= packetHeaderSize && pendingHeaderSize <= readBufferSize;
+}
+
+/**
+ * Reports whether the trailing bytes left in the TCP read buffer are small
+ * enough to cache as the next partial header fragment.
+ */
+inline bool CanStoreTcpPendingHeader(size_t trailingByteCount, size_t packetHeaderSize)
+{
+	return trailingByteCount < packetHeaderSize;
+}
+
+/**
+ * Reports whether a partially assembled packet has not already overrun its
+ * target payload buffer.
+ */
+inline bool CanContinuePacketAssembly(uint32 packetSize, uint32 bufferedByteCount)
+{
+	return bufferedByteCount <= packetSize;
+}
+
+/**
+ * Safely adds a fixed overhead to a byte count without allowing wraparound.
+ */
+inline bool TryAddSize(size_t baseSize, size_t extraSize, size_t *pnCombinedSize)
+{
+	if (pnCombinedSize == NULL || baseSize > (std::numeric_limits<size_t>::max)() - extraSize)
+		return false;
+
+	*pnCombinedSize = baseSize + extraSize;
+	return true;
+}
+
+/**
+ * Safely multiplies a byte count and adds a fixed overhead without allowing wraparound.
+ */
+inline bool TryMultiplyAddSize(size_t baseSize, size_t multiplier, size_t addend, size_t *pnExpandedSize)
+{
+	if (pnExpandedSize == NULL)
+		return false;
+
+	if (multiplier != 0 && baseSize > ((std::numeric_limits<size_t>::max)() - addend) / multiplier)
+		return false;
+
+	*pnExpandedSize = baseSize * multiplier + addend;
+	return true;
 }
 
 /**
@@ -62,6 +125,34 @@ inline bool HasUdpPayloadHeader(UINT payloadLength)
 inline bool HasCompressedUdpPayload(UINT payloadLength)
 {
 	return payloadLength > 2;
+}
+
+/**
+ * Reports whether the UDP callback packet is large enough to rewrite the
+ * forwarded IP/port fields and still carry a non-empty forwarded payload.
+ */
+inline bool HasUdpCallbackPayload(size_t payloadLength)
+{
+	return payloadLength >= 17 && CanReadPacketSpan(payloadLength, 10u, 6u);
+}
+
+/**
+ * Returns the minimum serialized block-packet header length for the current
+ * offset width and compression mode.
+ */
+inline uint32 GetDownloadBlockPacketHeaderSize(const bool bPacked, const bool bI64Offsets)
+{
+	const uint32 nFileHashSize = 16;
+	const uint32 nOffsetFieldSize = bI64Offsets ? 8u : 4u;
+	return nFileHashSize + nOffsetFieldSize + (bPacked ? 4u : nOffsetFieldSize);
+}
+
+/**
+ * Reports whether a download block packet is long enough to read its fixed header fields.
+ */
+inline bool HasDownloadBlockPacketHeader(size_t packetSize, const bool bPacked, const bool bI64Offsets)
+{
+	return packetSize >= GetDownloadBlockPacketHeaderSize(bPacked, bI64Offsets);
 }
 
 /**

@@ -27,6 +27,7 @@
 #include "ClientCredits.h"
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
+#include "ProtocolGuards.h"
 #include "emuledlg.h"
 #include "UserMsgs.h"
 #include "TransferDlg.h"
@@ -933,13 +934,17 @@ void CUpDownClient::SendBlockRequests()
 */
 void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool packed, bool bI64Offsets)
 {
-	if (!bI64Offsets) {
-		uint32 nDbgStartPos = *(uint32*)&packet[16];
+	if (!HasDownloadBlockPacketHeader(size, packed, bI64Offsets))
+		throw GetResString(IDS_ERR_BADDATABLOCK) + _T(" (ProcessBlockPacket)");
+
+	if (!bI64Offsets && CanReadPacketSpan(size, 16u, 8u)) {
+		const uint32 nDbgStartPos = PeekUInt32(&packet[16]);
+		const uint32 nDbgBoundary = PeekUInt32(&packet[20]);
 		if (thePrefs.GetDebugClientTCPLevel() > 1) {
 			if (packed)
-				Debug(_T("  Start=%u  BlockSize=%u  Size=%u  %s\n"), nDbgStartPos, *(uint32*)&packet[16 + 4], size - 24, (LPCTSTR)DbgGetFileInfo(packet));
+				Debug(_T("  Start=%u  BlockSize=%u  Size=%u  %s\n"), nDbgStartPos, nDbgBoundary, size - 24, (LPCTSTR)DbgGetFileInfo(packet));
 			else
-				Debug(_T("  Start=%u  End=%u  Size=%u  %s\n"), nDbgStartPos, *(uint32*)&packet[16 + 4], *(uint32*)&packet[16 + 4] - nDbgStartPos, (LPCTSTR)DbgGetFileInfo(packet));
+				Debug(_T("  Start=%u  End=%u  Size=%u  %s\n"), nDbgStartPos, nDbgBoundary, nDbgBoundary - nDbgStartPos, (LPCTSTR)DbgGetFileInfo(packet));
 		}
 	}
 

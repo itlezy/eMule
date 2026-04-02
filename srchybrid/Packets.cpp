@@ -94,7 +94,11 @@ Packet::Packet(uint8 in_opcode, uint32 in_size, uint8 protocol, bool bFromPartFi
 {
 	init();
 	if (in_size) {
-		completebuffer = new char[in_size + 10]{};
+		size_t nCompleteBufferSize = 0;
+		if (!TryAddSize(static_cast<size_t>(in_size), 10u, &nCompleteBufferSize))
+			AfxThrowMemoryException();
+
+		completebuffer = new char[nCompleteBufferSize]{};
 		pBuffer = completebuffer + PACKET_HEADER_SIZE;
 	} else {
 		completebuffer = NULL;
@@ -111,7 +115,11 @@ Packet::Packet(CSafeMemFile &datafile, uint8 protocol, uint8 ucOpcode)
 	, m_bFromPF()
 {
 	init();
-	completebuffer = new char[size + 10];
+	size_t nCompleteBufferSize = 0;
+	if (!TryAddSize(static_cast<size_t>(size), 10u, &nCompleteBufferSize))
+		AfxThrowMemoryException();
+
+	completebuffer = new char[nCompleteBufferSize];
 	pBuffer = completebuffer + PACKET_HEADER_SIZE;
 	BYTE *tmp = datafile.Detach();
 	memcpy(pBuffer, tmp, size);
@@ -128,7 +136,11 @@ Packet::Packet(const CStringA &str, uint8 protocol, uint8 ucOpcode)
 	, m_bFromPF()
 {
 	init();
-	completebuffer = new char[size + 10];
+	size_t nCompleteBufferSize = 0;
+	if (!TryAddSize(static_cast<size_t>(size), 10u, &nCompleteBufferSize))
+		AfxThrowMemoryException();
+
+	completebuffer = new char[nCompleteBufferSize];
 	pBuffer = completebuffer + PACKET_HEADER_SIZE;
 	memcpy(pBuffer, (LPCSTR)str, size);
 }
@@ -145,7 +157,11 @@ Packet::Packet(const Packet &old)
 {
 	ASSERT(!old.m_bSplitted); //for non-split packets only
 	memcpy(head, old.head, PACKET_HEADER_SIZE);
-	completebuffer = new char[size + 10];
+	size_t nCompleteBufferSize = 0;
+	if (!TryAddSize(static_cast<size_t>(size), 10u, &nCompleteBufferSize))
+		AfxThrowMemoryException();
+
+	completebuffer = new char[nCompleteBufferSize];
 	pBuffer = completebuffer + PACKET_HEADER_SIZE;
 	memcpy(completebuffer, old.completebuffer, size + PACKET_HEADER_SIZE);
 }
@@ -168,7 +184,11 @@ char* Packet::GetPacket()
 	}
 	delete[] tempbuffer;
 	tempbuffer = NULL; // 'new' may throw an exception
-	tempbuffer = new char[size + 10];
+	size_t nTempBufferSize = 0;
+	if (!TryAddSize(static_cast<size_t>(size), 10u, &nTempBufferSize))
+		AfxThrowMemoryException();
+
+	tempbuffer = new char[nTempBufferSize];
 	memcpy(tempbuffer, GetHeader(), PACKET_HEADER_SIZE);
 	memcpy(tempbuffer + PACKET_HEADER_SIZE, pBuffer, size);
 	return tempbuffer;
@@ -186,7 +206,11 @@ char* Packet::DetachPacket()
 	}
 	delete[] tempbuffer;
 	tempbuffer = NULL;
-	char *result = new char[size + 10]; // 'new' may throw an exception
+	size_t nTempBufferSize = 0;
+	if (!TryAddSize(static_cast<size_t>(size), 10u, &nTempBufferSize))
+		AfxThrowMemoryException();
+
+	char *result = new char[nTempBufferSize]; // 'new' may throw an exception
 	memcpy(result, GetHeader(), PACKET_HEADER_SIZE);
 	memcpy(result + PACKET_HEADER_SIZE, pBuffer, size);
 	return result;
@@ -209,8 +233,12 @@ char* Packet::GetUDPHeader()
 void Packet::PackPacket()
 {
 	ASSERT(!m_bSplitted);
-	uLongf newsize = size + 300;
-	Bytef *output = new BYTE[newsize];
+	size_t nCompressionBufferSize = 0;
+	if (!TryAddSize(static_cast<size_t>(size), 300u, &nCompressionBufferSize))
+		return;
+
+	uLongf newsize = static_cast<uLongf>(nCompressionBufferSize);
+	Bytef *output = new BYTE[nCompressionBufferSize];
 	int result = compress2(output, &newsize, (Bytef*)pBuffer, size, Z_BEST_COMPRESSION);
 	if (result == Z_OK && newsize < size) {
 		prot = (prot == OP_KADEMLIAHEADER) ? OP_KADEMLIAPACKEDPROT : OP_PACKEDPROT;
@@ -224,20 +252,32 @@ void Packet::PackPacket()
 bool Packet::UnPackPacket(UINT uMaxDecompressedSize)
 {
 	ASSERT(prot == OP_PACKEDPROT || prot == OP_KADEMLIAPACKEDPROT);
-	UINT nNewSize = size * 10 + 300;
-	if (nNewSize > uMaxDecompressedSize) {
-		//ASSERT(0);
+	size_t nNewSize = 0;
+	if (!TryMultiplyAddSize(static_cast<size_t>(size), 10u, 300u, &nNewSize))
 		nNewSize = uMaxDecompressedSize;
-	}
+
+	if (nNewSize > uMaxDecompressedSize)
+		nNewSize = uMaxDecompressedSize;
+
+	if (nNewSize == 0)
+		return false;
+
 	Bytef *unpack = NULL;
 	uLongf unpackedsize = 0;
 	int result = Z_OK;
 	do {
 		delete[] unpack;
 		unpack = new BYTE[nNewSize];
-		unpackedsize = nNewSize;
+		unpackedsize = static_cast<uLongf>(nNewSize);
 		result = uncompress(unpack, &unpackedsize, (Bytef*)pBuffer, size);
-		nNewSize *= 2; // size for the next try if needed
+
+		if (result != Z_BUF_ERROR || nNewSize >= uMaxDecompressedSize)
+			break;
+
+		if (nNewSize > static_cast<size_t>(uMaxDecompressedSize) / 2u)
+			nNewSize = uMaxDecompressedSize;
+		else
+			nNewSize *= 2u;
 	} while (result == Z_BUF_ERROR && nNewSize < uMaxDecompressedSize);
 
 	if (result == Z_OK) {
