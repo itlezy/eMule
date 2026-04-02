@@ -124,6 +124,62 @@ namespace
 		uFileSize = _wcstoui64(sValue, NULL, 10);
 		return uFileSize > 0;
 	}
+
+	LPCTSTR OraclePublishTransportModeLabel(bool bCryptEnabled, bool bHasCryptTargetID, bool bHasReceiverVerifyKey)
+	{
+		if (!bCryptEnabled)
+			return _T("plaintext");
+		if (bHasCryptTargetID)
+			return _T("node_id");
+		if (bHasReceiverVerifyKey)
+			return _T("receiver_verify_key");
+		return _T("plaintext");
+	}
+
+	// Emit one canonical publish-contact line per send so parity work can read
+	// semantic packet size directly from the oracle logs without reverse-mapping
+	// the UDP dump back to a scheduler event.
+	void OracleLogPublishContact(
+		LPCSTR pszFamily,
+		const CContact *pContact,
+		const CUInt128 &uTarget,
+		uint32 uPayloadLen,
+		uint32 uEntryCount,
+		bool bHasCryptTargetID,
+		bool bHasReceiverVerifyKey)
+	{
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const LPCTSTR pszTransportMode = OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey);
+		const CStringA sContact = OracleTrace::HostPort(pContact->GetIPAddress(), pContact->GetUDPPort());
+		const CStringA sTarget = OracleTrace::Hex128(uTarget);
+		CStringA sTransportMode;
+		sTransportMode = CT2A(pszTransportMode);
+		const uint32 uUDPKey = pContact->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false));
+
+		CStringA sFields;
+		sFields.Format("family=%s contact=%s contact_version=%u target=%s transport_mode=%s payload_len=%u entry_count=%u crypt_enabled=%u udp_key=%u"
+			, pszFamily
+			, (LPCSTR)sContact
+			, pContact->GetVersion()
+			, (LPCSTR)sTarget
+			, (LPCSTR)sTransportMode
+			, uPayloadLen
+			, uEntryCount
+			, bCryptEnabled ? 1u : 0u
+			, uUDPKey);
+		OracleTrace::Append("publish_contact_send", sFields);
+
+		DebugLog(_T("Oracle publish contact family=%hs contact=%hs contact_version=%u target=%hs transport_mode=%s payload_len=%u entry_count=%u crypt_enabled=%u udp_key=%u")
+			, pszFamily
+			, (LPCSTR)sContact
+			, pContact->GetVersion()
+			, (LPCSTR)sTarget
+			, pszTransportMode
+			, uPayloadLen
+			, uEntryCount
+			, bCryptEnabled ? 1u : 0u
+			, uUDPKey);
+	}
 }
 
 CSearch::CSearch()
@@ -835,6 +891,7 @@ void CSearch::StorePacket()
 						, current_pos);
 					OracleTrace::Append("search_storekeyword_prepare", sFields);
 				}
+				OracleLogPublishContact("keyword", pFromContact, m_uTarget, current_pos, iPacketCount, pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA, false);
 
 				// Send packet
 				if (pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) {
@@ -884,6 +941,8 @@ void CSearch::StorePacket()
 			if (pFromContact->GetVersion() >= KADEMLIA_VERSION2_47a)
 				listTag.push_back(new CKadTagUInt(TAG_FILESIZE, pFile->GetFileSize()));
 			byIO.WriteTagList(listTag);
+			const uint32 uPayloadLen = static_cast<uint32>((sizeof byPacket) - byIO.GetAvailable());
+			OracleLogPublishContact("notes", pFromContact, m_uTarget, uPayloadLen, 1u, pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA, false);
 
 			// Send packet
 			if (pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) {

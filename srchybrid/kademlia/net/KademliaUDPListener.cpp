@@ -69,6 +69,65 @@ extern LPCWSTR g_awszInvKadKeywordChars;
 
 using namespace Kademlia;
 
+namespace
+{
+	LPCTSTR OraclePublishTransportModeLabel(bool bCryptEnabled, bool bHasCryptTargetID, bool bHasReceiverVerifyKey)
+	{
+		if (!bCryptEnabled)
+			return _T("plaintext");
+		if (bHasCryptTargetID)
+			return _T("node_id");
+		if (bHasReceiverVerifyKey)
+			return _T("receiver_verify_key");
+		return _T("plaintext");
+	}
+
+	// Mirror the publish packet shape into both the oracle trace and the verbose
+	// log right before send. This keeps the per-contact semantic payload size easy
+	// to inspect while preserving the JSONL dump as the raw on-wire source.
+	void OracleLogPublishContact(
+		LPCSTR pszFamily,
+		const CContact *pContact,
+		const CUInt128 &uTarget,
+		uint32 uPayloadLen,
+		uint32 uEntryCount,
+		bool bHasCryptTargetID,
+		bool bHasReceiverVerifyKey)
+	{
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const LPCTSTR pszTransportMode = OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey);
+		const CStringA sContact = OracleTrace::HostPort(pContact->GetIPAddress(), pContact->GetUDPPort());
+		const CStringA sTarget = OracleTrace::Hex128(uTarget);
+		CStringA sTransportMode;
+		sTransportMode = CT2A(pszTransportMode);
+		const uint32 uUDPKey = pContact->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false));
+
+		CStringA sFields;
+		sFields.Format("family=%s contact=%s contact_version=%u target=%s transport_mode=%s payload_len=%u entry_count=%u crypt_enabled=%u udp_key=%u"
+			, pszFamily
+			, (LPCSTR)sContact
+			, pContact->GetVersion()
+			, (LPCSTR)sTarget
+			, (LPCSTR)sTransportMode
+			, uPayloadLen
+			, uEntryCount
+			, bCryptEnabled ? 1u : 0u
+			, uUDPKey);
+		OracleTrace::Append("publish_contact_send", sFields);
+
+		DebugLog(_T("Oracle publish contact family=%hs contact=%hs contact_version=%u target=%hs transport_mode=%s payload_len=%u entry_count=%u crypt_enabled=%u udp_key=%u")
+			, pszFamily
+			, (LPCSTR)sContact
+			, pContact->GetVersion()
+			, (LPCSTR)sTarget
+			, pszTransportMode
+			, uPayloadLen
+			, uEntryCount
+			, bCryptEnabled ? 1u : 0u
+			, uUDPKey);
+	}
+}
+
 CKademliaUDPListener::~CKademliaUDPListener()
 {
 // report timeout to all pending FetchNodeIDRequests
@@ -225,6 +284,7 @@ void CKademliaUDPListener::SendPublishSourcePacket(CContact *pContact, const CUI
 			, uLen);
 		OracleTrace::Append("publish_source_semantic", sFields);
 	}
+	OracleLogPublishContact("source", pContact, uTargetID, uLen, 1u, pContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA, false);
 	if (pContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) { // obfuscated?
 		CUInt128 uClientID = pContact->GetClientID();
 		SendPacket(byPacket, uLen, pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);
@@ -2001,15 +2061,22 @@ void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, uint
 		pPacket->PackPacket();
 	theStats.AddUpDataOverheadKad(pPacket->size);
 	if (OracleTrace::IsPublishOpcode(pbyData[1])) {
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const bool bHasCryptTargetID = (uCryptTargetID != NULL) && !isnulmd4(uCryptTargetID->GetData());
+		const bool bHasReceiverVerifyKey = targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)) != 0;
+		CStringA sTransportMode;
+		sTransportMode = CT2A(OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey));
 		CStringA sFields;
-		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s"
+		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s transport_mode=%s crypt_enabled=%u"
 			, (LPCSTR)OracleTrace::OpcodeName(pbyData[1])
 			, pbyData[1]
 			, (LPCSTR)OracleTrace::HostPort(uDestinationHost, uDestinationPort)
 			, uLenData
 			, pPacket->size
 			, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false))
-			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-");
+			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-"
+			, (LPCSTR)sTransportMode
+			, bCryptEnabled ? 1u : 0u);
 		OracleTrace::Append("publish_send_raw", sFields);
 	}
 	AddTrackedOutPacket(uDestinationHost, pbyData[1]);
@@ -2030,15 +2097,22 @@ void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, byte
 		pPacket->PackPacket();
 	theStats.AddUpDataOverheadKad(pPacket->size);
 	if (OracleTrace::IsPublishOpcode(byOpcode)) {
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const bool bHasCryptTargetID = (uCryptTargetID != NULL) && !isnulmd4(uCryptTargetID->GetData());
+		const bool bHasReceiverVerifyKey = targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)) != 0;
+		CStringA sTransportMode;
+		sTransportMode = CT2A(OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey));
 		CStringA sFields;
-		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s"
+		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s transport_mode=%s crypt_enabled=%u"
 			, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
 			, byOpcode
 			, (LPCSTR)OracleTrace::HostPort(uDestinationHost, uDestinationPort)
 			, uLenData
 			, pPacket->size
 			, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false))
-			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-");
+			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-"
+			, (LPCSTR)sTransportMode
+			, bCryptEnabled ? 1u : 0u);
 		OracleTrace::Append("publish_send_opcode", sFields);
 	}
 	AddTrackedOutPacket(uDestinationHost, byOpcode);
@@ -2056,15 +2130,22 @@ void CKademliaUDPListener::SendPacket(CSafeMemFile *pbyData, byte byOpcode, uint
 		pPacket->PackPacket();
 	theStats.AddUpDataOverheadKad(pPacket->size);
 	if (OracleTrace::IsPublishOpcode(byOpcode)) {
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const bool bHasCryptTargetID = (uCryptTargetID != NULL) && !isnulmd4(uCryptTargetID->GetData());
+		const bool bHasReceiverVerifyKey = targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)) != 0;
+		CStringA sTransportMode;
+		sTransportMode = CT2A(OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey));
 		CStringA sFields;
-		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s"
+		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s transport_mode=%s crypt_enabled=%u"
 			, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
 			, byOpcode
 			, (LPCSTR)OracleTrace::HostPort(uDestinationHost, uDestinationPort)
 			, pPacket->size
 			, pPacket->size
 			, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false))
-			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-");
+			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-"
+			, (LPCSTR)sTransportMode
+			, bCryptEnabled ? 1u : 0u);
 		OracleTrace::Append("publish_send_memfile", sFields);
 	}
 	AddTrackedOutPacket(uDestinationHost, byOpcode);
