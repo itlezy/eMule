@@ -25,6 +25,7 @@
 #include "DownloadQueue.h"
 #include "partfile.h"
 #include "Log.h"
+#include "AICHMaintenanceSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1045,12 +1046,13 @@ ULONGLONG CAICHRecoveryHashSet::AddStoredAICHHash(CAICHHash Hash, ULONGLONG nFil
 {
 	ULONGLONG foundPos;
 	if (m_mapAICHHashsStored.Lookup(Hash, foundPos)) {
-		if (nFilePos <= foundPos)
+		const StoredAICHHashUpdate update = AICHMaintenanceSeams::ResolveStoredAICHHashUpdate(foundPos, nFilePos);
+		if (!update.bShouldReplaceExisting)
 			return 0; //this was an older hash; ignore it
 #ifdef _DEBUG
 		theApp.QueueDebugLogLine(false, _T("AICH hash storing is not unique - %s"), (LPCTSTR)Hash.GetString());
-		ASSERT(0);
 #endif
+		foundPos = update.nReplacedFilePos;
 	} else
 		foundPos = 0;
 	m_mapAICHHashsStored[Hash] = nFilePos;

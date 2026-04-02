@@ -27,6 +27,15 @@ struct AICHSyncForegroundWaitAction
 	DWORD dwSleepMilliseconds;
 };
 
+/**
+ * @brief Describes how duplicate stored AICH hash entries should be handled while compacting hash files.
+ */
+struct StoredAICHHashUpdate
+{
+	bool bShouldReplaceExisting;
+	ULONGLONG nReplacedFilePos;
+};
+
 namespace AICHMaintenanceSeams
 {
 /**
@@ -65,5 +74,16 @@ inline AICHSyncForegroundWaitAction GetForegroundHashWaitAction(const AICHSyncFo
 		return {false, kForegroundHashYieldDelayMs};
 
 	return {false, 0u};
+}
+
+/**
+ * @brief Keeps the newest stored hash position while tolerating duplicate serialized AICH hashes.
+ */
+inline StoredAICHHashUpdate ResolveStoredAICHHashUpdate(ULONGLONG nExistingFilePos, ULONGLONG nNewFilePos)
+{
+	if (nNewFilePos <= nExistingFilePos)
+		return {false, 0u};
+
+	return {true, nExistingFilePos};
 }
 }
