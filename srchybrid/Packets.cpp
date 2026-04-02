@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "Packets.h"
+#include "CompressionBufferSeams.h"
 #include "ProtocolGuards.h"
 #include "ProtocolParsers.h"
 #include "OtherFunctions.h"
@@ -238,58 +239,50 @@ void Packet::PackPacket()
 		return;
 
 	uLongf newsize = static_cast<uLongf>(nCompressionBufferSize);
-	Bytef *output = new BYTE[nCompressionBufferSize];
-	int result = compress2(output, &newsize, (Bytef*)pBuffer, size, Z_BEST_COMPRESSION);
+	std::vector<BYTE> output(nCompressionBufferSize);
+	int result = compress2(output.data(), &newsize, reinterpret_cast<Bytef*>(pBuffer), size, Z_BEST_COMPRESSION);
 	if (result == Z_OK && newsize < size) {
 		prot = (prot == OP_KADEMLIAHEADER) ? OP_KADEMLIAPACKEDPROT : OP_PACKEDPROT;
-		memcpy(pBuffer, output, newsize);
+		memcpy(pBuffer, output.data(), newsize);
 		size = newsize;
 		m_bPacked = true;
 	}
-	delete[] output;
 }
 
 bool Packet::UnPackPacket(UINT uMaxDecompressedSize)
 {
 	ASSERT(prot == OP_PACKEDPROT || prot == OP_KADEMLIAPACKEDPROT);
 	size_t nNewSize = 0;
-	if (!TryMultiplyAddSize(static_cast<size_t>(size), 10u, 300u, &nNewSize))
-		nNewSize = uMaxDecompressedSize;
-
-	if (nNewSize > uMaxDecompressedSize)
-		nNewSize = uMaxDecompressedSize;
-
-	if (nNewSize == 0)
+	if (!TryDeriveZlibBufferSize(static_cast<size_t>(size), 10u, 300u, uMaxDecompressedSize, &nNewSize))
 		return false;
 
-	Bytef *unpack = NULL;
+	std::vector<BYTE> unpack;
 	uLongf unpackedsize = 0;
 	int result = Z_OK;
 	do {
-		delete[] unpack;
-		unpack = new BYTE[nNewSize];
+		unpack.resize(nNewSize);
 		unpackedsize = static_cast<uLongf>(nNewSize);
-		result = uncompress(unpack, &unpackedsize, (Bytef*)pBuffer, size);
+		result = uncompress(unpack.data(), &unpackedsize, reinterpret_cast<Bytef*>(pBuffer), size);
 
 		if (result != Z_BUF_ERROR || nNewSize >= uMaxDecompressedSize)
 			break;
-
-		if (nNewSize > static_cast<size_t>(uMaxDecompressedSize) / 2u)
-			nNewSize = uMaxDecompressedSize;
-		else
-			nNewSize *= 2u;
-	} while (result == Z_BUF_ERROR && nNewSize < uMaxDecompressedSize);
+	} while (result == Z_BUF_ERROR && TryGrowZlibBufferSize(nNewSize, uMaxDecompressedSize, &nNewSize));
 
 	if (result == Z_OK) {
 		ASSERT(completebuffer == NULL);
 		ASSERT(pBuffer != NULL);
+		std::unique_ptr<char[]> pOwnedBuffer;
+		if (unpackedsize != 0) {
+			pOwnedBuffer.reset(new char[unpackedsize]);
+			memcpy(pOwnedBuffer.get(), unpack.data(), unpackedsize);
+		}
+
 		size = unpackedsize;
 		delete[] pBuffer;
-		pBuffer = (char*)unpack;
+		pBuffer = pOwnedBuffer.release();
 		prot = (prot == OP_KADEMLIAPACKEDPROT) ? OP_KADEMLIAHEADER : OP_EMULEPROT;
 		return true;
 	}
-	delete[] unpack;
 	return false;
 }
 
