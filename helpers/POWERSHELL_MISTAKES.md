@@ -329,3 +329,17 @@
   I assumed there was a dedicated `BaseClient.h` without checking the current repo layout first.
 - Fix:
   confirm the live file path with `rg --files` or `Test-Path` before issuing a targeted file read against a guessed header name.
+
+- Error:
+  `Get-Content` failed for `C:\prj\p2p\eMule\eMulebb\eMule-remote\src\shared\emule.ts` because that file does not exist.
+- Cause:
+  I guessed the remote shared types path instead of confirming the current `eMule-remote` layout first.
+- Fix:
+  locate the live file with `rg --files` or `rg -n` before reading a guessed path in sibling workspaces.
+
+- Error:
+  `pwsh -File ... -StressQueries 'ubuntu','debian netinst',...` mis-bound a later token to `RemotePort` with `Cannot convert value "media" to type "System.Int32"`.
+- Cause:
+  I passed an array-style argument list to a script invoked through `pwsh -File`; the command-line binder did not preserve the intended array parameter shape.
+- Fix:
+  when a script parameter needs an array value, prefer `pwsh -Command { & .\script.ps1 -Param @('a','b') }` or repeat the parameter in a form the binder supports.

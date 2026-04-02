@@ -22,13 +22,31 @@ param(
     [string]$SearchQuery = 'Gran Torino',
 
     [Parameter(Mandatory = $false)]
+    [string[]]$StressQueries = @(),
+
+    [Parameter(Mandatory = $false)]
     [int]$SearchWaitSec = 120,
+
+    [Parameter(Mandatory = $false)]
+    [int]$SearchCycleCount = 1,
+
+    [Parameter(Mandatory = $false)]
+    [int]$SearchCyclePauseSec = 5,
 
     [Parameter(Mandatory = $false)]
     [int]$MonitorSec = 480,
 
     [Parameter(Mandatory = $false)]
     [int]$PollSec = 5,
+
+    [Parameter(Mandatory = $false)]
+    [int]$TransferProbeCount = 0,
+
+    [Parameter(Mandatory = $false)]
+    [int]$UploadProbeCount = 0,
+
+    [Parameter(Mandatory = $false)]
+    [int]$ExtraStatsBurstsPerPoll = 0,
 
     [Parameter(Mandatory = $false)]
     [int]$RemotePort = 4715,
@@ -112,6 +130,30 @@ function Stop-MatchingProcess {
 
     Stop-Process -Id $process.Id -Force
     return $process.Id
+}
+
+function Stop-ListeningProcessByPort {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$Port
+    )
+
+    $stoppedProcessIds = New-Object System.Collections.Generic.List[int]
+    $listeningConnections = @(Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+    $owningProcessIds = @($listeningConnections | Select-Object -ExpandProperty OwningProcess -Unique)
+    foreach ($processId in $owningProcessIds) {
+        if ($null -eq $processId -or $processId -le 0) {
+            continue
+        }
+
+        try {
+            Stop-Process -Id $processId -Force -ErrorAction Stop
+            $stoppedProcessIds.Add([int]$processId)
+        } catch {
+        }
+    }
+
+    return @($stoppedProcessIds)
 }
 
 function Set-IniValue {
@@ -243,52 +285,24 @@ function Start-RedirectedProcess {
         [hashtable]$Environment = @{}
     )
 
-    $startInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $startInfo.FileName = $FilePath
-    $startInfo.WorkingDirectory = $WorkingDirectory
-    foreach ($argument in $Arguments) {
-        $null = $startInfo.ArgumentList.Add($argument)
-    }
-    $startInfo.UseShellExecute = $false
-    $startInfo.RedirectStandardOutput = $true
-    $startInfo.RedirectStandardError = $true
-    foreach ($pair in $Environment.GetEnumerator()) {
-        $startInfo.Environment[$pair.Key] = [string]$pair.Value
+    $startProcessArgs = @{
+        FilePath = $FilePath
+        ArgumentList = $Arguments
+        WorkingDirectory = $WorkingDirectory
+        RedirectStandardOutput = $StdOutPath
+        RedirectStandardError = $StdErrPath
+        Environment = $Environment
+        PassThru = $true
+        WindowStyle = 'Hidden'
     }
 
-    $process = New-Object System.Diagnostics.Process
-    $process.StartInfo = $startInfo
-    $stdOutWriter = [System.IO.StreamWriter]::new($StdOutPath, $false, [System.Text.UTF8Encoding]::new($false))
-    $stdErrWriter = [System.IO.StreamWriter]::new($StdErrPath, $false, [System.Text.UTF8Encoding]::new($false))
-
-    $process.add_OutputDataReceived({
-        param($sender, $args)
-        if ($null -ne $args.Data) {
-            $stdOutWriter.WriteLine($args.Data)
-            $stdOutWriter.Flush()
-        }
-    })
-    $process.add_ErrorDataReceived({
-        param($sender, $args)
-        if ($null -ne $args.Data) {
-            $stdErrWriter.WriteLine($args.Data)
-            $stdErrWriter.Flush()
-        }
-    })
-
-    if (-not $process.Start()) {
-        $stdOutWriter.Dispose()
-        $stdErrWriter.Dispose()
+    $process = Start-Process @startProcessArgs
+    if ($null -eq $process) {
         throw "Failed to start '$FilePath'."
     }
 
-    $process.BeginOutputReadLine()
-    $process.BeginErrorReadLine()
-
     return [pscustomobject]@{
         Process = $process
-        StdOutWriter = $stdOutWriter
-        StdErrWriter = $stdErrWriter
     }
 }
 
@@ -301,14 +315,12 @@ function Stop-RedirectedProcess {
     $process = $Handle.Process
     if ($null -ne $process -and -not $process.HasExited) {
         try {
-            $process.Kill($true)
-            $process.WaitForExit(10000)
+            $null = $process.Kill($true)
+            $null = $process.WaitForExit(10000)
         } catch {
         }
     }
 
-    $Handle.StdOutWriter.Dispose()
-    $Handle.StdErrWriter.Dispose()
 }
 
 function Invoke-RemoteJson {
@@ -417,6 +429,227 @@ function Get-FallbackEd2kLink {
     return $null
 }
 
+function Get-ConfiguredSearchQueries {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PrimaryQuery,
+
+        [Parameter(Mandatory = $false)]
+        [string[]]$AdditionalQueries = @()
+    )
+
+    $queries = New-Object System.Collections.Generic.List[string]
+    foreach ($query in @($PrimaryQuery) + $AdditionalQueries) {
+        if (-not [string]::IsNullOrWhiteSpace($query)) {
+            $queries.Add($query)
+        }
+    }
+
+    if ($queries.Count -eq 0) {
+        throw 'At least one non-empty search query is required.'
+    }
+
+    return @($queries)
+}
+
+function Get-SampledTransferHashes {
+    param(
+        [Parameter(Mandatory = $false)]
+        [object]$TransfersResponse,
+
+        [Parameter(Mandatory = $true)]
+        [int]$Count
+    )
+
+    if ($Count -le 0 -or $null -eq $TransfersResponse) {
+        return @()
+    }
+
+    $transferRows = @()
+    if ($TransfersResponse -is [System.Array]) {
+        $transferRows = $TransfersResponse
+    } elseif ($TransfersResponse.PSObject.Properties.Name -contains 'transfers') {
+        $transferRows = @($TransfersResponse.transfers)
+    } else {
+        $transferRows = @($TransfersResponse)
+    }
+
+    $hashes = New-Object System.Collections.Generic.List[string]
+    foreach ($transfer in $transferRows) {
+        if ($hashes.Count -ge $Count) {
+            break
+        }
+
+        $hash = [string]$transfer.hash
+        if (-not [string]::IsNullOrWhiteSpace($hash)) {
+            $hashes.Add($hash)
+        }
+    }
+
+    return @($hashes)
+}
+
+function Invoke-SearchCycle {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseUri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Query,
+
+        [Parameter(Mandatory = $true)]
+        [int]$WaitSec,
+
+        [Parameter(Mandatory = $false)]
+        [string]$FallbackLink
+    )
+
+    $errors = New-Object System.Collections.Generic.List[string]
+    $searchSession = $null
+    $searchSnapshot = $null
+    $selectedDownloadLink = $null
+    $stopResult = $null
+    $selectedMethod = $null
+    $pollCount = 0
+
+    try {
+        foreach ($method in @('global', 'kad')) {
+            try {
+                $searchSession = Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/search/start" -Token $Token -Body @{
+                    query = $Query
+                    method = $method
+                }
+                $selectedMethod = $method
+                if ($null -ne $searchSession.search_id) {
+                    break
+                }
+            } catch {
+                $errors.Add($_.Exception.Message)
+                $searchSession = $null
+            }
+        }
+
+        if ($null -ne $searchSession -and $null -ne $searchSession.search_id) {
+            $searchDeadline = (Get-Date).AddSeconds($WaitSec)
+            while ((Get-Date) -lt $searchDeadline) {
+                $pollCount += 1
+                try {
+                    $searchSnapshot = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/search/results?search_id=$($searchSession.search_id)" -Token $Token
+                    if ($null -ne $searchSnapshot.results -and $searchSnapshot.results.Count -gt 0) {
+                        foreach ($result in $searchSnapshot.results) {
+                            if ($result.knownType -eq 'downloading' -or $result.knownType -eq 'downloaded' -or $result.knownType -eq 'cancelled') {
+                                continue
+                            }
+
+                            $selectedDownloadLink = Build-Ed2kLinkFromResult -SearchResult $result
+                            if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
+                                break
+                            }
+                        }
+
+                        if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
+                            break
+                        }
+                    }
+                } catch {
+                    $errors.Add($_.Exception.Message)
+                }
+
+                Start-Sleep -Seconds 5
+            }
+        }
+    } finally {
+        if ([string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
+            $selectedDownloadLink = $FallbackLink
+        }
+
+        if ($null -ne $searchSession -and $null -ne $searchSession.search_id) {
+            try {
+                $stopResult = Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/search/stop" -Token $Token -Body @{
+                    search_id = $searchSession.search_id
+                }
+            } catch {
+                $errors.Add($_.Exception.Message)
+            }
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        query = $Query
+        method = $selectedMethod
+        search_session = $searchSession
+        search_snapshot = $searchSnapshot
+        selected_download_link = $selectedDownloadLink
+        stop_result = $stopResult
+        poll_count = $pollCount
+        errors = @($errors)
+    }
+}
+
+function Invoke-StressProbe {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseUri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TransferProbeCount,
+
+        [Parameter(Mandatory = $true)]
+        [int]$UploadProbeCount,
+
+        [Parameter(Mandatory = $true)]
+        [int]$ExtraStatsBurstsPerPoll
+    )
+
+    $stats = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
+    $transfers = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+    $recentLog = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=40" -Token $Token
+    $sampledTransferHashes = Get-SampledTransferHashes -TransfersResponse $transfers -Count $TransferProbeCount
+
+    $transferDetails = New-Object System.Collections.Generic.List[object]
+    $transferSources = New-Object System.Collections.Generic.List[object]
+    foreach ($hash in $sampledTransferHashes) {
+        $transferDetails.Add((Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash" -Token $Token))
+        $transferSources.Add([pscustomobject][ordered]@{
+            hash = $hash
+            sources = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash/sources" -Token $Token)
+        })
+    }
+
+    $uploadSnapshots = New-Object System.Collections.Generic.List[object]
+    for ($uploadProbeIndex = 0; $uploadProbeIndex -lt $UploadProbeCount; ++$uploadProbeIndex) {
+        $uploadSnapshots.Add([pscustomobject][ordered]@{
+            list = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/list" -Token $Token)
+            queue = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/queue" -Token $Token)
+        })
+    }
+
+    $extraStatsBursts = New-Object System.Collections.Generic.List[object]
+    for ($burstIndex = 0; $burstIndex -lt $ExtraStatsBurstsPerPoll; ++$burstIndex) {
+        $extraStatsBursts.Add([pscustomobject][ordered]@{
+            stats = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token)
+            recent_log = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=20" -Token $Token)
+        })
+    }
+
+    return [pscustomobject][ordered]@{
+        stats = $stats
+        transfers = $transfers
+        recent_log = $recentLog
+        sampled_transfer_hashes = $sampledTransferHashes
+        transfer_details = @($transferDetails)
+        transfer_sources = @($transferSources)
+        upload_snapshots = @($uploadSnapshots)
+        extra_stats_bursts = @($extraStatsBursts)
+    }
+}
+
 function Get-ProcessSocketsSummary {
     param(
         [Parameter(Mandatory = $true)]
@@ -523,6 +756,7 @@ if (-not (Test-Path -LiteralPath $remoteEntryPoint -PathType Leaf)) {
 Set-LiveSessionPreferences -PreferencesPath $preferencesPath -BindInterfaceName $BindInterfaceName
 
 $stoppedEmuleProcessId = Stop-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
+$stoppedRemoteProcessIds = Stop-ListeningProcessByPort -Port $RemotePort
 
 $manifest = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
@@ -533,11 +767,18 @@ $manifest = [ordered]@{
     bind_interface_name = $BindInterfaceName
     bind_interface_description = $bindInterface.InterfaceDescription
     search_query = $SearchQuery
+    stress_queries = @($StressQueries)
     search_wait_sec = $SearchWaitSec
+    search_cycle_count = $SearchCycleCount
+    search_cycle_pause_sec = $SearchCyclePauseSec
     monitor_sec = $MonitorSec
     poll_sec = $PollSec
+    transfer_probe_count = $TransferProbeCount
+    upload_probe_count = $UploadProbeCount
+    extra_stats_bursts_per_poll = $ExtraStatsBurstsPerPoll
     remote_port = $RemotePort
     stopped_existing_emule_process_id = $stoppedEmuleProcessId
+    stopped_existing_remote_process_ids = @($stoppedRemoteProcessIds)
     launch_status = 'starting'
 }
 $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
@@ -570,6 +811,7 @@ $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -E
 
 $health = Wait-RemoteHealth -BaseUri $baseUri -TimeoutSec 90
 $fallbackLink = Get-FallbackEd2kLink -ConfigDir $configDir
+$configuredSearchQueries = Get-ConfiguredSearchQueries -PrimaryQuery $SearchQuery -AdditionalQueries $StressQueries
 
 $serversStatus = $null
 $kadStatus = $null
@@ -582,6 +824,7 @@ $freezeReason = $null
 $consecutiveApiFailures = 0
 $consecutiveNonResponding = 0
 $samples = New-Object System.Collections.Generic.List[object]
+$searchCycles = New-Object System.Collections.Generic.List[object]
 
 try {
     try {
@@ -596,43 +839,19 @@ try {
         $kadStatus = [pscustomobject]@{ error = $_.Exception.Message }
     }
 
-    foreach ($method in @('global', 'kad')) {
-        try {
-            $searchSession = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/search/start" -Token $RemoteToken -Body @{
-                query = $SearchQuery
-                method = $method
-            }
-            if ($null -ne $searchSession.search_id) {
-                break
-            }
-        } catch {
-            $searchSession = [pscustomobject]@{ error = $_.Exception.Message }
+    for ($searchCycleIndex = 0; $searchCycleIndex -lt $SearchCycleCount; ++$searchCycleIndex) {
+        $query = $configuredSearchQueries[$searchCycleIndex % $configuredSearchQueries.Count]
+        $searchCycle = Invoke-SearchCycle -BaseUri $baseUri -Token $RemoteToken -Query $query -WaitSec $SearchWaitSec -FallbackLink $fallbackLink
+        $searchCycles.Add($searchCycle)
+        $searchSession = $searchCycle.search_session
+        $searchSnapshot = $searchCycle.search_snapshot
+
+        if ([string]::IsNullOrWhiteSpace($selectedDownloadLink) -and -not [string]::IsNullOrWhiteSpace($searchCycle.selected_download_link)) {
+            $selectedDownloadLink = $searchCycle.selected_download_link
         }
-    }
 
-    if ($null -ne $searchSession -and $null -ne $searchSession.search_id) {
-        $searchDeadline = (Get-Date).AddSeconds($SearchWaitSec)
-        while ((Get-Date) -lt $searchDeadline) {
-            try {
-                $searchSnapshot = Invoke-RemoteJson -Method Get -Uri "$baseUri/api/v2/search/results?search_id=$($searchSession.search_id)" -Token $RemoteToken
-                if ($null -ne $searchSnapshot.results -and $searchSnapshot.results.Count -gt 0) {
-                    foreach ($result in $searchSnapshot.results) {
-                        if ($result.knownType -eq 'downloading' -or $result.knownType -eq 'downloaded' -or $result.knownType -eq 'cancelled') {
-                            continue
-                        }
-                        $selectedDownloadLink = Build-Ed2kLinkFromResult -SearchResult $result
-                        if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
-                            break
-                        }
-                    }
-                    if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
-                        break
-                    }
-                }
-            } catch {
-            }
-
-            Start-Sleep -Seconds 5
+        if ($searchCycleIndex + 1 -lt $SearchCycleCount -and $SearchCyclePauseSec -gt 0) {
+            Start-Sleep -Seconds $SearchCyclePauseSec
         }
     }
 
@@ -668,12 +887,14 @@ try {
         $stats = $null
         $transfers = $null
         $recentLog = $null
+        $stressProbe = $null
         $apiError = $null
         $apiStartedAt = Get-Date
         try {
-            $stats = Invoke-RemoteJson -Method Get -Uri "$baseUri/api/v2/stats/global" -Token $RemoteToken
-            $transfers = Invoke-RemoteJson -Method Get -Uri "$baseUri/api/v2/transfers" -Token $RemoteToken
-            $recentLog = Invoke-RemoteJson -Method Get -Uri "$baseUri/api/v2/log?limit=40" -Token $RemoteToken
+            $stressProbe = Invoke-StressProbe -BaseUri $baseUri -Token $RemoteToken -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll
+            $stats = $stressProbe.stats
+            $transfers = $stressProbe.transfers
+            $recentLog = $stressProbe.recent_log
             $consecutiveApiFailures = 0
         } catch {
             $apiError = $_.Exception.Message
@@ -694,6 +915,7 @@ try {
             stats = $stats
             transfers = $transfers
             recent_log = $recentLog
+            stress_probe = $stressProbe
             disk_logs = Get-LogSnapshot -LogDir $logDir
         })
 
@@ -749,6 +971,11 @@ if (Test-Path -LiteralPath $crtLogPath -PathType Leaf) {
     Copy-Item -LiteralPath $crtLogPath -Destination (Join-Path $artifactDir 'eMule CRT Debug Log.log') -Force
 }
 
+$searchSessionId = $null
+if ($null -ne $searchSession -and $searchSession.PSObject.Properties.Name -contains 'search_id') {
+    $searchSessionId = $searchSession.search_id
+}
+
 $summary = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
     artifact_dir = $artifactDir
@@ -759,6 +986,7 @@ $summary = [ordered]@{
     server_connect = $serversStatus
     kad_connect = $kadStatus
     search_session = $searchSession
+    search_cycles = @($searchCycles.ToArray())
     selected_download_link = $selectedDownloadLink
     transfer_add_result = $transferAddResult
     freeze_reason = $freezeReason
@@ -772,7 +1000,8 @@ $summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -En
     "artifact_dir: $artifactDir"
     "profile_root: $profileRoot"
     "search_query: $SearchQuery"
-    "search_session: $($searchSession.search_id)"
+    "search_cycle_count: $SearchCycleCount"
+    "search_session: $searchSessionId"
     "selected_download_link: $selectedDownloadLink"
     "freeze_reason: $freezeReason"
     "dump_path: $dumpPath"
