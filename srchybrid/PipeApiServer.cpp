@@ -30,6 +30,7 @@
 #include "Log.h"
 #include "OtherFunctions.h"
 #include "PartFile.h"
+#include "PipeApiCommandSeams.h"
 #include "PipeApiSurfaceSeams.h"
 #include "Preferences.h"
 #include "SearchDlg.h"
@@ -664,29 +665,15 @@ CString FormatSearchId(const uint32 uSearchID)
  */
 bool TryGetSearchId(const json &rValue, uint32 &ruSearchID, SPipeApiError &rError)
 {
-	if (!rValue.is_string()) {
+	std::string strError;
+	uint32_t uSearchID = 0;
+	if (!PipeApiCommandSeams::TryParseSearchId(rValue, uSearchID, strError)) {
 		rError.strCode = "INVALID_ARGUMENT";
-		rError.strMessage = _T("search_id must be a decimal string");
+		rError.strMessage = CStringFromStdUtf8(strError);
 		return false;
 	}
 
-	const std::string strValue = rValue.get<std::string>();
-	if (strValue.empty()) {
-		rError.strCode = "INVALID_ARGUMENT";
-		rError.strMessage = _T("search_id must not be empty");
-		return false;
-	}
-
-	char *pEnd = NULL;
-	errno = 0;
-	const unsigned long uValue = strtoul(strValue.c_str(), &pEnd, 10);
-	if (errno != 0 || pEnd == NULL || *pEnd != '\0' || uValue > _UI32_MAX) {
-		rError.strCode = "INVALID_ARGUMENT";
-		rError.strMessage = _T("search_id must be a valid uint32 decimal string");
-		return false;
-	}
-
-	ruSearchID = static_cast<uint32>(uValue);
+	ruSearchID = static_cast<uint32>(uSearchID);
 	return true;
 }
 
@@ -1376,39 +1363,27 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "transfers/list") {
-		CString strFilter;
-		UINT uCategory = 0;
-		bool bHasCategory = false;
-		if (params.contains("filter")) {
-			if (!params["filter"].is_string()) {
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("filter must be a string when provided");
-				return json();
-			}
-			strFilter = CStringFromStdUtf8(params["filter"].get<std::string>());
-			strFilter.MakeLower();
+		PipeApiCommandSeams::STransfersListRequest request;
+		std::string strError;
+		if (!PipeApiCommandSeams::TryParseTransfersListRequest(params, request, strError)) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = CStringFromStdUtf8(strError);
+			return json();
 		}
-		if (params.contains("category")) {
-			if (!params["category"].is_number_unsigned()) {
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("category must be an unsigned number");
-				return json();
-			}
-			uCategory = static_cast<UINT>(params["category"].get<unsigned>());
-			if (uCategory >= thePrefs.GetCatCount()) {
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("category is out of range");
-				return json();
-			}
-			bHasCategory = true;
+		if (request.bHasCategory && request.uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("category is out of range");
+			return json();
 		}
+
+		const CString strFilter(CStringFromStdUtf8(request.strFilterLower));
 
 		json result = json::array();
 		for (POSITION pos = theApp.downloadqueue->GetFileHeadPosition(); pos != NULL;) {
 			CPartFile *pPartFile = theApp.downloadqueue->GetFileNext(pos);
 			if (pPartFile == NULL)
 				continue;
-			if (bHasCategory && pPartFile->GetCategory() != uCategory)
+			if (request.bHasCategory && pPartFile->GetCategory() != request.uCategory)
 				continue;
 			if (!strFilter.IsEmpty()) {
 				CString strName(pPartFile->GetFileName());
@@ -1440,22 +1415,17 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "transfers/add") {
-		if (!params.contains("link") || !params["link"].is_string()) {
+		std::string strLinkUtf8;
+		std::string strError;
+		if (!PipeApiCommandSeams::TryParseTransferAddLink(params, strLinkUtf8, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("link must be a string");
+			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
 		}
 
 		CED2KLink *pLink = NULL;
 		try {
-			CString strLink(CStringFromStdUtf8(params["link"].get<std::string>()));
-			strLink.Trim();
-			if (strLink.IsEmpty()) {
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("link must not be empty");
-				return json();
-			}
-
+			CString strLink(CStringFromStdUtf8(strLinkUtf8));
 			const bool bSlash = (strLink[strLink.GetLength() - 1] == _T('/'));
 			pLink = CED2KLink::CreateLinkFromUrl(bSlash ? strLink : strLink + _T('/'));
 			if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
@@ -1483,15 +1453,17 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	auto handleTransferBulkMutation = [&](LPCTSTR pszAction) -> json
 	{
-		if (!params.contains("hashes") || !params["hashes"].is_array()) {
+		PipeApiCommandSeams::STransferBulkMutationRequest request;
+		std::string strError;
+		if (!PipeApiCommandSeams::TryParseTransferBulkMutationRequest(params, request, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("hashes must be a string array");
+			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
 		}
 
 		bool bUpdateTabs = false;
 		json results = json::array();
-		for (const json &hashValue : params["hashes"]) {
+		for (const json &hashValue : request.hashes) {
 			SPipeApiError itemError = rError;
 			CPartFile *pPartFile = FindPartFileByHash(hashValue, itemError);
 			if (pPartFile == NULL) {
@@ -1530,7 +1502,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 				} else
 					strErrorText = _T("transfer cannot be stopped");
 			} else if (_tcscmp(pszAction, _T("delete")) == 0) {
-				const bool bDeleteFiles = params.value("deleteFiles", params.value("delete_files", false));
+				const bool bDeleteFiles = request.bDeleteFiles;
 				if (pPartFile->GetStatus() == PS_COMPLETE) {
 					if (!bDeleteFiles) {
 						strErrorText = _T("completed transfer deletion requires delete_files=true");
@@ -1630,13 +1602,14 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		CPartFile *const pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
 		if (pPartFile == NULL)
 			return json();
-		if (!params.contains("category") || !params["category"].is_number_unsigned()) {
+		uint64_t uRequestedCategory = 0;
+		if (!params.contains("category") || !PipeApiCommandSeams::TryParseNonNegativeUInt64(params["category"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("category must be an unsigned number");
 			return json();
 		}
 
-		const UINT uCategory = static_cast<UINT>(params["category"].get<unsigned>());
+		const UINT uCategory = static_cast<UINT>(uRequestedCategory);
 		if (uCategory >= thePrefs.GetCatCount()) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("category is out of range");
@@ -1657,112 +1630,78 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			rError.strMessage = _T("search window is not available");
 			return json();
 		}
-		if (!params.contains("query") || !params["query"].is_string()) {
+		PipeApiCommandSeams::SSearchStartRequest request;
+		std::string strError;
+		if (!PipeApiCommandSeams::TryParseSearchStartRequest(params, request, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("query must be a string");
+			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
 		}
 
 		SSearchParams *const pSearchParams = new SSearchParams;
-		pSearchParams->strExpression = CStringFromStdUtf8(params["query"].get<std::string>());
-		pSearchParams->strExpression.Trim();
-		if (pSearchParams->strExpression.IsEmpty()) {
+		pSearchParams->strExpression = CStringFromStdUtf8(request.strQuery);
+		switch (request.eMethod) {
+		case PipeApiCommandSeams::ESearchMethod::Automatic:
+			pSearchParams->eType = SearchTypeAutomatic;
+			break;
+		case PipeApiCommandSeams::ESearchMethod::Server:
+			pSearchParams->eType = SearchTypeEd2kServer;
+			break;
+		case PipeApiCommandSeams::ESearchMethod::Global:
+			pSearchParams->eType = SearchTypeEd2kGlobal;
+			break;
+		case PipeApiCommandSeams::ESearchMethod::Kad:
+			pSearchParams->eType = SearchTypeKademlia;
+			break;
+		case PipeApiCommandSeams::ESearchMethod::Invalid:
+		default:
 			delete pSearchParams;
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("query must not be empty");
+			rError.strMessage = _T("method must be one of automatic, server, global, kad");
 			return json();
 		}
 
-		if (params.contains("method")) {
-			if (!params["method"].is_string()) {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("method must be a string");
-				return json();
-			}
-			CString strMethod(CStringFromStdUtf8(params["method"].get<std::string>()));
-			strMethod.MakeLower();
-			if (strMethod == _T("automatic"))
-				pSearchParams->eType = SearchTypeAutomatic;
-			else if (strMethod == _T("server"))
-				pSearchParams->eType = SearchTypeEd2kServer;
-			else if (strMethod == _T("global"))
-				pSearchParams->eType = SearchTypeEd2kGlobal;
-			else if (strMethod == _T("kad"))
-				pSearchParams->eType = SearchTypeKademlia;
-			else {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("method must be one of automatic, server, global, kad");
-				return json();
-			}
-		} else
-			pSearchParams->eType = SearchTypeAutomatic;
-
-		if (params.contains("type")) {
-			if (!params["type"].is_string()) {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("type must be a string");
-				return json();
-			}
-			CString strType(CStringFromStdUtf8(params["type"].get<std::string>()));
-			strType.MakeLower();
-			if (strType.IsEmpty() || strType == _T("any"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_ANY);
-			else if (strType == _T("archive"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_ARCHIVE);
-			else if (strType == _T("audio"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_AUDIO);
-			else if (strType == _T("cdimage") || strType == _T("iso"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_CDIMAGE);
-			else if (strType == _T("image"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_IMAGE);
-			else if (strType == _T("program"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_PROGRAM);
-			else if (strType == _T("video"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_VIDEO);
-			else if (strType == _T("document"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_DOCUMENT);
-			else if (strType == _T("emulecollection"))
-				pSearchParams->strFileType = _T(ED2KFTSTR_EMULECOLLECTION);
-			else {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("type is not supported");
-				return json();
-			}
+		switch (request.eFileType) {
+		case PipeApiCommandSeams::ESearchFileType::Any:
+			pSearchParams->strFileType = _T(ED2KFTSTR_ANY);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Archive:
+			pSearchParams->strFileType = _T(ED2KFTSTR_ARCHIVE);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Audio:
+			pSearchParams->strFileType = _T(ED2KFTSTR_AUDIO);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::CdImage:
+			pSearchParams->strFileType = _T(ED2KFTSTR_CDIMAGE);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Image:
+			pSearchParams->strFileType = _T(ED2KFTSTR_IMAGE);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Program:
+			pSearchParams->strFileType = _T(ED2KFTSTR_PROGRAM);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Video:
+			pSearchParams->strFileType = _T(ED2KFTSTR_VIDEO);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Document:
+			pSearchParams->strFileType = _T(ED2KFTSTR_DOCUMENT);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::EmuleCollection:
+			pSearchParams->strFileType = _T(ED2KFTSTR_EMULECOLLECTION);
+			break;
+		case PipeApiCommandSeams::ESearchFileType::Invalid:
+		default:
+			delete pSearchParams;
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("type is not supported");
+			return json();
 		}
 
-		if (params.contains("ext")) {
-			if (!params["ext"].is_string()) {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("ext must be a string");
-				return json();
-			}
-			pSearchParams->strExtension = CStringFromStdUtf8(params["ext"].get<std::string>());
-		}
-
-		if (params.contains("min_size")) {
-			if (!params["min_size"].is_number_unsigned()) {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("min_size must be an unsigned number");
-				return json();
-			}
-			pSearchParams->ullMinSize = params["min_size"].get<uint64>();
-		}
-
-		if (params.contains("max_size")) {
-			if (!params["max_size"].is_number_unsigned()) {
-				delete pSearchParams;
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("max_size must be an unsigned number");
-				return json();
-			}
-			pSearchParams->ullMaxSize = params["max_size"].get<uint64>();
-		}
+		pSearchParams->strExtension = CStringFromStdUtf8(request.strExtension);
+		if (request.bHasMinSize)
+			pSearchParams->ullMinSize = request.ullMinSize;
+		if (request.bHasMaxSize)
+			pSearchParams->ullMaxSize = request.ullMaxSize;
 
 		CString strSearchError;
 		if (!pSearchResults->StartSearchFromApi(pSearchParams, strSearchError)) {
