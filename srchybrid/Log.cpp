@@ -93,6 +93,27 @@ CString EscapeOracleUdpJson(const CString &strValue)
 	return strEscaped;
 }
 
+CString ExtractOracleUdpTransportMode(LPCTSTR pszMetadata)
+{
+	if (pszMetadata == NULL || pszMetadata[0] == _T('\0'))
+		return CString();
+
+	const CString strMetadata(pszMetadata);
+	const CString strNeedle(_T("transport_mode="));
+	const int iStart = strMetadata.Find(strNeedle);
+	if (iStart < 0)
+		return CString();
+
+	const int iValueStart = iStart + strNeedle.GetLength();
+	int iValueEnd = strMetadata.Find(_T(' '), iValueStart);
+	if (iValueEnd < 0)
+		iValueEnd = strMetadata.GetLength();
+	if (iValueEnd <= iValueStart)
+		return CString();
+
+	return strMetadata.Mid(iValueStart, iValueEnd - iValueStart);
+}
+
 void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata, const BYTE *pDecodedPayload, UINT uDecodedPayloadLen)
 {
 	if (pPayload == NULL || uPayloadLen == 0 || !theOracleUdpDumpLog.IsOpen())
@@ -104,6 +125,7 @@ void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerL
 	const CString strPeer = EscapeOracleUdpJson(pszPeerLabel != NULL ? pszPeerLabel : _T("unknown"));
 	const CString strWireHex = BuildOracleUdpHexString(pPayload, uPayloadLen);
 	const CString strSummary = (pszMetadata != NULL && pszMetadata[0] != _T('\0')) ? EscapeOracleUdpJson(CString(pszMetadata)) : CString();
+	const CString strTransportMode = EscapeOracleUdpJson(ExtractOracleUdpTransportMode(pszMetadata));
 	const bool bHasDecoded = pDecodedPayload != NULL && uDecodedPayloadLen > 0;
 	const CString strDecodedHex = bHasDecoded ? BuildOracleUdpHexString(pDecodedPayload, uDecodedPayloadLen) : CString();
 
@@ -122,6 +144,11 @@ void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerL
 		strJson += strDecodedField;
 	} else {
 		strJson += _T(",\"decoded_len\":null,\"decoded_hex\":null");
+	}
+	if (!strTransportMode.IsEmpty()) {
+		strJson += _T(",\"transport_mode\":\"") + strTransportMode + _T("\"");
+	} else {
+		strJson += _T(",\"transport_mode\":null");
 	}
 	if (!strSummary.IsEmpty()) {
 		strJson += _T(",\"summary\":\"") + strSummary + _T("\"");

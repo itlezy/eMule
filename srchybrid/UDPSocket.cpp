@@ -35,6 +35,26 @@
 #include "Log.h"
 #include "ServerConnect.h"
 
+namespace
+{
+LPCTSTR OracleUdpTransportModeToString(const EOracleUdpTransportMode eTransportMode)
+{
+	switch (eTransportMode) {
+	case ORACLE_UDP_TRANSPORT_NODE_ID:
+		return _T("node_id");
+	case ORACLE_UDP_TRANSPORT_RECEIVER_VERIFY_KEY:
+		return _T("receiver_verify_key");
+	case ORACLE_UDP_TRANSPORT_USER_HASH:
+		return _T("user_hash");
+	case ORACLE_UDP_TRANSPORT_SERVER_BASE_KEY:
+		return _T("server_base_key");
+	case ORACLE_UDP_TRANSPORT_PLAINTEXT:
+	default:
+		return _T("plaintext");
+	}
+}
+} // namespace
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -155,6 +175,7 @@ void CUDPSocket::OnReceive(int nErrorCode)
 	int length = ReceiveFrom(buffer, sizeof buffer, (LPSOCKADDR)&sockAddr, &iSockAddrLen);
 	if (length != SOCKET_ERROR) {
 		int nPayLoadLen = length;
+		EOracleUdpTransportMode eTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
 		CServer *pServer = theApp.serverlist->GetServerByIPUDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), true);
 		if (pServer != NULL && thePrefs.IsServerCryptLayerUDPEnabled() &&
 			((pServer->GetServerKeyUDP() != 0 && pServer->SupportsObfuscationUDP()) || (pServer->GetCryptPingReplyPending() && pServer->GetChallenge() != 0)))
@@ -167,7 +188,7 @@ void CUDPSocket::OnReceive(int nErrorCode)
 				dwKey = pServer->GetServerKeyUDP();
 
 			ASSERT(dwKey != 0);
-			nPayLoadLen = DecryptReceivedServer(buffer, length, &pBuffer, dwKey, sockAddr.sin_addr.s_addr);
+			nPayLoadLen = DecryptReceivedServer(buffer, length, &pBuffer, dwKey, sockAddr.sin_addr.s_addr, &eTransportMode);
 			if (nPayLoadLen == length)
 				DebugLogWarning(_T("Expected encrypted packet, but received unencrypted from server %s, UDPKey %u, Challenge: %u"), (LPCTSTR)pServer->GetListName(), pServer->GetServerKeyUDP(), pServer->GetChallenge());
 			else if (thePrefs.GetDebugServerUDPLevel() > 0)
@@ -177,17 +198,19 @@ void CUDPSocket::OnReceive(int nErrorCode)
 		CString strMetadata;
 		if (nPayLoadLen >= 2) {
 			strMetadata.Format(
-				_T("protocol=0x%02X opcode=0x%02X raw_obfuscated=%s"),
+				_T("transport_mode=%s protocol=0x%02X opcode=0x%02X raw_obfuscated=%s"),
+				OracleUdpTransportModeToString(eTransportMode),
 				pBuffer[0],
 				pBuffer[1],
 				(nPayLoadLen != length) ? _T("yes") : _T("no"));
 		} else if (nPayLoadLen == 1) {
 			strMetadata.Format(
-				_T("protocol=0x%02X opcode=n/a raw_obfuscated=%s"),
+				_T("transport_mode=%s protocol=0x%02X opcode=n/a raw_obfuscated=%s"),
+				OracleUdpTransportModeToString(eTransportMode),
 				pBuffer[0],
 				(nPayLoadLen != length) ? _T("yes") : _T("no"));
 		} else {
-			strMetadata.Format(_T("protocol=n/a opcode=n/a raw_obfuscated=%s"), (nPayLoadLen != length) ? _T("yes") : _T("no"));
+			strMetadata.Format(_T("transport_mode=%s protocol=n/a opcode=n/a raw_obfuscated=%s"), OracleUdpTransportModeToString(eTransportMode), (nPayLoadLen != length) ? _T("yes") : _T("no"));
 		}
 		OracleUdpDump(_T("recv"), _T("server_udp"), sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), buffer, length, strMetadata, pBuffer, nPayLoadLen);
 
@@ -765,6 +788,7 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 	const BYTE *pDecodedPayload = NULL;
 	UINT uDecodedPayloadLen = 0;
 	BYTE *pOwnedDecodedPayload = NULL;
+	EOracleUdpTransportMode eTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
 	if (packet != NULL) {
 		uRawPacketSize = packet->size + 2;
 		size_t iLen = thePrefs.IsServerCryptLayerUDPEnabled() && pServer->GetServerKeyUDP() && pServer->SupportsObfuscationUDP()
@@ -777,7 +801,7 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 		memcpy(pOwnedDecodedPayload, pRawPacket + iLen, uDecodedPayloadLen);
 		pDecodedPayload = pOwnedDecodedPayload;
 		if (iLen) {
-			uRawPacketSize = EncryptSendServer(pRawPacket, uRawPacketSize, pServer->GetServerKeyUDP());
+			uRawPacketSize = EncryptSendServer(pRawPacket, uRawPacketSize, pServer->GetServerKeyUDP(), &eTransportMode);
 			if (thePrefs.GetDebugServerUDPLevel() > 0)
 				DEBUG_ONLY(DebugLog(_T("Sending encrypted packet to server %s, UDPKey %u"), (LPCTSTR)pServer->GetListName(), pServer->GetServerKeyUDP()));
 			if (!nPort)
@@ -803,13 +827,14 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 	CString strMetadata;
 	if (packet != NULL) {
 		strMetadata.Format(
-			_T("protocol=0x%02X opcode=0x%02X raw_obfuscated=%s server_name=%s"),
+			_T("transport_mode=%s protocol=0x%02X opcode=0x%02X raw_obfuscated=%s server_name=%s"),
+			OracleUdpTransportModeToString(eTransportMode),
 			packet->GetUDPHeader()[0],
 			packet->opcode,
 			(thePrefs.IsServerCryptLayerUDPEnabled() && pServer->GetServerKeyUDP() && pServer->SupportsObfuscationUDP()) ? _T("yes") : _T("no"),
 			(LPCTSTR)pServer->GetListName());
 	} else {
-		strMetadata.Format(_T("protocol=raw opcode=n/a raw_obfuscated=no server_name=%s"), (LPCTSTR)pServer->GetListName());
+		strMetadata.Format(_T("transport_mode=%s protocol=raw opcode=n/a raw_obfuscated=no server_name=%s"), OracleUdpTransportModeToString(eTransportMode), (LPCTSTR)pServer->GetListName());
 	}
 	OracleUdpDumpPeerLabel(_T("send"), _T("server_udp"), strPeerLabel, pRawPacket, uRawPacketSize, strMetadata, pDecodedPayload, uDecodedPayloadLen);
 	delete[] pOwnedDecodedPayload;
