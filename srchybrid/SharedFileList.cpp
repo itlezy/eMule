@@ -428,7 +428,10 @@ bool CAddFileThread::ImportParts()
 			if (theApp.IsRunning()) {
 				WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(static_cast<uint64>(i), static_cast<uint64>(m_PartsToImport.GetSize())));
 				VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)m_partfile));
-				::Sleep(100); // sleep very shortly to give time to write (or else mem grows!)
+				/** Give the async importer time to drain queued writes before we enqueue the next full part. */
+				const bool bYieldForWrite = SharedFileListSeams::ShouldYieldAfterImportProgress(theApp.IsRunning(), partSize == PARTSIZE, m_partfile->GetFileOp() == PFOP_IMPORTPARTS);
+				if (bYieldForWrite)
+					::Sleep(SharedFileListSeams::kImportPartProgressYieldMs);
 			}
 
 			if (!theApp.IsRunning() || partSize != PARTSIZE || m_partfile->GetFileOp() != PFOP_IMPORTPARTS)
@@ -473,12 +476,6 @@ int CAddFileThread::Run()
 		return 0;
 	}
 
-	// Locking this hashing thread is needed because we may create a few of those threads
-	// at startup when rehashing potentially corrupted downloading part files.
-	// If all those hash threads would run concurrently, the I/O system would be under
-	// very heavy load and slowly progressing
-	CSingleLock hashingLock(&theApp.hashing_mut, TRUE); // hash only one file at a time
-
 	TCHAR strFilePath[MAX_PATH];
 	_tmakepathlimit(strFilePath, NULL, m_strDirectory, m_strFilename, NULL);
 	if (m_partfile)
@@ -488,7 +485,15 @@ int CAddFileThread::Run()
 
 	if (!theApp.IsClosing()) {
 		CKnownFile *newKnown = new CKnownFile();
-		if (newKnown->CreateFromFile(m_strDirectory, m_strFilename, m_partfile)) { // SLUGFILLER: SafeHash - in case of shutdown while still hashing
+		bool bCreated = false;
+		{
+			// Keep the single-hash gate only around the actual file hash creation work.
+			CSingleLock hashingLock(&theApp.hashing_mut, TRUE); // hash only one file at a time
+			if (!theApp.IsClosing())
+				bCreated = newKnown->CreateFromFile(m_strDirectory, m_strFilename, m_partfile); // SLUGFILLER: SafeHash - in case of shutdown while still hashing
+		}
+
+		if (bCreated) {
 			if (m_partfile && m_partfile->GetFileOp() == PFOP_HASHING)
 				m_partfile->SetFileOp(PFOP_NONE);
 			if (!theApp.emuledlg->PostMessage(TM_FINISHEDHASHING, (m_pOwner ? 0 : (WPARAM)m_partfile), (LPARAM)newKnown))
@@ -510,7 +515,6 @@ int CAddFileThread::Run()
 		}
 	}
 
-	hashingLock.Unlock();
 	::CoUninitialize();
 	return 0;
 }
@@ -609,15 +613,15 @@ void CSharedFileList::MarkAutoRescanDirty()
 
 bool CSharedFileList::ShouldScheduleAutoReload(DWORD dwNow) const
 {
-	if (!thePrefs.IsAutoRescanSharedFolders()
-		|| m_bAutoReloadPending
-		|| m_bAutoReloadInProgress
-		|| !HasElapsedTick(dwNow, m_dwNextAutoReloadTick))
-	{
-		return false;
-	}
-
-	return m_bDirectoryWatchFallbackPolling || SharedFileListSeams::IsAutoRescanDirtyFlagSet(m_lAutoRescanDirty);
+	const SharedFileListSeams::AutoReloadScheduleState state = {
+		thePrefs.IsAutoRescanSharedFolders(),
+		m_bAutoReloadPending,
+		m_bAutoReloadInProgress,
+		HasElapsedTick(dwNow, m_dwNextAutoReloadTick),
+		m_bDirectoryWatchFallbackPolling,
+		SharedFileListSeams::IsAutoRescanDirtyFlagSet(m_lAutoRescanDirty)
+	};
+	return SharedFileListSeams::ShouldScheduleAutoReload(state);
 }
 
 void CSharedFileList::ScheduleNextAutoReload(DWORD dwNow)
@@ -1568,7 +1572,8 @@ void CSharedFileList::Process()
 		&& ::IsWindow(theApp.emuledlg->sharedfileswnd->m_hWnd))
 	{
 		m_bAutoReloadPending = true;
-		VERIFY(::PostMessage(theApp.emuledlg->sharedfileswnd->m_hWnd, UM_AUTO_RELOAD_SHARED_FILES, 0, 0));
+		if (!::PostMessage(theApp.emuledlg->sharedfileswnd->m_hWnd, UM_AUTO_RELOAD_SHARED_FILES, 0, 0))
+			m_bAutoReloadPending = false;
 	}
 }
 

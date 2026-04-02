@@ -5,6 +5,48 @@
 namespace SharedFileListSeams
 {
 /**
+ * @brief Stable snapshot of the state used to decide whether a shared-folder auto-reload should be queued.
+ */
+struct AutoReloadScheduleState
+{
+	bool bAutoRescanEnabled;
+	bool bAutoReloadPending;
+	bool bAutoReloadInProgress;
+	bool bReloadTickElapsed;
+	bool bFallbackPolling;
+	bool bDirty;
+};
+
+/**
+ * @brief Returns the bounded delay used to yield after queuing one full imported part for async write.
+ */
+constexpr DWORD kImportPartProgressYieldMs = 100;
+
+/**
+ * @brief Returns the scheduling decision for the next shared-folder auto-reload from one stable state snapshot.
+ */
+inline bool ShouldScheduleAutoReload(const AutoReloadScheduleState &rState)
+{
+	if (!rState.bAutoRescanEnabled
+		|| rState.bAutoReloadPending
+		|| rState.bAutoReloadInProgress
+		|| !rState.bReloadTickElapsed)
+	{
+		return false;
+	}
+
+	return rState.bFallbackPolling || rState.bDirty;
+}
+
+/**
+ * @brief Reports whether the import thread should yield after posting part-write progress.
+ */
+inline bool ShouldYieldAfterImportProgress(const bool bAppRunning, const bool bImportedFullPart, const bool bImportStillActive)
+{
+	return bAppRunning && bImportedFullPart && bImportStillActive;
+}
+
+/**
  * Returns whether a file may enter the shared-file list when it is either a part file,
  * shared by directory/category rules, or shared by an explicit single-file share.
  */
