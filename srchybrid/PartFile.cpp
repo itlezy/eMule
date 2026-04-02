@@ -58,6 +58,7 @@
 #include "DisplayRefreshSeams.h"
 #include "PartFileNumericSeams.h"
 #include "ResourceOwnershipSeams.h"
+#include "WorkerUiMessageSeams.h"
 #include <vector>
 #include <urlmon.h>
 
@@ -2814,7 +2815,8 @@ DWORD CALLBACK CopyProgressRoutine(LARGE_INTEGER TotalFileSize, LARGE_INTEGER To
 			: 0);
 		if (uProgress != pPartFile->GetFileOpProgress()) {
 			ASSERT(uProgress <= 100);
-			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pPartFile));
+			/** @brief Part-file progress posts should not assert when the main dialog is already gone. */
+			(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pPartFile);
 		}
 	} else
 		ASSERT(0);

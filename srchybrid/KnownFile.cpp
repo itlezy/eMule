@@ -41,6 +41,7 @@
 #include <vector>
 #include "PartFileNumericSeams.h"
 #include "ResourceOwnershipSeams.h"
+#include "WorkerUiMessageSeams.h"
 #include "MappedFileReader.h"
 #include "Collection.h"
 #include "emuledlg.h"
@@ -544,7 +545,8 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 			const uint64 nBytesHashed = nFileSize >= togo ? nFileSize - togo : 0;
 			WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(nBytesHashed, nFileSize));
 			ASSERT(uProgress <= 100);
-			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam));
+			/** @brief File hashing progress is a best-effort worker-to-UI notification. */
+			(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam);
 		}
 	}
 
@@ -572,7 +574,8 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->GetFileSize() == GetFileSize());
 		WPARAM uProgress = 100;
 		ASSERT(uProgress <= 100);
-		VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam));
+		/** @brief Final hashing progress is also best-effort during shutdown and dialog teardown. */
+		(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam);
 	}
 
 	// set last write date

@@ -42,6 +42,7 @@
 #include "ImportParts.h"
 #include "MD5Sum.h"
 #include "UserMsgs.h"
+#include "WorkerUiMessageSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -427,7 +428,8 @@ bool CAddFileThread::ImportParts()
 
 			if (theApp.IsRunning()) {
 				WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(static_cast<uint64>(i), static_cast<uint64>(m_PartsToImport.GetSize())));
-				VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)m_partfile));
+				/** @brief Shared-file import progress is a best-effort update once the worker outlives the UI. */
+				(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)m_partfile);
 				/** Give the async importer time to drain queued writes before we enqueue the next full part. */
 				const bool bYieldForWrite = SharedFileListSeams::ShouldYieldAfterImportProgress(theApp.IsRunning(), partSize == PARTSIZE, m_partfile->GetFileOp() == PFOP_IMPORTPARTS);
 				if (bYieldForWrite)
