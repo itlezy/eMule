@@ -40,6 +40,7 @@
 #include "MD4.h"
 #include <vector>
 #include "PartFileNumericSeams.h"
+#include "KnownFileProgressSeams.h"
 #include "ResourceOwnershipSeams.h"
 #include "WorkerUiMessageSeams.h"
 #include "MappedFileReader.h"
@@ -539,14 +540,19 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 				return false;
 			}
 
-			ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CKnownFile)));
-			ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->GetFileSize() == GetFileSize());
+			CKnownFile *pProgressOwner = reinterpret_cast<CKnownFile*>(pvProgressParam);
 			const uint64 nFileSize = static_cast<uint64>(GetFileSize());
-			const uint64 nBytesHashed = nFileSize >= togo ? nFileSize - togo : 0;
-			WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(nBytesHashed, nFileSize));
-			ASSERT(uProgress <= 100);
-			/** @brief File hashing progress is a best-effort worker-to-UI notification. */
-			(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam);
+			if (IsCompatibleKnownFileProgressOwner(
+				pProgressOwner->IsKindOf(RUNTIME_CLASS(CKnownFile)) != FALSE,
+				static_cast<uint64>(pProgressOwner->GetFileSize()),
+				nFileSize))
+			{
+				const uint64 nBytesHashed = nFileSize >= togo ? nFileSize - togo : 0;
+				WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(nBytesHashed, nFileSize));
+				ASSERT(uProgress <= 100);
+				/** @brief File hashing progress is a best-effort worker-to-UI notification. */
+				(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam);
+			}
 		}
 	}
 
@@ -570,12 +576,17 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		DebugLogError(LOG_STATUSBAR, _T("Failed to calculate AICH Hashset from file %s"), (LPCTSTR)GetFileName());
 
 	if (pvProgressParam && !theApp.IsClosing()) {
-		ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CKnownFile)));
-		ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->GetFileSize() == GetFileSize());
-		WPARAM uProgress = 100;
-		ASSERT(uProgress <= 100);
-		/** @brief Final hashing progress is also best-effort during shutdown and dialog teardown. */
-		(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam);
+		CKnownFile *pProgressOwner = reinterpret_cast<CKnownFile*>(pvProgressParam);
+		if (IsCompatibleKnownFileProgressOwner(
+			pProgressOwner->IsKindOf(RUNTIME_CLASS(CKnownFile)) != FALSE,
+			static_cast<uint64>(pProgressOwner->GetFileSize()),
+			static_cast<uint64>(GetFileSize())))
+		{
+			WPARAM uProgress = 100;
+			ASSERT(uProgress <= 100);
+			/** @brief Final hashing progress is also best-effort during shutdown and dialog teardown. */
+			(void)TryPostWorkerUiMessage(theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL, TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam);
+		}
 	}
 
 	// set last write date
