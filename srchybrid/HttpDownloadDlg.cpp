@@ -21,6 +21,7 @@ All rights reserved.
 #include "opcodes.h"
 #include "OtherFunctions.h"
 #include "Log.h"
+#include "WorkerUiMessageSeams.h"
 
 ///////////////////////////////// Defines /////////////////////////////////////
 #define HAS_ZLIB
@@ -35,6 +36,29 @@ static char THIS_FILE[] = __FILE__;
 void InitWindowStyles(CWnd *pWnd);
 
 const UINT WM_HTTPDOWNLOAD_THREAD_FINISHED = WM_APP + 1;
+const UINT WM_HTTPDOWNLOAD_THREAD_UPDATE = WM_APP + 2;
+
+enum EHttpDownloadUiUpdateFlags
+{
+	HTTP_DOWNLOAD_UI_UPDATE_CAPTION = 0x0001,
+	HTTP_DOWNLOAD_UI_UPDATE_PROGRESS_RANGE = 0x0002,
+	HTTP_DOWNLOAD_UI_UPDATE_PROGRESS_POS = 0x0004,
+	HTTP_DOWNLOAD_UI_UPDATE_TIME_LEFT = 0x0008,
+	HTTP_DOWNLOAD_UI_UPDATE_STATUS = 0x0010,
+	HTTP_DOWNLOAD_UI_UPDATE_TRANSFER_RATE = 0x0020,
+	HTTP_DOWNLOAD_UI_UPDATE_PLAY_ANIMATION = 0x0040
+};
+
+struct SHttpDownloadUiUpdate
+{
+	DWORD dwFlags = 0;
+	CString strCaption;
+	CString strStatus;
+	CString strTimeLeft;
+	CString strTransferRate;
+	short nProgressRangeMax = 0;
+	int nProgressPos = 0;
+};
 
 
 ////////////////////////////////////// gzip ///////////////////////////////////
@@ -197,6 +221,7 @@ BEGIN_MESSAGE_MAP(CHttpDownloadDlg, CDialog)
 	ON_WM_DESTROY()
 	ON_WM_CLOSE()
 	ON_MESSAGE(WM_HTTPDOWNLOAD_THREAD_FINISHED, OnThreadFinished)
+	ON_MESSAGE(WM_HTTPDOWNLOAD_THREAD_UPDATE, OnThreadUpdate)
 END_MESSAGE_MAP()
 
 ULONGLONG CHttpDownloadDlg::sm_ullWinInetVer;
@@ -211,6 +236,8 @@ CHttpDownloadDlg::CHttpDownloadDlg(CWnd *pParent /*=NULL*/)
 	, m_nPort()
 	, m_bAbort()
 	, m_bSafeToClose()
+	, m_dwUiThreadId()
+	, m_bWorkerUiClosing(true)
 {
 	//{{AFX_DATA_INIT(CHttpDownloadDlg)
 	//}}AFX_DATA_INIT
@@ -250,6 +277,45 @@ LRESULT CHttpDownloadDlg::OnThreadFinished(WPARAM wParam, LPARAM)
 	return 0;
 }
 
+LRESULT CHttpDownloadDlg::OnThreadUpdate(WPARAM wParam, LPARAM)
+{
+	std::unique_ptr<SHttpDownloadUiUpdate> pUpdate = TakePostedWorkerUiPayload<SHttpDownloadUiUpdate>(wParam);
+	if (pUpdate == NULL)
+		return 0;
+
+	ApplyThreadUpdate(*pUpdate);
+	return 0;
+}
+
+bool CHttpDownloadDlg::TryPostThreadFinishedMessage(WPARAM wParam)
+{
+	return TryPostWorkerUiMessage(GetSafeHwnd(), WM_HTTPDOWNLOAD_THREAD_FINISHED, wParam, 0, &m_bWorkerUiClosing);
+}
+
+bool CHttpDownloadDlg::QueueThreadUpdate(SHttpDownloadUiUpdate *pUpdate)
+{
+	std::unique_ptr<SHttpDownloadUiUpdate> pOwnedUpdate(pUpdate);
+	return TryPostWorkerUiPayloadMessage(GetSafeHwnd(), &m_bWorkerUiClosing, GetWorkerUiPayloadOwnerKey(this), WM_HTTPDOWNLOAD_THREAD_UPDATE, std::move(pOwnedUpdate));
+}
+
+void CHttpDownloadDlg::ApplyThreadUpdate(const SHttpDownloadUiUpdate &update)
+{
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_CAPTION) != 0)
+		SetWindowText(update.strCaption);
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_PROGRESS_RANGE) != 0)
+		m_ctrlProgress.SetRange(0, update.nProgressRangeMax);
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_PROGRESS_POS) != 0)
+		m_ctrlProgress.SetPos(update.nProgressPos);
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_TIME_LEFT) != 0)
+		m_ctrlTimeLeft.SetWindowText(update.strTimeLeft);
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_STATUS) != 0)
+		m_ctrlStatus.SetWindowText(update.strStatus);
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_TRANSFER_RATE) != 0)
+		m_ctrlTransferRate.SetWindowText(update.strTransferRate);
+	if ((update.dwFlags & HTTP_DOWNLOAD_UI_UPDATE_PLAY_ANIMATION) != 0)
+		m_ctrlAnimate.Play(0, UINT_MAX, UINT_MAX);
+}
+
 BOOL CHttpDownloadDlg::OnInitDialog()
 {
 	SetDlgItemText(IDCANCEL, GetResString(IDS_CANCEL));
@@ -260,6 +326,8 @@ BOOL CHttpDownloadDlg::OnInitDialog()
 	//Let the parent class do its thing
 	CDialog::OnInitDialog();
 	InitWindowStyles(this);
+	m_dwUiThreadId = ::GetCurrentThreadId();
+	m_bWorkerUiClosing.store(false, std::memory_order_release);
 
 	//Validate the URL
 	ASSERT(m_sURLToDownload.GetLength()); //Always specify URL for download
@@ -351,19 +419,35 @@ void CHttpDownloadDlg::SetPercentage(int nPercentage)
 	//Change the caption text
 	CString sPercentage;
 	sPercentage.Format(_T("%d"), nPercentage);
-	CString sCaption;
-	sCaption.Format(GetResString(IDS_HTTPDOWNLOAD_PERCENTAGE), (LPCTSTR)sPercentage, (LPCTSTR)m_sFilename);
-	SetWindowText(sCaption);
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_CAPTION;
+	update.strCaption.Format(GetResString(IDS_HTTPDOWNLOAD_PERCENTAGE), (LPCTSTR)sPercentage, (LPCTSTR)m_sFilename);
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::SetProgressRange(DWORD dwFileSize)
 {
-	m_ctrlProgress.SetRange(0, (short)((dwFileSize + 512) / 1024));
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_PROGRESS_RANGE;
+	update.nProgressRangeMax = static_cast<short>((dwFileSize + 512) / 1024);
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::SetProgress(DWORD dwBytesRead)
 {
-	m_ctrlProgress.SetPos(dwBytesRead / 1024);
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_PROGRESS_POS;
+	update.nProgressPos = static_cast<int>(dwBytesRead / 1024);
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::SetTimeLeft(DWORD dwSecondsLeft, DWORD dwBytesRead, DWORD dwFileSize)
@@ -371,14 +455,24 @@ void CHttpDownloadDlg::SetTimeLeft(DWORD dwSecondsLeft, DWORD dwBytesRead, DWORD
 	CString sOf;
 	sOf.Format(GetResString(IDS_HTTPDOWNLOAD_OF), (LPCTSTR)CastItoXBytes((uint64)dwBytesRead), (LPCTSTR)CastItoXBytes((uint64)dwFileSize));
 
-	CString sTimeLeft;
-	sTimeLeft.Format(GetResString(IDS_HTTPDOWNLOAD_TIMELEFT), (LPCTSTR)CastSecondsToHM(dwSecondsLeft), (LPCTSTR)sOf);
-	m_ctrlTimeLeft.SetWindowText(sTimeLeft);
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_TIME_LEFT;
+	update.strTimeLeft.Format(GetResString(IDS_HTTPDOWNLOAD_TIMELEFT), (LPCTSTR)CastSecondsToHM(dwSecondsLeft), (LPCTSTR)sOf);
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::SetStatus(const CString &sCaption)
 {
-	m_ctrlStatus.SetWindowText(sCaption);
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_STATUS;
+	update.strStatus = sCaption;
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::SetStatus(const CString &strFmt, LPCTSTR lpsz1)
@@ -390,12 +484,23 @@ void CHttpDownloadDlg::SetStatus(const CString &strFmt, LPCTSTR lpsz1)
 
 void CHttpDownloadDlg::SetTransferRate(double KbPerSecond)
 {
-	m_ctrlTransferRate.SetWindowText(CastItoXBytes(KbPerSecond, true, true));
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_TRANSFER_RATE;
+	update.strTransferRate = CastItoXBytes(KbPerSecond, true, true);
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::PlayAnimation()
 {
-	m_ctrlAnimate.Play(0, UINT_MAX, UINT_MAX);
+	SHttpDownloadUiUpdate update;
+	update.dwFlags = HTTP_DOWNLOAD_UI_UPDATE_PLAY_ANIMATION;
+	if (::GetCurrentThreadId() == m_dwUiThreadId)
+		ApplyThreadUpdate(update);
+	else
+		QueueThreadUpdate(new SHttpDownloadUiUpdate(update));
 }
 
 void CHttpDownloadDlg::HandleThreadErrorWithLastError(const CString &strIDError, DWORD dwLastError)
@@ -417,13 +522,13 @@ void CHttpDownloadDlg::HandleThreadErrorWithLastError(const CString &strIDError,
 	//Delete the file
 	::DeleteFile(m_sFileToDownloadInto);
 
-	PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED, 1);
+	TryPostThreadFinishedMessage(1);
 }
 
 void CHttpDownloadDlg::HandleThreadError(const CString &strIDError)
 {
 	m_sError = strIDError;
-	PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED, 1);
+	TryPostThreadFinishedMessage(1);
 }
 
 void CHttpDownloadDlg::DownloadThread()
@@ -440,7 +545,7 @@ void CHttpDownloadDlg::DownloadThread()
 
 	//Should we exit the thread
 	if (m_bAbort) {
-		PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);
+		TryPostThreadFinishedMessage();
 		return;
 	}
 
@@ -453,7 +558,7 @@ void CHttpDownloadDlg::DownloadThread()
 
 	//Should we exit the thread
 	if (m_bAbort) {
-		PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);
+		TryPostThreadFinishedMessage();
 		return;
 	}
 
@@ -474,7 +579,7 @@ void CHttpDownloadDlg::DownloadThread()
 
 	//Should we exit the thread
 	if (m_bAbort) {
-		PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);
+		TryPostThreadFinishedMessage();
 		return;
 	}
 
@@ -495,7 +600,7 @@ void CHttpDownloadDlg::DownloadThread()
 
 	//Should we exit the thread
 	if (m_bAbort) {
-		PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);
+		TryPostThreadFinishedMessage();
 		return;
 	}
 
@@ -629,7 +734,7 @@ resend:
 		::DeleteFile(m_sFileToDownloadInto);
 
 	//We've finished
-	PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);
+	TryPostThreadFinishedMessage();
 }
 
 void CHttpDownloadDlg::UpdateControlsDuringTransfer(DWORD dwStartTicks, DWORD &dwCurrentTicks, DWORD dwTotalBytesRead, DWORD &dwLastTotalBytes,
@@ -723,6 +828,9 @@ void CHttpDownloadDlg::OnStatusCallBack(HINTERNET /*hInternet*/, DWORD dwInterne
 
 void CHttpDownloadDlg::OnDestroy()
 {
+	m_bWorkerUiClosing.store(true, std::memory_order_release);
+	DiscardPostedWorkerUiPayloadsForOwner(GetWorkerUiPayloadOwnerKey(this));
+
 	//Wait for the worker thread to exit
 	if (m_pThread) {
 		::WaitForSingleObject(m_pThread->m_hThread, INFINITE);

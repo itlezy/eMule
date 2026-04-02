@@ -32,7 +32,7 @@ public:
 
 protected:
 	void SetWriteInterestEnabled(bool bEnabled);
-	static void PostDatagramDispatchMessage();
+	static bool PostDatagramDispatchMessage();
 
 	virtual void OnDatagramReceive(int nErrorCode) = 0;
 	virtual void OnDatagramSend(int nErrorCode) = 0;

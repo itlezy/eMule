@@ -11,6 +11,7 @@ All rights reserved.
 
 ////////////////////////////////// Macros ///////////////////////////
 #pragma once
+#include <atomic>
 #include <afxinet.h>
 
 
@@ -57,6 +58,7 @@ protected:
 	afx_msg void OnClose();
 	//}}AFX_MSG
 	afx_msg LRESULT OnThreadFinished(WPARAM wParam, LPARAM);
+	afx_msg LRESULT OnThreadUpdate(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
 	DECLARE_DYNAMIC(CHttpDownloadDlg);
@@ -70,6 +72,9 @@ protected:
 	void HandleThreadErrorWithLastError(const CString &strIDError, DWORD dwLastError = 0);
 	void HandleThreadError(const CString &strIDError);
 	void DownloadThread();
+	bool TryPostThreadFinishedMessage(WPARAM wParam = 0);
+	bool QueueThreadUpdate(struct SHttpDownloadUiUpdate *pUpdate);
+	void ApplyThreadUpdate(const struct SHttpDownloadUiUpdate &update);
 	void SetPercentage(int nPercentage);
 	void SetTimeLeft(DWORD dwSecondsLeft, DWORD dwBytesRead, DWORD dwFileSize);
 	void SetProgressRange(DWORD dwFileSize);
@@ -95,4 +100,6 @@ protected:
 	INTERNET_PORT	m_nPort;
 	volatile bool	m_bAbort;
 	bool			m_bSafeToClose;
+	DWORD			m_dwUiThreadId;
+	std::atomic_bool m_bWorkerUiClosing;
 };

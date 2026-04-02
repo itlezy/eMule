@@ -14,6 +14,7 @@
 #include "stdafx.h"
 #include "AsyncDatagramSocket.h"
 #include "AsyncDatagramSocketSeams.h"
+#include "WorkerUiMessageSeams.h"
 #include "UserMsgs.h"
 #include "emule.h"
 #include "EmuleDlg.h"
@@ -55,17 +56,20 @@ void CAsyncDatagramSocket::SetWriteInterestEnabled(bool bEnabled)
 		AsyncSelect(GetAsyncDatagramEventMask(bEnabled));
 }
 
-void CAsyncDatagramSocket::PostDatagramDispatchMessage()
+bool CAsyncDatagramSocket::PostDatagramDispatchMessage()
 {
-	if (theApp.emuledlg != NULL && theApp.emuledlg->GetSafeHwnd() != NULL)
-		VERIFY(theApp.emuledlg->PostMessage(UM_WSAPOLL_UDP_SOCKET));
+	const HWND hMainWnd = theApp.emuledlg != NULL ? theApp.emuledlg->GetSafeHwnd() : NULL;
+	return TryPostWorkerUiMessage(hMainWnd, UM_WSAPOLL_UDP_SOCKET);
 }
 
 void CAsyncDatagramSocket::QueueSocketEventDispatch()
 {
 	bool bExpected = false;
-	if (m_bDispatchPosted.compare_exchange_strong(bExpected, true, std::memory_order_acq_rel))
-		PostDatagramDispatchMessage();
+	if (m_bDispatchPosted.compare_exchange_strong(bExpected, true, std::memory_order_acq_rel)) {
+		// Reset the posted gate when the UI window is already gone so future wakeups can retry cleanly.
+		if (!PostDatagramDispatchMessage())
+			m_bDispatchPosted.store(false, std::memory_order_release);
+	}
 }
 
 void CAsyncDatagramSocket::OnReceive(int /*nErrorCode*/)

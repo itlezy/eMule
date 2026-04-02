@@ -24,6 +24,7 @@
 #include "Preferences.h"
 #include "UserMsgs.h"
 #include "SplitterControl.h"
+#include "WorkerUiMessageSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -54,6 +55,8 @@ class CGetMediaInfoThread : public CWinThread
 protected:
 	CGetMediaInfoThread()
 		: m_hWndOwner()
+		, m_nOwnerKey()
+		, m_pbOwnerClosing()
 		, m_hFont()
 	{
 	}
@@ -61,9 +64,11 @@ protected:
 public:
 	virtual BOOL InitInstance();
 	virtual int	Run();
-	void SetValues(HWND hWnd, const CSimpleArray<CObject*> *paFiles, HFONT hFont)
+	void SetValues(HWND hWnd, ULONG_PTR nOwnerKey, std::atomic_bool *pbOwnerClosing, const CSimpleArray<CObject*> *paFiles, HFONT hFont)
 	{
 		m_hWndOwner = hWnd;
+		m_nOwnerKey = nOwnerKey;
+		m_pbOwnerClosing = pbOwnerClosing;
 		for (int i = 0; i < paFiles->GetSize(); ++i)
 			m_aFiles.Add(static_cast<CShareableFile*>((*paFiles)[i]));
 		m_hFont = hFont;
@@ -73,6 +78,8 @@ private:
 	bool GetMediaInfo(HWND hWndOwner, const CShareableFile *pFile, SMediaInfo *mi, bool bSingleFile);
 	CSimpleArray<const CShareableFile*> m_aFiles;
 	HWND m_hWndOwner;
+	ULONG_PTR m_nOwnerKey;
+	std::atomic_bool *m_pbOwnerClosing;
 	HFONT m_hFont;
 };
 
@@ -93,6 +100,7 @@ CFileInfoDialog::CFileInfoDialog()
 	, m_paFiles()
 	, m_bDataChanged()
 	, m_bReducedDlg()
+	, m_bWorkerUiClosing(true)
 {
 	m_strCaption = GetResString(IDS_CONTENT_INFO);
 	m_psp.pszTitle = m_strCaption;
@@ -104,6 +112,7 @@ BOOL CFileInfoDialog::OnInitDialog()
 	CWaitCursor curWait; // we may get quite busy here.
 	CResizablePage::OnInitDialog();
 	InitWindowStyles(this);
+	m_bWorkerUiClosing.store(false, std::memory_order_release);
 
 	if (!m_bReducedDlg) {
 		AddAnchor(IDC_FILESIZE, TOP_LEFT, TOP_RIGHT);
@@ -181,6 +190,9 @@ BOOL CFileInfoDialog::OnInitDialog()
 
 void CFileInfoDialog::OnDestroy()
 {
+	m_bWorkerUiClosing.store(true, std::memory_order_release);
+	DiscardPostedWorkerUiPayloadsForOwner(GetWorkerUiPayloadOwnerKey(this));
+
 	// This property sheet's window may get destroyed and re-created several times although
 	// the corresponding C++ class is kept -> explicitly reset ResizableLib state
 	RemoveAllAnchors();
@@ -197,7 +209,7 @@ BOOL CFileInfoDialog::OnSetActive()
 
 		CGetMediaInfoThread *pThread = (CGetMediaInfoThread*)AfxBeginThread(RUNTIME_CLASS(CGetMediaInfoThread), THREAD_PRIORITY_LOWEST, 0, CREATE_SUSPENDED);
 		if (pThread) {
-			pThread->SetValues(m_hWnd, m_paFiles, (HFONT)GetDlgItem(IDC_FD_XI1)->GetFont()->m_hObject);
+			pThread->SetValues(m_hWnd, GetWorkerUiPayloadOwnerKey(this), &m_bWorkerUiClosing, m_paFiles, (HFONT)GetDlgItem(IDC_FD_XI1)->GetFont()->m_hObject);
 			pThread->ResumeThread();
 		}
 		m_pFiles.RemoveAll();
@@ -270,7 +282,7 @@ int CGetMediaInfoThread::Run()
 		paMediaInfo = NULL;
 	}
 
-	SMediaInfoThreadResult *pThreadRes = new SMediaInfoThreadResult;
+	std::unique_ptr<SMediaInfoThreadResult> pThreadRes(new SMediaInfoThreadResult);
 	pThreadRes->paMediaInfo = paMediaInfo;
 	CRichEditStream re;
 	re.Attach(hwndRE);
@@ -278,27 +290,9 @@ int CGetMediaInfoThread::Run()
 	re.Detach();
 	VERIFY(DestroyWindow(hwndRE));
 
-	// Usage of 'PostMessage': The idea is to post a message to the window in that other
-	// thread and never deadlock (because of the post). This is safe, but leads to the problem
-	// that we may create memory leaks in case the target window is currently in the process
-	// of getting destroyed! E.g. if the target window gets destroyed after we put the message
-	// into the queue, we have no chance of determining that and the memory wouldn't get freed.
-	//if (!::IsWindow(m_hWndOwner) || !::PostMessage(m_hWndOwner, UM_MEDIA_INFO_RESULT, 0, (LPARAM)pThreadRes))
-	//	delete pThreadRes;
-
-	// Usage of 'SendMessage': Using 'SendMessage' seems to be dangerous because of potential
-	// deadlocks. Basically it depends on what the target thread/window is currently doing
-	// whether there is a risk for a deadlock. However, even with extensive stress testing
-	// there does not show any problem. The worse thing which can happen, is that we call
-	// 'SendMessage', then the target window gets destroyed (while we are still waiting in
-	// 'SendMessage') and would get blocked. Though, this does not happen, it seems that Windows
-	// is catching that case internally and lets our 'SendMessage' call return (with a result
-	// of '0'). If that happened, the 'IsWindow(m_hWndOwner)' returns FALSE, which positively
-	// indicates that the target window was destroyed while we were waiting in 'SendMessage'.
-	// So, everything should be fine (with that special scenario) with using 'SendMessage'.
-	// Let's be brave. :)
-	if (!::IsWindow(m_hWndOwner) || !::SendMessage(m_hWndOwner, UM_MEDIA_INFO_RESULT, 0, (LPARAM)pThreadRes))
-		delete pThreadRes;
+	// Queue the worker result until the UI thread consumes it so teardown can drop stale media
+	// info payloads without blocking the worker thread in a cross-thread send.
+	TryPostWorkerUiPayloadMessage(m_hWndOwner, m_pbOwnerClosing, m_nOwnerKey, UM_MEDIA_INFO_RESULT, std::move(pThreadRes));
 
 	::CoUninitialize();
 	return 0;
@@ -323,24 +317,22 @@ void CFileInfoDialog::InitDisplay(LPCTSTR pStr)
 
 }
 
-LRESULT CFileInfoDialog::OnMediaInfoResult(WPARAM, LPARAM lParam)
+LRESULT CFileInfoDialog::OnMediaInfoResult(WPARAM wParam, LPARAM)
 {
 	SetDlgItemText(IDC_FD_XI3, GetResString(IDS_VIDEO));
 	SetDlgItemText(IDC_FD_XI4, GetResString(IDS_AUDIO));
 	InitDisplay(_T("-"));
 
-	SMediaInfoThreadResult *pThreadRes = (SMediaInfoThreadResult*)lParam;
+	std::unique_ptr<SMediaInfoThreadResult> pThreadRes = TakePostedWorkerUiPayload<SMediaInfoThreadResult>(wParam);
 	if (pThreadRes == NULL)
 		return 1;
 	CArray<SMediaInfo> *paMediaInfo = pThreadRes->paMediaInfo;
 	if (paMediaInfo == NULL) {
-		delete pThreadRes;
 		return 1;
 	}
 
 	if (paMediaInfo->GetSize() != m_paFiles->GetSize()) {
 		InitDisplay(_T(""));
-		delete pThreadRes;
 		return 1;
 	}
 
@@ -534,7 +526,6 @@ LRESULT CFileInfoDialog::OnMediaInfoResult(WPARAM, LPARAM lParam)
 		DisableAutoSelect(m_fi);
 	}
 
-	delete pThreadRes;
 	return 1;
 }
 
