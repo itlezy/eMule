@@ -38,6 +38,7 @@
 #include "shahashset.h"
 #include "Log.h"
 #include "MD4.h"
+#include "PartFileNumericSeams.h"
 #include "ResourceOwnershipSeams.h"
 #include "MappedFileReader.h"
 #include "Collection.h"
@@ -922,23 +923,29 @@ bool CKnownFile::WriteToFile(CFileDataIO &file)
 		// no point in permanently storing the AICH part hashset if we need to rehash the file anyway to fetch the full recovery hashset
 		// Also the tag will make the known.met incompatible with emule version prior 0.44a - but that one is nearly 6 years old
 		if (m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount()) {
-			uint32 nAICHHashSetSize = (CAICHHash::GetHashSize() * (m_FileIdentifier.GetAvailableAICHPartHashCount() + 1)) + 2;
-			BYTE *pHashBuffer = new BYTE[nAICHHashSetSize];
-			CSafeMemFile hashSetFile(pHashBuffer, nAICHHashSetSize);
 			bool bWriteHashSet = false;
-			try {
-				m_FileIdentifier.WriteAICHHashsetToFile(hashSetFile);
-				bWriteHashSet = true;
-			} catch (CFileException *ex) {
+			uint32 nAICHHashSetSize = 0;
+			/** @brief Derive the serialized AICH hashset span through checked multiply-add math before allocating the buffer. */
+			if (!PartFileNumericSeams::TryDeriveAICHHashSetSize(CAICHHash::GetHashSize(), m_FileIdentifier.GetAvailableAICHPartHashCount(), &nAICHHashSetSize)) {
 				ASSERT(0);
-				DebugLogError(_T("Memfile Error while storing AICH Part HashSet"));
-				delete[] hashSetFile.Detach();
-				ex->Delete();
-			}
-			if (bWriteHashSet) {
-				CTag tagAICHHashSet(FT_AICHHASHSET, hashSetFile.Detach(), nAICHHashSetSize);
-				tagAICHHashSet.WriteTagToFile(file);
-				++uTagCount;
+				DebugLogError(_T("Skipped storing AICH Part HashSet because the serialized size overflowed"));
+			} else {
+				BYTE *pHashBuffer = new BYTE[nAICHHashSetSize];
+				CSafeMemFile hashSetFile(pHashBuffer, nAICHHashSetSize);
+				try {
+					m_FileIdentifier.WriteAICHHashsetToFile(hashSetFile);
+					bWriteHashSet = true;
+				} catch (CFileException *ex) {
+					ASSERT(0);
+					DebugLogError(_T("Memfile Error while storing AICH Part HashSet"));
+					delete[] hashSetFile.Detach();
+					ex->Delete();
+				}
+				if (bWriteHashSet) {
+					CTag tagAICHHashSet(FT_AICHHASHSET, hashSetFile.Detach(), nAICHHashSetSize);
+					tagAICHHashSet.WriteTagToFile(file);
+					++uTagCount;
+				}
 			}
 		}
 	}

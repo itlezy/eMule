@@ -56,6 +56,7 @@
 #include "uploaddiskiothread.h"
 #include "PartFileWriteThread.h"
 #include "DisplayRefreshSeams.h"
+#include "PartFileNumericSeams.h"
 #include <urlmon.h>
 
 #ifdef _DEBUG
@@ -1341,23 +1342,31 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 			// no point in permanently storing the AICH part hashset if we need to rehash the file anyway to fetch the full recovery hashset
 			// the tag will make the known.met incompatible with emule version prior 0.44a - but that one is nearly 6 years old
 			if (m_FileIdentifier.HasExpectedAICHHashCount()) {
-				uint32 nAICHHashSetSize = (CAICHHash::GetHashSize() * (m_FileIdentifier.GetAvailableAICHPartHashCount() + 1)) + 2;
-				BYTE *pHashBuffer = new BYTE[nAICHHashSetSize];
-				CSafeMemFile hashSetFile(pHashBuffer, nAICHHashSetSize);
 				bool bWriteHashSet = true;
-				try {
-					m_FileIdentifier.WriteAICHHashsetToFile(hashSetFile);
-				} catch (CFileException *pError) {
+				uint32 nAICHHashSetSize = 0;
+				/** @brief Derive the serialized AICH hashset span through checked multiply-add math before allocating the buffer. */
+				if (!PartFileNumericSeams::TryDeriveAICHHashSetSize(CAICHHash::GetHashSize(), m_FileIdentifier.GetAvailableAICHPartHashCount(), &nAICHHashSetSize)) {
 					ASSERT(0);
-					DebugLogError(_T("Memfile Error while storing AICH Part HashSet"));
+					DebugLogError(_T("Skipped storing AICH Part HashSet because the serialized size overflowed"));
 					bWriteHashSet = false;
-					delete[] hashSetFile.Detach();
-					pError->Delete();
 				}
 				if (bWriteHashSet) {
-					CTag tagAICHHashSet(FT_AICHHASHSET, hashSetFile.Detach(), nAICHHashSetSize);
-					tagAICHHashSet.WriteTagToFile(file);
-					++uTagCount;
+					BYTE *pHashBuffer = new BYTE[nAICHHashSetSize];
+					CSafeMemFile hashSetFile(pHashBuffer, nAICHHashSetSize);
+					try {
+						m_FileIdentifier.WriteAICHHashsetToFile(hashSetFile);
+					} catch (CFileException *pError) {
+						ASSERT(0);
+						DebugLogError(_T("Memfile Error while storing AICH Part HashSet"));
+						bWriteHashSet = false;
+						delete[] hashSetFile.Detach();
+						pError->Delete();
+					}
+					if (bWriteHashSet) {
+						CTag tagAICHHashSet(FT_AICHHASHSET, hashSetFile.Detach(), nAICHHashSetSize);
+						tagAICHHashSet.WriteTagToFile(file);
+						++uTagCount;
+					}
 				}
 			}
 		}
@@ -4677,11 +4686,11 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender, Requested_Block_Str
 
 			// Define the bounds of the zones (very rare, rare etc)
 			// more depending on available sources
-			const uint16 limit = (uint16)max((GetSourceCount() + 9) / 10, 3);
+			const uint16 limit = PartFileNumericSeams::CalculateRareChunkSourceLimit(static_cast<size_t>(GetSourceCount()));
 
 			const uint16 veryRareBound = limit;
-			const uint16 rareBound = 2 * limit;
-			const uint16 almostRareBound = 4 * limit;
+			const uint16 rareBound = PartFileNumericSeams::ClampUInt32ToUInt16(2u * static_cast<uint32>(limit));
+			const uint16 almostRareBound = PartFileNumericSeams::ClampUInt32ToUInt16(4u * static_cast<uint32>(limit));
 
 			// Cache Preview state (Criterion 2)
 			const bool isPreviewEnable = (thePrefs.GetPreviewPrio() || (GetPreviewPrio() && thePrefs.IsExtControlsEnabled()))
@@ -4772,13 +4781,13 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender, Requested_Block_Str
 
 				//Last chunk is always counted as a full size chunk - to give it no advantage because of smaller size.
 				//So 1/3 of PARTSIZE downloaded in the last chunk will give 33% even if there's just one more byte do download to complete the chunk.
-				uint16 critCompletion = (uint16)((partSize * 100 + PARTSIZE - 1) / PARTSIZE); // in [%].
+				const uint16 critCompletion = PartFileNumericSeams::CalculateChunkCompletionPercent(partSize, PARTSIZE); // in [%].
 
 				// Criterion 5. Prefer to continue the same chunk
 				const bool sameChunk = (cur_chunk.part == sender->m_lastPartAsked);
 
 				// Criterion 6. The more transferring clients that has this part, the better (i.e. lower).
-				uint16 transferringClientsScore = (uint16)m_downloadingSourceList.GetCount();
+				uint16 transferringClientsScore = PartFileNumericSeams::ClampCountToUInt16(m_downloadingSourceList.GetCount());
 
 				// Criterion 7. Sooner to completion (how much of a part is completed, how fast can be transferred to this part, if all currently transferring clients with this part are put on it. Lower is better.)
 				uint16 bandwidthScore = 2000;
@@ -4794,7 +4803,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender, Requested_Block_Str
 						}
 					}
 
-					bandwidthScore = (uint16)min((UINT)((PARTSIZE - partSize) / (totalDownloadDatarateForThisPart * 5ull)), 2000u);
+					bandwidthScore = PartFileNumericSeams::ClampUInt32ToUInt16(min((UINT)((PARTSIZE - partSize) / (totalDownloadDatarateForThisPart * 5ull)), 2000u));
 					//AddDebugLogLine(DLP_VERYLOW, false
 					//    , _T("BandwidthScore for chunk %i: bandwidthScore = %u = min((PARTSIZE-partSize)/(totalDownloadDatarateForThisChunk * 5), 2000u) = min((PARTSIZE-%I64u)/(%u*5), 2000u)")
 					//    , cur_chunk.part, bandwidthScore, partSize, totalDownloadDatarateForThisChunk);
@@ -4839,7 +4848,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender, Requested_Block_Str
 					//ASSERT(cur_chunk.frequency >= rareBound);
 
 					// used to slightly lessen the importance of frequency
-					uint16 randomAdd = (uint16)((3 * RAND_MAX / 2 + (uint32)rand() *(almostRareBound - rareBound)) / RAND_MAX);
+					const uint16 randomAdd = PartFileNumericSeams::ClampUInt32ToUInt16((3 * RAND_MAX / 2 + static_cast<uint32>(rand()) * (almostRareBound - rareBound)) / RAND_MAX);
 					//AddDebugLogLine(DLP_VERYLOW, false, _T("RandomAdd: %i, (%i-%i=%i)"), randomAdd, rareBound, almostRareBound, almostRareBound-rareBound);
 
 					cur_chunk.rank = (cur_chunk.frequency)           // Criterion 1
