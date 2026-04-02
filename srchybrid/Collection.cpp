@@ -25,6 +25,9 @@
 #include "emule.h"
 #include "Log.h"
 #include "md5sum.h"
+#include "CollectionSeams.h"
+#include <memory>
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -146,10 +149,15 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 			}
 			for (uint32 fileCount = data.ReadUInt32(); fileCount > 0; --fileCount)
 				try {
-					CCollectionFile *pCollectionFile = new CCollectionFile(data);
-					AddFileToCollection(pCollectionFile, false);
-				} catch (...) {
+					/** Keep malformed individual collection entries from aborting the whole import. */
+					std::unique_ptr<CCollectionFile> pCollectionFile(new CCollectionFile(data));
+					if (AddFileToCollection(pCollectionFile.get(), false) != NULL)
+						pCollectionFile.release();
+				} catch (CException *ex) {
+					ex->Delete();
 					ASSERT(0);
+					if (!ShouldContinueAfterCollectionEntryFailure())
+						return false;
 				}
 
 			bCollectionLoaded = true;
@@ -159,22 +167,20 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 			if (data.GetLength() > data.GetPosition()) {
 				using namespace CryptoPP;
 
-				uint32 nPos = (uint32)data.GetPosition();
+				CollectionSignatureLayout layout = {};
+				if (!TryBuildCollectionSignatureLayout(data.GetLength(), data.GetPosition(), layout))
+					return false;
 				data.SeekToBegin();
-				BYTE *pMessage = new BYTE[nPos];
-				VERIFY(data.Read(pMessage, nPos) == nPos);
+				std::vector<BYTE> abyMessage(layout.nMessageLength);
+				VERIFY(data.Read(abyMessage.data(), layout.nMessageLength) == layout.nMessageLength);
 
 				StringSource ss_Pubkey(m_pabyCollectionAuthorKey, m_nKeySize, true, 0);
 				RSASSA_PKCS1v15_SHA_Verifier pubkey(ss_Pubkey);
 
-				UINT nSignLen = (UINT)(data.GetLength() - data.GetPosition());
-				BYTE *pSignature = new BYTE[nSignLen];
-				VERIFY(data.Read(pSignature, nSignLen) == nSignLen);
+				std::vector<BYTE> abySignature(layout.nSignatureLength);
+				VERIFY(data.Read(abySignature.data(), layout.nSignatureLength) == layout.nSignatureLength);
 
-				bResult = pubkey.VerifyMessage(pMessage, nPos, pSignature, nSignLen);
-
-				delete[] pMessage;
-				delete[] pSignature;
+				bResult = pubkey.VerifyMessage(abyMessage.data(), layout.nMessageLength, abySignature.data(), layout.nSignatureLength);
 			}
 			if (!bResult) {
 				DebugLogWarning(_T("Collection %s: Verification of public key failed!"), (LPCTSTR)m_sCollectionName);
@@ -188,11 +194,14 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 		} else
 			m_sCollectionAuthorName.Empty();
 		data.Close();
-	} catch (CFileException *ex) {
+	} catch (CException *ex) {
 		ex->Delete();
 		return false;
-	} catch (...) {
-		ASSERT(0);
+	} catch (const CryptoPP::Exception &e) {
+		AddDebugLogLine(false, _T("Failed to load collection %s: %hs"), (LPCTSTR)sFileName, e.what());
+		return false;
+	} catch (const std::exception &e) {
+		AddDebugLogLine(false, _T("Failed to load collection %s: %hs"), (LPCTSTR)sFileName, e.what());
 		return false;
 	}
 
@@ -206,14 +215,15 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 					//These lines can be used for future features.
 					if (sLink.Find(_T('#')) != 0) {
 						try {
-							CCollectionFile *pCollectionFile = new CCollectionFile();
-							if (pCollectionFile->InitFromLink(sLink))
-								AddFileToCollection(pCollectionFile, false);
-							else
-								delete pCollectionFile;
-						} catch (...) {
+							/** Keep malformed individual text entries from aborting the whole import. */
+							std::unique_ptr<CCollectionFile> pCollectionFile(new CCollectionFile());
+							if (pCollectionFile->InitFromLink(sLink) && AddFileToCollection(pCollectionFile.get(), false) != NULL)
+								pCollectionFile.release();
+						} catch (CException *ex) {
+							ex->Delete();
 							ASSERT(0);
-							return false;
+							if (!ShouldContinueAfterCollectionEntryFailure())
+								return false;
 						}
 					}
 				}
@@ -225,10 +235,10 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 				m_sCollectionName = sFileName.Left(iLen);
 				m_bTextFormat = true;
 				return true;
-			} catch (CFileException *ex) {
+			} catch (CException *ex) {
 				ex->Delete();
-			} catch (...) {
-				ASSERT(0);
+			} catch (const std::exception &e) {
+				AddDebugLogLine(false, _T("Failed to load text collection %s: %hs"), (LPCTSTR)sFileName, e.what());
 			}
 		}
 	}
@@ -294,27 +304,32 @@ void CCollection::WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSi
 					pair->value->WriteCollectionInfo(data);
 
 				if (pSignKey != NULL) {
-					uint32 nPos = (uint32)data.GetPosition();
+					uint32 nPos = 0;
+					if (!TryConvertCollectionSerializedLength(data.GetPosition(), nPos)) {
+						ASSERT(0);
+						return;
+					}
 					data.SeekToBegin();
-					BYTE *pBuffer = new BYTE[nPos];
-					VERIFY(data.Read(pBuffer, nPos) == nPos);
+					std::vector<BYTE> abyMessage(nPos);
+					VERIFY(data.Read(abyMessage.data(), nPos) == nPos);
 
 					SecByteBlock sbbSignature(pSignKey->SignatureLength());
 					AutoSeededRandomPool rng;
-					pSignKey->SignMessage(rng, pBuffer, nPos, sbbSignature.begin());
-					BYTE abyBuffer2[500];
-					ArraySink asink(abyBuffer2, sizeof abyBuffer2);
+					pSignKey->SignMessage(rng, abyMessage.data(), nPos, sbbSignature.begin());
+					std::vector<BYTE> abySignature(sbbSignature.size());
+					ArraySink asink(abySignature.data(), abySignature.size());
 					asink.Put(sbbSignature.begin(), sbbSignature.size());
-					data.Write(abyBuffer2, (UINT)asink.TotalPutLength());
-
-					delete[] pBuffer;
+					data.Write(abySignature.data(), (UINT)asink.TotalPutLength());
 				}
 				data.Close();
 			} catch (CFileException *ex) {
 				ex->Delete();
 				return;
-			} catch (...) {
-				ASSERT(0);
+			} catch (const CryptoPP::Exception &e) {
+				AddDebugLogLine(false, _T("Failed to write collection %s: %hs"), (LPCTSTR)m_sCollectionName, e.what());
+				return;
+			} catch (const std::exception &e) {
+				AddDebugLogLine(false, _T("Failed to write collection %s: %hs"), (LPCTSTR)m_sCollectionName, e.what());
 				return;
 			}
 		}

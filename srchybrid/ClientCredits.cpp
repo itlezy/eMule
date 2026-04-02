@@ -23,6 +23,8 @@
 #include "Opcodes.h"
 #include "ServerConnect.h"
 #include "Log.h"
+#include "ClientCreditsSeams.h"
+#include <memory>
 #include <base64.h>
 #include <osrng.h>
 #include <files.h>
@@ -352,6 +354,7 @@ void CClientCreditsList::InitalizeCrypting()
 {
 	m_nMyPublicKeyLen = 0;
 	memset(m_abyMyPublicKey, 0, sizeof m_abyMyPublicKey); // not really needed; better for debugging tho
+	delete m_pSignkey;
 	m_pSignkey = NULL;
 	if (!thePrefs.IsSecureIdentEnabled())
 		return;
@@ -373,18 +376,24 @@ void CClientCreditsList::InitalizeCrypting()
 	try {
 		// load private key
 		FileSource filesource((CStringA)cryptkeypath, true, new Base64Decoder);
-		m_pSignkey = new RSASSA_PKCS1v15_SHA_Signer(filesource);
+		std::unique_ptr<RSASSA_PKCS1v15_SHA_Signer> pSignKey(new RSASSA_PKCS1v15_SHA_Signer(filesource));
 		// calculate and store public key
-		RSASSA_PKCS1v15_SHA_Verifier pubkey(*m_pSignkey);
+		RSASSA_PKCS1v15_SHA_Verifier pubkey(*pSignKey);
 		ArraySink asink(m_abyMyPublicKey, sizeof m_abyMyPublicKey);
 		pubkey.GetMaterial().Save(asink);
 		m_nMyPublicKeyLen = (uint8)asink.TotalPutLength();
 		asink.MessageEnd();
-	} catch (...) {
-		delete m_pSignkey;
-		m_pSignkey = NULL;
+		m_pSignkey = pSignKey.release();
+	} catch (const Exception &e) {
+		memset(m_abyMyPublicKey, 0, sizeof m_abyMyPublicKey);
+		m_nMyPublicKeyLen = 0;
 		LogError(LOG_STATUSBAR, GetResString(IDS_CRYPT_INITFAILED));
-		ASSERT(0);
+		AddDebugLogLine(false, _T("Failed to initialize secure ident crypting: %hs"), e.what());
+	} catch (const std::exception &e) {
+		memset(m_abyMyPublicKey, 0, sizeof m_abyMyPublicKey);
+		m_nMyPublicKeyLen = 0;
+		LogError(LOG_STATUSBAR, GetResString(IDS_CRYPT_INITFAILED));
+		AddDebugLogLine(false, _T("Failed to initialize secure ident crypting: %hs"), e.what());
 	}
 	ASSERT(Debug_CheckCrypting());
 }
@@ -403,10 +412,12 @@ bool CClientCreditsList::CreateKeyPair()
 		if (thePrefs.GetLogSecureIdent())
 			AddDebugLogLine(false, _T("Created new RSA keypair"));
 		return true;
-	} catch (...) {
+	} catch (const Exception &e) {
 		if (thePrefs.GetVerbose())
-			AddDebugLogLine(false, _T("Failed to create new RSA keypair"));
-		ASSERT(0);
+			AddDebugLogLine(false, _T("Failed to create new RSA keypair: %hs"), e.what());
+	} catch (const std::exception &e) {
+		if (thePrefs.GetVerbose())
+			AddDebugLogLine(false, _T("Failed to create new RSA keypair: %hs"), e.what());
 	}
 	return false;
 }
@@ -427,25 +438,30 @@ uint8 CClientCreditsList::CreateSignature(CClientCredits *pTarget, uchar *pachOu
 		AutoSeededRandomPool rng;
 		byte abyBuffer[MAXPUBKEYSIZE + 9];
 		size_t keylen = pTarget->GetSecIDKeyLen();
+		ClientCreditsChallengeLayout layout = {};
+		if (!TryBuildClientCreditsChallengeLayout(keylen, byChaIPKind != 0, layout))
+			return 0;
+		if (!CanStoreClientCreditsSignature(sbbSignature.size(), nMaxSize))
+			return 0;
 		memcpy(abyBuffer, pTarget->GetSecureIdent(), keylen);
 		// 4 additional bytes of random data sent from this client
 		uint32 challenge = pTarget->m_dwCryptRndChallengeFrom;
 		ASSERT(challenge);
+		if (challenge == 0)
+			return 0;
 		PokeUInt32(&abyBuffer[keylen], challenge);
-		size_t ChIpLen;
-		if (byChaIPKind == 0)
-			ChIpLen = 0;
-		else {
-			ChIpLen = 5;
+		if (byChaIPKind != 0) {
 			PokeUInt32(&abyBuffer[keylen + 4], ChallengeIP);
 			abyBuffer[keylen + 4 + 4] = byChaIPKind;
 		}
-		sigkey->SignMessage(rng, abyBuffer, keylen + 4 + ChIpLen, sbbSignature.begin());
+		sigkey->SignMessage(rng, abyBuffer, layout.nMessageLength, sbbSignature.begin());
 		ArraySink asink(pachOutput, nMaxSize);
 		asink.Put(sbbSignature.begin(), sbbSignature.size());
 		return (uint8)asink.TotalPutLength();
-	} catch (...) {
-		ASSERT(0);
+	} catch (const Exception &e) {
+		AddDebugLogLine(false, _T("Failed to create secure ident signature: %hs"), e.what());
+	} catch (const std::exception &e) {
+		AddDebugLogLine(false, _T("Failed to create secure ident signature: %hs"), e.what());
 	}
 	return 0;
 }
@@ -465,17 +481,18 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget, const uchar *pachS
 		RSASSA_PKCS1v15_SHA_Verifier pubkey(ss_Pubkey);
 		// 4 additional bytes random data send from this client +5 bytes v2
 		byte abyBuffer[MAXPUBKEYSIZE + 9];
+		ClientCreditsChallengeLayout layout = {};
+		if (!TryBuildClientCreditsChallengeLayout(m_nMyPublicKeyLen, byChaIPKind != 0, layout))
+			return false;
 		memcpy(abyBuffer, m_abyMyPublicKey, m_nMyPublicKeyLen);
 		uint32 challenge = pTarget->m_dwCryptRndChallengeFor;
 		ASSERT(challenge);
+		if (challenge == 0)
+			return false;
 		PokeUInt32(&abyBuffer[m_nMyPublicKeyLen], challenge);
 
 		// v2 security improvements (not supported by 29b, not used as default by 29c)
-		size_t nChIpSize;
-		if (byChaIPKind == 0)
-			nChIpSize = 0;
-		else {
-			nChIpSize = 5;
+		if (byChaIPKind != 0) {
 			uint32 ChallengeIP = 0;
 			switch (byChaIPKind) {
 			case CRYPT_CIP_LOCALCLIENT:
@@ -497,17 +514,19 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget, const uchar *pachS
 		}
 		//v2 end
 
-		bResult = pubkey.VerifyMessage(abyBuffer, m_nMyPublicKeyLen + 4 + nChIpSize, pachSignature, nInputSize);
-	} catch (...) {
+		bResult = pubkey.VerifyMessage(abyBuffer, layout.nMessageLength, pachSignature, nInputSize);
+	} catch (const Exception &e) {
 		if (thePrefs.GetVerbose())
-			AddDebugLogLine(false, _T("Error: Unknown exception in %hs"), __FUNCTION__);
-		//ASSERT(0);
+			AddDebugLogLine(false, _T("Error: secure ident verification failed in %hs: %hs"), __FUNCTION__, e.what());
+		bResult = false;
+	} catch (const std::exception &e) {
+		if (thePrefs.GetVerbose())
+			AddDebugLogLine(false, _T("Error: secure ident verification failed in %hs: %hs"), __FUNCTION__, e.what());
 		bResult = false;
 	}
-	if (!bResult) {
-		if (pTarget->IdentState == IS_IDNEEDED)
-			pTarget->IdentState = IS_IDFAILED;
-	} else
+	if (!bResult)
+		pTarget->IdentState = GetClientCreditsStateAfterVerifyFailure(pTarget->IdentState, IS_IDNEEDED, IS_IDFAILED);
+	else
 		pTarget->Verified(dwForIP);
 
 	return bResult;
