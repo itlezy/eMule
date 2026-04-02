@@ -13,10 +13,13 @@
 - ensure to implement regression and parity test when touching core features
 - test suites live only here `c:\prj\p2p\eMule\eMulebb\eMule-build-tests`
 - treat `c:\prj\p2p\eMule\eMulebb\eMule-build-tests` as the single source of truth for all test code, scripts, and reports
-- eMule "oracle" version and its build workspace live here `c:\prj\p2p\eMule\eMulebb\eMule-build-oracle` and it is the reference implementation to compare against for parity and regressions
-- do not recreate or edit per-workspace `tests\` directories under `eMule-build` or `eMule-build-oracle`
+- eMule "oracle" workspaces live here `c:\prj\p2p\eMule\eMulebb\eMule-build-oracle-v0.72a-oracle` and `c:\prj\p2p\eMule\eMulebb\eMule-build-oracle-v0.60d-oracle`; they are reference implementations to compare against for parity and regressions
+- changes to oracle-source branches are allowed when they are strictly required to enable testing, seams, logging, tracing, or debugging; do not use the oracle workspaces for feature work or unrelated cleanup
+- do not recreate or edit per-workspace `tests\` directories under `eMule-build`, `eMule-build-oracle-v0.72a-oracle`, or `eMule-build-oracle-v0.60d-oracle`
+- when building `eMule-build-oracle-v0.72a-oracle`, prefer `pwsh -File .\workspace.ps1 validate`, `build-libs`, `build-app`, and `run-binary`; the root `.cmd` files are wrappers only
+- when building `eMule-build-oracle-v0.60d-oracle`, use the legacy root scripts `003_build_MSBuild_ALL_libs*.cmd`, `build_MSBuild_eMule*.cmd`, and `launch_binary_eMule*.cmd`
 - eMule remote is a web-ui that lives here `c:\prj\p2p\eMule\eMulebb\eMule-remote`
-- keep the fixed sibling layout `eMule-build`, `eMule-build-oracle`, and `eMule-build-tests`, and make the shared tests build against the target workspace via explicit paths
+- keep the fixed sibling layout `eMule-build`, `eMule-build-oracle-v0.72a-oracle`, `eMule-build-oracle-v0.60d-oracle`, and `eMule-build-tests`, and make the shared tests build against the target workspace via explicit paths
 - only for major changes save and overwrite `.\RESUME.md` to keep track of the last and the next chunk of work, to resume quickly
 - load and strictly follow the PowerShell guide from `c:\prj\aidev\specs\POWERSHELL_GUIDE.md`
 - when launching the `emule.exe` UI, always pass `-c` to make the config root explicit; disposable profiles may be created under `c:\tmp`, and a ready-made profile is available as `-c c:\tmp\emule-testing`
