@@ -36,6 +36,15 @@ struct StoredAICHHashUpdate
 	ULONGLONG nReplacedFilePos;
 };
 
+/**
+ * @brief Describes how a malformed one-sided AICH tree node should be normalized.
+ */
+struct IncompleteAICHTreeNodeAction
+{
+	bool bHasIncompleteChildren;
+	bool bShouldInvalidateNodeHash;
+};
+
 namespace AICHMaintenanceSeams
 {
 /**
@@ -85,5 +94,16 @@ inline StoredAICHHashUpdate ResolveStoredAICHHashUpdate(ULONGLONG nExistingFileP
 		return {false, 0u};
 
 	return {true, nExistingFilePos};
+}
+
+/**
+ * @brief Detects and normalizes the unsupported state where only one child branch exists.
+ */
+inline IncompleteAICHTreeNodeAction GetIncompleteAICHTreeNodeAction(bool bHasLeftChild, bool bHasRightChild)
+{
+	if (bHasLeftChild != bHasRightChild)
+		return {true, true};
+
+	return {false, false};
 }
 }

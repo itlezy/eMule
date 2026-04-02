@@ -197,7 +197,19 @@ const CAICHHashTree* CAICHHashTree::FindExistingHash(uint64 nStartPos, uint64 nS
 // fails if no hash is found for any branch
 bool CAICHHashTree::ReCalculateHash(CAICHHashAlgo *hashalg, bool bDontReplace)
 {
-	ASSERT(!((m_pLeftTree != NULL) ^ (m_pRightTree != NULL)));
+	const IncompleteAICHTreeNodeAction incompleteNodeAction = AICHMaintenanceSeams::GetIncompleteAICHTreeNodeAction(m_pLeftTree != NULL, m_pRightTree != NULL);
+	if (incompleteNodeAction.bHasIncompleteChildren) {
+		/** @brief AICH recalculation cannot proceed from a one-sided branch pair. */
+		theApp.QueueDebugLogLine(false, _T("ReCalculateHash: Hash tree incomplete"));
+		delete m_pLeftTree;
+		m_pLeftTree = NULL;
+		delete m_pRightTree;
+		m_pRightTree = NULL;
+		if (incompleteNodeAction.bShouldInvalidateNodeHash)
+			m_bHashValid = false;
+		return false;
+	}
+
 	if (m_pLeftTree && m_pRightTree) {
 		if (!m_pLeftTree->ReCalculateHash(hashalg, bDontReplace) || !m_pRightTree->ReCalculateHash(hashalg, bDontReplace))
 			return false;
