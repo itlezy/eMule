@@ -38,6 +38,7 @@
 #include "shahashset.h"
 #include "collection.h"
 #include "SafeFile.h"
+#include "FormatSafetySeams.h"
 #include "Kademlia/Kademlia/kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "Log.h"
@@ -2363,19 +2364,19 @@ void DebugSend(LPCSTR pszMsg, const CUpDownClient *client, const uchar *packet)
 
 void DebugSend(LPCSTR pszOpcode, uint32 ip, uint16 port)
 {
-	TCHAR szIPPort[22];
-	_stprintf(szIPPort, _T("%s:%u"), (LPCTSTR)ipstr(htonl(ip)), port);
-	Debug(_T(">>> %-20hs to   %-21s\n"), pszOpcode, szIPPort);
+	/** Format the endpoint through a bounded CString helper instead of a fixed stack buffer. */
+	const CString strIPPort = FormatSafetySeams::FormatStoredIPv4Endpoint(htonl(ip), port);
+	Debug(_T(">>> %-20hs to   %-21s\n"), pszOpcode, (LPCTSTR)strIPPort);
 }
 
 void DebugSendF(LPCSTR pszOpcode, uint32 ip, uint16 port, LPCTSTR pszMsg, ...)
 {
 	va_list args;
 	va_start(args, pszMsg);
-	TCHAR szIPPort[22];
-	_stprintf(szIPPort, _T("%s:%u"), (LPCTSTR)ipstr(htonl(ip)), port);
+	/** Format the endpoint through a bounded CString helper before appending the caller message. */
+	const CString strIPPort = FormatSafetySeams::FormatStoredIPv4Endpoint(htonl(ip), port);
 	CString str;
-	str.Format(_T(">>> %-20hs to   %-21s; "), pszOpcode, szIPPort);
+	str.Format(_T(">>> %-20hs to   %-21s; "), pszOpcode, (LPCTSTR)strIPPort);
 	str.AppendFormatV(pszMsg, args);
 	va_end(args);
 	Debug(_T("%s\n"), (LPCTSTR)str);
@@ -2383,9 +2384,9 @@ void DebugSendF(LPCSTR pszOpcode, uint32 ip, uint16 port, LPCTSTR pszMsg, ...)
 
 void DebugRecv(LPCSTR pszOpcode, uint32 ip, uint16 port)
 {
-	TCHAR szIPPort[22];
-	_stprintf(szIPPort, _T("%s:%u"), (LPCTSTR)ipstr(htonl(ip)), port);
-	Debug(_T("%-24hs from %-21s\n"), pszOpcode, szIPPort);
+	/** Format the endpoint through a bounded CString helper instead of a fixed stack buffer. */
+	const CString strIPPort = FormatSafetySeams::FormatStoredIPv4Endpoint(htonl(ip), port);
+	Debug(_T("%-24hs from %-21s\n"), pszOpcode, (LPCTSTR)strIPPort);
 }
 
 void DebugHttpHeaders(const CStringAArray &astrHeaders)

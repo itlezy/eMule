@@ -18,6 +18,7 @@
 #include "preferences.h"
 #include "UPnPImplMiniLib.h"
 #include "Log.h"
+#include "FormatSafetySeams.h"
 #include "Otherfunctions.h"
 #include "miniupnpc\include\miniupnpc.h"
 #include "miniupnpc\include\upnpcommands.h"
@@ -97,9 +98,9 @@ void CUPnPImplMiniLib::DeletePorts()
 void CUPnPImplMiniLib::DeletePort(uint16 port, LPCTSTR prot)
 {
 	if (port != 0) {
-		char achPort[8];
-		sprintf(achPort, "%hu", port);
-		int nResult = UPNP_DeletePortMapping(m_pURLs->controlURL, m_pIGDData->first.servicetype, achPort, CStringA(prot), NULL);
+		/** Convert the port value through a bounded ASCII helper before passing it to miniupnpc. */
+		const CStringA strPort = FormatSafetySeams::FormatDecimalPortValueA(port);
+		int nResult = UPNP_DeletePortMapping(m_pURLs->controlURL, m_pIGDData->first.servicetype, strPort, CStringA(prot), NULL);
 		if (nResult == UPNPCOMMAND_SUCCESS)
 			DebugLog(_T("Successfully removed mapping for %s port %hu"), prot, port);
 		else
@@ -296,8 +297,8 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 
 	static const char achDescTCP[] = "eMule_TCP";
 	static const char achDescUDP[] = "eMule_UDP";
-	char achPort[8];
-	sprintf(achPort, "%hu", nPort);
+	/** Convert the port value through a bounded ASCII helper before issuing miniupnpc calls. */
+	const CStringA strPort = FormatSafetySeams::FormatDecimalPortValueA(nPort);
 
 	int nResult;
 	// if we are refreshing ports, check first if the mapping is still fine and only try to open if not
@@ -305,7 +306,7 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 	char achOutPort[8] = {};
 	if (bCheckAndRefresh) {
 		nResult = UPNP_GetSpecificPortMappingEntry(m_pOwner->m_pURLs->controlURL, m_pOwner->m_pIGDData->first.servicetype
-												 , achPort
+												 , strPort
 												 , (bTCP ? sTCPa : sUDPa)
 												 , NULL
 												 , achOutIP, achOutPort
@@ -322,7 +323,7 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 
 	nResult = UPNP_AddPortMapping(m_pOwner->m_pURLs->controlURL
 								, m_pOwner->m_pIGDData->first.servicetype
-								, achPort, achPort, pachLANIP
+								, strPort, strPort, pachLANIP
 								, (bTCP ? achDescTCP : achDescUDP)
 								, (bTCP ? sTCPa : sUDPa)
 								, NULL, NULL);
@@ -338,8 +339,8 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 	// make sure it really worked
 	achOutIP[0] = 0;
 	nResult = UPNP_GetSpecificPortMappingEntry(m_pOwner->m_pURLs->controlURL
-											 , m_pOwner->m_pIGDData->first.servicetype
-											 , achPort
+												, m_pOwner->m_pIGDData->first.servicetype
+												, strPort
 											 , (bTCP ? sTCPa : sUDPa)
 											 , NULL
 											 , achOutIP, achOutPort
