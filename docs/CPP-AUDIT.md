@@ -29,6 +29,7 @@ Completed bounded hardening chunks already landed on this branch:
 - **[DONE]** bounded `CPP_028` socket sleep-poll cleanup for UDP resend and callback drain (`ae3d1da`)
 - **[DONE]** bounded `CPP_012` fixed-buffer formatting hardening (`165e809`)
 - **[DONE]** bounded `CPP_032` / `CPP_035` client-credits and collection exception/resource hardening (`313f880`)
+- **[DONE]** bounded `CPP_034` AICH hashset and part-selection numeric hardening (`bf0c827`)
 
 The broader audit categories below remain open unless explicitly marked otherwise; completed chunks reduce the remaining surface but do not imply the entire category is closed.
 
@@ -805,22 +806,18 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_034 — Integer Overflow Risks
 
-**Count:** 12+ sites
+**Count:** 6+ remaining sites
 **Severity:** High
 **Priority:** HIGH
 
 | File | Line | Pattern | Risk |
 |---|---|---|---|
-| Packets.cpp | 212 | `uLongf newsize = size + 300` | Wraps if `size` near `ULONG_MAX` |
-| ClientUDPSocket.cpp | 118–126 | `uint32 nNewSize = nPacketLen * 10 + 300` | Network-supplied `nPacketLen` unchecked |
-| PartFile.cpp | 1342 | `GetHashSize() * (PartHashCount + 1) + 2` | Multiplication overflow |
-| PartFile.cpp | 4678 | `(uint16)max((GetSourceCount() + 9) / 10, 3)` | Narrowing `uint32` → `uint16` |
-| PartFile.cpp | 4773 | `(uint16)((partSize * 100 + PARTSIZE - 1) / PARTSIZE)` | Narrowing `uint64` → `uint16` |
-| Packets.cpp | 399 | `m_nBlobSize((uint32)nSize)` | `size_t` → `uint32` truncation |
-| Packets.cpp | 205 | `WriteUInt16((uint16)uLen)` | `size_t` → `uint16` truncation |
-| DownloadClient.cpp | 476 | `new char[m_nPartCount + 1]` | `UINT_MAX` overflow |
-| EMSocket.cpp | 602 | `sent += result` | Could overflow if `sent` → `UINT_MAX` |
-| EMSocket.cpp | 865 | `(uint32)(sizeleft - decval + 1)` | Signed subtraction to unsigned cast |
+| Packets.cpp | 432 | `m_nBlobSize((uint32)nSize)` | `size_t` → `uint32` truncation |
+| Packets.cpp | 678, 685, 736 | `WriteUInt16((uint16)... )` | `size_t` / tag length truncation to 16-bit wire fields |
+| FileIdentifier.cpp | 241, 390 | `WriteUInt16((uint16)uParts)` | Part-count truncation if unbounded input reaches serialization |
+| DownloadClient.cpp | 481 | `new char[m_nPartCount + 1]` | `UINT_MAX` overflow in debug/status rendering path |
+| EMSocket.cpp | 932 | `(uint32)(sizeleft - decval + 1)` | Signed subtraction to unsigned cast |
+| SafeFile.cpp | 178, 204 | `WriteUInt16((uint16)uLen)` | String-length truncation to 16-bit serialized size |
 
 **Status:** **[PARTIAL]**
 
