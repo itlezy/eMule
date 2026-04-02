@@ -14,10 +14,13 @@
 #pragma once
 
 #include <cstdint>
+#include <cstring>
 #include <winsock2.h>
+#include <ws2tcpip.h>
 
 #define FD_FORCEREAD (1<<15)
 #define FD_DEFAULT (FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE)
+#define EMULE_TEST_HAVE_ASYNC_SOCKET_CONNECT_TARGET_SEAMS 1
 
 enum AsyncSocketExState : uint8_t
 {
@@ -35,6 +38,15 @@ struct AsyncSocketExCloseAction
 {
 	bool bShouldReadDrain;
 	bool bShouldClose;
+};
+
+struct AsyncSocketExConnectTarget
+{
+	ADDRESS_FAMILY nFamily;
+	int nSocketType;
+	int nProtocol;
+	int nSockAddrLen;
+	SOCKADDR_STORAGE sockAddr;
 };
 
 /**
@@ -123,6 +135,25 @@ inline AsyncSocketExCloseAction ClassifyAsyncSocketClose(AsyncSocketExState nSta
 inline bool HasAsyncSocketPollFailure(int nPollResult)
 {
 	return nPollResult == SOCKET_ERROR;
+}
+
+/**
+ * @brief Copies the current `addrinfo` candidate so reconnect logic can close the active socket safely.
+ */
+inline bool TryCaptureAsyncSocketConnectTarget(const addrinfo *pAddr, AsyncSocketExConnectTarget &target)
+{
+	if (pAddr == NULL || pAddr->ai_addr == NULL)
+		return false;
+	if (pAddr->ai_addrlen <= 0 || pAddr->ai_addrlen > static_cast<int>(sizeof target.sockAddr))
+		return false;
+
+	memset(&target, 0, sizeof target);
+	target.nFamily = static_cast<ADDRESS_FAMILY>(pAddr->ai_family);
+	target.nSocketType = pAddr->ai_socktype;
+	target.nProtocol = pAddr->ai_protocol;
+	target.nSockAddrLen = static_cast<int>(pAddr->ai_addrlen);
+	memcpy(&target.sockAddr, pAddr->ai_addr, static_cast<size_t>(target.nSockAddrLen));
+	return true;
 }
 
 /**

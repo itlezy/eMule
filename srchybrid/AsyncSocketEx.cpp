@@ -555,6 +555,25 @@ void CAsyncSocketEx::Close()
 #endif
 }
 
+/**
+ * @brief Closes only the active socket state so address-family retries can reuse the pending `addrinfo` list.
+ */
+void CAsyncSocketEx::ResetSocketForRetry()
+{
+	if (m_SocketData.hSocket == INVALID_SOCKET)
+		return;
+
+	const SOCKET hSocket = m_SocketData.hSocket;
+	DetachHandle();
+	closesocket(hSocket);
+	m_SocketData.nFamily = AF_UNSPEC;
+	m_SocketData.bIsClosing = false;
+	RemoveAllLayers();
+#ifndef NOSOCKETSTATES
+	SetState(notsock);
+#endif
+}
+
 int CAsyncSocketEx::Receive(void *lpBuf, int nBufLen, int nFlags)
 {
 	return recv(m_SocketData.hSocket, static_cast<char*>(lpBuf), nBufLen, nFlags);
@@ -583,6 +602,7 @@ bool CAsyncSocketEx::Connect(const CString &sHostAddress, UINT nHostPort)
 		return false;
 	}
 
+	ResetSocketForRetry();
 	if (m_SocketData.addrInfo) {
 		freeaddrinfo(m_SocketData.addrInfo);
 		m_SocketData.addrInfo = NULL;
@@ -633,14 +653,17 @@ BOOL CAsyncSocketEx::Connect(const LPSOCKADDR lpSockAddr, int nSockAddrLen)
 bool CAsyncSocketEx::TryNextProtocol()
 {
 	while (m_SocketData.nextAddr) {
-		addrinfo *pAddr = m_SocketData.nextAddr;
+		const addrinfo *pAddr = m_SocketData.nextAddr;
 		m_SocketData.nextAddr = m_SocketData.nextAddr->ai_next;
 
-		if (m_SocketData.hSocket != INVALID_SOCKET)
-			Close();
+		AsyncSocketExConnectTarget target = {};
+		if (!TryCaptureAsyncSocketConnectTarget(pAddr, target))
+			continue;
 
-		m_nSocketType = pAddr->ai_socktype;
-		if (!CreateSocketHandle(pAddr->ai_socktype, static_cast<ADDRESS_FAMILY>(pAddr->ai_family), pAddr->ai_protocol))
+		ResetSocketForRetry();
+
+		m_nSocketType = target.nSocketType;
+		if (!CreateSocketHandle(target.nSocketType, target.nFamily, target.nProtocol))
 			continue;
 
 		if (m_bReusable && m_nSocketPort != 0) {
@@ -648,11 +671,11 @@ bool CAsyncSocketEx::TryNextProtocol()
 			SetSockOpt(SO_REUSEADDR, &value, sizeof value);
 		}
 		if (!Bind(m_nSocketPort, m_sSocketAddress)) {
-			Close();
+			ResetSocketForRetry();
 			continue;
 		}
 
-		const BOOL bConnected = Connect(pAddr->ai_addr, static_cast<int>(pAddr->ai_addrlen));
+		const BOOL bConnected = Connect(reinterpret_cast<LPSOCKADDR>(&target.sockAddr), target.nSockAddrLen);
 		const int nError = WSAGetLastError();
 		if (bConnected || nError == WSAEWOULDBLOCK || nError == WSAEINPROGRESS || nError == WSAEINVAL)
 			return true;

@@ -377,7 +377,7 @@ int CAICHSyncThread::Run()
 			if (!ShouldCreateAICHSyncHash(theApp.IsClosing(), bIsStillShared))
 				continue;
 			theApp.QueueLogLine(false, GetResString(IDS_AICH_CALCFILE), (LPCTSTR)pCurFile->GetFileName());
-			if (!pCurFile->CreateAICHHashSetOnly())
+			if (!pCurFile->CreateAICHHashSetOnly() && !theApp.IsClosing())
 				theApp.QueueDebugLogLine(false, _T("Failed to create AICH Hashset while sync. for file %s"), (LPCTSTR)pCurFile->GetFileName());
 		}
 

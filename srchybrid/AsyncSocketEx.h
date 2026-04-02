@@ -120,6 +120,7 @@ protected:
 private:
 	bool CreateSocketHandle(int nSocketType, ADDRESS_FAMILY nFamily, int nProtocol = 0);
 	bool AttachSocketHandle(SOCKET hSocket, ADDRESS_FAMILY nFamily);
+	void ResetSocketForRetry();
 	void WaitForCallbacksToDrain(const std::shared_ptr<CAsyncSocketPollEntry> &pEntry);
 	static bool SetSocketNonBlocking(SOCKET hSocket);
 };

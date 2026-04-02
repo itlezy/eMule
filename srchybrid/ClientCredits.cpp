@@ -183,14 +183,16 @@ void CClientCreditsList::LoadList()
 
 		BOOL bCreateBackup = TRUE;
 
-		ScopedHandle hBakFile(::CreateFile(strBakFileName, GENERIC_READ, FILE_SHARE_READ, NULL
-									, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL));
-		if (hBakFile.IsValid()) {
-			// OK, the backup exist, get the size
-			DWORD dwBakFileSize = ::GetFileSize(hBakFile.Get(), NULL); //debug
-			if (dwBakFileSize > (DWORD)file.GetLength()) {
-				// the size of the backup was larger then the orig. file, something is wrong here, don't overwrite old backup.
-				bCreateBackup = FALSE;
+		{
+			ScopedHandle hBakFile(::CreateFile(strBakFileName, GENERIC_READ, FILE_SHARE_READ, NULL
+										, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL));
+			if (hBakFile.IsValid()) {
+				// OK, the backup exist, get the size
+				DWORD dwBakFileSize = ::GetFileSize(hBakFile.Get(), NULL); //debug
+				if (dwBakFileSize > (DWORD)file.GetLength()) {
+					// the size of the backup was larger then the orig. file, something is wrong here, don't overwrite old backup.
+					bCreateBackup = FALSE;
+				}
 			}
 		}
 		//else: the backup doesn't exist, create it

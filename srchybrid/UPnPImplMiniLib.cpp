@@ -19,6 +19,7 @@
 #include "UPnPImplMiniLib.h"
 #include "Log.h"
 #include "FormatSafetySeams.h"
+#include "UPnPImplMiniLibSeams.h"
 #include "Otherfunctions.h"
 #include "miniupnpc\include\miniupnpc.h"
 #include "miniupnpc\include\upnpcommands.h"
@@ -312,12 +313,12 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 												 , achOutIP, achOutPort
 												 , NULL, NULL, NULL);
 
-		if (nResult == UPNPCOMMAND_SUCCESS && achOutIP[0] != 0) {
+		if (nResult == UPNPCOMMAND_SUCCESS && DoesMiniUPnPMappingMatchRequest(achOutIP, achOutPort, pachLANIP, nPort)) {
 			DebugLog(_T("Checking UPnP: Mapping for port %hu (%s) on local IP %S still exists"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
 			return true;
 		}
 
-		DebugLogWarning(_T("Checking UPnP: Mapping for port %hu (%s) on local IP %S is gone, trying to reopen port"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
+		DebugLogWarning(_T("Checking UPnP: Mapping for port %hu (%s) is missing or points elsewhere (%S:%S), trying to reopen port"), nPort, (bTCP ? sTCP : sUDP), achOutIP, achOutPort);
 	}
 
 
@@ -329,6 +330,20 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 								, NULL, NULL);
 
 	if (nResult != UPNPCOMMAND_SUCCESS) {
+		achOutIP[0] = 0;
+		achOutPort[0] = 0;
+		const int nLookupResult = UPNP_GetSpecificPortMappingEntry(m_pOwner->m_pURLs->controlURL
+												   , m_pOwner->m_pIGDData->first.servicetype
+												   , strPort
+												   , (bTCP ? sTCPa : sUDPa)
+												   , NULL
+												   , achOutIP, achOutPort
+												   , NULL, NULL, NULL);
+		if (nLookupResult == UPNPCOMMAND_SUCCESS && DoesMiniUPnPMappingMatchRequest(achOutIP, achOutPort, pachLANIP, nPort)) {
+			DebugLog(_T("UPnP mapping for port %hu (%s) already existed on local IP %S"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
+			return true;
+		}
+
 		DebugLog(_T("Adding PortMapping failed, Error Code %u"), nResult);
 		return false;
 	}
@@ -346,12 +361,12 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 											 , achOutIP, achOutPort
 											 , NULL, NULL, NULL);
 
-	if (nResult == UPNPCOMMAND_SUCCESS && achOutIP[0] != 0) {
+	if (nResult == UPNPCOMMAND_SUCCESS && DoesMiniUPnPMappingMatchRequest(achOutIP, achOutPort, pachLANIP, nPort)) {
 		DebugLog(_T("Successfully added mapping for port %hu (%s) on local IP %S"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
 		return true;
 	}
 
-	DebugLogWarning(_T("Failed to verify mapping for port %hu (%s) on local IP %S - considering as failed"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
+	DebugLogWarning(_T("Failed to verify mapping for port %hu (%s); router reported %S:%S - considering as failed"), nPort, (bTCP ? sTCP : sUDP), achOutIP, achOutPort);
 	// maybe counting this as error is a bit harsh as this may lead to false negatives, however if we would risk false positives
 	// this would mean that the fallback implementations are not tried because eMule thinks it worked out fine
 	return false;
