@@ -13,6 +13,8 @@
 
 #include "stdafx.h"
 #include "AsyncSocketEx.h"
+#include "AsyncSocketExSeams.h"
+#include "Log.h"
 #include "OtherFunctions.h"
 
 #include <algorithm>
@@ -158,8 +160,14 @@ private:
 			}
 
 			const int rc = WSAPoll(pollFds.data(), static_cast<ULONG>(pollFds.size()), kSocketPollTimeoutMs);
-			if (rc <= 0)
+			if (rc == 0)
 				continue;
+			if (HasAsyncSocketPollFailure(rc)) {
+				const int nError = WSAGetLastError();
+				DebugLogError(_T("WSAPoll failed in AsyncSocketEx poller: %s"), (LPCTSTR)GetErrorMessage(nError, 1));
+				std::this_thread::sleep_for(std::chrono::milliseconds(kSocketPollTimeoutMs));
+				continue;
+			}
 
 			for (size_t i = 0; i < pollFds.size(); ++i) {
 				if (pollFds[i].revents == 0)

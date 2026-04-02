@@ -394,8 +394,10 @@ void CPartFile::CreatePartFile(UINT cat)
 	const CString &partfull(RemoveFileExtension(m_fullname));
 	SetFilePath(partfull);
 
-	if (!m_hpartfile.Open(partfull, CFile::modeCreate | CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan)) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_CREATEPARTFILE));
+	CFileException fex;
+	if (!m_hpartfile.Open(partfull, CFile::modeCreate | CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan, &fex)) {
+		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)GetResString(IDS_ERR_CREATEPARTFILE), (LPCTSTR)CExceptionStrDash(fex));
+		DebugLogError(_T("Failed to create part file \"%s\" - %s"), (LPCTSTR)partfull, (LPCTSTR)CExceptionStrDash(fex));
 		SetStatus(PS_ERROR);
 		return;
 	}

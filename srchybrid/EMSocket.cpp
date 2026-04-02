@@ -22,6 +22,7 @@
 #include <timeapi.h>
 #include "emsocket.h"
 #include "Packets.h"
+#include "SocketIoSeams.h"
 #include "ProtocolGuards.h"
 #include "OtherFunctions.h"
 #include "UploadBandwidthThrottler.h"
@@ -256,11 +257,15 @@ void CEMSocket::OnReceive(int nErrorCode)
 	int ret = Receive(GlobalReadBuffer + pendingHeaderSize, (int)readMax);
 	if (ret == SOCKET_ERROR || byConnected == EMS_DISCONNECTED)
 		return;
+	if (!HasValidSocketReceiveResult(ret, readMax)) {
+		OnError(ERR_WRONGHEADER);
+		return;
+	}
 
 	// Bandwidth control
 	if (downloadLimitEnable)
 		// Update limit
-		downloadLimit -= GetRealReceivedBytes();
+		downloadLimit = ClampSocketReceiveBudget(downloadLimit, GetRealReceivedBytes());
 
 	// CPU load improvement
 	// Detect if the socket's buffer is empty (or the size did match...)
@@ -651,7 +656,14 @@ SocketSentBytes CEMSocket::SendStd(uint32 maxNumberOfBytesToSend, uint32 minFrag
 					m_bBusy = false;
 					m_hasSent = true;
 
-					sent += result;
+					uint32 nUpdatedSent = 0;
+					if (!TryAccumulateSocketSendProgress(sent, tosend, sendblen, result, &nUpdatedSent)) {
+						ret.success = false;
+						theApp.QueueDebugLogLineEx(ERROR, _T("EMSocket::Send returned an invalid byte count: sent=%u request=%u result=%u buffer=%u"), sent, tosend, result, sendblen);
+						break;
+					}
+
+					sent = nUpdatedSent;
 					sentBytes = result;
 					// Log send bytes in correct class
 					if (!m_currentPacket_is_controlpacket) {

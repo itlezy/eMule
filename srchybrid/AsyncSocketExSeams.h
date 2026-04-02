@@ -116,3 +116,11 @@ inline AsyncSocketExCloseAction ClassifyAsyncSocketClose(AsyncSocketExState nSta
 
 	return {false, true};
 }
+
+/**
+ * Reports whether a `WSAPoll()` result represents a timeout, a dispatchable event batch, or a hard failure.
+ */
+inline bool HasAsyncSocketPollFailure(int nPollResult)
+{
+	return nPollResult == SOCKET_ERROR;
+}
