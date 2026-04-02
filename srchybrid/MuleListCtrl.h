@@ -138,7 +138,7 @@ public:
 	// Retrieves the number of items in the control.
 	int GetItemCount() const
 	{
-		return static_cast<int>(m_Params.GetCount());
+		return UsesOwnerDataItemModel() ? CListCtrl::GetItemCount() : static_cast<int>(m_Params.GetCount());
 	};
 
 	enum ArrowType
@@ -207,6 +207,8 @@ protected:
 	void DrawFocusRect(CDC *pDC, LPCRECT rcItem, BOOL bItemFocused, BOOL bCtrlFocused, BOOL bItemSelected);
 	void InitItemMemDC(CMemoryDC &dc, LPDRAWITEMSTRUCT lpDrawItemStruct, BOOL &bCtrlFocused);
 	void LocaliseHeaderCtrl(const UINT *const uids, size_t cnt);
+	/** @brief Reports whether this list view uses Win32 owner-data rows instead of CMuleListCtrl item bookkeeping. */
+	bool UsesOwnerDataItemModel() const { return (GetStyle() & LVS_OWNERDATA) != 0; }
 
 	static inline bool HaveIntersection(const RECT &rc1, const RECT &rc2)
 	{
@@ -282,6 +284,12 @@ private:
 
 	DWORD_PTR GetParamAt(POSITION pos, int iPos)
 	{
+		if (UsesOwnerDataItemModel())
+			return CListCtrl::GetItemData(iPos);
+
+		if (pos == NULL)
+			return 0;
+
 		DWORD_PTR lParam = m_Params.GetAt(pos);
 		if (lParam == 0xFEEBDEEF) { //same as MLC_MAGIC!
 			lParam = CListCtrl::GetItemData(iPos);

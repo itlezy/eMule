@@ -609,8 +609,15 @@ void CSearchResultsWnd::DownloadSelected(bool bPaused)
 	for (POSITION pos = searchlistctrl.GetFirstSelectedItemPosition(); pos != NULL;) {
 		int iIndex = searchlistctrl.GetNextSelectedItem(pos);
 		if (iIndex >= 0) {
-			// get selected listview item (may be a child item from an expanded search result)
-			const CSearchFile *sel_file = reinterpret_cast<CSearchFile*>(searchlistctrl.GetItemData(iIndex));
+			/**
+			 * @brief Owner-data search rows no longer carry per-item `lParam` state.
+			 *
+			 * Download actions therefore resolve the logical result directly from the
+			 * visible-row cache instead of reading list-view item data.
+			 */
+			const CSearchFile *const sel_file = searchlistctrl.GetSearchFileAt(iIndex);
+			if (sel_file == NULL)
+				continue;
 
 			// get parent
 			const CSearchFile *parent = sel_file->GetListParent();

@@ -217,7 +217,14 @@ void CSearchListCtrl::OnDestroy()
 
 void CSearchListCtrl::SetStyle()
 {
-	ModifyStyle(0, LVS_OWNERDATA);
+	/**
+	 * @brief The search result list must be created as an owner-data control.
+	 *
+	 * `LVS_OWNERDATA` cannot be toggled on safely after the list-view window has
+	 * been created, so the dialog resource now carries the style and this setup
+	 * path only verifies the invariant before enabling the extra list behavior.
+	 */
+	ASSERT((GetStyle() & LVS_OWNERDATA) != 0);
 	SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP);
 }
 
@@ -589,6 +596,9 @@ void CSearchListCtrl::AppendVisibleRowsForParent(CSearchFile *pParent)
 
 void CSearchListCtrl::SetVisibleRowCount()
 {
+	if (!CanApplyOwnerDataItemCount())
+		return;
+
 	SetItemCountEx(static_cast<int>(m_aVisibleRows.size()), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
 }
 
@@ -604,6 +614,17 @@ bool CSearchListCtrl::ShouldMarshalOwnerDataMutation() const
 
 	const DWORD dwUiThreadId = ::GetWindowThreadProcessId(hWnd, NULL);
 	return SearchListViewSeams::ShouldMarshalOwnerDataMutation(::GetCurrentThreadId(), dwUiThreadId);
+}
+
+/**
+ * @brief Guards virtual item count updates until the list view is a live owner-data control.
+ */
+bool CSearchListCtrl::CanApplyOwnerDataItemCount() const
+{
+	const HWND hWnd = GetSafeHwnd();
+	const bool bHasOwnerDataStyle = (GetStyle() & LVS_OWNERDATA) != 0;
+	ASSERT(hWnd == NULL || bHasOwnerDataStyle);
+	return SearchListViewSeams::CanApplyOwnerDataItemCount(hWnd != NULL, bHasOwnerDataStyle);
 }
 
 /**
@@ -1405,8 +1426,15 @@ void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	if (!g_bLowColorDesktop || (lpDrawItemStruct->itemState & ODS_SELECTED) == 0)
 		dc.SetTextColor(GetSearchItemColor(content));
 
-	bool isChild = (content->GetListParent() != NULL);
-	bool notLast = (lpDrawItemStruct->itemID + 1 != (UINT)GetItemCount());
+	const size_t uVisibleRowCount = m_aVisibleRows.size();
+	const bool isChild = (content->GetListParent() != NULL);
+	/**
+	 * @brief Owner-data paint notifications may briefly outlive the previous visible-row count.
+	 *
+	 * Use the logical row cache as the source of truth so tree drawing never
+	 * dereferences a row index that was already trimmed out of the projection.
+	 */
+	const bool notLast = static_cast<size_t>(lpDrawItemStruct->itemID + 1) < uVisibleRowCount;
 	bool notFirst = (lpDrawItemStruct->itemID != 0);
 	int tree_start = 0;
 	int tree_end = 0;
@@ -1472,7 +1500,8 @@ void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		dc.IntersectClipRect(&tree_rect);
 
 		//gather some information
-		bool hasNext = notLast && GetSearchFileAt(static_cast<int>(lpDrawItemStruct->itemID + 1))->GetListParent() != NULL;
+		CSearchFile *const pNextVisibleFile = notLast ? GetSearchFileAt(static_cast<int>(lpDrawItemStruct->itemID + 1)) : NULL;
+		const bool hasNext = pNextVisibleFile != NULL && pNextVisibleFile->GetListParent() != NULL;
 		bool isOpenRoot = hasNext && !isChild;
 
 		//might as well calculate these now

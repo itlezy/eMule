@@ -76,6 +76,8 @@ public:
 	void	UpdateTabHeader(uint32 nResultsID);
 	EFileSizeFormat GetFileSizeFormat() const		{ return m_eFileSizeFormat; }
 	void	SetFileSizeFormat(EFileSizeFormat eFormat);
+	/** @brief Resolves the logical search file shown at a visible owner-data row index. */
+	CSearchFile* GetSearchFileAt(int iItem) const;
 
 protected:
 	CTitledMenu	m_SearchFileMenu;
@@ -145,11 +147,11 @@ protected:
 	void	AppendVisibleRowsForParent(CSearchFile *pParent);
 	void	AppendVisibleChildRows(CSearchFile *pParent);
 	int		FindVisibleItem(const CSearchFile *pSearchFile) const;
-	CSearchFile* GetSearchFileAt(int iItem) const;
 	bool	TryInsertVisibleResult(CSearchFile *pSearchFile);
 	void	SetVisibleRowCount();
 	void	SortVisibleRows(std::vector<CSearchFile*> &rRows) const;
 	bool	ShouldMarshalOwnerDataMutation() const;
+	bool	CanApplyOwnerDataItemCount() const;
 	void	TryPostDeferredVisibleRowsRefresh();
 	void	QueueDeferredVisibleRowsRefresh(bool bUpdateTabHeader);
 

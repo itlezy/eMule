@@ -74,6 +74,16 @@ inline ptrdiff_t FindVisibleRowIndex(const std::vector<SVisibleRow> &rVisibleRow
 }
 
 /**
+ * @brief Resolves the stored row id for a visible owner-data list index.
+ */
+inline size_t GetVisibleRowIdAt(const std::vector<SVisibleRow> &rVisibleRows, const ptrdiff_t iVisibleIndex)
+{
+	return (iVisibleIndex >= 0 && static_cast<size_t>(iVisibleIndex) < rVisibleRows.size())
+		? rVisibleRows[static_cast<size_t>(iVisibleIndex)].uRowId
+		: 0u;
+}
+
+/**
  * @brief Reports whether an owner-data list mutation must be marshalled to the UI thread.
  */
 inline bool ShouldMarshalOwnerDataMutation(const unsigned long dwCurrentThreadId, const unsigned long dwUiThreadId)
@@ -91,5 +101,17 @@ inline bool TryQueueCoalescedOwnerDataRefresh(bool &rbRefreshMessagePending)
 
 	rbRefreshMessagePending = true;
 	return true;
+}
+
+/**
+ * @brief Reports whether the owner-data list view is ready to accept virtual item count changes.
+ *
+ * Virtual list views require a created window and the `LVS_OWNERDATA` style
+ * at creation time. Search-list refreshes skip `SetItemCountEx` until both
+ * conditions are satisfied so startup and teardown do not trip MFC asserts.
+ */
+inline bool CanApplyOwnerDataItemCount(const bool bHasWindow, const bool bHasOwnerDataStyle)
+{
+	return bHasWindow && bHasOwnerDataStyle;
 }
 }

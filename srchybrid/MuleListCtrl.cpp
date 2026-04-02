@@ -580,6 +580,9 @@ int CMuleListCtrl::MoveItem(int iOldIndex, int iNewIndex)
 
 int CMuleListCtrl::UpdateLocation(int iItem)
 {
+	if (UsesOwnerDataItemModel())
+		return iItem;
+
 	int iItemCount = GetItemCount();
 	if (iItem >= iItemCount || iItem < 0)
 		return iItem;
@@ -653,6 +656,9 @@ int CMuleListCtrl::UpdateLocation(int iItem)
 
 DWORD_PTR CMuleListCtrl::GetItemData(int iItem)
 {
+	if (UsesOwnerDataItemModel())
+		return CListCtrl::GetItemData(iItem);
+
 	POSITION pos = m_Params.FindIndex(iItem);
 	if (pos == NULL)
 		return 0;
@@ -808,6 +814,8 @@ BOOL CMuleListCtrl::OnWndMsg(UINT message, WPARAM wParam, LPARAM lParam, LRESULT
 		}
 		break;
 	case LVM_SETITEM:
+		if (UsesOwnerDataItemModel())
+			break;
 		{
 			POSITION pos = m_Params.FindIndex(reinterpret_cast<LPLVITEM>(lParam)->iItem);
 			if (pos) {
@@ -822,6 +830,8 @@ BOOL CMuleListCtrl::OnWndMsg(UINT message, WPARAM wParam, LPARAM lParam, LRESULT
 	case LVN_KEYDOWN:
 		break;
 	case LVM_SETITEMTEXT:
+		if (UsesOwnerDataItemModel())
+			break;
 		//need to check for movement
 		*pResult = DefWindowProc(message, wParam, lParam);
 		if (*pResult) {
@@ -832,22 +842,30 @@ BOOL CMuleListCtrl::OnWndMsg(UINT message, WPARAM wParam, LPARAM lParam, LRESULT
 		}
 		return *pResult != 0;
 	case LVM_SORTITEMS:
+		if (UsesOwnerDataItemModel())
+			break;
 		m_dwParamSort = (LPARAM)wParam;
 		m_SortProc = (PFNLVCOMPARE)lParam;
 		for (POSITION pos = m_Params.GetHeadPosition(); pos != NULL; m_Params.GetNext(pos))
 			m_Params.SetAt(pos, MLC_MAGIC);
 		break;
 	case LVM_DELETEALLITEMS:
+		if (UsesOwnerDataItemModel())
+			break;
 		if (!CListCtrl::OnWndMsg(message, wParam, lParam, pResult) && DefWindowProc(message, wParam, lParam))
 			m_Params.RemoveAll();
 		return (BOOL)(*pResult = 1);
 	case LVM_DELETEITEM:
+		if (UsesOwnerDataItemModel())
+			break;
 		MLC_ASSERT(m_Params.GetAt(m_Params.FindIndex(wParam)) == CListCtrl::GetItemData(wParam));
 		if (!CListCtrl::OnWndMsg(message, wParam, lParam, pResult) && DefWindowProc(message, wParam, lParam))
 			m_Params.RemoveAt(m_Params.FindIndex(wParam));
 		return (BOOL)(*pResult = 1);
 	case LVM_INSERTITEMA:
 	case LVM_INSERTITEMW:
+		if (UsesOwnerDataItemModel())
+			break;
 		//try to fix position of inserted items
 		{
 			LPLVITEM pItem = reinterpret_cast<LPLVITEM>(lParam);
@@ -931,6 +949,8 @@ BOOL CMuleListCtrl::OnWndMsg(UINT message, WPARAM wParam, LPARAM lParam, LRESULT
 		SaveSettings();
 		break;
 	case LVM_UPDATE:
+		if (UsesOwnerDataItemModel())
+			break;
 		//better fix for old problem... normally Update(int) causes entire list to redraw
 		if ((int)wParam == UpdateLocation((int)wParam)) { //no need to invalidate rect if item moved
 			RECT rcItem;
