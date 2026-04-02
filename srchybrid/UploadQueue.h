@@ -127,12 +127,17 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	struct RetiredUploadClientStructContext
+	{
+		UploadingToClient_Struct *pUploadClientStruct;
+	};
 	/** Makes a removed upload entry inert before worker-thread completions can observe it again. */
 	void	RetireUploadClientStruct(POSITION pos, UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient);
 	/** Deletes retired upload entries once no overlapped disk reads still point at them. */
 	void	ReclaimRetiredUploadClientStructs();
 	/** Clears queued upload-block state and detaches the client before delayed reclamation. */
 	void	InvalidateUploadClientStruct(UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient);
+	RetiredUploadClientStructContext RemoveUploadClientStructFromActiveList(POSITION pos, UploadingToClient_Struct *pUploadClientStruct);
 	void	UpdateActiveClientsInfo(DWORD curTick);
 	void	UpdateSlotCapacityState(DWORD curTick);
 	bool	ShouldOpenMoreUploadSlots(INT_PTR curUploadSlots) const;

@@ -20,6 +20,7 @@
 #include "uploaddiskiothread.h"
 #include "emule.h"
 #include "UploadQueue.h"
+#include "UploadQueueSeams.h"
 #include "sharedfilelist.h"
 #include "partfile.h"
 #include "log.h"
@@ -305,10 +306,11 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 			const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
 			CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
 			ASSERT(lockUploadListRead.IsLocked());
-			bool bFound = (rUploadList.Find(pStruct) != NULL);
+			const bool bFound = (rUploadList.Find(pStruct) != NULL);
+			const UploadQueueEntryAccessState entryState = ClassifyUploadQueueEntryAccess(bFound, pStruct->m_bRetired, pStruct->m_pClient != NULL);
 
 			// all important prechecks done, create the packets
-			if (bFound && !bReadError) {
+			if (entryState == uploadQueueEntryLive && !bReadError) {
 				// Keep the uploadlist locked while working with the client object.
 				// Instead of sending the packets immediately, we store them
 				// and send after we have released the uploadlist lock -
@@ -337,8 +339,8 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 					Packet *packet = packetsList.RemoveHead();
 					pSocket->SendPacket(packet, false, packet->uStatsPayLoad);
 				}
-			} else { // bReadError is true
-				if (bFound)
+			} else { // bReadError is true or the entry is no longer live
+				if (entryState == uploadQueueEntryLive)
 					pStruct->m_bIOError = true;
 				else
 					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Client not found in uploadlist when reading finished; discarding block"));

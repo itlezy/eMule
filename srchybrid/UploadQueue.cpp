@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "ModernLimits.h"
 #include "UploadQueue.h"
+#include "UploadQueueSeams.h"
 #include "Packets.h"
 #include "PartFile.h"
 #include "ListenSocket.h"
@@ -774,10 +775,12 @@ void CUploadQueue::InvalidateUploadClientStruct(UploadingToClient_Struct *pUploa
 	pUploadClientStruct->m_pClient = NULL;
 }
 
-void CUploadQueue::RetireUploadClientStruct(POSITION pos, UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient)
+/**
+ * @brief Removes an upload entry from the active list under the upload-list lock and marks it retired.
+ */
+CUploadQueue::RetiredUploadClientStructContext CUploadQueue::RemoveUploadClientStructFromActiveList(POSITION pos, UploadingToClient_Struct *pUploadClientStruct)
 {
 	ASSERT(pUploadClientStruct != NULL);
-	ASSERT(pClient != NULL);
 
 	CSingleLock lockUploadList(&m_csUploadListMainThrdWriteOtherThrdsRead, TRUE);
 	ASSERT(lockUploadList.IsLocked());
@@ -785,8 +788,17 @@ void CUploadQueue::RetireUploadClientStruct(POSITION pos, UploadingToClient_Stru
 	uploadinglist.RemoveAt(pos);
 	pUploadClientStruct->m_bRetired = true;
 	pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
-	InvalidateUploadClientStruct(pUploadClientStruct, pClient);
 	m_retiredUploadingList.AddTail(pUploadClientStruct);
+	return {pUploadClientStruct};
+}
+
+void CUploadQueue::RetireUploadClientStruct(POSITION pos, UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient)
+{
+	ASSERT(pUploadClientStruct != NULL);
+	ASSERT(pClient != NULL);
+
+	const RetiredUploadClientStructContext retiredContext = RemoveUploadClientStructFromActiveList(pos, pUploadClientStruct);
+	InvalidateUploadClientStruct(retiredContext.pUploadClientStruct, pClient);
 }
 
 void CUploadQueue::ReclaimRetiredUploadClientStructs()
@@ -798,7 +810,7 @@ void CUploadQueue::ReclaimRetiredUploadClientStructs()
 		POSITION curPos = pos;
 		UploadingToClient_Struct *pUploadClientStruct = m_retiredUploadingList.GetNext(pos);
 		ASSERT(pUploadClientStruct->m_bRetired);
-		if (pUploadClientStruct->m_nPendingIOBlocks.load() == 0) {
+		if (CanReclaimUploadQueueEntry(pUploadClientStruct->m_bRetired, pUploadClientStruct->m_nPendingIOBlocks.load())) {
 			m_retiredUploadingList.RemoveAt(curPos);
 			delete pUploadClientStruct;
 		}
@@ -945,22 +957,27 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client)
 void CUploadQueue::DeleteAll()
 {
 	waitinglist.RemoveAll();
+	CUploadingPtrList deletingList;
 	CSingleLock lockUploadList(&m_csUploadListMainThrdWriteOtherThrdsRead, TRUE);
 	ASSERT(lockUploadList.IsLocked());
 
 	while (!uploadinglist.IsEmpty()) {
 		UploadingToClient_Struct *pUploadClientStruct = uploadinglist.RemoveHead();
-		CUpDownClient *pClient = pUploadClientStruct->m_pClient;
 		pUploadClientStruct->m_bRetired = true;
 		pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
-		if (pClient != NULL)
-			InvalidateUploadClientStruct(pUploadClientStruct, pClient);
-		ASSERT(pUploadClientStruct->m_nPendingIOBlocks.load() == 0);
-		delete pUploadClientStruct;
+		deletingList.AddTail(pUploadClientStruct);
 	}
 	while (!m_retiredUploadingList.IsEmpty()) {
-		UploadingToClient_Struct *pUploadClientStruct = m_retiredUploadingList.RemoveHead();
-		ASSERT(pUploadClientStruct->m_nPendingIOBlocks.load() == 0);
+		deletingList.AddTail(m_retiredUploadingList.RemoveHead());
+	}
+	lockUploadList.Unlock();
+
+	while (!deletingList.IsEmpty()) {
+		UploadingToClient_Struct *pUploadClientStruct = deletingList.RemoveHead();
+		CUpDownClient *pClient = pUploadClientStruct->m_pClient;
+		if (pClient != NULL)
+			InvalidateUploadClientStruct(pUploadClientStruct, pClient);
+		ASSERT(CanReclaimUploadQueueEntry(pUploadClientStruct->m_bRetired, pUploadClientStruct->m_nPendingIOBlocks.load()));
 		delete pUploadClientStruct;
 	}
 	// PENDING: Remove from UploadBandwidthThrottler as well!
