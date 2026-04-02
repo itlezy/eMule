@@ -475,6 +475,15 @@ void CSharedFilesCtrl::ShowFilesCount()
 	theApp.emuledlg->sharedfileswnd->SetDlgItemText(IDC_TRAFFIC_TEXT, GetResString(IDS_SF_FILES) + str);
 }
 
+/**
+ * @brief Applies the worker-reported AICH hashing count on the UI thread and refreshes the shared-files title.
+ */
+void CSharedFilesCtrl::ApplyAICHHashingCount(INT_PTR nVal)
+{
+	SetAICHHashing(nVal);
+	ShowFilesCount();
+}
+
 void CSharedFilesCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	if (!lpDrawItemStruct->itemData || theApp.IsClosing())

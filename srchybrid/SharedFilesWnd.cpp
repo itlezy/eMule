@@ -56,6 +56,7 @@ BEGIN_MESSAGE_MAP(CSharedFilesWnd, CResizableDialog)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SFLIST, OnLvnItemchangedSflist)
 	ON_WM_SHOWWINDOW()
 	ON_MESSAGE(UM_AUTO_RELOAD_SHARED_FILES, OnAutoReloadSharedFiles)
+	ON_MESSAGE(UM_AICH_HASHING_COUNT_CHANGED, OnAICHHashingCountChanged)
 END_MESSAGE_MAP()
 
 CSharedFilesWnd::CSharedFilesWnd(CWnd *pParent /*=NULL*/)
@@ -224,6 +225,15 @@ LRESULT CSharedFilesWnd::OnAutoReloadSharedFiles(WPARAM, LPARAM)
 	CWaitCursor curWait;
 	Reload(true);
 	theApp.sharedfiles->FinishAutoReload();
+	return 0;
+}
+
+/**
+ * @brief Applies AICH sync progress updates on the UI thread before refreshing the shared-files counter.
+ */
+LRESULT CSharedFilesWnd::OnAICHHashingCountChanged(WPARAM wParam, LPARAM)
+{
+	sharedfilesctrl.ApplyAICHHashingCount(static_cast<INT_PTR>(wParam));
 	return 0;
 }
 
