@@ -124,3 +124,11 @@ inline bool HasAsyncSocketPollFailure(int nPollResult)
 {
 	return nPollResult == SOCKET_ERROR;
 }
+
+/**
+ * @brief Reports whether callback-drain polling should keep yielding while callbacks remain in flight.
+ */
+inline bool ShouldYieldForAsyncSocketCallbackDrain(long nCallbacksInFlight)
+{
+	return nCallbacksInFlight > 0;
+}

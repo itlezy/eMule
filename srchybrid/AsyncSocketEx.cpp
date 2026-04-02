@@ -346,8 +346,8 @@ void CAsyncSocketEx::WaitForCallbacksToDrain(const std::shared_ptr<CAsyncSocketP
 	if (!pEntry || CSocketPoller::Instance().IsNetworkThread())
 		return;
 
-	while (pEntry->callbacksInFlight.load(std::memory_order_acquire) > 0)
-		::Sleep(1);
+	while (ShouldYieldForAsyncSocketCallbackDrain(pEntry->callbacksInFlight.load(std::memory_order_acquire)))
+		::SwitchToThread();
 }
 
 bool CAsyncSocketEx::AttachSocketHandle(SOCKET hSocket, ADDRESS_FAMILY nFamily)

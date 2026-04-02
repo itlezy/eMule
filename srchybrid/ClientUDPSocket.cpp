@@ -470,7 +470,9 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 					CSingleLock lockSend(&sendLocker, TRUE);
 					controlpacket_queue.AddHead(cur_packet); //try to resend
 				}
-				::Sleep(20);
+				/** Yield after a would-block requeue so the socket callback thread can rearm write readiness. */
+				if (ShouldYieldAfterUdpControlRequeue(iLen))
+					::SwitchToThread();
 			}
 		} else {
 			delete cur_packet->packet;

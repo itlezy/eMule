@@ -30,6 +30,14 @@ inline bool ShouldRequeueUdpControlPacket(int nSendResult)
 }
 
 /**
+ * @brief Reports whether the UDP throttler should cooperatively yield after requeueing a would-block packet.
+ */
+inline bool ShouldYieldAfterUdpControlRequeue(int nSendResult)
+{
+	return ShouldRequeueUdpControlPacket(nSendResult);
+}
+
+/**
  * @brief Reports whether the throttler should be re-woken for queued UDP control data.
  */
 inline bool ShouldSignalUdpControlQueue(bool bWouldBlock, bool bQueueEmpty)
