@@ -424,8 +424,9 @@ void CClientUDPSocket::OnDatagramSend(int nErrorCode)
 	CSingleLock lockSend(&sendLocker, TRUE);
 	m_bWouldBlock = false;
 	SetWriteInterestEnabled(false);
-
-	if (ShouldSignalUdpControlQueue(m_bWouldBlock, controlpacket_queue.IsEmpty()))
+	const bool bShouldSignalQueue = ShouldSignalUdpControlQueue(m_bWouldBlock, controlpacket_queue.IsEmpty());
+	lockSend.Unlock();
+	if (bShouldSignalQueue)
 		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 // <-- ZZ:UploadBandWithThrottler (UDP)
 }
@@ -538,9 +539,10 @@ bool CClientUDPSocket::SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, boo
 	else
 		md4clr(newpending->pachTargetClientHashORKadID);
 // ZZ:UploadBandWithThrottler (UDP) -->
-	CSingleLock lockSend(&sendLocker, TRUE);
-	controlpacket_queue.AddTail(newpending);
-
+	{
+		CSingleLock lockSend(&sendLocker, TRUE);
+		controlpacket_queue.AddTail(newpending);
+	}
 	theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 	return true;
 // <-- ZZ:UploadBandWithThrottler (UDP)

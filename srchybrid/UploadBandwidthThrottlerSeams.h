@@ -58,6 +58,25 @@ namespace UploadBandwidthThrottlerSeams
 	}
 
 	/**
+	 * @brief Pops the next control socket to send while preserving the priority queue order.
+	 */
+	template <typename TSocket>
+	inline TSocket *PopNextControlSocket(std::list<TSocket*> &controlQueueFirst, std::list<TSocket*> &controlQueue)
+	{
+		if (!controlQueueFirst.empty()) {
+			TSocket *pSocket = controlQueueFirst.front();
+			controlQueueFirst.pop_front();
+			return pSocket;
+		}
+		if (!controlQueue.empty()) {
+			TSocket *pSocket = controlQueue.front();
+			controlQueue.pop_front();
+			return pSocket;
+		}
+		return nullptr;
+	}
+
+	/**
 	 * @brief Clears every control-queue domain during throttler shutdown.
 	 */
 	template <typename TSocket>

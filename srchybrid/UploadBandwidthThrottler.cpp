@@ -506,19 +506,18 @@ UINT UploadBandwidthThrottler::RunInternal()
 				m_ControlQueue_list,
 				m_TempControlQueueFirst_list,
 				m_TempControlQueue_list);
+			queueLocker.Unlock();
 
 			// Send any queued up control packets first
 			while ((bytesToSpend > 0 && spentBytes < (uint64)bytesToSpend || allowedDataRate == 0 && spentBytes < 500)
-				&& (!m_ControlQueueFirst_list.empty() || !m_ControlQueue_list.empty()))
+				)
 			{
-				ThrottledControlSocket *socket;
-				if (!m_ControlQueueFirst_list.empty()) {
-					socket = m_ControlQueueFirst_list.front();
-					m_ControlQueueFirst_list.pop_front();
-				} else if (!m_ControlQueue_list.empty()) {
-					socket = m_ControlQueue_list.front();
-					m_ControlQueue_list.pop_front();
-				} else
+				queueLocker.Lock();
+				ThrottledControlSocket *socket = UploadBandwidthThrottlerSeams::PopNextControlSocket(
+					m_ControlQueueFirst_list,
+					m_ControlQueue_list);
+				queueLocker.Unlock();
+				if (socket == NULL)
 					break;
 
 				if (socket != NULL) {
@@ -528,6 +527,8 @@ UINT UploadBandwidthThrottler::RunInternal()
 					spentOverhead += socketSentBytes.sentBytesControlPackets;
 				}
 			}
+
+			queueLocker.Lock();
 
 			// Check if any sockets have got no data for a long time. Then trickle them a packet.
 			for (INT_PTR slotCounter = 0; slotCounter < GetStandardListSize(); ++slotCounter) {
