@@ -24,6 +24,7 @@
 #include "Packets.h"
 #include "SocketIoSeams.h"
 #include "ProtocolGuards.h"
+#include "ResourceOwnershipSeams.h"
 #include "OtherFunctions.h"
 #include "UploadBandwidthThrottler.h"
 #include "Preferences.h"
@@ -53,24 +54,24 @@ namespace
 		_strdate(osDate);
 		int len = snprintf(temp, _countof(temp), "%s %s: %s\r\n", osDate, osTime, bufferline);
 		if (len > 0) {
-			HANDLE hFile = ::CreateFile(_T("c:\\tmp\\EMSocket.log")	// ensure valid path to a writable location
+			/** @brief Keep the debug trace file handle scoped even if this helper grows new early exits later. */
+			ScopedHandle hFile(::CreateFile(_T("c:\\tmp\\EMSocket.log")	// ensure valid path to a writable location
 				, GENERIC_WRITE			// open for writing
 				, FILE_SHARE_READ		// share for reading
 				, NULL					// no security
 				, OPEN_ALWAYS			// open existing or create new
 				, FILE_ATTRIBUTE_NORMAL // normal file
-				, NULL);				// no template file
+				, NULL));				// no template file
 
-			if (hFile != INVALID_HANDLE_VALUE) {
+			if (hFile.IsValid()) {
 				DWORD nbBytesWritten;
-				SetFilePointer(hFile, 0, NULL, FILE_END);
-				::WriteFile(hFile	// handle to file
+				SetFilePointer(hFile.Get(), 0, NULL, FILE_END);
+				::WriteFile(hFile.Get()	// handle to file
 					, temp				// data buffer
 					, len				// number of bytes to write
 					, &nbBytesWritten	// number of bytes written
 					, NULL				// overlapped buffer
 				);
-				::CloseHandle(hFile);
 			}
 		}
 #else

@@ -38,6 +38,7 @@
 #include "shahashset.h"
 #include "Log.h"
 #include "MD4.h"
+#include "ResourceOwnershipSeams.h"
 #include "MappedFileReader.h"
 #include "Collection.h"
 #include "emuledlg.h"
@@ -56,10 +57,10 @@ namespace
 	/**
 	 * @brief Opens a shared-read Win32 handle for hashing while keeping long-path support.
 	 */
-	HANDLE OpenHashReadHandleLongPath(const CString &rstrFilePath)
+	ScopedHandle OpenHashReadHandleLongPath(const CString &rstrFilePath)
 	{
-		return ::CreateFile(PreparePathForLongPath(rstrFilePath), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
-			, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+		return ScopedHandle(::CreateFile(PreparePathForLongPath(rstrFilePath), GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
+			, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, NULL));
 	}
 
 	/**
@@ -457,17 +458,16 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		strFilePath += _T("\\");
 	strFilePath += in_filename;
 	SetFilePath(strFilePath);
-	HANDLE hFile = OpenHashReadHandleLongPath(strFilePath); // can not use exclusive sharing because we may access a completing part file
-	if (hFile == INVALID_HANDLE_VALUE) {
+	ScopedHandle hFile = OpenHashReadHandleLongPath(strFilePath); // can not use exclusive sharing because we may access a completing part file
+	if (!hFile.IsValid()) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), (LPCTSTR)GetErrorMessage(::GetLastError()));
 		return false;
 	}
 
 	// set file size. Zero size is valid for .part files
 	LARGE_INTEGER liFileSize = {};
-	if (!::GetFileSizeEx(hFile, &liFileSize)) {
+	if (!::GetFileSizeEx(hFile.Get(), &liFileSize)) {
 		LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, (LPCTSTR)GetErrorMessage(::GetLastError()));
-		VERIFY(::CloseHandle(hFile));
 		return false;
 	}
 	__int64 llFileSize = liFileSize.QuadPart;
@@ -476,7 +476,6 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, (LPCTSTR)GetErrorMessage(ERROR_HANDLE_EOF));
 		else
 			LogError(_T("Skipped hashing file \"%s\" - File size exceeds limit."), (LPCTSTR)strFilePath);
-		VERIFY(::CloseHandle(hFile));
 		return false; // not supported by network
 	}
 	SetFileSize((EMFileSize)(uint64)llFileSize);
@@ -500,17 +499,15 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 		uchar *newhash = new uchar[MDX_DIGEST_SIZE];
 		try {
-			CreateHash(hFile, static_cast<uint64>(hashcount) * PARTSIZE, uSize, newhash, pBlockAICHHashTree);
+			CreateHash(hFile.Get(), static_cast<uint64>(hashcount) * PARTSIZE, uSize, newhash, pBlockAICHHashTree);
 		} catch (CFileException *ex) {
 			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, (LPCTSTR)CExceptionStr(*ex));
-			VERIFY(::CloseHandle(hFile));
 			delete[] newhash;
 			ex->Delete();
 			return false;
 		}
 
 		if (theApp.IsClosing()) { // in case of shutdown while still hashing
-			VERIFY(::CloseHandle(hFile));
 			delete[] newhash;
 			return false;
 		}
@@ -530,14 +527,12 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 		if (theApp.IsClosing()) {
 			LogError(_T("Hashing cancelled (closing eMule), file \"%s\""), (LPCTSTR)strFilePath);
-			VERIFY(::CloseHandle(hFile));
 			return false;
 		}
 		if (pvProgressParam) {
 			if (reinterpret_cast<CPartFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CPartFile))
 				&& reinterpret_cast<CPartFile*>(pvProgressParam)->IsDeleting()) {
 				LogError(_T("Hashing cancelled (pending delete), file \"%s\""), (LPCTSTR)strFilePath);
-				VERIFY(::CloseHandle(hFile));
 				return false;
 			}
 
@@ -580,12 +575,10 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 	// set last write date
 	struct _stat64 st;
-	if (statUTC(hFile, st) == 0) {
+	if (statUTC(hFile.Get(), st) == 0) {
 		m_tUtcLastModified = (time_t)st.st_mtime;
 		AdjustNTFSDaylightFileTime(m_tUtcLastModified, (LPCTSTR)strFilePath);
 	}
-
-	VERIFY(::CloseHandle(hFile));
 
 	// Add file tags
 	UpdateMetaDataTags();
@@ -599,8 +592,8 @@ bool CKnownFile::CreateAICHHashSetOnly()
 {
 	ASSERT(!IsPartFile());
 
-	HANDLE hFile = OpenHashReadHandleLongPath(GetFilePath()); // can not use exclusive sharing because we may access a completing part file
-	if (hFile == INVALID_HANDLE_VALUE) {
+	ScopedHandle hFile = OpenHashReadHandleLongPath(GetFilePath()); // can not use exclusive sharing because we may access a completing part file
+	if (!hFile.IsValid()) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)GetFilePath(), _T(""), (LPCTSTR)GetErrorMessage(::GetLastError()));
 		return false;
 	}
@@ -613,20 +606,17 @@ bool CKnownFile::CreateAICHHashSetOnly()
 		CAICHHashTree *pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash(hashcount * PARTSIZE, uSize);
 		ASSERT(pBlockAICHHashTree != NULL);
 		try {
-			CreateHash(hFile, static_cast<uint64>(hashcount) * PARTSIZE, uSize, NULL, pBlockAICHHashTree);
+			CreateHash(hFile.Get(), static_cast<uint64>(hashcount) * PARTSIZE, uSize, NULL, pBlockAICHHashTree);
 		} catch (CFileException *ex) {
 			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)GetFilePath(), (LPCTSTR)CExceptionStr(*ex));
-			VERIFY(::CloseHandle(hFile));
 			ex->Delete();
 			return false;
 		}
 		if (theApp.IsClosing()) { // in case of shutdown while still hashing
-			VERIFY(::CloseHandle(hFile));
 			return false;
 		}
 		togo -= uSize;
 	}
-	VERIFY(::CloseHandle(hFile));
 
 	cAICHHashSet.ReCalculateHash(false);
 	if (cAICHHashSet.VerifyHashTree(true)) {

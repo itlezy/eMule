@@ -34,10 +34,12 @@
 #include "Server.h"
 #include "ServerConnect.h"
 #include "ClientSocketLifetimeSeams.h"
+#include "ResourceOwnershipSeams.h"
 #include "SocketPolicySeams.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "ClientListCtrl.h"
+#include <memory>
 #include "Exceptions.h"
 #include "Kademlia/Utils/uint128.h"
 #include "Kademlia/Kademlia/kademlia.h"
@@ -227,21 +229,14 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			theStats.AddDownDataOverheadOther(size);
 
 			bool bNewClient = !client;
-			if (bNewClient)
-				// create new client to save standard information
-				client = new CUpDownClient(this);
-
-			bool bIsMuleHello;
-			try {
-				bIsMuleHello = client->ProcessHelloPacket(packet, size);
-			} catch (...) {
-				if (bNewClient) {
-					// Don't let CUpDownClient::Disconnected process a client which is not in the list of clients.
-					delete client;
-					client = NULL;
-				}
-				throw;
+			std::unique_ptr<CUpDownClient> pOwnedClient;
+			if (bNewClient) {
+				/** @brief Keep the temporary hello client scoped until the list accepts ownership. */
+				pOwnedClient.reset(new CUpDownClient(this));
+				client = pOwnedClient.get();
 			}
+
+			bool bIsMuleHello = client->ProcessHelloPacket(packet, size);
 
 			if (thePrefs.GetDebugClientTCPLevel() > 0) {
 				DebugRecv("OP_Hello", client);
@@ -257,6 +252,7 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				bIsMuleHello = client->ProcessHelloPacket(packet, size);
 			else {
 				theApp.clientlist->AddClient(client);
+				ReleaseOwnedObjectIfMatched(pOwnedClient, client);
 				client->SetCommentDirty();
 			}
 
@@ -1315,8 +1311,11 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 				uint16 tcp = data.ReadUInt16();
 				CUpDownClient *callback = theApp.clientlist->FindClientByConnIP(ntohl(ip), tcp);
 				if (callback == NULL) {
-					callback = new CUpDownClient(NULL, tcp, ip, 0, 0);
+					/** @brief Hold the callback client locally until the client list owns it. */
+					std::unique_ptr<CUpDownClient> pOwnedCallback(new CUpDownClient(NULL, tcp, ip, 0, 0));
+					callback = pOwnedCallback.get();
 					theApp.clientlist->AddClient(callback);
+					ReleaseOwnedObjectIfMatched(pOwnedCallback, callback);
 				}
 
 				callback->TryToConnect(true);

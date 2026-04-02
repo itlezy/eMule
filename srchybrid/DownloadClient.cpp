@@ -29,6 +29,7 @@
 #include "ClientUDPSocket.h"
 #include "CompressionBufferSeams.h"
 #include "ProtocolGuards.h"
+#include "ResourceOwnershipSeams.h"
 #include "emuledlg.h"
 #include "UserMsgs.h"
 #include "TransferDlg.h"
@@ -37,6 +38,7 @@
 #include "SharedFileList.h"
 #include "Log.h"
 #include "DisplayRefreshSeams.h"
+#include <vector>
 #include <zlib.h>
 
 #ifdef _DEBUG
@@ -783,12 +785,10 @@ void CUpDownClient::CreateBlockRequests(int blockCount)
 	if (blockCount <= 0)
 		return;
 
-	Requested_Block_Struct **toadd = new Requested_Block_Struct*[blockCount];
-	if (m_reqfile->GetNextRequestedBlock(this, toadd, blockCount))
-		for (int i = 0; i < blockCount; ++i)
-			m_PendingBlocks_list.AddTail(new Pending_Block_Struct{toadd[i]});
-
-	delete[] toadd;
+	/** @brief Stage requested block pointers in RAII storage so early exits cannot leak the scratch array. */
+	std::vector<Requested_Block_Struct*> toadd(static_cast<size_t>(blockCount), NULL);
+	if (m_reqfile->GetNextRequestedBlock(this, toadd.data(), blockCount))
+		AppendPendingBlocksFromStage<decltype(m_PendingBlocks_list), Pending_Block_Struct>(m_PendingBlocks_list, toadd.data(), blockCount);
 }
 
 void CUpDownClient::SendBlockRequests()
