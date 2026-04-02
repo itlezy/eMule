@@ -20,6 +20,15 @@ Completed bounded hardening chunks already landed on this branch:
 - **[DONE]** bounded `CPP_022` upload queue retirement and disk-I/O lock-order hardening (`09b3808`)
 - **[DONE]** bounded `CPP_024` worker-to-UI message safety hardening (`7123271`)
 - **[DONE]** bounded `CPP_022` upload throttler queue lock-order hardening (`0e3221e`)
+- **[DONE]** bounded `CPP_035` transient resource ownership hardening (`3ab87c7`)
+- **[DONE]** bounded `CPP_036` parser and allocation null-guard hardening (`ac0844c`)
+- **[DONE]** bounded `CPP_026` UDP and upload-disk lock-scope hardening (`4ba2304`)
+- **[DONE]** bounded `CPP_021` / `CPP_023` / `CPP_026` / `CPP_028` EMSocket send-path hardening (`f7fc906`)
+- **[DONE]** bounded `CPP_023` BaseClient friend/buddy snapshot hardening (`430af74`)
+- **[DONE]** bounded `CPP_021` / `CPP_028` shared-file hashing and auto-rescan coordination hardening (`83e15b6`)
+- **[DONE]** bounded `CPP_028` socket sleep-poll cleanup for UDP resend and callback drain (`ae3d1da`)
+- **[DONE]** bounded `CPP_012` fixed-buffer formatting hardening (`165e809`)
+- **[DONE]** bounded `CPP_032` / `CPP_035` client-credits and collection exception/resource hardening (`313f880`)
 
 The broader audit categories below remain open unless explicitly marked otherwise; completed chunks reduce the remaining surface but do not imply the entire category is closed.
 
@@ -314,21 +323,22 @@ MFC containers cannot be used with standard algorithms, range-for, or move seman
 
 ### CPP_012 — Unsafe String Functions
 
-**Count:** 13 `sprintf`-family; 47 `atoi`-family occurrences
+**Count:** 7+ remaining raw copy / fixed-buffer string sites
 **Severity:** High
 **Priority:** HIGH
 
 | File | Line | Function | Risk |
 |---|---|---|---|
-| OtherFunctions.cpp | 2367 | `_stprintf(szIPPort, ...)` | Fixed-size buffer overflow |
-| OtherFunctions.cpp | 2376 | `_stprintf(...)` | Same |
-| OtherFunctions.cpp | 2387 | `_stprintf(...)` | Same |
-| UPnPImplMiniLib.cpp | 101 | `sprintf(achPort, "%hu", port)` | No bounds check |
-| UPnPImplMiniLib.cpp | 300 | `sprintf(...)` | Same |
+| CustomAutoComplete.cpp | 231 | `wcscpy(rgelt[i], ...)` | Raw copy without destination bound |
+| Emule.cpp | 705 | `_tcscpy(pGlobalT, strText)` | Clipboard buffer copy relies on caller sizing |
+| EmuleDlg.cpp | 3341 | `wcscpy(m_thbButtons[i].szTip, tooltip)` | Tooltip buffer copy without explicit bound |
+| GradientStatic.cpp | 181 | `_tcscpy(lfFont.lfFaceName, _T("Arial"))` | Raw fixed-buffer copy into `LOGFONT` face name |
+| OtherFunctions.cpp | 3661 | `_tcscpy(path, tchBuffer)` | Path copy without explicit destination bound |
+| PartFile.cpp | 2831 | `_tcscpy(newfilename, ...)` | Raw filename copy into duplicated buffer |
 
-**Recommendation:** Replace with `std::format` (C++20) or `_stprintf_s` / `snprintf` with explicit buffer size.
+**Recommendation:** Continue replacing raw copy/formatting sites with `CString`, `_tcscpy_s`, or equivalent bounded helpers. The fixed-buffer `_stprintf` / `sprintf` endpoint and UPnP port conversions are already addressed.
 
-**Status:** Open
+**Status:** **[PARTIAL]**
 
 ---
 
@@ -621,20 +631,18 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_026 — CSingleLock Anti-Patterns
 
-**Count:** 5+ problematic patterns
+**Count:** 2+ remaining problematic patterns
 **Severity:** Medium
 **Priority:** MEDIUM
 
 | Pattern | File | Line | Issue |
 |---|---|---|---|
-| Manual `Lock()`/`Unlock()` | ClientUDPSocket.cpp | 425–431 | No automatic scope guard; exception leaks lock |
-| Lock held across Sleep | UploadDiskIOThread.cpp | 97–101 | Lock held during I/O wait |
 | Lock scope too narrow | DownloadQueue.cpp | 47–51 | `GetCount()` checked without lock, elements accessed without lock |
-| Lock held too wide | UploadDiskIOThread.cpp | 97 | Entire I/O loop under lock |
+| Remaining ad hoc lock APIs outside hardened networking paths | Various secondary sites | — | Manual or weakly-scoped lock sequencing still exists outside the already-refactored UDP, upload-disk, and EMSocket send paths |
 
-**Recommendation:** Always use `CSingleLock lock(&cs, TRUE);` (auto-lock) or migrate to `std::lock_guard`.
+**Recommendation:** Keep converting remaining callsites to structured `CSingleLock` scopes or explicit policy helpers. The major networking and upload-disk sites are already addressed.
 
-**Status:** Open
+**Status:** **[PARTIAL]**
 
 ---
 
@@ -747,7 +755,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_032 — Exception Safety
 
-**Count:** 15+ resource-leak-on-throw sites; 12+ silent `catch(...)` blocks
+**Count:** 8+ remaining resource/exception sites; several high-risk packet and collection paths already hardened
 **Severity:** High
 **Priority:** HIGH
 
@@ -755,21 +763,19 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 | File | Line | Pattern |
 |---|---|---|
-| ClientUDPSocket.cpp | 122–143 | `unpack = new BYTE[...]` → `uncompress()` could throw → leak |
-| DownloadClient.cpp | 1050 | `new BYTE[lenUnzipped]` → `unzip()` → leak on throw |
-| Packets.cpp | 213–221 | `new BYTE[newsize]` → `compress2()` → leak on throw |
-| EMSocket.cpp | 332 | `new char[size+1]` → reassignment could throw → leak |
-| DownloadClient.cpp | 784 | `new Requested_Block_Struct*[blockCount]` → loop can throw → leak |
+| EMSocket.cpp | 363 | `new char[nPacketBufferSize]` | Allocation still relies on surrounding caller cleanup and exception propagation |
+| KnownFile.cpp | 926 | `new BYTE[nAICHHashSetSize]` | Raw temporary hashset buffer still uses manual cleanup |
+| Collection.cpp | 56, 119 | `new BYTE[...]` for author key ownership | Long-lived raw ownership remains manual |
 
 **Silent exception swallowing (`catch(...)`):**
 
 | File | Line | Pattern |
 |---|---|---|
 | BaseClient.cpp | 2289 | `catch (...) { ASSERT(0); }` — silent in release |
-| ClientCredits.cpp | 383, 406, 447, 501 | Four `catch (...) { ASSERT(0); }` — no logging |
-| Collection.cpp | 151, 194, 214, 230, 257, 316 | Six empty/debug-only catch blocks |
-| DownloadClient.cpp | 1244 | `catch (...) { ASSERT(0); }` — exception discarded |
-| ListenSocket.cpp | 245, 1753 | Minimal recovery |
+| DownloadClient.cpp | 1293 | `catch (...) { ASSERT(0); }` — exception discarded |
+| ListenSocket.cpp | 1744 | Minimal recovery around client parse path |
+| Collection.cpp | 267 | Text-write path still uses `catch (...) { ASSERT(0); }` |
+| KnownFile.cpp | 1438 | `catch (...)` remains in a hash/metadata path |
 
 **Status:** **[PARTIAL]**
 
@@ -822,41 +828,39 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_035 — Resource Leaks
 
-**Count:** 10+ leak sites
+**Count:** 6+ remaining leak / manual-lifetime sites
 **Severity:** High
 **Priority:** HIGH
 
 | Resource | File | Line | Issue |
 |---|---|---|---|
-| `HANDLE` | EMSocket.cpp | 55–72 | `CreateFile` → `WriteFile` → `CloseHandle` — if `WriteFile` throws, leak |
-| `HANDLE` | KnownFile.cpp | 59–62 | `OpenHashReadHandleLongPath()` — caller must close, no RAII |
+| `HANDLE` | ClientCredits.cpp | 181, 364 | Raw `CreateFile` / `CloseHandle` sites still use manual handle lifetime |
 | `SOCKET` | AsyncSocketEx.cpp | 355 | `socket()` opened, not closed on all error paths |
-| `new[]` | DownloadClient.cpp | 784–789 | `toadd` leaked if loop throws |
-| `new[]` | Packets.cpp | 224–254 | `unpack` leaked on some `compress2` error paths |
+| `new[]` | KnownFile.cpp | 926 | Temporary AICH hashset buffer still uses manual `new[]` ownership |
+| `new[]` | DownloadClient.cpp | 94, 481 | Raw arrays remain for part-status and debug rendering |
 | `delete[]` skip | BaseClient.cpp | 278–324 | Sequential `delete[]` in dtor — if one throws, rest skipped |
-| `CFile` | PartFile.cpp | 231 | `m_hWrite` inconsistent if `CreateFile` fails + exception |
-| `new` | ListenSocket.cpp | 240, 268 | `new CUpDownClient(this)` — if `ProcessHelloPacket` throws, leak |
+| `new` | Collection.cpp | 56, 119 | Author-key ownership is still manual raw allocation |
+| `catch(...)` recovery | ListenSocket.cpp | 1744 | Remaining exception path still relies on manual cleanup behavior |
 
-**Status:** Open
+**Status:** **[PARTIAL]**
 
 ---
 
 ### CPP_036 — Null Pointer Dereference Risks
 
-**Count:** 10+ sites
+**Count:** 6+ remaining sites
 **Severity:** High
 **Priority:** MEDIUM
 
 | File | Line | Pattern |
 |---|---|---|
-| BaseClient.cpp | 406 | `_tcsdup()` return not null-checked |
-| DownloadClient.cpp | 543 | `m_abyPartStatus[done]` — assumes `m_nPartCount` >= range |
 | PartFile.cpp | 88 | `m_kadNotes.GetNext(pos)` — list corruption → null |
-| EMSocket.cpp | 155–160 | Queue iteration under `sendLocker` — queue modified in `OnReceive` without lock |
+| EMSocket.cpp | 173 | `delete pendingPacket; pendingPacket = NULL;` teardown still depends on surrounding queue/receive invariants |
 | PartFile.cpp | 301–305 | `BufferedData_list` iteration — concurrent modification risk |
-| ClientUDPSocket.cpp | 135 | `ProcessPacket()` with unvalidated packet data |
+| DownloadClient.cpp | 481 | Debug part-status rendering still allocates and dereferences from `m_nPartCount`-derived state |
+| BaseClient.cpp | 1818 | `_tcsdup()`-based username lifetime still relies on allocation succeeding outside the bounded parser pass |
 
-**Status:** Open
+**Status:** **[PARTIAL]**
 
 ---
 
@@ -947,7 +951,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | CPP_009 | Structured bindings (3–5) | Low | LOW | Open |
 | CPP_010 | Init statements in if/switch | Low | LOW | Open |
 | CPP_011 | MFC → std container migration (159) | Medium | HIGH | Open |
-| CPP_012 | Unsafe string functions (60) | High | HIGH | Open |
+| CPP_012 | Unsafe string functions (60) | High | HIGH | **[PARTIAL]** |
 | CPP_013 | Algorithm opportunities (534 loops) | Medium | HIGH | Open |
 | CPP_014 | GetTickCount / time() → std::chrono (297) | Medium | MEDIUM | Open |
 | CPP_015 | CFile / CreateFile → std::filesystem (50+) | Low | MEDIUM | Open |
@@ -961,7 +965,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | CPP_023 | TOCTOU races (12+) | High | HIGH | **[PARTIAL]** |
 | CPP_024 | Thread-unsafe MFC calls (10+) | High | MEDIUM | **[PARTIAL]** |
 | CPP_025 | Missing volatile / std::atomic (8+) | High | HIGH | **[PARTIAL]** |
-| CPP_026 | CSingleLock anti-patterns (5+) | Medium | MEDIUM | Open |
+| CPP_026 | CSingleLock anti-patterns (5+) | Medium | MEDIUM | **[PARTIAL]** |
 | CPP_027 | Thread inventory (12 threads) | Info | Reference | **[DONE]** |
 | CPP_028 | Sleep-based polling (5) | Medium | LOW | **[PARTIAL]** |
 | CPP_029 | Thread pool opportunities (4) | Low | LOW | **[PARTIAL]** |
@@ -970,8 +974,8 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | CPP_032 | Exception safety (15+ leaks, 12+ silent catches) | High | HIGH | **[PARTIAL]** |
 | CPP_033 | Buffer overflows (11+) | Critical | CRITICAL | **[PARTIAL]** |
 | CPP_034 | Integer overflow risks (12+) | High | HIGH | **[PARTIAL]** |
-| CPP_035 | Resource leaks (10+) | High | HIGH | Open |
-| CPP_036 | Null pointer dereference risks (10+) | High | MEDIUM | Open |
+| CPP_035 | Resource leaks (10+) | High | HIGH | **[PARTIAL]** |
+| CPP_036 | Null pointer dereference risks (10+) | High | MEDIUM | **[PARTIAL]** |
 | CPP_037 | Use-after-free patterns (7+) | Critical | CRITICAL | **[PARTIAL]** |
 | CPP_038 | RAII wrapper opportunities (5) | Medium | MEDIUM | Open |
 | CPP_039 | noexcept opportunities (3+) | Low | LOW | Open |

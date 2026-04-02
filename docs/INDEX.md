@@ -230,9 +230,9 @@
 | ID | Summary | Status | Doc |
 |---|---|---|---|
 | CPP_001–010 | Language modernization — casts, arrays, RAII, constexpr, range-for, enum class, nullptr, auto | Open | [CPP-AUDIT](CPP-AUDIT.md) |
-| CPP_011–020 | Standard library — MFC→std containers, string safety, algorithms, chrono, filesystem, random | Open | [CPP-AUDIT](CPP-AUDIT.md) |
-| CPP_021–030 | Threading — shared state, lock ordering, TOCTOU, atomics, CSingleLock, thread inventory, mutex | **[PARTIAL]** (`CPP_027` **[DONE]**) | [CPP-AUDIT](CPP-AUDIT.md) |
-| CPP_031–040 | Safety — unchecked returns, exception safety, buffer overflows, integer overflow, RAII, noexcept | **[PARTIAL]** | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_011–020 | Standard library — MFC→std containers, string safety, algorithms, chrono, filesystem, random | **[PARTIAL]** (`CPP_012` **[PARTIAL]**) | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_021–030 | Threading — shared state, lock ordering, TOCTOU, atomics, CSingleLock, thread inventory, mutex | **[PARTIAL]** (`CPP_021`–`026`, `CPP_028`–`030` partially addressed; `CPP_027` **[DONE]**) | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_031–040 | Safety — unchecked returns, exception safety, buffer overflows, integer overflow, RAII, noexcept | **[PARTIAL]** (`CPP_031`–`037` partially addressed) | [CPP-AUDIT](CPP-AUDIT.md) |
 
 ### Dependencies (DEP_)
 
@@ -299,7 +299,7 @@
 
 | Category | Total | Done | Partial | Stale | Open |
 |---|---|---|---|---|---|
-| CPP_ | 40 | 1 | 13 | 0 | 26 |
+| CPP_ | 40 | 1 | 17 | 0 | 22 |
 | REFAC_ | 18 | 12 | 1 | 0 | 5 |
 | FEAT_ | 22 | 3 | 4 | 0 | 15 |
 | BUG_/GAP_ | 8 | 3 | 0 | 3 | 2 |
