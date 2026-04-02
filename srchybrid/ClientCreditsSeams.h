@@ -1,6 +1,9 @@
 #pragma once
 
 #include <cstddef>
+#include <limits>
+
+#define EMULE_TEST_HAVE_CLIENT_CREDITS_BUFFER_SEAMS 1
 
 struct ClientCreditsChallengeLayout
 {
@@ -29,6 +32,20 @@ inline bool TryBuildClientCreditsChallengeLayout(const size_t nKeyLength, const 
 inline bool CanStoreClientCreditsSignature(const size_t nSignatureLength, const size_t nMaxSize)
 {
 	return nSignatureLength <= nMaxSize;
+}
+
+/**
+ * @brief Derives the transient clients.met save-buffer size while rejecting overflow.
+ */
+inline bool TryBuildClientCreditsSaveBufferSize(const size_t nRecordCount, const size_t nRecordSize, size_t *pnBufferSize)
+{
+	if (pnBufferSize == NULL)
+		return false;
+	if (nRecordSize != 0u && nRecordCount > (std::numeric_limits<size_t>::max)() / nRecordSize)
+		return false;
+
+	*pnBufferSize = nRecordCount * nRecordSize;
+	return true;
 }
 
 /**

@@ -34,6 +34,7 @@
 #include "Server.h"
 #include "ServerConnect.h"
 #include "ClientSocketLifetimeSeams.h"
+#include "ListenSocketSeams.h"
 #include "ResourceOwnershipSeams.h"
 #include "SocketPolicySeams.h"
 #include "emuledlg.h"
@@ -1740,10 +1741,8 @@ bool CClientReqSocket::PacketReceived(Packet *packet)
 		} catch (CMemoryException *ex) {
 			ex->Delete();
 			throwCStr(_T("Memory exception"));
-#ifndef _DEBUG
 		} catch (...) {
-			throwCStr(_T("Unknown exception"));
-#endif
+			throwCStr(GetListenSocketUnknownPacketExceptionMessage());
 		}
 		return true;
 	} catch (CClientException *ex) { // similar to 'CString&' exception but client deletion is optional

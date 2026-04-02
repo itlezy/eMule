@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "MapKey.h"
+#include <vector>
 #include <rsa.h>
 #include <base64.h>
 #include <osrng.h>
@@ -42,7 +43,7 @@ public:
 	CCollectionFile* AddFileToCollection(CAbstractFile *pAbstractFile, bool bCreateClone);
 	void	RemoveFileFromCollection(const CAbstractFile *pAbstractFile);
 	void	WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSignKey = NULL);
-	void	SetCollectionAuthorKey(const byte *abyCollectionAuthorKey, uint32 nSize);
+	void	SetCollectionAuthorKey(const BYTE *abyCollectionAuthorKey, uint32 nSize);
 	CString	GetCollectionAuthorKeyString();
 	CString	GetAuthorKeyHashString() const;
 	static bool HasCollectionExtention(const CString &sFileName);
@@ -55,5 +56,5 @@ public:
 private:
 	uint32	m_nKeySize;
 	CCollectionFilesMap m_CollectionFilesMap;
-	byte	*m_pabyCollectionAuthorKey;
+	std::vector<BYTE> m_abyCollectionAuthorKey;
 };

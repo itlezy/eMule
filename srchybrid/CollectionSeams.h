@@ -1,7 +1,11 @@
 #pragma once
 
 #include <limits>
+#include <vector>
+
 #include "types.h"
+
+#define EMULE_TEST_HAVE_COLLECTION_OWNERSHIP_SEAMS 1
 
 struct CollectionSignatureLayout
 {
@@ -44,4 +48,35 @@ inline bool TryConvertCollectionSerializedLength(const ULONGLONG nSerializedLeng
 inline bool ShouldContinueAfterCollectionEntryFailure()
 {
 	return true;
+}
+
+/**
+ * @brief Returns the raw author-key view while preserving the historical NULL-for-empty contract.
+ */
+inline const BYTE *GetCollectionAuthorKeyData(const std::vector<BYTE> &keyData)
+{
+	return keyData.empty() ? NULL : keyData.data();
+}
+
+/**
+ * @brief Replaces the stored collection author key and keeps the serialized size field in sync.
+ */
+inline void AssignCollectionAuthorKey(const BYTE *pKeyData, const uint32 nKeySize, std::vector<BYTE> &keyData, uint32 &rnStoredKeySize)
+{
+	if (pKeyData != NULL && nKeySize != 0u) {
+		keyData.assign(pKeyData, pKeyData + nKeySize);
+		rnStoredKeySize = nKeySize;
+	} else {
+		keyData.clear();
+		rnStoredKeySize = 0u;
+	}
+}
+
+/**
+ * @brief Clears the stored collection author key and resets the serialized size field.
+ */
+inline void ClearCollectionAuthorKey(std::vector<BYTE> &keyData, uint32 &rnStoredKeySize)
+{
+	keyData.clear();
+	rnStoredKeySize = 0u;
 }

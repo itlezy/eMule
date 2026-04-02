@@ -41,7 +41,7 @@ static char THIS_FILE[] = __FILE__;
 CCollection::CCollection()
 	: m_bTextFormat()
 	, m_nKeySize()
-	, m_pabyCollectionAuthorKey()
+	, m_abyCollectionAuthorKey()
 {
 	m_CollectionFilesMap.InitHashTable(1031);
 	m_sCollectionName.Format(_T("New Collection-%u"), ::GetTickCount());
@@ -50,15 +50,11 @@ CCollection::CCollection()
 CCollection::CCollection(const CCollection *pCollection)
 	: m_sCollectionName(pCollection->m_sCollectionName)
 	, m_bTextFormat(pCollection->m_bTextFormat)
+	, m_nKeySize(pCollection->m_nKeySize)
+	, m_abyCollectionAuthorKey(pCollection->m_abyCollectionAuthorKey)
 {
-	if (pCollection->m_pabyCollectionAuthorKey != NULL) {
-		m_nKeySize = pCollection->m_nKeySize;
-		m_pabyCollectionAuthorKey = new BYTE[m_nKeySize];
-		memcpy(m_pabyCollectionAuthorKey, pCollection->m_pabyCollectionAuthorKey, m_nKeySize);
+	if (!m_abyCollectionAuthorKey.empty()) {
 		m_sCollectionAuthorName = pCollection->m_sCollectionAuthorName;
-	} else {
-		m_nKeySize = 0;
-		m_pabyCollectionAuthorKey = NULL;
 	}
 
 	m_CollectionFilesMap.InitHashTable(1031);
@@ -68,7 +64,6 @@ CCollection::CCollection(const CCollection *pCollection)
 
 CCollection::~CCollection()
 {
-	delete[] m_pabyCollectionAuthorKey;
 	CSKey key;
 	for (POSITION pos = m_CollectionFilesMap.GetStartPosition(); pos != NULL;) {
 		CCollectionFile *pCollectionFile;
@@ -110,16 +105,9 @@ void CCollection::RemoveFileFromCollection(const CAbstractFile *pAbstractFile)
 		ASSERT(0);
 }
 
-void CCollection::SetCollectionAuthorKey(const byte *abyCollectionAuthorKey, uint32 nSize)
+void CCollection::SetCollectionAuthorKey(const BYTE *abyCollectionAuthorKey, uint32 nSize)
 {
-	delete[] m_pabyCollectionAuthorKey;
-	m_pabyCollectionAuthorKey = NULL;
-	m_nKeySize = 0;
-	if (abyCollectionAuthorKey != NULL) {
-		m_pabyCollectionAuthorKey = new BYTE[nSize];
-		memcpy(m_pabyCollectionAuthorKey, abyCollectionAuthorKey, nSize);
-		m_nKeySize = nSize;
-	}
+	AssignCollectionAuthorKey(abyCollectionAuthorKey, nSize, m_abyCollectionAuthorKey, m_nKeySize);
 }
 
 bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString &sFileName)
@@ -162,7 +150,7 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 
 			bCollectionLoaded = true;
 		}
-		if (m_pabyCollectionAuthorKey != NULL) {
+		if (!m_abyCollectionAuthorKey.empty()) {
 			bool bResult = false;
 			if (data.GetLength() > data.GetPosition()) {
 				using namespace CryptoPP;
@@ -174,7 +162,7 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 				std::vector<BYTE> abyMessage(layout.nMessageLength);
 				VERIFY(data.Read(abyMessage.data(), layout.nMessageLength) == layout.nMessageLength);
 
-				StringSource ss_Pubkey(m_pabyCollectionAuthorKey, m_nKeySize, true, 0);
+				StringSource ss_Pubkey(GetCollectionAuthorKeyData(m_abyCollectionAuthorKey), m_nKeySize, true, 0);
 				RSASSA_PKCS1v15_SHA_Verifier pubkey(ss_Pubkey);
 
 				std::vector<BYTE> abySignature(layout.nSignatureLength);
@@ -184,9 +172,7 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 			}
 			if (!bResult) {
 				DebugLogWarning(_T("Collection %s: Verification of public key failed!"), (LPCTSTR)m_sCollectionName);
-				delete[] m_pabyCollectionAuthorKey;
-				m_pabyCollectionAuthorKey = NULL;
-				m_nKeySize = 0;
+				ClearCollectionAuthorKey(m_abyCollectionAuthorKey, m_nKeySize);
 				m_sCollectionAuthorName.Empty();
 			} else
 				DebugLog(_T("Collection %s: Public key verified"), (LPCTSTR)m_sCollectionName);
@@ -284,16 +270,16 @@ void CCollection::WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSi
 
 				data.WriteUInt32(dwVersion);
 				//NumberHeaderTags
-				data.WriteUInt32(m_pabyCollectionAuthorKey ? 3 : 1);
+				data.WriteUInt32(m_abyCollectionAuthorKey.empty() ? 1 : 3);
 
 				CTag collectionName(FT_FILENAME, m_sCollectionName);
 				collectionName.WriteTagToFile(data, UTF8strRaw);
 
-				if (m_pabyCollectionAuthorKey != NULL) {
+				if (!m_abyCollectionAuthorKey.empty()) {
 					CTag collectionAuthor(FT_COLLECTIONAUTHOR, m_sCollectionAuthorName);
 					collectionAuthor.WriteTagToFile(data, UTF8strRaw);
 
-					CTag collectionAuthorKey(FT_COLLECTIONAUTHORKEY, m_nKeySize, m_pabyCollectionAuthorKey);
+					CTag collectionAuthorKey(FT_COLLECTIONAUTHORKEY, m_nKeySize, GetCollectionAuthorKeyData(m_abyCollectionAuthorKey));
 					collectionAuthorKey.WriteTagToFile(data, UTF8strRaw);
 				}
 
@@ -345,13 +331,13 @@ bool CCollection::HasCollectionExtention(const CString &sFileName)
 
 CString CCollection::GetCollectionAuthorKeyString()
 {
-	return m_pabyCollectionAuthorKey ? EncodeBase16(m_pabyCollectionAuthorKey, m_nKeySize) : CString();
+	return m_abyCollectionAuthorKey.empty() ? CString() : EncodeBase16(GetCollectionAuthorKeyData(m_abyCollectionAuthorKey), m_nKeySize);
 }
 
 CString CCollection::GetAuthorKeyHashString() const
 {
-	if (m_pabyCollectionAuthorKey == NULL)
+	if (m_abyCollectionAuthorKey.empty())
 		return CString();
-	MD5Sum md5(m_pabyCollectionAuthorKey, m_nKeySize);
+	MD5Sum md5(GetCollectionAuthorKeyData(m_abyCollectionAuthorKey), m_nKeySize);
 	return md5.GetHashString().MakeUpper();
 }

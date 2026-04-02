@@ -24,7 +24,9 @@
 #include "ServerConnect.h"
 #include "Log.h"
 #include "ClientCreditsSeams.h"
+#include "ResourceOwnershipSeams.h"
 #include <memory>
+#include <vector>
 #include <base64.h>
 #include <osrng.h>
 #include <files.h>
@@ -178,17 +180,15 @@ void CClientCreditsList::LoadList()
 
 		BOOL bCreateBackup = TRUE;
 
-		HANDLE hBakFile = ::CreateFile(strBakFileName, GENERIC_READ, FILE_SHARE_READ, NULL
-									, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hBakFile != INVALID_HANDLE_VALUE) {
+		ScopedHandle hBakFile(::CreateFile(strBakFileName, GENERIC_READ, FILE_SHARE_READ, NULL
+									, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL));
+		if (hBakFile.IsValid()) {
 			// OK, the backup exist, get the size
-			DWORD dwBakFileSize = ::GetFileSize(hBakFile, NULL); //debug
+			DWORD dwBakFileSize = ::GetFileSize(hBakFile.Get(), NULL); //debug
 			if (dwBakFileSize > (DWORD)file.GetLength()) {
 				// the size of the backup was larger then the orig. file, something is wrong here, don't overwrite old backup.
 				bCreateBackup = FALSE;
 			}
-			//else: backup is smaller or the same size as orig. file, proceed with copying of file
-			::CloseHandle(hBakFile);
 		}
 		//else: the backup doesn't exist, create it
 
@@ -251,26 +251,31 @@ void CClientCreditsList::SaveList()
 	{
 		return;
 	}
-	byte *pBuffer = new byte[m_mapClients.GetCount() * sizeof(CreditStruct)]; //not CreditStruct[] because of alignment
+	size_t nBufferSize = 0;
+	/** @brief Size the transient credits save buffer through checked record-count math before allocating it. */
+	if (!TryBuildClientCreditsSaveBufferSize(m_mapClients.GetCount(), sizeof(CreditStruct), &nBufferSize)) {
+		ASSERT(0);
+		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)GetResString(IDS_ERR_FAILED_CREDITSAVE), _T(" (save buffer overflow)"));
+		return;
+	}
+	std::vector<byte> buffer(nBufferSize); // not CreditStruct[] because of alignment
 	uint32 count = 0;
 	for (const CClientCreditsMap::CPair *pair = m_mapClients.PGetFirstAssoc(); pair != NULL; pair = m_mapClients.PGetNextAssoc(pair)) {
 		const CClientCredits *cur_credit = pair->value;
 		if (cur_credit->GetUploadedTotal() || cur_credit->GetDownloadedTotal())
-			*reinterpret_cast<CreditStruct*>(&pBuffer[sizeof(CreditStruct) * count++]) = cur_credit->m_Credits;
+			*reinterpret_cast<CreditStruct*>(&buffer[sizeof(CreditStruct) * count++]) = cur_credit->m_Credits;
 	}
 
 	try {
 		uint8 version = CREDITFILE_VERSION;
 		file.Write(&version, 1);
 		file.Write(&count, 4);
-		file.Write(pBuffer, (UINT)(count * sizeof(CreditStruct)));
+		file.Write(buffer.data(), (UINT)(count * sizeof(CreditStruct)));
 		file.Close();
 	} catch (CFileException *ex) {
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)GetResString(IDS_ERR_FAILED_CREDITSAVE), (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
 	}
-
-	delete[] pBuffer;
 }
 
 CClientCredits* CClientCreditsList::GetCredit(const uchar *key)
@@ -361,12 +366,11 @@ void CClientCreditsList::InitalizeCrypting()
 	// check if keyfile is there
 	bool bCreateNewKey = false;
 	const CString &cryptkeypath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("cryptkey.dat"));
-	HANDLE hKeyFile = ::CreateFile(cryptkeypath
-		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hKeyFile != INVALID_HANDLE_VALUE) {
-		if (::GetFileSize(hKeyFile, NULL) == 0)
+	ScopedHandle hKeyFile(::CreateFile(cryptkeypath
+		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL));
+	if (hKeyFile.IsValid()) {
+		if (::GetFileSize(hKeyFile.Get(), NULL) == 0)
 			bCreateNewKey = true;
-		::CloseHandle(hKeyFile);
 	} else
 		bCreateNewKey = true;
 	if (bCreateNewKey)
