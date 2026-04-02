@@ -889,6 +889,7 @@ try {
         $recentLog = $null
         $stressProbe = $null
         $apiError = $null
+        $apiErrorDetail = $null
         $apiStartedAt = Get-Date
         try {
             $stressProbe = Invoke-StressProbe -BaseUri $baseUri -Token $RemoteToken -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll
@@ -898,6 +899,7 @@ try {
             $consecutiveApiFailures = 0
         } catch {
             $apiError = $_.Exception.Message
+            $apiErrorDetail = $_ | Out-String
             $consecutiveApiFailures += 1
         }
         $apiDurationMs = [int](((Get-Date) - $apiStartedAt).TotalMilliseconds)
@@ -912,6 +914,7 @@ try {
             sockets = Get-ProcessSocketsSummary -ProcessId $runningProcess.Id
             api_duration_ms = $apiDurationMs
             api_error = $apiError
+            api_error_detail = $apiErrorDetail
             stats = $stats
             transfers = $transfers
             recent_log = $recentLog

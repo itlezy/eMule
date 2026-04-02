@@ -343,3 +343,10 @@
   I passed an array-style argument list to a script invoked through `pwsh -File`; the command-line binder did not preserve the intended array parameter shape.
 - Fix:
   when a script parameter needs an array value, prefer `pwsh -Command { & .\script.ps1 -Param @('a','b') }` or repeat the parameter in a form the binder supports.
+
+- Error:
+  running two live-session helpers in parallel against the same `C:\tmp\emule-testing` profile failed with `preferences.ini ... is being used by another process`.
+- Cause:
+  I parallelized runtime sessions that mutate the same disposable profile and launch the same UI process, which is not an independent workload.
+- Fix:
+  keep live `emule.exe` stress sessions strictly serial unless each run has its own isolated profile root and runtime ports.
