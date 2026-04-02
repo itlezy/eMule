@@ -103,6 +103,20 @@ inline void ReleaseOwnedObjectIfMatched(std::unique_ptr<TObject> &pOwnedObject, 
 }
 
 /**
+ * @brief Releases ownership when a callee consumed the temporary object and replaced the raw pointer.
+ *
+ * Some legacy handoff sites delete or otherwise consume the temporary object before returning a different
+ * raw pointer to the caller. This seam lets the temporary unique_ptr forget that original address without
+ * touching the replacement object.
+ */
+template <typename TObject>
+inline void ReleaseOwnedObjectIfSuperseded(std::unique_ptr<TObject> &pOwnedObject, TObject *pPreviousObject, TObject *pCurrentObject) noexcept
+{
+	if (pOwnedObject.get() == pPreviousObject && pPreviousObject != pCurrentObject)
+		static_cast<void>(pOwnedObject.release());
+}
+
+/**
  * @brief Appends staged request pointers in-order to the destination pending-block list.
  *
  * The seam keeps the temporary pointer staging container independent from the list ownership model.

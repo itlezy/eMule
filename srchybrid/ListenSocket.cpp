@@ -250,10 +250,13 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			// be attached to the known client, the new client will be deleted
 			// and the var. "client" will point to the known client.
 			// if not we keep our new-constructed client ;)
-			if (theApp.clientlist->AttachToAlreadyKnown(&client, this))
+			CUpDownClient *pHelloClient = pOwnedClient.get();
+			if (theApp.clientlist->AttachToAlreadyKnown(&client, this)) {
+				/** @brief The attach path may delete the temporary hello client before returning a known client. */
+				ReleaseOwnedObjectIfSuperseded(pOwnedClient, pHelloClient, client);
 				// update the old client informations
 				bIsMuleHello = client->ProcessHelloPacket(packet, size);
-			else {
+			} else {
 				theApp.clientlist->AddClient(client);
 				ReleaseOwnedObjectIfMatched(pOwnedClient, client);
 				client->SetCommentDirty();
