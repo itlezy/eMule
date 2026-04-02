@@ -1,7 +1,7 @@
 # eMule Documentation Index
 
 **Branch:** `v0.72a-broadband-dev`
-**Last updated:** 2026-03-31
+**Last updated:** 2026-04-02
 
 ---
 
@@ -34,6 +34,7 @@
 | [AUDIT-BUGS](AUDIT-BUGS.md) | Full static bug audit — buffer overflows, use-after-free, protocol parsing, GDI leaks, logic bugs | BBUG_001–050 (all triaged) |
 | [AUDIT-CODEREVIEW](AUDIT-CODEREVIEW.md) | Code review of v0.72a upstream changes — Ring.h, CaptchaGenerator, BarShader, WebSocket | CODEREV_001–012 |
 | [AUDIT-CODEQUALITY](AUDIT-CODEQUALITY.md) | Code quality roadmap — CMake migration, clang-tidy, clang-format, cppcheck, sanitizers |  |
+| [CPP-AUDIT](CPP-AUDIT.md) | C++ language & safety audit — casts, RAII, threading risks, buffer safety, std library usage | CPP_001–040 |
 | [AUDIT-DEADCODE](AUDIT-DEADCODE.md) | Dead code / cleanup analysis — MFC patterns, deprecated opcodes, ASSERT(0) paths, TODO inventory | Cross-refs REFAC_011–018 |
 | [AUDIT-DEFECTS](AUDIT-DEFECTS.md) | Preferences persistence audit — INI key mismatches, load-only hidden prefs | BUG_010–011 |
 | [AUDIT-KAD](AUDIT-KAD.md) | Kademlia security/routing audit — bootstrap trust, SafeKad, FastKad, abuse budgets, libtorrent comparison | AUD_KAD_001–022 |
@@ -224,6 +225,15 @@
 | AUD_KAD_021 | No new mandatory Kad wire-level rules | Guidance | [AUDIT-KAD](AUDIT-KAD.md) |
 | AUD_KAD_022 | Prioritize bootstrap trust, grace, budgets | Guidance | [AUDIT-KAD](AUDIT-KAD.md) |
 
+### C++ Audit (CPP_)
+
+| ID | Summary | Status | Doc |
+|---|---|---|---|
+| CPP_001–010 | Language modernization — casts, arrays, RAII, constexpr, range-for, enum class, nullptr, auto | Open | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_011–020 | Standard library — MFC→std containers, string safety, algorithms, chrono, filesystem, random | Open | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_021–030 | Threading — shared state, lock ordering, TOCTOU, atomics, CSingleLock, thread inventory, mutex | **[PARTIAL]** (`CPP_027` **[DONE]**) | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_031–040 | Safety — unchecked returns, exception safety, buffer overflows, integer overflow, RAII, noexcept | **[PARTIAL]** | [CPP-AUDIT](CPP-AUDIT.md) |
+
 ### Dependencies (DEP_)
 
 | ID | Summary | Status | Doc |
@@ -289,6 +299,7 @@
 
 | Category | Total | Done | Partial | Stale | Open |
 |---|---|---|---|---|---|
+| CPP_ | 40 | 1 | 13 | 0 | 26 |
 | REFAC_ | 18 | 12 | 1 | 0 | 5 |
 | FEAT_ | 22 | 3 | 4 | 0 | 15 |
 | BUG_/GAP_ | 8 | 3 | 0 | 3 | 2 |
