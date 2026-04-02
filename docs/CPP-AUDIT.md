@@ -31,6 +31,7 @@ Completed bounded hardening chunks already landed on this branch:
 - **[DONE]** bounded `CPP_032` / `CPP_035` client-credits and collection exception/resource hardening (`313f880`)
 - **[DONE]** bounded `CPP_034` AICH hashset and part-selection numeric hardening (`bf0c827`)
 - **[DONE]** bounded `CPP_028` / `CPP_032` / `CPP_035` AICH maintenance hardening (`b9579cf`)
+- **[DONE]** bounded `CPP_035` / `CPP_036` / `CPP_038` client part-status ownership hardening (`c23f169`)
 
 The broader audit categories below remain open unless explicitly marked otherwise; completed chunks reduce the remaining surface but do not imply the entire category is closed.
 
@@ -824,16 +825,13 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_035 — Resource Leaks
 
-**Count:** 5+ remaining leak / manual-lifetime sites
+**Count:** 3+ remaining leak / manual-lifetime sites
 **Severity:** High
 **Priority:** HIGH
 
 | Resource | File | Line | Issue |
 |---|---|---|---|
 | `HANDLE` | ClientCredits.cpp | 181, 364 | Raw `CreateFile` / `CloseHandle` sites still use manual handle lifetime |
-| `SOCKET` | AsyncSocketEx.cpp | 355 | `socket()` opened, not closed on all error paths |
-| `new[]` | DownloadClient.cpp | 94, 481 | Raw arrays remain for part-status and debug rendering |
-| `delete[]` skip | BaseClient.cpp | 278–324 | Sequential `delete[]` in dtor — if one throws, rest skipped |
 | `new` | Collection.cpp | 56, 119 | Author-key ownership is still manual raw allocation |
 | `catch(...)` recovery | ListenSocket.cpp | 1744 | Remaining exception path still relies on manual cleanup behavior |
 
@@ -843,7 +841,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_036 — Null Pointer Dereference Risks
 
-**Count:** 6+ remaining sites
+**Count:** 5+ remaining sites
 **Severity:** High
 **Priority:** MEDIUM
 
@@ -852,7 +850,6 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | PartFile.cpp | 88 | `m_kadNotes.GetNext(pos)` — list corruption → null |
 | EMSocket.cpp | 173 | `delete pendingPacket; pendingPacket = NULL;` teardown still depends on surrounding queue/receive invariants |
 | PartFile.cpp | 301–305 | `BufferedData_list` iteration — concurrent modification risk |
-| DownloadClient.cpp | 481 | Debug part-status rendering still allocates and dereferences from `m_nPartCount`-derived state |
 | BaseClient.cpp | 1818 | `_tcsdup()`-based username lifetime still relies on allocation succeeding outside the bounded parser pass |
 
 **Status:** **[PARTIAL]**
@@ -879,7 +876,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_038 — RAII Wrapper Opportunities
 
-**Count:** 5 highest-impact wrappers
+**Count:** 4 remaining highest-impact wrappers
 **Severity:** Medium
 **Priority:** MEDIUM
 
@@ -887,11 +884,11 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 |---|---|---|
 | `ScopedHandle` (Win32 `HANDLE`) | `CreateFile` / `CloseHandle` pairs | EMSocket.cpp, KnownFile.cpp |
 | `AutoSelectObject` (GDI) | `SelectObject` / restore pairs | Drawing code |
-| `std::unique_ptr<BYTE[]>` | Raw `new BYTE[]` buffers | EMSocket.cpp, DownloadClient.cpp, ClientUDPSocket.cpp, Packets.cpp |
+| `std::unique_ptr<BYTE[]>` | Raw `new BYTE[]` buffers | EMSocket.cpp, ClientUDPSocket.cpp, Packets.cpp |
 | `PacketPtr` | `Packet*` ownership transfer | Packets.cpp, EMSocket.cpp |
-| Scope guard for `CSafeMemFile` | Temp allocation lifetime | BaseClient.cpp, DownloadClient.cpp |
+| Scope guard for `CSafeMemFile` | Temp allocation lifetime | BaseClient.cpp |
 
-**Status:** Open
+**Status:** **[PARTIAL]**
 
 ---
 
