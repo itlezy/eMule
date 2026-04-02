@@ -28,6 +28,7 @@
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
 #include "CompressionBufferSeams.h"
+#include "NullGuardSeams.h"
 #include "ProtocolGuards.h"
 #include "ResourceOwnershipSeams.h"
 #include "emuledlg.h"
@@ -540,26 +541,48 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, CSafeMemFile &data, CPart
 		}
 
 		m_nPartCount = m_reqfile->GetPartCount();
-		m_abyPartStatus = new uint8[m_nPartCount];
-		for (UINT done = 0; done < m_nPartCount;) {
-			uint8 toread = data.ReadUInt8();
-			for (UINT i = 0; i < 8 && done < m_nPartCount; ++i) {
-				m_abyPartStatus[done] = (toread >> i) & 1;
-				iNeeded += static_cast<int>(m_abyPartStatus[done] && !m_reqfile->IsComplete(done));
-				++done;
-			}
+		const ULONGLONG nStatusBytesLength = data.GetLength();
+		const ULONGLONG nStatusBytesPosition = data.GetPosition();
+		if (nStatusBytesPosition > nStatusBytesLength
+			|| !HasPackedPartStatusBytes(m_nPartCount, static_cast<size_t>(nStatusBytesLength - nStatusBytesPosition)))
+		{
+			CString strError;
+			strError.Format(_T("ProcessFileStatus - truncated part status recv=%u  parts=%u  %s"), nED2KPartCount, m_nPartCount, (LPCTSTR)DbgGetFileInfo(m_reqfile->GetFileHash()));
+			m_nPartCount = 0;
+			throw strError;
 		}
+
+		size_t nPackedStatusByteCount = 0;
+		VERIFY(TryGetPartStatusPackedByteCount(m_nPartCount, &nPackedStatusByteCount));
+		std::vector<BYTE> packedStatusBytes(nPackedStatusByteCount, 0);
+		if (nPackedStatusByteCount != 0)
+			data.Read(packedStatusBytes.data(), static_cast<UINT>(nPackedStatusByteCount));
+
+		m_abyPartStatus = new uint8[m_nPartCount];
+		if (!TryDecodePartStatusBits(m_abyPartStatus, m_nPartCount, packedStatusBytes.data(), packedStatusBytes.size())) {
+			CString strError;
+			strError.Format(_T("ProcessFileStatus - invalid part status decode parts=%u  %s"), m_nPartCount, (LPCTSTR)DbgGetFileInfo(m_reqfile->GetFileHash()));
+			delete[] m_abyPartStatus;
+			m_abyPartStatus = NULL;
+			m_nPartCount = 0;
+			throw strError;
+		}
+		for (UINT done = 0; done < m_nPartCount; ++done)
+			iNeeded += static_cast<int>(m_abyPartStatus[done] && !m_reqfile->IsComplete(done));
+
 		bPartsNeeded = (iNeeded > 0);
 	}
 
 	// NOTE: This function is invoked for TCP and UDP sockets!
 	if ((bUdpPacket ? thePrefs.GetDebugClientUDPLevel() : thePrefs.GetDebugClientTCPLevel()) > 0) {
-		TCHAR *psz = new TCHAR[m_nPartCount + 1];
+		size_t nDisplayLength = 0;
+		if (!TryGetPartStatusDisplayLength(m_nPartCount, &nDisplayLength))
+			throw CString(_T("ProcessFileStatus - invalid debug part status length"));
+
+		std::vector<TCHAR> partStatusDisplay(nDisplayLength, _T('\0'));
 		for (UINT i = 0; i < m_nPartCount; ++i)
-			psz[i] = m_abyPartStatus[i] ? _T('#') : _T('.');
-		psz[m_nPartCount] = _T('\0');
-		Debug(_T("  Parts=%hu  %s  Needed=%i\n"), m_nPartCount, psz, iNeeded);
-		delete[] psz;
+			partStatusDisplay[i] = m_abyPartStatus[i] ? _T('#') : _T('.');
+		Debug(_T("  Parts=%hu  %s  Needed=%i\n"), m_nPartCount, partStatusDisplay.data(), iNeeded);
 	}
 
 	UpdateDisplayedInfo(bUdpPacket);

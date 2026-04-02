@@ -102,11 +102,10 @@ void CClientUDPSocket::OnDatagramReceive(int nErrorCode)
 		if (nPacketLen > 0) {
 			CString strError;
 			try {
-				switch (pBuffer[0]) {
+				if (!HasUdpPayloadHeader(static_cast<UINT>(nPacketLen)))
+					strError = _T("UDP packet too short");
+				else switch (pBuffer[0]) {
 				case OP_EMULEPROT:
-					if (nPacketLen < 2)
-						strError = _T("eMule packet too short");
-					else
 						ProcessPacket(pBuffer + 2, nPacketLen - 2, pBuffer[1], sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
 					break;
 				case OP_KADEMLIAPACKEDPROT:
@@ -147,12 +146,9 @@ void CClientUDPSocket::OnDatagramReceive(int nErrorCode)
 					break;
 				case OP_KADEMLIAHEADER:
 					theStats.AddDownDataOverheadKad(nPacketLen);
-					if (nPacketLen < 2)
-						strError = _T("Kad packet too short");
-					else
-						Kademlia::CKademlia::ProcessPacket(pBuffer, nPacketLen, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
-							, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
-							, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
+					Kademlia::CKademlia::ProcessPacket(pBuffer, nPacketLen, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
+						, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
+						, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
 					break;
 				default:
 					strError.Format(_T("Unknown protocol 0x%02x"), pBuffer[0]);

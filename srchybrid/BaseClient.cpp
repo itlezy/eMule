@@ -36,6 +36,7 @@
 #include "IP2Country.h"
 #include "Friend.h"
 #include "SocketPolicySeams.h"
+#include "NullGuardSeams.h"
 #include "Statistics.h"
 #include "ServerConnect.h"
 #include "ServerConnectionGuards.h"
@@ -407,8 +408,13 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 		switch (temptag.GetNameID()) {
 		case CT_NAME:
 			if (temptag.IsStr()) {
+				/** @brief Promote username duplication failure into the existing packet-memory error path. */
+				TCHAR *pszUsername = NULL;
+				if (!TryDuplicateCString(temptag.GetStr(), &pszUsername, _tcsdup))
+					AfxThrowMemoryException();
+
 				free(m_pszUsername);
-				m_pszUsername = _tcsdup(temptag.GetStr());
+				m_pszUsername = pszUsername;
 				if (bDbgInfo) {
 					if (m_pszUsername) { //filter username for bad chars
 						for (TCHAR *psz = m_pszUsername; *psz != _T('\0'); ++psz)
