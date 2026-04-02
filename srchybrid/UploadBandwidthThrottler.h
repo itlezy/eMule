@@ -68,7 +68,6 @@ private:
 	CArray<ThrottledFileSocket*, ThrottledFileSocket*> m_StandardOrder_list; // sockets that have upload slots. Ordered so the most prioritized socket is first
 
 	CCriticalSection queueLocker;
-	CCriticalSection tempQueueLocker;
 
 	CEvent m_eventThreadEnded;
 	CEvent m_eventPaused;

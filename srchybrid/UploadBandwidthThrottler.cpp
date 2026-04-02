@@ -22,6 +22,7 @@
 #include "opcodes.h"
 #include "OtherFunctions.h"
 #include "AtomicStateSeams.h"
+#include "UploadBandwidthThrottlerSeams.h"
 #include "uploadqueue.h"
 #include "preferences.h"
 #include "UploadDiskIOThread.h"
@@ -139,7 +140,7 @@ bool UploadBandwidthThrottler::RemoveFromStandardList(ThrottledFileSocket *socke
  * Remove a socket from the list of sockets that have upload slots. NOT THREADSAFE!
  * This is an internal method that doesn't take the necessary lock before it removes
  * the socket. This method should only be called when the current thread already owns
- * the sendLocker lock!
+ * the throttler queue lock.
  *
  * @param socket address of the socket that should be removed from the list. If this socket
  *			   does not exist in the list, this method will do nothing.
@@ -173,14 +174,14 @@ bool UploadBandwidthThrottler::RemoveFromStandardListNoLock(ThrottledFileSocket 
 void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSocket *socket, const bool hasSent)
 {
 	if (m_bRun) {
-		tempQueueLocker.Lock();
+		queueLocker.Lock();
 
 		if (hasSent)
 			m_TempControlQueueFirst_list.push_back(socket);
 		else
 			m_TempControlQueue_list.push_back(socket);
 
-		tempQueueLocker.Unlock();
+		queueLocker.Unlock();
 	}
 }
 
@@ -193,14 +194,13 @@ void UploadBandwidthThrottler::QueueForSendingControlPacket(ThrottledControlSock
  */
 void UploadBandwidthThrottler::RemoveFromAllQueuesNoLock(ThrottledControlSocket *socket)
 {
-	// Remove this socket from control packet queue
-	m_ControlQueue_list.remove(socket);
-	m_ControlQueueFirst_list.remove(socket);
-
-	tempQueueLocker.Lock();
-	m_TempControlQueue_list.remove(socket);
-	m_TempControlQueueFirst_list.remove(socket);
-	tempQueueLocker.Unlock();
+	// Keep all throttler queue mutations under queueLocker so removal cannot race a temp->live merge.
+	(void)UploadBandwidthThrottlerSeams::RemoveSocketFromAllControlQueues(
+		m_ControlQueueFirst_list,
+		m_ControlQueue_list,
+		m_TempControlQueueFirst_list,
+		m_TempControlQueue_list,
+		socket);
 }
 
 void UploadBandwidthThrottler::RemoveFromAllQueues(ThrottledFileSocket *socket)
@@ -500,11 +500,12 @@ UINT UploadBandwidthThrottler::RunInternal()
 
 			queueLocker.Lock();
 
-			tempQueueLocker.Lock();
-			// Move all sockets from m_TempControlQueue_list to normal m_ControlQueue_list
-			m_ControlQueueFirst_list.splice(m_ControlQueueFirst_list.cend(), m_TempControlQueueFirst_list);
-			m_ControlQueue_list.splice(m_ControlQueue_list.cend(), m_TempControlQueue_list);
-			tempQueueLocker.Unlock();
+			/// Drain producer-side queues into the live queues while holding only the shared queue lock.
+			UploadBandwidthThrottlerSeams::MergePendingControlQueues(
+				m_ControlQueueFirst_list,
+				m_ControlQueue_list,
+				m_TempControlQueueFirst_list,
+				m_TempControlQueue_list);
 
 			// Send any queued up control packets first
 			while ((bytesToSpend > 0 && spentBytes < (uint64)bytesToSpend || allowedDataRate == 0 && spentBytes < 500)
@@ -624,12 +625,11 @@ UINT UploadBandwidthThrottler::RunInternal()
 	}
 
 	queueLocker.Lock();
-	tempQueueLocker.Lock();
-	m_TempControlQueue_list.clear();
-	m_TempControlQueueFirst_list.clear();
-	tempQueueLocker.Unlock();
-
-	m_ControlQueue_list.clear();
+	UploadBandwidthThrottlerSeams::ClearAllControlQueues(
+		m_ControlQueueFirst_list,
+		m_ControlQueue_list,
+		m_TempControlQueueFirst_list,
+		m_TempControlQueue_list);
 	m_StandardOrder_list.RemoveAll();
 	queueLocker.Unlock();
 
