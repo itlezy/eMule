@@ -19,6 +19,7 @@
 #include "TitledMenu.h"
 #include "ListCtrlItemWalk.h"
 #include "ToolTipCtrlX.h"
+#include <vector>
 
 #define AVBLYSHADECOUNT 13
 
@@ -32,21 +33,25 @@ enum EFileSizeFormat
 	fsizeMByte
 };
 
-struct SearchCtrlItem_Struct
-{
-	CSearchFile	*value;
-	CSearchFile	*owner;
-	uchar		filehash[16];
-	uint16		childcount;
-};
-
 class CSortSelectionState
 {
 public:
-	CArray<int, int>	m_aSelectedItems;
-	uint32	m_nSortItem;
-	uint32	m_nScrollPosition;
-	bool	m_bSortAscending;
+	/** @brief Stores the selected logical search rows by stable search-file identity. */
+	CArray<CSearchFile*, CSearchFile*> m_aSelectedItems;
+	/** @brief Remembers the focused logical row when rebuilding the visible cache. */
+	CSearchFile *m_pFocusedItem;
+	/** @brief Remembers the first visible logical row when rebuilding the visible cache. */
+	CSearchFile *m_pTopItem;
+	uint32 m_nSortItem;
+	bool m_bSortAscending;
+
+	CSortSelectionState()
+		: m_pFocusedItem(NULL)
+		, m_pTopItem(NULL)
+		, m_nSortItem(static_cast<uint32>(-1))
+		, m_bSortAscending(true)
+	{
+	}
 };
 
 class CSearchListCtrl : public CMuleListCtrl, public CListCtrlItemWalk
@@ -65,7 +70,7 @@ public:
 	void	Localize();
 	void	ShowResults(uint32 nResultsID);
 	void	ClearResultViewState(uint32 nResultsID);
-	void	NoTabs()								{ m_nResultsID = 0; }
+	void	NoTabs();
 	void	UpdateSearch(CSearchFile *toupdate);
 	void	UpdateTabHeader(uint32 nResultsID);
 	EFileSizeFormat GetFileSizeFormat() const		{ return m_eFileSizeFormat; }
@@ -87,6 +92,32 @@ protected:
 
 	typedef CMap<int, int, CSortSelectionState*, CSortSelectionState*> CSortSelectionStatesMap;
 	CSortSelectionStatesMap m_mapSortSelectionStates;
+	/**
+	 * @brief Describes one visible row in the owner-data search result projection.
+	 *
+	 * The list control now owns only the currently visible row order. The real
+	 * search data stays in CSearchList and this cache feeds owner-data text,
+	 * selection restoration, and custom drawing without repopulating Win32 list
+	 * items on every refresh.
+	 */
+	struct SVisibleSearchRow
+	{
+		CSearchFile *pSearchFile;
+		bool bIsChild;
+
+		SVisibleSearchRow()
+			: pSearchFile(NULL)
+			, bIsChild(false)
+		{
+		}
+
+		SVisibleSearchRow(CSearchFile *pInSearchFile, bool bInIsChild)
+			: pSearchFile(pInSearchFile)
+			, bIsChild(bInIsChild)
+		{
+		}
+	};
+	std::vector<SVisibleSearchRow> m_aVisibleRows;
 
 	COLORREF GetSearchItemColor(/*const*/ CSearchFile *src);
 	bool	IsComplete(const CSearchFile *pFile, UINT uSources) const;
@@ -99,6 +130,16 @@ protected:
 	CString	FormatFileSize(ULONGLONG ullFileSize) const;
 	CString GetItemDisplayText(const CSearchFile *src, int iSubItem) const;
 	bool	IsFilteredOut(const CSearchFile *pSearchFile) const;
+	void	CaptureViewState(CSortSelectionState &rState) const;
+	void	RestoreViewState(const CSortSelectionState &rState);
+	void	RebuildVisibleRows(const CSortSelectionState *pStateToRestore = NULL);
+	void	AppendVisibleRowsForParent(CSearchFile *pParent);
+	void	AppendVisibleChildRows(CSearchFile *pParent);
+	int		FindVisibleItem(const CSearchFile *pSearchFile) const;
+	CSearchFile* GetSearchFileAt(int iItem) const;
+	bool	TryInsertVisibleResult(CSearchFile *pSearchFile);
+	void	SetVisibleRowCount();
+	void	SortVisibleRows(std::vector<CSearchFile*> &rRows) const;
 
 	void	DrawSourceParent(CDC &dc, int nColumn, LPRECT lpRect, UINT uDrawTextAlignment, const CSearchFile *src);
 	void	DrawSourceChild(CDC &dc, int nColumn, LPRECT lpRect, UINT uDrawTextAlignment, const CSearchFile *src);

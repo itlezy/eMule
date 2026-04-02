@@ -43,6 +43,7 @@
 #include "UserMsgs.h"
 #include "SearchResultsWnd.h"
 #include "MediaInfo.h"
+#include <algorithm>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -212,6 +213,7 @@ void CSearchListCtrl::OnDestroy()
 
 void CSearchListCtrl::SetStyle()
 {
+	ModifyStyle(0, LVS_OWNERDATA);
 	SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP);
 }
 
@@ -296,7 +298,6 @@ void CSearchListCtrl::Init(CSearchList *in_searchlist)
 	// Barry - Use preferred sort order from preferences
 	if (GetSortItem() != -1) {// don't force sorting if '-1' is specified;  we can see better how the search results are arriving
 		SetSortArrow();
-		SortItems(SortProc, MAKELONG(GetSortItem(), !GetSortAscending()));
 	}
 }
 
@@ -338,65 +339,29 @@ void CSearchListCtrl::AddResult(const CSearchFile *toshow)
 		return;
 	if (!theApp.emuledlg->searchwnd->m_pwndResults->m_astrFilter.IsEmpty() && IsFilteredOut(toshow))
 		return;
-
-	// Turn off updates
-	EUpdateMode eCurUpdateMode = SetUpdateMode(none);
-	// Add item
-	int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, GetItemCount(), toshow->GetFileName(), 0, 0, 0, (LPARAM)toshow);
-	// Add all sub items as callbacks and restore updating with last sub item.
-	// The callbacks are only needed for 'Find' functionality, not for any drawing.
-	const int iSubItems = 13;
-	for (int i = 1; i <= iSubItems; ++i) {
-		if (i == iSubItems)
-			SetUpdateMode(eCurUpdateMode);
-		SetItemText(iItem, i, LPSTR_TEXTCALLBACK);
-	}
+	if (TryInsertVisibleResult(const_cast<CSearchFile*>(toshow)))
+		UpdateTabHeader(toshow->GetSearchID());
 }
 
 void CSearchListCtrl::UpdateSources(const CSearchFile *toupdate)
 {
-	LVFINDINFO find;
-	find.flags = LVFI_PARAM;
-	find.lParam = (LPARAM)toupdate;
-	int iItem = FindItem(&find);
-	if (iItem >= 0) {
-		uint32 nSources = toupdate->GetSourceCount();
-		int iClients = toupdate->GetClientsCount();
-		CString strBuffer;
-		if (thePrefs.IsExtControlsEnabled() && iClients > 0)
-			strBuffer.Format(_T("%u (%i)"), nSources, iClients);
-		else
-			strBuffer.Format(_T("%u"), nSources);
-		SetItemText(iItem, 2, strBuffer);
-		SetItemText(iItem, 3, GetCompleteSourcesDisplayString(toupdate, nSources));
+	if (toupdate == NULL || toupdate->GetSearchID() != m_nResultsID)
+		return;
 
-		if (toupdate->IsListExpanded()) {
-			const SearchList *list = theApp.searchlist->GetSearchListForID(toupdate->GetSearchID());
-			for (POSITION pos = list->GetHeadPosition(); pos != NULL;) {
-				const CSearchFile *cur_file = list->GetNext(pos);
-				if (cur_file->GetListParent() == toupdate) {
-					LVFINDINFO find1;
-					find1.flags = LVFI_PARAM;
-					find1.lParam = (LPARAM)cur_file;
-					int index = FindItem(&find1);
-					if (index >= 0)
-						Update(index);
-					else
-						InsertItem(LVIF_TEXT | LVIF_PARAM, iItem + 1, cur_file->GetFileName(), 0, 0, 0, (LPARAM)cur_file);
-				}
-			}
-		}
-		Update(iItem);
+	const CSearchFile *const pVisibleFile = (toupdate->GetListParent() != NULL) ? toupdate->GetListParent() : toupdate;
+	const int iItem = FindVisibleItem(pVisibleFile);
+	if (iItem >= 0) {
+		if (pVisibleFile->IsListExpanded())
+			RebuildVisibleRows();
+		else
+			Update(iItem);
 	}
 }
 
 void CSearchListCtrl::UpdateSearch(CSearchFile *toupdate)
 {
 	if (toupdate && !theApp.IsClosing()) {
-		LVFINDINFO find;
-		find.flags = LVFI_PARAM;
-		find.lParam = (LPARAM)toupdate;
-		int iItem = FindItem(&find);
+		const int iItem = FindVisibleItem(toupdate);
 		if (iItem >= 0)
 			Update(iItem);
 	}
@@ -479,56 +444,204 @@ CString CSearchListCtrl::GetCompleteSourcesDisplayString(const CSearchFile *pFil
 
 void CSearchListCtrl::RemoveResult(const CSearchFile *toremove)
 {
-	LVFINDINFO find;
-	find.flags = LVFI_PARAM;
-	find.lParam = (LPARAM)toremove;
-	int iItem = FindItem(&find);
-	if (iItem >= 0)
-		DeleteItem(iItem);
+	if (toremove != NULL && toremove->GetSearchID() == m_nResultsID)
+		RebuildVisibleRows();
 }
 
 void CSearchListCtrl::ShowResults(uint32 nResultsID)
 {
-	if (nResultsID != m_nResultsID) {
-		// store the current state
-		CSortSelectionState *pCurState = new CSortSelectionState();
-		for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;)
-			pCurState->m_aSelectedItems.Add(GetNextSelectedItem(pos));
+	CSortSelectionState *pRestoreState = NULL;
+	CSortSelectionState currentState;
+	const uint32 nPreviousResultsID = m_nResultsID;
+	if (m_nResultsID != 0)
+		CaptureViewState(currentState);
 
-		pCurState->m_nSortItem = GetSortItem();
-		pCurState->m_bSortAscending = GetSortAscending();
-		pCurState->m_nScrollPosition = GetTopIndex();
-		m_mapSortSelectionStates[m_nResultsID] = pCurState;
-	}
-
-	DeleteAllItems();
-
-	// recover stored state
-	CSortSelectionState *pNewState;
-	if (nResultsID != m_nResultsID && m_mapSortSelectionStates.Lookup(nResultsID, pNewState)) {
-		m_mapSortSelectionStates.RemoveKey(nResultsID);
-
-		// sort order
-		SetSortArrow(pNewState->m_nSortItem, pNewState->m_bSortAscending);
-		SortItems(SortProc, MAKELONG(pNewState->m_nSortItem, !pNewState->m_bSortAscending));
-		// fill in the items
-		m_nResultsID = nResultsID;
-		searchlist->ShowResults(nResultsID);
-		// set stored selectionstates
-		for (INT_PTR i = pNewState->m_aSelectedItems.GetCount(); --i >= 0;)
-			SetItemState(pNewState->m_aSelectedItems[i], LVIS_SELECTED, LVIS_SELECTED);
-
-		if (pNewState->m_nScrollPosition > 0) {
-			POINT Point;
-			GetItemPosition(pNewState->m_nScrollPosition - 1, &Point);
-			Point.x = 0;
-			Scroll((CSize)Point);
+	if (nResultsID != m_nResultsID && m_nResultsID != 0) {
+		CSortSelectionState *pExistingState = NULL;
+		if (m_mapSortSelectionStates.Lookup(m_nResultsID, pExistingState)) {
+			m_mapSortSelectionStates.RemoveKey(m_nResultsID);
+			delete pExistingState;
 		}
-		delete pNewState;
-	} else {
-		m_nResultsID = nResultsID;
-		searchlist->ShowResults(nResultsID);
+		CSortSelectionState *pStoredState = new CSortSelectionState();
+		pStoredState->m_pFocusedItem = currentState.m_pFocusedItem;
+		pStoredState->m_pTopItem = currentState.m_pTopItem;
+		pStoredState->m_nSortItem = currentState.m_nSortItem;
+		pStoredState->m_bSortAscending = currentState.m_bSortAscending;
+		for (INT_PTR i = 0; i < currentState.m_aSelectedItems.GetCount(); ++i)
+			pStoredState->m_aSelectedItems.Add(currentState.m_aSelectedItems[i]);
+		m_mapSortSelectionStates[m_nResultsID] = pStoredState;
 	}
+
+	if (nResultsID == nPreviousResultsID) {
+		pRestoreState = &currentState;
+	} else if (m_mapSortSelectionStates.Lookup(nResultsID, pRestoreState)) {
+		m_mapSortSelectionStates.RemoveKey(nResultsID);
+		SetSortArrow(pRestoreState->m_nSortItem, pRestoreState->m_bSortAscending);
+	}
+
+	m_nResultsID = nResultsID;
+	RebuildVisibleRows(pRestoreState);
+	if (pRestoreState != NULL && pRestoreState != &currentState)
+		delete pRestoreState;
+}
+
+void CSearchListCtrl::NoTabs()
+{
+	m_nResultsID = 0;
+	m_aVisibleRows.clear();
+}
+
+void CSearchListCtrl::CaptureViewState(CSortSelectionState &rState) const
+{
+	rState.m_aSelectedItems.RemoveAll();
+	rState.m_pFocusedItem = GetSearchFileAt(GetSelectionMark());
+	rState.m_pTopItem = GetSearchFileAt(GetTopIndex());
+	rState.m_nSortItem = GetSortItem();
+	rState.m_bSortAscending = GetSortAscending();
+	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
+		if (CSearchFile *const pSearchFile = GetSearchFileAt(GetNextSelectedItem(pos)))
+			rState.m_aSelectedItems.Add(pSearchFile);
+	}
+}
+
+void CSearchListCtrl::RestoreViewState(const CSortSelectionState &rState)
+{
+	SetItemState(-1, 0, LVIS_SELECTED | LVIS_FOCUSED);
+	for (INT_PTR i = 0; i < rState.m_aSelectedItems.GetCount(); ++i) {
+		const int iItem = FindVisibleItem(rState.m_aSelectedItems[i]);
+		if (iItem >= 0)
+			SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
+	}
+
+	const int iFocusedItem = FindVisibleItem(rState.m_pFocusedItem);
+	if (iFocusedItem >= 0) {
+		SetItemState(iFocusedItem, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
+		SetSelectionMark(iFocusedItem);
+	} else {
+		AutoSelectItem();
+	}
+
+	const int iTopItem = FindVisibleItem(rState.m_pTopItem);
+	if (iTopItem > 0)
+		EnsureVisible(iTopItem, FALSE);
+}
+
+void CSearchListCtrl::SortVisibleRows(std::vector<CSearchFile*> &rRows) const
+{
+	if (GetSortItem() == -1 || rRows.size() < 2)
+		return;
+
+	const LPARAM lParamSort = MAKELONG(GetSortItem(), !GetSortAscending());
+	std::stable_sort(rRows.begin(), rRows.end(),
+		[lParamSort](const CSearchFile *pLeft, const CSearchFile *pRight)
+		{
+			return SortProc(reinterpret_cast<LPARAM>(pLeft), reinterpret_cast<LPARAM>(pRight), lParamSort) < 0;
+		});
+}
+
+void CSearchListCtrl::AppendVisibleChildRows(CSearchFile *pParent)
+{
+	if (pParent == NULL || !pParent->IsListExpanded())
+		return;
+
+	std::vector<CSearchFile*> aChildren;
+	const SearchList *const pList = theApp.searchlist->GetSearchListForID(pParent->GetSearchID());
+	for (POSITION pos = pList->GetHeadPosition(); pos != NULL;) {
+		CSearchFile *const pSearchFile = pList->GetNext(pos);
+		if (pSearchFile != NULL && pSearchFile->GetListParent() == pParent)
+			aChildren.push_back(pSearchFile);
+	}
+
+	SortVisibleRows(aChildren);
+	for (const CSearchFile *const pChild : aChildren)
+		m_aVisibleRows.push_back(SVisibleSearchRow(const_cast<CSearchFile*>(pChild), true));
+}
+
+void CSearchListCtrl::AppendVisibleRowsForParent(CSearchFile *pParent)
+{
+	if (pParent == NULL || pParent->m_flags.noshow || IsFilteredOut(pParent))
+		return;
+
+	m_aVisibleRows.push_back(SVisibleSearchRow(pParent, false));
+	AppendVisibleChildRows(pParent);
+}
+
+void CSearchListCtrl::SetVisibleRowCount()
+{
+	SetItemCountEx(static_cast<int>(m_aVisibleRows.size()), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
+}
+
+int CSearchListCtrl::FindVisibleItem(const CSearchFile *pSearchFile) const
+{
+	if (pSearchFile == NULL)
+		return -1;
+
+	for (size_t i = 0; i < m_aVisibleRows.size(); ++i)
+		if (m_aVisibleRows[i].pSearchFile == pSearchFile)
+			return static_cast<int>(i);
+	return -1;
+}
+
+CSearchFile* CSearchListCtrl::GetSearchFileAt(int iItem) const
+{
+	return (iItem >= 0 && static_cast<size_t>(iItem) < m_aVisibleRows.size()) ? m_aVisibleRows[static_cast<size_t>(iItem)].pSearchFile : NULL;
+}
+
+bool CSearchListCtrl::TryInsertVisibleResult(CSearchFile *pSearchFile)
+{
+	if (pSearchFile == NULL || pSearchFile->GetListParent() != NULL || pSearchFile->m_flags.noshow || IsFilteredOut(pSearchFile))
+		return false;
+
+	size_t uInsertIndex = m_aVisibleRows.size();
+	if (GetSortItem() != -1) {
+		const LPARAM lParamSort = MAKELONG(GetSortItem(), !GetSortAscending());
+		for (size_t i = 0; i < m_aVisibleRows.size(); ++i) {
+			const SVisibleSearchRow &rRow = m_aVisibleRows[i];
+			if (rRow.bIsChild || rRow.pSearchFile == NULL)
+				continue;
+			if (SortProc(reinterpret_cast<LPARAM>(pSearchFile), reinterpret_cast<LPARAM>(rRow.pSearchFile), lParamSort) < 0) {
+				uInsertIndex = i;
+				break;
+			}
+		}
+	}
+
+	m_aVisibleRows.insert(m_aVisibleRows.begin() + static_cast<ptrdiff_t>(uInsertIndex), SVisibleSearchRow(pSearchFile, false));
+	SetVisibleRowCount();
+	RedrawItems(static_cast<int>(uInsertIndex), GetItemCount() - 1);
+	return true;
+}
+
+void CSearchListCtrl::RebuildVisibleRows(const CSortSelectionState *pStateToRestore)
+{
+	CSortSelectionState currentState;
+	if (pStateToRestore == NULL && m_nResultsID != 0 && GetItemCount() > 0) {
+		CaptureViewState(currentState);
+		pStateToRestore = &currentState;
+	}
+
+	SetRedraw(false);
+	m_aVisibleRows.clear();
+	if (m_nResultsID != 0) {
+		std::vector<CSearchFile*> aParents;
+		const SearchList *const pList = theApp.searchlist->GetSearchListForID(m_nResultsID);
+		for (POSITION pos = pList->GetHeadPosition(); pos != NULL;) {
+			CSearchFile *const pSearchFile = pList->GetNext(pos);
+			if (pSearchFile != NULL && pSearchFile->GetListParent() == NULL && !pSearchFile->m_flags.noshow && !IsFilteredOut(pSearchFile))
+				aParents.push_back(pSearchFile);
+		}
+
+		SortVisibleRows(aParents);
+		for (CSearchFile *const pParent : aParents)
+			AppendVisibleRowsForParent(pParent);
+	}
+
+	SetVisibleRowCount();
+	UpdateTabHeader(m_nResultsID);
+	if (pStateToRestore != NULL)
+		RestoreViewState(*pStateToRestore);
+	SetRedraw(true);
+	Invalidate();
 }
 
 void CSearchListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
@@ -550,7 +663,7 @@ void CSearchListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	// Sort table
 	UpdateSortHistory(MAKELONG(pNMLV->iSubItem, !sortAscending));
 	SetSortArrow(pNMLV->iSubItem, sortAscending);
-	SortItems(SortProc, MAKELONG(pNMLV->iSubItem, !sortAscending));
+	RebuildVisibleRows();
 	*pResult = 0;
 }
 
@@ -677,7 +790,7 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 	int iToDownload = 0;
 	bool bContainsNotSpamFile = false;
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-		const CSearchFile *pFile = reinterpret_cast<CSearchFile*>(GetItemData(GetNextSelectedItem(pos)));
+		const CSearchFile *const pFile = GetSearchFileAt(GetNextSelectedItem(pos));
 		if (pFile) {
 			++iSelected;
 			iToDownload += static_cast<int>(!theApp.downloadqueue->IsFileExisting(pFile->GetFileHash(), false));
@@ -738,7 +851,7 @@ BOOL CSearchListCtrl::OnCommand(WPARAM wParam, LPARAM)
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
 		int index = GetNextSelectedItem(pos);
 		if (index >= 0)
-			selectedList.AddTail(reinterpret_cast<CSearchFile*>(GetItemData(index)));
+			selectedList.AddTail(GetSearchFileAt(index));
 	}
 
 	if (!selectedList.IsEmpty()) {
@@ -863,6 +976,7 @@ BOOL CSearchListCtrl::OnCommand(WPARAM wParam, LPARAM)
 
 void CSearchListCtrl::OnLvnDeleteAllItems(LPNMHDR, LRESULT *pResult)
 {
+	m_aVisibleRows.clear();
 	// To suppress subsequent LVN_DELETEITEM notification messages, return TRUE.
 	*pResult = 1;
 }
@@ -930,7 +1044,7 @@ void CSearchListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 		}
 
 		if (GetSelectedCount() <= 1) {
-			const CSearchFile *file = (CSearchFile*)GetItemData(pGetInfoTip->iItem);
+			const CSearchFile *const file = GetSearchFileAt(pGetInfoTip->iItem);
 			if (file && pGetInfoTip->pszText && pGetInfoTip->cchTextMax > 0) {
 				CString strInfo;
 				CString strHead(file->GetFileName());
@@ -1097,7 +1211,7 @@ void CSearchListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 			int iSelected = 0;
 			ULONGLONG ulTotalSize = 0;
 			for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-				const CSearchFile *pFile = (CSearchFile*)GetItemData(GetNextSelectedItem(pos));
+				const CSearchFile *const pFile = GetSearchFileAt(GetNextSelectedItem(pos));
 				if (pFile) {
 					++iSelected;
 					ulTotalSize += (uint64)pFile->GetFileSize();
@@ -1126,14 +1240,10 @@ void CSearchListCtrl::ExpandCollapseItem(int iItem, int iAction)
 	if (iItem == -1)
 		return;
 
-	CSearchFile *searchfile = (CSearchFile*)GetItemData(iItem);
+	CSearchFile *searchfile = GetSearchFileAt(iItem);
 	if (searchfile->GetListParent() != NULL) {
 		searchfile = searchfile->GetListParent();
-
-		LVFINDINFO find;
-		find.flags = LVFI_PARAM;
-		find.lParam = (LPARAM)searchfile;
-		iItem = FindItem(&find);
+		iItem = FindVisibleItem(searchfile);
 		if (iItem == -1)
 			return;
 	}
@@ -1145,18 +1255,8 @@ void CSearchListCtrl::ExpandCollapseItem(int iItem, int iAction)
 			// only expand when more than one child (more than the original entry itself)
 			if (searchfile->GetListChildCount() < 2)
 				return;
-
-			// Go through the whole list to find out the sources for this file
-			SetRedraw(false);
-			const SearchList *list = theApp.searchlist->GetSearchListForID(searchfile->GetSearchID());
-			for (POSITION pos = list->GetHeadPosition(); pos != NULL;) {
-				const CSearchFile *cur_file = list->GetNext(pos);
-				if (cur_file->GetListParent() == searchfile) {
-					searchfile->SetListExpanded(true);
-					InsertItem(LVIF_TEXT | LVIF_PARAM, iItem + 1, cur_file->GetFileName(), 0, 0, 0, (LPARAM)cur_file);
-				}
-			}
-			SetRedraw(true);
+			searchfile->SetListExpanded(true);
+			RebuildVisibleRows();
 		}
 	} else {
 		if (iAction == EXPAND_COLLAPSE || iAction == COLLAPSE_ONLY) {
@@ -1173,12 +1273,10 @@ void CSearchListCtrl::ExpandCollapseItem(int iItem, int iAction)
 
 void CSearchListCtrl::HideSources(CSearchFile *toCollapse)
 {
-	SetRedraw(false);
-	for (int i = GetItemCount(); --i >= 0;)
-		if (reinterpret_cast<CSearchFile*>(GetItemData(i))->GetListParent() == toCollapse)
-			DeleteItem(i);
+	if (toCollapse == NULL)
+		return;
 	toCollapse->SetListExpanded(false);
-	SetRedraw(true);
+	RebuildVisibleRows();
 }
 
 void CSearchListCtrl::OnNmClick(LPNMHDR pNMHDR, LRESULT*)
@@ -1201,7 +1299,7 @@ void CSearchListCtrl::OnNmDblClk(LPNMHDR, LRESULT*)
 		if (GetKeyState(VK_MENU) & 0x8000) {
 			int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 			if (iSel >= 0) {
-				/*const*/ CSearchFile *file = reinterpret_cast<CSearchFile*>(GetItemData(iSel));
+				/*const*/ CSearchFile *file = GetSearchFileAt(iSel);
 				if (file) {
 					CTypedPtrList<CPtrList, CSearchFile*> aFiles;
 					aFiles.AddTail(file);
@@ -1216,7 +1314,8 @@ void CSearchListCtrl::OnNmDblClk(LPNMHDR, LRESULT*)
 
 void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
-	if (!lpDrawItemStruct->itemData || theApp.IsClosing())
+	CSearchFile *const content = GetSearchFileAt(static_cast<int>(lpDrawItemStruct->itemID));
+	if (content == NULL || theApp.IsClosing())
 		return;
 
 	CRect rcItem(lpDrawItemStruct->rcItem);
@@ -1225,7 +1324,6 @@ void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	InitItemMemDC(dc, lpDrawItemStruct, bCtrlFocused);
 	RECT rcClient;
 	GetClientRect(&rcClient);
-	CSearchFile *content = reinterpret_cast<CSearchFile*>(lpDrawItemStruct->itemData);
 	if (!g_bLowColorDesktop || (lpDrawItemStruct->itemState & ODS_SELECTED) == 0)
 		dc.SetTextColor(GetSearchItemColor(content));
 
@@ -1289,12 +1387,14 @@ void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 	//draw the tree last, over selected and focus (looks better)
 	if (tree_start < tree_end) {
-		//set new bounds
-		RECT tree_rect{tree_start, lpDrawItemStruct->rcItem.top, tree_end, lpDrawItemStruct->rcItem.bottom};
-		dc.SetBoundsRect(&tree_rect, DCB_DISABLE);
+		// Keep connector drawing clipped to the current row so scrolling never
+		// paints below the list into the adjacent search controls.
+		const RECT tree_rect{lpDrawItemStruct->rcItem.left, lpDrawItemStruct->rcItem.top, lpDrawItemStruct->rcItem.right, lpDrawItemStruct->rcItem.bottom};
+		const int nSavedDc = dc.SaveDC();
+		dc.IntersectClipRect(&tree_rect);
 
 		//gather some information
-		bool hasNext = notLast && reinterpret_cast<CSearchFile*>(GetItemData(lpDrawItemStruct->itemID + 1))->GetListParent() != NULL;
+		bool hasNext = notLast && GetSearchFileAt(static_cast<int>(lpDrawItemStruct->itemID + 1))->GetListParent() != NULL;
 		bool isOpenRoot = hasNext && !isChild;
 
 		//might as well calculate these now
@@ -1308,14 +1408,14 @@ void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		CPen *oldpn = dc.SelectObject(&pn);
 
 		if (isChild) {
-			//draw the line to the status bar
+			// draw the horizontal connector inside the current row only.
 			dc.MoveTo(tree_end + 10, middle);
 			dc.LineTo(tree_start + 4, middle);
 
 			//draw the line to the child node
 			if (hasNext) {
 				dc.MoveTo(treeCenter, middle);
-				dc.LineTo(treeCenter, rcItem.bottom + 1);
+				dc.LineTo(treeCenter, rcItem.bottom - 1);
 			}
 		} else if (isOpenRoot || content->GetListChildCount() > 1) {
 			//draw box
@@ -1336,19 +1436,20 @@ void CSearchListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			//draw the line to the child node
 			if (hasNext) {
 				dc.MoveTo(treeCenter, middle + 4);
-				dc.LineTo(treeCenter, rcItem.bottom + 1);
+				dc.LineTo(treeCenter, rcItem.bottom - 1);
 			}
 		}
 
 		//draw the line back up to parent node
 		if (notFirst && isChild) {
 			dc.MoveTo(treeCenter, middle);
-			dc.LineTo(treeCenter, rcItem.top - 1);
+			dc.LineTo(treeCenter, rcItem.top);
 		}
 
 		//put the old pen back
 		dc.SelectObject(oldpn);
 		pn.DeleteObject();
+		dc.RestoreDC(nSavedDc);
 	}
 }
 
@@ -1642,9 +1743,11 @@ void CSearchListCtrl::OnLvnGetDispInfo(LPNMHDR pNMHDR, LRESULT *pResult)
 		//
 		// Vista: That callback is used to get the strings for the label tips for the sub(!)-items.
 		//
-		const LVITEMW &rItem = reinterpret_cast<NMLVDISPINFO*>(pNMHDR)->item;
+		LVITEMW &rItem = reinterpret_cast<NMLVDISPINFO*>(pNMHDR)->item;
+		const CSearchFile *const pSearchFile = GetSearchFileAt(rItem.iItem);
+		if (rItem.mask & LVIF_PARAM)
+			rItem.lParam = reinterpret_cast<LPARAM>(pSearchFile);
 		if (rItem.mask & LVIF_TEXT) {
-			const CSearchFile *pSearchFile = reinterpret_cast<CSearchFile*>(rItem.lParam);
 			if (pSearchFile != NULL)
 				_tcsncpy_s(rItem.pszText, rItem.cchTextMax, GetItemDisplayText(pSearchFile, rItem.iSubItem), _TRUNCATE);
 		}
