@@ -30,6 +30,7 @@ Completed bounded hardening chunks already landed on this branch:
 - **[DONE]** bounded `CPP_012` fixed-buffer formatting hardening (`165e809`)
 - **[DONE]** bounded `CPP_032` / `CPP_035` client-credits and collection exception/resource hardening (`313f880`)
 - **[DONE]** bounded `CPP_034` AICH hashset and part-selection numeric hardening (`bf0c827`)
+- **[DONE]** bounded `CPP_028` / `CPP_032` / `CPP_035` AICH maintenance hardening (`b9579cf`)
 
 The broader audit categories below remain open unless explicitly marked otherwise; completed chunks reduce the remaining surface but do not imply the entire category is closed.
 
@@ -673,13 +674,12 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_028 — Busy-Wait / Sleep Polling
 
-**Count:** 5 `Sleep()`-based polling loops
+**Count:** 4 remaining polling loops
 **Severity:** Medium
 **Priority:** LOW
 
 | File | Line | Current | Recommended |
 |---|---|---|---|
-| AICHSyncThread.cpp | 301 | `Sleep(100)` waiting for hashing completion | Condition variable |
 | ClientUDPSocket.cpp | 466 | `Sleep(20)` in DNS resolution loop | Event-based notification |
 | SharedFileList.cpp | 431 | `Sleep(100)` "give time to write" | Completion event |
 | EMSocket.cpp | 1079 | `Sleep(20)` for send buffer space | Throttler event |
@@ -756,7 +756,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_032 — Exception Safety
 
-**Count:** 8+ remaining resource/exception sites; several high-risk packet and collection paths already hardened
+**Count:** 7+ remaining resource/exception sites; several high-risk packet and AICH maintenance paths already hardened
 **Severity:** High
 **Priority:** HIGH
 
@@ -765,7 +765,6 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | File | Line | Pattern |
 |---|---|---|
 | EMSocket.cpp | 363 | `new char[nPacketBufferSize]` | Allocation still relies on surrounding caller cleanup and exception propagation |
-| KnownFile.cpp | 926 | `new BYTE[nAICHHashSetSize]` | Raw temporary hashset buffer still uses manual cleanup |
 | Collection.cpp | 56, 119 | `new BYTE[...]` for author key ownership | Long-lived raw ownership remains manual |
 
 **Silent exception swallowing (`catch(...)`):**
@@ -825,7 +824,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_035 — Resource Leaks
 
-**Count:** 6+ remaining leak / manual-lifetime sites
+**Count:** 5+ remaining leak / manual-lifetime sites
 **Severity:** High
 **Priority:** HIGH
 
@@ -833,7 +832,6 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 |---|---|---|---|
 | `HANDLE` | ClientCredits.cpp | 181, 364 | Raw `CreateFile` / `CloseHandle` sites still use manual handle lifetime |
 | `SOCKET` | AsyncSocketEx.cpp | 355 | `socket()` opened, not closed on all error paths |
-| `new[]` | KnownFile.cpp | 926 | Temporary AICH hashset buffer still uses manual `new[]` ownership |
 | `new[]` | DownloadClient.cpp | 94, 481 | Raw arrays remain for part-status and debug rendering |
 | `delete[]` skip | BaseClient.cpp | 278–324 | Sequential `delete[]` in dtor — if one throws, rest skipped |
 | `new` | Collection.cpp | 56, 119 | Author-key ownership is still manual raw allocation |
