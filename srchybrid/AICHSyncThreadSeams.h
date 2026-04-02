@@ -1,20 +1,14 @@
 #pragma once
 
-#include <windows.h>
-
-struct AICHSyncForegroundHashState
-{
-	bool bIsClosing;
-	INT_PTR nSharedFileHashingCount;
-	bool bHasPendingPartFileHashing;
-};
+#include "AICHMaintenanceSeams.h"
 
 /**
  * @brief Reports whether AICH background hashing should wait for foreground hash work to finish.
  */
 inline bool ShouldWaitForAICHSyncForegroundHashing(const AICHSyncForegroundHashState &state)
 {
-	return !state.bIsClosing && (state.nSharedFileHashingCount > 0 || state.bHasPendingPartFileHashing);
+	const AICHSyncForegroundWaitAction action = AICHMaintenanceSeams::GetForegroundHashWaitAction(state);
+	return !action.bShouldExit && action.dwSleepMilliseconds != 0u;
 }
 
 /**

@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "StdAfx.h"
 #include "aichsyncthread.h"
+#include "AICHMaintenanceSeams.h"
 #include "AICHSyncThreadSeams.h"
 #include "shahashset.h"
 #include "safefile.h"
@@ -29,6 +30,7 @@
 #include "PartFile.h"
 #include "Log.h"
 #include "UserMsgs.h"
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -281,14 +283,18 @@ int CAICHSyncThread::Run()
 					posTmp = CAICHRecoveryHashSet::AddStoredAICHHash(aichHash, nCurrentHashsetPos);
 				} else {
 					// used Hashset, move position in file
-					BYTE *buffer = new BYTE[nHashCount * (size_t)CAICHHash::GetHashSize()];
-					file.Read(buffer, nHashCount * CAICHHash::GetHashSize());
+					uint32 nHashPayloadSize = 0;
+					if (!AICHMaintenanceSeams::TryDeriveAICHHashPayloadSize(CAICHHash::GetHashSize(), nHashCount, &nHashPayloadSize))
+						AfxThrowFileException(CFileException::endOfFile, 0, file.GetFileName());
+					std::vector<BYTE> buffer(nHashPayloadSize);
+					if (nHashPayloadSize != 0u)
+						file.Read(buffer.data(), nHashPayloadSize);
 					posReadPos = file.GetPosition();
 					file.Seek(posWritePos, CFile::begin);
 					file.Write(aichHash.GetRawHashC(), CAICHHash::GetHashSize());
 					file.WriteUInt32(nHashCount);
-					file.Write(buffer, nHashCount * CAICHHash::GetHashSize());
-					delete[] buffer;
+					if (nHashPayloadSize != 0u)
+						file.Write(buffer.data(), nHashPayloadSize);
 					posTmp = CAICHRecoveryHashSet::AddStoredAICHHash(aichHash, posWritePos);
 
 					posWritePos = file.GetPosition();
@@ -353,10 +359,14 @@ int CAICHSyncThread::Run()
 				return 0;
 
 			// Let foreground hashing work, including crash-recovery part files, use the shared hash lane first.
-			while (ShouldWaitForAICHSyncForegroundHashing({theApp.IsClosing(), theApp.sharedfiles->GetHashingCount(), HasPendingPartFileHashing()})) {
-				if (theApp.IsClosing())
+			while (true) {
+				const AICHSyncForegroundWaitAction waitAction = AICHMaintenanceSeams::GetForegroundHashWaitAction({theApp.IsClosing(), theApp.sharedfiles->GetHashingCount(), HasPendingPartFileHashing()});
+				if (waitAction.bShouldExit)
 					return 0;
-				::Sleep(100);
+				if (waitAction.dwSleepMilliseconds == 0u)
+					break;
+				if (!::SwitchToThread())
+					::Sleep(waitAction.dwSleepMilliseconds);
 			}
 
 			CSingleLock hashingLock(&theApp.hashing_mut, TRUE); // only one file hash at a time
@@ -417,12 +427,16 @@ bool CAICHSyncThread::ConvertKnown2ToKnown264(CSafeFile &TargetFile)
 			if (oldfile.GetPosition() + nHashCount * (ULONGLONG)CAICHHash::GetHashSize() > oldfile.GetLength())
 				AfxThrowFileException(CFileException::endOfFile, 0, oldfile.GetFileName());
 
-			BYTE *buffer = new BYTE[nHashCount * (size_t)CAICHHash::GetHashSize()];
-			oldfile.Read(buffer, nHashCount * CAICHHash::GetHashSize());
+			uint32 nHashPayloadSize = 0;
+			if (!AICHMaintenanceSeams::TryDeriveAICHHashPayloadSize(CAICHHash::GetHashSize(), nHashCount, &nHashPayloadSize))
+				AfxThrowFileException(CFileException::endOfFile, 0, oldfile.GetFileName());
+			std::vector<BYTE> buffer(nHashPayloadSize);
+			if (nHashPayloadSize != 0u)
+				oldfile.Read(buffer.data(), nHashPayloadSize);
 			TargetFile.Write(aichHash.GetRawHash(), CAICHHash::GetHashSize());
 			TargetFile.WriteUInt32(nHashCount);
-			TargetFile.Write(buffer, nHashCount * CAICHHash::GetHashSize());
-			delete[] buffer;
+			if (nHashPayloadSize != 0u)
+				TargetFile.Write(buffer.data(), nHashPayloadSize);
 		}
 		TargetFile.Flush();
 		oldfile.Close();

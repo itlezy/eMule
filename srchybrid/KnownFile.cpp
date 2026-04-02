@@ -38,6 +38,7 @@
 #include "shahashset.h"
 #include "Log.h"
 #include "MD4.h"
+#include <vector>
 #include "PartFileNumericSeams.h"
 #include "ResourceOwnershipSeams.h"
 #include "MappedFileReader.h"
@@ -930,19 +931,18 @@ bool CKnownFile::WriteToFile(CFileDataIO &file)
 				ASSERT(0);
 				DebugLogError(_T("Skipped storing AICH Part HashSet because the serialized size overflowed"));
 			} else {
-				BYTE *pHashBuffer = new BYTE[nAICHHashSetSize];
-				CSafeMemFile hashSetFile(pHashBuffer, nAICHHashSetSize);
+				std::vector<BYTE> hashBuffer(nAICHHashSetSize);
+				CSafeMemFile hashSetFile(hashBuffer.data(), static_cast<UINT>(hashBuffer.size()));
 				try {
 					m_FileIdentifier.WriteAICHHashsetToFile(hashSetFile);
 					bWriteHashSet = true;
 				} catch (CFileException *ex) {
 					ASSERT(0);
 					DebugLogError(_T("Memfile Error while storing AICH Part HashSet"));
-					delete[] hashSetFile.Detach();
 					ex->Delete();
 				}
 				if (bWriteHashSet) {
-					CTag tagAICHHashSet(FT_AICHHASHSET, hashSetFile.Detach(), nAICHHashSetSize);
+					CTag tagAICHHashSet(FT_AICHHASHSET, hashBuffer.size(), hashBuffer.data());
 					tagAICHHashSet.WriteTagToFile(file);
 					++uTagCount;
 				}

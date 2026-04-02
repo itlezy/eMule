@@ -57,6 +57,7 @@
 #include "PartFileWriteThread.h"
 #include "DisplayRefreshSeams.h"
 #include "PartFileNumericSeams.h"
+#include <vector>
 #include <urlmon.h>
 
 #ifdef _DEBUG
@@ -1351,19 +1352,18 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 					bWriteHashSet = false;
 				}
 				if (bWriteHashSet) {
-					BYTE *pHashBuffer = new BYTE[nAICHHashSetSize];
-					CSafeMemFile hashSetFile(pHashBuffer, nAICHHashSetSize);
+					std::vector<BYTE> hashBuffer(nAICHHashSetSize);
+					CSafeMemFile hashSetFile(hashBuffer.data(), static_cast<UINT>(hashBuffer.size()));
 					try {
 						m_FileIdentifier.WriteAICHHashsetToFile(hashSetFile);
 					} catch (CFileException *pError) {
 						ASSERT(0);
 						DebugLogError(_T("Memfile Error while storing AICH Part HashSet"));
 						bWriteHashSet = false;
-						delete[] hashSetFile.Detach();
 						pError->Delete();
 					}
 					if (bWriteHashSet) {
-						CTag tagAICHHashSet(FT_AICHHASHSET, hashSetFile.Detach(), nAICHHashSetSize);
+						CTag tagAICHHashSet(FT_AICHHASHSET, hashBuffer.size(), hashBuffer.data());
 						tagAICHHashSet.WriteTagToFile(file);
 						++uTagCount;
 					}
