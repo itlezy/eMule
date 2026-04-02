@@ -27,6 +27,7 @@
 #include "UploadQueue.h"
 #include "Preferences.h"
 #include "CompressionBufferSeams.h"
+#include "LockScopeSeams.h"
 #include "ProtocolGuards.h"
 #include "ClientList.h"
 #include "EncryptedDatagramSocket.h"
@@ -38,6 +39,7 @@
 #include "kademlia/io/IOException.h"
 #include "kademlia/kademlia/prefs.h"
 #include "kademlia/utils/KadUDPKey.h"
+#include <memory>
 #include <zlib.h>
 
 #ifdef _DEBUG
@@ -419,13 +421,12 @@ void CClientUDPSocket::OnDatagramSend(int nErrorCode)
 	}
 
 // ZZ:UploadBandWithThrottler (UDP) -->
-	sendLocker.Lock();
+	CSingleLock lockSend(&sendLocker, TRUE);
 	m_bWouldBlock = false;
 	SetWriteInterestEnabled(false);
 
-	if (!controlpacket_queue.IsEmpty())
+	if (ShouldSignalUdpControlQueue(m_bWouldBlock, controlpacket_queue.IsEmpty()))
 		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
-	sendLocker.Unlock();
 // <-- ZZ:UploadBandWithThrottler (UDP)
 }
 
@@ -434,36 +435,43 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 // ZZ:UploadBandWithThrottler (UDP) -->
 // NOTE: *** This function is invoked from a *different* thread!
 	uint32 sentBytes = 0;
-	DWORD curTick;
-
-	sendLocker.Lock();
+	const uint32 nMaxQueueMilliseconds = ModernLimits::kDefaultUdpMaxQueueTimeSeconds * 1000u;
 // <-- ZZ:UploadBandWithThrottler (UDP)
-	curTick = ::GetTickCount();
-	while (!controlpacket_queue.IsEmpty() && !IsBusy() && sentBytes < maxNumberOfBytesToSend) { // ZZ:UploadBandWithThrottler (UDP)
-		UDPPack *cur_packet = controlpacket_queue.RemoveHead();
-		if (curTick < cur_packet->dwTime + ModernLimits::kDefaultUdpMaxQueueTimeSeconds * 1000u) {
+	while (true) { // ZZ:UploadBandWithThrottler (UDP)
+		UDPPack *cur_packet = NULL;
+		bool bWouldBlock = false;
+		{
+			CSingleLock lockSend(&sendLocker, TRUE);
+			bWouldBlock = m_bWouldBlock;
+			if (!ShouldContinueUdpControlSend(controlpacket_queue.IsEmpty(), bWouldBlock, sentBytes, maxNumberOfBytesToSend))
+				break;
+			cur_packet = controlpacket_queue.RemoveHead();
+		}
+
+		if (!HasUdpControlPacketExpired(::GetTickCount(), cur_packet->dwTime, nMaxQueueMilliseconds)) {
 			int nLen = (int)cur_packet->packet->size + 2;
 			int iLen = cur_packet->bEncrypt && (theApp.GetPublicIP() > 0 || cur_packet->bKad)
 				? EncryptOverheadSize(cur_packet->bKad) : 0;
-			uchar *sendbuffer = new uchar[nLen + iLen];
-			memcpy(&sendbuffer[iLen], cur_packet->packet->GetUDPHeader(), 2);
-			memcpy(&sendbuffer[iLen + 2], cur_packet->packet->pBuffer, cur_packet->packet->size);
+			std::unique_ptr<uchar[]> pSendBuffer(new uchar[nLen + iLen]);
+			memcpy(&pSendBuffer[iLen], cur_packet->packet->GetUDPHeader(), 2);
+			memcpy(&pSendBuffer[iLen + 2], cur_packet->packet->pBuffer, cur_packet->packet->size);
 
 			if (iLen) {
-				nLen = EncryptSendClient(sendbuffer, nLen, cur_packet->pachTargetClientHashORKadID, cur_packet->bKad, cur_packet->nReceiverVerifyKey, (cur_packet->bKad ? Kademlia::CPrefs::GetUDPVerifyKey(cur_packet->dwIP) : 0u));
+				nLen = EncryptSendClient(pSendBuffer.get(), nLen, cur_packet->pachTargetClientHashORKadID, cur_packet->bKad, cur_packet->nReceiverVerifyKey, (cur_packet->bKad ? Kademlia::CPrefs::GetUDPVerifyKey(cur_packet->dwIP) : 0u));
 				//DEBUG_ONLY(  AddDebugLogLine(DLP_VERYLOW, false, _T("Sent obfuscated UDP packet to clientIP: %s, Kad: %s, ReceiverKey: %u"), (LPCTSTR)ipstr(cur_packet->dwIP), cur_packet->bKad ? _T("Yes") : _T("No"), cur_packet->nReceiverVerifyKey) );
 			}
-			iLen = SendTo(sendbuffer, nLen, cur_packet->dwIP, cur_packet->nPort);
-			if (iLen >= 0) {
-				sentBytes += iLen; // ZZ:UploadBandWithThrottler (UDP)
+			iLen = SendTo(pSendBuffer.get(), nLen, cur_packet->dwIP, cur_packet->nPort);
+			if (!ShouldRequeueUdpControlPacket(iLen)) {
+				sentBytes += static_cast<uint32>(max(iLen, 0)); // ZZ:UploadBandWithThrottler (UDP)
 				delete cur_packet->packet;
 				delete cur_packet;
 			} else {
-				controlpacket_queue.AddHead(cur_packet); //try to resend
+				{
+					CSingleLock lockSend(&sendLocker, TRUE);
+					controlpacket_queue.AddHead(cur_packet); //try to resend
+				}
 				::Sleep(20);
-				curTick = ::GetTickCount();
 			}
-			delete[] sendbuffer;
 		} else {
 			delete cur_packet->packet;
 			delete cur_packet;
@@ -471,10 +479,13 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 	}
 
 // ZZ:UploadBandWithThrottler (UDP) -->
-	if (!IsBusy() && !controlpacket_queue.IsEmpty())
+	bool bShouldSignalQueue = false;
+	{
+		CSingleLock lockSend(&sendLocker, TRUE);
+		bShouldSignalQueue = ShouldSignalUdpControlQueue(m_bWouldBlock, controlpacket_queue.IsEmpty());
+	}
+	if (bShouldSignalQueue)
 		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
-
-	sendLocker.Unlock();
 
 	return SocketSentBytes{0, sentBytes, true};
 // <-- ZZ:UploadBandWithThrottler (UDP)
@@ -483,7 +494,7 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 int CClientUDPSocket::SendTo(uchar *lpBuf, int nBufLen, uint32 dwIP, uint16 nPort)
 {
 	// NOTE: *** This function is invoked from a *different* thread!
-	//Currently called only locally; sendLocker must be locked by the caller
+	// The would-block state is synchronized locally when the async socket reports backpressure.
 	SOCKADDR_IN sockAddr = {};
 	sockAddr.sin_family = AF_INET;
 	sockAddr.sin_addr.s_addr = dwIP;
@@ -492,6 +503,7 @@ int CClientUDPSocket::SendTo(uchar *lpBuf, int nBufLen, uint32 dwIP, uint16 nPor
 	if (result == SOCKET_ERROR) {
 		DWORD dwError = (DWORD)CAsyncSocketEx::GetSocketLastError();
 		if (dwError == WSAEWOULDBLOCK) {
+			CSingleLock lockSend(&sendLocker, TRUE);
 			m_bWouldBlock = true;
 			SetWriteInterestEnabled(true);
 			return -1; //blocked
@@ -524,9 +536,8 @@ bool CClientUDPSocket::SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, boo
 	else
 		md4clr(newpending->pachTargetClientHashORKadID);
 // ZZ:UploadBandWithThrottler (UDP) -->
-	sendLocker.Lock();
+	CSingleLock lockSend(&sendLocker, TRUE);
 	controlpacket_queue.AddTail(newpending);
-	sendLocker.Unlock();
 
 	theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 	return true;

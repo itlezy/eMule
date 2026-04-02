@@ -21,6 +21,7 @@
 #include "emule.h"
 #include "UploadQueue.h"
 #include "UploadQueueSeams.h"
+#include "LockScopeSeams.h"
 #include "sharedfilelist.h"
 #include "partfile.h"
 #include "log.h"
@@ -95,11 +96,15 @@ UINT CUploadDiskIOThread::RunInternal()
 		//start new I/O
 		CCriticalSection *pcsUploadListRead = NULL;
 		const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
-		pcsUploadListRead->Lock();
-		for (POSITION pos = rUploadList.GetHeadPosition(); pos != NULL;)
-			StartCreateNextBlockPackage(rUploadList.GetNext(pos));
+		{
+			/**
+			 * @brief Keep the upload-list read lock only around the live scan.
+			 */
+			CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
+			for (POSITION pos = rUploadList.GetHeadPosition(); pos != NULL;)
+				StartCreateNextBlockPackage(rUploadList.GetNext(pos));
+		}
 		InterlockedExchange8(&m_bNewData, 0);
-		pcsUploadListRead->Unlock();
 
 		//completed I/O
 		do {
@@ -301,50 +306,55 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 		}
 		if (pKnownFile->m_hRead != INVALID_HANDLE_VALUE) { //discard data from closed files
 			DEBUG_ONLY(dbgDataReadPending -= pOvRead->uEndOffset - pOvRead->uStartOffset);
-			// check if the client struct is still in the upload list (otherwise it is a deleted pointer)
-			CCriticalSection *pcsUploadListRead = NULL;
-			const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
-			CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
-			ASSERT(lockUploadListRead.IsLocked());
-			const bool bFound = (rUploadList.Find(pStruct) != NULL);
-			const UploadQueueEntryAccessState entryState = ClassifyUploadQueueEntryAccess(bFound, pStruct->m_bRetired, pStruct->m_pClient != NULL);
+			CPacketList packetsList;
+			CClientReqSocket *pSocket = NULL;
+			UploadDiskReadCompletionAction completionAction = uploadDiskReadCompletionDiscard;
+			bool bLoggedCompletionDiscard = false;
+			{
+				/**
+				 * @brief Classify the upload entry while holding the read lock, then release it before sending.
+				 */
+				CCriticalSection *pcsUploadListRead = NULL;
+				const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
+				CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
+				ASSERT(lockUploadListRead.IsLocked());
+				const bool bFound = (rUploadList.Find(pStruct) != NULL);
+				const UploadQueueEntryAccessState entryState = ClassifyUploadQueueEntryAccess(bFound, pStruct->m_bRetired, pStruct->m_pClient != NULL);
+				completionAction = ClassifyUploadDiskReadCompletion(entryState, bReadError);
 
-			// all important prechecks done, create the packets
-			if (entryState == uploadQueueEntryLive && !bReadError) {
-				// Keep the uploadlist locked while working with the client object.
-				// Instead of sending the packets immediately, we store them
-				// and send after we have released the uploadlist lock -
-				// just to be sure there is no chance of a deadlock (now or in future version, also it doesn't cost us much)
-				CPacketList packetsList;
-				CUpDownClient *pClient = pStruct->m_pClient;
-				CClientReqSocket *pSocket = pClient != NULL ? pClient->socket : NULL;
-				if (pClient != NULL && pSocket && pSocket->IsConnected()) {
-					// Broadband parity: always send standard upload packets and avoid
-					// the extra CPU/latency path of compressed-part generation.
-					CreateStandardPackets(*pOvRead, packetsList);
-
-					m_bSignalThrottler = true;
-				} else if (pClient != NULL)
-					theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pClient->DbgGetClientInfo(true));
-				else
-					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Upload entry retired before packet delivery; discarding block"));
-
-				lockUploadListRead.Unlock();
-
-				// Send out all packets we have made. By default, our socket object is not safe
-				// to use now either, because we have no lock on itself (to make sure it is not deleted).
-				// However the way we handle sockets, they cannot get deleted directly (takes 10s),
-				// so this isn't a problem in our case
-				while (!packetsList.IsEmpty() && pSocket != NULL) {
-					Packet *packet = packetsList.RemoveHead();
-					pSocket->SendPacket(packet, false, packet->uStatsPayLoad);
+				if (completionAction == uploadDiskReadCompletionSendPackets) {
+					CUpDownClient *pClient = pStruct->m_pClient;
+					pSocket = pClient != NULL ? pClient->socket : NULL;
+					if (pClient != NULL && pSocket != NULL && pSocket->IsConnected()) {
+						// Broadband parity: always send standard upload packets and avoid
+						// the extra CPU/latency path of compressed-part generation.
+						CreateStandardPackets(*pOvRead, packetsList);
+						m_bSignalThrottler = true;
+					} else if (pClient != NULL) {
+						theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pClient->DbgGetClientInfo(true));
+						completionAction = uploadDiskReadCompletionDiscard;
+						pSocket = NULL;
+						bLoggedCompletionDiscard = true;
+					} else {
+						theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Upload entry retired before packet delivery; discarding block"));
+						completionAction = uploadDiskReadCompletionDiscard;
+						bLoggedCompletionDiscard = true;
+					}
 				}
-			} else { // bReadError is true or the entry is no longer live
-				if (entryState == uploadQueueEntryLive)
+
+				if (completionAction == uploadDiskReadCompletionMarkIoError)
 					pStruct->m_bIOError = true;
-				else
+				else if (completionAction == uploadDiskReadCompletionDiscard && !bLoggedCompletionDiscard)
 					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Client not found in uploadlist when reading finished; discarding block"));
-				lockUploadListRead.Unlock();
+			}
+
+			// Send out all packets we have made. By default, our socket object is not safe
+			// to use now either, because we have no lock on itself (to make sure it is not deleted).
+			// However the way we handle sockets, they cannot get deleted directly (takes 10s),
+			// so this isn't a problem in our case
+			while (!packetsList.IsEmpty() && pSocket != NULL) {
+				Packet *packet = packetsList.RemoveHead();
+				pSocket->SendPacket(packet, false, packet->uStatsPayLoad);
 			}
 		}
 	} else {
