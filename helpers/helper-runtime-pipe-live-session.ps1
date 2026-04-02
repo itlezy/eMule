@@ -607,46 +607,64 @@ function Invoke-StressProbe {
         [int]$ExtraStatsBurstsPerPoll
     )
 
-    $stats = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
-    $transfers = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
-    $recentLog = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=40" -Token $Token
-    $sampledTransferHashes = Get-SampledTransferHashes -TransfersResponse $transfers -Count $TransferProbeCount
+    $step = 'stats/global'
+    try {
+        $stats = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
+        $step = 'transfers/list'
+        $transfers = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+        $step = 'log/get'
+        $recentLog = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=40" -Token $Token
+        $step = 'sample transfer hashes'
+        $sampledTransferHashes = @(Get-SampledTransferHashes -TransfersResponse $transfers -Count $TransferProbeCount)
 
-    $transferDetails = New-Object System.Collections.Generic.List[object]
-    $transferSources = New-Object System.Collections.Generic.List[object]
-    foreach ($hash in $sampledTransferHashes) {
-        $transferDetails.Add((Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash" -Token $Token))
-        $transferSources.Add([pscustomobject][ordered]@{
-            hash = $hash
-            sources = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash/sources" -Token $Token)
-        })
-    }
+        $transferDetails = New-Object System.Collections.Generic.List[object]
+        $transferSources = New-Object System.Collections.Generic.List[object]
+        foreach ($hash in $sampledTransferHashes) {
+            $step = "transfers/get:$hash"
+            $transferDetails.Add((Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash" -Token $Token))
+            $step = "transfers/sources:$hash"
+            $transferSources.Add([pscustomobject][ordered]@{
+                hash = $hash
+                sources = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash/sources" -Token $Token)
+            })
+        }
 
-    $uploadSnapshots = New-Object System.Collections.Generic.List[object]
-    for ($uploadProbeIndex = 0; $uploadProbeIndex -lt $UploadProbeCount; ++$uploadProbeIndex) {
-        $uploadSnapshots.Add([pscustomobject][ordered]@{
-            list = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/list" -Token $Token)
-            queue = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/queue" -Token $Token)
-        })
-    }
+        $uploadSnapshots = New-Object System.Collections.Generic.List[object]
+        for ($uploadProbeIndex = 0; $uploadProbeIndex -lt $UploadProbeCount; ++$uploadProbeIndex) {
+            $step = "uploads/list[$uploadProbeIndex]"
+            $uploadList = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/list" -Token $Token
+            $step = "uploads/queue[$uploadProbeIndex]"
+            $uploadQueue = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/queue" -Token $Token
+            $uploadSnapshots.Add([pscustomobject][ordered]@{
+                list = $uploadList
+                queue = $uploadQueue
+            })
+        }
 
-    $extraStatsBursts = New-Object System.Collections.Generic.List[object]
-    for ($burstIndex = 0; $burstIndex -lt $ExtraStatsBurstsPerPoll; ++$burstIndex) {
-        $extraStatsBursts.Add([pscustomobject][ordered]@{
-            stats = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token)
-            recent_log = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=20" -Token $Token)
-        })
+        $extraStatsBursts = New-Object System.Collections.Generic.List[object]
+        for ($burstIndex = 0; $burstIndex -lt $ExtraStatsBurstsPerPoll; ++$burstIndex) {
+            $step = "stats/global burst[$burstIndex]"
+            $burstStats = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
+            $step = "log/get burst[$burstIndex]"
+            $burstLog = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=20" -Token $Token
+            $extraStatsBursts.Add([pscustomobject][ordered]@{
+                stats = $burstStats
+                recent_log = $burstLog
+            })
+        }
+    } catch {
+        throw "Invoke-StressProbe failed at '$step': $($_.Exception.Message)"
     }
 
     return [pscustomobject][ordered]@{
         stats = $stats
         transfers = $transfers
         recent_log = $recentLog
-        sampled_transfer_hashes = $sampledTransferHashes
-        transfer_details = @($transferDetails)
-        transfer_sources = @($transferSources)
-        upload_snapshots = @($uploadSnapshots)
-        extra_stats_bursts = @($extraStatsBursts)
+        sampled_transfer_hashes = @($sampledTransferHashes)
+        transfer_details = @($transferDetails.ToArray())
+        transfer_sources = @($transferSources.ToArray())
+        upload_snapshots = @($uploadSnapshots.ToArray())
+        extra_stats_bursts = @($extraStatsBursts.ToArray())
     }
 }
 
