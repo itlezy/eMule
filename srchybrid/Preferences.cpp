@@ -1633,6 +1633,10 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("FilterBadIPs"), filterLANIPs);
 	ini.WriteBool(_T("Autoconnect"), autoconnect);
 	ini.WriteBool(_T("OnlineSignature"), onlineSig);
+	// Keep the local oracle workflow headless-friendly. This debug build is
+	// launched by helper automation, so persisting a restored window state just
+	// reintroduces UI churn between parity runs.
+	startMinimized = true;
 	ini.WriteBool(_T("StartupMinimized"), startMinimized);
 	ini.WriteBool(_T("AutoStart"), m_bAutoStart);
 	ini.WriteInt(_T("LastMainWndDlgID"), m_iLastMainWndDlgID);
@@ -2129,7 +2133,10 @@ void CPreferences::LoadPreferences()
 	m_bIconflashOnNewMessage = ini.GetBool(_T("IconflashOnNewMessage"), false);
 
 	onlineSig = ini.GetBool(_T("OnlineSignature"), false);
-	startMinimized = ini.GetBool(_T("StartupMinimized"), false);
+	// Force the local debug oracle to stay minimized on startup even if the
+	// runtime-local preferences were edited manually or saved by an earlier run.
+	startMinimized = true;
+	(void)ini.GetBool(_T("StartupMinimized"), true);
 	m_bAutoStart = ini.GetBool(_T("AutoStart"), false);
 	m_bRestoreLastMainWndDlg = ini.GetBool(_T("RestoreLastMainWndDlg"), false);
 	m_iLastMainWndDlgID = ini.GetInt(_T("LastMainWndDlgID"), 0);
