@@ -56,6 +56,7 @@
 #include "uploaddiskiothread.h"
 #include "PartFileWriteThread.h"
 #include "DisplayRefreshSeams.h"
+#include "PartFileHashSeams.h"
 #include "PartFileNumericSeams.h"
 #include "ResourceOwnershipSeams.h"
 #include "WorkerUiMessageSeams.h"
@@ -1489,8 +1490,25 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 
 void CPartFile::PartFileHashFinished(CKnownFile *result)
 {
-	ASSERT(result->GetFileIdentifier().GetTheoreticalMD4PartHashCount() == m_FileIdentifier.GetTheoreticalMD4PartHashCount());
-	ASSERT(result->GetFileIdentifier().GetTheoreticalAICHPartHashCount() == m_FileIdentifier.GetTheoreticalAICHPartHashCount());
+	if (!HasMatchingPartFileHashLayout(
+		m_FileIdentifier.GetTheoreticalMD4PartHashCount(),
+		result->GetFileIdentifier().GetTheoreticalMD4PartHashCount(),
+		m_FileIdentifier.GetTheoreticalAICHPartHashCount(),
+		result->GetFileIdentifier().GetTheoreticalAICHPartHashCount()))
+	{
+		/** @brief A rehash result built from a drifted temp file cannot be applied back onto this part file safely. */
+		DebugLogError(_T("PartFileHashFinished layout mismatch for %s (MD4 %u/%u, AICH %u/%u)")
+			, (LPCTSTR)GetFileName()
+			, static_cast<unsigned>(m_FileIdentifier.GetTheoreticalMD4PartHashCount())
+			, static_cast<unsigned>(result->GetFileIdentifier().GetTheoreticalMD4PartHashCount())
+			, static_cast<unsigned>(m_FileIdentifier.GetTheoreticalAICHPartHashCount())
+			, static_cast<unsigned>(result->GetFileIdentifier().GetTheoreticalAICHPartHashCount()));
+		delete result;
+		SetStatus(PS_READY);
+		SavePartFile();
+		return;
+	}
+
 	bool errorfound = false;
 	bool bToShare = false; // add to the shared files list if a complete part was found
 	// check each part
