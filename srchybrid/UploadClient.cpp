@@ -28,6 +28,7 @@
 #include "PartFile.h"
 #include "ClientCredits.h"
 #include "ListenSocket.h"
+#include "ClientSocketLifetimeSeams.h"
 #include "DisplayRefreshSeams.h"
 #include "SafeFile.h"
 #include "DownloadQueue.h"
@@ -691,8 +692,13 @@ void CUpDownClient::Ban(LPCTSTR pszReason)
 	SetUploadState(US_BANNED);
 	theApp.emuledlg->transferwnd->ShowQueueCount(theApp.uploadqueue->GetWaitingUserCount());
 	QueueDisplayUpdate(DISPLAY_REFRESH_QUEUE_LIST);
-	if (socket != NULL && socket->IsConnected())
-		socket->Shutdown(SD_RECEIVE); // let the socket timeout, since we don't want to risk to delete the client right now. This isn't actually perfect, could be changed later
+	/**
+	 * @brief Leave the live socket alone here and let the listener-owned timeout sweep disconnect banned peers.
+	 *
+	 * The ban path can race with deferred socket teardown, so dereferencing the raw `socket` pointer here risks
+	 * touching freed memory. `CClientReqSocket::CheckTimeOut` observes the banned client state from the socket side
+	 * and performs the actual disconnect when the socket is still alive and attached.
+	 */
 }
 
 DWORD CUpDownClient::GetWaitStartTime() const

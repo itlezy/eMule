@@ -685,7 +685,6 @@
     <Image Include="res\Contact2.ico" />
     <Image Include="res\Contact3.ico" />
     <Image Include="res\Contact4.ico" />
-    <Image Include="res\ContentDB.ico" />
     <Image Include="res\Convert.ico" />
     <Image Include="res\Copy.ico" />
     <Image Include="res\CopySelected.ico" />

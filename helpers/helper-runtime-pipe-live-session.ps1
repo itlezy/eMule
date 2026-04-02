@@ -6,8 +6,9 @@ Runs a live eMule session driven through the local pipe API and monitors for han
 This helper launches the repo debug `emule.exe` against an explicit `-c` profile,
 forces the required VPN bind and disk logging settings, starts the sibling
 `eMule-remote` sidecar, triggers server/Kad connects plus search/download activity
-through the pipe-backed HTTP API, samples process and transfer state for a bounded
-window, and captures a full dump if the UI stops responding.
+through the pipe-backed HTTP API, runs deterministic matrix scenarios plus longer
+soak churn, samples process and transfer state for a bounded window, and captures
+a full dump if the UI stops responding.
 #>
 
 [CmdletBinding()]
@@ -19,10 +20,19 @@ param(
     [string]$BindInterfaceName = 'hide.me',
 
     [Parameter(Mandatory = $false)]
-    [string]$SearchQuery = 'Gran Torino',
+    [string]$SearchQuery = '1080p',
 
     [Parameter(Mandatory = $false)]
     [string[]]$StressQueries = @(),
+
+    [Parameter(Mandatory = $false)]
+    [ValidateSet('balanced', 'matrix', 'soak')]
+    [string]$ScenarioProfile = 'balanced',
+
+    [Parameter(Mandatory = $false)]
+    [int]$MatrixRepeatCount = 1,
+
+    [switch]$StrictMatrix,
 
     [Parameter(Mandatory = $false)]
     [int]$SearchWaitSec = 120,
@@ -72,6 +82,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
+
+$script:PipeCommandTranscript = New-Object System.Collections.Generic.List[object]
+$script:PipeScenarioResults = New-Object System.Collections.Generic.List[object]
+$script:CurrentScenarioContext = $null
+$script:CurrentScenarioStep = $null
 
 function Get-NormalizedPath {
     param(
@@ -435,6 +450,313 @@ function Stop-RedirectedProcess {
 
 }
 
+function Get-NormalizedApiValue {
+    param(
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [object]$Value,
+
+        [Parameter(Mandatory = $false)]
+        [int]$Depth = 0
+    )
+
+    if ($Depth -ge 2) {
+        if ($null -eq $Value) {
+            return $null
+        }
+
+        return [string]$Value
+    }
+
+    if ($null -eq $Value) {
+        return $null
+    }
+
+    if ($Value -is [string] -or $Value -is [char] -or $Value -is [bool] -or
+        $Value -is [byte] -or $Value -is [int16] -or $Value -is [int32] -or
+        $Value -is [int64] -or $Value -is [uint16] -or $Value -is [uint32] -or
+        $Value -is [uint64] -or $Value -is [double] -or $Value -is [decimal]) {
+        return $Value
+    }
+
+    if ($Value -is [System.Collections.IDictionary]) {
+        $summary = [ordered]@{}
+        foreach ($key in @($Value.Keys | Select-Object -First 8)) {
+            $summary[[string]$key] = Get-NormalizedApiValue -Value $Value[$key] -Depth ($Depth + 1)
+        }
+        return $summary
+    }
+
+    if ($Value -is [System.Collections.IEnumerable] -and -not ($Value -is [string])) {
+        $items = @($Value)
+        $summary = [ordered]@{
+            kind = 'array'
+            count = $items.Count
+        }
+        if ($items.Count -gt 0) {
+            $summary.first = Get-NormalizedApiValue -Value $items[0] -Depth ($Depth + 1)
+        }
+        return $summary
+    }
+
+    $propertyNames = @($Value.PSObject.Properties.Name)
+    if ($propertyNames.Count -gt 0) {
+        $summary = [ordered]@{}
+        foreach ($propertyName in @($propertyNames | Select-Object -First 8)) {
+            $summary[$propertyName] = Get-NormalizedApiValue -Value $Value.$propertyName -Depth ($Depth + 1)
+        }
+        return $summary
+    }
+
+    return [string]$Value
+}
+
+function Get-FirstScalarValue {
+    param(
+        [Parameter(Mandatory = $false)]
+        [AllowNull()]
+        [object]$Value
+    )
+
+    if ($Value -is [System.Array]) {
+        return if ($Value.Count -gt 0) { $Value[0] } else { $null }
+    }
+
+    return $Value
+}
+
+function Get-RemoteFailureDetails {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Exception]$Exception
+    )
+
+    $httpStatus = $null
+    $errorCode = $null
+    $errorMessage = $Exception.Message
+    $payloadText = $null
+
+    try {
+        if ($null -ne $Exception.Response -and $null -ne $Exception.Response.StatusCode) {
+            $statusCodeValue = Get-FirstScalarValue -Value $Exception.Response.StatusCode
+            if ($null -ne $statusCodeValue) {
+                if ($statusCodeValue -is [System.Enum]) {
+                    $httpStatus = [int]$statusCodeValue.value__
+                } else {
+                    $httpStatus = [int]$statusCodeValue
+                }
+            }
+        }
+    } catch {
+    }
+
+    try {
+        if ($null -ne $Exception.ErrorDetails -and -not [string]::IsNullOrWhiteSpace($Exception.ErrorDetails.Message)) {
+            $payloadText = [string]$Exception.ErrorDetails.Message
+            $payload = $payloadText | ConvertFrom-Json -ErrorAction Stop
+            if ($payload.PSObject.Properties.Name -contains 'error') {
+                $errorCode = [string]$payload.error
+            }
+            if ($payload.PSObject.Properties.Name -contains 'message' -and -not [string]::IsNullOrWhiteSpace([string]$payload.message)) {
+                $errorMessage = [string]$payload.message
+            }
+        }
+    } catch {
+    }
+
+    if ([string]::IsNullOrWhiteSpace($errorCode)) {
+        try {
+            if ($Exception.Data.Contains('PipeApiErrorCode')) {
+                $errorCode = [string]$Exception.Data['PipeApiErrorCode']
+            }
+        } catch {
+        }
+    }
+
+    $failureClass = 'server_error'
+    if ($httpStatus -in @(400, 404) -or $errorCode -in @('INVALID_ARGUMENT', 'NOT_FOUND')) {
+        $failureClass = 'validation'
+    } elseif ($httpStatus -eq 504 -or $errorCode -eq 'EMULE_TIMEOUT' -or $errorMessage -match 'timeout|timed out') {
+        $failureClass = 'api_timeout'
+    } elseif ($httpStatus -eq 503 -or $errorCode -eq 'EMULE_UNAVAILABLE' -or $errorMessage -match 'pipe .*not connected|pipe connection closed|EPIPE|ENOENT') {
+        $failureClass = 'pipe_disconnect'
+    } elseif ($errorMessage -match 'stopped responding') {
+        $failureClass = 'app_unresponsive'
+    }
+
+    return [ordered]@{
+        http_status = $httpStatus
+        error_code = $errorCode
+        error_message = $errorMessage
+        failure_class = $failureClass
+        payload = $payloadText
+    }
+}
+
+function Set-ScenarioStep {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Step
+    )
+
+    $script:CurrentScenarioStep = $Step
+}
+
+function Assert-ScenarioCondition {
+    param(
+        [Parameter(Mandatory = $true)]
+        [bool]$Condition,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Message
+    )
+
+    if (-not $Condition) {
+        throw $Message
+    }
+}
+
+function Invoke-ScenarioApiCommand {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Step,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Method,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $false)]
+        [object]$Body = $null,
+
+        [Parameter(Mandatory = $false)]
+        [int]$TimeoutSec = 8
+    )
+
+    Set-ScenarioStep -Step $Step
+    return Invoke-RemoteJson -Method $Method -Uri $Uri -Token $Token -Body $Body -TimeoutSec $TimeoutSec
+}
+
+function Invoke-ExpectedRemoteFailure {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Step,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Method,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Uri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $false)]
+        [object]$Body = $null,
+
+        [Parameter(Mandatory = $false)]
+        [int[]]$ExpectedStatus = @(),
+
+        [Parameter(Mandatory = $false)]
+        [string[]]$ExpectedErrorCodes = @(),
+
+        [Parameter(Mandatory = $false)]
+        [int]$TimeoutSec = 8
+    )
+
+    Set-ScenarioStep -Step $Step
+    try {
+        $null = Invoke-RemoteJson -Method $Method -Uri $Uri -Token $Token -Body $Body -TimeoutSec $TimeoutSec
+    } catch {
+        $failure = Get-RemoteFailureDetails -Exception $_.Exception
+        if ($ExpectedStatus.Count -gt 0) {
+            $observedStatus = Get-FirstScalarValue -Value $failure.http_status
+            Assert-ScenarioCondition -Condition ($null -ne $observedStatus -and ($ExpectedStatus -contains [int]$observedStatus)) -Message ("Expected HTTP status {0} for step '{1}', got {2}" -f (($ExpectedStatus -join ', ')), $Step, $failure.http_status)
+        }
+        if ($ExpectedErrorCodes.Count -gt 0) {
+            Assert-ScenarioCondition -Condition ($ExpectedErrorCodes -contains [string]$failure.error_code) -Message ("Expected error code {0} for step '{1}', got {2}" -f (($ExpectedErrorCodes -join ', ')), $Step, $failure.error_code)
+        }
+        return [pscustomobject]$failure
+    }
+
+    throw "Expected API failure for step '$Step' but the request succeeded."
+}
+
+function Invoke-Scenario {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Name,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('matrix', 'soak')]
+        [string]$Kind,
+
+        [Parameter(Mandatory = $true)]
+        [scriptblock]$Action,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$FailFast
+    )
+
+    $scenario = [ordered]@{
+        name = $Name
+        kind = $Kind
+        started_at = (Get-Date).ToString('o')
+        ended_at = $null
+        ok = $false
+        step_failed = $null
+        http_status = $null
+        error_code = $null
+        error_message = $null
+        failure_class = $null
+        result_summary = $null
+    }
+
+    $previousScenario = $script:CurrentScenarioContext
+    $previousStep = $script:CurrentScenarioStep
+    $script:CurrentScenarioContext = $scenario
+    $script:CurrentScenarioStep = $null
+
+    try {
+        $result = & $Action
+        if ($null -ne $result -and ($result.PSObject.Properties.Name -contains 'scenario_ok') -and (-not [bool]$result.scenario_ok)) {
+            $scenario.step_failed = $result.step_failed
+            $scenario.http_status = $result.http_status
+            $scenario.error_code = $result.error_code
+            $scenario.error_message = $result.error_message
+            $scenario.failure_class = $result.failure_class
+            $scenario.result_summary = Get-NormalizedApiValue -Value $result
+            if ($FailFast) {
+                throw ($scenario.error_message ?? ("Scenario '{0}' failed." -f $Name))
+            }
+            return $result
+        }
+        $scenario.ok = $true
+        $scenario.result_summary = Get-NormalizedApiValue -Value $result
+        return $result
+    } catch {
+        $failure = Get-RemoteFailureDetails -Exception $_.Exception
+        $scenario.step_failed = $script:CurrentScenarioStep
+        $scenario.http_status = $failure.http_status
+        $scenario.error_code = $failure.error_code
+        $scenario.error_message = $failure.error_message
+        $scenario.failure_class = $failure.failure_class
+        if ($FailFast) {
+            throw
+        }
+        return $null
+    } finally {
+        $scenario.ended_at = (Get-Date).ToString('o')
+        $script:PipeScenarioResults.Add([pscustomobject]$scenario)
+        $script:CurrentScenarioContext = $previousScenario
+        $script:CurrentScenarioStep = $previousStep
+    }
+}
+
 function Invoke-RemoteJson {
     param(
         [Parameter(Mandatory = $true)]
@@ -470,7 +792,49 @@ function Invoke-RemoteJson {
         $invokeArgs.Body = ($Body | ConvertTo-Json -Depth 8 -Compress)
     }
 
-    return Invoke-RestMethod @invokeArgs
+    $startedAt = Get-Date
+    $transcriptEntry = [ordered]@{
+        timestamp = $startedAt.ToString('o')
+        scenario = if ($null -ne $script:CurrentScenarioContext) { $script:CurrentScenarioContext.name } else { $null }
+        scenario_kind = if ($null -ne $script:CurrentScenarioContext) { $script:CurrentScenarioContext.kind } else { $null }
+        step = $script:CurrentScenarioStep
+        method = $Method
+        uri = $Uri
+        payload_summary = Get-NormalizedApiValue -Value $Body
+        duration_ms = $null
+        ok = $false
+        http_status = $null
+        error_code = $null
+        error_message = $null
+        failure_class = $null
+        result_summary = $null
+    }
+
+    try {
+        $result = Invoke-RestMethod @invokeArgs
+        $transcriptEntry.ok = $true
+        $transcriptEntry.http_status = 200
+        $transcriptEntry.result_summary = Get-NormalizedApiValue -Value $result
+        return $result
+    } catch {
+        $failure = Get-RemoteFailureDetails -Exception $_.Exception
+        try {
+            $_.Exception.Data['PipeApiHttpStatus'] = $failure.http_status
+            $_.Exception.Data['PipeApiErrorCode'] = $failure.error_code
+            $_.Exception.Data['PipeApiErrorMessage'] = $failure.error_message
+            $_.Exception.Data['PipeApiFailureClass'] = $failure.failure_class
+        } catch {
+        }
+
+        $transcriptEntry.http_status = $failure.http_status
+        $transcriptEntry.error_code = $failure.error_code
+        $transcriptEntry.error_message = $failure.error_message
+        $transcriptEntry.failure_class = $failure.failure_class
+        throw
+    } finally {
+        $transcriptEntry.duration_ms = [int](((Get-Date) - $startedAt).TotalMilliseconds)
+        $script:PipeCommandTranscript.Add([pscustomobject]$transcriptEntry)
+    }
 }
 
 function Wait-RemoteHealth {
@@ -608,24 +972,17 @@ function New-SyntheticEd2kLinks {
         'quote''s sample & reference copy.mp3',
         'hash-tag #release [beta] final!.7z'
     )
-    $hashes = @(
-        '0123456789abcdeffedcba9876543210',
-        '11111111111111112222222222222222',
-        '33333333333333334444444444444444',
-        '55555555555555556666666666666666',
-        '77777777777777778888888888888888',
-        '9999999999999999aaaabbbbccccdddd',
-        'deadbeefdeadbeefcafebabec001d00d',
-        'f0e1d2c3b4a5968778695a4bc3d2e1f0'
-    )
-
     $links = New-Object System.Collections.Generic.List[string]
     for ($index = 0; $index -lt $Count; ++$index) {
         $templateIndex = $index % $names.Count
         $fileName = '{0} [{1:00}]' -f $names[$templateIndex], ($index + 1)
         $escapedName = [System.Uri]::EscapeDataString($fileName)
         $fileSize = 1048576 + ($index * 131072)
-        $links.Add("ed2k://|file|$escapedName|$fileSize|$($hashes[$templateIndex])|/")
+        <#*
+         * @brief Keep each synthetic transfer hash unique so repeated matrix cycles do not alias prior links.
+         #>
+        $hash = ('{0:x32}' -f ($index + 1))
+        $links.Add("ed2k://|file|$escapedName|$fileSize|$hash|/")
     }
 
     return @($links)
@@ -710,7 +1067,10 @@ function Invoke-TransferMutation {
         [string[]]$Hashes,
 
         [Parameter(Mandatory = $false)]
-        [bool]$DeleteFiles = $false
+        [bool]$DeleteFiles = $false,
+
+        [Parameter(Mandatory = $false)]
+        [string]$StepName = ''
     )
 
     if ($null -eq $Hashes -or $Hashes.Count -eq 0) {
@@ -722,6 +1082,10 @@ function Invoke-TransferMutation {
     }
     if ($Action -eq 'delete') {
         $body.deleteFiles = $DeleteFiles
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($StepName)) {
+        return Invoke-ScenarioApiCommand -Step $StepName -Method Post -Uri "$BaseUri/api/v2/transfers/$Action" -Token $Token -Body $body
     }
 
     return Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/transfers/$Action" -Token $Token -Body $body
@@ -787,30 +1151,30 @@ function Invoke-TransferChurnCycle {
     $transfersAfterDelete = $null
 
     try {
-        $addResult = Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/transfers/add" -Token $Token -Body @{
+        $addResult = Invoke-ScenarioApiCommand -Step "transfer-churn[$CycleIndex]/transfers/add" -Method Post -Uri "$BaseUri/api/v2/transfers/add" -Token $Token -Body @{
             links = @($linkBatch.ToArray())
         }
         $addedHashes = @(Get-SuccessfulTransferHashes -MutationResponse $addResult)
-        $transfersAfterAdd = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+        $transfersAfterAdd = Invoke-ScenarioApiCommand -Step "transfer-churn[$CycleIndex]/transfers/list after add" -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
 
         if ($addedHashes.Count -gt 0) {
             if ($PauseMs -gt 0) {
                 Start-Sleep -Milliseconds $PauseMs
             }
-            $pauseResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'pause' -Hashes $addedHashes
+            $pauseResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'pause' -Hashes $addedHashes -StepName "transfer-churn[$CycleIndex]/transfers/pause"
             if ($PauseMs -gt 0) {
                 Start-Sleep -Milliseconds $PauseMs
             }
-            $resumeResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'resume' -Hashes $addedHashes
+            $resumeResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'resume' -Hashes $addedHashes -StepName "transfer-churn[$CycleIndex]/transfers/resume"
             if ($PauseMs -gt 0) {
                 Start-Sleep -Milliseconds $PauseMs
             }
-            $stopResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'stop' -Hashes $addedHashes
+            $stopResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'stop' -Hashes $addedHashes -StepName "transfer-churn[$CycleIndex]/transfers/stop"
             if ($PauseMs -gt 0) {
                 Start-Sleep -Milliseconds $PauseMs
             }
-            $deleteResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'delete' -Hashes $addedHashes -DeleteFiles $true
-            $transfersAfterDelete = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+            $deleteResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'delete' -Hashes $addedHashes -DeleteFiles $true -StepName "transfer-churn[$CycleIndex]/transfers/delete"
+            $transfersAfterDelete = Invoke-ScenarioApiCommand -Step "transfer-churn[$CycleIndex]/transfers/list after delete" -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
         }
     } catch {
         $errors.Add($_.Exception.Message)
@@ -859,7 +1223,7 @@ function Invoke-SearchCycle {
     try {
         foreach ($method in @('global', 'kad')) {
             try {
-                $searchSession = Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/search/start" -Token $Token -Body @{
+                $searchSession = Invoke-ScenarioApiCommand -Step "search-cycle[$Query]/search/start:$method" -Method Post -Uri "$BaseUri/api/v2/search/start" -Token $Token -Body @{
                     query = $Query
                     method = $method
                 }
@@ -878,7 +1242,7 @@ function Invoke-SearchCycle {
             while ((Get-Date) -lt $searchDeadline) {
                 $pollCount += 1
                 try {
-                    $searchSnapshot = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/search/results?search_id=$($searchSession.search_id)" -Token $Token
+                    $searchSnapshot = Invoke-ScenarioApiCommand -Step "search-cycle[$Query]/search/results[$pollCount]" -Method Get -Uri "$BaseUri/api/v2/search/results?search_id=$($searchSession.search_id)" -Token $Token
                     if ($null -ne $searchSnapshot.results -and $searchSnapshot.results.Count -gt 0) {
                         foreach ($result in $searchSnapshot.results) {
                             if ($result.knownType -eq 'downloading' -or $result.knownType -eq 'downloaded' -or $result.knownType -eq 'cancelled') {
@@ -909,7 +1273,7 @@ function Invoke-SearchCycle {
 
         if ($null -ne $searchSession -and $null -ne $searchSession.search_id) {
             try {
-                $stopResult = Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/search/stop" -Token $Token -Body @{
+                $stopResult = Invoke-ScenarioApiCommand -Step "search-cycle[$Query]/search/stop" -Method Post -Uri "$BaseUri/api/v2/search/stop" -Token $Token -Body @{
                     search_id = $searchSession.search_id
                 }
             } catch {
@@ -950,11 +1314,11 @@ function Invoke-StressProbe {
 
     $step = 'stats/global'
     try {
-        $stats = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
+        $stats = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
         $step = 'transfers/list'
-        $transfers = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+        $transfers = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
         $step = 'log/get'
-        $recentLog = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=40" -Token $Token
+        $recentLog = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/log?limit=40" -Token $Token
         $step = 'sample transfer hashes'
         $sampledTransferHashes = @(Get-SampledTransferHashes -TransfersResponse $transfers -Count $TransferProbeCount)
 
@@ -962,20 +1326,20 @@ function Invoke-StressProbe {
         $transferSources = New-Object System.Collections.Generic.List[object]
         foreach ($hash in $sampledTransferHashes) {
             $step = "transfers/get:$hash"
-            $transferDetails.Add((Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash" -Token $Token))
+            $transferDetails.Add((Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/transfers/$hash" -Token $Token))
             $step = "transfers/sources:$hash"
             $transferSources.Add([pscustomobject][ordered]@{
                 hash = $hash
-                sources = (Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers/$hash/sources" -Token $Token)
+                sources = (Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/transfers/$hash/sources" -Token $Token)
             })
         }
 
         $uploadSnapshots = New-Object System.Collections.Generic.List[object]
         for ($uploadProbeIndex = 0; $uploadProbeIndex -lt $UploadProbeCount; ++$uploadProbeIndex) {
             $step = "uploads/list[$uploadProbeIndex]"
-            $uploadList = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/list" -Token $Token
+            $uploadList = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/uploads/list" -Token $Token
             $step = "uploads/queue[$uploadProbeIndex]"
-            $uploadQueue = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/uploads/queue" -Token $Token
+            $uploadQueue = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/uploads/queue" -Token $Token
             $uploadSnapshots.Add([pscustomobject][ordered]@{
                 list = $uploadList
                 queue = $uploadQueue
@@ -985,9 +1349,9 @@ function Invoke-StressProbe {
         $extraStatsBursts = New-Object System.Collections.Generic.List[object]
         for ($burstIndex = 0; $burstIndex -lt $ExtraStatsBurstsPerPoll; ++$burstIndex) {
             $step = "stats/global burst[$burstIndex]"
-            $burstStats = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
+            $burstStats = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/stats/global" -Token $Token
             $step = "log/get burst[$burstIndex]"
-            $burstLog = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/log?limit=20" -Token $Token
+            $burstLog = Invoke-ScenarioApiCommand -Step $step -Method Get -Uri "$BaseUri/api/v2/log?limit=20" -Token $Token
             $extraStatsBursts.Add([pscustomobject][ordered]@{
                 stats = $burstStats
                 recent_log = $burstLog
@@ -1006,6 +1370,408 @@ function Invoke-StressProbe {
         transfer_sources = @($transferSources.ToArray())
         upload_snapshots = @($uploadSnapshots.ToArray())
         extra_stats_bursts = @($extraStatsBursts.ToArray())
+    }
+}
+
+function Get-ScenarioSummary {
+    param(
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('matrix', 'soak')]
+        [string]$Kind
+    )
+
+    $scenarios = @($script:PipeScenarioResults | Where-Object { $_.kind -eq $Kind })
+    $failedScenarios = @($scenarios | Where-Object { -not $_.ok } |
+        Select-Object name, step_failed, http_status, error_code, error_message, failure_class)
+
+    return [ordered]@{
+        kind = $Kind
+        scenario_count = $scenarios.Count
+        passed = @($scenarios | Where-Object { $_.ok }).Count
+        failed = $failedScenarios.Count
+        failed_scenarios = @($failedScenarios)
+        scenarios = @($scenarios)
+    }
+}
+
+function Invoke-PipeScenarioMatrix {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseUri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$SearchQueries,
+
+        [Parameter(Mandatory = $true)]
+        [int]$SearchWaitSec,
+
+        [Parameter(Mandatory = $false)]
+        [string]$FallbackLink,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$SyntheticLinks,
+
+        [Parameter(Mandatory = $true)]
+        [int]$MatrixRepeatCount,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TransferPauseMs,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$FailFast
+    )
+
+    $selectedDownloadLink = $FallbackLink
+    $repeatCount = [Math]::Max($MatrixRepeatCount, 1)
+
+    for ($repeatIndex = 0; $repeatIndex -lt $repeatCount; ++$repeatIndex) {
+        $query = $SearchQueries[$repeatIndex % $SearchQueries.Count]
+        $matrixSearchResult = Invoke-Scenario -Name ("matrix/search-valid[{0}]" -f ($repeatIndex + 1)) -Kind 'matrix' -FailFast:$FailFast -Action {
+            $searchSession = Invoke-ScenarioApiCommand -Step 'search/start' -Method Post -Uri "$BaseUri/api/v2/search/start" -Token $Token -Body @{
+                query = $query
+                method = 'global'
+            }
+            Assert-ScenarioCondition -Condition ($null -ne $searchSession -and $null -ne $searchSession.search_id) -Message 'search/start did not return a search_id'
+
+            $deadline = (Get-Date).AddSeconds([Math]::Min([Math]::Max($SearchWaitSec, 5), 20))
+            $pollCount = 0
+            $searchSnapshot = $null
+            $candidateDownloadLink = $null
+            while ((Get-Date) -lt $deadline) {
+                $pollCount += 1
+                $searchSnapshot = Invoke-ScenarioApiCommand -Step ("search/results[{0}]" -f $pollCount) -Method Get -Uri "$BaseUri/api/v2/search/results?search_id=$($searchSession.search_id)" -Token $Token
+                if ($null -ne $searchSnapshot -and ($searchSnapshot.PSObject.Properties.Name -contains 'results')) {
+                    foreach ($result in @($searchSnapshot.results)) {
+                        if ($null -eq $result) {
+                            continue
+                        }
+
+                        $candidateDownloadLink = Build-Ed2kLinkFromResult -SearchResult $result
+                        if (-not [string]::IsNullOrWhiteSpace($candidateDownloadLink)) {
+                            break
+                        }
+                    }
+                }
+
+                if (-not [string]::IsNullOrWhiteSpace($candidateDownloadLink)) {
+                    break
+                }
+
+                Start-Sleep -Seconds 5
+            }
+
+            $stopResult = Invoke-ScenarioApiCommand -Step 'search/stop' -Method Post -Uri "$BaseUri/api/v2/search/stop" -Token $Token -Body @{
+                search_id = $searchSession.search_id
+            }
+
+            return [pscustomobject][ordered]@{
+                query = $query
+                search_id = $searchSession.search_id
+                poll_count = $pollCount
+                result_count = if ($null -ne $searchSnapshot -and ($searchSnapshot.PSObject.Properties.Name -contains 'results')) { @($searchSnapshot.results).Count } else { 0 }
+                selected_download_link = $candidateDownloadLink
+                stop_result = $stopResult
+            }
+        }
+        if ($null -ne $matrixSearchResult -and -not [string]::IsNullOrWhiteSpace($matrixSearchResult.selected_download_link)) {
+            $selectedDownloadLink = [string]$matrixSearchResult.selected_download_link
+        }
+
+        $null = Invoke-Scenario -Name ("matrix/search-invalid-empty[{0}]" -f ($repeatIndex + 1)) -Kind 'matrix' -FailFast:$FailFast -Action {
+            return Invoke-ExpectedRemoteFailure -Step 'search/start empty query' -Method Post -Uri "$BaseUri/api/v2/search/start" -Token $Token -Body @{
+                query = ''
+                method = 'global'
+            } -ExpectedStatus @(400) -ExpectedErrorCodes @('INVALID_ARGUMENT')
+        }
+
+        $null = Invoke-Scenario -Name ("matrix/search-invalid-method[{0}]" -f ($repeatIndex + 1)) -Kind 'matrix' -FailFast:$FailFast -Action {
+            return Invoke-ExpectedRemoteFailure -Step 'search/start invalid method' -Method Post -Uri "$BaseUri/api/v2/search/start" -Token $Token -Body @{
+                query = $query
+                method = 'broken'
+            } -ExpectedStatus @(400) -ExpectedErrorCodes @('INVALID_ARGUMENT')
+        }
+
+        $transferResult = Invoke-Scenario -Name ("matrix/transfers-roundtrip[{0}]" -f ($repeatIndex + 1)) -Kind 'matrix' -FailFast:$FailFast -Action {
+            $linkBatch = New-Object System.Collections.Generic.List[string]
+            if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
+                $linkBatch.Add($selectedDownloadLink)
+            }
+            for ($linkIndex = 0; $linkBatch.Count -lt 3 -and $linkIndex -lt $SyntheticLinks.Count; ++$linkIndex) {
+                $syntheticIndex = ($repeatIndex * 3 + $linkIndex) % $SyntheticLinks.Count
+                $linkBatch.Add($SyntheticLinks[$syntheticIndex])
+            }
+            Assert-ScenarioCondition -Condition ($linkBatch.Count -gt 0) -Message 'no transfer links were available for the matrix roundtrip'
+
+            $addResult = Invoke-ScenarioApiCommand -Step 'transfers/add' -Method Post -Uri "$BaseUri/api/v2/transfers/add" -Token $Token -Body @{
+                links = @($linkBatch.ToArray())
+            }
+            $addedHashes = @(Get-SuccessfulTransferHashes -MutationResponse $addResult)
+            Assert-ScenarioCondition -Condition ($addedHashes.Count -gt 0) -Message 'transfers/add did not return any successful hashes'
+
+            $transfersList = Invoke-ScenarioApiCommand -Step 'transfers/list' -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+            $primaryHash = $addedHashes[0]
+            $transferDetail = Invoke-ScenarioApiCommand -Step 'transfers/get' -Method Get -Uri "$BaseUri/api/v2/transfers/$primaryHash" -Token $Token
+            Assert-ScenarioCondition -Condition ([string]$transferDetail.hash -eq $primaryHash) -Message 'transfers/get did not return the requested hash'
+
+            $transferSources = Invoke-ScenarioApiCommand -Step 'transfers/sources' -Method Get -Uri "$BaseUri/api/v2/transfers/$primaryHash/sources" -Token $Token
+            $pauseResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'pause' -Hashes $addedHashes -StepName 'transfers/pause'
+            $resumeResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'resume' -Hashes $addedHashes -StepName 'transfers/resume'
+            $stopResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'stop' -Hashes $addedHashes -StepName 'transfers/stop'
+            $deleteResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'delete' -Hashes $addedHashes -DeleteFiles $true -StepName 'transfers/delete'
+            $transfersAfterDelete = Invoke-ScenarioApiCommand -Step 'transfers/list after delete' -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+
+            Assert-ScenarioCondition -Condition (@($pauseResult.results).Count -eq $addedHashes.Count) -Message 'transfers/pause did not return one result row per hash'
+            Assert-ScenarioCondition -Condition (@($deleteResult.results).Count -eq $addedHashes.Count) -Message 'transfers/delete did not return one result row per hash'
+
+            return [pscustomobject][ordered]@{
+                links = @($linkBatch.ToArray())
+                added_hashes = @($addedHashes)
+                transfers_before_delete = $transfersList
+                transfer_detail = $transferDetail
+                transfer_sources = $transferSources
+                pause_result = $pauseResult
+                resume_result = $resumeResult
+                stop_result = $stopResult
+                delete_result = $deleteResult
+                transfers_after_delete = $transfersAfterDelete
+            }
+        }
+        if ($null -ne $transferResult -and @($transferResult.added_hashes).Count -gt 0) {
+            $selectedDownloadLink = $transferResult.links[0]
+        }
+
+        $null = Invoke-Scenario -Name ("matrix/transfers-invalid-hash[{0}]" -f ($repeatIndex + 1)) -Kind 'matrix' -FailFast:$FailFast -Action {
+            return Invoke-ExpectedRemoteFailure -Step 'transfers/get invalid hash' -Method Get -Uri "$BaseUri/api/v2/transfers/not-a-hash" -Token $Token -ExpectedStatus @(400) -ExpectedErrorCodes @('INVALID_ARGUMENT')
+        }
+
+        $null = Invoke-Scenario -Name ("matrix/transfers-not-found[{0}]" -f ($repeatIndex + 1)) -Kind 'matrix' -FailFast:$FailFast -Action {
+            return Invoke-ExpectedRemoteFailure -Step 'transfers/get missing hash' -Method Get -Uri "$BaseUri/api/v2/transfers/feedfacefeedfacefeedfacefeedface" -Token $Token -ExpectedStatus @(404) -ExpectedErrorCodes @('NOT_FOUND')
+        }
+    }
+
+    return [pscustomobject][ordered]@{
+        selected_download_link = $selectedDownloadLink
+    }
+}
+
+function Invoke-PipeSoakScenario {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseUri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ExecutablePath,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$ConfiguredSearchQueries,
+
+        [Parameter(Mandatory = $true)]
+        [int]$SearchWaitSec,
+
+        [Parameter(Mandatory = $true)]
+        [int]$SearchCycleCount,
+
+        [Parameter(Mandatory = $true)]
+        [int]$SearchCyclePauseSec,
+
+        [Parameter(Mandatory = $true)]
+        [int]$MonitorSec,
+
+        [Parameter(Mandatory = $true)]
+        [int]$PollSec,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TransferProbeCount,
+
+        [Parameter(Mandatory = $true)]
+        [int]$UploadProbeCount,
+
+        [Parameter(Mandatory = $true)]
+        [int]$ExtraStatsBurstsPerPoll,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TransferChurnCycles,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TransfersPerChurnCycle,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TransferChurnPauseMs,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$SyntheticLinks,
+
+        [Parameter(Mandatory = $true)]
+        [string]$LogDir,
+
+        [Parameter(Mandatory = $false)]
+        [string]$InitialSelectedDownloadLink,
+
+        [Parameter(Mandatory = $false)]
+        [string]$FallbackLink,
+
+        [Parameter(Mandatory = $true)]
+        [string]$ArtifactDir
+    )
+
+    return Invoke-Scenario -Name 'soak/mixed-search-transfer' -Kind 'soak' -Action {
+        $selectedDownloadLink = if (-not [string]::IsNullOrWhiteSpace($InitialSelectedDownloadLink)) { $InitialSelectedDownloadLink } else { $FallbackLink }
+        $searchCycles = New-Object System.Collections.Generic.List[object]
+        $transferChurnHistory = New-Object System.Collections.Generic.List[object]
+        $samples = New-Object System.Collections.Generic.List[object]
+        $transferAddResult = $null
+        $completedTransferChurnCycles = 0
+        $consecutiveApiFailures = 0
+        $consecutiveNonResponding = 0
+        $freezeReason = $null
+        $dumpPath = $null
+        $lastApiFailure = $null
+
+        for ($searchCycleIndex = 0; $searchCycleIndex -lt $SearchCycleCount; ++$searchCycleIndex) {
+            $query = $ConfiguredSearchQueries[$searchCycleIndex % $ConfiguredSearchQueries.Count]
+            $searchCycle = Invoke-SearchCycle -BaseUri $BaseUri -Token $Token -Query $query -WaitSec $SearchWaitSec -FallbackLink $FallbackLink
+            $searchCycles.Add($searchCycle)
+
+            if ([string]::IsNullOrWhiteSpace($selectedDownloadLink) -and -not [string]::IsNullOrWhiteSpace($searchCycle.selected_download_link)) {
+                $selectedDownloadLink = $searchCycle.selected_download_link
+            }
+
+            if ($searchCycleIndex + 1 -lt $SearchCycleCount -and $SearchCyclePauseSec -gt 0) {
+                Start-Sleep -Seconds $SearchCyclePauseSec
+            }
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
+            $transferAddResult = Invoke-ScenarioApiCommand -Step 'soak/bootstrap/transfers/add' -Method Post -Uri "$BaseUri/api/v2/transfers/add" -Token $Token -Body @{
+                links = @($selectedDownloadLink)
+            }
+        }
+
+        $deadline = (Get-Date).AddSeconds($MonitorSec)
+        while ((Get-Date) -lt $deadline) {
+            $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $ExecutablePath
+            if ($null -eq $runningProcess) {
+                $freezeReason = 'eMule process exited during soak monitoring'
+                break
+            }
+
+            $windowSummary = [ordered]@{
+                responding = $runningProcess.Responding
+                main_window_title = $runningProcess.MainWindowTitle
+                main_window_handle = $runningProcess.MainWindowHandle
+            }
+
+            if ($runningProcess.Responding) {
+                $consecutiveNonResponding = 0
+            } else {
+                $consecutiveNonResponding += 1
+            }
+
+            $stats = $null
+            $transfers = $null
+            $recentLog = $null
+            $stressProbe = $null
+            $transferChurn = $null
+            $transferChurnError = $null
+            $apiError = $null
+            $apiErrorDetail = $null
+            $apiErrorCode = $null
+            $apiErrorStatus = $null
+            $apiFailureClass = $null
+            $apiStartedAt = Get-Date
+            try {
+                if ($completedTransferChurnCycles -lt $TransferChurnCycles) {
+                    $transferChurn = Invoke-TransferChurnCycle -BaseUri $BaseUri -Token $Token -PrimaryLink $selectedDownloadLink -SyntheticLinks $SyntheticLinks -LinksPerCycle $TransfersPerChurnCycle -CycleIndex $completedTransferChurnCycles -PauseMs $TransferChurnPauseMs
+                    $transferChurnHistory.Add($transferChurn)
+                    $completedTransferChurnCycles += 1
+                    $transferChurnErrors = @($transferChurn.errors)
+                    if ($transferChurnErrors.Count -gt 0) {
+                        $transferChurnError = ($transferChurnErrors -join '; ')
+                    }
+                }
+                $stressProbe = Invoke-StressProbe -BaseUri $BaseUri -Token $Token -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll
+                $stats = $stressProbe.stats
+                $transfers = $stressProbe.transfers
+                $recentLog = $stressProbe.recent_log
+                $consecutiveApiFailures = 0
+                $lastApiFailure = $null
+            } catch {
+                $apiError = $_.Exception.Message
+                $apiErrorDetail = $_ | Out-String
+                $lastApiFailure = Get-RemoteFailureDetails -Exception $_.Exception
+                $apiErrorCode = $lastApiFailure.error_code
+                $apiErrorStatus = $lastApiFailure.http_status
+                $apiFailureClass = $lastApiFailure.failure_class
+                $consecutiveApiFailures += 1
+            }
+            $apiDurationMs = [int](((Get-Date) - $apiStartedAt).TotalMilliseconds)
+
+            $samples.Add([pscustomobject][ordered]@{
+                timestamp = (Get-Date).ToString('o')
+                cpu = $runningProcess.CPU
+                working_set = $runningProcess.WorkingSet64
+                handles = $runningProcess.Handles
+                threads = $runningProcess.Threads.Count
+                window = $windowSummary
+                sockets = Get-ProcessSocketsSummary -ProcessId $runningProcess.Id
+                api_duration_ms = $apiDurationMs
+                api_error = $apiError
+                api_error_detail = $apiErrorDetail
+                api_error_code = $apiErrorCode
+                api_error_status = $apiErrorStatus
+                api_failure_class = $apiFailureClass
+                transfer_churn = $transferChurn
+                transfer_churn_error = $transferChurnError
+                stats = $stats
+                transfers = $transfers
+                recent_log = $recentLog
+                stress_probe = $stressProbe
+                disk_logs = Get-LogSnapshot -LogDir $LogDir
+            })
+
+            if ($consecutiveNonResponding -ge 3) {
+                $freezeReason = "process stopped responding for $consecutiveNonResponding consecutive polls"
+                break
+            }
+
+            if ($consecutiveApiFailures -ge 3) {
+                $freezeReason = "pipe-backed API failed for $consecutiveApiFailures consecutive polls"
+                break
+            }
+
+            Start-Sleep -Seconds $PollSec
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($freezeReason)) {
+            $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $ExecutablePath
+            if ($null -ne $runningProcess) {
+                $dumpPath = Join-Path $ArtifactDir ("emule-freeze-{0}.dmp" -f $runningProcess.Id)
+                $dumpPath = Save-HangDump -ProcessId $runningProcess.Id -DumpPath $dumpPath
+            }
+        }
+
+        return [pscustomobject][ordered]@{
+            scenario_ok = [string]::IsNullOrWhiteSpace($freezeReason)
+            step_failed = if (-not [string]::IsNullOrWhiteSpace($freezeReason)) { $script:CurrentScenarioStep } else { $null }
+            http_status = if ($null -ne $lastApiFailure) { $lastApiFailure.http_status } else { $null }
+            error_code = if ($null -ne $lastApiFailure) { $lastApiFailure.error_code } else { $null }
+            error_message = if (-not [string]::IsNullOrWhiteSpace($freezeReason)) { $freezeReason } else { $null }
+            failure_class = if ($null -ne $lastApiFailure) { $lastApiFailure.failure_class } elseif (-not [string]::IsNullOrWhiteSpace($freezeReason)) { 'app_unresponsive' } else { $null }
+            search_cycles = @($searchCycles.ToArray())
+            selected_download_link = $selectedDownloadLink
+            transfer_add_result = $transferAddResult
+            transfer_churn_cycles = @($transferChurnHistory.ToArray())
+            sample_count = $samples.Count
+            runtime_samples = @($samples.ToArray())
+            freeze_reason = $freezeReason
+            dump_path = $dumpPath
+        }
     }
 }
 
@@ -1128,6 +1894,9 @@ $manifest = [ordered]@{
     bind_interface_description = $bindInterface.InterfaceDescription
     search_query = $SearchQuery
     stress_queries = @($StressQueries)
+    scenario_profile = $ScenarioProfile
+    matrix_repeat_count = $MatrixRepeatCount
+    strict_matrix = [bool]$StrictMatrix
     search_wait_sec = $SearchWaitSec
     search_cycle_count = $SearchCycleCount
     search_cycle_pause_sec = $SearchCyclePauseSec
@@ -1170,19 +1939,12 @@ $kadStatus = $null
 $health = $null
 $fallbackLink = $null
 $configuredSearchQueries = $null
-$searchSession = $null
-$searchSnapshot = $null
 $selectedDownloadLink = $null
-$transferAddResult = $null
+$matrixResult = $null
+$soakResult = $null
+$matrixSummary = $null
+$soakSummary = $null
 $syntheticLinks = @(New-SyntheticEd2kLinks -Count ([Math]::Max($TransfersPerChurnCycle * 2, 8)))
-$transferChurnHistory = New-Object System.Collections.Generic.List[object]
-$completedTransferChurnCycles = 0
-$dumpPath = $null
-$freezeReason = $null
-$consecutiveApiFailures = 0
-$consecutiveNonResponding = 0
-$samples = New-Object System.Collections.Generic.List[object]
-$searchCycles = New-Object System.Collections.Generic.List[object]
 $remoteHandle = $null
 $sessionFailure = $null
 $sessionFailureDetail = $null
@@ -1219,120 +1981,27 @@ try {
         $kadStatus = [pscustomobject]@{ error = $_.Exception.Message }
     }
 
-    for ($searchCycleIndex = 0; $searchCycleIndex -lt $SearchCycleCount; ++$searchCycleIndex) {
-        $query = $configuredSearchQueries[$searchCycleIndex % $configuredSearchQueries.Count]
-        $searchCycle = Invoke-SearchCycle -BaseUri $baseUri -Token $RemoteToken -Query $query -WaitSec $SearchWaitSec -FallbackLink $fallbackLink
-        $searchCycles.Add($searchCycle)
-        $searchSession = $searchCycle.search_session
-        $searchSnapshot = $searchCycle.search_snapshot
-
-        if ([string]::IsNullOrWhiteSpace($selectedDownloadLink) -and -not [string]::IsNullOrWhiteSpace($searchCycle.selected_download_link)) {
-            $selectedDownloadLink = $searchCycle.selected_download_link
+    if ($ScenarioProfile -ne 'soak') {
+        $matrixResult = Invoke-PipeScenarioMatrix -BaseUri $baseUri -Token $RemoteToken -SearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -FallbackLink $fallbackLink -SyntheticLinks $syntheticLinks -MatrixRepeatCount $MatrixRepeatCount -TransferPauseMs $TransferChurnPauseMs -FailFast:$StrictMatrix
+        if ($null -ne $matrixResult -and -not [string]::IsNullOrWhiteSpace($matrixResult.selected_download_link)) {
+            $selectedDownloadLink = $matrixResult.selected_download_link
         }
-
-        if ($searchCycleIndex + 1 -lt $SearchCycleCount -and $SearchCyclePauseSec -gt 0) {
-            Start-Sleep -Seconds $SearchCyclePauseSec
+        $matrixSummary = Get-ScenarioSummary -Kind 'matrix'
+        if ($matrixSummary.failed -gt 0) {
+            $sessionFailure = "{0} matrix scenario(s) failed." -f $matrixSummary.failed
+            $sessionFailureDetail = ($matrixSummary.failed_scenarios | ConvertTo-Json -Depth 8)
         }
     }
 
-    if ([string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
-        $selectedDownloadLink = $fallbackLink
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($selectedDownloadLink)) {
-        $transferAddResult = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/transfers/add" -Token $RemoteToken -Body @{
-            links = @($selectedDownloadLink)
+    if ([string]::IsNullOrWhiteSpace($sessionFailure) -and $ScenarioProfile -ne 'matrix') {
+        $soakResult = Invoke-PipeSoakScenario -BaseUri $baseUri -Token $RemoteToken -ExecutablePath $exePath -ConfiguredSearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -SearchCycleCount $SearchCycleCount -SearchCyclePauseSec $SearchCyclePauseSec -MonitorSec $MonitorSec -PollSec $PollSec -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll -TransferChurnCycles $TransferChurnCycles -TransfersPerChurnCycle $TransfersPerChurnCycle -TransferChurnPauseMs $TransferChurnPauseMs -SyntheticLinks $syntheticLinks -LogDir $logDir -InitialSelectedDownloadLink $selectedDownloadLink -FallbackLink $fallbackLink -ArtifactDir $artifactDir
+        $soakSummary = Get-ScenarioSummary -Kind 'soak'
+        if ($null -ne $soakResult -and -not [string]::IsNullOrWhiteSpace($soakResult.selected_download_link)) {
+            $selectedDownloadLink = $soakResult.selected_download_link
         }
-    }
-
-    $deadline = (Get-Date).AddSeconds($MonitorSec)
-    while ((Get-Date) -lt $deadline) {
-        $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
-        if ($null -eq $runningProcess) {
-            break
-        }
-
-        $windowSummary = [ordered]@{
-            responding = $runningProcess.Responding
-            main_window_title = $runningProcess.MainWindowTitle
-            main_window_handle = $runningProcess.MainWindowHandle
-        }
-
-        if ($runningProcess.Responding) {
-            $consecutiveNonResponding = 0
-        } else {
-            $consecutiveNonResponding += 1
-        }
-
-        $stats = $null
-        $transfers = $null
-        $recentLog = $null
-        $stressProbe = $null
-        $transferChurn = $null
-        $transferChurnError = $null
-        $apiError = $null
-        $apiErrorDetail = $null
-        $apiStartedAt = Get-Date
-        try {
-            if ($completedTransferChurnCycles -lt $TransferChurnCycles) {
-                $transferChurn = Invoke-TransferChurnCycle -BaseUri $baseUri -Token $RemoteToken -PrimaryLink $selectedDownloadLink -SyntheticLinks $syntheticLinks -LinksPerCycle $TransfersPerChurnCycle -CycleIndex $completedTransferChurnCycles -PauseMs $TransferChurnPauseMs
-                $transferChurnHistory.Add($transferChurn)
-                $completedTransferChurnCycles += 1
-                $transferChurnErrors = @($transferChurn.errors)
-                if ($transferChurnErrors.Count -gt 0) {
-                    $transferChurnError = ($transferChurnErrors -join '; ')
-                }
-            }
-            $stressProbe = Invoke-StressProbe -BaseUri $baseUri -Token $RemoteToken -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll
-            $stats = $stressProbe.stats
-            $transfers = $stressProbe.transfers
-            $recentLog = $stressProbe.recent_log
-            $consecutiveApiFailures = 0
-        } catch {
-            $apiError = $_.Exception.Message
-            $apiErrorDetail = $_ | Out-String
-            $consecutiveApiFailures += 1
-        }
-        $apiDurationMs = [int](((Get-Date) - $apiStartedAt).TotalMilliseconds)
-
-        $samples.Add([pscustomobject][ordered]@{
-            timestamp = (Get-Date).ToString('o')
-            cpu = $runningProcess.CPU
-            working_set = $runningProcess.WorkingSet64
-            handles = $runningProcess.Handles
-            threads = $runningProcess.Threads.Count
-            window = $windowSummary
-            sockets = Get-ProcessSocketsSummary -ProcessId $runningProcess.Id
-            api_duration_ms = $apiDurationMs
-            api_error = $apiError
-            api_error_detail = $apiErrorDetail
-            transfer_churn = $transferChurn
-            transfer_churn_error = $transferChurnError
-            stats = $stats
-            transfers = $transfers
-            recent_log = $recentLog
-            stress_probe = $stressProbe
-            disk_logs = Get-LogSnapshot -LogDir $logDir
-        })
-
-        if ($consecutiveNonResponding -ge 3) {
-            $freezeReason = "process stopped responding for $consecutiveNonResponding consecutive polls"
-            break
-        }
-
-        if ($consecutiveApiFailures -ge 3) {
-            $freezeReason = "pipe-backed API failed for $consecutiveApiFailures consecutive polls"
-            break
-        }
-
-        Start-Sleep -Seconds $PollSec
-    }
-
-    if (-not [string]::IsNullOrWhiteSpace($freezeReason)) {
-        $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
-        if ($null -ne $runningProcess) {
-            $dumpPath = Join-Path $artifactDir ("emule-freeze-{0}.dmp" -f $runningProcess.Id)
-            $dumpPath = Save-HangDump -ProcessId $runningProcess.Id -DumpPath $dumpPath
+        if ($null -ne $soakResult -and -not [bool]$soakResult.scenario_ok) {
+            $sessionFailure = [string]$soakResult.error_message
+            $sessionFailureDetail = ($soakResult | ConvertTo-Json -Depth 12)
         }
     }
 } catch {
@@ -1365,36 +2034,63 @@ try {
 }
 
 $finalLogSnapshot = Get-LogSnapshot -LogDir $logDir
-$samples | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $artifactDir 'runtime-samples.json') -Encoding utf8
+$runtimeSamples = @()
+$freezeReason = $null
+$dumpPath = $null
+$searchCycles = @()
+$transferAddResult = $null
+$transferChurnCycles = @()
+if ($null -ne $soakResult) {
+    $runtimeSamples = @($soakResult.runtime_samples)
+    $freezeReason = $soakResult.freeze_reason
+    $dumpPath = $soakResult.dump_path
+    $searchCycles = @($soakResult.search_cycles)
+    $transferAddResult = $soakResult.transfer_add_result
+    $transferChurnCycles = @($soakResult.transfer_churn_cycles)
+}
+
+if ($null -eq $matrixSummary) {
+    $matrixSummary = Get-ScenarioSummary -Kind 'matrix'
+}
+if ($null -eq $soakSummary) {
+    $soakSummary = Get-ScenarioSummary -Kind 'soak'
+}
+
+$runtimeSamples | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $artifactDir 'runtime-samples.json') -Encoding utf8
 $finalLogSnapshot | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $artifactDir 'log-snapshot.json') -Encoding utf8
+$script:PipeScenarioResults | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $artifactDir 'scenario-results.json') -Encoding utf8
+$script:PipeCommandTranscript | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $artifactDir 'command-transcript.json') -Encoding utf8
+$matrixSummary | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath (Join-Path $artifactDir 'matrix-summary.json') -Encoding utf8
+$soakSummary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath (Join-Path $artifactDir 'soak-summary.json') -Encoding utf8
 Copy-Item -LiteralPath $preferencesPath -Destination (Join-Path $artifactDir 'preferences.ini') -Force
 if (Test-Path -LiteralPath $crtLogPath -PathType Leaf) {
     Copy-Item -LiteralPath $crtLogPath -Destination (Join-Path $artifactDir 'eMule CRT Debug Log.log') -Force
-}
-
-$searchSessionId = $null
-if ($null -ne $searchSession -and $searchSession.PSObject.Properties.Name -contains 'search_id') {
-    $searchSessionId = $searchSession.search_id
 }
 
 $summary = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
     artifact_dir = $artifactDir
     profile_root = $profileRoot
+    scenario_profile = $ScenarioProfile
+    matrix_repeat_count = $MatrixRepeatCount
+    strict_matrix = [bool]$StrictMatrix
     emule_process_id = $emuleProcess.Id
     remote_process_id = if ($null -ne $remoteHandle) { $remoteHandle.Process.Id } else { $null }
     remote_health = $health
     server_connect = $serversStatus
     kad_connect = $kadStatus
-    search_session = $searchSession
-    search_cycles = @($searchCycles.ToArray())
+    matrix_result = $matrixResult
+    matrix_summary = $matrixSummary
+    soak_result = $soakResult
+    soak_summary = $soakSummary
+    search_cycles = @($searchCycles)
     selected_download_link = $selectedDownloadLink
     synthetic_links = @($syntheticLinks)
     transfer_add_result = $transferAddResult
-    transfer_churn_cycles = @($transferChurnHistory.ToArray())
+    transfer_churn_cycles = @($transferChurnCycles)
     freeze_reason = $freezeReason
     dump_path = $dumpPath
-    sample_count = $samples.Count
+    sample_count = $runtimeSamples.Count
     session_failure = $sessionFailure
     session_failure_detail = $sessionFailureDetail
     finished_at = (Get-Date).ToString('o')
@@ -1404,15 +2100,17 @@ $summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -En
     "Pipe live session"
     "artifact_dir: $artifactDir"
     "profile_root: $profileRoot"
+    "scenario_profile: $ScenarioProfile"
+    "matrix_failed: $($matrixSummary.failed)"
+    "soak_failed: $($soakSummary.failed)"
     "search_query: $SearchQuery"
     "search_cycle_count: $SearchCycleCount"
     "transfer_churn_cycles: $TransferChurnCycles"
     "transfers_per_churn_cycle: $TransfersPerChurnCycle"
-    "search_session: $searchSessionId"
     "selected_download_link: $selectedDownloadLink"
     "freeze_reason: $freezeReason"
     "dump_path: $dumpPath"
-    "sample_count: $($samples.Count)"
+    "sample_count: $($runtimeSamples.Count)"
     "session_failure: $sessionFailure"
 ) | Set-Content -LiteralPath $summaryPath -Encoding utf8
 

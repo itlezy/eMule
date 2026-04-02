@@ -441,13 +441,13 @@ void CSearchParamsWnd::UpdateControls()
 		thePrefs.SetSearchMethod(iMethod);
 	}
 
-	DWORD_PTR dwData = static_cast<DWORD_PTR>(iMethod == SearchTypeEd2kServer || iMethod == SearchTypeEd2kGlobal || iMethod == SearchTypeContentDB);
-	m_ctlOpts.SetItemData(orAvailability, static_cast<DWORD_PTR>(iMethod == SearchTypeContentDB));
-	m_ctlOpts.SetItemData(orExtension, static_cast<DWORD_PTR>(iMethod == SearchTypeContentDB));
-	m_ctlOpts.SetItemData(orCompleteSources, static_cast<DWORD_PTR>(iMethod == SearchTypeKademlia || iMethod == SearchTypeContentDB)); //ed2k only
-	m_ctlOpts.SetItemData(orCodec, static_cast<DWORD_PTR>(iMethod == SearchTypeContentDB));
-	m_ctlOpts.SetItemData(orBitrate, static_cast<DWORD_PTR>(iMethod == SearchTypeContentDB));
-	m_ctlOpts.SetItemData(orLength, static_cast<DWORD_PTR>(iMethod == SearchTypeContentDB));
+	DWORD_PTR dwData = static_cast<DWORD_PTR>(iMethod == SearchTypeEd2kServer || iMethod == SearchTypeEd2kGlobal);
+	m_ctlOpts.SetItemData(orAvailability, static_cast<DWORD_PTR>(FALSE));
+	m_ctlOpts.SetItemData(orExtension, static_cast<DWORD_PTR>(FALSE));
+	m_ctlOpts.SetItemData(orCompleteSources, static_cast<DWORD_PTR>(iMethod == SearchTypeKademlia)); //ed2k only
+	m_ctlOpts.SetItemData(orCodec, static_cast<DWORD_PTR>(FALSE));
+	m_ctlOpts.SetItemData(orBitrate, static_cast<DWORD_PTR>(FALSE));
+	m_ctlOpts.SetItemData(orLength, static_cast<DWORD_PTR>(FALSE));
 	m_ctlOpts.SetItemData(orTitle, dwData); //KAD only
 	m_ctlOpts.SetItemData(orAlbum, dwData);	//
 	m_ctlOpts.SetItemData(orArtist, dwData);//
@@ -461,7 +461,6 @@ void CSearchParamsWnd::SetAllIcons()
 	iml.Add(CTempIconLoader(_T("SearchMethod_SERVER")));
 	iml.Add(CTempIconLoader(_T("SearchMethod_GLOBAL")));
 	iml.Add(CTempIconLoader(_T("SearchMethod_KADEMLIA")));
-	iml.Add(CTempIconLoader(_T("SearchMethod_CONTENTDB")));
 	m_ctlMethod.SetImageList(&iml);
 	m_imlSearchMethods.DeleteImageList();
 	m_imlSearchMethods.Attach(iml.Detach());
@@ -502,7 +501,6 @@ void CSearchParamsWnd::InitMethodsCtrl()
 	VERIFY(m_ctlMethod.AddItem(GetResString(IDS_SERVER), 1) == SearchTypeEd2kServer);
 	VERIFY(m_ctlMethod.AddItem(GetResString(IDS_GLOBALSEARCH), 2) == SearchTypeEd2kGlobal);
 	VERIFY(m_ctlMethod.AddItem(GetResString(IDS_KADEMLIA) + _T(' ') + GetResString(IDS_NETWORK), 3) == SearchTypeKademlia);
-	VERIFY(m_ctlMethod.AddItem(GetResString(IDS_CONTENTDB), 4) == SearchTypeContentDB);
 	UpdateHorzExtent(m_ctlMethod, 16); // adjust dropped width to ensure all strings are fully visible
 	m_ctlMethod.SetCurSel(iMethod != CB_ERR ? iMethod : SearchTypeAutomatic);
 }

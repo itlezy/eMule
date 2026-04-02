@@ -125,6 +125,12 @@ void CClientReqSocket::ResetTimeOutTimer()
 bool CClientReqSocket::CheckTimeOut()
 {
 	const DWORD curTick = ::GetTickCount();
+	if (ShouldDisconnectBannedClientSocket(client != NULL, client != NULL && client->IsBanned())) {
+		timeout_timer = curTick;
+		Disconnect(_T("Banned client"));
+		return true;
+	}
+
 	if (m_nOnConnect == SS_Half) {
 		//This socket is still in a half connection state. Because of SP2, we don't know
 		//if this socket is actually failing, or if this socket is just queued in SP2's new

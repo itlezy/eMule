@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SafeFile.h"
+#include "SearchParamsPolicy.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // ESearchType
@@ -11,8 +12,7 @@ enum ESearchType : uint8
 	SearchTypeAutomatic = 0,
 	SearchTypeEd2kServer,
 	SearchTypeEd2kGlobal,
-	SearchTypeKademlia,
-	SearchTypeContentDB
+	SearchTypeKademlia
 };
 
 
@@ -47,7 +47,7 @@ struct SSearchParams
 		, bMatchKeywords()
 	{
 		dwSearchID = rFile.ReadUInt32();
-		eType = (ESearchType)rFile.ReadUInt8();
+		eType = static_cast<ESearchType>(SearchParamsPolicy::NormalizeStoredSearchType(rFile.ReadUInt8()));
 		bClientSharedFiles = rFile.ReadUInt8() > 0;
 		strSpecialTitle = rFile.ReadString(true);
 		strExpression = rFile.ReadString(true);
