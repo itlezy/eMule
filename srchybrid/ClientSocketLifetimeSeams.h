@@ -16,6 +16,16 @@ inline void DetachClientSocketPair(TClient *pClient, TSocket *pSocket)
 }
 
 /**
+ * @brief Initializes a newly created socket-side link slot to the detached state before any first attach.
+ */
+template <typename TSocket>
+inline void ResetClientSocketPeer(TSocket *pSocket)
+{
+	if (pSocket != nullptr)
+		pSocket->client = nullptr;
+}
+
+/**
  * @brief Rebinds a client/socket pair after detaching any previous peer on either side.
  */
 template <typename TClient, typename TSocket>

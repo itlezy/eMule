@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstring>
 #include <limits>
 
 #define EMULE_TEST_HAVE_CLIENT_CREDITS_BUFFER_SEAMS 1
@@ -46,6 +47,17 @@ inline bool TryBuildClientCreditsSaveBufferSize(const size_t nRecordCount, const
 
 	*pnBufferSize = nRecordCount * nRecordSize;
 	return true;
+}
+
+/**
+ * @brief Clears the secure-ident runtime state so startup and reinitialization share one safe reset path.
+ */
+template <typename TSigner, typename TByte, size_t N, typename TLen>
+inline void ResetClientCreditsCryptState(TSigner *&pSignKey, TByte (&abyPublicKey)[N], TLen &nPublicKeyLen)
+{
+	pSignKey = NULL;
+	nPublicKeyLen = 0;
+	memset(abyPublicKey, 0, sizeof(abyPublicKey));
 }
 
 /**

@@ -138,8 +138,11 @@ float CClientCredits::GetScoreRatio(uint32 dwForIP) const
 
 
 CClientCreditsList::CClientCreditsList()
+	: m_pSignkey(NULL)
+	, m_nLastSaved(::GetTickCount())
+	, m_nMyPublicKeyLen(0)
 {
-	m_nLastSaved = ::GetTickCount();
+	ResetClientCreditsCryptState(m_pSignkey, m_abyMyPublicKey, m_nMyPublicKeyLen);
 	LoadList();
 
 	InitalizeCrypting();
@@ -357,10 +360,9 @@ using namespace CryptoPP;
 
 void CClientCreditsList::InitalizeCrypting()
 {
-	m_nMyPublicKeyLen = 0;
-	memset(m_abyMyPublicKey, 0, sizeof m_abyMyPublicKey); // not really needed; better for debugging tho
 	delete m_pSignkey;
-	m_pSignkey = NULL;
+	/** @brief Reset the cached secure-ident state before deciding whether to reload or regenerate the keypair. */
+	ResetClientCreditsCryptState(m_pSignkey, m_abyMyPublicKey, m_nMyPublicKeyLen);
 	if (!thePrefs.IsSecureIdentEnabled())
 		return;
 	// check if keyfile is there
@@ -389,13 +391,11 @@ void CClientCreditsList::InitalizeCrypting()
 		asink.MessageEnd();
 		m_pSignkey = pSignKey.release();
 	} catch (const Exception &e) {
-		memset(m_abyMyPublicKey, 0, sizeof m_abyMyPublicKey);
-		m_nMyPublicKeyLen = 0;
+		ResetClientCreditsCryptState(m_pSignkey, m_abyMyPublicKey, m_nMyPublicKeyLen);
 		LogError(LOG_STATUSBAR, GetResString(IDS_CRYPT_INITFAILED));
 		AddDebugLogLine(false, _T("Failed to initialize secure ident crypting: %hs"), e.what());
 	} catch (const std::exception &e) {
-		memset(m_abyMyPublicKey, 0, sizeof m_abyMyPublicKey);
-		m_nMyPublicKeyLen = 0;
+		ResetClientCreditsCryptState(m_pSignkey, m_abyMyPublicKey, m_nMyPublicKeyLen);
 		LogError(LOG_STATUSBAR, GetResString(IDS_CRYPT_INITFAILED));
 		AddDebugLogLine(false, _T("Failed to initialize secure ident crypting: %hs"), e.what());
 	}

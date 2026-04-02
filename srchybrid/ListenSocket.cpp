@@ -65,6 +65,8 @@ CClientReqSocket::CClientReqSocket(CUpDownClient *in_client)
 	, deletethis()
 	, m_bPortTestCon()
 {
+	/** @brief Start detached so the first SetClient call never dereferences stale debug-fill memory. */
+	ResetClientSocketPeer(this);
 	SetClient(in_client);
 	theApp.listensocket->AddSocket(this);
 	ResetTimeOutTimer();
