@@ -32,6 +32,7 @@ Completed bounded hardening chunks already landed on this branch:
 - **[DONE]** bounded `CPP_034` AICH hashset and part-selection numeric hardening (`bf0c827`)
 - **[DONE]** bounded `CPP_028` / `CPP_032` / `CPP_035` AICH maintenance hardening (`b9579cf`)
 - **[DONE]** bounded `CPP_035` / `CPP_036` / `CPP_038` client part-status ownership hardening (`c23f169`)
+- **[DONE]** bounded `CPP_035` / `CPP_038` Win32 file-handle RAII hardening for overlapped reads and utility file opens (`26c21fc`)
 
 The broader audit categories below remain open unless explicitly marked otherwise; completed chunks reduce the remaining surface but do not imply the entire category is closed.
 
@@ -823,13 +824,12 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_035 — Resource Leaks
 
-**Count:** 2+ remaining leak / manual-lifetime sites
+**Count:** 1+ remaining leak / manual-lifetime sites
 **Severity:** High
 **Priority:** HIGH
 
 | Resource | File | Line | Issue |
 |---|---|---|---|
-| `HANDLE` | KnownFile.h | 141 | Member `m_hRead` is still a raw Win32 handle without an owning RAII wrapper |
 | `new` | EMSocket.cpp | 363 | Pending packet buffer ownership is still manual and coupled to surrounding queue cleanup |
 
 **Status:** **[PARTIAL]**
@@ -879,7 +879,6 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 | Wrapper | Target | Impact Files |
 |---|---|---|
-| `ScopedHandle` (Win32 `HANDLE`) | `CreateFile` / `CloseHandle` pairs | EMSocket.cpp, KnownFile.cpp |
 | `AutoSelectObject` (GDI) | `SelectObject` / restore pairs | Drawing code |
 | `std::unique_ptr<BYTE[]>` | Raw `new BYTE[]` buffers | EMSocket.cpp, ClientUDPSocket.cpp, Packets.cpp |
 | `PacketPtr` | `Packet*` ownership transfer | Packets.cpp, EMSocket.cpp |
@@ -966,7 +965,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | CPP_035 | Resource leaks (10+) | High | HIGH | **[PARTIAL]** |
 | CPP_036 | Null pointer dereference risks (10+) | High | MEDIUM | **[PARTIAL]** |
 | CPP_037 | Use-after-free patterns (7+) | Critical | CRITICAL | **[PARTIAL]** |
-| CPP_038 | RAII wrapper opportunities (5) | Medium | MEDIUM | Open |
+| CPP_038 | RAII wrapper opportunities (4) | Medium | MEDIUM | **[PARTIAL]** |
 | CPP_039 | noexcept opportunities (3+) | Low | LOW | Open |
 | CPP_040 | [[nodiscard]] candidates (10+) | Low | LOW | Open |
 

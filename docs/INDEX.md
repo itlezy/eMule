@@ -232,7 +232,7 @@
 | CPP_001–010 | Language modernization — casts, arrays, RAII, constexpr, range-for, enum class, nullptr, auto | Open | [CPP-AUDIT](CPP-AUDIT.md) |
 | CPP_011–020 | Standard library — MFC→std containers, string safety, algorithms, chrono, filesystem, random | **[PARTIAL]** (`CPP_012` **[PARTIAL]**) | [CPP-AUDIT](CPP-AUDIT.md) |
 | CPP_021–030 | Threading — shared state, lock ordering, TOCTOU, atomics, CSingleLock, thread inventory, mutex | **[PARTIAL]** (`CPP_021`–`026`, `CPP_028`–`030` partially addressed, including bounded AICH maintenance wait cleanup; `CPP_027` **[DONE]**) | [CPP-AUDIT](CPP-AUDIT.md) |
-| CPP_031–040 | Safety — unchecked returns, exception safety, buffer overflows, integer overflow, RAII, noexcept | **[PARTIAL]** (`CPP_031`–`038` partially addressed, including bounded `CPP_034` numeric hardening, AICH maintenance RAII cleanup, client part-status ownership hardening, and credits/collection ownership hardening) | [CPP-AUDIT](CPP-AUDIT.md) |
+| CPP_031–040 | Safety — unchecked returns, exception safety, buffer overflows, integer overflow, RAII, noexcept | **[PARTIAL]** (`CPP_031`–`038` partially addressed, including bounded `CPP_034` numeric hardening, AICH maintenance RAII cleanup, client part-status ownership hardening, credits/collection ownership hardening, and Win32 file-handle RAII hardening) | [CPP-AUDIT](CPP-AUDIT.md) |
 
 ### Dependencies (DEP_)
 
@@ -299,7 +299,7 @@
 
 | Category | Total | Done | Partial | Stale | Open |
 |---|---|---|---|---|---|
-| CPP_ | 40 | 1 | 17 | 0 | 22 |
+| CPP_ | 40 | 1 | 18 | 0 | 21 |
 | REFAC_ | 18 | 12 | 1 | 0 | 5 |
 | FEAT_ | 22 | 3 | 4 | 0 | 15 |
 | BUG_/GAP_ | 8 | 3 | 0 | 3 | 2 |
