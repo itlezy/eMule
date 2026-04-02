@@ -26,6 +26,7 @@
 #include "TransferDlg.h"
 #include "DownloadListCtrl.h"
 #include "Preferences.h"
+#include "ResourceOwnershipSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -246,11 +247,10 @@ void CCollectionCreateDialog::OnBnClickedOk()
 		if (m_CollectionCreateSignNameKeyCheck.GetCheck()) {
 			bool bCreateNewKey = false;
 			const CString &collkeypath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("collectioncryptkey.dat"));
-			HANDLE hKeyFile = ::CreateFile(collkeypath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (hKeyFile != INVALID_HANDLE_VALUE) {
-				if (::GetFileSize(hKeyFile, NULL) == 0)
+			ScopedHandle hKeyFile(::CreateFile(collkeypath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL));
+			if (HasOpenHandle(hKeyFile)) {
+				if (::GetFileSize(hKeyFile.Get(), NULL) == 0)
 					bCreateNewKey = true;
-				::CloseHandle(hKeyFile);
 			} else
 				bCreateNewKey = true;
 

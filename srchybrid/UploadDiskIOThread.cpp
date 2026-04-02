@@ -22,6 +22,7 @@
 #include "UploadQueue.h"
 #include "UploadQueueSeams.h"
 #include "LockScopeSeams.h"
+#include "ResourceOwnershipSeams.h"
 #include "sharedfilelist.h"
 #include "partfile.h"
 #include "log.h"
@@ -142,21 +143,24 @@ UINT CUploadDiskIOThread::RunInternal()
 bool CUploadDiskIOThread::AssociateFile(CKnownFile *pFile)
 {
 	ASSERT(m_hPort && m_Run);
-	if (pFile && pFile->m_hRead == INVALID_HANDLE_VALUE && !pFile->bNoNewReads) {
+	if (pFile && !HasOpenHandle(pFile->m_hRead) && !pFile->bNoNewReads) {
 		CString fullname = (pFile->IsPartFile())
 			? RemoveFileExtension(static_cast<const CPartFile*>(pFile)->GetFullName())
 			: pFile->GetFilePath();
 		const CString preparedPath(PreparePathForLongPath(fullname));
-		pFile->m_hRead = ::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
-		if (pFile->m_hRead == INVALID_HANDLE_VALUE) {
+		ScopedHandle hRead(::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_FLAG_SEQUENTIAL_SCAN, NULL));
+		if (!HasOpenHandle(hRead)) {
 			theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to open \"%s\" for overlapped read: %s"), (LPCTSTR)fullname, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
 			return false;
 		}
-		if (m_hPort != ::CreateIoCompletionPort(pFile->m_hRead, m_hPort, (ULONG_PTR)pFile, 0)) {
+		if (m_hPort != ::CreateIoCompletionPort(hRead.Get(), m_hPort, (ULONG_PTR)pFile, 0)) {
 			theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to associate \"%s\" with reading IOCP: %s"), (LPCTSTR)fullname, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
-			DissociateFile(pFile);
 			return false;
 		}
+		/**
+		 * @brief Transfer the associated read handle into the file object only after IOCP setup succeeds.
+		 */
+		pFile->m_hRead.Reset(hRead.Release());
 	}
 	return true;
 }
@@ -164,10 +168,7 @@ bool CUploadDiskIOThread::AssociateFile(CKnownFile *pFile)
 void CUploadDiskIOThread::DissociateFile(CKnownFile *pFile)
 {
 	ASSERT(pFile);
-	if (pFile->m_hRead != INVALID_HANDLE_VALUE) {
-		VERIFY(::CloseHandle(pFile->m_hRead));
-		pFile->m_hRead = INVALID_HANDLE_VALUE;
-	}
+	pFile->m_hRead.Reset();
 }
 
 void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *pUploadClientStruct)
@@ -250,7 +251,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 			pOverlappedRead->uEndOffset = currentblock->EndOffset;
 			pOverlappedRead->pBuffer = new byte[(size_t)uTogo];
 
-			if (!::ReadFile(pFile->m_hRead, pOverlappedRead->pBuffer, (DWORD)uTogo, NULL, (LPOVERLAPPED)pOverlappedRead)) {
+			if (!::ReadFile(pFile->m_hRead.Get(), pOverlappedRead->pBuffer, (DWORD)uTogo, NULL, (LPOVERLAPPED)pOverlappedRead)) {
 				DWORD dwError = ::GetLastError();
 				if (dwError != ERROR_IO_PENDING) {
 					delete[] pOverlappedRead->pBuffer;
@@ -304,7 +305,7 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				, (DWORD)(pOvRead->uEndOffset - pOvRead->uStartOffset), dwRead);
 			bReadError = true;
 		}
-		if (pKnownFile->m_hRead != INVALID_HANDLE_VALUE) { //discard data from closed files
+		if (HasOpenHandle(pKnownFile->m_hRead)) { //discard data from closed files
 			DEBUG_ONLY(dbgDataReadPending -= pOvRead->uEndOffset - pOvRead->uStartOffset);
 			CPacketList packetsList;
 			CClientReqSocket *pSocket = NULL;

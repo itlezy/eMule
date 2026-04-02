@@ -57,6 +57,7 @@
 #include "PartFileWriteThread.h"
 #include "DisplayRefreshSeams.h"
 #include "PartFileNumericSeams.h"
+#include "ResourceOwnershipSeams.h"
 #include <vector>
 #include <urlmon.h>
 
@@ -2764,8 +2765,8 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) != 0)
 		return;
 
-	HANDLE hFile = ::CreateFile(preparedPath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
-	if (hFile == INVALID_HANDLE_VALUE) {
+	ScopedHandle hFile(::CreateFile(preparedPath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL));
+	if (!HasOpenHandle(hFile)) {
 		if (thePrefs.GetVerbose())
 			theApp.QueueDebugLogLine(true, _T("Failed to open file \"%s\" for decompressing - %s"), pszFilePath, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
 		return;
@@ -2776,11 +2777,9 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 
 	USHORT usInData = COMPRESSION_FORMAT_NONE;
 	DWORD dwReturned = 0;
-	if (!DeviceIoControl(hFile, FSCTL_SET_COMPRESSION, &usInData, sizeof usInData, NULL, 0, &dwReturned, NULL))
+	if (!DeviceIoControl(hFile.Get(), FSCTL_SET_COMPRESSION, &usInData, sizeof usInData, NULL, 0, &dwReturned, NULL))
 		if (thePrefs.GetVerbose())
 			theApp.QueueDebugLogLine(true, _T("Failed to decompress file \"%s\" - %s"), pszFilePath, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
-
-	::CloseHandle(hFile);
 }
 
 void SetZoneIdentifier(LPCTSTR pszFilePath)

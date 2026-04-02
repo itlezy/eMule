@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include <dbghelp.h>
 #include "mdump.h"
+#include "ResourceOwnershipSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -79,10 +80,10 @@ LONG WINAPI CMiniDumper::TopLevelFilter(struct _EXCEPTION_POINTERS *pExceptionIn
 
 		TCHAR szResult[MAX_PATH + 1024];
 		*szResult = _T('\0');
-		HANDLE hFile = ::CreateFile(szDumpPath, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-		if (hFile != INVALID_HANDLE_VALUE) {
+		ScopedHandle hFile(::CreateFile(szDumpPath, GENERIC_WRITE, FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL));
+		if (HasOpenHandle(hFile)) {
 			_MINIDUMP_EXCEPTION_INFORMATION ExInfo = _MINIDUMP_EXCEPTION_INFORMATION{GetCurrentThreadId(), pExceptionInfo, FALSE};
-			BOOL bOK = ::MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile, MiniDumpNormal, &ExInfo, NULL, NULL);
+			BOOL bOK = ::MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), hFile.Get(), MiniDumpNormal, &ExInfo, NULL, NULL);
 			if (bOK) {
 				// Do *NOT* localize this string (in fact, do not use MFC to load it)!
 				_sntprintf(szResult, _countof(szResult)
@@ -100,7 +101,6 @@ LONG WINAPI CMiniDumper::TopLevelFilter(struct _EXCEPTION_POINTERS *pExceptionIn
 					, szDumpPath, ::GetLastError());
 				szResult[_countof(szResult) - 1] = _T('\0');
 			}
-			::CloseHandle(hFile);
 		} else {
 			// Do *NOT* localize this string (in fact, do not use MFC to load it)!
 			_sntprintf(szResult, _countof(szResult), _T("Failed to create dump file \"%s\".\r\n\r\nError: %lu")

@@ -83,6 +83,14 @@ private:
 };
 
 /**
+ * @brief Returns whether the wrapped Win32 handle currently owns a usable OS handle.
+ */
+inline bool HasOpenHandle(const ScopedHandle &rHandle) noexcept
+{
+	return rHandle.IsValid();
+}
+
+/**
  * @brief Releases a uniquely owned object only when the raw pointer still refers to that instance.
  *
  * This keeps temporary ownership around until the handoff site has definitively accepted the object.

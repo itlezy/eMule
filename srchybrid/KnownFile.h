@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "BarShader.h"
+#include "ResourceOwnershipSeams.h"
 #include "StatisticFile.h"
 #include "ShareableFile.h"
 
@@ -138,7 +139,7 @@ public:
 	CArray<uint16, uint16> m_AvailPartFrequency;
 	CCollection *m_pCollection;
 	//overlapped disk reads
-	HANDLE		m_hRead;
+	ScopedHandle m_hRead;
 	int			nInUse; //count outstanding I/O (reads) to know if the file is in use
 	bool		bNoNewReads; //blocks new overlapped reads
 #ifdef _DEBUG

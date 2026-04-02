@@ -39,6 +39,7 @@
 #include "collection.h"
 #include "SafeFile.h"
 #include "FormatSafetySeams.h"
+#include "ResourceOwnershipSeams.h"
 #include "Kademlia/Kademlia/kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "Log.h"
@@ -3898,15 +3899,17 @@ FILE* OpenFileStreamSharedReadLongPath(const CString &path, bool bTextMode)
 {
 	const CString preparedPath(PreparePathForLongPath(path));
 	const DWORD dwFlags = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN;
-	HANDLE hFile = ::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, dwFlags, NULL);
-	if (hFile == INVALID_HANDLE_VALUE)
+	ScopedHandle hFile(::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, dwFlags, NULL));
+	if (!HasOpenHandle(hFile))
 		return NULL;
 
-	int fd = _open_osfhandle((intptr_t)hFile, _O_RDONLY | (bTextMode ? _O_TEXT : _O_BINARY));
-	if (fd == -1) {
-		::CloseHandle(hFile);
+	int fd = _open_osfhandle((intptr_t)hFile.Get(), _O_RDONLY | (bTextMode ? _O_TEXT : _O_BINARY));
+	if (fd == -1)
 		return NULL;
-	}
+	/**
+	 * @brief The CRT descriptor now owns the file handle and closes it through `_close` / `fclose`.
+	 */
+	hFile.Release();
 
 	FILE *pStream = _fdopen(fd, bTextMode ? "r" : "rb");
 	if (pStream == NULL) {
@@ -3921,15 +3924,17 @@ int OpenCrtReadOnlyLongPath(LPCTSTR pszFilePath)
 {
 	const CString preparedPath(PreparePathForLongPath(pszFilePath));
 	const DWORD dwFlags = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN;
-	HANDLE hFile = ::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, dwFlags, NULL);
-	if (hFile == INVALID_HANDLE_VALUE)
+	ScopedHandle hFile(::CreateFile(preparedPath, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, dwFlags, NULL));
+	if (!HasOpenHandle(hFile))
 		return -1;
 
-	int fd = _open_osfhandle((intptr_t)hFile, _O_RDONLY | _O_BINARY);
-	if (fd == -1) {
-		::CloseHandle(hFile);
+	int fd = _open_osfhandle((intptr_t)hFile.Get(), _O_RDONLY | _O_BINARY);
+	if (fd == -1)
 		return -1;
-	}
+	/**
+	 * @brief The CRT file descriptor assumes ownership once `_open_osfhandle` succeeds.
+	 */
+	hFile.Release();
 
 	return fd;
 }
