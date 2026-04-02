@@ -798,7 +798,7 @@ void CUploadQueue::ReclaimRetiredUploadClientStructs()
 		POSITION curPos = pos;
 		UploadingToClient_Struct *pUploadClientStruct = m_retiredUploadingList.GetNext(pos);
 		ASSERT(pUploadClientStruct->m_bRetired);
-		if (InterlockedCompareExchange(&pUploadClientStruct->m_nPendingIOBlocks, 0, 0) == 0) {
+		if (pUploadClientStruct->m_nPendingIOBlocks.load() == 0) {
 			m_retiredUploadingList.RemoveAt(curPos);
 			delete pUploadClientStruct;
 		}
@@ -955,12 +955,12 @@ void CUploadQueue::DeleteAll()
 		pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
 		if (pClient != NULL)
 			InvalidateUploadClientStruct(pUploadClientStruct, pClient);
-		ASSERT(InterlockedCompareExchange(&pUploadClientStruct->m_nPendingIOBlocks, 0, 0) == 0);
+		ASSERT(pUploadClientStruct->m_nPendingIOBlocks.load() == 0);
 		delete pUploadClientStruct;
 	}
 	while (!m_retiredUploadingList.IsEmpty()) {
 		UploadingToClient_Struct *pUploadClientStruct = m_retiredUploadingList.RemoveHead();
-		ASSERT(InterlockedCompareExchange(&pUploadClientStruct->m_nPendingIOBlocks, 0, 0) == 0);
+		ASSERT(pUploadClientStruct->m_nPendingIOBlocks.load() == 0);
 		delete pUploadClientStruct;
 	}
 	// PENDING: Remove from UploadBandwidthThrottler as well!

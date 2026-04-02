@@ -243,7 +243,7 @@ void CUpDownClient::Init()
 	m_lastRefreshedDLDisplay = 0;
 	m_lastRefreshedULDisplay = ::GetTickCount();
 	m_random_update_wait = (DWORD)(rand() % SEC2MS(1));
-	m_nPendingDisplayUpdateMask = 0;
+	m_nPendingDisplayUpdateMask.store(0);
 
 	m_fHashsetRequestingMD4 = 0;
 	m_fSharedDirectories = 0;

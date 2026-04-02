@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <atomic>
 #include "ring.h"
 
 struct Requested_Block_Struct;
@@ -39,7 +40,7 @@ struct UploadingToClient_Struct
 	CCriticalSection									m_csBlockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
 	bool												m_bIOError;
 	bool												m_bRetired;
-	volatile LONG										m_nPendingIOBlocks;
+	std::atomic<LONG>									m_nPendingIOBlocks;
 	DWORD												m_dwRetiredTick;
 };
 typedef CTypedPtrList<CPtrList, UploadingToClient_Struct*> CUploadingPtrList;

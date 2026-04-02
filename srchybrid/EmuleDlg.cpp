@@ -658,7 +658,7 @@ void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*
 						AddLogLine(true, GetResString(IDS_MAIN_READY), (LPCTSTR)theApp.m_strCurVersionLong);
 				}
 
-				theApp.m_app_state = APP_STATE_RUNNING; //initialization completed
+				theApp.m_app_state.store(APP_STATE_RUNNING); //initialization completed
 				theApp.emuledlg->toolbar->EnableButton(TBBTN_CONNECT, !theApp.IsStartupBindBlocked());
 				theApp.emuledlg->m_SysMenuOptions.EnableMenuItem(MP_CONNECT, theApp.IsStartupBindBlocked() ? MF_GRAYED : MF_ENABLED);
 				theApp.emuledlg->serverwnd->GetDlgItem(IDC_ED2KCONNECT)->EnableWindow(!theApp.IsStartupBindBlocked());
@@ -1295,7 +1295,7 @@ LRESULT CemuleDlg::OnWMData(WPARAM, LPARAM lParam)
 			else if (clcommand == _T("disconnect"))
 				theApp.serverconnect->Disconnect();
 			else if (clcommand == _T("exit")) {
-				theApp.m_app_state = APP_STATE_SHUTTINGDOWN; // do no ask to close
+		theApp.m_app_state.store(APP_STATE_SHUTTINGDOWN); // do no ask to close
 				OnClose();
 			} else if (clcommand == _T("help") || clcommand == _T("/?"))
 				; // show usage
@@ -1465,7 +1465,7 @@ void CemuleDlg::OnEndSession(BOOL bEnding)
 		// is not terminating in time and gives the user a chance to cancel that. If the user
 		// does not cancel the Windows dialog, Windows will though wait until eMule has
 		// terminated by itself - no data loss, no file corruption, everything is fine.
-		theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
+		theApp.m_app_state.store(APP_STATE_SHUTTINGDOWN);
 		OnClose();
 	}
 
@@ -1503,14 +1503,14 @@ LRESULT CemuleDlg::OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam)
 #if 1
 		// And it really should be OK to expect that emule can shutdown in 20 sec on almost
 		// all computers. So, use the proper shutdown.
-		theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
+		theApp.m_app_state.store(APP_STATE_SHUTTINGDOWN);
 		OnClose();	// do not invoke if shutdown takes longer than 20 sec, read above
 #else
 		// As a minimum action we at least set the 'shutting down' flag, this will help e.g.
 		// the CUploadQueue::UploadTimer to not start any file save actions which could get
 		// interrupted by windows and which would then lead to corrupted MET-files.
 		// Setting this flag also helps any possible running threads to stop their work.
-		theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
+		theApp.m_app_state.store(APP_STATE_SHUTTINGDOWN);
 
 #ifdef _DEBUG
 		// Simulate some work.
@@ -1557,14 +1557,14 @@ void CemuleDlg::OnDestroy()
 
 bool CemuleDlg::CanClose()
 {
-	if (theApp.m_app_state == APP_STATE_RUNNING && thePrefs.IsConfirmExitEnabled()) {
-		theApp.m_app_state = APP_STATE_ASKCLOSE; //disable tray menu
+	if (theApp.m_app_state.load() == APP_STATE_RUNNING && thePrefs.IsConfirmExitEnabled()) {
+		theApp.m_app_state.store(APP_STATE_ASKCLOSE); //disable tray menu
 		RestoreWindow(); // make sure the window is in foreground for this prompt
 		ExitBox request;
 		request.DoModal();
 		if (request.WasCancelled()) {
-			if (theApp.m_app_state == APP_STATE_ASKCLOSE) //if the application state has not changed
-				theApp.m_app_state = APP_STATE_RUNNING; //then keep running
+			if (theApp.m_app_state.load() == APP_STATE_ASKCLOSE) //if the application state has not changed
+				theApp.m_app_state.store(APP_STATE_RUNNING); //then keep running
 			return false;
 		}
 	}
@@ -1580,7 +1580,7 @@ void CemuleDlg::OnClose()
 		::InterlockedExchange(&closing, 0);
 		return;
 	}
-	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
+	theApp.m_app_state.store(APP_STATE_SHUTTINGDOWN);
 	thePipeApiServer.Stop();
 	notifierenabled = false;
 	//flush queued messages
@@ -1703,7 +1703,7 @@ void CemuleDlg::OnClose()
 	delete theApp.m_pPartFileWriteThread;	theApp.m_pPartFileWriteThread = NULL;
 
 	thePrefs.Uninit();
-	theApp.m_app_state = APP_STATE_DONE;
+	theApp.m_app_state.store(APP_STATE_DONE);
 	CTrayDialog::OnCancel();
 	//flush queued messages
 	theApp.HandleDebugLogQueue();
@@ -1713,7 +1713,7 @@ void CemuleDlg::OnClose()
 
 void CemuleDlg::OnTrayRButtonUp(CPoint pt)
 {
-	if (theApp.m_app_state != APP_STATE_RUNNING)
+	if (theApp.m_app_state.load() != APP_STATE_RUNNING)
 		return;
 
 	// Avoid re-entrance problems with main window, options dialog and minimule window

@@ -21,6 +21,7 @@
 #include "EMSocket.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
+#include "AtomicStateSeams.h"
 #include "uploadqueue.h"
 #include "preferences.h"
 #include "UploadDiskIOThread.h"
@@ -81,7 +82,7 @@ INT_PTR UploadBandwidthThrottler::GetHighestNumberOfFullyActivatedSlotsSinceLast
 
 bool UploadBandwidthThrottler::GetNeedsMoreBandwidthSlotsSinceLastCallAndReset()
 {
-	return ::InterlockedExchange((LONG*)&m_needsMoreBandwidthSlots, FALSE) != FALSE;
+	return ConsumeAtomicLongFlag(m_needsMoreBandwidthSlots);
 }
 
 /**
@@ -605,7 +606,7 @@ UINT UploadBandwidthThrottler::RunInternal()
 				spendingRate = SEC2MS(1) - 1;
 				if (thisLoopTick >= lastTickReachedBandwidth + max(SEC2MS(1), timeSinceLastLoop * 2)) {
 					m_highestNumberOfFullyActivatedSlots = GetStandardListSize() + 1;
-					::InterlockedExchange((LONG*)&m_needsMoreBandwidthSlots, TRUE);
+					SetAtomicLongFlag(m_needsMoreBandwidthSlots, TRUE);
 					lastTickReachedBandwidth = thisLoopTick;
 					//theApp.QueueDebugLogLine(false, _T("UploadBandwidthThrottler: request new slot due to bw not reached. m_highestNumberOfFullyActivatedSlots: %i GetStandardListSize(): %i tick: %i"), m_highestNumberOfFullyActivatedSlots, GetStandardListSize(), thisLoopTick);
 				}

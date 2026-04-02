@@ -643,7 +643,7 @@ protected:
 	DWORD	m_lastRefreshedDLDisplay;
 	DWORD	m_lastRefreshedULDisplay;
 	DWORD	m_random_update_wait;
-	volatile LONG m_nPendingDisplayUpdateMask;
+	std::atomic<LONG> m_nPendingDisplayUpdateMask;
 
 	// using bit fields for less important flags, to save some bytes
 	UINT m_fHashsetRequestingMD4 : 1, // we have sent a hashset request to this client in the current connection

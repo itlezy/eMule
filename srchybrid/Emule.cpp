@@ -1732,7 +1732,7 @@ BOOL WINAPI ConsoleCtrlHandler(DWORD dwCtrlType) noexcept
 			// has called 'ExitProcess' or returns from processing the message. This is
 			// needed to not let Windows terminate the process before the 20 sec. timeout.
 			if (!theApp.emuledlg->SendMessage(TM_CONSOLETHREADEVENT, dwCtrlType, (LPARAM)GetCurrentThreadId())) {
-				theApp.m_app_state = APP_STATE_SHUTTINGDOWN; // as a last attempt
+				theApp.m_app_state.store(APP_STATE_SHUTTINGDOWN); // as a last attempt
 				if (thePrefs.GetDebug2Disk())
 					theVerboseLog.Logf(_T("%hs: Error: Failed to send TM_CONSOLETHREADEVENT to main window - error %u"), __FUNCTION__, ::GetLastError());
 			}

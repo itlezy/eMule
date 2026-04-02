@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <atomic>
 #include <vector>
 #include "MapKey.h"
 #include "FileIdentifier.h"
@@ -146,7 +147,7 @@ private:
 
 	CWinThread		*m_pDirectoryWatchThread;
 	HANDLE			m_hDirectoryWatchStopEvent;
-	volatile LONG	m_lAutoRescanDirty;
+	std::atomic<LONG>	m_lAutoRescanDirty;
 	bool			m_bAutoReloadPending;
 	bool			m_bAutoReloadInProgress;
 	bool			m_bDirectoryWatchFallbackPolling;

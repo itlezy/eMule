@@ -258,7 +258,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 				}
 			}
 			++pFile->nInUse;
-			InterlockedIncrement(&pUploadClientStruct->m_nPendingIOBlocks);
+			pUploadClientStruct->m_nPendingIOBlocks.fetch_add(1);
 			pOverlappedRead->pos = m_listPendingIO.AddTail(pOverlappedRead);
 			DEBUG_ONLY(dbgDataReadPending += uTogo);
 
@@ -349,7 +349,7 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 		if (pKnownFile)
 			DissociateFile(pKnownFile);
 	}
-	InterlockedDecrement(&pStruct->m_nPendingIOBlocks);
+	pStruct->m_nPendingIOBlocks.fetch_sub(1);
 
 	// cleanup
 	delete[] pOvRead->pBuffer;

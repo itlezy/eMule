@@ -18,6 +18,8 @@
 #ifndef __AFXWIN_H__
 #error include 'stdafx.h' before including this file for PCH
 #endif
+#include <atomic>
+#include "AppStateSeams.h"
 #include "resource.h"
 
 #define	DEFAULT_NICK			thePrefs.GetHomepageBaseURL()
@@ -50,22 +52,13 @@ class CIP2Country;
 
 struct SLogItem;
 
-enum AppState : uint8
-{
-	APP_STATE_STARTING = 0,	//initialization phase
-	APP_STATE_RUNNING,
-	APP_STATE_ASKCLOSE,		//exit dialog is on screen
-	APP_STATE_SHUTTINGDOWN,
-	APP_STATE_DONE			//shutdown has completed
-};
-
 class CemuleApp : public CWinApp
 {
 public:
 	explicit CemuleApp(LPCTSTR lpszAppName = NULL);
 	// Barry - To find out if app is running or shutting/shut down
-	bool IsRunning() const	{ return m_app_state == APP_STATE_RUNNING || m_app_state == APP_STATE_ASKCLOSE; }
-	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
+	bool IsRunning() const	{ return IsAppStateRunning(m_app_state.load()); }
+	bool IsClosing() const	{ return IsAppStateClosing(m_app_state.load()); }
 	bool IsStartupBindBlocked() const						{ return m_bStartupBindBlocked; }
 	const CString& GetStartupBindBlockReason() const		{ return m_strStartupBindBlockReason; }
 	bool HasStartupConfigBaseDirOverride() const			{ return !m_strStartupConfigBaseDir.IsEmpty(); }
@@ -115,7 +108,7 @@ public:
 	CString		m_strPendingLink;
 	COPYDATASTRUCT sendstruct;
 	int			m_iDfltImageListColorFlags;
-	AppState	m_app_state; // defines application state
+	std::atomic<AppState>	m_app_state; // defines application state
 
 // Implementierung
 	virtual BOOL InitInstance();

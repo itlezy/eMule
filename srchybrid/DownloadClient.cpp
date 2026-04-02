@@ -1423,7 +1423,7 @@ void CUpDownClient::QueueDisplayUpdate(uint32 nMask)
 		return;
 
 	if (ShouldQueueDisplayRefresh(::GetCurrentThreadId(), g_uMainThreadId)) {
-		if (AccumulatePendingDisplayMask(&m_nPendingDisplayUpdateMask, static_cast<LONG>(nMask)) == 0) {
+		if (AccumulatePendingDisplayMask(m_nPendingDisplayUpdateMask, static_cast<LONG>(nMask)) == 0) {
 			CClientDisplayUpdateRequest *pRequest = new CClientDisplayUpdateRequest;
 			md4cpy(pRequest->userHash, GetUserHash());
 			pRequest->connectIP = GetConnectIP();
@@ -1431,7 +1431,7 @@ void CUpDownClient::QueueDisplayUpdate(uint32 nMask)
 			pRequest->reserved = 0;
 			if (theApp.emuledlg == NULL || !theApp.emuledlg->PostMessage(UM_CLIENT_DISPLAY_UPDATE, reinterpret_cast<WPARAM>(pRequest), 0)) {
 				delete pRequest;
-				InterlockedExchange(&m_nPendingDisplayUpdateMask, 0);
+				m_nPendingDisplayUpdateMask.store(0);
 			}
 		}
 		return;
@@ -1451,7 +1451,7 @@ void CUpDownClient::QueueDisplayUpdate(uint32 nMask)
 
 void CUpDownClient::DispatchQueuedDisplayUpdate()
 {
-	const LONG nMask = InterlockedExchange(&m_nPendingDisplayUpdateMask, 0);
+	const LONG nMask = m_nPendingDisplayUpdateMask.exchange(0);
 	if (nMask != 0)
 		QueueDisplayUpdate(static_cast<uint32>(nMask));
 }

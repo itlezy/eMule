@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <atomic>
 #include "KnownFile.h"
 #include "ModernLimits.h"
 #include "DeadSourceList.h"
@@ -390,7 +391,7 @@ private:
 	DWORD	m_nFileFlushTime; //if file is idle long enough, flush new data to disk
 	DWORD	m_dwFileAttributes;
 	DWORD	m_random_update_wait;
-	volatile LONG m_nPendingDisplayUpdate;
+	std::atomic<LONG> m_nPendingDisplayUpdate;
 	UINT	m_anStates[STATES_COUNT];
 	UINT	m_category;
 	UINT	m_uMaxSources;

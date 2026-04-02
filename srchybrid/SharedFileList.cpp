@@ -604,7 +604,7 @@ bool CSharedFileList::IsSharedDescendantOfRoot(const CString &strDir) const
 
 void CSharedFileList::MarkAutoRescanDirty()
 {
-	InterlockedExchange(&m_lAutoRescanDirty, 1);
+	SharedFileListSeams::MarkAutoRescanDirtyFlag(m_lAutoRescanDirty);
 }
 
 bool CSharedFileList::ShouldScheduleAutoReload(DWORD dwNow) const
@@ -617,7 +617,7 @@ bool CSharedFileList::ShouldScheduleAutoReload(DWORD dwNow) const
 		return false;
 	}
 
-	return m_bDirectoryWatchFallbackPolling || InterlockedCompareExchange(const_cast<volatile LONG*>(&m_lAutoRescanDirty), 0, 0) != 0;
+	return m_bDirectoryWatchFallbackPolling || SharedFileListSeams::IsAutoRescanDirtyFlagSet(m_lAutoRescanDirty);
 }
 
 void CSharedFileList::ScheduleNextAutoReload(DWORD dwNow)
@@ -1104,7 +1104,7 @@ void CSharedFileList::Reload()
 	bHaveSingleSharedFiles = false;
 	FindSharedFiles();
 	m_keywords->PurgeUnreferencedKeywords();
-	InterlockedExchange(&m_lAutoRescanDirty, 0);
+	SharedFileListSeams::ClearAutoRescanDirtyFlag(m_lAutoRescanDirty);
 	ScheduleNextAutoReload(::GetTickCount());
 	RestartDirectoryWatch();
 	if (output)

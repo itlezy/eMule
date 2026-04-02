@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 
+#include <atomic>
 #include <list>
 #include "ThrottledSocket.h" // ZZ:UploadBandWithThrottler (UDP)
 
@@ -77,7 +78,7 @@ private:
 	uint64 m_SentBytesSinceLastCall;
 	uint64 m_SentBytesSinceLastCallOverhead;
 	INT_PTR m_highestNumberOfFullyActivatedSlots;
-	volatile LONG m_needsMoreBandwidthSlots;
+	std::atomic<LONG> m_needsMoreBandwidthSlots;
 
 	volatile bool m_bRun;
 };

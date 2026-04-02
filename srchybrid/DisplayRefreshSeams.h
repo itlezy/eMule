@@ -1,5 +1,7 @@
 #pragma once
 
+#include <atomic>
+
 enum EDisplayRefreshMask : uint32
 {
 	DISPLAY_REFRESH_NONE = 0,
@@ -42,14 +44,12 @@ inline bool ShouldRunDisplayRefresh(bool bForce, DWORD dwCurrentTick, DWORD dwLa
 /**
  * @brief Atomically merges a refresh mask and returns the previous value.
  */
-inline LONG AccumulatePendingDisplayMask(volatile LONG *pnPendingMask, LONG nMask)
+inline LONG AccumulatePendingDisplayMask(std::atomic<LONG> &rnPendingMask, LONG nMask)
 {
-	LONG nCurrent = *pnPendingMask;
+	LONG nCurrent = rnPendingMask.load();
 	for (;;) {
 		const LONG nUpdated = nCurrent | nMask;
-		const LONG nObserved = InterlockedCompareExchange(pnPendingMask, nUpdated, nCurrent);
-		if (nObserved == nCurrent)
+		if (rnPendingMask.compare_exchange_weak(nCurrent, nUpdated))
 			return nCurrent;
-		nCurrent = nObserved;
 	}
 }
