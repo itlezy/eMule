@@ -30,6 +30,7 @@
 #include "DownloadQueue.h"
 #include "ClientCredits.h"
 #include "ListenSocket.h"
+#include "ClientSocketLifetimeSeams.h"
 #include "Opcodes.h"
 #include "ServerConnect.h"
 #include "emuledlg.h"
@@ -217,11 +218,14 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientReqSocket 
 				}
 				return false;
 			}
-			found_client->socket->client = NULL;
-			found_client->socket->Safe_Delete();
+			CClientReqSocket *pFoundSocket = found_client->socket;
+			DetachClientSocketPair(found_client, pFoundSocket);
+			pFoundSocket->Safe_Delete();
 		}
-		found_client->socket = sender;
-		tocheck->socket = NULL;
+		/**
+		 * @brief Rebinds the accepted socket away from the temporary client before that client is destroyed.
+		 */
+		LinkClientSocketPair(found_client, sender);
 	}
 	*client = NULL;
 //***	found_client->SetSourceFrom(tocheck->GetSourceFrom());

@@ -24,6 +24,7 @@
 #include "Clientlist.h"
 #include "PartFile.h"
 #include "ListenSocket.h"
+#include "ClientSocketLifetimeSeams.h"
 #include "DisplayRefreshSeams.h"
 #include "Packets.h"
 #include "Opcodes.h"
@@ -291,8 +292,12 @@ CUpDownClient::~CUpDownClient()
 	theApp.clientlist->RemoveClient(this, _T("Destructing client object"));
 
 	if (socket) {
-		socket->client = NULL;
-		socket->Safe_Delete();
+		/**
+		 * @brief Breaks the client/socket cross-link before the listener owns the deferred delete.
+		 */
+		CClientReqSocket *pSocket = socket;
+		DetachClientSocketPair(this, pSocket);
+		pSocket->Safe_Delete();
 	}
 
 	free(m_pszUsername);
@@ -1218,9 +1223,15 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 	// Delete Socket
 	if (!bFromSocket && socket) {
 		ASSERT(theApp.listensocket->IsValidSocket(socket));
-		socket->Safe_Delete();
+		/**
+		 * @brief Clears both back-pointers before the socket enters deferred listener cleanup.
+		 */
+		CClientReqSocket *pSocket = socket;
+		DetachClientSocketPair(this, pSocket);
+		pSocket->Safe_Delete();
 	}
-	socket = NULL;
+	else
+		DetachClientSocketPair(this, socket);
 	if (!bDelete)
 		QueueDisplayUpdate(DISPLAY_REFRESH_CLIENT_LIST);
 
@@ -1295,7 +1306,12 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 				DebugLogWarning(_T("TryToConnect found connected socket, but without Handshake finished - %s"), (LPCTSTR)DbgGetClientInfo());
 			return true;
 		}
-		socket->Safe_Delete();
+		/**
+		 * @brief Retires any stale socket linkage before creating a replacement connection.
+		 */
+		CClientReqSocket *pSocket = socket;
+		DetachClientSocketPair(this, pSocket);
+		pSocket->Safe_Delete();
 	}
 	m_eConnectingState = CCS_PRECONDITIONS; // We now officially try to connect :)
 

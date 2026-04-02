@@ -33,6 +33,7 @@
 #include "ServerList.h"
 #include "Server.h"
 #include "ServerConnect.h"
+#include "ClientSocketLifetimeSeams.h"
 #include "SocketPolicySeams.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
@@ -100,9 +101,7 @@ CClientReqSocket::~CClientReqSocket()
 {
 	//This will update our statistics.
 	SetConState(SS_Other);
-	if (client)
-		client->socket = 0;
-	client = NULL;
+	DetachClientSocketPair(client, this);
 	theApp.listensocket->RemoveSocket(this);
 
 	DEBUG_ONLY(theApp.clientlist->Debug_SocketDeleted(this));
@@ -110,9 +109,7 @@ CClientReqSocket::~CClientReqSocket()
 
 void CClientReqSocket::SetClient(CUpDownClient *pClient)
 {
-	client = pClient;
-	if (client)
-		client->socket = this;
+	LinkClientSocketPair(pClient, this);
 }
 
 void CClientReqSocket::ResetTimeOutTimer()
@@ -172,15 +169,13 @@ void CClientReqSocket::Disconnect(LPCTSTR pszReason)
 	CEMSocket::SetConState(EMS_DISCONNECTED);
 	AsyncSelect(FD_CLOSE);
 	if (client) {
+		CUpDownClient *pClient = client;
 		CString sMsg;
 		sMsg.Format(_T("CClientReqSocket::Disconnect(): %s"), pszReason);
-		if (client->Disconnected(sMsg, true)) {
-			const CUpDownClient *temp = client;
-			client->socket = NULL;
-			client = NULL;
-			delete temp;
-		} else
-			client = NULL;
+		const bool bDeleteClient = pClient->Disconnected(sMsg, true);
+		DetachClientSocketPair(pClient, this);
+		if (bDeleteClient)
+			delete pClient;
 	}
 	Safe_Delete();
 }
@@ -201,10 +196,7 @@ void CClientReqSocket::Safe_Delete()
 	deltimer = ::GetTickCount();
 	if (m_SocketData.hSocket != INVALID_SOCKET)
 		Shutdown(SD_BOTH);
-	if (client) {
-		client->socket = NULL;
-		client = NULL;
-	}
+	DetachClientSocketPair(client, this);
 	deletethis = true;
 }
 
