@@ -35,6 +35,7 @@
 #include "IPFilter.h"
 #include "IP2Country.h"
 #include "Friend.h"
+#include "BaseClientFriendBuddySeams.h"
 #include "SocketPolicySeams.h"
 #include "NullGuardSeams.h"
 #include "Statistics.h"
@@ -651,19 +652,32 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 		Ban();
 	}
 
+	CFriend *pCurrentFriend = GetFriend();
+	const FriendLinkSnapshot currentFriendSnapshot = {
+		pCurrentFriend != NULL,
+		pCurrentFriend != NULL && pCurrentFriend->HasUserhash(),
+		pCurrentFriend != NULL && pCurrentFriend->IsTryingToConnect(),
+		pCurrentFriend != NULL && (!pCurrentFriend->HasUserhash() || md4equ(pCurrentFriend->m_abyUserhash, m_achUserHash)),
+		pCurrentFriend != NULL && pCurrentFriend->m_dwLastUsedIP == GetConnectIP() && pCurrentFriend->m_nLastUsedPort == GetUserPort()
+	};
 
-	if (GetFriend() != NULL && GetFriend()->HasUserhash() && !md4equ(GetFriend()->m_abyUserhash, m_achUserHash))
-		// this isn't our friend any more and it will be removed/replaced, tell our friend object about it
-		if (GetFriend()->IsTryingToConnect())
-			GetFriend()->UpdateFriendConnectionState(FCR_USERHASHFAILED); // this will remove our linked friend
-		else
-			GetFriend()->SetLinkedClient(NULL);
+	/**
+	 * @brief Resolve friend mismatch handling from one captured snapshot instead of re-reading the friend pointer.
+	 */
+	switch (ClassifyFriendLinkTransition(currentFriendSnapshot)) {
+	case friendLinkTransitionUserhashFailed:
+		pCurrentFriend->UpdateFriendConnectionState(FCR_USERHASHFAILED); // this will remove our linked friend
+		break;
+	case friendLinkTransitionUnlink:
+		pCurrentFriend->SetLinkedClient(NULL);
+		break;
+	default:
+		break;
+	}
 
 	// do not replace friend objects which have no userhash, but the fitting ip with another friend object with the
 	// fitting user hash (both objects would fit to this instance), as this could lead to unwanted results
-	if (GetFriend() == NULL || GetFriend()->HasUserhash() || GetFriend()->m_dwLastUsedIP != GetConnectIP()
-		|| GetFriend()->m_nLastUsedPort != GetUserPort())
-	{
+	if (ShouldSearchReplacementFriend(currentFriendSnapshot)) {
 		m_Friend = theApp.friendlist->SearchFriend(m_achUserHash, m_dwUserIP, m_nUserPort);
 		if (m_Friend != NULL)
 			// Link the friend to that client
@@ -671,9 +685,9 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 		else
 			// avoid that an unwanted client instance keeps a friend slot
 			SetFriendSlot(false);
-	} else
+	} else if (pCurrentFriend != NULL)
 		// however, copy over our userhash in this case
-		md4cpy(GetFriend()->m_abyUserhash, m_achUserHash);
+		md4cpy(pCurrentFriend->m_abyUserhash, m_achUserHash);
 
 	// check for known major gpl breaker
 	CString strBuffer(m_pszUsername);
@@ -945,10 +959,10 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 	data.WriteUInt32(theApp.GetID());
 	data.WriteUInt16(thePrefs.GetPort());
 
-	uint32 tagcount = 6;
-
-	if (theApp.clientlist->GetBuddy() && theApp.IsFirewalled())
-		tagcount += 2;
+	CUpDownClient *pBuddy = theApp.clientlist->GetBuddy();
+	const BuddyHelloSnapshot buddySnapshot = BuildBuddyHelloSnapshot(theApp.IsFirewalled(), pBuddy != NULL
+		, pBuddy != NULL ? pBuddy->GetIP() : 0u, pBuddy != NULL ? pBuddy->GetUDPPort() : 0u);
+	const uint32 tagcount = GetHelloTagCount(buddySnapshot);
 
 	data.WriteUInt32(tagcount);
 
@@ -980,11 +994,14 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 				);
 	tagUdpPorts.WriteTagToFile(data);
 
-	if (theApp.clientlist->GetBuddy() && theApp.IsFirewalled()) {
-		CTag tagBuddyIP(CT_EMULE_BUDDYIP, theApp.clientlist->GetBuddy()->GetIP());
+	if (buddySnapshot.bShouldAdvertise) {
+		/**
+		 * @brief Serialize buddy tags from one snapshot so the advertised count matches the payload.
+		 */
+		CTag tagBuddyIP(CT_EMULE_BUDDYIP, buddySnapshot.dwBuddyIP);
 		tagBuddyIP.WriteTagToFile(data);
 
-		CTag tagBuddyPort(CT_EMULE_BUDDYUDP, ((uint32)theApp.clientlist->GetBuddy()->GetUDPPort()));
+		CTag tagBuddyPort(CT_EMULE_BUDDYUDP, static_cast<uint32>(buddySnapshot.nBuddyPort));
 		tagBuddyPort.WriteTagToFile(data);
 	}
 
