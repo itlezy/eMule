@@ -72,4 +72,24 @@ inline ptrdiff_t FindVisibleRowIndex(const std::vector<SVisibleRow> &rVisibleRow
 			return static_cast<ptrdiff_t>(i);
 	return -1;
 }
+
+/**
+ * @brief Reports whether an owner-data list mutation must be marshalled to the UI thread.
+ */
+inline bool ShouldMarshalOwnerDataMutation(const unsigned long dwCurrentThreadId, const unsigned long dwUiThreadId)
+{
+	return dwCurrentThreadId != 0 && dwUiThreadId != 0 && dwCurrentThreadId != dwUiThreadId;
+}
+
+/**
+ * @brief Coalesces repeated worker refresh requests into a single posted UI wakeup.
+ */
+inline bool TryQueueCoalescedOwnerDataRefresh(bool &rbRefreshMessagePending)
+{
+	if (rbRefreshMessagePending)
+		return false;
+
+	rbRefreshMessagePending = true;
+	return true;
+}
 }

@@ -43,6 +43,8 @@
 #include "UserMsgs.h"
 #include "SearchResultsWnd.h"
 #include "MediaInfo.h"
+#include "WorkerUiMessageSeams.h"
+#include "SearchListViewSeams.h"
 #include <algorithm>
 
 #ifdef _DEBUG
@@ -187,6 +189,7 @@ BEGIN_MESSAGE_MAP(CSearchListCtrl, CMuleListCtrl)
 	ON_WM_DESTROY()
 	ON_WM_KEYDOWN()
 	ON_WM_SYSCOLORCHANGE()
+	ON_MESSAGE(UM_SEARCHLIST_VIEW_REFRESH, OnWorkerRefreshVisibleRows)
 END_MESSAGE_MAP()
 
 CSearchListCtrl::CSearchListCtrl()
@@ -207,6 +210,7 @@ CSearchListCtrl::CSearchListCtrl()
 
 void CSearchListCtrl::OnDestroy()
 {
+	m_bWorkerRefreshClosing.store(true, std::memory_order_release);
 	theApp.WriteProfileInt(_T("eMule"), _T("SearchResultsFileSizeFormat"), m_eFileSizeFormat);
 	__super::OnDestroy();
 }
@@ -339,6 +343,10 @@ void CSearchListCtrl::AddResult(const CSearchFile *toshow)
 		return;
 	if (!theApp.emuledlg->searchwnd->m_pwndResults->m_astrFilter.IsEmpty() && IsFilteredOut(toshow))
 		return;
+	if (ShouldMarshalOwnerDataMutation()) {
+		QueueDeferredVisibleRowsRefresh(true);
+		return;
+	}
 	if (TryInsertVisibleResult(const_cast<CSearchFile*>(toshow)))
 		UpdateTabHeader(toshow->GetSearchID());
 }
@@ -347,6 +355,10 @@ void CSearchListCtrl::UpdateSources(const CSearchFile *toupdate)
 {
 	if (toupdate == NULL || toupdate->GetSearchID() != m_nResultsID)
 		return;
+	if (ShouldMarshalOwnerDataMutation()) {
+		QueueDeferredVisibleRowsRefresh(false);
+		return;
+	}
 
 	const CSearchFile *const pVisibleFile = (toupdate->GetListParent() != NULL) ? toupdate->GetListParent() : toupdate;
 	const int iItem = FindVisibleItem(pVisibleFile);
@@ -361,6 +373,10 @@ void CSearchListCtrl::UpdateSources(const CSearchFile *toupdate)
 void CSearchListCtrl::UpdateSearch(CSearchFile *toupdate)
 {
 	if (toupdate && !theApp.IsClosing()) {
+		if (ShouldMarshalOwnerDataMutation()) {
+			QueueDeferredVisibleRowsRefresh(false);
+			return;
+		}
 		const int iItem = FindVisibleItem(toupdate);
 		if (iItem >= 0)
 			Update(iItem);
@@ -444,8 +460,13 @@ CString CSearchListCtrl::GetCompleteSourcesDisplayString(const CSearchFile *pFil
 
 void CSearchListCtrl::RemoveResult(const CSearchFile *toremove)
 {
-	if (toremove != NULL && toremove->GetSearchID() == m_nResultsID)
+	if (toremove != NULL && toremove->GetSearchID() == m_nResultsID) {
+		if (ShouldMarshalOwnerDataMutation()) {
+			QueueDeferredVisibleRowsRefresh(true);
+			return;
+		}
 		RebuildVisibleRows();
+	}
 }
 
 void CSearchListCtrl::ShowResults(uint32 nResultsID)
@@ -571,6 +592,44 @@ void CSearchListCtrl::SetVisibleRowCount()
 	SetItemCountEx(static_cast<int>(m_aVisibleRows.size()), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
 }
 
+/**
+ * Owner-data list mutations must stay on the list view's UI thread because MFC
+ * asserts when virtual item count changes come from worker-owned search result callbacks.
+ */
+bool CSearchListCtrl::ShouldMarshalOwnerDataMutation() const
+{
+	const HWND hWnd = GetSafeHwnd();
+	if (hWnd == NULL)
+		return false;
+
+	const DWORD dwUiThreadId = ::GetWindowThreadProcessId(hWnd, NULL);
+	return SearchListViewSeams::ShouldMarshalOwnerDataMutation(::GetCurrentThreadId(), dwUiThreadId);
+}
+
+/**
+ * Posts at most one deferred owner-data refresh message while worker search results keep arriving.
+ */
+void CSearchListCtrl::TryPostDeferredVisibleRowsRefresh()
+{
+	bool bExpected = false;
+	if (!m_bWorkerRefreshPosted.compare_exchange_strong(bExpected, true, std::memory_order_acq_rel))
+		return;
+
+	if (!TryPostWorkerUiMessage(GetSafeHwnd(), UM_SEARCHLIST_VIEW_REFRESH, 0, 0, &m_bWorkerRefreshClosing))
+		m_bWorkerRefreshPosted.store(false, std::memory_order_release);
+}
+
+/**
+ * Coalesces worker-side search updates so the UI thread rebuilds the owner-data projection safely.
+ */
+void CSearchListCtrl::QueueDeferredVisibleRowsRefresh(bool bUpdateTabHeader)
+{
+	m_bWorkerRefreshDirty.store(true, std::memory_order_release);
+	if (bUpdateTabHeader)
+		m_bWorkerTabHeaderDirty.store(true, std::memory_order_release);
+	TryPostDeferredVisibleRowsRefresh();
+}
+
 int CSearchListCtrl::FindVisibleItem(const CSearchFile *pSearchFile) const
 {
 	if (pSearchFile == NULL)
@@ -642,6 +701,25 @@ void CSearchListCtrl::RebuildVisibleRows(const CSortSelectionState *pStateToRest
 		RestoreViewState(*pStateToRestore);
 	SetRedraw(true);
 	Invalidate();
+}
+
+LRESULT CSearchListCtrl::OnWorkerRefreshVisibleRows(WPARAM, LPARAM)
+{
+	m_bWorkerRefreshPosted.store(false, std::memory_order_release);
+
+	const bool bRefreshVisibleRows = m_bWorkerRefreshDirty.exchange(false, std::memory_order_acq_rel);
+	const bool bRefreshTabHeader = m_bWorkerTabHeaderDirty.exchange(false, std::memory_order_acq_rel);
+	if (bRefreshVisibleRows)
+		RebuildVisibleRows();
+	else if (bRefreshTabHeader)
+		UpdateTabHeader(m_nResultsID);
+
+	if ((m_bWorkerRefreshDirty.load(std::memory_order_acquire) || m_bWorkerTabHeaderDirty.load(std::memory_order_acquire))
+		&& !m_bWorkerRefreshClosing.load(std::memory_order_acquire)) {
+		TryPostDeferredVisibleRowsRefresh();
+	}
+
+	return 0;
 }
 
 void CSearchListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)

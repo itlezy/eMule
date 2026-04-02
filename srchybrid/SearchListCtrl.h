@@ -19,6 +19,7 @@
 #include "TitledMenu.h"
 #include "ListCtrlItemWalk.h"
 #include "ToolTipCtrlX.h"
+#include <atomic>
 #include <vector>
 
 #define AVBLYSHADECOUNT 13
@@ -118,6 +119,14 @@ protected:
 		}
 	};
 	std::vector<SVisibleSearchRow> m_aVisibleRows;
+	/** @brief Tracks whether a coalesced worker refresh message is already queued for this control. */
+	std::atomic_bool m_bWorkerRefreshPosted{false};
+	/** @brief Tracks whether worker-side search updates dirtied the visible owner-data projection. */
+	std::atomic_bool m_bWorkerRefreshDirty{false};
+	/** @brief Tracks whether the search tab header count needs a UI-thread refresh. */
+	std::atomic_bool m_bWorkerTabHeaderDirty{false};
+	/** @brief Blocks further worker refresh posts once the list control starts tearing down. */
+	std::atomic_bool m_bWorkerRefreshClosing{false};
 
 	COLORREF GetSearchItemColor(/*const*/ CSearchFile *src);
 	bool	IsComplete(const CSearchFile *pFile, UINT uSources) const;
@@ -140,6 +149,9 @@ protected:
 	bool	TryInsertVisibleResult(CSearchFile *pSearchFile);
 	void	SetVisibleRowCount();
 	void	SortVisibleRows(std::vector<CSearchFile*> &rRows) const;
+	bool	ShouldMarshalOwnerDataMutation() const;
+	void	TryPostDeferredVisibleRowsRefresh();
+	void	QueueDeferredVisibleRowsRefresh(bool bUpdateTabHeader);
 
 	void	DrawSourceParent(CDC &dc, int nColumn, LPRECT lpRect, UINT uDrawTextAlignment, const CSearchFile *src);
 	void	DrawSourceChild(CDC &dc, int nColumn, LPRECT lpRect, UINT uDrawTextAlignment, const CSearchFile *src);
@@ -163,4 +175,5 @@ protected:
 	afx_msg void OnNmClick(LPNMHDR pNMHDR, LRESULT*);
 	afx_msg void OnNmDblClk(LPNMHDR, LRESULT*);
 	afx_msg void OnSysColorChange();
+	afx_msg LRESULT OnWorkerRefreshVisibleRows(WPARAM, LPARAM);
 };
