@@ -67,7 +67,7 @@ void CUpDownClient::DrawStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect,
 		s_StatusBar.SetRect(rect);
 		s_StatusBar.Fill(crNeither);
 
-		if (!onlygreyrect && m_abyPartStatus) {
+		if (!onlygreyrect && !m_abyPartStatus.empty()) {
 			COLORREF crBoth;
 			COLORREF crClientOnly;
 			COLORREF crPending;
@@ -89,16 +89,15 @@ void CUpDownClient::DrawStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect,
 				crNextPending = RGB(255, 208, 0);
 			}
 
-			char *pcNextPendingBlks;
+			std::vector<char> nextPendingBlocks;
 			if (m_eDownloadState == DS_DOWNLOADING) {
-				pcNextPendingBlks = new char[m_nPartCount]{};
+				VERIFY(PartStatusOwnershipSeams::TryBuildPendingPartOverlay(m_nPartCount, nextPendingBlocks));
 				for (POSITION pos = m_PendingBlocks_list.GetHeadPosition(); pos != NULL;) {
 					UINT uPart = (UINT)(m_PendingBlocks_list.GetNext(pos)->block->StartOffset / PARTSIZE);
 					if (uPart < m_nPartCount)
-						pcNextPendingBlks[uPart] = 1;
+						nextPendingBlocks[uPart] = 1;
 				}
-			} else
-				pcNextPendingBlks = NULL;
+			}
 
 			for (UINT i = 0; i < m_nPartCount; ++i)
 				if (m_abyPartStatus[i]) {
@@ -110,14 +109,12 @@ void CUpDownClient::DrawStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect,
 						colour = crBoth;
 					else if (m_eDownloadState == DS_DOWNLOADING && GetSessionDown() && m_nLastBlockOffset >= uBegin && m_nLastBlockOffset < uEnd)
 						colour = crPending;
-					else if (pcNextPendingBlks && pcNextPendingBlks[i])
+					else if (!nextPendingBlocks.empty() && nextPendingBlocks[i])
 						colour = crNextPending;
 					else
 						colour = crClientOnly;
 					s_StatusBar.FillRange(uBegin, uEnd, colour);
 				}
-
-			delete[] pcNextPendingBlks;
 		}
 	} else
 		ASSERT(0);
@@ -469,23 +466,21 @@ void CUpDownClient::ProcessFileInfo(CSafeMemFile &data, CPartFile *file)
 	// the file is shared by the remote client. If the file is shared, we know also that the file
 	// is complete and don't need to request the file status.
 	if (m_reqfile->GetPartCount() == 1) {
-		delete[] m_abyPartStatus;
-		m_abyPartStatus = NULL;
+		m_abyPartStatus.clear();
 		m_nPartCount = m_reqfile->GetPartCount();
-		m_abyPartStatus = new uint8[m_nPartCount];
-		memset(m_abyPartStatus, 1, m_nPartCount);
+		PartStatusOwnershipSeams::AssignPartStatus(m_abyPartStatus, m_nPartCount, 1u);
 		m_bCompleteSource = true;
 
 		if (thePrefs.GetDebugClientTCPLevel() > 0) {
 			int iNeeded = 0;
-			char *psz = new char[m_nPartCount + 1];
+			std::vector<char> displayBuffer;
+			VERIFY(PartStatusOwnershipSeams::TryBuildPendingPartOverlay(m_nPartCount + 1u, displayBuffer));
 			for (UINT i = 0; i < m_nPartCount; ++i) {
 				iNeeded += static_cast<int>(!m_reqfile->IsComplete(i));
-				psz[i] = m_abyPartStatus[i] ? '#' : '.';
+				displayBuffer[i] = m_abyPartStatus[i] ? '#' : '.';
 			}
-			psz[m_nPartCount] = '\0';
-			Debug(_T("  Parts=%u  %hs  Needed=%u\n"), m_nPartCount, psz, iNeeded);
-			delete[] psz;
+			displayBuffer[m_nPartCount] = '\0';
+			Debug(_T("  Parts=%u  %hs  Needed=%u\n"), m_nPartCount, displayBuffer.data(), iNeeded);
 		}
 		UpdateDisplayedInfo();
 		m_reqfile->UpdateAvailablePartsCount();
@@ -513,8 +508,7 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, CSafeMemFile &data, CPart
 	if (file->GetStatus() == PS_COMPLETE || file->GetStatus() == PS_COMPLETING)
 		return;
 
-	delete[] m_abyPartStatus;
-	m_abyPartStatus = NULL;
+	m_abyPartStatus.clear();
 
 	uint16 nED2KPartCount = data.ReadUInt16();
 	bool bPartsNeeded = m_bCompleteSource = !nED2KPartCount;
@@ -523,8 +517,7 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, CSafeMemFile &data, CPart
 		m_nPartCount = m_reqfile->GetPartCount();
 		if (!m_nPartCount)
 			return;
-		m_abyPartStatus = new uint8[m_nPartCount];
-		memset(m_abyPartStatus, 1, m_nPartCount);
+		PartStatusOwnershipSeams::AssignPartStatus(m_abyPartStatus, m_nPartCount, 1u);
 		if ((bUdpPacket ? thePrefs.GetDebugClientUDPLevel() : thePrefs.GetDebugClientTCPLevel()) > 0)
 			for (UINT i = 0; i < m_nPartCount; ++i)
 				iNeeded += static_cast<int>(!m_reqfile->IsComplete(i));
@@ -558,13 +551,11 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, CSafeMemFile &data, CPart
 		if (nPackedStatusByteCount != 0)
 			data.Read(packedStatusBytes.data(), static_cast<UINT>(nPackedStatusByteCount));
 
-		m_abyPartStatus = new uint8[m_nPartCount];
-		if (!TryDecodePartStatusBits(m_abyPartStatus, m_nPartCount, packedStatusBytes.data(), packedStatusBytes.size())) {
+		PartStatusOwnershipSeams::AssignPartStatus(m_abyPartStatus, m_nPartCount, 0u);
+		if (!TryDecodePartStatusBits(m_abyPartStatus.data(), m_nPartCount, packedStatusBytes.data(), packedStatusBytes.size())) {
 			CString strError;
 			strError.Format(_T("ProcessFileStatus - invalid part status decode parts=%u  %s"), m_nPartCount, (LPCTSTR)DbgGetFileInfo(m_reqfile->GetFileHash()));
-			delete[] m_abyPartStatus;
-			m_abyPartStatus = NULL;
-			m_nPartCount = 0;
+			PartStatusOwnershipSeams::ClearPartStatus(m_abyPartStatus, m_nPartCount);
 			throw strError;
 		}
 		for (UINT done = 0; done < m_nPartCount; ++done)
@@ -579,9 +570,8 @@ void CUpDownClient::ProcessFileStatus(bool bUdpPacket, CSafeMemFile &data, CPart
 		if (!TryGetPartStatusDisplayLength(m_nPartCount, &nDisplayLength))
 			throw CString(_T("ProcessFileStatus - invalid debug part status length"));
 
-		std::vector<TCHAR> partStatusDisplay(nDisplayLength, _T('\0'));
-		for (UINT i = 0; i < m_nPartCount; ++i)
-			partStatusDisplay[i] = m_abyPartStatus[i] ? _T('#') : _T('.');
+		std::vector<TCHAR> partStatusDisplay;
+		VERIFY(PartStatusOwnershipSeams::TryBuildPartStatusDisplay(m_abyPartStatus, partStatusDisplay));
 		Debug(_T("  Parts=%hu  %s  Needed=%i\n"), m_nPartCount, partStatusDisplay.data(), iNeeded);
 	}
 
@@ -716,8 +706,7 @@ void CUpDownClient::SetDownloadState(EDownloadState nNewState, LPCTSTR pszReason
 			m_AverageDDR_hist.RemoveAll();
 
 			if (nNewState == DS_NONE) {
-				delete[] m_abyPartStatus;
-				m_abyPartStatus = NULL;
+				m_abyPartStatus.clear();
 				m_nPartCount = 0;
 			}
 			if (socket && nNewState != DS_ERROR)

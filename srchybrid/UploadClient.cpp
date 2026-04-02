@@ -78,7 +78,7 @@ void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrec
 		s_UpStatusBar.SetHeight(rect.Height());
 		s_UpStatusBar.SetWidth(rect.Width());
 		s_UpStatusBar.Fill(crNeither);
-		if (!onlygreyrect && m_abyUpPartStatus)
+		if (!onlygreyrect && !m_abyUpPartStatus.empty())
 			for (UINT i = 0; i < m_nUpPartCount; ++i)
 				if (m_abyUpPartStatus[i])
 					s_UpStatusBar.FillRange(i * PARTSIZE, i * PARTSIZE + PARTSIZE, crBoth);
@@ -256,9 +256,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 
 bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqfile)
 {
-	delete[] m_abyUpPartStatus;
-	m_abyUpPartStatus = NULL;
-	m_nUpPartCount = 0;
+	PartStatusOwnershipSeams::ClearPartStatus(m_abyUpPartStatus, m_nUpPartCount);
 	m_nUpCompleteSourcesCount = 0;
 	if (GetExtendedRequestsVersion() == 0)
 		return true;
@@ -268,7 +266,7 @@ bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqf
 		m_nUpPartCount = tempreqfile->GetPartCount();
 		if (!m_nUpPartCount)
 			return false;
-		m_abyUpPartStatus = new uint8[m_nUpPartCount]{};
+		PartStatusOwnershipSeams::AssignPartStatus(m_abyUpPartStatus, m_nUpPartCount, 0u);
 	} else {
 		if (tempreqfile->GetED2KPartCount() != nED2KUpPartCount) {
 			//We already checked if we are talking about the same file. So if we get here, something really strange happened!
@@ -276,7 +274,7 @@ bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqf
 			return false;
 		}
 		m_nUpPartCount = tempreqfile->GetPartCount();
-		m_abyUpPartStatus = new uint8[m_nUpPartCount];
+		PartStatusOwnershipSeams::AssignPartStatus(m_abyUpPartStatus, m_nUpPartCount, 0u);
 		for (UINT done = 0; done < m_nUpPartCount;) {
 			uint8 toread = data.ReadUInt8();
 			for (UINT i = 0; i < 8; ++i) {
@@ -325,9 +323,7 @@ void CUpDownClient::SetUploadFileID(CKnownFile *newreqfile)
 		return;
 
 	// clear old status
-	delete[] m_abyUpPartStatus;
-	m_abyUpPartStatus = NULL;
-	m_nUpPartCount = 0;
+	PartStatusOwnershipSeams::ClearPartStatus(m_abyUpPartStatus, m_nUpPartCount);
 	m_nUpCompleteSourcesCount = 0;
 
 	if (newreqfile) {

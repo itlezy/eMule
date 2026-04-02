@@ -18,6 +18,7 @@
 #include "BarShader.h"
 #include "ClientStateDefs.h"
 #include "DisplayRefreshSeams.h"
+#include "PartStatusOwnershipSeams.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
 #include "ring.h"
@@ -285,8 +286,8 @@ public:
 	bool			ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqfile);
 	uint16			GetUpPartCount() const							{ return m_nUpPartCount; }
 	void			DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect, bool  bFlat) const;
-	bool			IsUpPartAvailable(UINT uPart) const				{ return m_abyUpPartStatus && uPart < m_nUpPartCount && m_abyUpPartStatus[uPart];	}
-	uint8*			GetUpPartStatus() const							{ return m_abyUpPartStatus; }
+	bool			IsUpPartAvailable(UINT uPart) const				{ return !m_abyUpPartStatus.empty() && uPart < m_nUpPartCount && m_abyUpPartStatus[uPart];	}
+	const uint8*	GetUpPartStatus() const							{ return PartStatusOwnershipSeams::GetRawStatusView(m_abyUpPartStatus); }
 	float			GetCombinedFilePrioAndCredit();
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -298,8 +299,8 @@ public:
 	void			SetDownloadState(EDownloadState nNewState, LPCTSTR pszReason = _T("Unspecified"));
 	DWORD			GetLastAskedTime(const CPartFile *pFile = NULL) const;
 	void			SetLastAskedTime();
-	bool			IsPartAvailable(UINT uPart) const				{ return m_abyPartStatus && uPart < m_nPartCount && m_abyPartStatus[uPart]; }
-	uint8*			GetPartStatus() const							{ return m_abyPartStatus; }
+	bool			IsPartAvailable(UINT uPart) const				{ return !m_abyPartStatus.empty() && uPart < m_nPartCount && m_abyPartStatus[uPart]; }
+	const uint8*	GetPartStatus() const							{ return PartStatusOwnershipSeams::GetRawStatusView(m_abyPartStatus); }
 	uint16			GetPartCount() const							{ return m_nPartCount; }
 	UINT			GetDownloadDatarate() const						{ return m_nDownDatarate; }
 	UINT			GetRemoteQueueRank() const						{ return m_nRemoteQueueRank; }
@@ -454,7 +455,7 @@ public:
 	CClientReqSocket *socket;
 	CClientCredits	*credits;
 	CFriend			*m_Friend;
-	uint8			*m_abyUpPartStatus;
+	std::vector<uint8> m_abyUpPartStatus;
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherRequests_list;
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherNoNeeded_list;
 	uint16			m_lastPartAsked;
@@ -585,7 +586,7 @@ protected:
 	//
 	CPartFile	*m_reqfile;
 	CAICHHash	*m_pReqFileAICHHash;
-	uint8		*m_abyPartStatus;
+	std::vector<uint8> m_abyPartStatus;
 	CString		m_strClientFilename;
 	uint64		m_nTransferredDown;
 	uint64		m_nCurSessionPayloadDown;

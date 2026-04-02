@@ -318,7 +318,7 @@ void CKnownFile::UpdatePartsInfo()
 	for (POSITION pos = m_ClientUploadList.GetHeadPosition(); pos != NULL;) {
 		CUpDownClient *cur_src = m_ClientUploadList.GetNext(pos);
 		//This could be a partfile that just completed. Many of these clients will not have this information.
-		if (cur_src->m_abyUpPartStatus && cur_src->GetUpPartCount() == GetPartCount()) {
+		if (cur_src->GetUpPartStatus() != NULL && cur_src->GetUpPartCount() == GetPartCount()) {
 			for (INT_PTR i = GetPartCount(); --i > 0;)
 				m_AvailPartFrequency[i] += static_cast<uint16>(cur_src->IsUpPartAvailable((UINT)i));
 

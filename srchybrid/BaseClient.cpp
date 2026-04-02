@@ -117,7 +117,7 @@ void CUpDownClient::Init()
 {
 	credits = NULL;
 	m_Friend = NULL;
-	m_abyUpPartStatus = NULL;
+	m_abyUpPartStatus.clear();
 	m_lastPartAsked = _UI16_MAX;
 	m_bAddNextConnect = false;
 
@@ -209,7 +209,7 @@ void CUpDownClient::Init()
 
 	m_pReqFileAICHHash = NULL;
 	m_cDownAsked = 0;
-	m_abyPartStatus = NULL;
+	m_abyPartStatus.clear();
 	m_nTransferredDown = 0;
 	m_nCurSessionPayloadDown = 0;
 	m_dwDownStartTime = 0;
@@ -305,11 +305,8 @@ CUpDownClient::~CUpDownClient()
 	free(m_pszUsername);
 	m_pszUsername = NULL;
 
-	delete[] m_abyPartStatus;
-	m_abyPartStatus = NULL;
-
-	delete[] m_abyUpPartStatus;
-	m_abyUpPartStatus = NULL;
+	m_abyPartStatus.clear();
+	m_abyUpPartStatus.clear();
 
 	//FlushSendBlocks(); - socket already is 0
 
@@ -2078,10 +2075,8 @@ void CUpDownClient::InfoPacketsReceived()
 
 void CUpDownClient::ResetFileStatusInfo()
 {
-	delete[] m_abyPartStatus;
-	m_abyPartStatus = NULL;
+	PartStatusOwnershipSeams::ClearPartStatus(m_abyPartStatus, m_nPartCount);
 	m_nRemoteQueueRank = 0;
-	m_nPartCount = 0;
 	m_strClientFilename.Empty();
 	m_bCompleteSource = false;
 	m_uFileRating = 0;

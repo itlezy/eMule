@@ -52,9 +52,8 @@ void CUrlClient::SetRequestFile(CPartFile *pReqFile)
 	CUpDownClient::SetRequestFile(pReqFile);
 	if (m_reqfile) {
 		m_nPartCount = m_reqfile->GetPartCount();
-		m_abyPartStatus = new uint8[m_nPartCount];
 		ASSERT(m_nPartCount);
-		memset(m_abyPartStatus, 1, m_nPartCount);
+		PartStatusOwnershipSeams::AssignPartStatus(m_abyPartStatus, m_nPartCount, 1u);
 		m_bCompleteSource = true;
 	}
 }
