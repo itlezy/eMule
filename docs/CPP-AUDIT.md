@@ -28,7 +28,7 @@ Completed bounded hardening chunks already landed on this branch:
 - **[DONE]** bounded `CPP_021` / `CPP_028` shared-file hashing and auto-rescan coordination hardening (`83e15b6`)
 - **[DONE]** bounded `CPP_028` socket sleep-poll cleanup for UDP resend and callback drain (`ae3d1da`)
 - **[DONE]** bounded `CPP_012` fixed-buffer formatting hardening (`165e809`)
-- **[DONE]** bounded `CPP_032` / `CPP_035` client-credits and collection exception/resource hardening (`313f880`)
+- **[DONE]** bounded `CPP_032` / `CPP_035` credits, collection, and listen-socket ownership hardening (`6a58bf6`)
 - **[DONE]** bounded `CPP_034` AICH hashset and part-selection numeric hardening (`bf0c827`)
 - **[DONE]** bounded `CPP_028` / `CPP_032` / `CPP_035` AICH maintenance hardening (`b9579cf`)
 - **[DONE]** bounded `CPP_035` / `CPP_036` / `CPP_038` client part-status ownership hardening (`c23f169`)
@@ -757,7 +757,7 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_032 — Exception Safety
 
-**Count:** 7+ remaining resource/exception sites; several high-risk packet and AICH maintenance paths already hardened
+**Count:** 5+ remaining resource/exception sites; several high-risk packet, AICH maintenance, and credits/collection paths already hardened
 **Severity:** High
 **Priority:** HIGH
 
@@ -766,7 +766,6 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 | File | Line | Pattern |
 |---|---|---|
 | EMSocket.cpp | 363 | `new char[nPacketBufferSize]` | Allocation still relies on surrounding caller cleanup and exception propagation |
-| Collection.cpp | 56, 119 | `new BYTE[...]` for author key ownership | Long-lived raw ownership remains manual |
 
 **Silent exception swallowing (`catch(...)`):**
 
@@ -774,7 +773,6 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 |---|---|---|
 | BaseClient.cpp | 2289 | `catch (...) { ASSERT(0); }` — silent in release |
 | DownloadClient.cpp | 1293 | `catch (...) { ASSERT(0); }` — exception discarded |
-| ListenSocket.cpp | 1744 | Minimal recovery around client parse path |
 | Collection.cpp | 267 | Text-write path still uses `catch (...) { ASSERT(0); }` |
 | KnownFile.cpp | 1438 | `catch (...)` remains in a hash/metadata path |
 
@@ -825,15 +823,14 @@ MFC window operations (SendMessage, Invalidate, SetItemText) must only be called
 
 ### CPP_035 — Resource Leaks
 
-**Count:** 3+ remaining leak / manual-lifetime sites
+**Count:** 2+ remaining leak / manual-lifetime sites
 **Severity:** High
 **Priority:** HIGH
 
 | Resource | File | Line | Issue |
 |---|---|---|---|
-| `HANDLE` | ClientCredits.cpp | 181, 364 | Raw `CreateFile` / `CloseHandle` sites still use manual handle lifetime |
-| `new` | Collection.cpp | 56, 119 | Author-key ownership is still manual raw allocation |
-| `catch(...)` recovery | ListenSocket.cpp | 1744 | Remaining exception path still relies on manual cleanup behavior |
+| `HANDLE` | KnownFile.h | 141 | Member `m_hRead` is still a raw Win32 handle without an owning RAII wrapper |
+| `new` | EMSocket.cpp | 363 | Pending packet buffer ownership is still manual and coupled to surrounding queue cleanup |
 
 **Status:** **[PARTIAL]**
 
