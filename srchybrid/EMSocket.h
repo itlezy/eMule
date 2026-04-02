@@ -39,7 +39,7 @@ public:
 	virtual void SendPacket(Packet *packet, bool controlpacket = true, uint32 actualPayloadSize = 0, bool bForceImmediateSend = false);
 	bool	IsConnected() const								{ return byConnected == EMS_CONNECTED; }
 	uint8	GetConState() const								{ return byConnected; }
-	void	SetConState(uint8 val)							{ sendLocker.Lock(); byConnected = val; sendLocker.Unlock(); }
+	void	SetConState(uint8 val)							{ CSingleLock lockSend(&sendLocker, TRUE); byConnected = val; }
 	virtual bool IsRawDataMode() const						{ return false; }
 	void	SetDownloadLimit(uint32 limit);
 	void	DisableDownloadLimit();
