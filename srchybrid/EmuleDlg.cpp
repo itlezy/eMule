@@ -516,8 +516,12 @@ BOOL CemuleDlg::OnInitDialog()
 	TrayMinimizeToTrayChange();
 
 	ShowTransferRate(true);
-	/** Start the local pipe API server only when the persisted runtime toggle allows it. */
-	if (thePrefs.IsPipeApiServerEnabled())
+	bool bStartPipeApiServer = thePrefs.IsPipeApiServerEnabled();
+#ifdef _DEBUG
+	/** Keep the local pipe API reachable in debug runs so automated stress tooling does not depend on a persisted UI toggle. */
+	bStartPipeApiServer = true;
+#endif
+	if (bStartPipeApiServer)
 		thePipeApiServer.Start();
 	searchwnd->UpdateCatTabs();
 

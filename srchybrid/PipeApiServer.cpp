@@ -2077,8 +2077,11 @@ void CPipeApiServer::RunWorker()
 			PIPE_API_BUFFER_SIZE,
 			0,
 			NULL);
-		if (hPipe == INVALID_HANDLE_VALUE)
+		if (hPipe == INVALID_HANDLE_VALUE) {
+			/** Surface pipe startup failures in the disk log so headless stress runs keep the OS error code. */
+			DebugLogError(_T("Pipe API server failed to create named pipe %ls: %s"), PIPE_API_NAME, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
 			return;
+		}
 
 		{
 			const std::lock_guard<std::mutex> pipeLock(m_pipeMutex);

@@ -49,6 +49,18 @@ param(
     [int]$ExtraStatsBurstsPerPoll = 0,
 
     [Parameter(Mandatory = $false)]
+    [int]$TransferChurnCycles = 0,
+
+    [Parameter(Mandatory = $false)]
+    [int]$TransfersPerChurnCycle = 3,
+
+    [Parameter(Mandatory = $false)]
+    [int]$TransferChurnPauseMs = 750,
+
+    [Parameter(Mandatory = $false)]
+    [int]$PipeWarmupSec = 12,
+
+    [Parameter(Mandatory = $false)]
     [int]$RemotePort = 4715,
 
     [Parameter(Mandatory = $false)]
@@ -156,6 +168,35 @@ function Stop-ListeningProcessByPort {
     return @($stoppedProcessIds)
 }
 
+function Stop-ProcessesByCommandLinePattern {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProcessName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$CommandPattern
+    )
+
+    $stoppedProcessIds = New-Object System.Collections.Generic.List[int]
+    $normalizedPattern = $CommandPattern.ToLowerInvariant()
+    foreach ($process in @(Get-CimInstance Win32_Process -Filter ("Name='{0}.exe'" -f $ProcessName) -ErrorAction SilentlyContinue)) {
+        $commandLine = [string]$process.CommandLine
+        if ([string]::IsNullOrWhiteSpace($commandLine)) {
+            continue
+        }
+
+        if ($commandLine.ToLowerInvariant().Contains($normalizedPattern)) {
+            try {
+                Stop-Process -Id ([int]$process.ProcessId) -Force -ErrorAction Stop
+                $stoppedProcessIds.Add([int]$process.ProcessId)
+            } catch {
+            }
+        }
+    }
+
+    return @($stoppedProcessIds)
+}
+
 function Set-IniValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -213,17 +254,54 @@ function Set-IniValue {
     Set-Content -LiteralPath $IniPath -Value $lines -Encoding ascii
 }
 
+function Set-IniValueEverywhere {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$IniPath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Key,
+
+        [Parameter(Mandatory = $true)]
+        [AllowEmptyString()]
+        [string]$Value
+    )
+
+    if (-not (Test-Path -LiteralPath $IniPath -PathType Leaf)) {
+        return
+    }
+
+    $lines = [System.Collections.Generic.List[string]]::new()
+    foreach ($line in (Get-Content -LiteralPath $IniPath)) {
+        if ($line -match ("^{0}=" -f [regex]::Escape($Key))) {
+            $lines.Add("$Key=$Value")
+        } else {
+            $lines.Add($line)
+        }
+    }
+
+    Set-Content -LiteralPath $IniPath -Value $lines -Encoding ascii
+}
+
 function Set-LiveSessionPreferences {
     param(
         [Parameter(Mandatory = $true)]
         [string]$PreferencesPath,
 
         [Parameter(Mandatory = $true)]
+        [string]$ProfileRoot,
+
+        [Parameter(Mandatory = $true)]
         [string]$BindInterfaceName
     )
 
+    $incomingDir = (Join-Path $ProfileRoot 'Incoming').TrimEnd('\') + '\'
+    $tempDir = (Join-Path $ProfileRoot 'Temp').TrimEnd('\') + '\'
     $eMuleValues = [ordered]@{
         AppVersion            = '0.72a.1 x64 DEBUG'
+        IncomingDir           = $incomingDir
+        TempDir               = $tempDir
+        TempDirs              = ''
         CreateCrashDump       = '2'
         BindInterface         = ''
         BindInterfaceName     = $BindInterfaceName
@@ -262,6 +340,15 @@ function Set-LiveSessionPreferences {
     }
 
     Set-IniValue -IniPath $PreferencesPath -Section 'Remote' -Key 'EnablePipeApiServer' -Value '1'
+    foreach ($globalEntry in @(
+        @{ Key = 'IncomingDir'; Value = $incomingDir },
+        @{ Key = 'TempDir'; Value = $tempDir },
+        @{ Key = 'TempDirs'; Value = '' },
+        @{ Key = 'BindInterfaceName'; Value = $BindInterfaceName },
+        @{ Key = 'EnablePipeApiServer'; Value = '1' }
+    )) {
+        Set-IniValueEverywhere -IniPath $PreferencesPath -Key $globalEntry.Key -Value $globalEntry.Value
+    }
 }
 
 function Start-RedirectedProcess {
@@ -285,18 +372,43 @@ function Start-RedirectedProcess {
         [hashtable]$Environment = @{}
     )
 
+    $previousEnvironment = @{}
+    foreach ($entry in $Environment.GetEnumerator()) {
+        $name = [string]$entry.Key
+        $previousEnvironment[$name] = [pscustomobject]@{
+            Exists = $null -ne [System.Environment]::GetEnvironmentVariable($name, 'Process')
+            Value = [System.Environment]::GetEnvironmentVariable($name, 'Process')
+        }
+        [System.Environment]::SetEnvironmentVariable($name, [string]$entry.Value, 'Process')
+    }
+
     $startProcessArgs = @{
         FilePath = $FilePath
         ArgumentList = $Arguments
         WorkingDirectory = $WorkingDirectory
         RedirectStandardOutput = $StdOutPath
         RedirectStandardError = $StdErrPath
-        Environment = $Environment
         PassThru = $true
         WindowStyle = 'Hidden'
     }
 
-    $process = Start-Process @startProcessArgs
+    <#*
+     * @brief Launch the redirected child after staging its environment in the current PowerShell process.
+     *
+     * Windows PowerShell does not expose Start-Process -Environment, so the child inherits these
+     * temporary process-scoped variables and the caller's environment is restored immediately after.
+     #>
+    try {
+        $process = Start-Process @startProcessArgs
+    } finally {
+        foreach ($entry in $previousEnvironment.GetEnumerator()) {
+            if ($entry.Value.Exists) {
+                [System.Environment]::SetEnvironmentVariable($entry.Key, [string]$entry.Value.Value, 'Process')
+            } else {
+                [System.Environment]::SetEnvironmentVariable($entry.Key, $null, 'Process')
+            }
+        }
+    }
     if ($null -eq $process) {
         throw "Failed to start '$FilePath'."
     }
@@ -386,6 +498,30 @@ function Wait-RemoteHealth {
     throw "Remote server did not report a connected pipe within $TimeoutSec seconds."
 }
 
+function Wait-NamedPipeAvailability {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$PipeName,
+
+        [Parameter(Mandatory = $true)]
+        [int]$TimeoutSec
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    while ((Get-Date) -lt $deadline) {
+        $pipeEntry = Get-ChildItem '\\.\pipe\' -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -eq $PipeName } |
+            Select-Object -First 1
+        if ($null -ne $pipeEntry) {
+            return $true
+        }
+
+        Start-Sleep -Milliseconds 500
+    }
+
+    throw "Named pipe '$PipeName' did not appear within $TimeoutSec seconds."
+}
+
 function Build-Ed2kLinkFromResult {
     param(
         [Parameter(Mandatory = $true)]
@@ -452,6 +588,75 @@ function Get-ConfiguredSearchQueries {
     return @($queries)
 }
 
+function New-SyntheticEd2kLinks {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$Count
+    )
+
+    if ($Count -le 0) {
+        return @()
+    }
+
+    $names = @(
+        'ubuntu 24.04 LTS [desktop]-x64.iso',
+        'odd__name__[test]__(sample)!! 001.bin',
+        'semi;colon,comma plus+equals=.avi',
+        'many   spaces   and---dashes.txt',
+        'parentheses_(demo)_{alpha}_v1.2.zip',
+        'mix.of.dots...and__underscores__2026.rar',
+        'quote''s sample & reference copy.mp3',
+        'hash-tag #release [beta] final!.7z'
+    )
+    $hashes = @(
+        '0123456789abcdeffedcba9876543210',
+        '11111111111111112222222222222222',
+        '33333333333333334444444444444444',
+        '55555555555555556666666666666666',
+        '77777777777777778888888888888888',
+        '9999999999999999aaaabbbbccccdddd',
+        'deadbeefdeadbeefcafebabec001d00d',
+        'f0e1d2c3b4a5968778695a4bc3d2e1f0'
+    )
+
+    $links = New-Object System.Collections.Generic.List[string]
+    for ($index = 0; $index -lt $Count; ++$index) {
+        $templateIndex = $index % $names.Count
+        $fileName = '{0} [{1:00}]' -f $names[$templateIndex], ($index + 1)
+        $escapedName = [System.Uri]::EscapeDataString($fileName)
+        $fileSize = 1048576 + ($index * 131072)
+        $links.Add("ed2k://|file|$escapedName|$fileSize|$($hashes[$templateIndex])|/")
+    }
+
+    return @($links)
+}
+
+function Get-SuccessfulTransferHashes {
+    param(
+        [Parameter(Mandatory = $false)]
+        [object]$MutationResponse
+    )
+
+    if ($null -eq $MutationResponse -or -not ($MutationResponse.PSObject.Properties.Name -contains 'results')) {
+        return @()
+    }
+
+    $hashes = New-Object System.Collections.Generic.List[string]
+    foreach ($result in @($MutationResponse.results)) {
+        if ($null -eq $result) {
+            continue
+        }
+
+        if (($result.PSObject.Properties.Name -contains 'ok') -and $result.ok -and
+            ($result.PSObject.Properties.Name -contains 'hash') -and
+            -not [string]::IsNullOrWhiteSpace([string]$result.hash)) {
+            $hashes.Add([string]$result.hash)
+        }
+    }
+
+    return @($hashes)
+}
+
 function Get-SampledTransferHashes {
     param(
         [Parameter(Mandatory = $false)]
@@ -487,6 +692,142 @@ function Get-SampledTransferHashes {
     }
 
     return @($hashes)
+}
+
+function Invoke-TransferMutation {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseUri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('pause', 'resume', 'stop', 'delete')]
+        [string]$Action,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Hashes,
+
+        [Parameter(Mandatory = $false)]
+        [bool]$DeleteFiles = $false
+    )
+
+    if ($null -eq $Hashes -or $Hashes.Count -eq 0) {
+        return $null
+    }
+
+    $body = [ordered]@{
+        hashes = @($Hashes)
+    }
+    if ($Action -eq 'delete') {
+        $body.deleteFiles = $DeleteFiles
+    }
+
+    return Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/transfers/$Action" -Token $Token -Body $body
+}
+
+function Invoke-TransferChurnCycle {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$BaseUri,
+
+        [Parameter(Mandatory = $true)]
+        [string]$Token,
+
+        [Parameter(Mandatory = $false)]
+        [string]$PrimaryLink,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$SyntheticLinks,
+
+        [Parameter(Mandatory = $true)]
+        [int]$LinksPerCycle,
+
+        [Parameter(Mandatory = $true)]
+        [int]$CycleIndex,
+
+        [Parameter(Mandatory = $true)]
+        [int]$PauseMs
+    )
+
+    $linkBatch = New-Object System.Collections.Generic.List[string]
+    if (-not [string]::IsNullOrWhiteSpace($PrimaryLink)) {
+        $linkBatch.Add($PrimaryLink)
+    }
+
+    for ($linkIndex = 0; $linkBatch.Count -lt $LinksPerCycle -and $linkIndex -lt $SyntheticLinks.Count; ++$linkIndex) {
+        $syntheticIndex = ($CycleIndex + $linkIndex) % $SyntheticLinks.Count
+        $linkBatch.Add($SyntheticLinks[$syntheticIndex])
+    }
+
+    if ($linkBatch.Count -eq 0) {
+        return [pscustomobject][ordered]@{
+            links = @()
+            add_result = $null
+            added_hashes = @()
+            pause_result = $null
+            resume_result = $null
+            stop_result = $null
+            delete_result = $null
+            transfers_after_add = $null
+            transfers_after_delete = $null
+            errors = @('no links were available for transfer churn')
+        }
+    }
+
+    $errors = New-Object System.Collections.Generic.List[string]
+    $addResult = $null
+    $addedHashes = @()
+    $pauseResult = $null
+    $resumeResult = $null
+    $stopResult = $null
+    $deleteResult = $null
+    $transfersAfterAdd = $null
+    $transfersAfterDelete = $null
+
+    try {
+        $addResult = Invoke-RemoteJson -Method Post -Uri "$BaseUri/api/v2/transfers/add" -Token $Token -Body @{
+            links = @($linkBatch.ToArray())
+        }
+        $addedHashes = @(Get-SuccessfulTransferHashes -MutationResponse $addResult)
+        $transfersAfterAdd = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+
+        if ($addedHashes.Count -gt 0) {
+            if ($PauseMs -gt 0) {
+                Start-Sleep -Milliseconds $PauseMs
+            }
+            $pauseResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'pause' -Hashes $addedHashes
+            if ($PauseMs -gt 0) {
+                Start-Sleep -Milliseconds $PauseMs
+            }
+            $resumeResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'resume' -Hashes $addedHashes
+            if ($PauseMs -gt 0) {
+                Start-Sleep -Milliseconds $PauseMs
+            }
+            $stopResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'stop' -Hashes $addedHashes
+            if ($PauseMs -gt 0) {
+                Start-Sleep -Milliseconds $PauseMs
+            }
+            $deleteResult = Invoke-TransferMutation -BaseUri $BaseUri -Token $Token -Action 'delete' -Hashes $addedHashes -DeleteFiles $true
+            $transfersAfterDelete = Invoke-RemoteJson -Method Get -Uri "$BaseUri/api/v2/transfers" -Token $Token
+        }
+    } catch {
+        $errors.Add($_.Exception.Message)
+    }
+
+    return [pscustomobject][ordered]@{
+        links = @($linkBatch.ToArray())
+        add_result = $addResult
+        added_hashes = @($addedHashes)
+        pause_result = $pauseResult
+        resume_result = $resumeResult
+        stop_result = $stopResult
+        delete_result = $deleteResult
+        transfers_after_add = $transfersAfterAdd
+        transfers_after_delete = $transfersAfterDelete
+        errors = @($errors)
+    }
 }
 
 function Invoke-SearchCycle {
@@ -771,10 +1112,11 @@ if (-not (Test-Path -LiteralPath $remoteEntryPoint -PathType Leaf)) {
     throw "Remote entry point '$remoteEntryPoint' does not exist."
 }
 
-Set-LiveSessionPreferences -PreferencesPath $preferencesPath -BindInterfaceName $BindInterfaceName
+Set-LiveSessionPreferences -PreferencesPath $preferencesPath -ProfileRoot $profileRoot -BindInterfaceName $BindInterfaceName
 
 $stoppedEmuleProcessId = Stop-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
 $stoppedRemoteProcessIds = Stop-ListeningProcessByPort -Port $RemotePort
+$stoppedRemoteSidecarProcessIds = Stop-ProcessesByCommandLinePattern -ProcessName 'node' -CommandPattern $remoteEntryPoint
 
 $manifest = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
@@ -794,9 +1136,14 @@ $manifest = [ordered]@{
     transfer_probe_count = $TransferProbeCount
     upload_probe_count = $UploadProbeCount
     extra_stats_bursts_per_poll = $ExtraStatsBurstsPerPoll
+    transfer_churn_cycles = $TransferChurnCycles
+    transfers_per_churn_cycle = $TransfersPerChurnCycle
+    transfer_churn_pause_ms = $TransferChurnPauseMs
+    pipe_warmup_sec = $PipeWarmupSec
     remote_port = $RemotePort
     stopped_existing_emule_process_id = $stoppedEmuleProcessId
     stopped_existing_remote_process_ids = @($stoppedRemoteProcessIds)
+    stopped_existing_remote_sidecar_process_ids = @($stoppedRemoteSidecarProcessIds)
     launch_status = 'starting'
 }
 $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
@@ -814,37 +1161,52 @@ if ([string]::IsNullOrWhiteSpace($nodePath)) {
     throw 'Node.js was not found on PATH.'
 }
 
-$remoteHandle = Start-RedirectedProcess -FilePath $nodePath -Arguments @($remoteEntryPoint) -WorkingDirectory $remoteRoot -StdOutPath $remoteStdOutPath -StdErrPath $remoteStdErrPath -Environment @{
-    EMULE_REMOTE_HOST = '127.0.0.1'
-    EMULE_REMOTE_PORT = $RemotePort.ToString()
-    EMULE_REMOTE_TOKEN = $RemoteToken
-    EMULE_REMOTE_TIMEOUT_MS = '5000'
-    EMULE_REMOTE_RECONNECT_MS = '1000'
-}
-
 $manifest.process_id = $emuleProcess.Id
-$manifest.remote_process_id = $remoteHandle.Process.Id
-$manifest.launch_status = 'running'
+$manifest.launch_status = 'waiting_for_pipe'
 $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
-
-$health = Wait-RemoteHealth -BaseUri $baseUri -TimeoutSec 90
-$fallbackLink = Get-FallbackEd2kLink -ConfigDir $configDir
-$configuredSearchQueries = Get-ConfiguredSearchQueries -PrimaryQuery $SearchQuery -AdditionalQueries $StressQueries
 
 $serversStatus = $null
 $kadStatus = $null
+$health = $null
+$fallbackLink = $null
+$configuredSearchQueries = $null
 $searchSession = $null
 $searchSnapshot = $null
 $selectedDownloadLink = $null
 $transferAddResult = $null
+$syntheticLinks = @(New-SyntheticEd2kLinks -Count ([Math]::Max($TransfersPerChurnCycle * 2, 8)))
+$transferChurnHistory = New-Object System.Collections.Generic.List[object]
+$completedTransferChurnCycles = 0
 $dumpPath = $null
 $freezeReason = $null
 $consecutiveApiFailures = 0
 $consecutiveNonResponding = 0
 $samples = New-Object System.Collections.Generic.List[object]
 $searchCycles = New-Object System.Collections.Generic.List[object]
+$remoteHandle = $null
+$sessionFailure = $null
+$sessionFailureDetail = $null
 
 try {
+    Wait-NamedPipeAvailability -PipeName 'emule-api' -TimeoutSec 60
+    if ($PipeWarmupSec -gt 0) {
+        Start-Sleep -Seconds $PipeWarmupSec
+    }
+    $remoteHandle = Start-RedirectedProcess -FilePath $nodePath -Arguments @($remoteEntryPoint) -WorkingDirectory $remoteRoot -StdOutPath $remoteStdOutPath -StdErrPath $remoteStdErrPath -Environment @{
+        EMULE_REMOTE_HOST = '127.0.0.1'
+        EMULE_REMOTE_PORT = $RemotePort.ToString()
+        EMULE_REMOTE_TOKEN = $RemoteToken
+        EMULE_REMOTE_TIMEOUT_MS = '5000'
+        EMULE_REMOTE_RECONNECT_MS = '1000'
+    }
+    $manifest.remote_process_id = $remoteHandle.Process.Id
+    $manifest.launch_status = 'running'
+    $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+
+    $health = Wait-RemoteHealth -BaseUri $baseUri -TimeoutSec 90
+    $fallbackLink = Get-FallbackEd2kLink -ConfigDir $configDir
+    $configuredSearchQueries = @(Get-ConfiguredSearchQueries -PrimaryQuery $SearchQuery -AdditionalQueries $StressQueries)
+
     try {
         $serversStatus = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/servers/connect" -Token $RemoteToken -Body @{}
     } catch {
@@ -906,10 +1268,21 @@ try {
         $transfers = $null
         $recentLog = $null
         $stressProbe = $null
+        $transferChurn = $null
+        $transferChurnError = $null
         $apiError = $null
         $apiErrorDetail = $null
         $apiStartedAt = Get-Date
         try {
+            if ($completedTransferChurnCycles -lt $TransferChurnCycles) {
+                $transferChurn = Invoke-TransferChurnCycle -BaseUri $baseUri -Token $RemoteToken -PrimaryLink $selectedDownloadLink -SyntheticLinks $syntheticLinks -LinksPerCycle $TransfersPerChurnCycle -CycleIndex $completedTransferChurnCycles -PauseMs $TransferChurnPauseMs
+                $transferChurnHistory.Add($transferChurn)
+                $completedTransferChurnCycles += 1
+                $transferChurnErrors = @($transferChurn.errors)
+                if ($transferChurnErrors.Count -gt 0) {
+                    $transferChurnError = ($transferChurnErrors -join '; ')
+                }
+            }
             $stressProbe = Invoke-StressProbe -BaseUri $baseUri -Token $RemoteToken -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll
             $stats = $stressProbe.stats
             $transfers = $stressProbe.transfers
@@ -933,6 +1306,8 @@ try {
             api_duration_ms = $apiDurationMs
             api_error = $apiError
             api_error_detail = $apiErrorDetail
+            transfer_churn = $transferChurn
+            transfer_churn_error = $transferChurnError
             stats = $stats
             transfers = $transfers
             recent_log = $recentLog
@@ -960,6 +1335,9 @@ try {
             $dumpPath = Save-HangDump -ProcessId $runningProcess.Id -DumpPath $dumpPath
         }
     }
+} catch {
+    $sessionFailure = $_.Exception.Message
+    $sessionFailureDetail = $_ | Out-String
 } finally {
     if (-not $KeepRunning) {
         $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
@@ -981,7 +1359,9 @@ try {
         }
     }
 
-    Stop-RedirectedProcess -Handle $remoteHandle
+    if ($null -ne $remoteHandle) {
+        Stop-RedirectedProcess -Handle $remoteHandle
+    }
 }
 
 $finalLogSnapshot = Get-LogSnapshot -LogDir $logDir
@@ -1002,17 +1382,21 @@ $summary = [ordered]@{
     artifact_dir = $artifactDir
     profile_root = $profileRoot
     emule_process_id = $emuleProcess.Id
-    remote_process_id = $remoteHandle.Process.Id
+    remote_process_id = if ($null -ne $remoteHandle) { $remoteHandle.Process.Id } else { $null }
     remote_health = $health
     server_connect = $serversStatus
     kad_connect = $kadStatus
     search_session = $searchSession
     search_cycles = @($searchCycles.ToArray())
     selected_download_link = $selectedDownloadLink
+    synthetic_links = @($syntheticLinks)
     transfer_add_result = $transferAddResult
+    transfer_churn_cycles = @($transferChurnHistory.ToArray())
     freeze_reason = $freezeReason
     dump_path = $dumpPath
     sample_count = $samples.Count
+    session_failure = $sessionFailure
+    session_failure_detail = $sessionFailureDetail
     finished_at = (Get-Date).ToString('o')
 }
 $summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -Encoding utf8
@@ -1022,11 +1406,21 @@ $summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -En
     "profile_root: $profileRoot"
     "search_query: $SearchQuery"
     "search_cycle_count: $SearchCycleCount"
+    "transfer_churn_cycles: $TransferChurnCycles"
+    "transfers_per_churn_cycle: $TransfersPerChurnCycle"
     "search_session: $searchSessionId"
     "selected_download_link: $selectedDownloadLink"
     "freeze_reason: $freezeReason"
     "dump_path: $dumpPath"
     "sample_count: $($samples.Count)"
+    "session_failure: $sessionFailure"
 ) | Set-Content -LiteralPath $summaryPath -Encoding utf8
 
 Write-Output "Pipe live session artifact directory: $artifactDir"
+if (-not [string]::IsNullOrWhiteSpace($sessionFailure)) {
+    <#*
+     * @brief Surface the recorded failure after artifacts are flushed so automation can fail fast without losing logs.
+     #>
+    Write-Error $sessionFailure
+    exit 1
+}
