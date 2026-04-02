@@ -43,6 +43,8 @@ protected:
 
 private:
 	bool ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode);
+	void MaybeSendOracleSearchProbe();
+	void LogOracleSocketEvent(LPCTSTR pszEvent, uint8 opcode = 0, uint32 size = 0, uint8 protocol = 0) const;
 	void SetConnectionState(int newstate);
 
 	CServerConnect *serverconnect;
@@ -52,4 +54,7 @@ private:
 	bool m_bIsDeleting;	// true: socket is already in deletion phase, don't destroy it in ::StopConnectionTry
 	bool m_bStartNewMessageLog;
 	bool m_bManualSingleConnect;
+	bool m_bOracleProbeSearchSent;
+	DWORD m_dwOracleTraceId;
+	DWORD m_dwOracleProbeSearchSentAtTick;
 };

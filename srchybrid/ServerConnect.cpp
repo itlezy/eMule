@@ -124,6 +124,19 @@ void CServerConnect::ConnectToServer(CServer *server, bool multiconnect, bool bN
 	singleconnecting = !multiconnect;
 	theApp.emuledlg->ShowConnectionState();
 
+	if (thePrefs.GetVerbose()) {
+		DebugLog(
+			_T("Oracle ED2K ConnectToServer server=%s:%u multiconnect=%u noCrypt=%u triedCrypt=%u obfPort=%u tcpFlags=0x%08x udpFlags=0x%08x"),
+			server->GetAddress(),
+			server->GetPort(),
+			static_cast<UINT>(multiconnect),
+			static_cast<UINT>(bNoCrypt),
+			static_cast<UINT>(server->TriedCrypt()),
+			server->GetObfuscationPortTCP(),
+			server->GetTCPFlags(),
+			server->GetUDPFlags());
+	}
+
 	CServerSocket *newsocket = new CServerSocket(this, !multiconnect);
 	m_lstOpenSockets.AddTail((void*)newsocket);
 	newsocket->Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT, thePrefs.GetBindAddr());

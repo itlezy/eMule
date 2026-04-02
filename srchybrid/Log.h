@@ -88,3 +88,7 @@ protected:
 
 extern CLogFile theLog;
 extern CLogFile theVerboseLog;
+extern CLogFile theOracleUdpDumpLog;
+
+void OracleUdpDump(LPCTSTR pszDirection, LPCTSTR pszFamily, uint32 dwIP, uint16 nPort, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata = NULL, const BYTE *pDecodedPayload = NULL, UINT uDecodedPayloadLen = 0);
+void OracleUdpDumpPeerLabel(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata = NULL, const BYTE *pDecodedPayload = NULL, UINT uDecodedPayloadLen = 0);

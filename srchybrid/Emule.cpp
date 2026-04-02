@@ -93,6 +93,7 @@ static char THIS_FILE[] = __FILE__;
 
 CLogFile theLog;
 CLogFile theVerboseLog;
+CLogFile theOracleUdpDumpLog;
 bool g_bLowColorDesktop = false;
 bool g_bGdiPlusInstalled = false;
 
@@ -535,10 +536,13 @@ BOOL CemuleApp::InitInstance()
 #endif
 	VERIFY(theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")));
 	VERIFY(theVerboseLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Verbose.log")));
+	const CString strOracleUdpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("oracle-udp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
+	VERIFY(theOracleUdpDumpLog.SetFilePath(strOracleUdpDumpPath));
 	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theLog.SetFileFormat(thePrefs.GetLogFileFormat());
 	theVerboseLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theVerboseLog.SetFileFormat(thePrefs.GetLogFileFormat());
+	theOracleUdpDumpLog.SetFileFormat(Utf8);
 	if (thePrefs.GetLog2Disk()) {
 		theLog.Open();
 		theLog.Log(_T("\r\n"));
@@ -547,7 +551,9 @@ BOOL CemuleApp::InitInstance()
 		theVerboseLog.Open();
 		theVerboseLog.Log(_T("\r\n"));
 	}
+	VERIFY(theOracleUdpDumpLog.Open());
 	Log(_T("Starting eMule v%s"), (LPCTSTR)m_strCurVersionLong);
+	Log(_T("Oracle local paths: config=%s logs=%s profile=%s"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_CONFIGDIR, false), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_LOGDIR, false), m_pszProfileName);
 
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 

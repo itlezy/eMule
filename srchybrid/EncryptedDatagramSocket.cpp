@@ -288,7 +288,12 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen,
 uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen, const uchar *pachClientHashOrKadID, bool bKad, uint32 nReceiverVerifyKey, uint32 nSenderVerifyKey)
 {
 	ASSERT(theApp.GetPublicIP() != 0 || bKad);
-	ASSERT(thePrefs.IsClientCryptLayerSupported());
+	// Release builds already continue through this path without the debug assert.
+	// For plaintext-only parity runs, keep the debug oracle alive and log the
+	// unexpected send-side crypt request instead of aborting before we can trace
+	// the surrounding Kad behavior.
+	if (!thePrefs.IsClientCryptLayerSupported())
+		DebugLogWarning(_T("Oracle parity: EncryptSendClient entered while client crypt support is disabled (bKad=%u, receiverKey=%u, senderKey=%u)"), static_cast<UINT>(bKad), nReceiverVerifyKey, nSenderVerifyKey);
 	ASSERT(pachClientHashOrKadID != NULL || nReceiverVerifyKey != 0);
 	ASSERT((nReceiverVerifyKey == 0 && nSenderVerifyKey == 0) || bKad);
 

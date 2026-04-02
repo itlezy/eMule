@@ -57,6 +57,7 @@ their client on the eMule forum.
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/utils/KadClientSearcher.h"
 #include "kademlia/utils/LookupHistory.h"
+#include "kademlia/utils/OracleTrace.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -67,6 +68,63 @@ static char THIS_FILE[] = __FILE__;
 using namespace Kademlia;
 
 //void DebugSend(LPCTSTR pszMsg, uint32 uIP, uint16 uUDPPort);
+
+namespace
+{
+	bool TryReadOracleEnv(LPCWSTR pszName, CStringW &sValue)
+	{
+		wchar_t szBuffer[128] = {};
+		DWORD dwLen = ::GetEnvironmentVariableW(pszName, szBuffer, _countof(szBuffer));
+		if (dwLen == 0 || dwLen >= _countof(szBuffer))
+			return false;
+		sValue = szBuffer;
+		sValue.Trim();
+		return !sValue.IsEmpty();
+	}
+
+	bool TryParseOracleHex128(LPCWSTR pszName, CUInt128 &uValue)
+	{
+		CStringW sHex;
+		if (!TryReadOracleEnv(pszName, sHex) || sHex.GetLength() != 32)
+			return false;
+
+		byte byValue[16] = {};
+		for (int i = 0; i < 16; ++i) {
+			const wchar_t chHigh = sHex[i * 2];
+			const wchar_t chLow = sHex[i * 2 + 1];
+			const int iHigh = iswdigit(chHigh) ? (chHigh - L'0') : (towlower(chHigh) >= L'a' && towlower(chHigh) <= L'f' ? towlower(chHigh) - L'a' + 10 : -1);
+			const int iLow = iswdigit(chLow) ? (chLow - L'0') : (towlower(chLow) >= L'a' && towlower(chLow) <= L'f' ? towlower(chLow) - L'a' + 10 : -1);
+			if (iHigh < 0 || iLow < 0)
+				return false;
+			byValue[i] = static_cast<byte>((iHigh << 4) | iLow);
+		}
+
+		uValue.SetValueBE(byValue);
+		return true;
+	}
+
+	uint16 GetOracleSourceStartPosition()
+	{
+		CStringW sValue;
+		if (!TryReadOracleEnv(L"EMULE_ORACLE_SOURCE_START_POSITION", sValue))
+			return 0;
+		return static_cast<uint16>(min(_wtol(sValue), 0x7FFF));
+	}
+
+	bool TryGetOracleSyntheticSourceSize(const CUInt128 &uTarget, uint64 &uFileSize)
+	{
+		CUInt128 uSyntheticTarget;
+		if (!TryParseOracleHex128(L"EMULE_ORACLE_SOURCE_TARGET", uSyntheticTarget) || uSyntheticTarget != uTarget)
+			return false;
+
+		CStringW sValue;
+		if (!TryReadOracleEnv(L"EMULE_ORACLE_SOURCE_FILE_SIZE", sValue))
+			return false;
+
+		uFileSize = _wcstoui64(sValue, NULL, 10);
+		return uFileSize > 0;
+	}
+}
 
 CSearch::CSearch()
 	: m_bStoping()
@@ -497,16 +555,29 @@ void CSearch::StorePacket()
 				uchar ucharFileid[MDX_DIGEST_SIZE];
 				m_uTarget.ToByteArray(ucharFileid);
 				CKnownFile *pFile = theApp.downloadqueue->GetFileByID(ucharFileid);
-				if (!pFile) {
+				uint64 uFileSize = 0;
+				if (pFile != NULL)
+					uFileSize = pFile->GetFileSize();
+				else if (!TryGetOracleSyntheticSourceSize(m_uTarget, uFileSize)) {
 					PrepareToStop();
 					break;
 				}
-				// JOHNTODO -- Add start position
-				// Start Position range (0x0 to 0x7FFF)
-				m_pfileSearchTerms.WriteUInt16(0);
-				m_pfileSearchTerms.WriteUInt64(pFile->GetFileSize());
+				const uint16 uStartPosition = GetOracleSourceStartPosition();
+				m_pfileSearchTerms.WriteUInt16(uStartPosition);
+				m_pfileSearchTerms.WriteUInt64(uFileSize);
 				if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 					DebugSend("KADEMLIA2_SEARCH_SOURCE_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
+				{
+					const bool bNodeIdCrypt = pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA;
+					CStringA sFields;
+					sFields.Format("to=%s target=%s start_position=%u file_size=%llu transport=%s"
+						, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+						, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+						, uStartPosition
+						, static_cast<unsigned long long>(uFileSize)
+						, bNodeIdCrypt ? "obfuscated" : "plaintext");
+					OracleTrace::Append("search_source_req_out", sFields);
+				}
 				if (pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) {
 					CUInt128 uClientID = pFromContact->GetClientID();
 					CKademlia::GetUDPListener()->SendPacket(&m_pfileSearchTerms, KADEMLIA2_SEARCH_SOURCE_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
@@ -693,6 +764,19 @@ void CSearch::StorePacket()
 
 			listTag.push_back(new CKadTagUInt8(TAG_ENCRYPTION, CKademlia::GetPrefs()->GetMyConnectOptions(true, true)));
 
+			{
+				CStringA sFields;
+				sFields.Format("contact=%s contact_version=%u target=%s publish_identity=%s tag_count=%u tags=%s firewalled=%d"
+					, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+					, pFromContact->GetVersion()
+					, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+					, (LPCSTR)OracleTrace::Hex128(uID)
+					, static_cast<unsigned>(listTag.size())
+					, (LPCSTR)OracleTrace::TagSummary(listTag)
+					, theApp.IsFirewalled() ? 1 : 0);
+				OracleTrace::Append("search_storefile_prepare", sFields);
+			}
+
 			// Send packet
 			CKademlia::GetUDPListener()->SendPublishSourcePacket(pFromContact, m_uTarget, uID, listTag);
 			// Inc total request answers
@@ -740,6 +824,17 @@ void CSearch::StorePacket()
 				byIO.Seek(16);
 				byIO.WriteUInt16(iPacketCount);
 				byIO.Seek(current_pos);
+
+				{
+					CStringA sFields;
+					sFields.Format("contact=%s contact_version=%u target=%s packet_file_count=%u payload_len=%u"
+						, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+						, pFromContact->GetVersion()
+						, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+						, iPacketCount
+						, current_pos);
+					OracleTrace::Append("search_storekeyword_prepare", sFields);
+				}
 
 				// Send packet
 				if (pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) {

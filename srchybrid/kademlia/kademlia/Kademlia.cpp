@@ -35,11 +35,13 @@ their client on the eMule forum.
 #include "opcodes.h"
 #include "Log.h"
 #include "MD4.h"
+#include "SafeFile.h"
 #include "StringConversion.h"
 #include "kademliawnd.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/defines.h"
 #include "kademlia/kademlia/Prefs.h"
+#include "kademlia/kademlia/Search.h"
 #include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/kademlia/Indexed.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -48,6 +50,7 @@ their client on the eMule forum.
 #include "kademlia/routing/contact.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
+#include "kademlia/utils/OracleTrace.h"
 #include "kademlia/kademlia/tag.h"
 
 #ifdef _DEBUG
@@ -57,6 +60,78 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 using namespace Kademlia;
+
+namespace
+{
+	bool TryReadOracleEnv(LPCWSTR pszName, CStringW &sValue)
+	{
+		wchar_t szBuffer[128] = {};
+		DWORD dwLen = ::GetEnvironmentVariableW(pszName, szBuffer, _countof(szBuffer));
+		if (dwLen == 0 || dwLen >= _countof(szBuffer))
+			return false;
+		sValue = szBuffer;
+		sValue.Trim();
+		return !sValue.IsEmpty();
+	}
+
+	bool TryParseOracleHex128(LPCWSTR pszName, CUInt128 &uValue)
+	{
+		CStringW sHex;
+		if (!TryReadOracleEnv(pszName, sHex) || sHex.GetLength() != 32)
+			return false;
+
+		byte byValue[16] = {};
+		for (int i = 0; i < 16; ++i) {
+			const wchar_t chHigh = sHex[i * 2];
+			const wchar_t chLow = sHex[i * 2 + 1];
+			const int iHigh = iswdigit(chHigh) ? (chHigh - L'0') : (towlower(chHigh) >= L'a' && towlower(chHigh) <= L'f' ? towlower(chHigh) - L'a' + 10 : -1);
+			const int iLow = iswdigit(chLow) ? (chLow - L'0') : (towlower(chLow) >= L'a' && towlower(chLow) <= L'f' ? towlower(chLow) - L'a' + 10 : -1);
+			if (iHigh < 0 || iLow < 0)
+				return false;
+			byValue[i] = static_cast<byte>((iHigh << 4) | iLow);
+		}
+
+		uValue.SetValueBE(byValue);
+		return true;
+	}
+
+	bool TryParseOracleIPv4(LPCWSTR pszName, uint32 &uIP)
+	{
+		CStringW sValue;
+		if (!TryReadOracleEnv(pszName, sValue))
+			return false;
+
+		unsigned int uA = 0;
+		unsigned int uB = 0;
+		unsigned int uC = 0;
+		unsigned int uD = 0;
+		if (swscanf_s(sValue, L"%u.%u.%u.%u", &uA, &uB, &uC, &uD) != 4)
+			return false;
+		if (uA > 255 || uB > 255 || uC > 255 || uD > 255)
+			return false;
+
+		uIP = (uA << 24) | (uB << 16) | (uC << 8) | uD;
+		return true;
+	}
+
+	bool TryReadOracleUInt16(LPCWSTR pszName, uint16 &uValue)
+	{
+		CStringW sValue;
+		if (!TryReadOracleEnv(pszName, sValue))
+			return false;
+		uValue = static_cast<uint16>(min(_wtol(sValue), 0xFFFF));
+		return true;
+	}
+
+	bool TryReadOracleUInt64(LPCWSTR pszName, uint64 &uValue)
+	{
+		CStringW sValue;
+		if (!TryReadOracleEnv(pszName, sValue))
+			return false;
+		uValue = _wcstoui64(sValue, NULL, 10);
+		return uValue > 0;
+	}
+}
 
 CKademlia	*CKademlia::m_pInstance = NULL;
 EventMap	CKademlia::m_mapEvents;
@@ -111,8 +186,9 @@ void CKademlia::Start(CPrefs *pPrefs)
 		time_t tNow = time(NULL);
 		// Init jump start timer.
 		m_tNextSearchJumpStart = tNow;
-		// Force a FindNodeComplete within the first 3 minutes.
-		m_tNextSelfLookup = tNow + MIN2S(3);
+		// Start the initial self lookup immediately so Kad publishing can unlock
+		// during the first live startup window instead of idling for 3 minutes.
+		m_tNextSelfLookup = tNow;
 		// Init status timer.
 		m_tStatusUpdate = tNow;
 		// Init big timer for Zones
@@ -195,6 +271,9 @@ void CKademlia::Stop()
 
 void CKademlia::Process()
 {
+	static bool s_bOracleDirectSourceSent = false;
+	static bool s_bOracleSyntheticSourceStarted = false;
+
 	if (m_pInstance == NULL || !m_bRunning)
 		return;
 	uint32 uMaxUsers = 0;
@@ -299,6 +378,49 @@ void CKademlia::Process()
 			m_bootstrapping = false;
 			AddLogLine(true, GetResString(IDS_BOOTSTRAPFAILED));
 		}
+
+	if (IsConnected() && !s_bOracleSyntheticSourceStarted) {
+		CUInt128 uSyntheticTarget;
+		if (TryParseOracleHex128(L"EMULE_ORACLE_SOURCE_TARGET", uSyntheticTarget)) {
+			s_bOracleSyntheticSourceStarted = true;
+			CSearch *pSearch = CSearchManager::PrepareLookup(CSearch::FILE, true, uSyntheticTarget);
+			CStringA sFields;
+			sFields.Format("target=%s started=%d routing_contacts=%u"
+				, (LPCSTR)OracleTrace::Hex128(uSyntheticTarget)
+				, pSearch != NULL ? 1 : 0
+				, GetRoutingZone()->GetNumContacts());
+			OracleTrace::Append("synthetic_source_lookup", sFields);
+		}
+	}
+
+	if (GetUDPListener() != NULL && !s_bOracleDirectSourceSent) {
+		CUInt128 uTarget;
+		uint32 uDestIP = 0;
+		uint16 uDestPort = 0;
+		uint16 uStartPosition = 0;
+		uint64 uFileSize = 0;
+		if (TryParseOracleHex128(L"EMULE_ORACLE_SOURCE_TARGET", uTarget)
+			&& TryParseOracleIPv4(L"EMULE_ORACLE_SOURCE_DEST_IP", uDestIP)
+			&& TryReadOracleUInt16(L"EMULE_ORACLE_SOURCE_DEST_PORT", uDestPort)
+			&& TryReadOracleUInt16(L"EMULE_ORACLE_SOURCE_START_POSITION", uStartPosition)
+			&& TryReadOracleUInt64(L"EMULE_ORACLE_SOURCE_FILE_SIZE", uFileSize))
+		{
+			s_bOracleDirectSourceSent = true;
+			CSafeMemFile filePacket(26);
+			filePacket.WriteUInt128(&uTarget);
+			filePacket.WriteUInt16(uStartPosition);
+			filePacket.WriteUInt64(uFileSize);
+			GetUDPListener()->SendPacket(&filePacket, KADEMLIA2_SEARCH_SOURCE_REQ, uDestIP, uDestPort, CKadUDPKey(), NULL);
+
+			CStringA sFields;
+			sFields.Format("to=%s target=%s start_position=%u file_size=%llu"
+				, (LPCSTR)OracleTrace::HostPort(uDestIP, uDestPort)
+				, (LPCSTR)OracleTrace::Hex128(uTarget)
+				, uStartPosition
+				, static_cast<unsigned long long>(uFileSize));
+			OracleTrace::Append("direct_search_source_req_out", sFields);
+		}
+	}
 
 	if (GetUDPListener() != NULL)
 		GetUDPListener()->ExpireClientSearch(); // function does only one compare in most cases, so no real need for a timer

@@ -29,7 +29,111 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+namespace
+{
+CCriticalSection g_oracleUdpDumpLock;
 
+CString BuildOracleUdpTimestamp()
+{
+	SYSTEMTIME st = {};
+	::GetLocalTime(&st);
+	CString strTimestamp;
+	strTimestamp.Format(_T("%04u-%02u-%02uT%02u:%02u:%02u.%03u"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+	return strTimestamp;
+}
+
+CString BuildOracleUdpHexString(const BYTE *pPayload, UINT uPayloadLen)
+{
+	if (pPayload == NULL || uPayloadLen == 0)
+		return CString();
+
+	CString strHex;
+	LPTSTR pszHex = strHex.GetBuffer(static_cast<int>(uPayloadLen * 2));
+	static const TCHAR s_szDigits[] = _T("0123456789ABCDEF");
+	for (UINT uIndex = 0; uIndex < uPayloadLen; ++uIndex) {
+		const BYTE byValue = pPayload[uIndex];
+		pszHex[uIndex * 2] = s_szDigits[(byValue >> 4) & 0x0F];
+		pszHex[uIndex * 2 + 1] = s_szDigits[byValue & 0x0F];
+	}
+	strHex.ReleaseBuffer(static_cast<int>(uPayloadLen * 2));
+	return strHex;
+}
+
+CString EscapeOracleUdpJson(const CString &strValue)
+{
+	CString strEscaped;
+	for (int i = 0; i < strValue.GetLength(); ++i) {
+		const TCHAR ch = strValue[i];
+		switch (ch) {
+		case _T('\\'):
+			strEscaped += _T("\\\\");
+			break;
+		case _T('"'):
+			strEscaped += _T("\\\"");
+			break;
+		case _T('\r'):
+			strEscaped += _T("\\r");
+			break;
+		case _T('\n'):
+			strEscaped += _T("\\n");
+			break;
+		case _T('\t'):
+			strEscaped += _T("\\t");
+			break;
+		default:
+			if (static_cast<unsigned int>(ch) < 0x20u) {
+				CString strCodePoint;
+				strCodePoint.Format(_T("\\u%04X"), static_cast<unsigned int>(ch));
+				strEscaped += strCodePoint;
+			} else {
+				strEscaped.AppendChar(ch);
+			}
+		}
+	}
+	return strEscaped;
+}
+
+void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata, const BYTE *pDecodedPayload, UINT uDecodedPayloadLen)
+{
+	if (pPayload == NULL || uPayloadLen == 0 || !theOracleUdpDumpLog.IsOpen())
+		return;
+
+	const CString strTimestamp = EscapeOracleUdpJson(BuildOracleUdpTimestamp());
+	const CString strDirection = EscapeOracleUdpJson(pszDirection != NULL ? pszDirection : _T("unknown"));
+	const CString strFamily = EscapeOracleUdpJson(pszFamily != NULL ? pszFamily : _T("unknown"));
+	const CString strPeer = EscapeOracleUdpJson(pszPeerLabel != NULL ? pszPeerLabel : _T("unknown"));
+	const CString strWireHex = BuildOracleUdpHexString(pPayload, uPayloadLen);
+	const CString strSummary = (pszMetadata != NULL && pszMetadata[0] != _T('\0')) ? EscapeOracleUdpJson(CString(pszMetadata)) : CString();
+	const bool bHasDecoded = pDecodedPayload != NULL && uDecodedPayloadLen > 0;
+	const CString strDecodedHex = bHasDecoded ? BuildOracleUdpHexString(pDecodedPayload, uDecodedPayloadLen) : CString();
+
+	CString strJson;
+	strJson.Format(
+		_T("{\"schema\":\"udp_packet_v1\",\"source\":\"oracle\",\"ts\":\"%s\",\"direction\":\"%s\",\"family\":\"%s\",\"peer\":\"%s\",\"wire_len\":%u,\"wire_hex\":\"%s\""),
+		(LPCTSTR)strTimestamp,
+		(LPCTSTR)strDirection,
+		(LPCTSTR)strFamily,
+		(LPCTSTR)strPeer,
+		uPayloadLen,
+		(LPCTSTR)strWireHex);
+	if (bHasDecoded) {
+		CString strDecodedField;
+		strDecodedField.Format(_T(",\"decoded_len\":%u,\"decoded_hex\":\"%s\""), uDecodedPayloadLen, (LPCTSTR)strDecodedHex);
+		strJson += strDecodedField;
+	} else {
+		strJson += _T(",\"decoded_len\":null,\"decoded_hex\":null");
+	}
+	if (!strSummary.IsEmpty()) {
+		strJson += _T(",\"summary\":\"") + strSummary + _T("\"");
+	} else {
+		strJson += _T(",\"summary\":null");
+	}
+	strJson += _T("}\r\n");
+
+	CSingleLock lock(&g_oracleUdpDumpLock, TRUE);
+	theOracleUdpDumpLog.Log(strJson);
+}
+} // namespace
 
 void LogV(UINT uFlags, LPCTSTR pszFmt, va_list argp)
 {
@@ -385,6 +489,18 @@ bool CLogFile::Logf(LPCTSTR pszFmt, ...)
 	int iLen = _sntprintf(szFullMsg, _countof(szFullMsg), _T("%s: %s\r\n"), (LPCTSTR)CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szMsg);
 
 	return (iLen > 0) && Log(szFullMsg, iLen);
+}
+
+void OracleUdpDump(LPCTSTR pszDirection, LPCTSTR pszFamily, uint32 dwIP, uint16 nPort, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata, const BYTE *pDecodedPayload, UINT uDecodedPayloadLen)
+{
+	CString strPeer;
+	strPeer.Format(_T("%s:%u"), (LPCTSTR)ipstr(dwIP), nPort);
+	OracleUdpDumpImpl(pszDirection, pszFamily, strPeer, pPayload, uPayloadLen, pszMetadata, pDecodedPayload, uDecodedPayloadLen);
+}
+
+void OracleUdpDumpPeerLabel(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata, const BYTE *pDecodedPayload, UINT uDecodedPayloadLen)
+{
+	OracleUdpDumpImpl(pszDirection, pszFamily, pszPeerLabel, pPayload, uPayloadLen, pszMetadata, pDecodedPayload, uDecodedPayloadLen);
 }
 
 void CLogFile::StartNewLogFile()

@@ -1512,6 +1512,11 @@ void CSearchList::StoreSearches()
 
 void CSearchList::LoadSearches()
 {
+	if (!m_listFileLists.IsEmpty()) {
+		DebugLogWarning(_T("SearchList::LoadSearches found %u pre-existing search lists, clearing stale state before restore"),
+			static_cast<unsigned>(m_listFileLists.GetCount()));
+		Clear();
+	}
 	ASSERT(m_listFileLists.IsEmpty());
 	const CString &fullpath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + STOREDSEARCHES_FILENAME);
 	CSafeBufferedFile file;

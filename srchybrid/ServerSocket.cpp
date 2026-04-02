@@ -43,6 +43,30 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace {
+const TCHAR ORACLE_ED2K_SEARCH_PROBE_TERM[] = _T("ubuntu linux");
+volatile LONG g_nOracleServerSocketTraceId = 0;
+
+LPCTSTR GetOracleServerOpcodeName(uint8 opcode)
+{
+	switch (opcode) {
+	case OP_LOGINREQUEST: return _T("OP_LOGINREQUEST");
+	case OP_REJECT: return _T("OP_REJECT");
+	case OP_GETSERVERLIST: return _T("OP_GETSERVERLIST");
+	case OP_OFFERFILES: return _T("OP_OFFERFILES");
+	case OP_SEARCHREQUEST: return _T("OP_SEARCHREQUEST");
+	case OP_SERVERLIST: return _T("OP_SERVERLIST");
+	case OP_SEARCHRESULT: return _T("OP_SEARCHRESULT");
+	case OP_SERVERSTATUS: return _T("OP_SERVERSTATUS");
+	case OP_CALLBACKREQUESTED: return _T("OP_CALLBACKREQUESTED");
+	case OP_CALLBACK_FAIL: return _T("OP_CALLBACK_FAIL");
+	case OP_SERVERMESSAGE: return _T("OP_SERVERMESSAGE");
+	case OP_IDCHANGE: return _T("OP_IDCHANGE");
+	case OP_SERVERIDENT: return _T("OP_SERVERIDENT");
+	}
+	return _T("OP_UNKNOWN");
+}
+}
 
 #pragma pack(push, 1)
 struct LoginAnswer_Struct
@@ -60,6 +84,9 @@ CServerSocket::CServerSocket(CServerConnect *in_serverconnect, bool bManualSingl
 	, m_bIsDeleting()
 	, m_bStartNewMessageLog(true)
 	, m_bManualSingleConnect(bManualSingleConnect)
+	, m_bOracleProbeSearchSent(false)
+	, m_dwOracleTraceId((DWORD)InterlockedIncrement(&g_nOracleServerSocketTraceId))
+	, m_dwOracleProbeSearchSentAtTick(0)
 {
 }
 
@@ -109,6 +136,7 @@ void CServerSocket::OnConnect(int nErrorCode)
 	int state;
 	switch (nErrorCode) {
 	case 0:
+		LogOracleSocketEvent(_T("connect_ok"));
 		SetConnectionState(CS_WAITFORLOGIN);
 		return;
 
@@ -131,6 +159,7 @@ void CServerSocket::OnConnect(int nErrorCode)
 	}
 	m_bIsDeleting = true;
 	SetConnectionState(state);
+	LogOracleSocketEvent(_T("connect_failed"));
 	if (thePrefs.GetVerbose())
 		DebugLogError(_T("Failed to connect to server %s; %s"), cur_server->GetAddress(), (LPCTSTR)GetFullErrorMessage(nErrorCode));
 	serverconnect->DestroySocket(this);
@@ -141,6 +170,7 @@ void CServerSocket::OnReceive(int nErrorCode)
 	if (connectionstate != CS_CONNECTED && !serverconnect->IsConnecting())
 		serverconnect->DestroySocket(this);
 	else {
+		LogOracleSocketEvent(_T("receive_ready"));
 		CEMSocket::OnReceive(nErrorCode);
 		m_dwLastTransmission = ::GetTickCount();
 	}
@@ -249,6 +279,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 						theApp.emuledlg->AddServerMessageLine(LOG_INFO, message);
 					}
 				}
+				MaybeSendOracleSearchProbe();
 			}
 			break;
 		case OP_IDCHANGE:
@@ -403,6 +434,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 						DebugHexDump(packet + 8, size - 8);
 					}
 				}
+				MaybeSendOracleSearchProbe();
 			}
 			break;
 		case OP_SERVERIDENT:
@@ -469,6 +501,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 					theApp.emuledlg->ShowConnectionState();
 					theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
 				}
+				MaybeSendOracleSearchProbe();
 			}
 			break;
 		// tecxx 1609 2002 - add server's serverlist to own serverlist
@@ -509,6 +542,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 					DebugLogError((LPCTSTR)GetResString(IDS_ERR_BADSERVERLISTRECEIVED));
 				error->Delete();
 			}
+			MaybeSendOracleSearchProbe();
 			break;
 		case OP_CALLBACKREQUESTED:
 			if (thePrefs.GetDebugServerTCPLevel() > 0)
@@ -616,6 +650,33 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 	return false;
 }
 
+void CServerSocket::MaybeSendOracleSearchProbe()
+{
+	if (m_bOracleProbeSearchSent || connectionstate != CS_CONNECTED || cur_server == NULL)
+		return;
+
+	CSafeMemFile data(64);
+	data.WriteUInt8(1);
+	data.WriteString(CString(ORACLE_ED2K_SEARCH_PROBE_TERM), UTF8strRaw);
+
+	Packet *packet = new Packet(&data);
+	packet->opcode = OP_SEARCHREQUEST;
+
+	if (thePrefs.GetVerbose()) {
+		DebugLog(
+			_T("Oracle ED2K SearchProbe send server=%s:%u payload_len=%u payload_hex=%s"),
+			cur_server->GetAddress(),
+			cur_server->GetPort(),
+			packet->size,
+			(LPCTSTR)DbgGetHexDump((const BYTE*)packet->pBuffer, packet->size));
+	}
+
+	theStats.AddUpDataOverheadServer(packet->size);
+	serverconnect->SendPacket(packet, this);
+	m_bOracleProbeSearchSent = true;
+	m_dwOracleProbeSearchSentAtTick = ::GetTickCount();
+}
+
 void CServerSocket::ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError)
 {
 	if (thePrefs.GetVerbose()) {
@@ -649,6 +710,22 @@ void CServerSocket::ConnectTo(CServer *server, bool bNoCrypt)
 			nPort = cur_server->GetPort();
 	} else
 		nPort = cur_server->GetPort();
+
+	if (thePrefs.GetVerbose()) {
+		DebugLog(
+			_T("Oracle ED2K ConnectTo server=%s:%u noCrypt=%u encrypt=%u supportsObfTcp=%u triedCrypt=%u obfPort=%u basePort=%u chosenPort=%u tcpFlags=0x%08x udpFlags=0x%08x"),
+			cur_server->GetAddress(),
+			cur_server->GetPort(),
+			static_cast<UINT>(bNoCrypt),
+			static_cast<UINT>(bEncrypt),
+			static_cast<UINT>(cur_server->SupportsObfuscationTCP()),
+			static_cast<UINT>(cur_server->TriedCrypt()),
+			cur_server->GetObfuscationPortTCP(),
+			cur_server->GetPort(),
+			nPort,
+			cur_server->GetTCPFlags(),
+			cur_server->GetUDPFlags());
+	}
 
 	Log(GetResString(bEncrypt ? IDS_CONNECTINGTOOBFUSCATED : IDS_CONNECTINGTO), (LPCTSTR)cur_server->GetListName(), cur_server->GetAddress(), nPort);
 	SetConnectionEncryption(bEncrypt, NULL, true);
@@ -699,7 +776,10 @@ bool CServerSocket::PacketReceived(Packet *packet)
 		}
 
 		if (packet->prot == OP_EDONKEYPROT)
+		{
+			LogOracleSocketEvent(_T("recv_packet"), packet->opcode, packet->size, packet->prot);
 			ProcessPacket((BYTE*)packet->pBuffer, packet->size, packet->opcode);
+		}
 		else if (thePrefs.GetVerbose())
 			DebugLogWarning(_T("Received server TCP packet with unknown protocol: protocol=0x%02x  opcode=0x%02x  size=%u"), packet->prot, packet->opcode, packet->size);
 #ifndef _DEBUG
@@ -716,6 +796,7 @@ bool CServerSocket::PacketReceived(Packet *packet)
 
 void CServerSocket::OnClose(int /*nErrorCode*/)
 {
+	LogOracleSocketEvent(_T("close"));
 	CEMSocket::OnClose(0);
 	if (connectionstate == CS_WAITFORLOGIN)
 		SetConnectionState(CS_SERVERFULL);
@@ -740,5 +821,35 @@ void CServerSocket::SetConnectionState(int newstate)
 void CServerSocket::SendPacket(Packet *packet, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend)
 {
 	m_dwLastTransmission = ::GetTickCount();
+	if (packet)
+		LogOracleSocketEvent(_T("send_packet"), packet->opcode, packet->size, packet->prot);
 	CEMSocket::SendPacket(packet, controlpacket, actualPayloadSize, bForceImmediateSend);
+}
+
+void CServerSocket::LogOracleSocketEvent(LPCTSTR pszEvent, uint8 opcode, uint32 size, uint8 protocol) const
+{
+	CString strEndpoint;
+	if (cur_server)
+		strEndpoint.Format(_T("%s:%u"), cur_server->GetAddress(), cur_server->GetPort());
+	else
+		strEndpoint = _T("<no-server>");
+
+	CString strProbeAge;
+	if (m_dwOracleProbeSearchSentAtTick != 0)
+		strProbeAge.Format(_T("%lu"), ::GetTickCount() - m_dwOracleProbeSearchSentAtTick);
+	else
+		strProbeAge = _T("-");
+
+	DebugLog(
+		_T("Oracle ED2K Trace id=%lu event=%s state=%d endpoint=%s opcode=0x%02x(%s) size=%lu prot=0x%02x probe_age_ms=%s"),
+		m_dwOracleTraceId,
+		pszEvent,
+		connectionstate,
+		(LPCTSTR)strEndpoint,
+		(UINT)opcode,
+		GetOracleServerOpcodeName(opcode),
+		(ULONG)size,
+		(UINT)protocol,
+		(LPCTSTR)strProbeAge
+	);
 }

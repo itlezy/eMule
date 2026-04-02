@@ -304,7 +304,18 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 					theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(client);
 
 					// send a response packet with standard informations
-					if (client->GetHashType() == SO_EMULE && !bIsMuleHello)
+					const bool bSendMuleInfo = client->GetHashType() == SO_EMULE && !bIsMuleHello;
+#ifdef _DEBUG
+					if (thePrefs.GetVerbose() || thePrefs.GetDebugClientTCPLevel() > 0) {
+						AddDebugLogLine(false,
+							_T("Oracle listen hello decision hashType=%d isMuleHello=%u sendMuleInfo=%u peer=%s"),
+							client->GetHashType(),
+							bIsMuleHello ? 1 : 0,
+							bSendMuleInfo ? 1 : 0,
+							(LPCTSTR)client->DbgGetClientInfo());
+					}
+#endif
+					if (bSendMuleInfo)
 						client->SendMuleInfoPacket(false);
 
 					client->SendHelloAnswer();

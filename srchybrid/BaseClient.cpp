@@ -1059,6 +1059,35 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile *data)
 				(uSupportLargeFiles	 <<  4) |
 				(uKadVersion		 <<  0)
 				);
+#ifdef _DEBUG
+	if (thePrefs.GetVerbose() || thePrefs.GetDebugClientTCPLevel() > 0) {
+		const uint32 dwMisOptions2 =
+			(uFileIdentifiers	 << 13) |
+			(uDirectUDPCallback  << 12) |
+			(uSupportsCaptcha	 << 11) |
+			(uSupportsSourceEx2  << 10) |
+			(uRequiresCryptLayer <<  9) |
+			(uRequestsCryptLayer <<  8) |
+			(uSupportsCryptLayer <<  7) |
+			(uReserved			 <<  6) |
+			(uExtMultiPacket	 <<  5) |
+			(uSupportLargeFiles	 <<  4) |
+			(uKadVersion		 <<  0);
+		AddDebugLogLine(false,
+			_T("Oracle HELLO misc2=0x%08x directUdp=%u appFirewalled=%u kadRunning=%u kadFirewalled=%u udpFirewalled=%u udpVerified=%u cryptSup=%u cryptReq=%u cryptNeed=%u peer=%s"),
+			dwMisOptions2,
+			uDirectUDPCallback,
+			theApp.IsFirewalled() ? 1 : 0,
+			Kademlia::CKademlia::IsRunning() ? 1 : 0,
+			Kademlia::CKademlia::IsFirewalled() ? 1 : 0,
+			Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) ? 1 : 0,
+			Kademlia::CUDPFirewallTester::IsVerified() ? 1 : 0,
+			uSupportsCryptLayer,
+			uRequestsCryptLayer,
+			uRequiresCryptLayer,
+			(LPCTSTR)DbgGetClientInfo());
+	}
+#endif
 	tagMisOptions2.WriteTagToFile(data);
 
 	// eMule Version
