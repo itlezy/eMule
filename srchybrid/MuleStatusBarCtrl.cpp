@@ -26,6 +26,9 @@
 #include "Server.h"
 #include "ServerList.h"
 #include "Preferences.h"
+#include "DownloadQueue.h"
+#include "UploadQueue.h"
+#include "kademlia/kademlia/Kademlia.h"
 #include "StatusBarInfo.h"
 
 #ifdef _DEBUG
@@ -86,29 +89,77 @@ int CMuleStatusBarCtrl::GetPaneAtPosition(CPoint &point) const
 
 CString CMuleStatusBarCtrl::GetPaneToolTipText(EStatusBarPane iPane) const
 {
-	CString strText;
 	if (iPane == SBarIP) {
 		CString strBindAddress;
 		if (thePrefs.GetBindAddr() != NULL)
 			strBindAddress = thePrefs.GetBindAddr();
-		return StatusBarInfo::FormatNetworkAddressPaneToolTip(strBindAddress, theApp.GetED2KPublicIP());
+		return StatusBarInfo::FormatNetworkAddressPaneToolTip(strBindAddress
+			, theApp.GetED2KPublicIP()
+			, theApp.IsStartupBindBlocked()
+			, theApp.GetStartupBindBlockReason());
 	}
-	if (iPane == SBarConnected && theApp.serverconnect && theApp.serverconnect->IsConnected()) {
-		const CServer *cur_server = theApp.serverconnect->GetCurrentServer();
-		if (cur_server) {
-			const CServer *srv = theApp.serverlist->GetServerByAddress(cur_server->GetAddress(), cur_server->GetPort());
-			// Can't add more info than just the server name, unfortunately the MFC tooltip which
-			// we use here does not show more than one(!) line of text.
-			if (srv)
-				strText.Format(_T("eD2K %s: %s  (%s %s)")
-					, (LPCTSTR)GetResString(IDS_SERVER)
-					, (LPCTSTR)srv->GetListName()
-					, (LPCTSTR)GetFormatedUInt(srv->GetUsers())
-					, (LPCTSTR)GetResString(IDS_UUSERS));
+	if (iPane == SBarUsers && theApp.serverconnect && theApp.serverlist) {
+		uint32 totaluser = 0;
+		uint32 totalfile = 0;
+		theApp.serverlist->GetUserFileStatus(totaluser, totalfile);
+		const bool bHasEd2k = theApp.serverconnect->IsConnected();
+		const bool bHasKad = Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected();
+		return StatusBarInfo::FormatUsersPaneToolTip(GetResString(IDS_UUSERS)
+			, GetResString(IDS_FILES)
+			, CastItoIShort(totaluser, false, 1)
+			, CastItoIShort(Kademlia::CKademlia::GetKademliaUsers(), false, 1)
+			, CastItoIShort(totalfile, false, 1)
+			, CastItoIShort(Kademlia::CKademlia::GetKademliaFiles(), false, 1)
+			, bHasEd2k
+			, bHasKad);
+	}
+	if (iPane == SBarUpDown && theApp.downloadqueue && theApp.uploadqueue && theApp.emuledlg) {
+		return StatusBarInfo::FormatTransferPaneToolTip(theApp.emuledlg->GetTransferRateString()
+			, GetResString(IDS_DOWNLOADING)
+			, GetResString(IDS_UPLOADING)
+			, GetResString(IDS_ONQUEUE)
+			, theApp.downloadqueue->GetDownloadingFileCount()
+			, static_cast<uint32>(theApp.downloadqueue->GetFileCount())
+			, static_cast<uint32>(theApp.uploadqueue->GetActiveUploadsCount())
+			, static_cast<uint32>(theApp.uploadqueue->GetUploadQueueLength())
+			, static_cast<uint32>(theApp.uploadqueue->GetWaitingUserCount()));
+	}
+	if (iPane == SBarConnected && theApp.emuledlg && theApp.serverconnect) {
+		const CString strConnectionSummary = theApp.emuledlg->GetConnectionStateString();
+		const int iKadMarker = strConnectionSummary.Find(_T("|Kad:"));
+		CString strEd2kState;
+		CString strKadState;
+		if (iKadMarker > 5) {
+			strEd2kState = strConnectionSummary.Mid(5, iKadMarker - 5);
+			strKadState = strConnectionSummary.Mid(iKadMarker + 5);
+		} else {
+			strEd2kState = strConnectionSummary;
 		}
 
+		CString strServerName;
+		CString strServerUsers;
+		CString strServerPing;
+		if (theApp.serverconnect->IsConnected() && theApp.serverlist) {
+			const CServer *cur_server = theApp.serverconnect->GetCurrentServer();
+			if (cur_server) {
+				const CServer *srv = theApp.serverlist->GetServerByAddress(cur_server->GetAddress(), cur_server->GetPort());
+				if (srv) {
+					strServerName = srv->GetListName();
+					strServerUsers = GetFormatedUInt(srv->GetUsers());
+					if (srv->GetPing() > 0)
+						strServerPing.Format(_T("%u ms"), srv->GetPing());
+				}
+			}
+		}
+		return StatusBarInfo::FormatConnectionPaneToolTip(strEd2kState
+			, strKadState
+			, GetResString(IDS_SERVER)
+			, GetResString(IDS_UUSERS)
+			, strServerName
+			, strServerUsers
+			, strServerPing);
 	}
-	return strText;
+	return CString();
 }
 
 INT_PTR CMuleStatusBarCtrl::OnToolHitTest(CPoint point, TOOLINFO *pTI) const

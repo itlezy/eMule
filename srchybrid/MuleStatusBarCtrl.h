@@ -21,6 +21,7 @@ public:
 
 protected:
 	int GetPaneAtPosition(CPoint &point) const;
+	/** Builds the single-line diagnostic tooltip for the hovered status-bar pane. */
 	CString GetPaneToolTipText(EStatusBarPane iPane) const;
 
 	virtual INT_PTR OnToolHitTest(CPoint point, TOOLINFO *pTI) const;

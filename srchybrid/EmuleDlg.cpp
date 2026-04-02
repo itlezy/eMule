@@ -915,36 +915,37 @@ void CemuleDlg::ShowConnectionStateIcon()
 CString CemuleDlg::GetConnectionStateString()
 {
 	if (theApp.IsStartupBindBlocked())
-		return _T("eD2K:Blocked|Kad:Blocked");
+		return StatusBarInfo::FormatConnectionPaneText(_T("Blocked"), _T("Blocked"));
 
 	UINT ed2k, kad;
 	if (theApp.serverconnect->IsConnected())
-		ed2k = IDS_CONNECTED;
+		ed2k = theApp.serverconnect->IsLowID() ? IDS_IDLOW : IDS_IDHIGH;
 	else
 		ed2k = theApp.serverconnect->IsConnecting() ? IDS_CONNECTING : IDS_DISCONNECTED;
 
 	if (Kademlia::CKademlia::IsConnected())
-		kad = IDS_CONNECTED;
+		kad = Kademlia::CKademlia::IsFirewalled() ? IDS_FIREWALLED : IDS_KADOPEN;
 	else
 		kad = Kademlia::CKademlia::IsRunning() ? IDS_CONNECTING : IDS_DISCONNECTED;
 
-	CString state;
 	CString strKadState(GetResString(kad));
 	if (!Kademlia::CKademlia::IsConnected() && Kademlia::CKademlia::IsBootstrapping()) {
 		const uint32 uBootstrapProgress = Kademlia::CKademlia::GetBootstrapProgressPercent();
 		if (uBootstrapProgress > 0)
 			strKadState.Format(_T("%s %u%%"), (LPCTSTR)GetResString(IDS_BOOTSTRAP), uBootstrapProgress);
 	}
-	state.Format(_T("eD2K:%s|Kad:%s"), (LPCTSTR)GetResString(ed2k), (LPCTSTR)strKadState);
-	return state;
+	return StatusBarInfo::FormatConnectionPaneText(GetResString(ed2k), strKadState);
 }
 
+/**
+ * Formats the network-address pane so bind failures stay visible without widening the status bar.
+ */
 CString CemuleDlg::GetNetworkAddressStateString() const
 {
 	CString strBindAddress;
 	if (thePrefs.GetBindAddr() != NULL)
 		strBindAddress = thePrefs.GetBindAddr();
-	return StatusBarInfo::FormatNetworkAddressPaneText(strBindAddress, theApp.GetED2KPublicIP());
+	return StatusBarInfo::FormatNetworkAddressPaneText(strBindAddress, theApp.GetED2KPublicIP(), theApp.IsStartupBindBlocked());
 }
 
 void CemuleDlg::ShowNetworkAddressState()
@@ -1014,20 +1015,23 @@ void CemuleDlg::ShowConnectionState()
 	UpdateThumbBarButtons();
 }
 
+/**
+ * Refreshes the users/files pane with a balanced single-network or dual-network summary.
+ */
 void CemuleDlg::ShowUserCount()
 {
 	uint32 totaluser, totalfile;
 	theApp.serverlist->GetUserFileStatus(totaluser, totalfile);
-	CString buffer;
-	if (theApp.serverconnect->IsConnected() && Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected())
-		buffer.Format(_T("%s:%s(%s)|%s:%s(%s)"), (LPCTSTR)GetResString(IDS_UUSERS), (LPCTSTR)CastItoIShort(totaluser, false, 1), (LPCTSTR)CastItoIShort(Kademlia::CKademlia::GetKademliaUsers(), false, 1), (LPCTSTR)GetResString(IDS_FILES), (LPCTSTR)CastItoIShort(totalfile, false, 1), (LPCTSTR)CastItoIShort(Kademlia::CKademlia::GetKademliaFiles(), false, 1));
-	else if (theApp.serverconnect->IsConnected())
-		buffer.Format(_T("%s:%s|%s:%s"), (LPCTSTR)GetResString(IDS_UUSERS), (LPCTSTR)CastItoIShort(totaluser, false, 1), (LPCTSTR)GetResString(IDS_FILES), (LPCTSTR)CastItoIShort(totalfile, false, 1));
-	else if (Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected())
-		buffer.Format(_T("%s:%s|%s:%s"), (LPCTSTR)GetResString(IDS_UUSERS), (LPCTSTR)CastItoIShort(Kademlia::CKademlia::GetKademliaUsers(), false, 1), (LPCTSTR)GetResString(IDS_FILES), (LPCTSTR)CastItoIShort(Kademlia::CKademlia::GetKademliaFiles(), false, 1));
-	else
-		buffer.Format(_T("%s:0|%s:0"), (LPCTSTR)GetResString(IDS_UUSERS), (LPCTSTR)GetResString(IDS_FILES));
-	statusbar->SetText(buffer, SBarUsers, 0);
+	const bool bHasEd2k = theApp.serverconnect->IsConnected();
+	const bool bHasKad = Kademlia::CKademlia::IsRunning() && Kademlia::CKademlia::IsConnected();
+	statusbar->SetText(StatusBarInfo::FormatUsersPaneText(GetResString(IDS_UUSERS)
+		, GetResString(IDS_FILES)
+		, CastItoIShort(totaluser, false, 1)
+		, CastItoIShort(Kademlia::CKademlia::GetKademliaUsers(), false, 1)
+		, CastItoIShort(totalfile, false, 1)
+		, CastItoIShort(Kademlia::CKademlia::GetKademliaFiles(), false, 1)
+		, bHasEd2k
+		, bHasKad), SBarUsers, 0);
 }
 
 void CemuleDlg::ShowMessageState(UINT nIcon)
@@ -1076,6 +1080,9 @@ CString CemuleDlg::GetTransferRateString()
 	return szBuff;
 }
 
+/**
+ * Keeps the transfer pane compact by appending one activity summary to the existing rate text.
+ */
 void CemuleDlg::ShowTransferRate(bool bForceAll)
 {
 	if (bForceAll)
@@ -1100,7 +1107,10 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 	}
 
 	if (IsWindowVisible() || bForceAll) {
-		statusbar->SetText(strTransferRate, SBarUpDown, 0);
+		statusbar->SetText(StatusBarInfo::FormatTransferPaneText(strTransferRate
+			, theApp.downloadqueue->GetDownloadingFileCount()
+			, static_cast<uint32>(theApp.uploadqueue->GetActiveUploadsCount())
+			, static_cast<uint32>(theApp.uploadqueue->GetUploadQueueLength())), SBarUpDown, 0);
 		ShowTransferStateIcon();
 	}
 	if (IsWindowVisible() && thePrefs.ShowRatesOnTitle()) {
