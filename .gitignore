@@ -4,6 +4,7 @@
 *.sln.docstates
 *.suo
 *.user
+*.log
 /srchybrid/Debug/
 /srchybrid/Release/
 /srchybrid/ARM64/
