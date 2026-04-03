@@ -17,6 +17,9 @@ enum EBindAddressResolveResult
 	BARR_InterfaceNotFound,
 	BARR_InterfaceHasNoAddress,
 	BARR_AddressNotFoundOnInterface,
+	/**
+	 * @brief Oracle seam-only result used by shared parity tests when the configured bind IP vanished from every interface.
+	 */
 	BARR_AddressNotFound
 };
 
