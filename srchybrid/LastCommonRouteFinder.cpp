@@ -54,7 +54,7 @@ LastCommonRouteFinder::LastCommonRouteFinder()
 	threadEndedEvent = new CEvent(FALSE, TRUE);
 	newTraceRouteHostEvent = new CEvent(FALSE);
 	prefsEvent = new CEvent(FALSE);
-	
+
 	AfxBeginThread(RunProc, (LPVOID)this);
 }
 

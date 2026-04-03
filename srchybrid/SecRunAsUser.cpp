@@ -347,7 +347,7 @@ eResult CSecRunAsUser::RestartAsUser()
 	FreeAPI();
 	if (bResult)
 		return RES_OK_NEED_RESTART;
-	
+
 	theApp.QueueDebugLogLine(false, _T("Run as unprivileged user: Error: Failed to restart eMule as different user! Error Code: %i"), ::GetLastError());
 	return RES_FAILED;
 }

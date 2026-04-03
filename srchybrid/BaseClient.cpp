@@ -244,7 +244,7 @@ void CUpDownClient::Init()
 	//EastShare Start - added by AndCycle, IP to Country
 	m_structUserCountry = theApp.ip2country->GetCountryFromIP(GetIP());
 	//EastShare End - added by AndCycle, IP to Country
-	
+
 	m_fHashsetRequestingMD4 = 0;
 	m_fSharedDirectories = 0;
 	m_fSentCancelTransfer = 0;

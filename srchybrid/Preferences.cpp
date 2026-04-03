@@ -1562,7 +1562,7 @@ void CPreferences::SavePreferences()
 		tempdirs += tempdir[i];
 	}
 	ini.WriteString(_T("TempDirs"), tempdirs);
-	
+
 	// broadband-MOD>>
 	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
 	ini.WriteInt(_T("BBMaxUploadTargetFillPerc"), m_maxUploadTargetFillPerc);
@@ -1988,7 +1988,7 @@ void CPreferences::LoadPreferences()
 		if (!bDup && (PathFileExists(atmp) || ::CreateDirectory(atmp, NULL)) || tempdir.IsEmpty())
 			tempdir.Add(atmp);
 	}
-	
+
 	maxGraphDownloadRate = ini.GetInt(_T("DownloadCapacity"), 96);
 	if (maxGraphDownloadRate == 0)
 		maxGraphDownloadRate = 96;

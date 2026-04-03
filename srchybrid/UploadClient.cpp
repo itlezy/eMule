@@ -229,7 +229,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	// important fix to avoid slow clients going back in the queue too soon
 	// m_caughtBeingSlow will be set to 0 in AddUpNextClient(), if it makes it back to the upload queue
 	if (IsSlowDownloader())
-		return 0; 
+		return 0;
 	// broadband-MOD<<
 
 	int filepriority = GetFilePrioAsNumber();
@@ -277,7 +277,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 		fBaseValue = (fBaseValue / ratio);
 
 	// boost smaller files as they go away quickly
-	if (thePrefs.GetBoostFilesSmallerThan() > 0 && 
+	if (thePrefs.GetBoostFilesSmallerThan() > 0 &&
 		(uint64)currequpfile->GetFileSize() < ((uint64)thePrefs.GetBoostFilesSmallerThan() * 1024 * 1024)) fBaseValue = (fBaseValue + 99) * 3.33f;
 
 	// broadband-MOD<<
@@ -536,7 +536,7 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 
 				if (
 					// if a client is "slow" meaning a 1 / (SlowRateTolerancePerc * (1 + MaxUpClientsAllowed)) of the target upload rate
-					GetDatarate() < 
+					GetDatarate() <
 						((thePrefs.GetMaxUpload() * 1024u)    /
 						((thePrefs.GetSlowRateTolerancePerc() / 100.0f) * (1 + thePrefs.GetMaxUpClientsAllowed())))
 					) {

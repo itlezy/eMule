@@ -101,7 +101,7 @@ void CUploadListCtrl::Init()
 	InsertColumn(13, GetResString(IDS_CLIENT_HASH),		LVCFMT_LEFT, 50);
 	InsertColumn(14, GetResString(IDS_UPLOAD_PCT),			LVCFMT_RIGHT, 50);
 	InsertColumn(15, GetResString(IDS_FILE_SIZE),			LVCFMT_RIGHT, 50);
-	
+
 	InsertColumn(16, GetResString(IDS_RATIO), LVCFMT_RIGHT, 50);
 	InsertColumn(17, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, 50);
 
@@ -295,7 +295,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	{
 		// TODO need to review better this calculation as the client might have already part of the file
 		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-		if (file) 
+		if (file)
 			sText.Format(_T("%.1f%%"), (float)client->GetSessionUp() / (float)file->GetFileSize() * 100.0);
 	}
 		break;
@@ -529,7 +529,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			iResult = CompareUnsigned64(
 				(float)item1->GetSessionUp() / (float)file1->GetFileSize() * 1000.0,
 				(float)item2->GetSessionUp() / (float)file2->GetFileSize() * 1000.0);
-		
+
 	}
 		break;
 	case 15: // File Size
@@ -547,7 +547,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 	{
 		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
-		
+
 		if (file1 != NULL && file2 != NULL)
 			iResult = CompareUnsigned(
 				100 * file1->GetAllTimeRatio(),
@@ -671,7 +671,7 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
-	
+
 	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
 	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
 	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_COPY_ED2K_HASH, GetResString(IDS_COPY_HASH));

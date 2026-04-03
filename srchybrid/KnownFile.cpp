@@ -1296,7 +1296,7 @@ void CKnownFile::RemoveMetaDataTags(UINT uTagType)
 		{ FT_MEDIA_CODEC,   TAGTYPE_STRING }
 	};
 
-	// 05-Jän-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
+	// 05-JÃ¤n-2004 [bc]: ed2k and Kad are already full of totally wrong and/or not properly attached meta data. Take
 	// the chance to clean any available meta data tags and provide only tags which were determined by us.
 	// Remove all meta tags. Never ever trust the meta tags received from other clients or servers.
 	for (unsigned j = 0; j < _countof(_aEmuleMetaTags); ++j)
@@ -1444,7 +1444,7 @@ void TruncateED2KMetaData(CString &rstrData)
 
 void CKnownFile::UpdateMetaDataTags()
 {
-	// 05-Jän-2004 [bc]: ed2k and Kad are already full of totally wrong and/or improperly
+	// 05-JÃ¤n-2004 [bc]: ed2k and Kad are already full of totally wrong and/or improperly
 	// attached meta data. Take the chance to clean any available meta data tags
 	// and provide only tags which were determined by us.
 	RemoveMetaDataTags();

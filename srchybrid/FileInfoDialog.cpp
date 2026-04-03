@@ -502,7 +502,7 @@ int CGetMediaInfoThread::Run()
 			re.SetParaFormat(pf);
 		}
 		re.Detach();
-		
+
 		const int arcnt = m_aFiles.GetSize();
 		paMediaInfo = new CArray<SMediaInfo>;
 		for (int i = 0; i < arcnt; ++i) {

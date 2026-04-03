@@ -756,7 +756,7 @@ void CColourPopup::DrawCell(CDC *pDC, int nIndex)
 		// fill background
 		bool b = (m_nChosenColourSel == nIndex && m_nCurrentSel != nIndex);
 		pDC->FillSolidRect(TextButtonRect, ::GetSysColor(b ? COLOR_3DLIGHT : COLOR_3DFACE));
-		
+
 		// Draw thin line around text
 		CRect LineRect = TextButtonRect;
 		LineRect.DeflateRect(2 * m_nMargin, 2 * m_nMargin);

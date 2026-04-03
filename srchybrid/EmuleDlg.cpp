@@ -1484,7 +1484,7 @@ LRESULT CemuleDlg::OnImportPart(WPARAM wParam, LPARAM lParam)
 {
 	CPartFile *partfile = reinterpret_cast<CPartFile*>(lParam);
 	ImportPart_Struct *importpart = reinterpret_cast<ImportPart_Struct*>(wParam);
-	if (!theApp.IsClosing() && AfxIsValidAddress(partfile, sizeof(CPartFile)) && theApp.downloadqueue->IsPartFile(partfile)) // could have been cancelled 
+	if (!theApp.IsClosing() && AfxIsValidAddress(partfile, sizeof(CPartFile)) && theApp.downloadqueue->IsPartFile(partfile)) // could have been cancelled
 		partfile->WriteToBuffer(importpart->end - importpart->start + 1, importpart->data, importpart->start, importpart->end, NULL, NULL);
 
 	delete[] importpart->data;

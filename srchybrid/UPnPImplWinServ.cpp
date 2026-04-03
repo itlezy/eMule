@@ -768,7 +768,7 @@ void CUPnPImplWinServ::DeleteExistingPortMappings(ServicePointer pService)
 				{
 					break;
 				}
-				
+
 
 				if (_tcsstr(oTokens[4], m_sLocalIP) != NULL || stristr(oTokens[4], szComputerName) != NULL) {
 					CString str;

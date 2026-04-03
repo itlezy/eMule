@@ -652,7 +652,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 		} else
 			cbuffer.Format(_T("%s %s"), (LPCTSTR)GetResString(IDS_STATS_CRATIO), (LPCTSTR)GetResString(IDS_FSTAT_WAITING)); // Localize
 		m_stattree.SetItemText(trans[2], cbuffer);
-		
+
 		// TRANSFER -> DOWNLOADS SECTION
 		if (forceUpdate || m_stattree.IsExpanded(h_download)) {
 			uint64 DownOHTotal = 0;
@@ -2168,7 +2168,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 
 					if (!topcnt)
 						continue;
-					
+
 					UINT verMaj = topver / (100 * 10 * 100);
 					UINT verMin = (topver - (verMaj * 100 * 10 * 100)) / (100 * 10);
 					UINT verUp = (topver - (verMaj * 100 * 10 * 100) - (verMin * 100 * 10)) / (100);
@@ -2179,7 +2179,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 							cbuffer.Format(_T("v%u.%u.%u: %u (%1.1f%%)"), verMaj, verMin, verUp, topcnt, topper * 100);
 					} else
 						cbuffer.Format(_T("v%u.%u: %u (%1.1f%%)"), verMaj, verMin, topcnt, topper * 100);
-					
+
 					if (i >= MAX_SUB_CLIENT_VERSIONS / 2)
 						totalOther += topcnt;
 
@@ -2312,7 +2312,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 
 					if (!topcnt)
 						continue;
-					
+
 					UINT verMaj = topver / (100 * 10 * 100);
 					UINT verMin = (topver - (verMaj * 100 * 10 * 100)) / (100 * 10);
 					UINT verUp = (topver - (verMaj * 100 * 10 * 100) - (verMin * 100 * 10)) / (100);
