@@ -157,6 +157,30 @@ function Publish-LatestDirectoryPointer {
     $null = New-Item -ItemType Junction -Path $LatestDirectory -Target $TargetDirectory -Force
 }
 
+function Publish-HarnessExecutableCopy {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceExecutablePath,
+
+        [Parameter(Mandatory = $true)]
+        [string]$HarnessExecutablePath
+    )
+
+    if (-not (Test-Path -LiteralPath $SourceExecutablePath -PathType Leaf)) {
+        throw "Source executable '$SourceExecutablePath' does not exist."
+    }
+
+    $harnessParentDirectory = Split-Path -Parent $HarnessExecutablePath
+    if (-not [string]::IsNullOrWhiteSpace($harnessParentDirectory)) {
+        Ensure-Directory -Path $harnessParentDirectory
+    }
+
+    <#
+    * @brief Stage a harness-owned binary copy so process listings, dumps, and cleanup clearly identify live harness sessions.
+    #>
+    Copy-Item -LiteralPath $SourceExecutablePath -Destination $HarnessExecutablePath -Force
+}
+
 function Initialize-LiveSessionProfile {
     param(
         [Parameter(Mandatory = $true)]
@@ -1936,7 +1960,9 @@ $workspaceRoot = Get-NormalizedPath -Path (Join-Path $repoRoot '..')
 $testsRoot = Get-NormalizedPath -Path (Join-Path $workspaceRoot '..\eMule-build-tests')
 $remoteRoot = Get-NormalizedPath -Path (Join-Path $workspaceRoot '..\eMule-remote')
 $buildScriptPath = Join-Path $workspaceRoot '23-build-emule-debug-incremental.cmd'
-$exePath = Join-Path $repoRoot 'srchybrid\x64\Debug\emule.exe'
+$buildExePath = Join-Path $repoRoot 'srchybrid\x64\Debug\emule.exe'
+$launchedExePath = Join-Path $repoRoot 'srchybrid\x64\Debug\eMule_v072_harness.exe'
+$launchedProcessName = [System.IO.Path]::GetFileNameWithoutExtension($launchedExePath)
 $remoteEntryPoint = Join-Path $remoteRoot 'dist\server\index.js'
 $sessionStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $defaultSeedRoot = Join-Path $testsRoot 'manifests\live-profile-seed'
@@ -1987,8 +2013,8 @@ if (-not $SkipBuild) {
     }
 }
 
-if (-not (Test-Path -LiteralPath $exePath -PathType Leaf)) {
-    throw "Debug executable '$exePath' does not exist."
+if (-not (Test-Path -LiteralPath $buildExePath -PathType Leaf)) {
+    throw "Debug executable '$buildExePath' does not exist."
 }
 
 if (-not (Test-Path -LiteralPath $remoteEntryPoint -PathType Leaf)) {
@@ -2006,15 +2032,18 @@ try {
     $profileLatestError = $_.Exception.Message
 }
 
-$stoppedEmuleProcessId = Stop-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
+$stoppedHarnessProcessId = Stop-MatchingProcess -ProcessName $launchedProcessName -ExecutablePath $launchedExePath
 $stoppedRemoteProcessIds = Stop-ListeningProcessByPort -Port $RemotePort
 $stoppedRemoteSidecarProcessIds = Stop-ProcessesByCommandLinePattern -ProcessName 'node' -CommandPattern $remoteEntryPoint
+
+Publish-HarnessExecutableCopy -SourceExecutablePath $buildExePath -HarnessExecutablePath $launchedExePath
 
 $manifest = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
     started_at = (Get-Date).ToString('o')
     session_stamp = $sessionStamp
-    exe_path = $exePath
+    build_exe_path = $buildExePath
+    launched_exe_path = $launchedExePath
     remote_entry_point = $remoteEntryPoint
     seed_root = $seedRoot
     profile_base_root = $profileBaseRoot
@@ -2052,7 +2081,7 @@ $manifest = [ordered]@{
     transfer_churn_pause_ms = $TransferChurnPauseMs
     pipe_warmup_sec = $PipeWarmupSec
     remote_port = $RemotePort
-    stopped_existing_emule_process_id = $stoppedEmuleProcessId
+    stopped_existing_harness_process_id = $stoppedHarnessProcessId
     stopped_existing_remote_process_ids = @($stoppedRemoteProcessIds)
     stopped_existing_remote_sidecar_process_ids = @($stoppedRemoteSidecarProcessIds)
     launch_status = 'starting'
@@ -2060,8 +2089,8 @@ $manifest = [ordered]@{
 Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
 $startProcessArgs = @{
-    FilePath = $exePath
-    WorkingDirectory = (Split-Path -Parent $exePath)
+    FilePath = $launchedExePath
+    WorkingDirectory = (Split-Path -Parent $launchedExePath)
     ArgumentList = @('-assertfile', '-c', $profileRoot)
     PassThru = $true
 }
@@ -2142,7 +2171,7 @@ try {
         }
 
         if ([string]::IsNullOrWhiteSpace($sessionFailure) -and $ScenarioProfile -ne 'matrix') {
-            $soakResult = Invoke-PipeSoakScenario -BaseUri $baseUri -Token $RemoteToken -ExecutablePath $exePath -ConfiguredSearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -SearchCycleCount $SearchCycleCount -SearchCyclePauseSec $SearchCyclePauseSec -MonitorSec $MonitorSec -PollSec $PollSec -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll -TransferChurnCycles $TransferChurnCycles -TransfersPerChurnCycle $TransfersPerChurnCycle -TransferChurnPauseMs $TransferChurnPauseMs -SyntheticLinks $syntheticLinks -LogDir $logDir -InitialSelectedDownloadLink $selectedDownloadLink -FallbackLink $fallbackLink -ArtifactDir $artifactDir
+            $soakResult = Invoke-PipeSoakScenario -BaseUri $baseUri -Token $RemoteToken -ExecutablePath $launchedExePath -ConfiguredSearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -SearchCycleCount $SearchCycleCount -SearchCyclePauseSec $SearchCyclePauseSec -MonitorSec $MonitorSec -PollSec $PollSec -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll -TransferChurnCycles $TransferChurnCycles -TransfersPerChurnCycle $TransfersPerChurnCycle -TransferChurnPauseMs $TransferChurnPauseMs -SyntheticLinks $syntheticLinks -LogDir $logDir -InitialSelectedDownloadLink $selectedDownloadLink -FallbackLink $fallbackLink -ArtifactDir $artifactDir
             $soakSummary = Get-ScenarioSummary -Kind 'soak'
             if ($null -ne $soakResult -and -not [string]::IsNullOrWhiteSpace($soakResult.selected_download_link)) {
                 $selectedDownloadLink = $soakResult.selected_download_link
@@ -2158,7 +2187,7 @@ try {
     $sessionFailureDetail = $_ | Out-String
 } finally {
     if (-not $KeepRunning) {
-        $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
+        $runningProcess = Get-MatchingProcess -ProcessName $launchedProcessName -ExecutablePath $launchedExePath
         if ($null -ne $runningProcess) {
             try {
                 if ($runningProcess.CloseMainWindow()) {
@@ -2170,7 +2199,7 @@ try {
             } catch {
             }
 
-            $runningProcess = Get-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
+            $runningProcess = Get-MatchingProcess -ProcessName $launchedProcessName -ExecutablePath $launchedExePath
             if ($null -ne $runningProcess) {
                 Stop-Process -Id $runningProcess.Id -Force
             }
@@ -2227,6 +2256,8 @@ if (Test-Path -LiteralPath $crtLogPath -PathType Leaf) {
 
 $summary = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
+    build_exe_path = $buildExePath
+    launched_exe_path = $launchedExePath
     artifact_dir = $artifactDir
     artifact_latest_dir = $artifactLatestDir
     seed_root = $seedRoot
@@ -2286,6 +2317,8 @@ foreach ($entry in $summary.GetEnumerator()) {
 Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 @(
     "Pipe live session"
+    "build_exe_path: $buildExePath"
+    "launched_exe_path: $launchedExePath"
     "artifact_dir: $artifactDir"
     "artifact_latest_dir: $artifactLatestDir"
     "profile_root: $profileRoot"
