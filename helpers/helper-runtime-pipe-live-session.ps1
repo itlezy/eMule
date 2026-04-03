@@ -17,6 +17,12 @@ param(
     [string]$ProfileRoot = 'C:\tmp\emule-testing',
 
     [Parameter(Mandatory = $false)]
+    [string]$SeedRoot = '',
+
+    [Parameter(Mandatory = $false)]
+    [string]$SessionManifestPath = '',
+
+    [Parameter(Mandatory = $false)]
     [string]$BindInterfaceName = 'hide.me',
 
     [Parameter(Mandatory = $false)]
@@ -76,6 +82,7 @@ param(
     [Parameter(Mandatory = $false)]
     [string]$RemoteToken = 'codex-investigation',
 
+    [switch]$LaunchOnly,
     [switch]$SkipBuild,
     [switch]$KeepRunning
 )
@@ -104,6 +111,76 @@ function Ensure-Directory {
     )
 
     $null = New-Item -ItemType Directory -Force -Path $Path
+}
+
+function Publish-DirectorySnapshot {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SourceDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string]$DestinationDirectory
+    )
+
+    if (Test-Path -LiteralPath $DestinationDirectory -PathType Container) {
+        Remove-Item -LiteralPath $DestinationDirectory -Recurse -Force
+    }
+
+    Ensure-Directory -Path $DestinationDirectory
+    $sourceEntries = @(Get-ChildItem -LiteralPath $SourceDirectory -Force -ErrorAction SilentlyContinue)
+    foreach ($sourceEntry in $sourceEntries) {
+        Copy-Item -LiteralPath $sourceEntry.FullName -Destination $DestinationDirectory -Recurse -Force
+    }
+}
+
+function Initialize-LiveSessionProfile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$SeedRoot,
+
+        [Parameter(Mandatory = $true)]
+        [string]$WorkingProfileRoot
+    )
+
+    $seedConfigDir = Join-Path $SeedRoot 'config'
+    if (-not (Test-Path -LiteralPath $seedConfigDir -PathType Container)) {
+        throw "Seed config directory '$seedConfigDir' does not exist."
+    }
+
+    $workingConfigDir = Join-Path $WorkingProfileRoot 'config'
+    Ensure-Directory -Path $workingConfigDir
+    Ensure-Directory -Path (Join-Path $WorkingProfileRoot 'Incoming')
+    Ensure-Directory -Path (Join-Path $WorkingProfileRoot 'Temp')
+    Ensure-Directory -Path (Join-Path $WorkingProfileRoot 'logs')
+
+    foreach ($seedFileName in @('preferences.ini', 'nodes.dat', 'server.met')) {
+        $seedFilePath = Join-Path $seedConfigDir $seedFileName
+        if (-not (Test-Path -LiteralPath $seedFilePath -PathType Leaf)) {
+            throw "Seed file '$seedFilePath' does not exist."
+        }
+
+        Copy-Item -LiteralPath $seedFilePath -Destination (Join-Path $workingConfigDir $seedFileName) -Force
+    }
+}
+
+function Write-SessionManifest {
+    param(
+        [Parameter(Mandatory = $true)]
+        [hashtable]$Manifest,
+
+        [Parameter(Mandatory = $true)]
+        [string[]]$Paths
+    )
+
+    $json = $Manifest | ConvertTo-Json -Depth 12
+    foreach ($path in $Paths) {
+        $parentDirectory = Split-Path -Parent $path
+        if (-not [string]::IsNullOrWhiteSpace($parentDirectory)) {
+            Ensure-Directory -Path $parentDirectory
+        }
+
+        $json | Set-Content -LiteralPath $path -Encoding utf8
+    }
 }
 
 function Get-MatchingProcess {
@@ -1832,16 +1909,30 @@ function Save-HangDump {
 $helperDir = Split-Path -Parent $PSCommandPath
 $repoRoot = Get-NormalizedPath -Path (Join-Path $helperDir '..')
 $workspaceRoot = Get-NormalizedPath -Path (Join-Path $repoRoot '..')
+$testsRoot = Get-NormalizedPath -Path (Join-Path $workspaceRoot '..\eMule-build-tests')
 $remoteRoot = Get-NormalizedPath -Path (Join-Path $workspaceRoot '..\eMule-remote')
 $buildScriptPath = Join-Path $workspaceRoot '23-build-emule-debug-incremental.cmd'
 $exePath = Join-Path $repoRoot 'srchybrid\x64\Debug\emule.exe'
 $remoteEntryPoint = Join-Path $remoteRoot 'dist\server\index.js'
-$profileRoot = Get-NormalizedPath -Path $ProfileRoot
+$sessionStamp = Get-Date -Format 'yyyyMMdd-HHmmss'
+$defaultSeedRoot = Join-Path $testsRoot 'manifests\live-profile-seed'
+$seedRoot = if ([string]::IsNullOrWhiteSpace($SeedRoot)) {
+    Get-NormalizedPath -Path $defaultSeedRoot
+} else {
+    Get-NormalizedPath -Path $SeedRoot
+}
+$profileRunsRoot = Get-NormalizedPath -Path $ProfileRoot
+$profileRoot = Join-Path (Join-Path $profileRunsRoot 'runs') $sessionStamp
 $configDir = Join-Path $profileRoot 'config'
 $logDir = Join-Path $profileRoot 'logs'
 $preferencesPath = Join-Path $configDir 'preferences.ini'
-$artifactDir = Join-Path (Join-Path $workspaceRoot 'logs') ((Get-Date -Format 'yyyyMMdd-HHmmss') + '-pipe-live-session')
-$manifestPath = Join-Path $artifactDir 'session-manifest.json'
+$artifactDir = Join-Path (Join-Path $workspaceRoot 'logs') ($sessionStamp + '-pipe-live-session')
+$artifactLatestDir = Join-Path (Join-Path $workspaceRoot 'logs') 'pipe-live-session-latest'
+$artifactManifestPath = Join-Path $artifactDir 'session-manifest.json'
+$manifestPaths = @($artifactManifestPath)
+if (-not [string]::IsNullOrWhiteSpace($SessionManifestPath)) {
+    $manifestPaths += (Get-NormalizedPath -Path $SessionManifestPath)
+}
 $summaryPath = Join-Path $artifactDir 'session-summary.txt'
 $remoteStdOutPath = Join-Path $artifactDir 'remote-stdout.log'
 $remoteStdErrPath = Join-Path $artifactDir 'remote-stderr.log'
@@ -1849,18 +1940,17 @@ $crtLogPath = Join-Path $logDir 'eMule CRT Debug Log.log'
 $baseUri = "http://127.0.0.1:$RemotePort"
 
 Ensure-Directory -Path $artifactDir
+Ensure-Directory -Path $profileRunsRoot
+
+if (-not (Test-Path -LiteralPath $seedRoot -PathType Container)) {
+    throw "Seed root '$seedRoot' does not exist."
+}
+
+Initialize-LiveSessionProfile -SeedRoot $seedRoot -WorkingProfileRoot $profileRoot
 
 $bindInterface = Get-NetAdapter -Name $BindInterfaceName -ErrorAction SilentlyContinue
 if ($null -eq $bindInterface) {
     throw "Bind interface '$BindInterfaceName' was not found."
-}
-
-if (-not (Test-Path -LiteralPath $profileRoot -PathType Container)) {
-    throw "Profile root '$profileRoot' does not exist."
-}
-
-if (-not (Test-Path -LiteralPath $preferencesPath -PathType Leaf)) {
-    throw "Preferences file '$preferencesPath' does not exist."
 }
 
 if (-not $SkipBuild) {
@@ -1887,9 +1977,21 @@ $stoppedRemoteSidecarProcessIds = Stop-ProcessesByCommandLinePattern -ProcessNam
 $manifest = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
     started_at = (Get-Date).ToString('o')
+    session_stamp = $sessionStamp
     exe_path = $exePath
     remote_entry_point = $remoteEntryPoint
+    seed_root = $seedRoot
+    profile_runs_root = $profileRunsRoot
     profile_root = $profileRoot
+    config_dir = $configDir
+    log_dir = $logDir
+    artifact_dir = $artifactDir
+    artifact_latest_dir = $artifactLatestDir
+    launch_only = [bool]$LaunchOnly
+    keep_running = [bool]$KeepRunning
+    pipe_name = '\\.\pipe\emule-api'
+    base_uri = $baseUri
+    remote_token = $RemoteToken
     bind_interface_name = $BindInterfaceName
     bind_interface_description = $bindInterface.InterfaceDescription
     search_query = $SearchQuery
@@ -1915,7 +2017,7 @@ $manifest = [ordered]@{
     stopped_existing_remote_sidecar_process_ids = @($stoppedRemoteSidecarProcessIds)
     launch_status = 'starting'
 }
-$manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
 $startProcessArgs = @{
     FilePath = $exePath
@@ -1932,7 +2034,7 @@ if ([string]::IsNullOrWhiteSpace($nodePath)) {
 
 $manifest.process_id = $emuleProcess.Id
 $manifest.launch_status = 'waiting_for_pipe'
-$manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
 $serversStatus = $null
 $kadStatus = $null
@@ -1963,45 +2065,52 @@ try {
     }
     $manifest.remote_process_id = $remoteHandle.Process.Id
     $manifest.launch_status = 'running'
-    $manifest | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+    Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
     $health = Wait-RemoteHealth -BaseUri $baseUri -TimeoutSec 90
     $fallbackLink = Get-FallbackEd2kLink -ConfigDir $configDir
     $configuredSearchQueries = @(Get-ConfiguredSearchQueries -PrimaryQuery $SearchQuery -AdditionalQueries $StressQueries)
 
-    try {
-        $serversStatus = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/servers/connect" -Token $RemoteToken -Body @{}
-    } catch {
-        $serversStatus = [pscustomobject]@{ error = $_.Exception.Message }
-    }
+    if ($LaunchOnly) {
+        $manifest.launch_status = 'launch_only_ready'
+        $manifest.remote_health = $health
+        Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
+    } else {
 
-    try {
-        $kadStatus = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/kad/connect" -Token $RemoteToken -Body @{}
-    } catch {
-        $kadStatus = [pscustomobject]@{ error = $_.Exception.Message }
-    }
+        try {
+            $serversStatus = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/servers/connect" -Token $RemoteToken -Body @{}
+        } catch {
+            $serversStatus = [pscustomobject]@{ error = $_.Exception.Message }
+        }
 
-    if ($ScenarioProfile -ne 'soak') {
-        $matrixResult = Invoke-PipeScenarioMatrix -BaseUri $baseUri -Token $RemoteToken -SearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -FallbackLink $fallbackLink -SyntheticLinks $syntheticLinks -MatrixRepeatCount $MatrixRepeatCount -TransferPauseMs $TransferChurnPauseMs -FailFast:$StrictMatrix
-        if ($null -ne $matrixResult -and -not [string]::IsNullOrWhiteSpace($matrixResult.selected_download_link)) {
-            $selectedDownloadLink = $matrixResult.selected_download_link
+        try {
+            $kadStatus = Invoke-RemoteJson -Method Post -Uri "$baseUri/api/v2/kad/connect" -Token $RemoteToken -Body @{}
+        } catch {
+            $kadStatus = [pscustomobject]@{ error = $_.Exception.Message }
         }
-        $matrixSummary = Get-ScenarioSummary -Kind 'matrix'
-        if ($matrixSummary.failed -gt 0) {
-            $sessionFailure = "{0} matrix scenario(s) failed." -f $matrixSummary.failed
-            $sessionFailureDetail = ($matrixSummary.failed_scenarios | ConvertTo-Json -Depth 8)
-        }
-    }
 
-    if ([string]::IsNullOrWhiteSpace($sessionFailure) -and $ScenarioProfile -ne 'matrix') {
-        $soakResult = Invoke-PipeSoakScenario -BaseUri $baseUri -Token $RemoteToken -ExecutablePath $exePath -ConfiguredSearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -SearchCycleCount $SearchCycleCount -SearchCyclePauseSec $SearchCyclePauseSec -MonitorSec $MonitorSec -PollSec $PollSec -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll -TransferChurnCycles $TransferChurnCycles -TransfersPerChurnCycle $TransfersPerChurnCycle -TransferChurnPauseMs $TransferChurnPauseMs -SyntheticLinks $syntheticLinks -LogDir $logDir -InitialSelectedDownloadLink $selectedDownloadLink -FallbackLink $fallbackLink -ArtifactDir $artifactDir
-        $soakSummary = Get-ScenarioSummary -Kind 'soak'
-        if ($null -ne $soakResult -and -not [string]::IsNullOrWhiteSpace($soakResult.selected_download_link)) {
-            $selectedDownloadLink = $soakResult.selected_download_link
+        if ($ScenarioProfile -ne 'soak') {
+            $matrixResult = Invoke-PipeScenarioMatrix -BaseUri $baseUri -Token $RemoteToken -SearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -FallbackLink $fallbackLink -SyntheticLinks $syntheticLinks -MatrixRepeatCount $MatrixRepeatCount -TransferPauseMs $TransferChurnPauseMs -FailFast:$StrictMatrix
+            if ($null -ne $matrixResult -and -not [string]::IsNullOrWhiteSpace($matrixResult.selected_download_link)) {
+                $selectedDownloadLink = $matrixResult.selected_download_link
+            }
+            $matrixSummary = Get-ScenarioSummary -Kind 'matrix'
+            if ($matrixSummary.failed -gt 0) {
+                $sessionFailure = "{0} matrix scenario(s) failed." -f $matrixSummary.failed
+                $sessionFailureDetail = ($matrixSummary.failed_scenarios | ConvertTo-Json -Depth 8)
+            }
         }
-        if ($null -ne $soakResult -and -not [bool]$soakResult.scenario_ok) {
-            $sessionFailure = [string]$soakResult.error_message
-            $sessionFailureDetail = ($soakResult | ConvertTo-Json -Depth 12)
+
+        if ([string]::IsNullOrWhiteSpace($sessionFailure) -and $ScenarioProfile -ne 'matrix') {
+            $soakResult = Invoke-PipeSoakScenario -BaseUri $baseUri -Token $RemoteToken -ExecutablePath $exePath -ConfiguredSearchQueries $configuredSearchQueries -SearchWaitSec $SearchWaitSec -SearchCycleCount $SearchCycleCount -SearchCyclePauseSec $SearchCyclePauseSec -MonitorSec $MonitorSec -PollSec $PollSec -TransferProbeCount $TransferProbeCount -UploadProbeCount $UploadProbeCount -ExtraStatsBurstsPerPoll $ExtraStatsBurstsPerPoll -TransferChurnCycles $TransferChurnCycles -TransfersPerChurnCycle $TransfersPerChurnCycle -TransferChurnPauseMs $TransferChurnPauseMs -SyntheticLinks $syntheticLinks -LogDir $logDir -InitialSelectedDownloadLink $selectedDownloadLink -FallbackLink $fallbackLink -ArtifactDir $artifactDir
+            $soakSummary = Get-ScenarioSummary -Kind 'soak'
+            if ($null -ne $soakResult -and -not [string]::IsNullOrWhiteSpace($soakResult.selected_download_link)) {
+                $selectedDownloadLink = $soakResult.selected_download_link
+            }
+            if ($null -ne $soakResult -and -not [bool]$soakResult.scenario_ok) {
+                $sessionFailure = [string]$soakResult.error_message
+                $sessionFailureDetail = ($soakResult | ConvertTo-Json -Depth 12)
+            }
         }
     }
 } catch {
@@ -2028,9 +2137,18 @@ try {
         }
     }
 
-    if ($null -ne $remoteHandle) {
+    if (-not $KeepRunning -and $null -ne $remoteHandle) {
         Stop-RedirectedProcess -Handle $remoteHandle
     }
+}
+
+if ($LaunchOnly) {
+    $manifest.finished_at = (Get-Date).ToString('o')
+    $manifest.latest_artifact_published = $false
+    $manifest.latest_artifact_error = $null
+    Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
+    Write-Output "Pipe live session artifact directory: $artifactDir"
+    return
 }
 
 $finalLogSnapshot = Get-LogSnapshot -LogDir $logDir
@@ -2070,12 +2188,23 @@ if (Test-Path -LiteralPath $crtLogPath -PathType Leaf) {
 $summary = [ordered]@{
     helper = 'helper-runtime-pipe-live-session.ps1'
     artifact_dir = $artifactDir
+    artifact_latest_dir = $artifactLatestDir
+    seed_root = $seedRoot
+    profile_runs_root = $profileRunsRoot
     profile_root = $profileRoot
+    config_dir = $configDir
+    log_dir = $logDir
     scenario_profile = $ScenarioProfile
     matrix_repeat_count = $MatrixRepeatCount
     strict_matrix = [bool]$StrictMatrix
+    launch_only = [bool]$LaunchOnly
+    keep_running = [bool]$KeepRunning
+    pipe_name = '\\.\pipe\emule-api'
+    base_uri = $baseUri
+    remote_token = $RemoteToken
     emule_process_id = $emuleProcess.Id
     remote_process_id = if ($null -ne $remoteHandle) { $remoteHandle.Process.Id } else { $null }
+    manifest_paths = @($manifestPaths)
     remote_health = $health
     server_connect = $serversStatus
     kad_connect = $kadStatus
@@ -2095,10 +2224,26 @@ $summary = [ordered]@{
     session_failure_detail = $sessionFailureDetail
     finished_at = (Get-Date).ToString('o')
 }
-$summary | ConvertTo-Json -Depth 12 | Set-Content -LiteralPath $manifestPath -Encoding utf8
+$latestArtifactPublished = $false
+$latestArtifactError = $null
+if (-not $KeepRunning) {
+    try {
+        Publish-DirectorySnapshot -SourceDirectory $artifactDir -DestinationDirectory $artifactLatestDir
+        $latestArtifactPublished = $true
+    } catch {
+        $latestArtifactError = $_.Exception.Message
+    }
+}
+$summary.latest_artifact_published = $latestArtifactPublished
+$summary.latest_artifact_error = $latestArtifactError
+foreach ($entry in $summary.GetEnumerator()) {
+    $manifest[$entry.Key] = $entry.Value
+}
+Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 @(
     "Pipe live session"
     "artifact_dir: $artifactDir"
+    "artifact_latest_dir: $artifactLatestDir"
     "profile_root: $profileRoot"
     "scenario_profile: $ScenarioProfile"
     "matrix_failed: $($matrixSummary.failed)"
