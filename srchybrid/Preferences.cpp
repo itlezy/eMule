@@ -52,6 +52,7 @@ CPreferences thePrefs;
 CString CPreferences::m_astrDefaultDirs[13];
 bool	CPreferences::m_abDefaultDirsCreated[13] = {};
 int		CPreferences::m_nCurrentUserDirMode = -1;
+CString CPreferences::m_strProfileRootOverride;
 int		CPreferences::m_iDbgHeap;
 CString	CPreferences::strNick;
 uint32	CPreferences::m_minupload;
@@ -3006,9 +3007,8 @@ uint16 CPreferences::GetRandomUDPPort()
 // Fallback: ApplicationDir
 //
 // Oracle override:
-// The local debug oracle always runs self-contained from the executable tree.
-// All config, log, data and expansion directories stay next to the executable
-// so the runtime never drifts into AppData or ProgramData profiles.
+// The debug oracle defaults to an executable-local profile, but a harness can
+// override the mutable runtime root via "-c <profile_root>" for clean-room runs.
 CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCreate)
 {
 	if (m_astrDefaultDirs[0].IsEmpty()) { // already have all directories fetched and stored?
@@ -3021,11 +3021,13 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		*pszFileName = L'\0';
 		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = tchBuffer;
 
-		// Keep the debug-local oracle pinned to the executable tree so
-		// ".\\config\\preferences.ini" is always the active profile.
-		CString strSelectedDataBaseDirectory = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
-		CString strSelectedConfigBaseDirectory = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
-		CString strSelectedExpansionBaseDirectory = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
+		CString strProfileRoot = m_strProfileRootOverride;
+		if (strProfileRoot.IsEmpty())
+			strProfileRoot = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
+
+		CString strSelectedDataBaseDirectory = strProfileRoot;
+		CString strSelectedConfigBaseDirectory = strProfileRoot;
+		CString strSelectedExpansionBaseDirectory = strProfileRoot;
 		m_nCurrentUserDirMode = 2;
 		// the use of ending backslashes is inconsistent, would need a rework throughout the code to fix this
 		m_astrDefaultDirs[EMULE_CONFIGDIR] = strSelectedConfigBaseDirectory + CONFIGFOLDER;
@@ -3099,6 +3101,24 @@ void CPreferences::SetMuleDirectory(EDefaultDirectory eDirectory, const CString 
 	default:
 		ASSERT(0);
 	}
+}
+
+void CPreferences::SetProfileRootOverride(LPCTSTR pszProfileRoot)
+{
+	m_strProfileRootOverride = pszProfileRoot ? pszProfileRoot : _T("");
+	m_strProfileRootOverride.Trim();
+	m_strProfileRootOverride.Replace(_T('/'), _T('\\'));
+	if (!m_strProfileRootOverride.IsEmpty() && m_strProfileRootOverride.Right(1) != _T("\\"))
+		m_strProfileRootOverride += _T("\\");
+	for (int i = 0; i < _countof(m_astrDefaultDirs); ++i) {
+		m_astrDefaultDirs[i].Empty();
+		m_abDefaultDirsCreated[i] = false;
+	}
+}
+
+bool CPreferences::HasProfileRootOverride()
+{
+	return !m_strProfileRootOverride.IsEmpty();
 }
 
 void CPreferences::ChangeUserDirMode(int nNewMode)

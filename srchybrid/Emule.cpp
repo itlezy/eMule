@@ -371,6 +371,23 @@ bool CemuleApp::IsClosing() const
 	return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE;
 }
 
+bool CemuleApp::IsParityHarnessMode() const
+{
+	if (CPreferences::HasProfileRootOverride())
+		return true;
+
+	TCHAR tchBuffer[MAX_PATH];
+	::GetModuleFileName(NULL, tchBuffer, _countof(tchBuffer));
+	tchBuffer[_countof(tchBuffer) - 1] = _T('\0');
+	LPCTSTR pszFileName = _tcsrchr(tchBuffer, _T('\\'));
+	if (pszFileName != NULL)
+		++pszFileName;
+	else
+		pszFileName = tchBuffer;
+
+	return _tcsicmp(pszFileName, _T("eMule_v060_parity.exe")) == 0;
+}
+
 
 CemuleApp theApp(_T("eMule"));
 
@@ -431,6 +448,7 @@ BOOL CemuleApp::InitInstance()
 	// output all ASSERT messages to debug device
 	_CrtSetReportMode(_CRT_ASSERT, _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_REPORT_MODE) | _CRTDBG_MODE_DEBUG);
 #endif
+	ApplyEarlyCommandlineOverrides();
 	free((void*)m_pszProfileName);
 	m_pszProfileName = _tcsdup(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("preferences.ini"));
 
@@ -719,11 +737,49 @@ int eMuleAllocHook(int mode, void *pUserData, size_t nSize, int nBlockUse, long 
 }
 #endif
 
+bool CemuleApp::TryParseProfileRootArgument(int &i, CString &strProfileRoot)
+{
+	LPCTSTR pszArg = __targv[i];
+	if (pszArg[0] != _T('-') && pszArg[0] != _T('/'))
+		return false;
+	++pszArg;
+
+	if ((_tcsicmp(pszArg, _T("c")) == 0 || _tcsicmp(pszArg, _T("configdir")) == 0) && i + 1 < __argc) {
+		strProfileRoot = __targv[++i];
+		strProfileRoot.Trim();
+		return !strProfileRoot.IsEmpty();
+	}
+	if (_tcsnicmp(pszArg, _T("c="), 2) == 0) {
+		strProfileRoot = pszArg + 2;
+		strProfileRoot.Trim();
+		return !strProfileRoot.IsEmpty();
+	}
+	if (_tcsnicmp(pszArg, _T("configdir="), 10) == 0) {
+		strProfileRoot = pszArg + 10;
+		strProfileRoot.Trim();
+		return !strProfileRoot.IsEmpty();
+	}
+	return false;
+}
+
+void CemuleApp::ApplyEarlyCommandlineOverrides()
+{
+	for (int i = 1; i < __argc; ++i) {
+		CString strProfileRoot;
+		if (TryParseProfileRootArgument(i, strProfileRoot))
+			CPreferences::SetProfileRootOverride(strProfileRoot);
+	}
+}
+
 bool CemuleApp::ProcessCommandline()
 {
 	bool bIgnoreRunningInstances = (GetProfileInt(_T("eMule"), _T("IgnoreInstances"), 0) != 0);
+	CString command;
 	for (int i = 1; i < __argc; ++i) {
 		LPCTSTR pszParam = __targv[i];
+		CString strProfileRoot;
+		if (TryParseProfileRootArgument(i, strProfileRoot))
+			continue;
 		if (pszParam[0] == _T('-') || pszParam[0] == _T('/')) {
 			++pszParam;
 #ifdef _DEBUG
@@ -735,11 +791,11 @@ bool CemuleApp::ProcessCommandline()
 
 			if (_tcsicmp(pszParam, _T("AutoStart")) == 0)
 				m_bAutoStart = true;
+		} else if (command.IsEmpty()) {
+			command = __targv[i];
 		}
 	}
-
-	CCommandLineInfo cmdInfo;
-	ParseCommandLine(cmdInfo);
+	const bool bHasCommand = !command.IsEmpty();
 
 	// If we create our TCP listen socket with SO_REUSEADDR, we have to ensure that there are
 	// not 2 emules are running using the same port.
@@ -750,13 +806,12 @@ bool CemuleApp::ProcessCommandline()
 	m_hMutexOneInstance = CreateMutex(NULL, FALSE, strMutextName);
 
 	HWND maininst = NULL;
-	const CString &command(cmdInfo.m_strFileName);
 
 	//this codepart is to determine special cases when we do add a link to our eMule
 	//because in this case it would be nonsense to start another instance!
 	bool bAlreadyRunning = false;
 	if (bIgnoreRunningInstances
-		&& cmdInfo.m_nShellCommand == CCommandLineInfo::FileOpen
+		&& bHasCommand
 		&& (command.Find(_T("://")) > 0 || command.Find(_T("magnet:?")) >= 0 || CCollection::HasCollectionExtention(command)))
 	{
 		bIgnoreRunningInstances = false;
@@ -769,7 +824,7 @@ bool CemuleApp::ProcessCommandline()
 			EnumWindows(SearchEmuleWindow, (LPARAM)&maininst);
 		}
 
-	if (cmdInfo.m_nShellCommand == CCommandLineInfo::FileOpen) {
+	if (bHasCommand) {
 		if (command.Find(_T("://")) > 0 || command.Find(_T("magnet:?")) >= 0) {
 			sendstruct.cbData = (command.GetLength() + 1) * sizeof(TCHAR);
 			sendstruct.dwData = OP_ED2KLINK;
@@ -1337,7 +1392,7 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 				}
 			} else {
 				// WINBUG???: 'ExtractIcon' does not work well on ICO-files when using the color
-				// scheme 'Windows-Standard (extragroß)' -> always try to use 'LoadImage'!
+				// scheme 'Windows-Standard (extragroÃŸ)' -> always try to use 'LoadImage'!
 				//
 				// If the ICO file contains a 16x16 icon, 'LoadImage' will though return a 32x32 icon,
 				// if LR_DEFAULTSIZE is specified! -> always specify the requested size!
