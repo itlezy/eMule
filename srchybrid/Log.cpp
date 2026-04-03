@@ -32,6 +32,8 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 CCriticalSection g_oracleUdpDumpLock;
+CCriticalSection g_oracleEd2kTcpDumpLock;
+static const UINT ORACLE_ED2K_TCP_HEADER_SIZE = 6;
 
 CString BuildOracleUdpTimestamp()
 {
@@ -39,6 +41,15 @@ CString BuildOracleUdpTimestamp()
 	::GetLocalTime(&st);
 	CString strTimestamp;
 	strTimestamp.Format(_T("%04u-%02u-%02uT%02u:%02u:%02u.%03u"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+	return strTimestamp;
+}
+
+CString BuildOracleEd2kTcpTimestampUtc()
+{
+	SYSTEMTIME st = {};
+	::GetSystemTime(&st);
+	CString strTimestamp;
+	strTimestamp.Format(_T("%04u-%02u-%02uT%02u:%02u:%02u.%03uZ"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 	return strTimestamp;
 }
 
@@ -112,6 +123,103 @@ CString ExtractOracleUdpTransportMode(LPCTSTR pszMetadata)
 		return CString();
 
 	return strMetadata.Mid(iValueStart, iValueEnd - iValueStart);
+}
+
+LPCTSTR OracleEd2kProtocolName(uint8 byProtocol)
+{
+	switch (byProtocol) {
+	case OP_EDONKEYPROT:
+		return _T("ed2k");
+	case OP_EMULEPROT:
+		return _T("emule");
+	case OP_PACKEDPROT:
+		return _T("packed");
+	default:
+		return NULL;
+	}
+}
+
+CString OracleEd2kOpcodeName(uint8 byProtocol, uint8 byOpcode)
+{
+	if (byProtocol == OP_EDONKEYPROT)
+		return DbgGetDonkeyClientTCPOpcode(byOpcode);
+	if (byProtocol == OP_EMULEPROT || byProtocol == OP_PACKEDPROT)
+		return DbgGetMuleClientTCPOpcode(byOpcode);
+
+	CString strOpcode;
+	strOpcode.Format(_T("0x%02X"), byOpcode);
+	return strOpcode;
+}
+
+// Mirror the Rust helper dump format so the oracle and agent TCP handshakes can
+// be diffed directly without rebuilding packets from verbose logs.
+void OracleEd2kTcpDumpImpl(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszDirection, LPCTSTR pszPeerLabel, LPCTSTR pszTransportMode, uint8 byProtocol, uint8 byOpcode, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszNote)
+{
+	if (!theOracleEd2kTcpDumpLog.IsOpen())
+		return;
+
+	const CString strTimestamp = EscapeOracleUdpJson(BuildOracleEd2kTcpTimestampUtc());
+	const CString strFlow = EscapeOracleUdpJson(pszFlow != NULL ? pszFlow : _T("unknown"));
+	const CString strPhase = EscapeOracleUdpJson(pszPhase != NULL ? pszPhase : _T("session"));
+	const CString strDirection = EscapeOracleUdpJson(pszDirection != NULL ? pszDirection : _T("meta"));
+	const CString strPeer = EscapeOracleUdpJson(pszPeerLabel != NULL ? pszPeerLabel : _T("unknown"));
+	const CString strTransportMode = EscapeOracleUdpJson(pszTransportMode != NULL ? pszTransportMode : _T("unknown"));
+	const CString strNote = (pszNote != NULL && pszNote[0] != _T('\0')) ? EscapeOracleUdpJson(CString(pszNote)) : CString();
+
+	CString strJson;
+	strJson.Format(
+		_T("{\"schema\":\"ed2k_tcp_helper_v1\",\"source\":\"oracle\",\"ts_utc\":\"%s\",\"flow\":\"%s\",\"phase\":\"%s\",\"direction\":\"%s\",\"remote_addr\":\"%s\",\"transport_mode\":\"%s\""),
+		(LPCTSTR)strTimestamp,
+		(LPCTSTR)strFlow,
+		(LPCTSTR)strPhase,
+		(LPCTSTR)strDirection,
+		(LPCTSTR)strPeer,
+		(LPCTSTR)strTransportMode);
+
+	if (pPayload != NULL) {
+		const UINT uRawLen = uPayloadLen + ORACLE_ED2K_TCP_HEADER_SIZE;
+		BYTE *pRawPacket = new BYTE[uRawLen];
+		pRawPacket[0] = byProtocol;
+		const uint32 uPacketLength = uPayloadLen + 1;
+		pRawPacket[1] = static_cast<BYTE>(uPacketLength & 0xFF);
+		pRawPacket[2] = static_cast<BYTE>((uPacketLength >> 8) & 0xFF);
+		pRawPacket[3] = static_cast<BYTE>((uPacketLength >> 16) & 0xFF);
+		pRawPacket[4] = static_cast<BYTE>((uPacketLength >> 24) & 0xFF);
+		pRawPacket[5] = byOpcode;
+		if (uPayloadLen > 0)
+			memcpy(pRawPacket + ORACLE_ED2K_TCP_HEADER_SIZE, pPayload, uPayloadLen);
+		const CString strRawHex = BuildOracleUdpHexString(pRawPacket, uRawLen);
+		const CString strPayloadHex = BuildOracleUdpHexString(pPayload, uPayloadLen);
+		delete[] pRawPacket;
+
+		const LPCTSTR pszProtocolName = OracleEd2kProtocolName(byProtocol);
+		if (pszProtocolName != NULL)
+			strJson += _T(",\"protocol\":\"") + EscapeOracleUdpJson(pszProtocolName) + _T("\"");
+		else
+			strJson += _T(",\"protocol\":null");
+
+		CString strMarkers;
+		strMarkers.Format(_T(",\"protocol_marker\":%u,\"opcode\":%u,\"opcode_name\":\"%s\",\"raw_len\":%u,\"raw_hex\":\"%s\",\"payload_len\":%u,\"payload_hex\":\"%s\""),
+			static_cast<UINT>(byProtocol),
+			static_cast<UINT>(byOpcode),
+			(LPCTSTR)EscapeOracleUdpJson(OracleEd2kOpcodeName(byProtocol, byOpcode)),
+			uRawLen,
+			(LPCTSTR)strRawHex,
+			uPayloadLen,
+			(LPCTSTR)strPayloadHex);
+		strJson += strMarkers;
+	} else {
+		strJson += _T(",\"protocol\":null,\"protocol_marker\":null,\"opcode\":null,\"opcode_name\":null,\"raw_len\":null,\"raw_hex\":null,\"payload_len\":null,\"payload_hex\":null");
+	}
+
+	if (!strNote.IsEmpty())
+		strJson += _T(",\"note\":\"") + strNote + _T("\"");
+	else
+		strJson += _T(",\"note\":null");
+	strJson += _T("}\r\n");
+
+	CSingleLock lock(&g_oracleEd2kTcpDumpLock, TRUE);
+	theOracleEd2kTcpDumpLog.Log(strJson);
 }
 
 void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata, const BYTE *pDecodedPayload, UINT uDecodedPayloadLen)
@@ -528,6 +636,16 @@ void OracleUdpDump(LPCTSTR pszDirection, LPCTSTR pszFamily, uint32 dwIP, uint16 
 void OracleUdpDumpPeerLabel(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata, const BYTE *pDecodedPayload, UINT uDecodedPayloadLen)
 {
 	OracleUdpDumpImpl(pszDirection, pszFamily, pszPeerLabel, pPayload, uPayloadLen, pszMetadata, pDecodedPayload, uDecodedPayloadLen);
+}
+
+void OracleEd2kTcpDumpMeta(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszPeerLabel, LPCTSTR pszTransportMode, LPCTSTR pszNote)
+{
+	OracleEd2kTcpDumpImpl(pszFlow, pszPhase, _T("meta"), pszPeerLabel, pszTransportMode, 0, 0, NULL, 0, pszNote);
+}
+
+void OracleEd2kTcpDumpPacket(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszDirection, LPCTSTR pszPeerLabel, LPCTSTR pszTransportMode, uint8 byProtocol, uint8 byOpcode, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszNote)
+{
+	OracleEd2kTcpDumpImpl(pszFlow, pszPhase, pszDirection, pszPeerLabel, pszTransportMode, byProtocol, byOpcode, pPayload, uPayloadLen, pszNote);
 }
 
 void CLogFile::StartNewLogFile()

@@ -68,6 +68,42 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+bool IsOracleFirewallHelperFlow(const CUpDownClient *pClient)
+{
+	if (pClient == NULL)
+		return false;
+
+	switch (pClient->GetKadState()) {
+	case KS_CONNECTING_FWCHECK:
+	case KS_CONNECTING_FWCHECK_UDP:
+	case KS_FWCHECK_UDP:
+		return true;
+	default:
+		return false;
+	}
+}
+
+LPCTSTR GetOracleEd2kTcpFlow(const CUpDownClient *pClient)
+{
+	return IsOracleFirewallHelperFlow(pClient) ? _T("udp_firewall_check") : _T("listener");
+}
+
+CString GetOracleEd2kPeerLabel(const CUpDownClient *pClient)
+{
+	CString strPeer;
+	if (pClient == NULL) {
+		strPeer = _T("unknown");
+		return strPeer;
+	}
+
+	const uint32 dwPeerIP = pClient->GetConnectIP() != 0 ? pClient->GetConnectIP() : pClient->GetIP();
+	strPeer.Format(_T("%s:%u"), (LPCTSTR)ipstr(dwPeerIP), pClient->GetUserPort());
+	return strPeer;
+}
+}
+
 #define URLINDICATOR	_T("http:|www.|.de |.net |.com |.org |.to |.tk |.cc |.fr |ftp:|ed2k:|https:|ftp.|.info|.biz|.uk|.eu|.es|.tv|.cn|.tw|.ws|.nu|.jp")
 
 IMPLEMENT_DYNAMIC(CClientException, CException)
@@ -726,6 +762,7 @@ void CUpDownClient::SendHelloPacket()
 	packet->opcode = OP_HELLO;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_Hello", this);
+	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("hello_request"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadOther(packet->size);
 	SendPacket(packet);
 
@@ -767,6 +804,7 @@ void CUpDownClient::SendMuleInfoPacket(bool bAnswer)
 
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend(bAnswer ? "OP_EmuleInfoAnswer" : "OP_EmuleInfo", this);
+	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), bAnswer ? _T("mule_info_answer") : _T("mule_info"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadOther(packet->size);
 	SendPacket(packet);
 }
@@ -939,6 +977,7 @@ void CUpDownClient::SendHelloAnswer()
 	packet->opcode = OP_HELLOANSWER;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_HelloAnswer", this);
+	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("hello_answer"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadOther(packet->size);
 
 	// Servers send a FIN right in the data packet on check connection, so we need to force the response immediate
@@ -1596,6 +1635,12 @@ void CUpDownClient::ConnectionEstablished()
 	m_eConnectingState = CCS_NONE;
 	theApp.clientlist->RemoveConnectingClient(this);
 
+	if (IsOracleFirewallHelperFlow(this)) {
+		CString strNote;
+		strNote.Format(_T("kad_state=%u"), static_cast<UINT>(GetKadState()));
+		OracleEd2kTcpDumpMeta(_T("udp_firewall_check"), _T("connect_ok"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), strNote);
+	}
+
 	// check if we should use this client to retrieve our public IP
 	if (theApp.GetPublicIP() == 0 && theApp.IsConnected() && m_fPeerCache)
 		SendPublicIPRequest();
@@ -1918,6 +1963,7 @@ void CUpDownClient::SendPublicKeyPacket()
 	packet->pBuffer[0] = theApp.clientcredits->GetPubKeyLen();
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_PublicKey", this);
+	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("public_key"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	SendPacket(packet);
 	m_SecureIdentState = IS_SIGNATURENEEDED;
 }
@@ -1973,6 +2019,7 @@ void CUpDownClient::SendSignaturePacket()
 		packet->pBuffer[1 + siglen] = byChaIPKind;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_Signature", this);
+	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("signature"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	SendPacket(packet);
 	m_SecureIdentState = IS_ALLREQUESTSSEND;
 }
@@ -2086,6 +2133,7 @@ void CUpDownClient::SendSecIdentStatePacket()
 		PokeUInt32(&packet->pBuffer[1], dwRandom);
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP_SecIdentState", this);
+		OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("secure_ident_probe"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 		SendPacket(packet);
 	} else
 		ASSERT(0);
@@ -2979,6 +3027,7 @@ void CUpDownClient::SendFirewallCheckUDPRequest()
 	data.WriteUInt16(Kademlia::CKademlia::GetPrefs()->GetExternalKadPort());
 	data.WriteUInt32(Kademlia::CKademlia::GetPrefs()->GetUDPVerifyKey(GetConnectIP()));
 	Packet *packet = new Packet(&data, OP_EMULEPROT, OP_FWCHECKUDPREQ);
+	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("fwcheck_request"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadKad(packet->size);
 	SafeConnectAndSendPacket(packet);
 }
@@ -2996,6 +3045,19 @@ void CUpDownClient::ProcessFirewallCheckUDPRequest(CSafeMemFile *data)
 	uint16 nRemoteInternPort = data->ReadUInt16();
 	uint16 nRemoteExternPort = data->ReadUInt16();
 	uint32 dwSenderKey = data->ReadUInt32();
+	CString strRequestNote;
+	strRequestNote.Format(
+		_T("internal_udp_port=%u external_udp_port=%u sender_udp_key=%u already_known=%u"),
+		nRemoteInternPort,
+		nRemoteExternPort,
+		dwSenderKey,
+		bErrorAlreadyKnown ? 1 : 0);
+	OracleEd2kTcpDumpMeta(
+		GetOracleEd2kTcpFlow(this),
+		_T("fwcheck_process"),
+		GetOracleEd2kPeerLabel(this),
+		(socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"),
+		strRequestNote);
 	if (nRemoteInternPort == 0) {
 		DebugLogError(_T("UDP Firewall check requested with Intern Port == 0 (%s)"), (LPCTSTR)DbgGetClientInfo());
 		return;
