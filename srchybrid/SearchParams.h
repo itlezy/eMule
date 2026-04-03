@@ -1,7 +1,7 @@
 #pragma once
 
-#include "SafeFile.h"
 #include "SearchParamsPolicy.h"
+#include "SafeFile.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // ESearchType
@@ -31,7 +31,7 @@ struct SSearchParams
 		, uComplete()
 		, uiMinBitrate()
 		, uiMinLength()
-		, eType(SearchTypeEd2kServer)
+		, eType(static_cast<ESearchType>(SearchParamsPolicy::kDefaultSearchType))
 		, bClientSharedFiles()
 		, bMatchKeywords()
 	{
@@ -47,6 +47,9 @@ struct SSearchParams
 		, bMatchKeywords()
 	{
 		dwSearchID = rFile.ReadUInt32();
+		/**
+		 * @brief Keep the legacy oracle branch aligned with the shared search-method normalization seam.
+		 */
 		eType = static_cast<ESearchType>(SearchParamsPolicy::NormalizeStoredSearchType(rFile.ReadUInt8()));
 		bClientSharedFiles = rFile.ReadUInt8() > 0;
 		strSpecialTitle = rFile.ReadString(true);
