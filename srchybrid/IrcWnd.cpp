@@ -720,7 +720,7 @@ bool IsValidURLTerminationChar(TCHAR ch)
 	// truncate some special chars from end (and only from end), those
 	// are the same chars which are supported (not supported actually)
 	// by rich edit control auto url detection.
-	return _tcschr(_T("^!\"&()=?´`{}[]@+*~#,.-;:_"), ch) == NULL;
+	return _tcschr(_T("^!\"&()=?Â´`{}[]@+*~#,.-;:_"), ch) == NULL;
 }
 
 void CIrcWnd::AddColorLine(const CString &line, CHTRichEditCtrl &wnd, COLORREF crForeground)

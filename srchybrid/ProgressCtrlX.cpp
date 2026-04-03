@@ -4,7 +4,7 @@
 // Author:  Yury Goltsman
 // email:   ygprg@go.to
 // page:    http://go.to/ygprg
-// Copyright © 2000, Yury Goltsman
+// Copyright Â© 2000, Yury Goltsman
 //
 // This code provided "AS IS," without warranty of any kind.
 // You may freely use or modify this code provided this

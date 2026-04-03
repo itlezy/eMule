@@ -295,7 +295,7 @@ void CDownloadListCtrl::AddSource(CPartFile *owner, CUpDownClient *source, bool 
 	newitem->parent = ownerItem;
 
 	// The same source could be added a few times but only one time per file
-	
+
 	// Update the other instances of this source
 	bool bFound = false;
 	for (ListItems::const_iterator it = m_ListItems.find(source); it != m_ListItems.end() && it->first == source; ++it) {
@@ -318,7 +318,7 @@ void CDownloadListCtrl::AddSource(CPartFile *owner, CUpDownClient *source, bool 
 		delete newitem;
 		return;
 	}
-	
+
 	m_ListItems.insert(ListItemsPair(source, newitem));
 
 	if (owner->srcarevisible) {

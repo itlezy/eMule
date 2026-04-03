@@ -197,7 +197,7 @@ public:
 	static DWORD	m_adwStatsColors[15];
 	static bool		bHasCustomTaskIconColor;
 	static bool		m_bIconflashOnNewMessage;
-		   
+
 	static bool		splashscreen;
 	static bool		filterLANIPs;
 	static bool		m_bAllocLocalHostIP;
@@ -369,14 +369,14 @@ public:
 
 	static UINT		m_uTransferWnd1;
 	static UINT		m_uTransferWnd2;
-	//MORPH START - Added by SiRoB, Splitting Bar [O²]
+	//MORPH START - Added by SiRoB, Splitting Bar [OË›]
 	static UINT		splitterbarPositionStat;
 	static UINT		splitterbarPositionStat_HL;
 	static UINT		splitterbarPositionStat_HR;
 	static UINT		splitterbarPositionFriend;
 	static UINT		splitterbarPositionIRC;
 	static UINT		splitterbarPositionShared;
-	//MORPH END - Added by SiRoB, Splitting Bar [O²]
+	//MORPH END - Added by SiRoB, Splitting Bar [OË›]
 	static UINT		m_uDeadServerRetries;
 	static DWORD	m_dwServerKeepAliveTimeout;
 	// -khaos--+++> Changed data type to avoid overflows
@@ -473,7 +473,7 @@ public:
 
 	static UINT		versioncheckdays;
 	static bool		showRatesInTitle;
-		   
+
 	static CString	m_strTxtEditor;
 	static CString	m_strVideoPlayer;
 	static CString	m_strVideoPlayerArgs;
@@ -489,7 +489,7 @@ public:
 	static bool		m_bFirstStart;
 	static bool		m_bBetaNaggingDone;
 	static bool		m_bCreditSystem;
-		   
+
 	static bool		log2disk;
 	static bool		debug2disk;
 	static int		iMaxLogBuff;
@@ -500,13 +500,13 @@ public:
 	static bool		msgonlyfriends;
 	static bool		msgsecure;
 	static bool		m_bUseChatCaptchas;
-		   
+
 	static UINT		filterlevel;
 	static UINT		m_uFileBufferSize;
 	static INT_PTR	m_iQueueSize;
 	static int		m_iCommitFiles;
 	static DWORD	m_uFileBufferTimeLimit;
-		   
+
 	static UINT		maxmsgsessions;
 	static time_t	versioncheckLastAutomatic;
 	static CString	messageFilter;
@@ -561,11 +561,11 @@ public:
 	static bool		m_bRemoveFinishedDownloads;
 	static INT_PTR	m_iMaxChatHistory;
 	static bool		m_bShowActiveDownloadsBold;
-		   
+
 	static int		m_iSearchMethod;
 	static bool		m_bAdvancedSpamfilter;
 	static bool		m_bUseSecureIdent;
-		   
+
 	static bool		networkkademlia;
 	static bool		networked2k;
 
@@ -576,7 +576,7 @@ public:
 	static CString	m_sToolbarSettings;
 	static bool		m_bReBarToolbar;
 	static CSize	m_sizToolbarIconSize;
-		   
+
 	static bool		m_bWinaTransToolbar;
 	static bool		m_bShowDownloadToolbar;
 
@@ -607,7 +607,7 @@ public:
 	static UINT		m_nWebMirrorAlertLevel;
 	static bool		m_bRunAsUser;
 	static bool		m_bPreferRestrictedOverUser;
-		   
+
 	static bool		m_bUseOldTimeRemaining;
 
 	// PeerCache
@@ -1006,7 +1006,7 @@ public:
 	static void		SetTransferWnd1(UINT uWnd1)			{ m_uTransferWnd1 = uWnd1; }
 	static UINT		GetTransferWnd2()					{ return m_uTransferWnd2; }
 	static void		SetTransferWnd2(UINT uWnd2)			{ m_uTransferWnd2 = uWnd2; }
-	//MORPH START - Added by SiRoB, Splitting Bar [O²]
+	//MORPH START - Added by SiRoB, Splitting Bar [OË›]
 	static UINT		GetSplitterbarPositionStat()		{ return splitterbarPositionStat; }
 	static void		SetSplitterbarPositionStat(UINT pos) { splitterbarPositionStat = pos; }
 	static UINT		GetSplitterbarPositionStat_HL()		{ return splitterbarPositionStat_HL; }
@@ -1019,7 +1019,7 @@ public:
 	static void		SetSplitterbarPositionIRC(UINT pos)	{ splitterbarPositionIRC = pos; }
 	static UINT		GetSplitterbarPositionShared()		{ return splitterbarPositionShared; }
 	static void		SetSplitterbarPositionShared(UINT pos)	{ splitterbarPositionShared = pos; }
-	//MORPH END   - Added by SiRoB, Splitting Bar [O²]
+	//MORPH END   - Added by SiRoB, Splitting Bar [OË›]
 	// -khaos--+++> Changed datatype to avoid overflows
 	static UINT		GetStatsMax()						{ return statsMax; }
 	// <-----khaos-

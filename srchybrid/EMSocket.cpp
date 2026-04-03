@@ -1208,7 +1208,7 @@ void CEMSocket::CleanUpOverlappedSendOperation(bool bCancel)
 	if (m_bPendingSendOv) {
 		m_bPendingSendOv = false;
 		if (bCancel && CancelIo((HANDLE)GetSocketHandle()))
-			for (int i = 5; --i >= 0;) { //it could loop forever, so use sleep 
+			for (int i = 5; --i >= 0;) { //it could loop forever, so use sleep
 				DWORD dwTransferred, dwFlags;
 				if (WSAGetOverlappedResult(GetSocketHandle(), &m_PendingSendOperation, &dwTransferred, FALSE, &dwFlags))
 					break;
