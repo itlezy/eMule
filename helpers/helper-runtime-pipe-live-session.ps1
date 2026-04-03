@@ -133,6 +133,30 @@ function Publish-DirectorySnapshot {
     }
 }
 
+function Publish-LatestDirectoryPointer {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$TargetDirectory,
+
+        [Parameter(Mandatory = $true)]
+        [string]$LatestDirectory
+    )
+
+    $latestParentDirectory = Split-Path -Parent $LatestDirectory
+    if (-not [string]::IsNullOrWhiteSpace($latestParentDirectory)) {
+        Ensure-Directory -Path $latestParentDirectory
+    }
+
+    if (Test-Path -LiteralPath $LatestDirectory) {
+        Remove-Item -LiteralPath $LatestDirectory -Recurse -Force
+    }
+
+    <#
+    * @brief Keep one stable path that always points at the newest per-run working profile.
+    #>
+    $null = New-Item -ItemType Junction -Path $LatestDirectory -Target $TargetDirectory -Force
+}
+
 function Initialize-LiveSessionProfile {
     param(
         [Parameter(Mandatory = $true)]
@@ -1921,8 +1945,10 @@ $seedRoot = if ([string]::IsNullOrWhiteSpace($SeedRoot)) {
 } else {
     Get-NormalizedPath -Path $SeedRoot
 }
-$profileRunsRoot = Get-NormalizedPath -Path $ProfileRoot
-$profileRoot = Join-Path (Join-Path $profileRunsRoot 'runs') $sessionStamp
+$profileBaseRoot = Get-NormalizedPath -Path $ProfileRoot
+$profileRunsRoot = Join-Path $profileBaseRoot 'runs'
+$profileRoot = Join-Path $profileRunsRoot $sessionStamp
+$profileLatestRoot = Join-Path $profileBaseRoot 'latest'
 $configDir = Join-Path $profileRoot 'config'
 $logDir = Join-Path $profileRoot 'logs'
 $preferencesPath = Join-Path $configDir 'preferences.ini'
@@ -1940,6 +1966,7 @@ $crtLogPath = Join-Path $logDir 'eMule CRT Debug Log.log'
 $baseUri = "http://127.0.0.1:$RemotePort"
 
 Ensure-Directory -Path $artifactDir
+Ensure-Directory -Path $profileBaseRoot
 Ensure-Directory -Path $profileRunsRoot
 
 if (-not (Test-Path -LiteralPath $seedRoot -PathType Container)) {
@@ -1970,6 +1997,15 @@ if (-not (Test-Path -LiteralPath $remoteEntryPoint -PathType Leaf)) {
 
 Set-LiveSessionPreferences -PreferencesPath $preferencesPath -ProfileRoot $profileRoot -BindInterfaceName $BindInterfaceName
 
+$profileLatestPublished = $false
+$profileLatestError = $null
+try {
+    Publish-LatestDirectoryPointer -TargetDirectory $profileRoot -LatestDirectory $profileLatestRoot
+    $profileLatestPublished = $true
+} catch {
+    $profileLatestError = $_.Exception.Message
+}
+
 $stoppedEmuleProcessId = Stop-MatchingProcess -ProcessName 'emule' -ExecutablePath $exePath
 $stoppedRemoteProcessIds = Stop-ListeningProcessByPort -Port $RemotePort
 $stoppedRemoteSidecarProcessIds = Stop-ProcessesByCommandLinePattern -ProcessName 'node' -CommandPattern $remoteEntryPoint
@@ -1981,8 +2017,12 @@ $manifest = [ordered]@{
     exe_path = $exePath
     remote_entry_point = $remoteEntryPoint
     seed_root = $seedRoot
+    profile_base_root = $profileBaseRoot
     profile_runs_root = $profileRunsRoot
     profile_root = $profileRoot
+    profile_latest_root = $profileLatestRoot
+    profile_latest_published = $profileLatestPublished
+    profile_latest_error = $profileLatestError
     config_dir = $configDir
     log_dir = $logDir
     artifact_dir = $artifactDir
@@ -2190,8 +2230,12 @@ $summary = [ordered]@{
     artifact_dir = $artifactDir
     artifact_latest_dir = $artifactLatestDir
     seed_root = $seedRoot
+    profile_base_root = $profileBaseRoot
     profile_runs_root = $profileRunsRoot
     profile_root = $profileRoot
+    profile_latest_root = $profileLatestRoot
+    profile_latest_published = $profileLatestPublished
+    profile_latest_error = $profileLatestError
     config_dir = $configDir
     log_dir = $logDir
     scenario_profile = $ScenarioProfile
@@ -2245,6 +2289,7 @@ Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
     "artifact_dir: $artifactDir"
     "artifact_latest_dir: $artifactLatestDir"
     "profile_root: $profileRoot"
+    "profile_latest_root: $profileLatestRoot"
     "scenario_profile: $ScenarioProfile"
     "matrix_failed: $($matrixSummary.failed)"
     "soak_failed: $($soakSummary.failed)"
