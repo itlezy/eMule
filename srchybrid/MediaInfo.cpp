@@ -789,7 +789,7 @@ bool GetRIFFHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsAVI, bool bFu
 									mi->video.bmiHeader = *strmhdr.fmt.bmi;
 									mi->strVideoFormat = GetVideoFormatName(strmhdr.fmt.bmi->biCompression);
 									if (strmhdr.fmt.bmi->biWidth && strmhdr.fmt.bmi->biHeight)
-										mi->fVideoAspectRatio = abs(strmhdr.fmt.bmi->biWidth / (double)strmhdr.fmt.bmi->biHeight);
+												mi->fVideoAspectRatio = fabs(strmhdr.fmt.bmi->biWidth / (double)strmhdr.fmt.bmi->biHeight);
 								}
 							} else {
 								if (bFullInfo && mi->strInfo.m_hWnd) {
@@ -804,8 +804,8 @@ bool GetRIFFHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsAVI, bool bFu
 									if (strmhdr.fmt.bmi && strmhdr.dwFormatLen >= sizeof *strmhdr.fmt.bmi) {
 										mi->strInfo << _T("   ") << GetResString(IDS_CODEC) << _T(":\t") << GetVideoFormatName(strmhdr.fmt.bmi->biCompression) << _T("\n");
 										if (strmhdr.fmt.bmi->biWidth && strmhdr.fmt.bmi->biHeight) {
-											mi->strInfo << _T("   ") << GetResString(IDS_WIDTH) << _T(" x ") << GetResString(IDS_HEIGHT) << _T(":\t") << abs(strmhdr.fmt.bmi->biWidth) << _T(" x ") << abs(strmhdr.fmt.bmi->biHeight) << _T("\n");
-											float fAspectRatio = abs(strmhdr.fmt.bmi->biWidth / (float)strmhdr.fmt.bmi->biHeight);
+											mi->strInfo << _T("   ") << GetResString(IDS_WIDTH) << _T(" x ") << GetResString(IDS_HEIGHT) << _T(":\t") << labs(strmhdr.fmt.bmi->biWidth) << _T(" x ") << labs(strmhdr.fmt.bmi->biHeight) << _T("\n");
+											float fAspectRatio = fabs(strmhdr.fmt.bmi->biWidth / (float)strmhdr.fmt.bmi->biHeight);
 											mi->strInfo << _T("   ") << GetResString(IDS_ASPECTRATIO) << _T(":\t") << fAspectRatio << _T("  (") << GetKnownAspectRatioDisplayString(fAspectRatio) << _T(")\n");
 										}
 									}
@@ -1274,7 +1274,7 @@ bool GetRMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsRM, bool bFullI
 												mi->video.bmiHeader.biCompression = *(DWORD*)(pucTypeData + 8);
 												mi->video.bmiHeader.biWidth = _byteswap_ushort(*(WORD*)(pucTypeData + 12));
 												mi->video.bmiHeader.biHeight = _byteswap_ushort(*(WORD*)(pucTypeData + 14));
-												mi->fVideoAspectRatio = abs(mi->video.bmiHeader.biWidth / (double)mi->video.bmiHeader.biHeight);
+												mi->fVideoAspectRatio = fabs(mi->video.bmiHeader.biWidth / (double)mi->video.bmiHeader.biHeight);
 												mi->fVideoFrameRate = _byteswap_ushort(*(WORD*)(pucTypeData + 22));
 												bReadMDPR_Video = true;
 											}
@@ -2236,7 +2236,7 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 										if (mi->iVideoStreams == 1) {
 											mi->video = *(VIDEOINFOHEADER*)pVideoInfo;
 											if (mi->video.bmiHeader.biWidth && mi->video.bmiHeader.biHeight)
-												mi->fVideoAspectRatio = abs(mi->video.bmiHeader.biWidth / (double)mi->video.bmiHeader.biHeight);
+												mi->fVideoAspectRatio = fabs(mi->video.bmiHeader.biWidth / (double)mi->video.bmiHeader.biHeight);
 											mi->strVideoFormat = GetVideoFormatName(pVideoInfo->bmiHeader.biCompression);
 
 											if (pVideoInfo->bmiHeader.biCompression == MAKEFOURCC('D', 'V', 'R', ' ')
@@ -2265,7 +2265,7 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 													if (pMPEG2VideoInfo->hdr.dwPictAspectRatioX != 0 && pMPEG2VideoInfo->hdr.dwPictAspectRatioY != 0)
 														mi->fVideoAspectRatio = pMPEG2VideoInfo->hdr.dwPictAspectRatioX / (double)pMPEG2VideoInfo->hdr.dwPictAspectRatioY;
 													else if (mi->video.bmiHeader.biWidth && mi->video.bmiHeader.biHeight)
-														mi->fVideoAspectRatio = abs(mi->video.bmiHeader.biWidth / (double)mi->video.bmiHeader.biHeight);
+														mi->fVideoAspectRatio = fabs(mi->video.bmiHeader.biWidth / (double)mi->video.bmiHeader.biHeight);
 												}
 											}
 											if (mi->fVideoFrameRate == 0.0 && mi->video.AvgTimePerFrame)
@@ -2280,8 +2280,8 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 											mi->strInfo << _T("   ") << GetResString(IDS_CODEC) << _T(":\t") << GetVideoFormatName(pVideoInfo->bmiHeader.biCompression) << _T("\n");
 											if (pVideoInfo->dwBitRate)
 												mi->strInfo << _T("   ") << GetResString(IDS_BITRATE) << _T(":\t") << (UINT)((pVideoInfo->dwBitRate + 500) / 1000) << _T(" kbit/s\n");
-											mi->strInfo << _T("   ") << GetResString(IDS_WIDTH) << _T(" x ") << GetResString(IDS_HEIGHT) << _T(":\t") << abs(pVideoInfo->bmiHeader.biWidth) << _T(" x ") << abs(pVideoInfo->bmiHeader.biHeight) << _T("\n");
-											float fAspectRatio = abs(pVideoInfo->bmiHeader.biWidth / (float)pVideoInfo->bmiHeader.biHeight);
+											mi->strInfo << _T("   ") << GetResString(IDS_WIDTH) << _T(" x ") << GetResString(IDS_HEIGHT) << _T(":\t") << labs(pVideoInfo->bmiHeader.biWidth) << _T(" x ") << labs(pVideoInfo->bmiHeader.biHeight) << _T("\n");
+											float fAspectRatio = fabs(pVideoInfo->bmiHeader.biWidth / (float)pVideoInfo->bmiHeader.biHeight);
 											mi->strInfo << _T("   ") << GetResString(IDS_ASPECTRATIO) << _T(":\t") << fAspectRatio << _T("  (") << GetKnownAspectRatioDisplayString(fAspectRatio) << _T(")\n");
 
 											if (pVideoInfo->AvgTimePerFrame) {

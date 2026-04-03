@@ -19,7 +19,7 @@
 #include "shahashset.h"
 #include "safefile.h"
 #include "knownfile.h"
-#include "sha.h"
+#include "SHA.h"
 #include "emule.h"
 #include "emuledlg.h"
 #include "sharedfilelist.h"

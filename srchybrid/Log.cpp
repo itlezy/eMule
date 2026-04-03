@@ -19,6 +19,7 @@
 #include <share.h>
 #include "emule.h"
 #include "Log.h"
+#include "Opcodes.h"
 #include "OtherFunctions.h"
 #include "Preferences.h"
 #include "emuledlg.h"
