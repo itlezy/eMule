@@ -22,7 +22,7 @@
 #include "safefile.h"
 #include "knownfile.h"
 #include "preferences.h"
-#include "sha.h"
+#include "SHA.h"
 #include "updownclient.h"
 #include "DownloadQueue.h"
 #include "partfile.h"
