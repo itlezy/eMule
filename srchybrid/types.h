@@ -22,4 +22,3 @@ typedef CEMFileSize			EMFileSize;
 #else
 typedef unsigned __int64	EMFileSize;
 #endif
-

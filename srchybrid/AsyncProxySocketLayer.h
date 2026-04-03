@@ -127,7 +127,7 @@ public:
 	CAsyncProxySocketLayer();
 	virtual	~CAsyncProxySocketLayer();
 
-// Überschreibungen
+// Ãœberschreibungen
 public:
 	virtual void Close();
 	virtual bool Connect(const CString &sHostAddress, UINT nHostPort);

@@ -1855,34 +1855,34 @@ IDR_WIDECHARLOWERMAP    WIDECHARMAP             "res\\WideCharLowerMap.bin"
 IDD_PPG_PROXY DLGINIT
 BEGIN
     IDC_PROXYTYPE, 0x403, 9, 0
-0x6f4e, 0x5020, 0x6f72, 0x7978, "\000" 
+0x6f4e, 0x5020, 0x6f72, 0x7978, "\000"
     IDC_PROXYTYPE, 0x403, 8, 0
-0x6f53, 0x6b63, 0x2073, 0x0034, 
+0x6f53, 0x6b63, 0x2073, 0x0034,
     IDC_PROXYTYPE, 0x403, 9, 0
-0x6f53, 0x6b63, 0x2073, 0x6134, "\000" 
+0x6f53, 0x6b63, 0x2073, 0x6134, "\000"
     IDC_PROXYTYPE, 0x403, 8, 0
-0x6f53, 0x6b63, 0x2073, 0x0035, 
+0x6f53, 0x6b63, 0x2073, 0x0035,
     IDC_PROXYTYPE, 0x403, 9, 0
-0x5448, 0x5054, 0x3120, 0x302e, "\000" 
+0x5448, 0x5054, 0x3120, 0x302e, "\000"
     IDC_PROXYTYPE, 0x403, 9, 0
-0x5448, 0x5054, 0x3120, 0x312e, "\000" 
+0x5448, 0x5054, 0x3120, 0x312e, "\000"
     0
 END
 
 IDD_SMTPSERVER DLGINIT
 BEGIN
     IDC_SMTPSEC, 0x403, 5, 0
-0x6f4e, 0x656e, "\000" 
+0x6f4e, 0x656e, "\000"
     IDC_SMTPSEC, 0x403, 8, 0
-0x5353, 0x2f4c, 0x4c54, 0x0053, 
+0x5353, 0x2f4c, 0x4c54, 0x0053,
     IDC_SMTPSEC, 0x403, 9, 0
-0x5453, 0x5241, 0x5454, 0x534c, "\000" 
+0x5453, 0x5241, 0x5454, 0x534c, "\000"
     IDC_SMTPAUTH, 0x403, 5, 0
-0x6f4e, 0x656e, "\000" 
+0x6f4e, 0x656e, "\000"
     IDC_SMTPAUTH, 0x403, 6, 0
-0x4f4c, 0x4947, 0x004e, 
+0x4f4c, 0x4947, 0x004e,
     IDC_SMTPAUTH, 0x403, 6, 0
-0x4c50, 0x4941, 0x004e, 
+0x4c50, 0x4941, 0x004e,
     0
 END
 
@@ -1893,17 +1893,17 @@ END
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE
 BEGIN
     "#include ""afxres.h""\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE
 BEGIN
     "LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US\r\n"
     "#pragma code_page(65001)\r\n"
@@ -2089,15 +2089,15 @@ END
 STRINGTABLE
 BEGIN
     IDS_HTTPDOWNLOAD_GETTING_FILE_INFORMATION "Getting file information"
-    IDS_HTTPDOWNLOAD_GENERIC_ERROR 
+    IDS_HTTPDOWNLOAD_GENERIC_ERROR
                             "An error occurred while attempting to download the file, Error: %s"
-    IDS_HTTPDOWNLOAD_FAIL_CONNECT_SERVER 
+    IDS_HTTPDOWNLOAD_FAIL_CONNECT_SERVER
                             "An error occurred connecting to the server, Error: %s"
-    IDS_HTTPDOWNLOAD_INVALID_SERVER_RESPONSE 
+    IDS_HTTPDOWNLOAD_INVALID_SERVER_RESPONSE
                             "Failed to receive a valid response from the server"
-    IDS_HTTPDOWNLOAD_INVALID_HTTP_RESPONSE 
+    IDS_HTTPDOWNLOAD_INVALID_HTTP_RESPONSE
                             "Failed to receive a valid HTTP response from the server"
-    IDS_HTTPDOWNLOAD_ERROR_READFILE 
+    IDS_HTTPDOWNLOAD_ERROR_READFILE
                             "An error reading the downloaded file, Error: %s"
     IDS_HTTPDOWNLOAD_PERCENTAGE "Downloading: %s%% of %s completed"
     IDS_HTTPDOWNLOAD_RETREIVEING_FILE "Retrieving the file"
@@ -2116,7 +2116,7 @@ BEGIN
     IDS_ALBUM               "Album"
     IDS_AUTHMETHOD          "Authentication method"
     IDS_CD_UPLOADREQ        "Requested to upload:"
-    IDS_SETTINGCHANGED_RESTART 
+    IDS_SETTINGCHANGED_RESTART
                             "For the changed settings to take effect, please restart eMule!"
     IDS_CREDITSEXPIRED      ", %u clients deleted (not seen within 5 month)"
     IDS_SOURCESINFO         "%u  (Useful: %u, NNP: %u);  A4AF: %u"
@@ -2142,7 +2142,7 @@ BEGIN
     IDS_PASTE               "Paste"
     IDS_SEARCHAUTHORCOLLECTION "Search Author's Collections..."
     IDS_ERR_DUPL_FILES      "Duplicate shared files: ""%s"" and ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED 
+    IDS_USS_TRACEROUTEOFTENFAILED
                             "UploadSpeedSense: Trace routing failed too many times. Disabling Upload SpeedSense."
     IDS_USS_STARTING        "UploadSpeedSense: Done with preparations. Starting control of upload speed. (First 60 seconds will be in fast reaction mode)"
     IDS_A4AF                "Source Handling"
@@ -2160,10 +2160,10 @@ BEGIN
     IDS_HSAV                "Hashset available"
     IDS_DL_SHOWED2KLINK     "eD2K Links..."
     IDS_FD_CORR             "Corrupted"
-    IDS_HTTPDOWNLOAD_OK_TO_OVERWRITE 
+    IDS_HTTPDOWNLOAD_OK_TO_OVERWRITE
                             "The file '%s' already exists.\nDo you want to replace it?"
     IDS_FD_RECOV            "Recovered"
-    IDS_HTTPDOWNLOAD_FAIL_FILE_OPEN 
+    IDS_HTTPDOWNLOAD_FAIL_FILE_OPEN
                             "An error occurred while opening the file to be downloaded, Error: %s"
     IDS_HTTPDOWNLOAD_ABORTING_TRANSFER "Aborting transfer"
     IDS_FD_COMPR            "Compression"
@@ -2185,7 +2185,7 @@ BEGIN
     IDS_ERR_NOSLLINK        "Not an eD2K server or file link"
     IDS_ERR_WRONGPACKETSIZE "Invalid OP_REQUESTFILENAME packet size"
     IDS_ERR_WRONGHPACKETSIZE "Invalid OP_HASHSETREQUEST packet size"
-    IDS_ERR_UNKNOWNCLIENTACTION 
+    IDS_ERR_UNKNOWNCLIENTACTION
                             "Unknown clients sends extended protocol packet"
     IDS_ERR_OPENMET         "Error: Failed to open part.met file! (%s => %s)"
     IDS_ERR_BADMETVERSION   "Error: Invalid part.met file version! (%s => %s)"
@@ -2197,7 +2197,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_ERR_HASHERRORWARNING 
+    IDS_ERR_HASHERRORWARNING
                             "Warning: Unable to hash downloaded part - hashset incomplete (%s)"
     IDS_ERR_INCOMPLETEHASH  "Error: Unable to hash downloaded part - hashset incomplete (%s). This should never happen"
     IDS_DOWNLOADING         "Downloading"
@@ -2208,13 +2208,13 @@ BEGIN
     IDS_PAUSED              "Paused"
     IDS_ERRORLIKE           "Erroneous"
     IDS_ASSIGNED2K          "eMule is not assigned to eD2K links. Do you want to assign eMule to eD2K links now (recommended) ?"
-    IDS_ERR_EMPTYADDRESSESDAT 
+    IDS_ERR_EMPTYADDRESSESDAT
                             "No server list address entry in 'addresses.dat' found. Please paste a valid server list address into this file in order to auto-update your server list"
     IDS_ERR_BADSERVERMETVERSION "Invalid version tag in server.met (0x%X)!"
     IDS_SERVERSFOUND        "%u servers in server.met found"
     IDS_SERVERSADDED        "%u servers added, %u not added (already listed/invalid)"
     IDS_ERR_BADSERVERLIST   "Error: the file server.met is corrupted, unable to load server list"
-    IDS_ERR_FILEERROR_SERVERMET 
+    IDS_ERR_FILEERROR_SERVERMET
                             "Unexpected file error while reading server.met: %s, unable to load server list"
 END
 
@@ -2272,7 +2272,7 @@ BEGIN
     IDS_ERR_OUTOFSPACE      "You have insufficient disk space to download ""%s""!"
     IDS_SE                  "Source Exchange"
     IDS_ERR_WRITEERROR      "Unexpected file error while writing %s : %s"
-    IDS_ERR_COMPLETIONFAILED 
+    IDS_ERR_COMPLETIONFAILED
                             "Unexpected file error while completing ""%s"". File paused, restart eMule for another try to complete"
     IDS_ERR_DELETEFAILED    "Failed to delete %s, you will need to do this by hand"
     IDS_DOWNLOADDONE        "Finished downloading [ %s ]"
@@ -2408,11 +2408,11 @@ BEGIN
     IDS_NOPARTSFOUND        "No part files found"
     IDS_FOUNDPARTS          "Found %u part files"
     IDS_NEWDOWNLOAD         "Downloading [ %s ]"
-    IDS_ERR_ALREADY_DOWNLOADING 
+    IDS_ERR_ALREADY_DOWNLOADING
                             "You are already trying to download the file %s"
     IDS_ERR_ALREADY_DOWNLOADED "You already have the file %s"
     IDS_ERR_SERVERMET_BAD   "Error: the file known.met is corrupted, unable to load known files"
-    IDS_ERR_SERVERMET_UNKNOWN 
+    IDS_ERR_SERVERMET_UNKNOWN
                             "Unexpected file error while reading known.met: %s, unable to load known files"
     IDS_ERR_CONNECTIONERROR "Error while connecting to %s (%s:%u): %s"
     IDS_ERR_SOCKET          "Error in server socket: %s (%s:%u): %s"
@@ -2488,7 +2488,7 @@ BEGIN
     IDS_ERR_REQ_FNF         "Requested file not found"
     IDS_DESC                "Description: %s"
     IDS_PORT                "Port"
-    IDS_ERR_NOVALIDSERVERSFOUND 
+    IDS_ERR_NOVALIDSERVERSFOUND
                             "No valid servers to connect in server list found"
     IDS_CONNECTEDTOREQ      "Connected to %s (%s:%u), sending login request"
     IDS_ERR_FATAL           "Fatal Error while trying to connect. Internet connection might be down"
@@ -2567,7 +2567,7 @@ BEGIN
     IDS_WEB_LOGIN           "Login"
     IDS_WEB_ENTER_PASSWORD  "Enter your password here"
     IDS_WEB_LOGIN_NOW       "Login Now"
-    IDS_WEB_CONFIRM_REMOVE_SERVER 
+    IDS_WEB_CONFIRM_REMOVE_SERVER
                             "Are you sure to remove this server from list?"
     IDS_WEB_CONTROL         "Web Interface"
     IDS_WEB_LOGOUT          "Logout"
@@ -2966,9 +2966,9 @@ STRINGTABLE
 BEGIN
     IDS_INSTALL_SKIN        "Install eMule Skin"
     IDS_INSTALL_SKIN_NODIR  "No eMule Skin profile directory selected or directory is not accessible!"
-    IDS_INSTALL_SKIN_DIR_ERROR 
+    IDS_INSTALL_SKIN_DIR_ERROR
                             "Failed to create directory ""%s"" for eMule Skin - %s"
-    IDS_INSTALL_SKIN_FILE_ERROR 
+    IDS_INSTALL_SKIN_FILE_ERROR
                             "Failed to extract file ""%s"" from eMule Skin to local file ""%s"" - %s"
     IDS_INSTALL_SKIN_PKG_ERROR "This is not a valid eMule Skin package file."
     IDS_NEXT_REASK          "Next re-ask"
@@ -3111,13 +3111,13 @@ BEGIN
     IDS_WIZARD_ENTERBELOW   "(enter below)"
     IDS_STATS_MAXAVGDL      "Max Downloadrate Average: %s"
     IDS_STATS_MAXDL         "max. Downloadrate: %s"
-    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND 
+    IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
                             "Ignore eMule add friend protocol messages"
     IDS_PW_FASTSRVCON       "Safe Connect"
     IDS_SOURCELINKFAILED    "You need a high ID to create a valid source link"
     IDS_ERR_LOADSERVERMET   "Failed to load server.met!"
     IDS_ERR_CORRUPTCOMPRPKG "Corrupted compressed packet for %s received (error %u)"
-    IDS_ERR_EMFRIENDSINVALID 
+    IDS_ERR_EMFRIENDSINVALID
                             "The file 'emfriends.met' is invalid or corrupted!"
     IDS_ERR_READEMFRIENDS   "Unknown error while reading emfriends.met: %s"
     IDS_ERR_KNOWNSERVERINFOREC "Unknown server info received!"
@@ -3174,7 +3174,7 @@ BEGIN
     IDS_DESCRIPTIONRECV     "Description for file '%s' received: %s"
     IDS_WEBSERVICES         "&Web Services"
     IDS_WEBSVEDIT           "Edit Web Services..."
-    IDS_IRC_EMULEPROTO_IGNORESENDLINK 
+    IDS_IRC_EMULEPROTO_IGNORESENDLINK
                             "Ignore eMule send link protocol messages"
     IDS_CHECK4UPDATE        "Check for new version"
     IDS_STARTUP             "Startup"
@@ -3217,12 +3217,12 @@ BEGIN
     IDS_FIRSTCOMPLETE       "You have now completed the first runtime wizard.\n\nAll these settings and more can be changed by clicking the Options icon. For explanations and support check out the help by pressing F1 in eMule!"
     IDS_ENTERUSERNAME       "Please enter your user name:"
     IDS_STATIC_CPUMEM       "Save CPU && Memory Usage"
-    IDS_KAD_SEARCH_KEYWORD_TOO_SHORT 
+    IDS_KAD_SEARCH_KEYWORD_TOO_SHORT
                             "Keyword too short.\r\n\r\nThe keyword(s) used in a Kad search expression must have a minimum length of 3 characters."
     IDS_LOG2DISK            "Save log to disk"
-    IDS_KAD_SEARCH_KEYWORD_ALREADY_SEARCHING 
+    IDS_KAD_SEARCH_KEYWORD_ALREADY_SEARCHING
                             "There is already a Kad search ongoing for the keyword ""%s"".\r\n\r\nTo search again for that keyword, either wait until this keyword search is finished or close the according search results pane."
-    IDS_KAD_SEARCH_KEYWORD_INVALID 
+    IDS_KAD_SEARCH_KEYWORD_INVALID
                             "Invalid Kad keyword.\r\n\r\nA Kad search expression has the following format:\r\n\r\n\t<kad-keyword> [ <ed2k-search-expression> ]\r\n\r\nThe <kad-keyword> must not contain any of the following characters:\r\n\r\n\t%s"
     IDS_EDITCAT             "Edit Category-Properties"
     IDS_PW_WS               "Web Interface"
@@ -3235,7 +3235,7 @@ BEGIN
     IDS_WEB_GENERATE        "Create new certificate"
     IDS_CERT_ERR_CREATE     "Certificate not created (see Verbose log)"
     IDS_DELETEAFTERFILEOP   "File '%s' will be deleted after the current operation was completed"
-    IDS_IMPORTPARTS_ERR_ALREADYCOMPLETE 
+    IDS_IMPORTPARTS_ERR_ALREADYCOMPLETE
                             "Import aborted: Can't import to a complete file."
     IDS_IMPORTPARTS_ERR_CANTOPENFILE "Import aborted: Couldn't open %s."
     IDS_IMPORTPARTS_IMPORTSTART "Importing %i parts to %s."
@@ -3287,7 +3287,7 @@ STRINGTABLE
 BEGIN
     IDS_AUTOSCROLL          "Autoscroll"
     IDS_WIZ1_WELCOME_TITLE  "Welcome to eMule"
-    IDS_WIZ1_WELCOME_ACTIONS 
+    IDS_WIZ1_WELCOME_ACTIONS
                             "This wizard will guide you through the first steps in configuring eMule."
     IDS_WIZ1_WELCOME_BTN_HINT "To continue, click Next."
     IDS_WIZ1_END_TITLE      "Completing the Wizard"
@@ -3310,7 +3310,7 @@ BEGIN
     IDS_HM_LINKHP           "eMule Homepage"
     IDS_HM_LINKFAQ          "eMule FAQ"
     IDS_HM_LINKVC           "eMule Versioncheck"
-    IDS_DEBUG_SOURCE_EXCHANGE 
+    IDS_DEBUG_SOURCE_EXCHANGE
                             "Log client source exchange and server source queries/answers"
     IDS_SHAREDREQ1          "User %s (%u) requested your list of shared directories -> %s"
     IDS_SHAREDREQ2          "User %s (%u) requested your list of shared files for directory '%s' -> %s"
@@ -3430,7 +3430,7 @@ BEGIN
     IDS_DWLIPFILTERFAILED   "IP filter download failed"
     IDS_FINDBUDDY           "Find Buddy"
     IDS_ERR_IPFILTERZIPEXTR "Failed to extract IP filter file from downloaded IP filter ZIP file ""%s""."
-    IDS_ERR_IPFILTERCONTENTERR 
+    IDS_ERR_IPFILTERCONTENTERR
                             "Downloaded IP filter file ""%s"" is a ZIP file with unexpected content."
     IDS_STORENOTES          "Store Notes"
     IDS_NOTES               "Notes"
@@ -3451,14 +3451,14 @@ BEGIN
     IDS_WEB_SESSIONTIMEOUT  "Session Time out"
     IDS_WEB_ALLOWHILEVFUNC  "Allow exit eMule, reboot and shutdown"
     IDS_SETPFSLIMIT         "Source Limit..."
-    IDS_SETPFSLIMITEXPLAINED 
+    IDS_SETPFSLIMITEXPLAINED
                             "Please enter the new source limit for the selected file(s)!\n(set to 0 to use global setting)"
-    IDS_UPDATECATINCOMINGDIRS 
+    IDS_UPDATECATINCOMINGDIRS
                             "Do you want incoming folders of categories which are included in the old incoming folder to be updated to the new location?"
     IDS_USESPEECH           "Speak notification message"
     IDS_ERR_FAILEDTOLOAD    "Failed to load %s: %s "
     IDS_TCPIP_CONNS         "TCP/IP connections"
-    IDS_MANUAL_FILENAMECLEANUP 
+    IDS_MANUAL_FILENAMECLEANUP
                             "Do you want to cleanup the file names of the selected files?"
     IDS_ERR_DELFILE         "Failed to delete file ""%s"""
     IDS_ERR_CONFIGCORRUPT   "%s seems to be corrupted and will be replaced"
@@ -3498,9 +3498,9 @@ BEGIN
     IDS_KBITSSEC            "Kbit/s"
     IDS_KBYTESSEC           "KB/s"
     IDS_ERR_CREATE_DIR      "Failed to create %s directory ""%s"" - %s"
-    IDS_WRN_INCFILE_RESERVED 
+    IDS_WRN_INCFILE_RESERVED
                             "The incoming directory must not be set to an eMule installation directory."
-    IDS_WRN_TEMPFILES_RESERVED 
+    IDS_WRN_TEMPFILES_RESERVED
                             "The temporary directory must not be set to an eMule installation directory."
     IDS_WRN_INCTEMP_SAME    "Incoming directory and temporary directory must not be the same."
     IDS_SHOWDWLPERCENTAGE   "Show percentage of download completion in progressbar"
@@ -3581,7 +3581,7 @@ BEGIN
     IDS_ASKDOWNLOADLANG     "The language you selected is not installed on your system. Do you want eMule to download it from https://emule-project.net?"
     IDS_ASKDOWNLOADLANGCAP  "Download language files"
     IDS_DELETESELECTED      "Delete"
-    IDS_ERR_FAILEDDOWNLOADLANG 
+    IDS_ERR_FAILEDDOWNLOADLANG
                             "Failed to download and install selected language library from %s!"
     IDS_ERR_BADFOLDER       "Invalid folder.\nFolder can not be created. Please check name and location."
     IDS_AUTOREMOVEFD        "Auto clear completed downloads"
@@ -3617,7 +3617,7 @@ BEGIN
     IDS_SRV_UDPFR           "Extended UDP protocol for file requests"
     IDS_MINLENGTH           "Min. Length [hh:mm:ss]"
     IDS_EM_HELP             "&Help"
-    IDS_WRN_FRIENDDUPLIPPORT 
+    IDS_WRN_FRIENDDUPLIPPORT
                             "Friend not added.\r\n\r\nThere is already a friend with same IP address and port available."
     IDS_DYNUP               "Upload SpeedSense"
     IDS_KADOVERHEAD         "Kad Overhead (Packets): %s (%s)"
@@ -3653,7 +3653,7 @@ BEGIN
     IDS_STARTTEST           "Test Ports"
     IDS_TESTINFO            "Here you can test, if your TCP and UDP port can be connected to from remote. This success of this test is required for servers and clients to connect you. The TCP port have to succeed!"
     IDS_CONNECTIONTEST      "Connection Test"
-    IDS_NOPORTCHANGEPOSSIBLE 
+    IDS_NOPORTCHANGEPOSSIBLE
                             "The change of ports is not possible after you connected with clients or while connected to a server/Kad!\n\nPlease restart eMule with the changed port settings."
     IDS_NETWORK_INFO        "Network Information"
     IDS_SP_TOTALUL          "Total uploads"
@@ -3673,7 +3673,7 @@ STRINGTABLE
 BEGIN
     IDS_CHAT_IDENT          "Identification:"
     IDS_MAXHALFOPENCONS     "Max. half-open connections"
-    IDS_WIZ_STARTWITHWINDOWS 
+    IDS_WIZ_STARTWITHWINDOWS
                             "Enable this so that eMule will run when you start windows."
     IDS_KAD_WAITCBK         "Wait Callback Kad"
     IDS_KAD_TOOMANDYKADLKPS "Too Many Kad Lookups"
@@ -3762,7 +3762,7 @@ BEGIN
     IDS_EXTRACT_META_DATA   "Extract meta data"
     IDS_META_DATA_MEDIADET  "DirectShow (for all other audio/video files)"
     IDS_META_DATA_ID3LIB    "ID3 Library (only for MPEG audio files)"
-    IDS_COMCTRL32_DLL_TOOOLD 
+    IDS_COMCTRL32_DLL_TOOOLD
                             "Windows Common Controls library (COMCTL32.DLL) is too old!\r\n\r\neMule detected a version of the ""Windows Common Controls library (COMCTL32.DLL)"" which is too old to be properly used by eMule. To ensure full and flawless functionality of eMule we strongly recommend to update the ""Windows Common Controls library (COMCTL32.DLL)"" to at least version 5.8.\r\n\r\nDownload and install an update of the ""Windows Common Controls library (COMCTL32.DLL)"" at Microsoft (R) Download Center. Do you want to visit the corresponding URL?"
     IDS_ASREGEXPR           "As Regular Expression"
     IDS_STATIC_REGEXP       "Regular expression for view filter:"
@@ -3815,7 +3815,7 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Save collection in plain text format"
     IDS_RUNNINGRESTRICTED   "eMule is running with reduced privileges"
-    IDS_USS_MANUALUPLOADLIMITDETECTED 
+    IDS_USS_MANUALUPLOADLIMITDETECTED
                             "UploadSpeedSense: Raised upload limit in Options detected. Going into fast reaction mode for 60 seconds."
     IDS_USS_STATE_PREPARING "Preparing..."
     IDS_USS_STATE_WAITING   "Waiting..."
@@ -3840,12 +3840,12 @@ BEGIN
     IDS_X_SHAREAZA_IMPORT_HASH_SET_CORRUPT "Hash set corrupt."
     IDS_X_SHAREAZA_IMPORT_NO_HASH_SET "Hash set not found."
     IDS_CONVERTINGKNOWN2MET "Converting %s to %s to support large files..."
-    IDS_CONVERTINGKNOWN2FAILED 
+    IDS_CONVERTINGKNOWN2FAILED
                             "...failed to convert known2.met, ignoring old records"
     IDS_CONVERTINGKNOWN2DONE "... done, finished converting"
     IDS_ERR_MET_BAD         "Error: the file %s is corrupted, unable to load known files"
     IDS_SRV_LARGEFILES      "Support for large files"
-    IDS_ERR_FSCANTHANDLEFILE 
+    IDS_ERR_FSCANTHANDLEFILE
                             "You cannot download this file because your file system doesn't support files which are larger than 4GB, consider converting it to NTFS"
     IDS_NEWVERSIONAVLBETA   "This Beta version is out of date. Due to the nature of Beta versions, which often contain bugs it is very important that you update to a stable release as soon as possible!"
     IDS_BOLD                "Toggles bold text"
@@ -3881,11 +3881,11 @@ BEGIN
     IDS_OBFUSCATION         "Obfuscation"
     IDS_SUPPORTED           "Supported"
     IDS_ESTIMATED           "estimated"
-    IDS_MEDIAINFO_DLLMISSING 
+    IDS_MEDIAINFO_DLLMISSING
                             "There is no MediaInfo library installed. If you want to get more information about audio/video files in this dialog,\r\ndownload the MediaInfo library from https://mediaarea.net/en/MediaInfo and copy the MediaInfo.dll file into\r\neMule's installation folder ""%s"".\r\n"
-    IDS_WARNING_WRONGFILEEXTENTION 
+    IDS_WARNING_WRONGFILEEXTENTION
                             "Warning: The file extension of ""%s"" does not match the file extension\r\ntypically used for that file format. You may want to rename the file to\r\nuse one of those file extensions ""%s""\r\nfor properly using or viewing that file format.\r\n"
-    IDS_MEDIAINFO_DRMWARNING 
+    IDS_MEDIAINFO_DRMWARNING
                             "Warning: The file ""%s"" seems to be protected with Digital Rights Management.\r\nYou will most likely not be able to use that file without a license from the originator of that file.\r\n"
     IDS_ARCHPREV_ATTRIBINFO "File attributes can contain:\r\n\r\nP\tfile is password protected\r\nD\tis a directory\r\nC\tComment\r\nLx\tCompression level x\r\nM\tcompressed data not completely downloaded yet\r\n<\tfile continued from previous volume\r\n>\tfile continues in next volume\r\n"
     IDS_LOADFILTER_EMTOOLBAR "eMule Toolbar Bitmap Files"
@@ -3900,7 +3900,7 @@ END
 STRINGTABLE
 BEGIN
     IDS_ENABLEOBFUSCATION   "Enable protocol obfuscation"
-    IDS_CONNECTINGTOOBFUSCATED 
+    IDS_CONNECTINGTOOBFUSCATED
                             "Connecting to %s (%s:%u - using Protocol Obfuscation)..."
     IDS_CONNECTEDTOOBFUSCATED "Obfuscated connection established on: %s"
     IDS_VERIFIED            "Verified"
@@ -3909,7 +3909,7 @@ BEGIN
     IDS_INVALIDFILEEXT      "Invalid file extension"
     IDS_UNKNOWNFILEEXT      "Unknown file extension"
     IDS_ENABLEMINIMULE      "Enable MiniMule"
-    IDS_DISABLE_AUTOARCHPREV 
+    IDS_DISABLE_AUTOARCHPREV
                             "Disable automatic archive preview start in file details"
     IDS_US_STALLEDW4BR      "Stalled! Waiting for block request."
     IDS_US_STALLEDREADINGFDISK "Stalled! Reading from disk."
@@ -3970,7 +3970,7 @@ BEGIN
     IDS_EDITSPAMFILTERCOMMENTS "Edit spam filter for comments"
     IDS_WIZZARDOBFUSCATION  "Enable this option if you want to use protocol obfuscation\n\nIf your ISP tries throttle or block eMule, enabling obfuscation will help to circumvent such restrictions."
     IDS_BETANAG             "This is a beta version of eMule. Please report problems and check regularly for updates in our forum (https://forum.emule-project.net)."
-    IDS_CONFIRMNODESDOWNLOAD 
+    IDS_CONFIRMNODESDOWNLOAD
                             "Do you want to download and use Kad contacts (nodes.dat) from this address:\n%s ?"
     IDS_NOTCONNECTEDANY     "You are not connected to a server or the Kad network!"
     IDS_ERR_SHARED_DIR      "Failed to read shared directory ""%s"" - %s"
@@ -3991,7 +3991,7 @@ BEGIN
     IDS_DOWNLOADCOMMANDS    "Download Commands"
     IDS_CLOSETOOLBAR        "Close Toolbar"
     IDS_SHOWTOOLBAR         "Show Toolbar"
-    IDS_SEARCH_BADOPERATORCOMBINATION 
+    IDS_SEARCH_BADOPERATORCOMBINATION
                             "You cannot use the first keyword with an OR operator when searching on Kad!\n\nFor example ""Keyword1 OR Keyword2"" is not possible. Try ""Keyword1 AND (Keyword2 OR Keyword3)"" or do multiple searches instead."
     IDS_DISCOVEREDBY        "Discovered by"
     IDS_NODES               "Node(s)"
@@ -4048,4 +4048,3 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "res\\emule.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

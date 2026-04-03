@@ -42,22 +42,22 @@ static char THIS_FILE[] = __FILE__;
 static CString s_countryID[] = {
 	_T("N/A"),//first res in image list should be N/A
 
-	_T("AD"), _T("AE"), _T("AF"), _T("AG"), _T("AI"), _T("AL"), _T("AM"), _T("AN"), _T("AO"), _T("AR"), _T("AS"), _T("AT"), _T("AU"), _T("AW"), _T("AZ"), 
-	_T("BA"), _T("BB"), _T("BD"), _T("BE"), _T("BF"), _T("BG"), _T("BH"), _T("BI"), _T("BJ"), _T("BM"), _T("BN"), _T("BO"), _T("BR"), _T("BS"), _T("BT"), 
-	_T("BW"), _T("BY"), _T("BZ"), _T("CA"), _T("CC"), _T("CD"), _T("CF"), _T("CG"), _T("CH"), _T("CI"), _T("CK"), _T("CL"), _T("CM"), _T("CN"), _T("CO"), 
-	_T("CR"), _T("CU"), _T("CV"), _T("CX"), _T("CY"), _T("CZ"), _T("DE"), _T("DJ"), _T("DK"), _T("DM"), _T("DO"), _T("DZ"), _T("EC"), _T("EE"), _T("EG"), 
-	_T("EH"), _T("ER"), _T("ES"), _T("ET"), _T("FI"), _T("FJ"), _T("FK"), _T("FM"), _T("FO"), _T("FR"), _T("GA"), _T("GB"), _T("GD"), _T("GE"), _T("GG"), 
-	_T("GH"), _T("GI"), _T("GK"), _T("GL"), _T("GM"), _T("GN"), _T("GP"), _T("GQ"), _T("GR"), _T("GS"), _T("GT"), _T("GU"), _T("GW"), _T("GY"), _T("HK"), 
-	_T("HN"), _T("HR"), _T("HT"), _T("HU"), _T("ID"), _T("IE"), _T("IL"), _T("IM"), _T("IN"), _T("IO"), _T("IQ"), _T("IR"), _T("IS"), _T("IT"), _T("JE"), 
-	_T("JM"), _T("JO"), _T("JP"), _T("KE"), _T("KG"), _T("KH"), _T("KI"), _T("KM"), _T("KN"), _T("KP"), _T("KR"), _T("KW"), _T("KY"), _T("KZ"), _T("LA"), 
-	_T("LB"), _T("LC"), _T("LI"), _T("LK"), _T("LR"), _T("LS"), _T("LT"), _T("LU"), _T("LV"), _T("LY"), _T("MA"), _T("MC"), _T("MD"), _T("MG"), _T("MH"), 
-	_T("MK"), _T("ML"), _T("MM"), _T("MN"), _T("MO"), _T("MP"), _T("MQ"), _T("MR"), _T("MS"), _T("MT"), _T("MU"), _T("MV"), _T("MW"), _T("MX"), _T("MY"), 
-	_T("MZ"), _T("NA"), _T("NC"), _T("NE"), _T("NF"), _T("NG"), _T("NI"), _T("NL"), _T("NO"), _T("NP"), _T("NR"), _T("NU"), _T("NZ"), _T("OM"), _T("PA"), 
-	_T("PC"), _T("PE"), _T("PF"), _T("PG"), _T("PH"), _T("PK"), _T("PL"), _T("PM"), _T("PN"), _T("PR"), _T("PS"), _T("PT"), _T("PW"), _T("PY"), _T("QA"), 
-	_T("RO"), _T("RU"), _T("RW"), _T("SA"), _T("SB"), _T("SC"), _T("SD"), _T("SE"), _T("SG"), _T("SH"), _T("SI"), _T("SK"), _T("SL"), _T("SM"), _T("SN"), 
-	_T("SO"), _T("SR"), _T("ST"), _T("SU"), _T("SV"), _T("SY"), _T("SZ"), _T("TC"), _T("TD"), _T("TF"), _T("TG"), _T("TH"), _T("TJ"), _T("TK"), _T("TL"), 
-	_T("TM"), _T("TN"), _T("TO"), _T("TR"), _T("TT"), _T("TV"), _T("TW"), _T("TZ"), _T("UA"), _T("UG"), _T("UM"), _T("US"), _T("UY"), _T("UZ"), _T("VA"), 
-	_T("VC"), _T("VE"), _T("VG"), _T("VI"), _T("VN"), _T("VU"), _T("WF"), _T("WS"), _T("YE"), _T("YU"), _T("ZA"), _T("ZM"), _T("ZW"), 
+	_T("AD"), _T("AE"), _T("AF"), _T("AG"), _T("AI"), _T("AL"), _T("AM"), _T("AN"), _T("AO"), _T("AR"), _T("AS"), _T("AT"), _T("AU"), _T("AW"), _T("AZ"),
+	_T("BA"), _T("BB"), _T("BD"), _T("BE"), _T("BF"), _T("BG"), _T("BH"), _T("BI"), _T("BJ"), _T("BM"), _T("BN"), _T("BO"), _T("BR"), _T("BS"), _T("BT"),
+	_T("BW"), _T("BY"), _T("BZ"), _T("CA"), _T("CC"), _T("CD"), _T("CF"), _T("CG"), _T("CH"), _T("CI"), _T("CK"), _T("CL"), _T("CM"), _T("CN"), _T("CO"),
+	_T("CR"), _T("CU"), _T("CV"), _T("CX"), _T("CY"), _T("CZ"), _T("DE"), _T("DJ"), _T("DK"), _T("DM"), _T("DO"), _T("DZ"), _T("EC"), _T("EE"), _T("EG"),
+	_T("EH"), _T("ER"), _T("ES"), _T("ET"), _T("FI"), _T("FJ"), _T("FK"), _T("FM"), _T("FO"), _T("FR"), _T("GA"), _T("GB"), _T("GD"), _T("GE"), _T("GG"),
+	_T("GH"), _T("GI"), _T("GK"), _T("GL"), _T("GM"), _T("GN"), _T("GP"), _T("GQ"), _T("GR"), _T("GS"), _T("GT"), _T("GU"), _T("GW"), _T("GY"), _T("HK"),
+	_T("HN"), _T("HR"), _T("HT"), _T("HU"), _T("ID"), _T("IE"), _T("IL"), _T("IM"), _T("IN"), _T("IO"), _T("IQ"), _T("IR"), _T("IS"), _T("IT"), _T("JE"),
+	_T("JM"), _T("JO"), _T("JP"), _T("KE"), _T("KG"), _T("KH"), _T("KI"), _T("KM"), _T("KN"), _T("KP"), _T("KR"), _T("KW"), _T("KY"), _T("KZ"), _T("LA"),
+	_T("LB"), _T("LC"), _T("LI"), _T("LK"), _T("LR"), _T("LS"), _T("LT"), _T("LU"), _T("LV"), _T("LY"), _T("MA"), _T("MC"), _T("MD"), _T("MG"), _T("MH"),
+	_T("MK"), _T("ML"), _T("MM"), _T("MN"), _T("MO"), _T("MP"), _T("MQ"), _T("MR"), _T("MS"), _T("MT"), _T("MU"), _T("MV"), _T("MW"), _T("MX"), _T("MY"),
+	_T("MZ"), _T("NA"), _T("NC"), _T("NE"), _T("NF"), _T("NG"), _T("NI"), _T("NL"), _T("NO"), _T("NP"), _T("NR"), _T("NU"), _T("NZ"), _T("OM"), _T("PA"),
+	_T("PC"), _T("PE"), _T("PF"), _T("PG"), _T("PH"), _T("PK"), _T("PL"), _T("PM"), _T("PN"), _T("PR"), _T("PS"), _T("PT"), _T("PW"), _T("PY"), _T("QA"),
+	_T("RO"), _T("RU"), _T("RW"), _T("SA"), _T("SB"), _T("SC"), _T("SD"), _T("SE"), _T("SG"), _T("SH"), _T("SI"), _T("SK"), _T("SL"), _T("SM"), _T("SN"),
+	_T("SO"), _T("SR"), _T("ST"), _T("SU"), _T("SV"), _T("SY"), _T("SZ"), _T("TC"), _T("TD"), _T("TF"), _T("TG"), _T("TH"), _T("TJ"), _T("TK"), _T("TL"),
+	_T("TM"), _T("TN"), _T("TO"), _T("TR"), _T("TT"), _T("TV"), _T("TW"), _T("TZ"), _T("UA"), _T("UG"), _T("UM"), _T("US"), _T("UY"), _T("UZ"), _T("VA"),
+	_T("VC"), _T("VE"), _T("VG"), _T("VI"), _T("VN"), _T("VU"), _T("WF"), _T("WS"), _T("YE"), _T("YU"), _T("ZA"), _T("ZM"), _T("ZW"),
 	_T("UK"), //by tharghan
 	_T("CS"), //by propaganda
 	_T("TP"), //by commander
@@ -68,22 +68,22 @@ static CString s_countryID[] = {
 static CString s_countryMidName[] = {
 	_T("N/A"),//first res in image list should be N/A
 
-	_T("AND"), _T("ARE"), _T("AFG"), _T("ATG"), _T("AIA"), _T("ALB"), _T("ARM"), _T("ANT"), _T("AGO"), _T("ARG"), _T("ASM"), _T("AUT"), _T("AUS"), _T("ABW"), _T("AZE"), 
-	_T("BIH"), _T("BRB"), _T("BGD"), _T("BEL"), _T("BFA"), _T("BGR"), _T("BHR"), _T("BDI"), _T("BEN"), _T("BMU"), _T("BRN"), _T("BOL"), _T("BRA"), _T("BHS"), _T("BTN"), 
-	_T("BWA"), _T("BLR"), _T("BLZ"), _T("CAN"), _T("CCK"), _T("COD"), _T("CAF"), _T("COG"), _T("CHE"), _T("CIV"), _T("COK"), _T("CHL"), _T("CMR"), _T("CHN"), _T("COL"), 
-	_T("CRI"), _T("CUB"), _T("CPV"), _T("CXR"), _T("CYP"), _T("CZE"), _T("DEU"), _T("DJI"), _T("DNK"), _T("DMA"), _T("DOM"), _T("DZA"), _T("ECU"), _T("EST"), _T("EGY"), 
-	_T("ESH"), _T("ERI"), _T("ESP"), _T("ETH"), _T("FIN"), _T("FJI"), _T("FLK"), _T("FSM"), _T("FRO"), _T("FRA"), _T("GAB"), _T("GBR"), _T("GRD"), _T("GEO"), _T("GGY"), 
-	_T("GHA"), _T("GIB"), _T("GGY"), _T("GRL"), _T("GMB"), _T("GIN"), _T("GLP"), _T("GNQ"), _T("GRC"), _T("SGS"), _T("GTM"), _T("GUM"), _T("GNB"), _T("GUY"), _T("HKG"), 
-	_T("HND"), _T("HRV"), _T("HTI"), _T("HUN"), _T("IDN"), _T("IRL"), _T("ISR"), _T("IMN"), _T("IND"), _T("IOT"), _T("IRQ"), _T("IRN"), _T("ISL"), _T("ITA"), _T("JEY"), 
-	_T("JAM"), _T("JOR"), _T("JPN"), _T("KEN"), _T("KGZ"), _T("KHM"), _T("KIR"), _T("COM"), _T("KNA"), _T("PRK"), _T("KOR"), _T("KWT"), _T("CYM"), _T("KAZ"), _T("LAO"), 
-	_T("LBN"), _T("LCA"), _T("LIE"), _T("LKA"), _T("LBR"), _T("LSO"), _T("LTU"), _T("LUX"), _T("LVA"), _T("LBY"), _T("MAR"), _T("MCO"), _T("MDA"), _T("MDG"), _T("MHL"), 
-	_T("MKD"), _T("MLI"), _T("MMR"), _T("MNG"), _T("MAC"), _T("MNP"), _T("MTQ"), _T("MRT"), _T("MSR"), _T("MLT"), _T("MUS"), _T("MDV"), _T("MWI"), _T("MEX"), _T("MYS"), 
-	_T("MOZ"), _T("NAM"), _T("NCL"), _T("NER"), _T("NFK"), _T("NGA"), _T("NIC"), _T("NLD"), _T("NOR"), _T("NPL"), _T("NRU"), _T("NIU"), _T("NZL"), _T("OMN"), _T("PAN"), 
-	_T("PCN"), _T("PER"), _T("PYF"), _T("PNG"), _T("PHL"), _T("PAK"), _T("POL"), _T("SPM"), _T("PCN"), _T("PRI"), _T("PSE"), _T("PRT"), _T("PLW"), _T("PRY"), _T("QAT"), 
-	_T("ROU"), _T("RUS"), _T("RWA"), _T("SAU"), _T("SLB"), _T("SYC"), _T("SDN"), _T("SWE"), _T("SGP"), _T("SHN"), _T("SVN"), _T("SVK"), _T("SLE"), _T("SMR"), _T("SEN"), 
-	_T("SOM"), _T("SUR"), _T("STP"), _T("SDN"), _T("SLV"), _T("SYR"), _T("SWZ"), _T("TCA"), _T("TCD"), _T("ATF"), _T("TGO"), _T("THA"), _T("TJK"), _T("TKL"), _T("TLS"), 
-	_T("TKM"), _T("TUN"), _T("TON"), _T("TUR"), _T("TTO"), _T("TUV"), _T("TWN"), _T("TZA"), _T("UKR"), _T("UGA"), _T("UMI"), _T("USA"), _T("URY"), _T("UZB"), _T("VAT"), 
-	_T("VCT"), _T("VEN"), _T("VGB"), _T("VIR"), _T("VNM"), _T("VUT"), _T("WLF"), _T("WSM"), _T("YEM"), _T("YUG"), _T("ZAF"), _T("ZMB"), _T("ZWE"), 
+	_T("AND"), _T("ARE"), _T("AFG"), _T("ATG"), _T("AIA"), _T("ALB"), _T("ARM"), _T("ANT"), _T("AGO"), _T("ARG"), _T("ASM"), _T("AUT"), _T("AUS"), _T("ABW"), _T("AZE"),
+	_T("BIH"), _T("BRB"), _T("BGD"), _T("BEL"), _T("BFA"), _T("BGR"), _T("BHR"), _T("BDI"), _T("BEN"), _T("BMU"), _T("BRN"), _T("BOL"), _T("BRA"), _T("BHS"), _T("BTN"),
+	_T("BWA"), _T("BLR"), _T("BLZ"), _T("CAN"), _T("CCK"), _T("COD"), _T("CAF"), _T("COG"), _T("CHE"), _T("CIV"), _T("COK"), _T("CHL"), _T("CMR"), _T("CHN"), _T("COL"),
+	_T("CRI"), _T("CUB"), _T("CPV"), _T("CXR"), _T("CYP"), _T("CZE"), _T("DEU"), _T("DJI"), _T("DNK"), _T("DMA"), _T("DOM"), _T("DZA"), _T("ECU"), _T("EST"), _T("EGY"),
+	_T("ESH"), _T("ERI"), _T("ESP"), _T("ETH"), _T("FIN"), _T("FJI"), _T("FLK"), _T("FSM"), _T("FRO"), _T("FRA"), _T("GAB"), _T("GBR"), _T("GRD"), _T("GEO"), _T("GGY"),
+	_T("GHA"), _T("GIB"), _T("GGY"), _T("GRL"), _T("GMB"), _T("GIN"), _T("GLP"), _T("GNQ"), _T("GRC"), _T("SGS"), _T("GTM"), _T("GUM"), _T("GNB"), _T("GUY"), _T("HKG"),
+	_T("HND"), _T("HRV"), _T("HTI"), _T("HUN"), _T("IDN"), _T("IRL"), _T("ISR"), _T("IMN"), _T("IND"), _T("IOT"), _T("IRQ"), _T("IRN"), _T("ISL"), _T("ITA"), _T("JEY"),
+	_T("JAM"), _T("JOR"), _T("JPN"), _T("KEN"), _T("KGZ"), _T("KHM"), _T("KIR"), _T("COM"), _T("KNA"), _T("PRK"), _T("KOR"), _T("KWT"), _T("CYM"), _T("KAZ"), _T("LAO"),
+	_T("LBN"), _T("LCA"), _T("LIE"), _T("LKA"), _T("LBR"), _T("LSO"), _T("LTU"), _T("LUX"), _T("LVA"), _T("LBY"), _T("MAR"), _T("MCO"), _T("MDA"), _T("MDG"), _T("MHL"),
+	_T("MKD"), _T("MLI"), _T("MMR"), _T("MNG"), _T("MAC"), _T("MNP"), _T("MTQ"), _T("MRT"), _T("MSR"), _T("MLT"), _T("MUS"), _T("MDV"), _T("MWI"), _T("MEX"), _T("MYS"),
+	_T("MOZ"), _T("NAM"), _T("NCL"), _T("NER"), _T("NFK"), _T("NGA"), _T("NIC"), _T("NLD"), _T("NOR"), _T("NPL"), _T("NRU"), _T("NIU"), _T("NZL"), _T("OMN"), _T("PAN"),
+	_T("PCN"), _T("PER"), _T("PYF"), _T("PNG"), _T("PHL"), _T("PAK"), _T("POL"), _T("SPM"), _T("PCN"), _T("PRI"), _T("PSE"), _T("PRT"), _T("PLW"), _T("PRY"), _T("QAT"),
+	_T("ROU"), _T("RUS"), _T("RWA"), _T("SAU"), _T("SLB"), _T("SYC"), _T("SDN"), _T("SWE"), _T("SGP"), _T("SHN"), _T("SVN"), _T("SVK"), _T("SLE"), _T("SMR"), _T("SEN"),
+	_T("SOM"), _T("SUR"), _T("STP"), _T("SDN"), _T("SLV"), _T("SYR"), _T("SWZ"), _T("TCA"), _T("TCD"), _T("ATF"), _T("TGO"), _T("THA"), _T("TJK"), _T("TKL"), _T("TLS"),
+	_T("TKM"), _T("TUN"), _T("TON"), _T("TUR"), _T("TTO"), _T("TUV"), _T("TWN"), _T("TZA"), _T("UKR"), _T("UGA"), _T("UMI"), _T("USA"), _T("URY"), _T("UZB"), _T("VAT"),
+	_T("VCT"), _T("VEN"), _T("VGB"), _T("VIR"), _T("VNM"), _T("VUT"), _T("WLF"), _T("WSM"), _T("YEM"), _T("YUG"), _T("ZAF"), _T("ZMB"), _T("ZWE"),
 	_T("GBR"), //by tharghan
 	_T("CSK"), //by propaganda
 	_T("TMP"), //by commander
@@ -201,15 +201,15 @@ bool CIP2Country::LoadFromFile(){
 					// get & process IP range
 					CString sbuffer = szbuffer;
 					sbuffer.Remove(L'"'); // get rid of the " signs
-				
+
 					CString tempStr[5];
 					int curPos = 0;
 					for(int forCount = 0; forCount < 5; ++forCount)
 					{
 						tempStr[forCount] = sbuffer.Tokenize(_T(","), curPos);
-						if(tempStr[forCount].IsEmpty()) 
+						if(tempStr[forCount].IsEmpty())
 						{
-							if(forCount == 0 || forCount == 1) 
+							if(forCount == 0 || forCount == 1)
 							{
 								error = true; //no empty ip field
 								break;
@@ -260,21 +260,21 @@ bool CIP2Country::LoadFromFile(){
 					// get & process IP range
 					CString sbuffer = szbuffer;
 					sbuffer.Remove(L'"'); // get rid of the " signs
-				
+
 					CString tempStr[5];
 					int curPos = 0;
 					for(int forCount = 0; forCount < 6; ++forCount)
 					{
-						if (forCount < 2) // Ignoring char IPs 
+						if (forCount < 2) // Ignoring char IPs
 						{
 							sbuffer.Tokenize(_T(","), curPos);
 							continue;
 						}
 
 						tempStr[forCount-2] = sbuffer.Tokenize(_T(","), curPos);
-						if(tempStr[forCount-2].IsEmpty()) 
+						if(tempStr[forCount-2].IsEmpty())
 						{
-							if(forCount == 2 || forCount == 3) 
+							if(forCount == 2 || forCount == 3)
 							{
 								error = true; //no empty ip field
 								break;
@@ -378,7 +378,7 @@ void CIP2Country::AddIPRange(uint32 IPfrom,uint32 IPto, const TCHAR* shortCountr
 	newRange->ShortCountryName = shortCountryName;
 	newRange->MidCountryName = midCountryName;
 	newRange->LongCountryName = longCountryName;
-	
+
 	m_iplist.Add(newRange);
 }
 

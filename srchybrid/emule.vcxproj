@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -34,6 +34,9 @@
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup>
+    <WorkspaceRoot Condition="'$(WorkspaceRoot)'==''">$(MSBuildThisFileDirectory)..\..\</WorkspaceRoot>
+  </PropertyGroup>
   <PropertyGroup Label="Configuration">
     <CharacterSet>Unicode</CharacterSet>
     <PlatformToolset>v143</PlatformToolset>
@@ -47,6 +50,7 @@
     <WholeProgramOptimization>false</WholeProgramOptimization>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(WorkspaceRoot)v0.60d-workspace.props" Condition="Exists('$(WorkspaceRoot)v0.60d-workspace.props')" />
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
@@ -72,7 +76,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\crypto\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -83,10 +87,10 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;..\cximage\$(Platform)\$(Configuration)\cximage.lib;..\id3lib\libprj\$(Platform)\$(Configuration)\id3lib.lib;..\libpng\projects\visualc\$(Platform)\$(Configuration)\libpng.lib;..\mbedtls\visualc\vs2010\$(Platform)\$(Configuration)\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;..\resizablelib\$(Platform)\$(Configuration)\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -101,7 +105,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..\..\eMule-zz-deps-links;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -113,10 +117,10 @@
       <WholeProgramOptimization>false</WholeProgramOptimization>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\..\libs_debug\cryptlib.lib;..\..\libs_debug\cximage.lib;..\..\libs_debug\id3lib.lib;..\..\libs_debug\libpng15.lib;..\..\libs_debug\mbedTLS.lib;..\..\libs_debug\miniupnpc.lib;..\..\libs_debug\ResizableLib.lib;..\..\libs_debug\zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <OptimizeReferences>true</OptimizeReferences>
@@ -130,7 +134,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\crypto\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -140,10 +144,10 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;..\cximage\$(Platform)\$(Configuration)\cximage.lib;..\id3lib\libprj\$(Platform)\$(Configuration)\id3lib.lib;..\libpng\projects\visualc\$(Platform)\$(Configuration)\libpng.lib;..\mbedtls\visualc\vs2010\$(Platform)\$(Configuration)\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;..\resizablelib\$(Platform)\$(Configuration)\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -159,7 +163,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..\..\eMule-zz-deps-links;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.19041.0\um;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -171,10 +175,10 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\..\libs\cryptlib.lib;..\..\libs\cximage.lib;..\..\libs\id3lib.lib;..\..\libs\libpng15.lib;..\..\libs\mbedTLS.lib;..\..\libs\miniupnpc.lib;..\..\libs\ResizableLib.lib;..\..\libs\zlibstat.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -188,7 +192,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='_SpecialBootstrapNodes|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\crypto\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -199,10 +203,10 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\Debug\cryptlib.lib;..\cximage\$(Platform)\Debug\cximage.lib;..\id3lib\libprj\$(Platform)\Debug\id3lib.lib;..\libpng\projects\visualc\$(Platform)\Debug\libpng.lib;..\mbedtls\visualc\vs2010\$(Platform)\Debug\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;..\resizablelib\$(Platform)\Debug\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions>/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -217,7 +221,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='_SpecialBootstrapNodes|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\crypto\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -228,10 +232,10 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>$(IntDir);$(UniversalCRTSdkDir)Include\10.0.19041.0\um\;$(UniversalCRTSdkDir)Include\10.0.19041.0\shared\;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;$(VC_IncludePath);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\Debug\cryptlib.lib;..\cximage\$(Platform)\Debug\cximage.lib;..\id3lib\libprj\$(Platform)\Debug\id3lib.lib;..\libpng\projects\visualc\$(Platform)\Debug\libpng.lib;..\mbedtls\visualc\vs2010\$(Platform)\Debug\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;..\resizablelib\$(Platform)\Debug\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;crypt32.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>gdiplus.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <OptimizeReferences>false</OptimizeReferences>

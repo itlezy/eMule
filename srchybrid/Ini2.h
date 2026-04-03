@@ -1,4 +1,4 @@
-// Ini.h: Schnittstelle für die Klasse CIni.
+// Ini.h: Schnittstelle fÃ¼r die Klasse CIni.
 
 /*
  Autor: Michael Schikora

@@ -32,7 +32,7 @@ class CIP2Country
 	public:
 		CIP2Country(void);
 		~CIP2Country(void);
-		
+
 		void	Load();
 		void	Unload();
 

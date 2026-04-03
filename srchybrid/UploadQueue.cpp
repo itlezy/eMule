@@ -417,7 +417,7 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 
 	if (curUploadSlots < thePrefs.GetMaxUpClientsAllowed())
 		return true;
-	
+
 	return false;
 }
 
@@ -734,12 +734,12 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 	if (thePrefs.GetAutoFriendManagement() > 0) // auto un-friend low ids & slow high ids
 		if (client->IsFriend() && (client->HasLowID() || client->IsSlowDownloader()))
 			theApp.friendlist->RemoveFriend(client->GetFriend());
-	
+
 	const CKnownFile* pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
 	if (pDownloadingFile == NULL)
 		return true;
 	// broadband-MOD<<
-	
+
 	//If we have nobody in the queue, do NOT remove the current uploads.
 	//This will save some bandwidth and some unneeded swapping from upload/queue/upload.
 	if (waitinglist.IsEmpty() || client->GetFriendSlot())

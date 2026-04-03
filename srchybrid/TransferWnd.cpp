@@ -1365,7 +1365,7 @@ CString CTransferWnd::GetCatTitle(int catid)
 		, IDS_DOWNLOADING, IDS_ERRORLIKE, IDS_PAUSED, IDS_SEENCOMPL, 0
 		, IDS_VIDEO, IDS_AUDIO, IDS_SEARCH_ARC, IDS_SEARCH_CDIMG, IDS_SEARCH_DOC
 		, IDS_SEARCH_PICS, IDS_SEARCH_PRG, 0, IDS_REGEXPRESSION};
-	
+
 	catid = (catid >= 0 && catid < 17) ? idscat[catid] : 0;
 	return catid ? GetResString((UINT)catid) : CString(_T('?'));
 }

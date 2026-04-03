@@ -135,7 +135,7 @@ namespace Kademlia
 			: CStringW(psz, iLen)
 		{
 		}
-		
+
 		~CKadTagValueString() = default;
 
 		int CompareNoCase(LPCWSTR src) const noexcept
