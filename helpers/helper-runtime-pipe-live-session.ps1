@@ -337,6 +337,172 @@ function Stop-ProcessesByCommandLinePattern {
     return @($stoppedProcessIds)
 }
 
+function Get-ProcessesByCommandLinePattern {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$ProcessName,
+
+        [Parameter(Mandatory = $true)]
+        [string]$CommandPattern
+    )
+
+    $matches = @()
+    $normalizedPattern = $CommandPattern.ToLowerInvariant()
+    foreach ($process in @(Get-CimInstance Win32_Process -Filter ("Name='{0}.exe'" -f $ProcessName) -ErrorAction SilentlyContinue)) {
+        $commandLine = [string]$process.CommandLine
+        if ([string]::IsNullOrWhiteSpace($commandLine)) {
+            continue
+        }
+
+        if ($commandLine.ToLowerInvariant().Contains($normalizedPattern)) {
+            $matches += [pscustomobject]@{
+                process_id = [int]$process.ProcessId
+                process_name = $ProcessName
+                executable_path = [string]$process.ExecutablePath
+                command_line = $commandLine
+            }
+        }
+    }
+
+    return @($matches)
+}
+
+function Get-TrackedProcessMatches {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object]$TrackedProcess
+    )
+
+    $matchKind = [string]$TrackedProcess.match_kind
+    $processName = [string]$TrackedProcess.process_name
+    $executablePath = [string]$TrackedProcess.executable_path
+    $commandPattern = [string]$TrackedProcess.command_pattern
+
+    if ($matchKind -eq 'path') {
+        $matches = @()
+        $normalizedExecutablePath = Get-NormalizedPath -Path $executablePath
+        foreach ($process in @(Get-Process -Name $processName -ErrorAction SilentlyContinue)) {
+            try {
+                $processPath = [string]$process.Path
+                if (-not [string]::IsNullOrWhiteSpace($processPath) -and
+                    ((Get-NormalizedPath -Path $processPath).ToLowerInvariant() -eq $normalizedExecutablePath.ToLowerInvariant())) {
+                    $matches += [pscustomobject]@{
+                        process_id = [int]$process.Id
+                        process_name = $processName
+                        executable_path = $processPath
+                        command_line = $null
+                    }
+                }
+            } catch {
+            }
+        }
+
+        return @($matches)
+    }
+
+    if ($matchKind -eq 'command_line') {
+        return @(Get-ProcessesByCommandLinePattern -ProcessName $processName -CommandPattern $commandPattern)
+    }
+
+    throw "Unsupported tracked process match kind '$matchKind'."
+}
+
+function Stop-TrackedProcessById {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]$ProcessId
+    )
+
+    try {
+        $process = Get-Process -Id $ProcessId -ErrorAction Stop
+    } catch {
+        return $false
+    }
+
+    try {
+        if ($process.CloseMainWindow()) {
+            try {
+                Wait-Process -Id $ProcessId -Timeout 10 -ErrorAction Stop
+                return $true
+            } catch {
+            }
+        }
+    } catch {
+    }
+
+    try {
+        Stop-Process -Id $ProcessId -Force -ErrorAction Stop
+        return $true
+    } catch {
+    }
+
+    return $false
+}
+
+function Invoke-TrackedProcessCleanup {
+    param(
+        [Parameter(Mandatory = $true)]
+        [object[]]$TrackedProcesses,
+
+        [Parameter(Mandatory = $false)]
+        [int]$AttemptCount = 2,
+
+        [Parameter(Mandatory = $false)]
+        [int]$WaitMilliseconds = 1000
+    )
+
+    $attempts = 0
+    $stoppedProcessIds = @()
+    $leftoverProcesses = @()
+
+    for ($attempt = 1; $attempt -le $AttemptCount; ++$attempt) {
+        $attempts = $attempt
+        foreach ($trackedProcess in $TrackedProcesses) {
+            foreach ($match in @(Get-TrackedProcessMatches -TrackedProcess $trackedProcess)) {
+                $matchProcessId = [int]$match.process_id
+                if ($stoppedProcessIds -contains $matchProcessId) {
+                    continue
+                }
+
+                if (Stop-TrackedProcessById -ProcessId $matchProcessId) {
+                    $stoppedProcessIds += $matchProcessId
+                }
+            }
+        }
+
+        if ($WaitMilliseconds -gt 0) {
+            Start-Sleep -Milliseconds $WaitMilliseconds
+        }
+
+        $leftoverProcesses = @()
+        foreach ($trackedProcess in $TrackedProcesses) {
+            foreach ($match in @(Get-TrackedProcessMatches -TrackedProcess $trackedProcess)) {
+                $leftoverProcesses += [pscustomobject]@{
+                    kind = $trackedProcess.kind
+                    process_id = [int]$match.process_id
+                    process_name = $match.process_name
+                    executable_path = $match.executable_path
+                    command_line = $match.command_line
+                    match_kind = $trackedProcess.match_kind
+                }
+            }
+        }
+
+        if ($leftoverProcesses.Count -eq 0) {
+            break
+        }
+    }
+
+    return [ordered]@{
+        attempts = $attempts
+        success = ($leftoverProcesses.Count -eq 0)
+        stopped_process_ids = @($stoppedProcessIds)
+        leftover_processes = @($leftoverProcesses)
+        leftover_process_ids = @($leftoverProcesses | ForEach-Object { [int]$_.process_id } | Select-Object -Unique)
+        error = $null
+    }
+}
+
 function Set-IniValue {
     param(
         [Parameter(Mandatory = $true)]
@@ -2088,6 +2254,16 @@ $manifest = [ordered]@{
 }
 Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
+$startedProcesses = New-Object System.Collections.Generic.List[object]
+$cleanupResult = [ordered]@{
+    attempts = 0
+    success = $true
+    stopped_process_ids = @()
+    leftover_processes = @()
+    leftover_process_ids = @()
+    error = $null
+}
+
 $startProcessArgs = @{
     FilePath = $launchedExePath
     WorkingDirectory = (Split-Path -Parent $launchedExePath)
@@ -2095,6 +2271,14 @@ $startProcessArgs = @{
     PassThru = $true
 }
 $emuleProcess = Start-Process @startProcessArgs
+$startedProcesses.Add([ordered]@{
+    kind = 'emule'
+    process_id = [int]$emuleProcess.Id
+    process_name = $launchedProcessName
+    executable_path = $launchedExePath
+    command_pattern = $null
+    match_kind = 'path'
+})
 
 $nodePath = (Get-Command node -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Source)
 if ([string]::IsNullOrWhiteSpace($nodePath)) {
@@ -2102,6 +2286,8 @@ if ([string]::IsNullOrWhiteSpace($nodePath)) {
 }
 
 $manifest.process_id = $emuleProcess.Id
+$manifest.started_processes = @($startedProcesses.ToArray())
+$manifest.started_process_ids = @($startedProcesses | ForEach-Object { [int]$_.process_id })
 $manifest.launch_status = 'waiting_for_pipe'
 Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
@@ -2121,7 +2307,7 @@ $sessionFailure = $null
 $sessionFailureDetail = $null
 
 try {
-    Wait-NamedPipeAvailability -PipeName 'emule-api' -TimeoutSec 60
+    $null = Wait-NamedPipeAvailability -PipeName 'emule-api' -TimeoutSec 60
     if ($PipeWarmupSec -gt 0) {
         Start-Sleep -Seconds $PipeWarmupSec
     }
@@ -2132,7 +2318,17 @@ try {
         EMULE_REMOTE_TIMEOUT_MS = '5000'
         EMULE_REMOTE_RECONNECT_MS = '1000'
     }
+    $startedProcesses.Add([ordered]@{
+        kind = 'remote_sidecar'
+        process_id = [int]$remoteHandle.Process.Id
+        process_name = 'node'
+        executable_path = $nodePath
+        command_pattern = $remoteEntryPoint
+        match_kind = 'command_line'
+    })
     $manifest.remote_process_id = $remoteHandle.Process.Id
+    $manifest.started_processes = @($startedProcesses.ToArray())
+    $manifest.started_process_ids = @($startedProcesses | ForEach-Object { [int]$_.process_id })
     $manifest.launch_status = 'running'
     Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
 
@@ -2187,27 +2383,44 @@ try {
     $sessionFailureDetail = $_ | Out-String
 } finally {
     if (-not $KeepRunning) {
-        $runningProcess = Get-MatchingProcess -ProcessName $launchedProcessName -ExecutablePath $launchedExePath
-        if ($null -ne $runningProcess) {
-            try {
-                if ($runningProcess.CloseMainWindow()) {
-                    try {
-                        Wait-Process -Id $runningProcess.Id -Timeout 20 -ErrorAction Stop
-                    } catch {
-                    }
+        try {
+            <#*
+             * @brief Retry targeted teardown and fail the run if any harness-launched process is still present afterward.
+             #>
+            $cleanupResult = Invoke-TrackedProcessCleanup -TrackedProcesses @($startedProcesses.ToArray()) -AttemptCount 2 -WaitMilliseconds 1000
+            if (-not [bool]$cleanupResult.success) {
+                $cleanupFailure = "Harness cleanup left behind $($cleanupResult.leftover_process_ids.Count) launched process(es)."
+                if ([string]::IsNullOrWhiteSpace($sessionFailure)) {
+                    $sessionFailure = $cleanupFailure
+                    $sessionFailureDetail = $cleanupResult | ConvertTo-Json -Depth 12
+                } else {
+                    $sessionFailureDetail = @(
+                        $sessionFailureDetail
+                        'Cleanup failure:'
+                        ($cleanupResult | ConvertTo-Json -Depth 12)
+                    ) -join [Environment]::NewLine
                 }
-            } catch {
             }
-
-            $runningProcess = Get-MatchingProcess -ProcessName $launchedProcessName -ExecutablePath $launchedExePath
-            if ($null -ne $runningProcess) {
-                Stop-Process -Id $runningProcess.Id -Force
+        } catch {
+            $cleanupResult = [ordered]@{
+                attempts = 0
+                success = $false
+                stopped_process_ids = @()
+                leftover_processes = @()
+                leftover_process_ids = @()
+                error = $_.Exception.Message
+            }
+            if ([string]::IsNullOrWhiteSpace($sessionFailure)) {
+                $sessionFailure = 'Harness cleanup raised an unexpected error.'
+                $sessionFailureDetail = $_ | Out-String
+            } else {
+                $sessionFailureDetail = @(
+                    $sessionFailureDetail
+                    'Cleanup exception:'
+                    ($_ | Out-String)
+                ) -join [Environment]::NewLine
             }
         }
-    }
-
-    if (-not $KeepRunning -and $null -ne $remoteHandle) {
-        Stop-RedirectedProcess -Handle $remoteHandle
     }
 }
 
@@ -2215,8 +2428,23 @@ if ($LaunchOnly) {
     $manifest.finished_at = (Get-Date).ToString('o')
     $manifest.latest_artifact_published = $false
     $manifest.latest_artifact_error = $null
+    $manifest.started_processes = @($startedProcesses.ToArray())
+    $manifest.started_process_ids = @($startedProcesses | ForEach-Object { [int]$_.process_id })
+    $manifest.cleanup_requested = (-not [bool]$KeepRunning)
+    $manifest.cleanup_attempts = $cleanupResult.attempts
+    $manifest.cleanup_success = [bool]$cleanupResult.success
+    $manifest.cleanup_stopped_process_ids = @($cleanupResult.stopped_process_ids)
+    $manifest.leftover_process_ids = @($cleanupResult.leftover_process_ids)
+    $manifest.leftover_processes = @($cleanupResult.leftover_processes)
+    $manifest.cleanup_error = $cleanupResult.error
+    $manifest.session_failure = $sessionFailure
+    $manifest.session_failure_detail = $sessionFailureDetail
     Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
     Write-Output "Pipe live session artifact directory: $artifactDir"
+    if (-not [string]::IsNullOrWhiteSpace($sessionFailure)) {
+        Write-Error $sessionFailure
+        exit 1
+    }
     return
 }
 
@@ -2279,6 +2507,8 @@ $summary = [ordered]@{
     remote_token = $RemoteToken
     emule_process_id = $emuleProcess.Id
     remote_process_id = if ($null -ne $remoteHandle) { $remoteHandle.Process.Id } else { $null }
+    started_processes = @($startedProcesses.ToArray())
+    started_process_ids = @($startedProcesses | ForEach-Object { [int]$_.process_id })
     manifest_paths = @($manifestPaths)
     remote_health = $health
     server_connect = $serversStatus
@@ -2297,6 +2527,13 @@ $summary = [ordered]@{
     sample_count = $runtimeSamples.Count
     session_failure = $sessionFailure
     session_failure_detail = $sessionFailureDetail
+    cleanup_requested = (-not [bool]$KeepRunning)
+    cleanup_attempts = $cleanupResult.attempts
+    cleanup_success = [bool]$cleanupResult.success
+    cleanup_stopped_process_ids = @($cleanupResult.stopped_process_ids)
+    leftover_process_ids = @($cleanupResult.leftover_process_ids)
+    leftover_processes = @($cleanupResult.leftover_processes)
+    cleanup_error = $cleanupResult.error
     finished_at = (Get-Date).ToString('o')
 }
 $latestArtifactPublished = $false
@@ -2334,6 +2571,9 @@ Write-SessionManifest -Manifest $manifest -Paths $manifestPaths
     "freeze_reason: $freezeReason"
     "dump_path: $dumpPath"
     "sample_count: $($runtimeSamples.Count)"
+    "cleanup_success: $([bool]$cleanupResult.success)"
+    "leftover_process_ids: $(@($cleanupResult.leftover_process_ids) -join ',')"
+    "cleanup_error: $($cleanupResult.error)"
     "session_failure: $sessionFailure"
 ) | Set-Content -LiteralPath $summaryPath -Encoding utf8
 
