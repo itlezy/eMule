@@ -30,7 +30,8 @@ their client on the eMule forum.
 
 #pragma once
 #include "opcodes.h"
-#include "md4.h"
+#define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
+#include "cryptopp/md4.h"
 #include "otherfunctions.h"
 #include "kademlia/routing/Maps.h"
 

@@ -932,25 +932,25 @@ CBitmapDataObject::CBitmapDataObject(HBITMAP hBitmap)
 #pragma warning(disable:4100) // unreferenced parameter
 #pragma warning(disable:4555) // expression has no effect; expected expression with side-effect (because of the 'METHOD_PROLOGUE' macro)
 
-STDMETHODIMP CBitmapDataObject::XDataObject::QueryInterface(REFIID riid, void **ppvObj) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::QueryInterface(REFIID riid, void **ppvObj)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return (HRESULT)pThis->ExternalQueryInterface(&riid, ppvObj);
 }
 
-STDMETHODIMP_(ULONG) CBitmapDataObject::XDataObject::AddRef() noexcept
+STDMETHODIMP_(ULONG) CBitmapDataObject::XDataObject::AddRef()
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return pThis->ExternalAddRef();
 }
 
-STDMETHODIMP_(ULONG) CBitmapDataObject::XDataObject::Release() noexcept
+STDMETHODIMP_(ULONG) CBitmapDataObject::XDataObject::Release()
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return pThis->ExternalRelease();
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::GetData(FORMATETC *pformatetcIn, STGMEDIUM *pmedium)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 #ifdef USE_METAFILE
@@ -964,49 +964,49 @@ STDMETHODIMP CBitmapDataObject::XDataObject::GetData(FORMATETC *pformatetcIn, ST
 	return S_OK;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::GetDataHere(FORMATETC *pformatetc, STGMEDIUM *pmedium) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::GetDataHere(FORMATETC *pformatetc, STGMEDIUM *pmedium)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::QueryGetData(FORMATETC *pformatetc) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::QueryGetData(FORMATETC *pformatetc)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::GetCanonicalFormatEtc(FORMATETC *pformatectIn, FORMATETC *pformatetcOut) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::GetCanonicalFormatEtc(FORMATETC *pformatectIn, FORMATETC *pformatetcOut)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, BOOL fRelease) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::SetData(FORMATETC *pformatetc, STGMEDIUM *pmedium, BOOL fRelease)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::EnumFormatEtc(DWORD dwDirection, IEnumFORMATETC **ppenumFormatEtc)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::DAdvise(FORMATETC *pformatetc, DWORD advf, IAdviseSink *pAdvSink, DWORD *pdwConnection) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::DAdvise(FORMATETC *pformatetc, DWORD advf, IAdviseSink *pAdvSink, DWORD *pdwConnection)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::DUnadvise(DWORD dwConnection) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::DUnadvise(DWORD dwConnection)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;
 }
 
-STDMETHODIMP CBitmapDataObject::XDataObject::EnumDAdvise(IEnumSTATDATA **ppenumAdvise) noexcept
+STDMETHODIMP CBitmapDataObject::XDataObject::EnumDAdvise(IEnumSTATDATA **ppenumAdvise)
 {
 	METHOD_PROLOGUE(CBitmapDataObject, DataObject);
 	return E_NOTIMPL;

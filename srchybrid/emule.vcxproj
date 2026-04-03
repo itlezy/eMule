@@ -69,7 +69,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -98,7 +98,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -125,7 +125,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -154,7 +154,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -181,7 +181,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='_SpecialBootstrapNodes|Win32'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
@@ -210,7 +210,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='_SpecialBootstrapNodes|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;$(VC_ATLMFC_SourcePath);$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\um;$(WindowsSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/Zc:throwingNew</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>

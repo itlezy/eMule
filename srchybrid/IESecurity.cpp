@@ -136,32 +136,32 @@ void DumpIID(REFIID iid, LPCTSTR pszClassName)
 #pragma warning(push)
 #pragma warning(disable:4555) // expression has no effect; expected expression with side-effect (because of the 'METHOD_PROLOGUE' macro)
 
-STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::QueryInterface(REFIID riid, void **ppvObj) noexcept
+STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::QueryInterface(REFIID riid, void **ppvObj)
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
 	return (HRESULT)pThis->ExternalQueryInterface(&riid, ppvObj);
 }
 
-STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XInternetSecurityManager::AddRef() noexcept
+STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XInternetSecurityManager::AddRef()
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
 	return pThis->ExternalAddRef();
 }
 
-STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XInternetSecurityManager::Release() noexcept
+STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XInternetSecurityManager::Release()
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
 	return pThis->ExternalRelease();
 }
 
-STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::SetSecuritySite(IInternetSecurityMgrSite* /*pSite*/) noexcept
+STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::SetSecuritySite(IInternetSecurityMgrSite* /*pSite*/)
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
 	TRACE(_T("%hs\n"), "SetSecuritySite");
 	return INET_E_DEFAULT_ACTION;
 }
 
-STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::GetSecuritySite(IInternetSecurityMgrSite** /*ppSite*/) noexcept
+STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::GetSecuritySite(IInternetSecurityMgrSite** /*ppSite*/)
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
 	TRACE(_T("%hs\n"), "GetSecuritySite");
@@ -171,7 +171,7 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::GetSecuritySite(
 STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::MapUrlToZone(
 										LPCWSTR pwszUrl,
 										DWORD *pdwZone,
-										DWORD dwFlags) noexcept
+										DWORD dwFlags)
 {
 	UNREFERENCED_PARAMETER(pwszUrl);
 	UNREFERENCED_PARAMETER(dwFlags);
@@ -187,7 +187,7 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::MapUrlToZone(
 STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::GetSecurityId(
 										LPCWSTR pwszUrl,
 										BYTE* /*pbSecurityId*/, DWORD* /*pcbSecurityId*/,
-										DWORD_PTR dwReserved) noexcept
+										DWORD_PTR dwReserved)
 {
 	UNREFERENCED_PARAMETER(pwszUrl);
 	UNREFERENCED_PARAMETER(dwReserved);
@@ -201,7 +201,7 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::ProcessUrlAction
 										DWORD dwAction,
 										BYTE* /*pPolicy*/, DWORD /*cbPolicy*/,
 										BYTE* /*pContext*/, DWORD /*cbContext*/,
-										DWORD dwFlags, DWORD dwReserved) noexcept
+										DWORD dwFlags, DWORD dwReserved)
 {
 	UNREFERENCED_PARAMETER(pwszUrl);
 	UNREFERENCED_PARAMETER(dwAction);
@@ -229,7 +229,7 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::QueryCustomPolic
 										REFGUID /*guidKey*/,
 										BYTE** /*ppPolicy*/, DWORD* /*pcbPolicy*/,
 										BYTE* /*pContext*/, DWORD /*cbContext*/,
-										DWORD /*dwReserved*/) noexcept
+										DWORD /*dwReserved*/)
 {
 	UNREFERENCED_PARAMETER(pwszUrl);
 	METHOD_PROLOGUE(CMuleBrowserControlSite, InternetSecurityManager);
@@ -240,7 +240,7 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::QueryCustomPolic
 STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::SetZoneMapping(
 										DWORD dwZone,
 										LPCWSTR lpszPattern,
-										DWORD dwFlags) noexcept
+										DWORD dwFlags)
 {
 	UNREFERENCED_PARAMETER(dwZone);
 	UNREFERENCED_PARAMETER(lpszPattern);
@@ -253,7 +253,7 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::SetZoneMapping(
 STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::GetZoneMappings(
 										DWORD dwZone,
 										IEnumString** /*ppenumString*/,
-										DWORD dwFlags) noexcept
+										DWORD dwFlags)
 {
 	UNREFERENCED_PARAMETER(dwZone);
 	UNREFERENCED_PARAMETER(dwFlags);
@@ -267,25 +267,25 @@ STDMETHODIMP CMuleBrowserControlSite::XInternetSecurityManager::GetZoneMappings(
 // IServiceProvider
 //
 
-STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XServiceProvider::AddRef() noexcept
+STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XServiceProvider::AddRef()
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, ServiceProvider);
 	return pThis->ExternalAddRef();
 }
 
-STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XServiceProvider::Release() noexcept
+STDMETHODIMP_(ULONG) CMuleBrowserControlSite::XServiceProvider::Release()
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, ServiceProvider);
 	return pThis->ExternalRelease();
 }
 
-STDMETHODIMP CMuleBrowserControlSite::XServiceProvider::QueryInterface(REFIID riid, void **ppvObj) noexcept
+STDMETHODIMP CMuleBrowserControlSite::XServiceProvider::QueryInterface(REFIID riid, void **ppvObj)
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, ServiceProvider);
 	return (HRESULT)pThis->ExternalQueryInterface(&riid, ppvObj);
 }
 
-STDMETHODIMP CMuleBrowserControlSite::XServiceProvider::QueryService(REFGUID guidService, REFIID riid, void **ppvObject) noexcept
+STDMETHODIMP CMuleBrowserControlSite::XServiceProvider::QueryService(REFGUID guidService, REFIID riid, void **ppvObject)
 {
 	METHOD_PROLOGUE(CMuleBrowserControlSite, ServiceProvider);
 	//DUMPIID(guidService, _T("guidService"));
