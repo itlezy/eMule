@@ -39,6 +39,7 @@
 #include "Log.h"
 #include "Collection.h"
 #include "UploadDiskIOThread.h"
+#include "friendlist.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -62,16 +63,16 @@ void CUpDownClient::DrawUpStatusBar(CDC *dc, const CRect &rect, bool onlygreyrec
 	if (GetSlotNumber() <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
 		|| (GetUploadState() != US_UPLOADING && GetUploadState() != US_CONNECTING))
 	{
-		crNeither = RGB(224, 224, 224);
-		crNextSending = RGB(255, 208, 0);
-		crBoth = bFlat ? RGB(0, 0, 0) : RGB(104, 104, 104);
-		crSending = RGB(0, 150, 0);
+		crNeither = RGB(224, 224, 224); // light gray
+		crNextSending = RGB(255, 208, 0); // dark yellow
+		crBoth = bFlat ? RGB(0, 0, 0) : RGB(104, 104, 104); // black or dark gray
+		crSending = RGB(0, 150, 0); // light green
 	} else {
 		// grayed out
-		crNeither = RGB(248, 248, 248);
-		crNextSending = RGB(255, 244, 191);
-		crBoth = /*bFlat ? RGB(191, 191, 191) :*/ RGB(191, 191, 191);
-		crSending = RGB(191, 229, 191);
+		crNeither = RGB(248, 248, 248); // very light gray
+		crNextSending = RGB(255, 244, 191); // very light yellow
+		crBoth = /*bFlat ? RGB(191, 191, 191) :*/ RGB(191, 191, 191); // gray
+		crSending = RGB(191, 229, 191); // light green
 	}
 
 	// wistily: UpStatusFix
@@ -186,6 +187,12 @@ int CUpDownClient::GetFilePrioAsNumber() const
 	return filepriority;
 }
 
+// broadband-MOD>>
+bool CUpDownClient::IsSlowDownloader() const {
+	return m_caughtBeingSlow >= (1024 * thePrefs.GetSlowDownloaderSampleDepth());
+}
+// broadband-MOD<<
+
 /**
  * Gets the current waiting score for this client, taking into consideration waiting
  * time, priority of requested file, and the client's credits.
@@ -200,7 +207,9 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 		return 0;
 	}
 
-	if (!theApp.sharedfiles->GetFileByID(requpfileid)) //is any file requested?
+	const CKnownFile* currequpfile = theApp.sharedfiles->GetFileByID(requpfileid);
+
+	if (!currequpfile) //is any file requested?
 		return 0;
 
 	// bad clients (see note in function)
@@ -215,6 +224,13 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
+
+	// broadband-MOD>>
+	// important fix to avoid slow clients going back in the queue too soon
+	// m_caughtBeingSlow will be set to 0 in AddUpNextClient(), if it makes it back to the upload queue
+	if (IsSlowDownloader())
+		return 0;
+	// broadband-MOD<<
 
 	int filepriority = GetFilePrioAsNumber();
 
@@ -243,6 +259,31 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;
+
+	// broadband-MOD>>
+
+	float ratio = (float)currequpfile->GetAllTimeRatio();
+
+	// boost low ratio files
+	if (thePrefs.GetBoostLowRatioFiles() > 0) {
+		if      (ratio < thePrefs.GetBoostLowRatioFiles() + 0.33f) fBaseValue = (fBaseValue + (thePrefs.GetBoostLowRatioFilesBy() * 2));
+		else if (ratio < thePrefs.GetBoostLowRatioFiles() + 1.66f) fBaseValue = (fBaseValue +  thePrefs.GetBoostLowRatioFilesBy());
+	}
+
+	if (thePrefs.GetDeboostLowIDs() > 0)
+		fBaseValue = (fBaseValue / thePrefs.GetDeboostLowIDs());
+
+	if (thePrefs.GetDeboostHighRatioFiles() > 0 && ratio > thePrefs.GetDeboostHighRatioFiles())
+		fBaseValue = (fBaseValue / ratio);
+
+	// boost smaller files as they go away quickly
+	if (thePrefs.GetBoostFilesSmallerThan() > 0 &&
+		(uint64)currequpfile->GetFileSize() < ((uint64)thePrefs.GetBoostFilesSmallerThan() * 1024 * 1024)) fBaseValue = (fBaseValue + 99) * 3.33f;
+
+	// broadband-MOD<<
+
+	//AddDebugLogLine(false, _T("File fprio %u atratio %f fBaseValue %f - '%s'"), filepriority, ratio, fBaseValue, currequpfile->GetFileName());
+
 	return (uint32)fBaseValue;
 }
 
@@ -483,6 +524,53 @@ uint32 CUpDownClient::UpdateUploadingStatisticsData()
 		// download rate and the throttler can't
 		if (GetDatarate() > 100 * 1024)
 			s->UseBigSendBuffer();
+
+		// broadband-MOD>>
+		// apply "slow clients" logic only when there actually is people in the waiting list
+		if (theApp.uploadqueue->GetWaitingUserCount() > 0) {
+
+			bool isSlow = false;
+
+			// this is to ensure that clients are downloading at max speed all the time, unless when we have no busy queue
+			if (thePrefs.GetMaxUpload() != UNLIMITED) {
+
+				if (
+					// if a client is "slow" meaning a 1 / (SlowRateTolerancePerc * (1 + MaxUpClientsAllowed)) of the target upload rate
+					GetDatarate() <
+						((thePrefs.GetMaxUpload() * 1024u)    /
+						((thePrefs.GetSlowRateTolerancePerc() / 100.0f) * (1 + thePrefs.GetMaxUpClientsAllowed())))
+					) {
+					// only if Datarate below MaxUploadTargetFillPerc % of the max speed, if we're going fast enough we can leave the slow guys alone
+					if (theApp.uploadqueue->GetDatarate() < ((thePrefs.GetMaxUploadTargetFillPerc() / 100.0f) * (thePrefs.GetMaxUpload() * 1024u)))
+						isSlow = true;
+				}
+
+			}
+			else if (thePrefs.GetMaxUpload() == UNLIMITED) {
+				// still apply a boundary when up speed unlimited
+
+				if (GetDatarate() < thePrefs.GetUploadClientMaxDataRate())
+					isSlow = true;
+
+			}
+
+			if (!isSlow) {
+				if (m_caughtBeingSlow > 0)
+					m_caughtBeingSlow--;
+
+				if (thePrefs.GetAutoFriendManagement() > 0) // auto friend fast high ids
+					if (!HasLowID() && !IsFriend() && ((float)GetSessionUp() / (float)pCurrentUploadFile->GetFileSize() * 100.0f) > thePrefs.GetAutoFriendManagement())
+						theApp.friendlist->AddFriend(this);
+			}
+			else {
+				m_caughtBeingSlow++;
+
+				if (0 == GetDatarate()) // kick out stuck clients quicker
+					m_caughtBeingSlow += 24;
+			}
+		}
+		// broadband-MOD<<
+
 	}
 
 	if (sentBytesCompleteFile + sentBytesPartFile > 0 ||
@@ -730,6 +818,11 @@ bool CUpDownClient::GetFriendSlot() const
 		case IS_IDBADGUY:
 			return false;
 		}
+
+	// broadband-MOD>> // TODO is this actually needed? the logic of friend vs friend slot is not much clear..
+	if (thePrefs.GetAutoFriendManagement() > 0 && IsSlowDownloader())
+		return false;
+	// broadband-MOD<<
 
 	return m_bFriendSlot;
 }

@@ -624,6 +624,8 @@ BOOL CemuleApp::InitInstance()
 	scheduler = new CScheduler();
 	m_pPeerCache = new CPeerCacheFinder();
 
+	ip2country = new CIP2Country(); //EastShare - added by AndCycle, IP to Country
+
 	// ZZ:UploadSpeedSense -->
 	lastCommonRouteFinder = new LastCommonRouteFinder();
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();

@@ -841,7 +841,8 @@ void CSharedFileList::SendListToServer()
 			bool added = false;
 			for (POSITION pos1 = sortedList.GetHeadPosition(); pos1 != 0 && !added;) {
 				POSITION pos2 = pos1;
-				if (GetRealPrio(sortedList.GetNext(pos1)->GetUpPriority()) <= GetRealPrio(cur_file->GetUpPriority())) {
+				if (GetRealPrio(sortedList.GetNext(pos1)->GetUpPriority()) <= GetRealPrio(cur_file->GetUpPriority()) ||
+					sortedList.GetNext(pos1)->GetAllTimeRatio() <= cur_file->GetAllTimeRatio()) {
 					sortedList.InsertBefore(pos2, cur_file);
 					added = true;
 				}
@@ -1288,8 +1289,23 @@ void CSharedFileList::Process()
 	Publish();
 	if (m_lastPublishED2KFlag && ::GetTickCount() >= m_lastPublishED2K + ED2KREPUBLISHTIME) {
 		SendListToServer();
+
 		m_lastPublishED2K = ::GetTickCount();
 	}
+
+	// broadband-MOD>>
+	// reload the shared files every 33 min
+	if (m_lastReload > 0 && ::GetTickCount() >= m_lastReload + MIN2MS(33)) {
+
+		AddDebugLogLine(DLP_DEFAULT, false, _T("Reloading Shared Files list at Ticks %d"), m_lastReload);
+
+		Reload();
+
+		m_lastReload = ::GetTickCount();
+	}
+
+	if (m_lastReload <= 0) m_lastReload = ::GetTickCount();
+	// broadband-MOD<<
 }
 
 void CSharedFileList::Publish()

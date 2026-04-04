@@ -88,6 +88,23 @@ void CQueueListCtrl::Init()
 	InsertColumn(8, GetResString(IDS_BANNED),		LVCFMT_LEFT,  60);
 	InsertColumn(9, GetResString(IDS_UPSTATUS),		LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);
 
+	//MORPH START - Added by SiRoB, Client Software
+	InsertColumn(10, GetResString(IDS_CD_CSOFT), LVCFMT_LEFT, 100);
+	//MORPH END - Added by SiRoB, Client Software
+	InsertColumn(11, GetResString(IDS_CLIENT_UPLOADED), LVCFMT_LEFT, 100); //Total up down //TODO
+	// Commander - Added: IP2Country column - Start
+	InsertColumn(12, GetResString(IDS_COUNTRY), LVCFMT_LEFT, 100);
+	// Commander - Added: IP2Country column - End
+	InsertColumn(13, GetResString(IDS_IP), LVCFMT_LEFT, 100);
+	InsertColumn(14, GetResString(IDS_IDLOW), LVCFMT_LEFT, 50);
+	InsertColumn(15, GetResString(IDS_CLIENT_HASH), LVCFMT_LEFT, 50);
+	InsertColumn(16, GetResString(IDS_FILE_SIZE), LVCFMT_RIGHT, 50);
+
+	InsertColumn(17, GetResString(IDS_RATIO), LVCFMT_RIGHT, 50);
+	InsertColumn(18, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, 50);
+	InsertColumn(19, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
+	InsertColumn(20, GetResString(IDS_CAUGHT_SLOW), LVCFMT_RIGHT, 50);
+
 	SetAllIcons();
 	Localize();
 	LoadSettings();
@@ -267,6 +284,80 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		break;
 	case 9:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+	case 10:
+		//sText.Format(_T("%s (%s)"), client->GetClientSoftVer(), client->GetClientModVer());
+		sText = client->GetClientSoftVer();
+		break;
+		//MORPH END - Added by SiRoB, Client Software
+
+		//MORPH START - Added By Yun.SF3, Upload/Download
+	case 11: //LSD Total UP/DL
+	{
+		if (client->Credits()) {
+			sText.Format(_T("%s"), CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false));
+		}
+		else
+			sText.Format(_T("%s/%s"), _T("?"), _T("?"));
+		break;
+	}
+	//MORPH END - Added By Yun.SF3, Upload/Download
+
+	case 12:
+		sText = client->GetCountryName();
+		break;
+
+	case 13:
+		sText = ipstr(client->GetIP());
+		break;
+
+	case 14:
+		sText.Format(_T("%s"), GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH));
+		break;
+
+	case 15:
+		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
+		break;
+
+	case 16:
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%s"), (LPCTSTR)CastItoXBytes(file->GetFileSize()));
+	}
+		break;
+
+
+	case 17: // total ratio
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetAllTimeRatio());
+	}
+		break;
+
+	case 18: // session ratio
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetRatio());
+	}
+		break;
+
+	case 19: // File Folder
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText = file->GetPath();
+	}
+		break;
+
+	case 20: // Caught Being Slow
+	{
+		sText.Format(_T("%d / %d"), client->GetCaughtBeingSlow(), 1024 * thePrefs.GetSlowDownloaderSampleDepth());
+	}
+		break;
+
 	}
 	return sText;
 }
@@ -379,6 +470,86 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		break;
 	case 9:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 10:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 11:
+		if (item1->Credits() && item2->Credits()) {
+			iResult = CompareUnsigned64(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		}
+		break;
+	case 12:
+		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
+		break;
+	case 13:
+		iResult = CompareLocaleStringNoCase(ipstr(item1->GetIP()), ipstr(item2->GetIP()));
+		break;
+	case 14:
+		iResult = CompareUnsigned(item1->HasLowID(), item2->HasLowID());
+		break;
+	case 15:
+		if (item1->HasValidHash() && item2->HasValidHash()) {
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		}
+		break;
+	case 16:
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned64(file1->GetFileSize(), file2->GetFileSize());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 17:
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(
+				100 * file1->GetAllTimeRatio(),
+				100 * file2->GetAllTimeRatio());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 18:
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(
+				100 * file1->GetRatio(),
+				100 * file2->GetRatio());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 19: // File Folder
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
+		else
+			iResult = 1;
+	}
+		break;
+
+	case 20: // caught slow
+	{
+		iResult = CompareUnsigned(item1->GetCaughtBeingSlow(), item2->GetCaughtBeingSlow());
+	}
+		break;
+
 	}
 
 	if (lParamSort >= 100)
@@ -419,13 +590,21 @@ void CQueueListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("CLIENTDETAILS"));
 	ClientMenu.SetDefaultItem(MP_DETAIL);
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_ADDFRIEND, GetResString(IDS_ADDFRIEND), _T("ADDFRIEND"));
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_REMOVEFRIEND, GetResString(IDS_REMOVEFRIEND), _T("DELETEFRIEND"));
 	ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
-	if (thePrefs.IsExtControlsEnabled())
+	if (thePrefs.IsExtControlsEnabled()) {
+		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
+	}
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() != 0 && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
+
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_COPY_ED2K_HASH, GetResString(IDS_COPY_HASH));
+
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
@@ -454,11 +633,43 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			if (theApp.friendlist->AddFriend(client))
 				Update(iSel);
 			break;
+		case MP_REMOVEFRIEND: {
+			CFriend* fr = theApp.friendlist->SearchFriend(client->GetUserHash(), 0, 0);
+			if (fr) {
+				theApp.friendlist->RemoveFriend(fr);
+				Update(iSel);
+				}
+			}
+			break;
 		case MP_UNBAN:
 			if (client->IsBanned()) {
 				client->UnBan();
 				Update(iSel);
 			}
+			break;
+		case MP_BAN:
+			if (!client->IsBanned()) {
+				client->Ban(GetResString(IDS_BAN_ARBITRARY));
+				Update(iSel);
+			}
+			break;
+		case MP_COPY_ED2K_HASH: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
+		}
+			break;
+		case MP_OPEN: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellDefaultVerb(file->GetFilePath());
+		}
+			break;
+		case MP_OPENFOLDER: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
+		}
 			break;
 		case MP_DETAIL:
 		case MPG_ALTENTER:

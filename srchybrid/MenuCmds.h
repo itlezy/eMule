@@ -147,6 +147,10 @@
 #define MP_AUTOKADLOOKUPGRAPH	10363
 #define MP_UPDATE				10364
 
+// broadband-MOD>>
+#define MP_BAN					10365
+#define MP_COPY_ED2K_HASH		10366
+// broadband-MOD<<
 
 // quick-speed changer
 #define MP_QS_U10				10501
