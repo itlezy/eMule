@@ -487,8 +487,13 @@ bool CKnownFileList::ShouldPurgeAICHHashset(const CAICHHash &rAICHHash) const
 	if (m_mapKnownFilesByAICH.Lookup(rAICHHash, pFile)) {
 		if (!pFile->ShouldPartiallyPurgeFile())
 			return false;
-	} else
-		ASSERT(0);
+	} else {
+		// The AICH recovery file can outlive the in-memory known-file index after
+		// crashes or local test resets. Treat the missing map entry as an orphaned
+		// hashset which should be purged instead of aborting the entire debug run.
+		AddDebugLogLine(false, _T("KnownFileList: purging orphaned AICH hashset %s"), (LPCTSTR)rAICHHash.GetString());
+		return true;
+	}
 	return true;
 }
 

@@ -1286,44 +1286,94 @@ void CSharedFileList::UpdateFile(CKnownFile *toupdate)
 
 void CSharedFileList::Process()
 {
+	//AddDebugLogLine(DLP_DEFAULT, false, _T("CSharedFileList::Process() X01 %d T %d"), m_lastBandwCheck, ::GetTickCount64());
+
+	if (m_lastBandwCheck <= 0 || m_lastBandwCheck > ::GetTickCount64()) {
+		m_lastBandwCheck = ::GetTickCount64();
+	}
+
+	if (m_lastBandwCheck > 0 && ::GetTickCount64() >= m_lastBandwCheck + SEC2MS(16)) {
+
+		//AddDebugLogLine(DLP_DEFAULT, false, _T("CSharedFileList::Checking bandwidth limited at Ticks %d"), m_lastBandwCheck);
+
+		if (PathFileExists(_T("c:\\var\\tshr\\F_MULE_LIMIT_BANDW.TXT"))) {
+			thePrefs.SetMaxDownload(128);
+			thePrefs.SetMaxUpload(32);
+
+			AddDebugLogLine(DLP_DEFAULT, false, _T("CSharedFileList::Checking bandwidth limited at Ticks %d SLOW"), m_lastBandwCheck);
+		}
+		else {
+			thePrefs.SetMaxDownload(3222);
+			thePrefs.SetMaxUpload(333);
+
+			AddDebugLogLine(DLP_DEFAULT, false, _T("CSharedFileList::Checking bandwidth limited at Ticks %d NORM"), m_lastBandwCheck);
+		}
+
+		m_lastBandwCheck = ::GetTickCount64();
+	}
+
+	if (m_lastBandwCheck <= 0) m_lastBandwCheck = ::GetTickCount64();
+
+	//AddDebugLogLine(DLP_DEFAULT, false, _T("CSharedFileList::Process() X02 %d T %d"), m_lastBandwCheck, ::GetTickCount64());
+
 	Publish();
-	if (m_lastPublishED2KFlag && ::GetTickCount() >= m_lastPublishED2K + ED2KREPUBLISHTIME) {
+	if (m_lastPublishED2KFlag && ::GetTickCount64() >= m_lastPublishED2K + ED2KREPUBLISHTIME) {
 		SendListToServer();
 
-		m_lastPublishED2K = ::GetTickCount();
+		m_lastPublishED2K = ::GetTickCount64();
 	}
-
-	// broadband-MOD>>
-	// reload the shared files every 33 min
-	if (m_lastReload > 0 && ::GetTickCount() >= m_lastReload + MIN2MS(33)) {
-
-		AddDebugLogLine(DLP_DEFAULT, false, _T("Reloading Shared Files list at Ticks %d"), m_lastReload);
-
-		Reload();
-
-		m_lastReload = ::GetTickCount();
-	}
-
-	if (m_lastReload <= 0) m_lastReload = ::GetTickCount();
-	// broadband-MOD<<
 }
 
 void CSharedFileList::Publish()
 {
-	if (!Kademlia::CKademlia::IsConnected()
-		|| (theApp.IsFirewalled()
-			&& theApp.clientlist->GetBuddyStatus() != Connected
-			//direct callback
-			&& (Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) || !Kademlia::CUDPFirewallTester::IsVerified())
-		   )
-		|| !GetCount()
-		|| !Kademlia::CKademlia::GetPublish())
-	{
+	const bool bKadConnected = Kademlia::CKademlia::IsConnected();
+	const bool bAppFirewalled = theApp.IsFirewalled();
+	const bool bBuddyReady = theApp.clientlist->GetBuddyStatus() == Connected;
+	const bool bUdpFirewalled = Kademlia::CUDPFirewallTester::IsFirewalledUDP(true);
+	const bool bUdpVerified = Kademlia::CUDPFirewallTester::IsVerified();
+	const bool bHasFiles = GetCount() != 0;
+	const bool bPublishEnabled = Kademlia::CKademlia::GetPublish();
+	const bool bBlockedByFirewall = bAppFirewalled
+		&& !bBuddyReady
+		// direct callback
+		&& (bUdpFirewalled || !bUdpVerified);
+	const uint32 uPublishGateMask =
+		(bKadConnected ? 0x01u : 0x00u) |
+		(bBlockedByFirewall ? 0x02u : 0x00u) |
+		(bHasFiles ? 0x04u : 0x00u) |
+		(bPublishEnabled ? 0x08u : 0x00u);
+	static uint32 s_uLastPublishGateMask = 0xFFFFFFFFu;
+	static time_t s_tLastPublishGateLog = 0;
+	const time_t tNow = time(NULL);
+	if (!bKadConnected || bBlockedByFirewall || !bHasFiles || !bPublishEnabled) {
+		// Keep the gate trace readable by logging only on state changes and periodic refreshes.
+		if (uPublishGateMask != s_uLastPublishGateMask || tNow >= s_tLastPublishGateLog + SEC(10)) {
+			DebugLog(_T("Oracle publish gate connected=%u firewall_block=%u has_files=%u publish_enabled=%u app_firewalled=%u buddy_ready=%u udp_firewalled=%u udp_verified=%u total_files=%u total_store_key=%u total_store_src=%u total_store_notes=%u")
+				, bKadConnected ? 1 : 0
+				, bBlockedByFirewall ? 1 : 0
+				, bHasFiles ? 1 : 0
+				, bPublishEnabled ? 1 : 0
+				, bAppFirewalled ? 1 : 0
+				, bBuddyReady ? 1 : 0
+				, bUdpFirewalled ? 1 : 0
+				, bUdpVerified ? 1 : 0
+				, GetCount()
+				, Kademlia::CKademlia::GetTotalStoreKey()
+				, Kademlia::CKademlia::GetTotalStoreSrc()
+				, Kademlia::CKademlia::GetTotalStoreNotes());
+			s_tLastPublishGateLog = tNow;
+			s_uLastPublishGateMask = uPublishGateMask;
+		}
 		return;
 	}
 
+	if (uPublishGateMask != s_uLastPublishGateMask) {
+		DebugLog(_T("Oracle publish gate ready connected=1 firewall_block=0 has_files=1 publish_enabled=1 total_files=%u"), GetCount());
+		s_tLastPublishGateLog = tNow;
+		s_uLastPublishGateMask = uPublishGateMask;
+	}
+
 	//We are connected to Kad. We are either open or have a buddy. And Kad is ready to start publishing.
-	time_t tNow = time(NULL);
 	if (Kademlia::CKademlia::GetTotalStoreKey() < KADEMLIATOTALSTOREKEY) {
 		//We are not at the max simultaneous keyword publishes
 		if (tNow >= m_keywords->GetNextPublishTime()) {
@@ -1371,6 +1421,10 @@ void CSharedFileList::Publish()
 
 						if (count) {
 							//Start our keyword publish
+							DebugLog(_T("Oracle publish start family=keyword keyword=%s file_refs=%u target=%s")
+								, (LPCTSTR)pPubKw->GetKeyword()
+								, count
+								, (LPCTSTR)pPubKw->GetKadID().ToHexString());
 							pPubKw->SetNextPublishTime(tNow + KADEMLIAREPUBLISHTIMEK);
 							pPubKw->IncPublishedCount();
 							Kademlia::CSearchManager::StartSearch(pSearch);
@@ -1389,9 +1443,13 @@ void CSharedFileList::Publish()
 			if (m_currFileSrc >= GetCount())
 				m_currFileSrc = 0;
 			CKnownFile *pCurKnownFile = GetFileByIndex(m_currFileSrc);
-			if (pCurKnownFile && pCurKnownFile->PublishSrc())
+			if (pCurKnownFile && pCurKnownFile->PublishSrc()) {
+				DebugLog(_T("Oracle publish start family=source file=%s hash=%s")
+					, (LPCTSTR)pCurKnownFile->GetFileName()
+					, (LPCTSTR)md4str(pCurKnownFile->GetFileHash()));
 				if (Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::STOREFILE, true, Kademlia::CUInt128(pCurKnownFile->GetFileHash())) == NULL)
 					pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
+			}
 
 			++m_currFileSrc;
 
@@ -1406,9 +1464,13 @@ void CSharedFileList::Publish()
 			if (m_currFileNotes >= GetCount())
 				m_currFileNotes = 0;
 			CKnownFile *pCurKnownFile = GetFileByIndex(m_currFileNotes);
-			if (pCurKnownFile && pCurKnownFile->PublishNotes())
+			if (pCurKnownFile && pCurKnownFile->PublishNotes()) {
+				DebugLog(_T("Oracle publish start family=notes file=%s hash=%s")
+					, (LPCTSTR)pCurKnownFile->GetFileName()
+					, (LPCTSTR)md4str(pCurKnownFile->GetFileHash()));
 				if (Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::STORENOTES, true, Kademlia::CUInt128(pCurKnownFile->GetFileHash())) == NULL)
 					pCurKnownFile->SetLastPublishTimeKadNotes(0);
+			}
 
 			++m_currFileNotes;
 

@@ -56,6 +56,7 @@ their client on the eMule forum.
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
+#include "kademlia/utils/OracleTrace.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -67,6 +68,65 @@ extern LPCSTR g_aszInvKadKeywordCharsA;
 extern LPCWSTR g_awszInvKadKeywordChars;
 
 using namespace Kademlia;
+
+namespace
+{
+	LPCTSTR OraclePublishTransportModeLabel(bool bCryptEnabled, bool bHasCryptTargetID, bool bHasReceiverVerifyKey)
+	{
+		if (!bCryptEnabled)
+			return _T("plaintext");
+		if (bHasCryptTargetID)
+			return _T("node_id");
+		if (bHasReceiverVerifyKey)
+			return _T("receiver_verify_key");
+		return _T("plaintext");
+	}
+
+	// Mirror the publish packet shape into both the oracle trace and the verbose
+	// log right before send. This keeps the per-contact semantic payload size easy
+	// to inspect while preserving the JSONL dump as the raw on-wire source.
+	void OracleLogPublishContact(
+		LPCSTR pszFamily,
+		const CContact *pContact,
+		const CUInt128 &uTarget,
+		uint32 uPayloadLen,
+		uint32 uEntryCount,
+		bool bHasCryptTargetID,
+		bool bHasReceiverVerifyKey)
+	{
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const LPCTSTR pszTransportMode = OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey);
+		const CStringA sContact = OracleTrace::HostPort(pContact->GetIPAddress(), pContact->GetUDPPort());
+		const CStringA sTarget = OracleTrace::Hex128(uTarget);
+		CStringA sTransportMode;
+		sTransportMode = CT2A(pszTransportMode);
+		const uint32 uUDPKey = pContact->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false));
+
+		CStringA sFields;
+		sFields.Format("family=%s contact=%s contact_version=%u target=%s transport_mode=%s payload_len=%u entry_count=%u crypt_enabled=%u udp_key=%u"
+			, pszFamily
+			, (LPCSTR)sContact
+			, pContact->GetVersion()
+			, (LPCSTR)sTarget
+			, (LPCSTR)sTransportMode
+			, uPayloadLen
+			, uEntryCount
+			, bCryptEnabled ? 1u : 0u
+			, uUDPKey);
+		OracleTrace::Append("publish_contact_send", sFields);
+
+		DebugLog(_T("Oracle publish contact family=%hs contact=%hs contact_version=%u target=%hs transport_mode=%s payload_len=%u entry_count=%u crypt_enabled=%u udp_key=%u")
+			, pszFamily
+			, (LPCSTR)sContact
+			, pContact->GetVersion()
+			, (LPCSTR)sTarget
+			, pszTransportMode
+			, uPayloadLen
+			, uEntryCount
+			, bCryptEnabled ? 1u : 0u
+			, uUDPKey);
+	}
+}
 
 CKademliaUDPListener::~CKademliaUDPListener()
 {
@@ -210,6 +270,21 @@ void CKademliaUDPListener::SendPublishSourcePacket(CContact *pContact, const CUI
 			DebugSend("KADEMLIA_PUBLISH_REQ", pContact->GetIPAddress(), pContact->GetUDPPort());
 	}
 	uint32 uLen = (sizeof byPacket) - byteIO.GetAvailable();
+	{
+		CStringA sFields;
+		sFields.Format("contact=%s contact_version=%u target=%s contact_id=%s tag_count=%u tags=%s udp_key=%u crypt_target=%s packet_len=%u"
+			, (LPCSTR)OracleTrace::HostPort(pContact->GetIPAddress(), pContact->GetUDPPort())
+			, pContact->GetVersion()
+			, (LPCSTR)OracleTrace::Hex128(uTargetID)
+			, (LPCSTR)OracleTrace::Hex128(uContactID)
+			, static_cast<unsigned>(tags.size())
+			, (LPCSTR)OracleTrace::TagSummary(tags)
+			, pContact->GetUDPKey().GetKeyValue(theApp.GetPublicIP(false))
+			, (LPCSTR)OracleTrace::Hex128(pContact->GetClientID())
+			, uLen);
+		OracleTrace::Append("publish_source_semantic", sFields);
+	}
+	OracleLogPublishContact("source", pContact, uTargetID, uLen, 1u, pContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA, false);
 	if (pContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) { // obfuscated?
 		CUInt128 uClientID = pContact->GetClientID();
 		SendPacket(byPacket, uLen, pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);
@@ -340,7 +415,7 @@ void CKademliaUDPListener::ProcessPacket(const byte *pbyData, uint32 uLenData, u
 	case KADEMLIA2_PUBLISH_RES:
 		if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 			DebugRecv("KADEMLIA2_PUBLISH_RES", uIP, uUDPPort);
-		Process_KADEMLIA2_PUBLISH_RES(pbyPacketData, uLenData, uIP, uUDPPort, senderUDPKey);
+		Process_KADEMLIA2_PUBLISH_RES(pbyPacketData, uLenData, uIP, uUDPPort, senderUDPKey, bValidReceiverKey);
 		break;
 	case KADEMLIA_FIREWALLED_REQ:
 		if (thePrefs.GetDebugClientKadUDPLevel() > 0)
@@ -1066,6 +1141,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ(const byte *pbyPacke
 	bool uRestrictive = ((uStartPosition & 0x8000) != 0);
 	uStartPosition &= 0x7FFF;
 	SSearchTerm *pSearchTerms = NULL;
+	CStringA sSearchExpr("-");
 	if (uRestrictive) {
 		try {
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
@@ -1074,6 +1150,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ(const byte *pbyPacke
 			pSearchTerms = CreateSearchExpressionTree(fileIO, 0);
 			if (s_pstrDbgSearchExpr) {
 				Debug(_T("KadSearchTerm=%s\n"), (LPCTSTR)*s_pstrDbgSearchExpr);
+				sSearchExpr = CStringA(*s_pstrDbgSearchExpr);
 				delete s_pstrDbgSearchExpr;
 				s_pstrDbgSearchExpr = NULL;
 			}
@@ -1085,6 +1162,19 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_KEY_REQ(const byte *pbyPacke
 		}
 		if (pSearchTerms == NULL)
 			throw CString(_T("Invalid search expression"));
+	}
+	{
+		const char *pszTransport = senderUDPKey.IsEmpty() ? "plaintext" : "obfuscated";
+		CStringA sFields;
+		sFields.Format("from=%s target=%s start_position=%u restrictive=%d transport=%s sender_udp_key=%u expr=%s"
+			, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+			, (LPCSTR)OracleTrace::Hex128(uTarget)
+			, uStartPosition
+			, uRestrictive ? 1 : 0
+			, pszTransport
+			, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false))
+			, (LPCSTR)OracleTrace::Quote(sSearchExpr));
+		OracleTrace::Append("search_key_req_in", sFields);
 	}
 	CKademlia::GetIndexed()->SendValidKeywordResult(uTarget, pSearchTerms, uIP, uUDPPort, false, uStartPosition, senderUDPKey);
 	Free(pSearchTerms);
@@ -1098,6 +1188,18 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_SOURCE_REQ(const byte *pbyPa
 	fileIO.ReadUInt128(&uTarget);
 	uint16 uStartPosition = (fileIO.ReadUInt16() & 0x7FFF);
 	uint64 uFileSize = fileIO.ReadUInt64();
+	{
+		const char *pszTransport = senderUDPKey.IsEmpty() ? "plaintext" : "obfuscated";
+		CStringA sFields;
+		sFields.Format("from=%s target=%s start_position=%u file_size=%llu transport=%s sender_udp_key=%u"
+			, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+			, (LPCSTR)OracleTrace::Hex128(uTarget)
+			, uStartPosition
+			, static_cast<unsigned long long>(uFileSize)
+			, pszTransport
+			, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
+		OracleTrace::Append("search_source_req_in", sFields);
+	}
 	CKademlia::GetIndexed()->SendValidSourceResult(uTarget, uIP, uUDPPort, uStartPosition, uFileSize, senderUDPKey);
 }
 
@@ -1435,26 +1537,82 @@ void CKademliaUDPListener::Process_KADEMLIA_PUBLISH_RES(const byte *pbyPacketDat
 }
 
 // Used only by Kad2.0
-void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_RES(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey)
+void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_RES(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey, bool bValidReceiverKey)
 {
-	if (!IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_KEY_REQ) && !IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_SOURCE_REQ) && !IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_NOTES_REQ)) {
+	const bool bKeyTracked = IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_KEY_REQ, true);
+	const bool bSourceTracked = IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_SOURCE_REQ, true);
+	const bool bNotesTracked = IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_NOTES_REQ, true);
+	const bool bObfuscated = !senderUDPKey.IsEmpty();
+	const char *pszTransport = bObfuscated ? "obfuscated" : "plaintext";
+	if (!bKeyTracked && !bSourceTracked && !bNotesTracked) {
+		CStringA sFields;
+		sFields.Format("from=%s len=%u tracked_key=%d tracked_source=%d tracked_notes=%d transport=%s receiver_key_valid=%d sender_udp_key=%u reason=%s"
+			, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+			, uLenPacket
+			, bKeyTracked ? 1 : 0
+			, bSourceTracked ? 1 : 0
+			, bNotesTracked ? 1 : 0
+			, pszTransport
+			, bValidReceiverKey ? 1 : 0
+			, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false))
+			, "unrequested");
+		OracleTrace::Append("publish_res_drop", sFields);
 		CString strError;
 		strError.Format(_T("***NOTE: Received unrequested response packet, size (%u) in %hs"), uLenPacket, __FUNCTION__);
 		throw strError;
 	}
+	if (bKeyTracked)
+		IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_KEY_REQ);
+	else if (bSourceTracked)
+		IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_SOURCE_REQ);
+	else
+		IsOnOutTrackList(uIP, KADEMLIA2_PUBLISH_NOTES_REQ);
 	CSafeMemFile fileIO(pbyPacketData, uLenPacket);
 	CUInt128 uFile;
 	fileIO.ReadUInt128(&uFile);
 	uint8 uLoad = fileIO.ReadUInt8();
+	{
+		CStringA sFields;
+		sFields.Format("from=%s len=%u tracked_key=%d tracked_source=%d tracked_notes=%d file=%s load=%u transport=%s receiver_key_valid=%d sender_udp_key=%u"
+			, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+			, uLenPacket
+			, bKeyTracked ? 1 : 0
+			, bSourceTracked ? 1 : 0
+			, bNotesTracked ? 1 : 0
+			, (LPCSTR)OracleTrace::Hex128(uFile)
+			, uLoad
+			, pszTransport
+			, bValidReceiverKey ? 1 : 0
+			, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
+		OracleTrace::Append("publish_res_accept", sFields);
+	}
 	CSearchManager::ProcessPublishResult(uFile, uLoad, true);
 	if (fileIO.GetLength() > fileIO.GetPosition()) {
 		// for future use
 		uint8 byOptions = fileIO.ReadUInt8();
 		bool bRequestACK = (byOptions & 0x01) > 0;
+		{
+			CStringA sFields;
+			sFields.Format("from=%s file=%s options=0x%02x request_ack=%d sender_udp_key=%u"
+				, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+				, (LPCSTR)OracleTrace::Hex128(uFile)
+				, byOptions
+				, bRequestACK ? 1 : 0
+				, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
+			OracleTrace::Append("publish_res_options", sFields);
+		}
 		if (bRequestACK && !senderUDPKey.IsEmpty()) {
 			DEBUG_ONLY(DebugLogWarning(_T("KADEMLIA2_PUBLISH_RES_ACK requested (%s)"), (LPCTSTR)ipstr(htonl(uIP))));
 			if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 				DebugSend("KADEMLIA2_PUBLISH_RES_ACK", uIP, uUDPPort);
+			{
+				CStringA sFields;
+				sFields.Format("to=%s file=%s sender_udp_key=%u"
+					, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+					, (LPCSTR)OracleTrace::Hex128(uFile)
+					, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
+				OracleTrace::Append("publish_res_ack_send", sFields);
+			}
 			SendNullPacket(KADEMLIA2_PUBLISH_RES_ACK, uIP, uUDPPort, senderUDPKey, NULL);
 		}
 	}
@@ -1467,6 +1625,17 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_NOTES_REQ(const byte *pbyPac
 	CUInt128 uTarget;
 	fileIO.ReadUInt128(&uTarget);
 	uint64 uFileSize = fileIO.ReadUInt64();
+	{
+		const char *pszTransport = senderUDPKey.IsEmpty() ? "plaintext" : "obfuscated";
+		CStringA sFields;
+		sFields.Format("from=%s target=%s file_size=%llu transport=%s sender_udp_key=%u"
+			, (LPCSTR)OracleTrace::HostPort(uIP, uUDPPort)
+			, (LPCSTR)OracleTrace::Hex128(uTarget)
+			, static_cast<unsigned long long>(uFileSize)
+			, pszTransport
+			, senderUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
+		OracleTrace::Append("search_notes_req_in", sFields);
+	}
 	CKademlia::GetIndexed()->SendValidNoteResult(uTarget, uIP, uUDPPort, uFileSize, senderUDPKey);
 }
 
@@ -1891,8 +2060,28 @@ void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, uint
 	if (uLenData > 200)
 		pPacket->PackPacket();
 	theStats.AddUpDataOverheadKad(pPacket->size);
+	if (OracleTrace::IsPublishOpcode(pbyData[1])) {
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const bool bHasCryptTargetID = (uCryptTargetID != NULL) && !isnulmd4(uCryptTargetID->GetData());
+		const bool bHasReceiverVerifyKey = targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)) != 0;
+		CStringA sTransportMode;
+		sTransportMode = CT2A(OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey));
+		CStringA sFields;
+		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s transport_mode=%s crypt_enabled=%u"
+			, (LPCSTR)OracleTrace::OpcodeName(pbyData[1])
+			, pbyData[1]
+			, (LPCSTR)OracleTrace::HostPort(uDestinationHost, uDestinationPort)
+			, uLenData
+			, pPacket->size
+			, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false))
+			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-"
+			, (LPCSTR)sTransportMode
+			, bCryptEnabled ? 1u : 0u);
+		OracleTrace::Append("publish_send_raw", sFields);
+	}
 	AddTrackedOutPacket(uDestinationHost, pbyData[1]);
-	theApp.clientudp->SendPacket(pPacket, ntohl(uDestinationHost), uDestinationPort, true
+	// Keep Kad UDP transport aligned with the runtime obfuscation preference.
+	theApp.clientudp->SendPacket(pPacket, ntohl(uDestinationHost), uDestinationPort, thePrefs.IsClientCryptLayerSupported()
 		, (uCryptTargetID != NULL) ? uCryptTargetID->GetData() : NULL
 		, true, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
 }
@@ -1907,8 +2096,28 @@ void CKademliaUDPListener::SendPacket(const byte *pbyData, uint32 uLenData, byte
 	if (uLenData > 200)
 		pPacket->PackPacket();
 	theStats.AddUpDataOverheadKad(pPacket->size);
+	if (OracleTrace::IsPublishOpcode(byOpcode)) {
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const bool bHasCryptTargetID = (uCryptTargetID != NULL) && !isnulmd4(uCryptTargetID->GetData());
+		const bool bHasReceiverVerifyKey = targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)) != 0;
+		CStringA sTransportMode;
+		sTransportMode = CT2A(OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey));
+		CStringA sFields;
+		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s transport_mode=%s crypt_enabled=%u"
+			, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
+			, byOpcode
+			, (LPCSTR)OracleTrace::HostPort(uDestinationHost, uDestinationPort)
+			, uLenData
+			, pPacket->size
+			, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false))
+			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-"
+			, (LPCSTR)sTransportMode
+			, bCryptEnabled ? 1u : 0u);
+		OracleTrace::Append("publish_send_opcode", sFields);
+	}
 	AddTrackedOutPacket(uDestinationHost, byOpcode);
-	theApp.clientudp->SendPacket(pPacket, ntohl(uDestinationHost), uDestinationPort, true
+	// Keep Kad UDP transport aligned with the runtime obfuscation preference.
+	theApp.clientudp->SendPacket(pPacket, ntohl(uDestinationHost), uDestinationPort, thePrefs.IsClientCryptLayerSupported()
 		, (uCryptTargetID != NULL) ? uCryptTargetID->GetData() : NULL
 		, true, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
 }
@@ -1920,8 +2129,28 @@ void CKademliaUDPListener::SendPacket(CSafeMemFile *pbyData, byte byOpcode, uint
 	if (pPacket->size > 200)
 		pPacket->PackPacket();
 	theStats.AddUpDataOverheadKad(pPacket->size);
+	if (OracleTrace::IsPublishOpcode(byOpcode)) {
+		const bool bCryptEnabled = thePrefs.IsClientCryptLayerSupported();
+		const bool bHasCryptTargetID = (uCryptTargetID != NULL) && !isnulmd4(uCryptTargetID->GetData());
+		const bool bHasReceiverVerifyKey = targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)) != 0;
+		CStringA sTransportMode;
+		sTransportMode = CT2A(OraclePublishTransportModeLabel(bCryptEnabled, bHasCryptTargetID, bHasReceiverVerifyKey));
+		CStringA sFields;
+		sFields.Format("opcode=%s opcode_byte=0x%02x to=%s payload_len=%u packed_size=%u udp_key=%u crypt_target=%s transport_mode=%s crypt_enabled=%u"
+			, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
+			, byOpcode
+			, (LPCSTR)OracleTrace::HostPort(uDestinationHost, uDestinationPort)
+			, pPacket->size
+			, pPacket->size
+			, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false))
+			, uCryptTargetID != NULL ? (LPCSTR)OracleTrace::Hex128(*uCryptTargetID) : "-"
+			, (LPCSTR)sTransportMode
+			, bCryptEnabled ? 1u : 0u);
+		OracleTrace::Append("publish_send_memfile", sFields);
+	}
 	AddTrackedOutPacket(uDestinationHost, byOpcode);
-	theApp.clientudp->SendPacket(pPacket, htonl(uDestinationHost), uDestinationPort, true
+	// Keep Kad UDP transport aligned with the runtime obfuscation preference.
+	theApp.clientudp->SendPacket(pPacket, htonl(uDestinationHost), uDestinationPort, thePrefs.IsClientCryptLayerSupported()
 		, (uCryptTargetID != NULL) ? uCryptTargetID->GetData() : NULL
 		, true, targetUDPKey.GetKeyValue(theApp.GetPublicIP(false)));
 }

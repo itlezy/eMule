@@ -22,6 +22,7 @@
 #include "opcodes.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/net/PacketTracking.h"
+#include "kademlia/utils/OracleTrace.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -51,6 +52,16 @@ void CPacketTracking::AddTrackedOutPacket(uint32 dwIP, uint8 byOpcode)
 		return;
 	const uint32 tick = ::GetTickCount();
 	listTrackedRequests.AddHead(TrackPackets_Struct{tick, dwIP, byOpcode});
+	if (OracleTrace::IsPublishOpcode(byOpcode)) {
+		CStringA sFields;
+		sFields.Format("ip=%s opcode=%s opcode_byte=0x%02x tick=%u tracked_count=%u"
+			, (LPCSTR)OracleTrace::HostPort(dwIP, 0)
+			, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
+			, byOpcode
+			, tick
+			, static_cast<unsigned>(listTrackedRequests.GetCount()));
+		OracleTrace::Append("track_out_add", sFields);
+	}
 	while (!listTrackedRequests.IsEmpty() && tick >= listTrackedRequests.GetTail().dwInserted + SEC2MS(180))
 		listTrackedRequests.RemoveTail();
 }
@@ -91,8 +102,28 @@ bool CPacketTracking::IsOnOutTrackList(uint32 dwIP, uint8 byOpcode, bool bDontRe
 		if (req.dwIP == dwIP && req.byOpcode == byOpcode) {
 			if (!bDontRemove)
 				listTrackedRequests.RemoveAt(pos2);
+			if (OracleTrace::IsPublishOpcode(byOpcode)) {
+				CStringA sFields;
+				sFields.Format("ip=%s opcode=%s opcode_byte=0x%02x dont_remove=%d result=match tick=%u"
+					, (LPCSTR)OracleTrace::HostPort(dwIP, 0)
+					, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
+					, byOpcode
+					, bDontRemove ? 1 : 0
+					, tick);
+				OracleTrace::Append("track_out_lookup", sFields);
+			}
 			return true;
 		}
+	}
+	if (OracleTrace::IsPublishOpcode(byOpcode)) {
+		CStringA sFields;
+		sFields.Format("ip=%s opcode=%s opcode_byte=0x%02x dont_remove=%d result=miss tick=%u"
+			, (LPCSTR)OracleTrace::HostPort(dwIP, 0)
+			, (LPCSTR)OracleTrace::OpcodeName(byOpcode)
+			, byOpcode
+			, bDontRemove ? 1 : 0
+			, tick);
+		OracleTrace::Append("track_out_lookup", sFields);
 	}
 	return false;
 }
