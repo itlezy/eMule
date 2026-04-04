@@ -135,6 +135,7 @@ private:
 	time_t	m_lastPublishKadSrc;
 	time_t	m_lastPublishKadNotes;
 	DWORD	m_lastPublishED2K;
+	DWORD	m_lastReload;
 	bool	m_lastPublishED2KFlag;
 	bool	bHaveSingleSharedFiles;
 };

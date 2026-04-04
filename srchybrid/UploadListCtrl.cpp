@@ -89,6 +89,28 @@ void CUploadListCtrl::Init()
 	InsertColumn(6, GetResString(IDS_STATUS),		LVCFMT_LEFT, 100);
 	InsertColumn(7, GetResString(IDS_UPSTATUS),		LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);
 
+	//MORPH START - Added by SiRoB, Client Software
+	InsertColumn(8, GetResString(IDS_CD_CSOFT),		LVCFMT_LEFT, 100);
+	//MORPH END - Added by SiRoB, Client Software
+	InsertColumn(9, GetResString(IDS_CLIENT_UPLOADED),		LVCFMT_LEFT, 100); //Total up down //TODO
+	// Commander - Added: IP2Country column - Start
+	InsertColumn(10, GetResString(IDS_COUNTRY),			LVCFMT_LEFT, 100);
+	// Commander - Added: IP2Country column - End
+	InsertColumn(11, GetResString(IDS_IP),			LVCFMT_LEFT, 100);
+	InsertColumn(12, GetResString(IDS_IDLOW),		LVCFMT_LEFT, 50);
+	InsertColumn(13, GetResString(IDS_CLIENT_HASH),		LVCFMT_LEFT, 50);
+	InsertColumn(14, GetResString(IDS_UPLOAD_PCT),			LVCFMT_RIGHT, 50);
+	InsertColumn(15, GetResString(IDS_FILE_SIZE),			LVCFMT_RIGHT, 50);
+
+	InsertColumn(16, GetResString(IDS_RATIO), LVCFMT_RIGHT, 50);
+	InsertColumn(17, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, 50);
+
+	InsertColumn(18, GetResString(IDS_UPSTATUS), LVCFMT_RIGHT, 50);
+
+	InsertColumn(19, GetResString(IDS_ETA), LVCFMT_RIGHT, 50);
+	InsertColumn(20, GetResString(IDS_FOLDER), LVCFMT_LEFT, 50);
+	InsertColumn(21, GetResString(IDS_CAUGHT_SLOW), LVCFMT_RIGHT, 50);
+
 	SetAllIcons();
 	Localize();
 	LoadSettings();
@@ -204,12 +226,12 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			sText.Format(_T("(%s)"), (LPCTSTR)GetResString(IDS_UNKNOWN));
 		break;
 	case 1:
-		{
-			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-			if (file)
-				sText = file->GetFileName();
-		}
-		break;
+	{
+		const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText = file->GetFileName();
+	}
+	break;
 	case 2:
 		sText = CastItoXBytes(client->GetDatarate(), false, true);
 		break;
@@ -233,7 +255,118 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 	case 7:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+
+	case 8:
+		//sText.Format(_T("%s (%s)"), client->GetClientSoftVer(), client->GetClientModVer());
+		sText = client->GetClientSoftVer();
+		break;
+		//MORPH END - Added by SiRoB, Client Software
+
+		//MORPH START - Added By Yun.SF3, Upload/Download
+	case 9: //LSD Total UP/DL
+	{
+		if (client->Credits()) {
+			sText.Format(_T("%s"), CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false));
+		}
+		else
+			sText.Format(_T("%s/%s"), _T("?"), _T("?"));
+		break;
 	}
+	//MORPH END - Added By Yun.SF3, Upload/Download
+
+	case 10:
+		sText = client->GetCountryName();
+		break;
+
+	case 11:
+		sText = ipstr(client->GetIP());
+		break;
+
+	case 12:
+		sText.Format(_T("%s"), GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH));
+		break;
+
+	case 13:
+		sText.Format(_T("%s"), client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?"));
+		break;
+
+	case 14: // upload percentage %
+	{
+		// TODO need to review better this calculation as the client might have already part of the file
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%.1f%%"), (float)client->GetSessionUp() / (float)file->GetFileSize() * 100.0);
+	}
+		break;
+
+	case 15: // file size
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%s"), (LPCTSTR)CastItoXBytes(file->GetFileSize()));
+	}
+		break;
+
+	case 16: // total ratio
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetAllTimeRatio());
+	}
+		break;
+
+	case 17: // session ratio
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText.Format(_T("%.1f"), file->GetRatio());
+	}
+		break;
+
+	case 18: // upload parts status (numeric)
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		UploadingToClient_Struct* pUpClientStruct = theApp.uploadqueue->GetUploadingClientStructByClient(client);
+
+		if (file && pUpClientStruct)
+			sText.Format(_T("%llu / %llu"),
+				(uint64)pUpClientStruct->m_DoneBlocks_list.GetCount(),
+				(uint64)file->GetFileSize() / EMBLOCKSIZE);
+
+	}
+		break;
+
+	case 19: // ETA
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file) {
+			uint64 dataLeft = (uint64)file->GetFileSize() - client->GetSessionUp();
+			uint64 dataRate = client->GetDatarate();
+
+			if (dataLeft > 1024 && dataRate > 1024 &&
+				dataLeft / dataRate > 0 && dataLeft / dataRate < 60 * 60 * 10) sText = CastSecondsToHM(dataLeft / dataRate);
+			else sText = "-";
+		}
+	}
+		break;
+
+	case 20: // File Folder
+	{
+		const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+		if (file)
+			sText = file->GetPath();
+	}
+		break;
+
+	case 21: // File Folder
+	{
+		sText.Format(_T("%d / %d"), client->GetCaughtBeingSlow(), 1024 * thePrefs.GetSlowDownloaderSampleDepth());
+	}
+	break;
+
+	}
+
 	return sText;
 }
 
@@ -350,9 +483,9 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		iResult = CompareUnsigned(item1->GetDatarate(), item2->GetDatarate());
 		break;
 	case 3:
-		iResult = CompareUnsigned(item1->GetSessionUp(), item2->GetSessionUp());
+		iResult = CompareUnsigned64(item1->GetSessionUp(), item2->GetSessionUp());
 		if (iResult == 0 && thePrefs.m_bExtControls)
-			iResult = CompareUnsigned(item1->GetQueueSessionPayloadUp(), item2->GetQueueSessionPayloadUp());
+			iResult = CompareUnsigned64(item1->GetQueueSessionPayloadUp(), item2->GetQueueSessionPayloadUp());
 		break;
 	case 4:
 		iResult = CompareUnsigned(item1->GetWaitTime(), item2->GetWaitTime());
@@ -365,6 +498,133 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 7:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 8:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 9:
+		if (item1->Credits() && item2->Credits()) {
+			iResult = CompareUnsigned64(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		}
+		break;
+	case 10:
+		iResult = CompareLocaleStringNoCase(item1->GetCountryName(), item2->GetCountryName());
+		break;
+	case 11:
+		iResult = CompareLocaleStringNoCase(ipstr(item1->GetIP()), ipstr(item2->GetIP()));
+		break;
+	case 12:
+		iResult = CompareUnsigned(item1->HasLowID(), item2->HasLowID());
+		break;
+	case 13:
+		if (item1->HasValidHash() && item2->HasValidHash()) {
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		}
+		break;
+	case 14: // Session Transfer %
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned64(
+				(float)item1->GetSessionUp() / (float)file1->GetFileSize() * 1000.0,
+				(float)item2->GetSessionUp() / (float)file2->GetFileSize() * 1000.0);
+
+	}
+		break;
+	case 15: // File Size
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned64(file1->GetFileSize(), file2->GetFileSize());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 16: // All Time Ratio
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(
+				100 * file1->GetAllTimeRatio(),
+				100 * file2->GetAllTimeRatio());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+	case 17: // Session Ratio
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareUnsigned(
+				100 * file1->GetRatio(),
+				100 * file2->GetRatio());
+		else
+			iResult = (file1 == NULL) ? 1 : -1;
+	}
+		break;
+
+
+	case 18: // Uploaded parts
+	{
+		UploadingToClient_Struct* pUpClientStruct1 = theApp.uploadqueue->GetUploadingClientStructByClient(item1);
+		UploadingToClient_Struct* pUpClientStruct2 = theApp.uploadqueue->GetUploadingClientStructByClient(item2);
+
+		if (pUpClientStruct1 != NULL && pUpClientStruct2 != NULL)
+			iResult = CompareUnsigned((int)pUpClientStruct1->m_DoneBlocks_list.GetCount(), (int)pUpClientStruct2->m_DoneBlocks_list.GetCount());
+		else
+			iResult = 1;
+	}
+		break;
+
+	case 19: // ETA
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		iResult = 1;
+
+		if (file1 != NULL && file2 != NULL) {
+			uint64 dataLeft1 = (uint64)file1->GetFileSize() - item1->GetSessionUp();
+			uint64 dataRate1 = item1->GetDatarate();
+
+			uint64 dataLeft2 = (uint64)file2->GetFileSize() - item2->GetSessionUp();
+			uint64 dataRate2 = item2->GetDatarate();
+
+			if (dataLeft1 > 1024 && dataRate1 > 1024 &&
+				dataLeft1 / dataRate1 > 0 && dataLeft1 / dataRate1 < 60 * 60 * 24 &&
+				dataLeft2 > 1024 && dataRate2 > 1024 &&
+				dataLeft2 / dataRate2 > 0 && dataLeft2 / dataRate2 < 60 * 60 * 24)
+				iResult = CompareUnsigned64(dataLeft1 / dataRate1, dataLeft2 / dataRate2);
+		}
+	}
+		break;
+
+	case 20: // File Folder
+	{
+		const CKnownFile* file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+		const CKnownFile* file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+
+		if (file1 != NULL && file2 != NULL)
+			iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
+		else
+			iResult = 1;
+	}
+		break;
+
+	case 21: // caught slow
+	{
+		iResult = CompareUnsigned(item1->GetCaughtBeingSlow(), item2->GetCaughtBeingSlow());
+	}
+		break;
+
 	}
 
 	if (lParamSort >= 100)
@@ -405,11 +665,22 @@ void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("CLIENTDETAILS"));
 	ClientMenu.SetDefaultItem(MP_DETAIL);
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_ADDFRIEND, GetResString(IDS_ADDFRIEND), _T("ADDFRIEND"));
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_REMOVEFRIEND, GetResString(IDS_REMOVEFRIEND), _T("DELETEFRIEND"));
 	ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
+
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
+	ClientMenu.AppendMenu(MF_STRING | MF_ENABLED, MP_COPY_ED2K_HASH, GetResString(IDS_COPY_HASH));
+
+	if (thePrefs.IsExtControlsEnabled()) {
+		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
+		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
+	}
+
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 }
@@ -436,6 +707,44 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		case MP_ADDFRIEND:
 			if (theApp.friendlist->AddFriend(client))
 				Update(iSel);
+			break;
+		case MP_REMOVEFRIEND: {
+			CFriend* fr = theApp.friendlist->SearchFriend(client->GetUserHash(), 0, 0);
+			if (fr) {
+				theApp.friendlist->RemoveFriend(fr);
+				Update(iSel);
+				}
+			}
+			break;
+		case MP_UNBAN:
+			if (client->IsBanned()) {
+				client->UnBan();
+				Update(iSel);
+			}
+			break;
+		case MP_BAN:
+			if (!client->IsBanned()) {
+				client->Ban(GetResString(IDS_BAN_ARBITRARY));
+				Update(iSel);
+			}
+			break;
+		case MP_COPY_ED2K_HASH: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
+			}
+			break;
+		case MP_OPEN: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellDefaultVerb(file->GetFilePath());
+			}
+			break;
+		case MP_OPENFOLDER: {
+			const CKnownFile* file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			if (file && !file->IsPartFile())
+				ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
+			}
 			break;
 		case MP_DETAIL:
 		case MPG_ALTENTER:

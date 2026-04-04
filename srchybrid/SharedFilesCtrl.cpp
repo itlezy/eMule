@@ -282,6 +282,9 @@ void CSharedFilesCtrl::Init()
 	InsertColumn(16, GetResString(IDS_BITRATE), LVCFMT_RIGHT, DFLT_BITRATE_COL_WIDTH, -1, true);
 	InsertColumn(17, GetResString(IDS_CODEC), LVCFMT_LEFT, DFLT_CODEC_COL_WIDTH, -1, true);
 
+	InsertColumn(18, GetResString(IDS_RATIO), LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
+	InsertColumn(19, GetResString(IDS_RATIO_SESSION), LVCFMT_RIGHT, DFLT_LENGTH_COL_WIDTH);
+
 	SetAllIcons();
 	CreateMenus();
 	LoadSettings();
@@ -695,6 +698,13 @@ CString CSharedFilesCtrl::GetItemDisplayText(const CShareableFile *file, int iSu
 			break;
 		case 17:
 			sText = GetCodecDisplayName(pKnownFile->GetStrTagValue(FT_MEDIA_CODEC));
+			break;
+		case 18: // total ratio
+			sText.Format(_T("%.1f"), pKnownFile->GetAllTimeRatio());
+			break;
+		case 19: // session ratio
+			sText.Format(_T("%.1f"), pKnownFile->GetRatio());
+			break;
 		}
 	}
 	return sText;
@@ -1240,6 +1250,16 @@ int CALLBACK CSharedFilesCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM l
 				break;
 			case 17:
 				iResult = CompareOptLocaleStringNoCaseUndefinedAtBottom(GetCodecDisplayName(kitem1->GetStrTagValue(FT_MEDIA_CODEC)), GetCodecDisplayName(kitem2->GetStrTagValue(FT_MEDIA_CODEC)), bSortAscending);
+				break;
+			case 18:
+				iResult = CompareUnsigned(
+					100 * kitem1->GetAllTimeRatio(),
+					100 * kitem2->GetAllTimeRatio());
+				break;
+			case 19:
+				iResult = CompareUnsigned(
+					100 * kitem1->GetRatio(),
+					100 * kitem2->GetRatio());
 				break;
 
 			case 105: //all requests

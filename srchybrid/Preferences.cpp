@@ -57,6 +57,23 @@ CString	CPreferences::strNick;
 uint32	CPreferences::m_minupload;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
+
+// broadband-MOD>>
+uint32	CPreferences::m_maxUpClientsAllowed;
+uint32	CPreferences::m_maxUploadTargetFillPerc;
+uint32	CPreferences::m_slowRateTolerancePerc;
+uint64	CPreferences::m_sessionMaxTrans;
+uint64	CPreferences::m_sessionMaxTime;
+uint32	CPreferences::m_slowDownloaderSampleDepth;
+uint32	CPreferences::m_uploadClientMaxDataRate;
+uint32	CPreferences::m_boostLowRatioFiles;
+uint32	CPreferences::m_boostLowRatioFilesBy;
+uint32	CPreferences::m_boostFilesSmallerThan;
+uint32	CPreferences::m_deboostLowIDs;
+uint32	CPreferences::m_deboostHighRatioFiles;
+uint32	CPreferences::m_autoFriendManagement;
+// broadband-MOD<<
+
 LPCSTR	CPreferences::m_pszBindAddrA;
 CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
@@ -348,7 +365,6 @@ int		CPreferences::iMaxLogBuff;
 UINT	CPreferences::uMaxLogFileSize;
 ELogFileFormat CPreferences::m_iLogFileFormat = Unicode;
 bool	CPreferences::scheduler;
-bool	CPreferences::dontcompressavi;
 bool	CPreferences::msgonlyfriends;
 bool	CPreferences::msgsecure;
 bool	CPreferences::m_bUseChatCaptchas;
@@ -991,7 +1007,7 @@ void CPreferences::SaveCompletedDownloadsStat()
 } // SaveCompletedDownloadsStat()
 
 void CPreferences::Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF,
-	BOOL bUpDown, uint32 bytes, bool sentToFriend)
+	BOOL bUpDown, uint64 bytes, bool sentToFriend)
 {
 	//	This function adds the transferred bytes to the appropriate variables,
 	//	as well as to the totals for all clients. - Khaos
@@ -1547,6 +1563,22 @@ void CPreferences::SavePreferences()
 	}
 	ini.WriteString(_T("TempDirs"), tempdirs);
 
+	// broadband-MOD>>
+	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_maxUpClientsAllowed);
+	ini.WriteInt(_T("BBMaxUploadTargetFillPerc"), m_maxUploadTargetFillPerc);
+	ini.WriteInt(_T("BBSlowRateTolerancePerc"), m_slowRateTolerancePerc);
+	ini.WriteUInt64(_T("BBSessionMaxTrans"), m_sessionMaxTrans);
+	ini.WriteUInt64(_T("BBSessionMaxTime"), m_sessionMaxTime);
+	ini.WriteInt(_T("BBSlowDownloaderSampleDepth"), m_slowDownloaderSampleDepth);
+	ini.WriteInt(_T("BBUploadClientMaxDataRate"), m_uploadClientMaxDataRate);
+	ini.WriteInt(_T("BBBoostLowRatioFiles"), m_boostLowRatioFiles);
+	ini.WriteInt(_T("BBBoostLowRatioFilesBy"), m_boostLowRatioFilesBy);
+	ini.WriteInt(_T("BBBoostFilesSmallerThan"), m_boostFilesSmallerThan);
+	ini.WriteInt(_T("BBDeboostLowIDs"), m_deboostLowIDs);
+	ini.WriteInt(_T("BBDeboostHighRatioFiles"), m_deboostHighRatioFiles);
+	ini.WriteInt(_T("BBAutoFriendManagement"), m_autoFriendManagement);
+	// broadband-MOD<<
+
 	ini.WriteInt(_T("MinUpload"), m_minupload);
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
@@ -1976,6 +2008,28 @@ void CPreferences::LoadPreferences()
 			maxGraphUploadRate = nOldUploadCapacity; // use old custom value
 	}
 
+	// broadband-MOD>>
+	m_maxUpClientsAllowed = max(MIN_UP_CLIENTS_ALLOWED, (uint32)ini.GetInt(_T("BBMaxUpClientsAllowed"), MAX_UP_CLIENTS_ALLOWED));
+	m_maxUploadTargetFillPerc = (uint32)ini.GetInt(_T("BBMaxUploadTargetFillPerc"), 75);
+	m_slowRateTolerancePerc = (uint32)ini.GetInt(_T("BBSlowRateTolerancePerc"), 133);
+	m_sessionMaxTrans = max((uint64)ini.GetUInt64(_T("BBSessionMaxTrans"), SESSIONMAXTRANS), 1);
+	if (m_sessionMaxTrans > 100 && m_sessionMaxTrans < 32 * 1024 * 1024)
+		m_sessionMaxTrans = 32 * 1024 * 1024; // force a minimum of 32 Mb, less than that makes little sense
+
+	m_sessionMaxTime = max((uint64)ini.GetUInt64(_T("BBSessionMaxTime"), SESSIONMAXTIME), MIN2MS(10)); // at least 10 mins
+	m_slowDownloaderSampleDepth = max((uint32)ini.GetInt(_T("BBSlowDownloaderSampleDepth"), 4), 1); // at least 1 sample depth
+	m_uploadClientMaxDataRate = (uint32)ini.GetInt(_T("BBUploadClientMaxDataRate"), UPLOAD_CLIENT_MAXDATARATE);
+
+	m_boostLowRatioFiles = (uint32)ini.GetInt(_T("BBBoostLowRatioFiles"), 2);
+	m_boostLowRatioFilesBy = (uint32)ini.GetInt(_T("BBBoostLowRatioFilesBy"), 400);
+	m_boostFilesSmallerThan = (uint32)ini.GetInt(_T("BBBoostFilesSmallerThan"), 16);
+
+	m_deboostLowIDs = (uint32)ini.GetInt(_T("BBDeboostLowIDs"), 3);
+	m_deboostHighRatioFiles = (uint32)ini.GetInt(_T("BBDeboostHighRatioFiles"), 3);
+
+	m_autoFriendManagement = min((uint32)ini.GetInt(_T("BBAutoFriendManagement"), 0), 100);
+	// broadband-MOD<<
+
 	m_minupload = (uint32)ini.GetInt(_T("MinUpload"), 1);
 	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), UNLIMITED);
 	if (m_maxupload > (uint32)maxGraphUploadRate && m_maxupload != UNLIMITED)
@@ -2015,7 +2069,6 @@ void CPreferences::LoadPreferences()
 	trafficOMeterInterval = ini.GetInt(_T("StatGraphsInterval"), 3);
 	statsInterval = ini.GetInt(_T("statsInterval"), 5);
 	m_bFillGraphs = ini.GetBool(_T("StatsFillGraphs"));
-	dontcompressavi = ini.GetBool(_T("DontCompressAvi"), false);
 
 	m_uDeadServerRetries = ini.GetInt(_T("DeadServerRetry"), 1);
 	if (m_uDeadServerRetries > MAX_SERVERFAILCOUNT)
@@ -2447,7 +2500,7 @@ void CPreferences::LoadPreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
-	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), false, _T("UPnP"));
+	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), true, _T("UPnP"));
 	m_bSkipWANIPSetup = ini.GetBool(_T("SkipWANIPSetup"), false);
 	m_bSkipWANPPPSetup = ini.GetBool(_T("SkipWANPPPSetup"), false);
 	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true);

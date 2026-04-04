@@ -10,8 +10,8 @@
 #define HAVE_VISTA_SDK
 
 #ifdef XP_BUILD
-#define _WIN32_WINNT _WIN32_WINNT_WINXP
-#define NTDDI_VERSION NTDDI_WINXP
+#define _WIN32_WINNT _WIN32_WINNT_WIN7
+#define NTDDI_VERSION NTDDI_WIN7
 #endif
 
 //////////////////////////////////////////////////////////////////////////////

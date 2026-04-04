@@ -151,6 +151,23 @@ public:
 	// ZZ:UploadSpeedSense <--
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
+
+	// broadband-MOD>>
+	static uint32	m_maxUpClientsAllowed;
+	static uint32	m_maxUploadTargetFillPerc;
+	static uint32	m_slowRateTolerancePerc;
+	static uint64	m_sessionMaxTrans;
+	static uint64	m_sessionMaxTime;
+	static uint32	m_slowDownloaderSampleDepth;
+	static uint32	m_uploadClientMaxDataRate;
+	static uint32	m_boostLowRatioFiles;
+	static uint32	m_boostLowRatioFilesBy;
+	static uint32	m_boostFilesSmallerThan;
+	static uint32	m_deboostLowIDs;
+	static uint32	m_deboostHighRatioFiles;
+	static uint32	m_autoFriendManagement;
+	// broadband-MOD<<
+
 	static LPCSTR	m_pszBindAddrA;
 	static CStringA m_strBindAddrA;
 	static LPCWSTR	m_pszBindAddrW;
@@ -714,6 +731,21 @@ public:
 	// ZZ:UploadSpeedSense -->
 	static uint32	GetMinUpload()						{ return m_minupload; }
 	// ZZ:UploadSpeedSense <--
+	// broadband-MOD>>
+	static uint32	GetMaxUpClientsAllowed()			{ return m_maxUpClientsAllowed; }
+	static uint32	GetMaxUploadTargetFillPerc()		{ return m_maxUploadTargetFillPerc; }
+	static uint32	GetSlowRateTolerancePerc()			{ return m_slowRateTolerancePerc; }
+	static uint64	GetSessionMaxTrans()				{ return m_sessionMaxTrans; }
+	static uint64	GetSessionMaxTime()					{ return m_sessionMaxTime; }
+	static uint32	GetSlowDownloaderSampleDepth()		{ return m_slowDownloaderSampleDepth; }
+	static uint32	GetUploadClientMaxDataRate()		{ return m_uploadClientMaxDataRate; }
+	static uint32	GetBoostLowRatioFiles()				{ return m_boostLowRatioFiles; }
+	static uint32	GetBoostLowRatioFilesBy()			{ return m_boostLowRatioFilesBy; }
+	static uint32	GetBoostFilesSmallerThan()			{ return m_boostFilesSmallerThan; }
+	static uint32	GetDeboostLowIDs()					{ return m_deboostLowIDs; }
+	static uint32	GetDeboostHighRatioFiles()			{ return m_deboostHighRatioFiles; }
+	static uint32	GetAutoFriendManagement()			{ return m_autoFriendManagement; }
+	// broadband-MOD<<
 	static uint32	GetMaxUpload()						{ return m_maxupload; }
 	static bool		IsICHEnabled()						{ return ICH; }
 	static bool		GetAutoUpdateServerList()			{ return m_bAutoUpdateServerList; }
@@ -752,7 +784,7 @@ public:
 	static void		Add2ConnDownloadTime(int in)		{ cumConnDownloadTime += in; }
 	static void		Add2ConnUploadTime(int in)			{ cumConnUploadTime += in; }
 	static void		Add2DownSessionCompletedFiles()		{ ++sesDownCompletedFiles; }
-	static void		Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF, BOOL bUpDown, uint32 bytes, bool sentToFriend = false);
+	static void		Add2SessionTransferData(UINT uClientID, UINT uClientPort, BOOL bFromPF, BOOL bUpDown, uint64 bytes, bool sentToFriend = false);
 	static void		Add2DownSuccessfulSessions()		{ ++sesDownSuccessfulSessions;
 														  ++cumDownSuccessfulSessions; }
 	static void		Add2DownFailedSessions()			{ ++sesDownFailedSessions;
@@ -1250,7 +1282,6 @@ public:
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
 	static bool		IsSchedulerEnabled()				{ return scheduler; }
 	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
-	static bool		GetDontCompressAvi()				{ return dontcompressavi; }
 
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }

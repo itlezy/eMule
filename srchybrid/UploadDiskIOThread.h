@@ -57,7 +57,6 @@ public:
 	void		NewBlockRequestsAvailable();
 	void		SocketNeedsMoreData();
 	void		EndThread();
-	static bool ShouldCompressBasedOnFilename(const CString &strFileName);
 
 	uint32		dbgDataReadPending;
 protected:
@@ -72,7 +71,6 @@ private:
 	void		ReadCompletionRoutine(DWORD dwErrorCode, DWORD dwBytesRead, OverlappedEx_Struct *pOverlappedExStruct);
 
 	static void CreateStandardPackets(byte *pbyData, uint64 uStartOffset, uint64 uEndOffset, bool bFromPF, CPacketList &rOutPacketList, const uchar *pucMD4FileHash, const CString &strDbgClientInfo);
-	static void CreatePackedPackets(byte *pbyData, uint64 uStartOffset, uint64 uEndOffset, bool bFromPF, CPacketList &rOutPacketList, const uchar *pucMD4FileHash, const CString &strDbgClientInfo);
 	static void CreatePeerCachePackets(byte *pbyData, uint64 uStartOffset, uint64 uEndOffset, uint64 uFilesize, bool bFromPF, CPacketList &rOutPacketList, const uchar *pucMD4FileHash, CUpDownClient *pClient);
 
 	CEvent		*m_eventThreadEnded;

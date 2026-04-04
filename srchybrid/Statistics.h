@@ -156,7 +156,7 @@ public:
 
 private:
 	typedef struct {
-		uint32	datalen;
+		uint64	datalen;
 		DWORD	timestamp;
 	} TransferredData;
 	std::list<TransferredData> uprateHistory;
