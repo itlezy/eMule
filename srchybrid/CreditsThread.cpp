@@ -472,7 +472,7 @@ void CCreditsThread::InitText()
 	m_arCredits.Add(_T("S:05"));
 	m_arCredits.Add(_T("01:06:Basque: TXiKi"));
 	m_arCredits.Add(_T("S:05"));
-	m_arCredits.Add(_T("01:06:Breton: KAD-Korvigelloù an Drouizig"));
+	m_arCredits.Add(_T("01:06:Breton: KAD-KorvigelloÅ¯ an Drouizig"));
 	m_arCredits.Add(_T("S:05"));
 	m_arCredits.Add(_T("01:06:Bulgarian: DapKo, Dumper"));
 	m_arCredits.Add(_T("S:05"));
@@ -520,7 +520,7 @@ void CCreditsThread::InitText()
 	m_arCredits.Add(_T("S:05"));
 	m_arCredits.Add(_T("01:06:Polish: Tomasz \"TMouse\" Broniarek"));
 	m_arCredits.Add(_T("S:05"));
-	m_arCredits.Add(_T("01:06:Portuguese: Filipe, Luís Claro"));
+	m_arCredits.Add(_T("01:06:Portuguese: Filipe, LuÃ­s Claro"));
 	m_arCredits.Add(_T("S:05"));
 	m_arCredits.Add(_T("01:06:Portuguese Brazilian: DarthMaul,Brasco,Ducho"));
 	m_arCredits.Add(_T("S:05"));

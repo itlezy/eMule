@@ -83,7 +83,7 @@ BOOL CFileDetailDialogInfo::OnInitDialog()
 
 	// no need to refresh data explicitly because
 	// 'OnSetActive' will be called right after 'OnInitDialog'
-	
+
 	// start timer for calling 'RefreshData'
 	VERIFY((m_timer = SetTimer(IDT_REFRESH, SEC2MS(5), NULL)) != 0);
 

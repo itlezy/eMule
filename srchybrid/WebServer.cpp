@@ -1272,7 +1272,7 @@ CString CWebServer::_GetServerList(const ThreadData &Data)
 			HTTPProcessData.Replace(_T("[Servername]"), s);
 		} else
 			HTTPProcessData.Replace(_T("[Servername]"), cur_srv.sServerName);
-		
+
 		if (WSserverColumnHidden[1])
 			HTTPProcessData.Replace(_T("[Address]"), _T(""));
 		else {
@@ -1288,7 +1288,7 @@ CString CWebServer::_GetServerList(const ThreadData &Data)
 			HTTPProcessData.Replace(_T("[Description]"), s);
 		} else
 			HTTPProcessData.Replace(_T("[Description]"), cur_srv.sServerDescription);
-		
+
 		if (WSserverColumnHidden[3])
 			HTTPProcessData.Replace(_T("[Ping]"), _T(""));
 		else {
@@ -1339,7 +1339,7 @@ CString CWebServer::_GetServerList(const ThreadData &Data)
 			HTTPProcessData.Replace(_T("[Version]"), s);
 		} else
 			HTTPProcessData.Replace(_T("[Version]"), cur_srv.sServerVersion);
-		
+
 		HTTPProcessData.Replace(_T("[ServerState]"), cur_srv.sServerState);
 		sList += HTTPProcessData;
 	}
@@ -2220,12 +2220,12 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 			HTTPProcessData.Replace(_T("[ShortFileName]"), downf.sFileName.Left(SHORT_LENGTH_MAX - 3) + _T("..."));
 		else
 			HTTPProcessData.Replace(_T("[ShortFileName]"), downf.sFileName);
-		
+
 		HTTPProcessData.Replace(_T("[FileInfo]"), strFileInfo);
 		fTotalSize += downf.m_qwFileSize;
 
 		HTTPProcessData.Replace(_T("[2]"), WSdownloadColumnHidden[1] ? _T("") : (LPCTSTR)CastItoXBytes(downf.m_qwFileSize));
-		
+
 		if (WSdownloadColumnHidden[2])
 			HTTPProcessData.Replace(_T("[3]"), _T(""));
 		else if (downf.m_qwFileTransferred > 0) {

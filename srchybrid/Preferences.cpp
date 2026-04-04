@@ -1956,7 +1956,7 @@ void CPreferences::LoadPreferences()
 		if (!bDup && (PathFileExists(atmp) || ::CreateDirectory(atmp, NULL)) || tempdir.IsEmpty())
 			tempdir.Add(atmp);
 	}
-	
+
 	maxGraphDownloadRate = ini.GetInt(_T("DownloadCapacity"), 96);
 	if (maxGraphDownloadRate == 0)
 		maxGraphDownloadRate = 96;

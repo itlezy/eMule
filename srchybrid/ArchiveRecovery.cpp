@@ -332,8 +332,8 @@ bool CArchiveRecovery::recoverZip(CFile *zipInput, CFile *zipOutput, archiveScan
 			writeUInt32(zipOutput, ZIP_END_CD_MAGIC);
 			writeUInt16(zipOutput, 0); // Number of this disk
 			writeUInt16(zipOutput, 0); // Disk number where the central directory starts
-			writeUInt16(zipOutput, (uint16)fileCount); //Number of central directory records on this disk 
-			writeUInt16(zipOutput, (uint16)fileCount); //Total number of central directory records 
+			writeUInt16(zipOutput, (uint16)fileCount); //Number of central directory records on this disk
+			writeUInt16(zipOutput, (uint16)fileCount); //Total number of central directory records
 			writeUInt32(zipOutput, (uint32)(endOffset - startOffset));
 			writeUInt32(zipOutput, (uint32)startOffset);
 			writeUInt16(zipOutput, (uint16)strlen(ZIP_COMMENT));

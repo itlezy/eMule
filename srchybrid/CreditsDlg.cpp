@@ -50,7 +50,7 @@ END_MESSAGE_MAP()
 // CCreditsDlg message handlers
 
 /// <summary>
-/// 
+///
 /// </summary>
 /// <returns></returns>
 BOOL CCreditsDlg::OnInitDialog()
