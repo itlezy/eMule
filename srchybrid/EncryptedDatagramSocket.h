@@ -16,6 +16,15 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 
+enum EOracleUdpTransportMode : uint8
+{
+	ORACLE_UDP_TRANSPORT_PLAINTEXT = 0,
+	ORACLE_UDP_TRANSPORT_NODE_ID,
+	ORACLE_UDP_TRANSPORT_RECEIVER_VERIFY_KEY,
+	ORACLE_UDP_TRANSPORT_USER_HASH,
+	ORACLE_UDP_TRANSPORT_SERVER_BASE_KEY
+};
+
 class CEncryptedDatagramSocket
 {
 public:
@@ -23,11 +32,11 @@ public:
 	virtual	~CEncryptedDatagramSocket() = default;
 
 protected:
-	static int DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwIP, uint32 *nReceiverVerifyKey, uint32 *nSenderVerifyKey);
-	static uint32 EncryptSendClient(uchar *pbyBuf, uint32 nBufLen, const uchar *pachClientHashOrKadID, bool bKad, uint32 nReceiverVerifyKey, uint32 nSenderVerifyKey);
+	static int DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwIP, uint32 *nReceiverVerifyKey, uint32 *nSenderVerifyKey, EOracleUdpTransportMode *pTransportMode);
+	static uint32 EncryptSendClient(uchar *pbyBuf, uint32 nBufLen, const uchar *pachClientHashOrKadID, bool bKad, uint32 nReceiverVerifyKey, uint32 nSenderVerifyKey, EOracleUdpTransportMode *pTransportMode);
 
-	static int DecryptReceivedServer(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwBaseKey, uint32 dbgIP);
-	static uint32 EncryptSendServer(uchar *pbyBuf, uint32 nBufLen, uint32 dwBaseKey);
+	static int DecryptReceivedServer(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwBaseKey, uint32 dbgIP, EOracleUdpTransportMode *pTransportMode);
+	static uint32 EncryptSendServer(uchar *pbyBuf, uint32 nBufLen, uint32 dwBaseKey, EOracleUdpTransportMode *pTransportMode);
 
 	static int EncryptOverheadSize(bool bKad);
 };

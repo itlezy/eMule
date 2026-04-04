@@ -386,14 +386,14 @@ public:
 
 	static UINT		m_uTransferWnd1;
 	static UINT		m_uTransferWnd2;
-	//MORPH START - Added by SiRoB, Splitting Bar [O˛]
+	//MORPH START - Added by SiRoB, Splitting Bar [O²]
 	static UINT		splitterbarPositionStat;
 	static UINT		splitterbarPositionStat_HL;
 	static UINT		splitterbarPositionStat_HR;
 	static UINT		splitterbarPositionFriend;
 	static UINT		splitterbarPositionIRC;
 	static UINT		splitterbarPositionShared;
-	//MORPH END - Added by SiRoB, Splitting Bar [O˛]
+	//MORPH END - Added by SiRoB, Splitting Bar [O²]
 	static UINT		m_uDeadServerRetries;
 	static DWORD	m_dwServerKeepAliveTimeout;
 	// -khaos--+++> Changed data type to avoid overflows
@@ -700,6 +700,8 @@ public:
 	static const CString& GetFileCommentsFilePath()		{ return m_strFileCommentsFilePath; }
 	static CString	GetMuleDirectory(EDefaultDirectory eDirectory, bool bCreate = true);
 	static void		SetMuleDirectory(EDefaultDirectory eDirectory, const CString &strNewDir);
+	static void		SetProfileRootOverride(LPCTSTR pszProfileRoot);
+	static bool		HasProfileRootOverride();
 	static void		ChangeUserDirMode(int nNewMode);
 
 	static bool		IsTempFile(const CString &rstrDirectory, const CString &rstrName);
@@ -1038,7 +1040,7 @@ public:
 	static void		SetTransferWnd1(UINT uWnd1)			{ m_uTransferWnd1 = uWnd1; }
 	static UINT		GetTransferWnd2()					{ return m_uTransferWnd2; }
 	static void		SetTransferWnd2(UINT uWnd2)			{ m_uTransferWnd2 = uWnd2; }
-	//MORPH START - Added by SiRoB, Splitting Bar [O˛]
+	//MORPH START - Added by SiRoB, Splitting Bar [O²]
 	static UINT		GetSplitterbarPositionStat()		{ return splitterbarPositionStat; }
 	static void		SetSplitterbarPositionStat(UINT pos) { splitterbarPositionStat = pos; }
 	static UINT		GetSplitterbarPositionStat_HL()		{ return splitterbarPositionStat_HL; }
@@ -1051,7 +1053,7 @@ public:
 	static void		SetSplitterbarPositionIRC(UINT pos)	{ splitterbarPositionIRC = pos; }
 	static UINT		GetSplitterbarPositionShared()		{ return splitterbarPositionShared; }
 	static void		SetSplitterbarPositionShared(UINT pos)	{ splitterbarPositionShared = pos; }
-	//MORPH END   - Added by SiRoB, Splitting Bar [O˛]
+	//MORPH END   - Added by SiRoB, Splitting Bar [O²]
 	// -khaos--+++> Changed datatype to avoid overflows
 	static UINT		GetStatsMax()						{ return statsMax; }
 	// <-----khaos-
@@ -1473,6 +1475,7 @@ protected:
 	static CString	m_astrDefaultDirs[13];
 	static bool		m_abDefaultDirsCreated[13];
 	static int		m_nCurrentUserDirMode; // Only for PPgTweaks
+	static CString	m_strProfileRootOverride;
 
 	static void		CreateUserHash();
 	static void		SetStandardValues();

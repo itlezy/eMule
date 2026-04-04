@@ -200,9 +200,12 @@ public:
 	// Elandal:ThreadSafeLogging <--
 
 	bool		DidWeAutoStart()								{ return m_bAutoStart; }
+	bool		IsParityHarnessMode() const;
 
 protected:
 	bool ProcessCommandline();
+	void ApplyEarlyCommandlineOverrides();
+	static bool TryParseProfileRootArgument(int &i, CString &strProfileRoot);
 	void SetTimeOnTransfer();
 	static BOOL CALLBACK SearchEmuleWindow(HWND hWnd, LPARAM lParam) noexcept;
 

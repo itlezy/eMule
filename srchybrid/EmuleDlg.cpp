@@ -615,7 +615,7 @@ BOOL CemuleDlg::OnInitDialog()
 	if (thePrefs.IsUPnPEnabled())
 		StartUPnP();
 
-	if (thePrefs.IsFirstStart()) {
+	if (thePrefs.IsFirstStart() && !theApp.IsParityHarnessMode()) {
 		// temporary disable the 'startup minimized' option, otherwise no window will be shown at all
 		m_bStartMinimized = false;
 		DestroySplash();

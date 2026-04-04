@@ -52,6 +52,7 @@ CPreferences thePrefs;
 CString CPreferences::m_astrDefaultDirs[13];
 bool	CPreferences::m_abDefaultDirsCreated[13] = {};
 int		CPreferences::m_nCurrentUserDirMode = -1;
+CString CPreferences::m_strProfileRootOverride;
 int		CPreferences::m_iDbgHeap;
 CString	CPreferences::strNick;
 uint32	CPreferences::m_minupload;
@@ -1633,6 +1634,10 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("FilterBadIPs"), filterLANIPs);
 	ini.WriteBool(_T("Autoconnect"), autoconnect);
 	ini.WriteBool(_T("OnlineSignature"), onlineSig);
+	// Keep the local oracle workflow headless-friendly. This debug build is
+	// launched by helper automation, so persisting a restored window state just
+	// reintroduces UI churn between parity runs.
+	startMinimized = true;
 	ini.WriteBool(_T("StartupMinimized"), startMinimized);
 	ini.WriteBool(_T("AutoStart"), m_bAutoStart);
 	ini.WriteInt(_T("LastMainWndDlgID"), m_iLastMainWndDlgID);
@@ -2129,7 +2134,10 @@ void CPreferences::LoadPreferences()
 	m_bIconflashOnNewMessage = ini.GetBool(_T("IconflashOnNewMessage"), false);
 
 	onlineSig = ini.GetBool(_T("OnlineSignature"), false);
-	startMinimized = ini.GetBool(_T("StartupMinimized"), false);
+	// Force the local debug oracle to stay minimized on startup even if the
+	// runtime-local preferences were edited manually or saved by an earlier run.
+	startMinimized = true;
+	(void)ini.GetBool(_T("StartupMinimized"), true);
 	m_bAutoStart = ini.GetBool(_T("AutoStart"), false);
 	m_bRestoreLastMainWndDlg = ini.GetBool(_T("RestoreLastMainWndDlg"), false);
 	m_iLastMainWndDlgID = ini.GetInt(_T("LastMainWndDlgID"), 0);
@@ -2997,11 +3005,15 @@ uint16 CPreferences::GetRandomUDPPort()
 //          If not: User specific Dir again
 // Default overridden by Registry value (see below)
 // Fallback: ApplicationDir
+//
+// Oracle override:
+// The debug oracle defaults to an executable-local profile, but a harness can
+// override the mutable runtime root via "-c <profile_root>" for clean-room runs.
 CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCreate)
 {
 	if (m_astrDefaultDirs[0].IsEmpty()) { // already have all directories fetched and stored?
 
-		// Get executable starting directory which was our default till Vista
+		// Get executable starting directory which was our default till Vista.
 		TCHAR tchBuffer[MAX_PATH];
 		::GetModuleFileName(NULL, tchBuffer, _countof(tchBuffer));
 		tchBuffer[_countof(tchBuffer) - 1] = _T('\0');
@@ -3009,136 +3021,14 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		*pszFileName = L'\0';
 		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = tchBuffer;
 
-		// set our results to old default / fallback values
-		// those 3 dirs are the base for all others
-		CString strSelectedDataBaseDirectory = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
-		CString strSelectedConfigBaseDirectory = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
-		CString strSelectedExpansionBaseDirectory = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
-		m_nCurrentUserDirMode = 2; // To let us know which "mode" we are using in case we want to switch per options
+		CString strProfileRoot = m_strProfileRootOverride;
+		if (strProfileRoot.IsEmpty())
+			strProfileRoot = m_astrDefaultDirs[EMULE_EXECUTABLEDIR];
 
-		// check if preferences.ini exists already in our default / fallback dir
-		bool bConfigAvailableExecutable = (PathFileExists(strSelectedConfigBaseDirectory + CONFIGFOLDER _T("preferences.ini")) != FALSE);
-
-		// check if our registry setting is present which forces the single or multiuser directories
-		// and lets us ignore other defaults
-		// 0 = Multiuser, 1 = Publicuser, 2 = ExecutableDir. (on Winver < Vista 1 has the same effect as 2)
-		DWORD nRegistrySetting = _UI32_MAX;
-		CRegKey rkEMuleRegKey;
-		if (rkEMuleRegKey.Open(HKEY_CURRENT_USER, _T("Software\\eMule"), KEY_READ) == ERROR_SUCCESS) {
-			rkEMuleRegKey.QueryDWORDValue(_T("UsePublicUserDirectories"), nRegistrySetting);
-			rkEMuleRegKey.Close();
-		}
-		if (nRegistrySetting > 2)
-			nRegistrySetting = _UI32_MAX;
-
-		// Do we need to get SystemFolders, or do we use our old Default anyway? (Executable Dir)
-		if (nRegistrySetting == 0
-			|| (nRegistrySetting == 1 && GetWindowsVersion() >= _WINVER_VISTA_)
-			|| (nRegistrySetting == _UI32_MAX && (!bConfigAvailableExecutable || GetWindowsVersion() >= _WINVER_VISTA_)))
-		{
-			HMODULE hShell32 = LoadLibrary(_T("shell32.dll"));
-			if (hShell32) {
-				if (GetWindowsVersion() >= _WINVER_VISTA_) {
-
-					PWSTR pszLocalAppData = NULL;
-					PWSTR pszPersonalDownloads = NULL;
-					PWSTR pszPublicDownloads = NULL;
-					PWSTR pszProgramData = NULL;
-
-					// function not available on < WinVista
-					HRESULT(WINAPI *pfnSHGetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
-					(FARPROC&)pfnSHGetKnownFolderPath = GetProcAddress(hShell32, "SHGetKnownFolderPath");
-
-					if (pfnSHGetKnownFolderPath != NULL
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
-					{
-						if (_tcsclen(pszLocalAppData) < MAX_PATH - 30 && _tcsclen(pszPersonalDownloads) < MAX_PATH - 40
-							&& _tcsclen(pszProgramData) < MAX_PATH - 30 && _tcsclen(pszPublicDownloads) < MAX_PATH - 40)
-						{
-							CString strLocalAppData(pszLocalAppData);
-							CString strPersonalDownloads(pszPersonalDownloads);
-							CString strPublicDownloads(pszPublicDownloads);
-							CString strProgramData(pszProgramData);
-							slosh(strLocalAppData);
-							slosh(strPersonalDownloads);
-							slosh(strPublicDownloads);
-							slosh(strProgramData);
-
-							if (nRegistrySetting == _UI32_MAX) {
-								// no registry default, check if we find a preferences.ini to use
-								if (PathFileExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 0;
-								else {
-									if (PathFileExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-										m_nCurrentUserDirMode = 1;
-									else if (bConfigAvailableExecutable)
-										m_nCurrentUserDirMode = 2;
-									else
-										m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
-								}
-							} else
-								m_nCurrentUserDirMode = nRegistrySetting;
-
-							switch (m_nCurrentUserDirMode) {
-							case 0: //multiuser
-								strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-								break;
-							case 1: //public user
-								strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-							case 2: //program directory
-								break;
-							default:
-								ASSERT(0);
-							}
-						} else
-							ASSERT(0);
-					}
-
-					CoTaskMemFree(pszLocalAppData);
-					CoTaskMemFree(pszPersonalDownloads);
-					CoTaskMemFree(pszPublicDownloads);
-					CoTaskMemFree(pszProgramData);
-				} else {
-					// GetWindowsVersion() < _WINVER_VISTA_
-					CString strAppData = ShellGetFolderPath(CSIDL_APPDATA);
-					CString strPersonal = ShellGetFolderPath(CSIDL_PERSONAL);
-					if (!strAppData.IsEmpty() && !strPersonal.IsEmpty()) {
-						if (strAppData.GetLength() < MAX_PATH - 30 && strPersonal.GetLength() < MAX_PATH - 40) {
-							slosh(strPersonal);
-							slosh(strAppData);
-							if (nRegistrySetting == 0) {
-								// registry setting overwrites, use these folders
-								strSelectedDataBaseDirectory = strPersonal + _T("eMule Downloads\\");
-								strSelectedConfigBaseDirectory = strAppData + _T("eMule\\");
-								m_nCurrentUserDirMode = 0;
-								// strSelectedExpansionBaseDirectory stays default
-							} else if (nRegistrySetting == _UI32_MAX && !bConfigAvailableExecutable) {
-								if (PathFileExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))) {
-									// preferences.ini found, so we use this as default
-									strSelectedDataBaseDirectory = strPersonal + _T("eMule Downloads\\");
-									strSelectedConfigBaseDirectory = strAppData + _T("eMule\\");
-									m_nCurrentUserDirMode = 0;
-								}
-							} else
-								ASSERT(0);
-						} else
-							ASSERT(0);
-					}
-				}
-				FreeLibrary(hShell32);
-			} else {
-				DebugLogError(_T("Unable to load shell32.dll to retrieve the system folder locations, using fallbacks"));
-				ASSERT(0);
-			}
-		}
-
+		CString strSelectedDataBaseDirectory = strProfileRoot;
+		CString strSelectedConfigBaseDirectory = strProfileRoot;
+		CString strSelectedExpansionBaseDirectory = strProfileRoot;
+		m_nCurrentUserDirMode = 2;
 		// the use of ending backslashes is inconsistent, would need a rework throughout the code to fix this
 		m_astrDefaultDirs[EMULE_CONFIGDIR] = strSelectedConfigBaseDirectory + CONFIGFOLDER;
 		m_astrDefaultDirs[EMULE_TEMPDIR] = strSelectedDataBaseDirectory + _T("Temp");
@@ -3211,6 +3101,24 @@ void CPreferences::SetMuleDirectory(EDefaultDirectory eDirectory, const CString 
 	default:
 		ASSERT(0);
 	}
+}
+
+void CPreferences::SetProfileRootOverride(LPCTSTR pszProfileRoot)
+{
+	m_strProfileRootOverride = pszProfileRoot ? pszProfileRoot : _T("");
+	m_strProfileRootOverride.Trim();
+	m_strProfileRootOverride.Replace(_T('/'), _T('\\'));
+	if (!m_strProfileRootOverride.IsEmpty() && m_strProfileRootOverride.Right(1) != _T("\\"))
+		m_strProfileRootOverride += _T("\\");
+	for (int i = 0; i < _countof(m_astrDefaultDirs); ++i) {
+		m_astrDefaultDirs[i].Empty();
+		m_abDefaultDirsCreated[i] = false;
+	}
+}
+
+bool CPreferences::HasProfileRootOverride()
+{
+	return !m_strProfileRootOverride.IsEmpty();
 }
 
 void CPreferences::ChangeUserDirMode(int nNewMode)
