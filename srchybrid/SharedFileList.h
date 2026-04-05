@@ -78,6 +78,7 @@ public:
 	CKnownFile*	GetFileByID(const uchar *hash) const;
 	CKnownFile*	GetFileByIdentifier(const CFileIdentifierBase &rFileIdent, bool bStrict = false) const;
 	CKnownFile*	GetFileByIndex(INT_PTR index) const; // slow
+	POSITION	GetStartPosition() const				{ return m_Files_map.GetStartPosition(); }
 	CKnownFile*	GetFileNext(POSITION &pos) const;
 	CKnownFile*	GetFileByAICH(const CAICHHash &rHash) const; // slow
 

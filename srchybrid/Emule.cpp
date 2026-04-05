@@ -298,6 +298,9 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bAutoStart()
 	, m_bParityHarnessBootstrapIssued()
 	, m_bParityHarnessReadyFileWritten()
+	, m_bParityHarnessShareIssued()
+	, m_bParityHarnessLinkWritten()
+	, m_bParityHarnessDownloadIssued()
 {
 	// Initialize Windows security features.
 #if !defined(_DEBUG) && !defined(_WIN64)
@@ -449,6 +452,78 @@ void CemuleApp::EmitParityHarnessReadyFile()
 	_ftprintf(pFile, _T("profile=%s\n"), (LPCTSTR)strProfile);
 	fclose(pFile);
 	m_bParityHarnessReadyFileWritten = true;
+}
+
+bool CemuleApp::HasPendingParityHarnessScenario() const
+{
+	return !m_strParityHarnessShareFile.IsEmpty()
+		|| !m_strParityHarnessExportLinkFile.IsEmpty()
+		|| !m_strParityHarnessDownloadLinkFile.IsEmpty();
+}
+
+bool CemuleApp::ProcessPendingParityHarnessScenario()
+{
+	if (!HasPendingParityHarnessScenario() || emuledlg == NULL || sharedfiles == NULL)
+		return true;
+
+	if (!m_bParityHarnessShareIssued && !m_strParityHarnessShareFile.IsEmpty()) {
+		if (sharedfiles->AddSingleSharedFile(m_strParityHarnessShareFile))
+			Log(_T("Parity harness shared file: %s"), (LPCTSTR)m_strParityHarnessShareFile);
+		m_bParityHarnessShareIssued = true;
+	}
+
+	CKnownFile *sharedFile = NULL;
+	if (!m_strParityHarnessShareFile.IsEmpty()) {
+		CString normalizedTarget(m_strParityHarnessShareFile);
+		normalizedTarget.MakeLower();
+		for (POSITION pos = sharedfiles->GetStartPosition(); pos != NULL;) {
+			CKnownFile *candidate = sharedfiles->GetFileNext(pos);
+			if (candidate == NULL)
+				continue;
+
+			CString candidatePath(candidate->GetFilePath());
+			candidatePath.MakeLower();
+			if (candidatePath == normalizedTarget) {
+				sharedFile = candidate;
+				break;
+			}
+		}
+	}
+
+	if (!m_bParityHarnessLinkWritten && sharedFile != NULL && !m_strParityHarnessExportLinkFile.IsEmpty()) {
+		uint32 sourceIpValue = 0;
+		if (!m_strParityHarnessExportSourceIp.IsEmpty())
+			sourceIpValue = inet_addr(CT2A(m_strParityHarnessExportSourceIp));
+
+		const CString ed2kLink = sharedFile->GetED2kLink(false, false, false, sourceIpValue != INADDR_NONE && sourceIpValue != 0, sourceIpValue);
+		FILE *pFile = _tfsopen(m_strParityHarnessExportLinkFile, _T("wt"), _SH_DENYWR);
+		if (pFile != NULL) {
+			_ftprintf(pFile, _T("%s\n"), (LPCTSTR)ed2kLink);
+			fclose(pFile);
+			Log(_T("Parity harness exported ED2K link: %s"), (LPCTSTR)m_strParityHarnessExportLinkFile);
+			m_bParityHarnessLinkWritten = true;
+		}
+	}
+
+	if (!m_bParityHarnessDownloadIssued && !m_strParityHarnessDownloadLinkFile.IsEmpty() && _taccess(m_strParityHarnessDownloadLinkFile, 0) == 0) {
+		CStdioFile linkFile;
+		if (linkFile.Open(m_strParityHarnessDownloadLinkFile, CFile::modeRead | CFile::shareDenyNone)) {
+			CString ed2kLink;
+			if (linkFile.ReadString(ed2kLink)) {
+				ed2kLink.Trim();
+				if (!ed2kLink.IsEmpty()) {
+					emuledlg->ProcessED2KLink(ed2kLink);
+					Log(_T("Parity harness queued ED2K link from: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
+					m_bParityHarnessDownloadIssued = true;
+				}
+			}
+			linkFile.Close();
+		}
+	}
+
+	const bool exportDone = m_strParityHarnessExportLinkFile.IsEmpty() || m_bParityHarnessLinkWritten;
+	const bool downloadDone = m_strParityHarnessDownloadLinkFile.IsEmpty() || m_bParityHarnessDownloadIssued;
+	return exportDone && downloadDone;
 }
 
 static bool TryParseNamedArgument(int &i, LPCTSTR pszLongName, LPCTSTR pszShortName, CString &strValue)
@@ -868,6 +943,26 @@ bool CemuleApp::ProcessCommandline()
 		CString strReadyFile;
 		if (TryParseNamedArgument(i, _T("readyfile"), _T("r"), strReadyFile)) {
 			m_strParityHarnessReadyFile = strReadyFile;
+			continue;
+		}
+		CString strShareFile;
+		if (TryParseNamedArgument(i, _T("sharefile"), _T("sf"), strShareFile)) {
+			m_strParityHarnessShareFile = strShareFile;
+			continue;
+		}
+		CString strExportLinkFile;
+		if (TryParseNamedArgument(i, _T("exportlinkfile"), _T("elf"), strExportLinkFile)) {
+			m_strParityHarnessExportLinkFile = strExportLinkFile;
+			continue;
+		}
+		CString strExportSourceIp;
+		if (TryParseNamedArgument(i, _T("exportsourceip"), _T("esi"), strExportSourceIp)) {
+			m_strParityHarnessExportSourceIp = strExportSourceIp;
+			continue;
+		}
+		CString strDownloadLinkFile;
+		if (TryParseNamedArgument(i, _T("downloadlinkfile"), _T("dlf"), strDownloadLinkFile)) {
+			m_strParityHarnessDownloadLinkFile = strDownloadLinkFile;
 			continue;
 		}
 		if (pszParam[0] == _T('-') || pszParam[0] == _T('/')) {
