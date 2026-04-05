@@ -26,8 +26,11 @@ Any mod that changes anything within the Kademlia side will not be allowed to ad
 their client on the eMule forum.
 */
 #include "stdafx.h"
+#include "emule.h"
+#include "KnownFile.h"
 #include "Preferences.h"
 #include "Log.h"
+#include "SharedFileList.h"
 #include "kademlia/kademlia/Entry.h"
 #include "kademlia/kademlia/Indexed.h"
 #include "kademlia/kademlia/Kademlia.h"
@@ -761,6 +764,48 @@ void CIndexed::SendValidSourceResult(const CUInt128 &uKeyID, uint32 uIP, uint16 
 			//DEBUG_ONLY(DebugLog(_T("Sent %i source search results in last packet to avoid fragmentation"), iUnsentCount));
 		} else
 			ASSERT(iCount <= 0);
+	} else if (theApp.IsParityHarnessSeedPublisher() && theApp.sharedfiles != NULL) {
+		const CUInt128 uLookupFileId(uKeyID.GetData());
+		CKnownFile *pKnownFile = theApp.sharedfiles->GetFileByID(uLookupFileId.GetData());
+		if (pKnownFile == NULL && theApp.sharedfiles->GetCount() == 1)
+			pKnownFile = theApp.sharedfiles->GetFileByIndex(0);
+		if (pKnownFile != NULL && (!uFileSize || pKnownFile->GetFileSize() == uFileSize)) {
+			CEntry entry;
+			entry.m_uIP = theApp.GetParityHarnessExportSourceIp();
+			entry.m_uUDPPort = CKademlia::GetPrefs()->GetInternKadPort();
+			entry.m_uTCPPort = thePrefs.GetPort();
+			entry.m_uKeyID.SetValue(uKeyID);
+			entry.m_uSourceID.SetValue(CKademlia::GetPrefs()->GetClientHash());
+			entry.m_bSource = true;
+			entry.m_tLifetime = time(NULL) + KADEMLIAREPUBLISHTIMES;
+			entry.m_uSize = pKnownFile->GetFileSize();
+			entry.AddTag(new CKadTagUInt(TAG_SOURCEIP, entry.m_uIP));
+			entry.AddTag(new CKadTagUInt(TAG_SOURCETYPE, (pKnownFile->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE) ? 4 : 1));
+			entry.AddTag(new CKadTagUInt(TAG_SOURCEPORT, entry.m_uTCPPort));
+			entry.AddTag(new CKadTagUInt16(TAG_SOURCEUPORT, entry.m_uUDPPort));
+			entry.AddTag(new CKadTagUInt8(TAG_ENCRYPTION, CKademlia::GetPrefs()->GetMyConnectOptions(true, true)));
+
+			byte byPacket[1024 * 5];
+			byte bySmallBuffer[2048];
+			CByteIO byIO(byPacket, sizeof byPacket);
+			CByteIO byIOTmp(bySmallBuffer, sizeof bySmallBuffer);
+			byIO.WriteByte(OP_KADEMLIAHEADER);
+			byIO.WriteByte(KADEMLIA2_SEARCH_RES);
+			byIO.WriteUInt128(Kademlia::CKademlia::GetPrefs()->GetKadID());
+			byIO.WriteUInt128(uKeyID);
+			byIO.WriteUInt16(1);
+			byIOTmp.WriteUInt128(entry.m_uSourceID);
+			entry.WriteTagList(&byIOTmp);
+			byIO.WriteArray(bySmallBuffer, byIOTmp.GetUsed());
+			const uint32 uLen = sizeof byPacket - byIO.GetAvailable();
+			if (thePrefs.GetDebugClientKadUDPLevel() > 0)
+				DebugSend("KADEMLIA2_SEARCH_RES", uIP, uPort);
+			CKademlia::GetUDPListener()->SendPacket(byPacket, uLen, uIP, uPort, senderUDPKey, NULL);
+			DebugLog(_T("Oracle parity answered source search directly file=%s hash=%s port=%u")
+				, (LPCTSTR)pKnownFile->GetFileName()
+				, (LPCTSTR)md4str(pKnownFile->GetFileHash())
+				, static_cast<unsigned>(entry.m_uTCPPort));
+		}
 	}
 	Clean();
 }
