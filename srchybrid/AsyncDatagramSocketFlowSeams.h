@@ -54,6 +54,8 @@ inline AsyncDatagramFlowAction AdvanceAsyncDatagramFlow(AsyncDatagramFlowState &
 
 	switch (event) {
 	case AsyncDatagramFlowEvent::ReceiveReady:
+		if (!state.bSocketOpen)
+			break;
 		state.bReceivePending = true;
 		if (!state.bDispatchPosted) {
 			state.bDispatchPosted = true;
@@ -62,6 +64,8 @@ inline AsyncDatagramFlowAction AdvanceAsyncDatagramFlow(AsyncDatagramFlowState &
 		break;
 
 	case AsyncDatagramFlowEvent::SendReady:
+		if (!state.bSocketOpen)
+			break;
 		state.bSendPending = true;
 		if (!state.bDispatchPosted) {
 			state.bDispatchPosted = true;
