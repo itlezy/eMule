@@ -201,6 +201,7 @@ public:
 
 	bool		DidWeAutoStart()								{ return m_bAutoStart; }
 	bool		IsParityHarnessMode() const;
+	bool		IsParityHarnessSeedPublisher() const;
 	void		ApplyPendingParityHarnessActions();
 	void		EmitParityHarnessReadyFile();
 	bool		ProcessPendingParityHarnessScenario();

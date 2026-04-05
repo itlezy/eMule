@@ -1333,7 +1333,9 @@ void CSharedFileList::Publish()
 	const bool bUdpVerified = Kademlia::CUDPFirewallTester::IsVerified();
 	const bool bHasFiles = GetCount() != 0;
 	const bool bPublishEnabled = Kademlia::CKademlia::GetPublish();
-	const bool bBlockedByFirewall = bAppFirewalled
+	const bool bBypassFirewallGateForParitySeed = theApp.IsParityHarnessSeedPublisher();
+	const bool bBlockedByFirewall = !bBypassFirewallGateForParitySeed
+		&& bAppFirewalled
 		&& !bBuddyReady
 		// direct callback
 		&& (bUdpFirewalled || !bUdpVerified);
@@ -1348,7 +1350,7 @@ void CSharedFileList::Publish()
 	if (!bKadConnected || bBlockedByFirewall || !bHasFiles || !bPublishEnabled) {
 		// Keep the gate trace readable by logging only on state changes and periodic refreshes.
 		if (uPublishGateMask != s_uLastPublishGateMask || tNow >= s_tLastPublishGateLog + SEC(10)) {
-			DebugLog(_T("Oracle publish gate connected=%u firewall_block=%u has_files=%u publish_enabled=%u app_firewalled=%u buddy_ready=%u udp_firewalled=%u udp_verified=%u total_files=%u total_store_key=%u total_store_src=%u total_store_notes=%u")
+			DebugLog(_T("Oracle publish gate connected=%u firewall_block=%u has_files=%u publish_enabled=%u app_firewalled=%u buddy_ready=%u udp_firewalled=%u udp_verified=%u bypass_firewall_gate=%u total_files=%u total_store_key=%u total_store_src=%u total_store_notes=%u")
 				, bKadConnected ? 1 : 0
 				, bBlockedByFirewall ? 1 : 0
 				, bHasFiles ? 1 : 0
@@ -1357,6 +1359,7 @@ void CSharedFileList::Publish()
 				, bBuddyReady ? 1 : 0
 				, bUdpFirewalled ? 1 : 0
 				, bUdpVerified ? 1 : 0
+				, bBypassFirewallGateForParitySeed ? 1 : 0
 				, GetCount()
 				, Kademlia::CKademlia::GetTotalStoreKey()
 				, Kademlia::CKademlia::GetTotalStoreSrc()
