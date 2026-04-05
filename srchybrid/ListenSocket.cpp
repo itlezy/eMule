@@ -390,6 +390,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				break;
 			case OP_REQUESTFILENAME:
 				{
+					OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_REQUESTFILENAME, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 					if (thePrefs.GetDebugClientTCPLevel() > 0)
 						DebugRecv("OP_FileRequest", client, (size >= 16) ? packet : NULL);
 					theStats.AddDownDataOverheadFileRequest(size);
@@ -444,6 +445,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 						data_out.WriteString(reqfile->GetFileName(), client->GetUnicodeSupport());
 						Packet *packet1 = new Packet(&data_out);
 						packet1->opcode = OP_REQFILENAMEANSWER;
+						OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(client), _T("filename_answer"), _T("send"), GetOracleEd2kPeerLabel(client), GetOracleEd2kTransportMode(client), packet1->prot, packet1->opcode, reinterpret_cast<const BYTE *>(packet1->pBuffer), packet1->size);
 						if (thePrefs.GetDebugClientTCPLevel() > 0)
 							DebugSend("OP_FileReqAnswer", client, reqfile->GetFileHash());
 						theStats.AddUpDataOverheadFileRequest(packet1->size);
@@ -456,6 +458,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				throw GetResString(IDS_ERR_WRONGPACKETSIZE);
 			case OP_SETREQFILEID:
 				{
+					OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_SETREQFILEID, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 					if (thePrefs.GetDebugClientTCPLevel() > 0)
 						DebugRecv("OP_SetReqFileID", client, (size >= 16) ? packet : NULL);
 					theStats.AddDownDataOverheadFileRequest(size);
@@ -507,6 +510,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 							data.WriteUInt16(0);
 						Packet *packet2 = new Packet(&data);
 						packet2->opcode = OP_FILESTATUS;
+						OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(client), _T("file_status"), _T("send"), GetOracleEd2kPeerLabel(client), GetOracleEd2kTransportMode(client), packet2->prot, packet2->opcode, reinterpret_cast<const BYTE *>(packet2->pBuffer), packet2->size);
 						if (thePrefs.GetDebugClientTCPLevel() > 0)
 							DebugSend("OP_FileStatus", client, reqfile->GetFileHash());
 						theStats.AddUpDataOverheadFileRequest(packet2->size);
@@ -570,6 +574,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				}
 				break;
 			case OP_STARTUPLOADREQ:
+				OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_STARTUPLOADREQ, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 				if (thePrefs.GetDebugClientTCPLevel() > 0)
 					DebugRecv("OP_StartUpLoadReq", client, (size >= 16) ? packet : NULL);
 				theStats.AddDownDataOverheadFileRequest(size);
@@ -607,6 +612,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				break;
 			case OP_REQUESTPARTS:
 				{
+					OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_REQUESTPARTS, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 					// see also OP_REQUESTPARTS_I64
 					if (thePrefs.GetDebugClientTCPLevel() > 0)
 						DebugRecv("OP_RequestParts", client, (size >= 16) ? packet : NULL);
@@ -662,6 +668,7 @@ bool CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 					client->CheckFailedFileIdReqs(packet);
 				break;
 			case OP_HASHSETREQUEST:
+				OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_HASHSETREQUEST, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 				if (thePrefs.GetDebugClientTCPLevel() > 0)
 					DebugRecv("OP_HashSetReq", client, (size >= 16) ? packet : NULL);
 				theStats.AddDownDataOverheadFileRequest(size);
