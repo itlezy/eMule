@@ -35,6 +35,8 @@ namespace
 CCriticalSection g_oracleUdpDumpLock;
 CCriticalSection g_oracleEd2kTcpDumpLock;
 static const UINT ORACLE_ED2K_TCP_HEADER_SIZE = 6;
+volatile LONGLONG g_llOracleEd2kTcpDumpEventSeq = 0;
+volatile LONGLONG g_llOracleUdpDumpEventSeq = 0;
 
 CString BuildOracleUdpTimestamp()
 {
@@ -126,6 +128,62 @@ CString ExtractOracleUdpTransportMode(LPCTSTR pszMetadata)
 	return strMetadata.Mid(iValueStart, iValueEnd - iValueStart);
 }
 
+CString ExtractOracleMetadataField(LPCTSTR pszMetadata, LPCTSTR pszFieldName)
+{
+	if (pszMetadata == NULL || pszMetadata[0] == _T('\0') || pszFieldName == NULL || pszFieldName[0] == _T('\0'))
+		return CString();
+
+	CString strNeedle(pszFieldName);
+	strNeedle += _T('=');
+
+	const CString strMetadata(pszMetadata);
+	const int iStart = strMetadata.Find(strNeedle);
+	if (iStart < 0)
+		return CString();
+
+	const int iValueStart = iStart + strNeedle.GetLength();
+	int iValueEnd = strMetadata.Find(_T(' '), iValueStart);
+	if (iValueEnd < 0)
+		iValueEnd = strMetadata.GetLength();
+	if (iValueEnd <= iValueStart)
+		return CString();
+
+	return strMetadata.Mid(iValueStart, iValueEnd - iValueStart);
+}
+
+CString BuildOracleTraceKey(LPCTSTR pszFlow, LPCTSTR pszPeerLabel)
+{
+	CString strTraceKey;
+	strTraceKey.Format(_T("%s:%s"),
+		pszFlow != NULL ? pszFlow : _T("unknown"),
+		pszPeerLabel != NULL ? pszPeerLabel : _T("unknown"));
+	return strTraceKey;
+}
+
+CString BuildOracleStateId(LPCTSTR pszFlow, LPCTSTR pszPhase)
+{
+	CString strStateId;
+	strStateId.Format(_T("%s.%s"),
+		pszFlow != NULL ? pszFlow : _T("unknown"),
+		pszPhase != NULL ? pszPhase : _T("session"));
+	return strStateId;
+}
+
+CString BuildOracleUdpStateId(LPCTSTR pszFamily, LPCTSTR pszDirection, LPCTSTR pszOpcodeLabel)
+{
+	CString strStateId;
+	strStateId.Format(_T("%s.%s.%s"),
+		pszFamily != NULL ? pszFamily : _T("unknown"),
+		pszDirection != NULL ? pszDirection : _T("unknown"),
+		pszOpcodeLabel != NULL ? pszOpcodeLabel : _T("packet"));
+	return strStateId;
+}
+
+ULONGLONG NextOracleDumpEventSeq(volatile LONGLONG *pllCounter)
+{
+	return static_cast<ULONGLONG>(::InterlockedIncrement64(pllCounter));
+}
+
 LPCTSTR OracleEd2kProtocolName(uint8 byProtocol)
 {
 	switch (byProtocol) {
@@ -165,12 +223,19 @@ void OracleEd2kTcpDumpImpl(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszDirecti
 	const CString strDirection = EscapeOracleUdpJson(pszDirection != NULL ? pszDirection : _T("meta"));
 	const CString strPeer = EscapeOracleUdpJson(pszPeerLabel != NULL ? pszPeerLabel : _T("unknown"));
 	const CString strTransportMode = EscapeOracleUdpJson(pszTransportMode != NULL ? pszTransportMode : _T("unknown"));
+	const CString strTraceKey = EscapeOracleUdpJson(BuildOracleTraceKey(pszFlow, pszPeerLabel));
+	const CString strStateId = EscapeOracleUdpJson(BuildOracleStateId(pszFlow, pszPhase));
 	const CString strNote = (pszNote != NULL && pszNote[0] != _T('\0')) ? EscapeOracleUdpJson(CString(pszNote)) : CString();
+	const ULONGLONG ullEventSeq = NextOracleDumpEventSeq(&g_llOracleEd2kTcpDumpEventSeq);
 
 	CString strJson;
 	strJson.Format(
-		_T("{\"schema\":\"ed2k_tcp_helper_v1\",\"source\":\"oracle\",\"ts_utc\":\"%s\",\"flow\":\"%s\",\"phase\":\"%s\",\"direction\":\"%s\",\"remote_addr\":\"%s\",\"transport_mode\":\"%s\""),
+		_T("{\"schema\":\"ed2k_tcp_helper_v1\",\"source\":\"oracle\",\"ts_utc\":\"%s\",\"event_seq\":%I64u,\"trace_key\":\"%s\",\"state_id\":\"%s\",\"state_label\":\"%s\",\"flow\":\"%s\",\"phase\":\"%s\",\"direction\":\"%s\",\"remote_addr\":\"%s\",\"transport_mode\":\"%s\""),
 		(LPCTSTR)strTimestamp,
+		ullEventSeq,
+		(LPCTSTR)strTraceKey,
+		(LPCTSTR)strStateId,
+		(LPCTSTR)strPhase,
 		(LPCTSTR)strFlow,
 		(LPCTSTR)strPhase,
 		(LPCTSTR)strDirection,
@@ -235,13 +300,24 @@ void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerL
 	const CString strWireHex = BuildOracleUdpHexString(pPayload, uPayloadLen);
 	const CString strSummary = (pszMetadata != NULL && pszMetadata[0] != _T('\0')) ? EscapeOracleUdpJson(CString(pszMetadata)) : CString();
 	const CString strTransportMode = EscapeOracleUdpJson(ExtractOracleUdpTransportMode(pszMetadata));
+	const CString strOpcodeLabel = ExtractOracleMetadataField(pszMetadata, _T("opcode_name")).IsEmpty()
+		? ExtractOracleMetadataField(pszMetadata, _T("opcode"))
+		: ExtractOracleMetadataField(pszMetadata, _T("opcode_name"));
+	const CString strTraceKey = EscapeOracleUdpJson(BuildOracleTraceKey(pszFamily, pszPeerLabel));
+	const CString strStateLabel = EscapeOracleUdpJson(strOpcodeLabel.IsEmpty() ? CString(_T("packet")) : strOpcodeLabel);
+	const CString strStateId = EscapeOracleUdpJson(BuildOracleUdpStateId(pszFamily, pszDirection, strOpcodeLabel.IsEmpty() ? _T("packet") : (LPCTSTR)strOpcodeLabel));
+	const ULONGLONG ullEventSeq = NextOracleDumpEventSeq(&g_llOracleUdpDumpEventSeq);
 	const bool bHasDecoded = pDecodedPayload != NULL && uDecodedPayloadLen > 0;
 	const CString strDecodedHex = bHasDecoded ? BuildOracleUdpHexString(pDecodedPayload, uDecodedPayloadLen) : CString();
 
 	CString strJson;
 	strJson.Format(
-		_T("{\"schema\":\"udp_packet_v1\",\"source\":\"oracle\",\"ts\":\"%s\",\"direction\":\"%s\",\"family\":\"%s\",\"peer\":\"%s\",\"wire_len\":%u,\"wire_hex\":\"%s\""),
+		_T("{\"schema\":\"udp_packet_v1\",\"source\":\"oracle\",\"ts\":\"%s\",\"event_seq\":%I64u,\"trace_key\":\"%s\",\"state_id\":\"%s\",\"state_label\":\"%s\",\"direction\":\"%s\",\"family\":\"%s\",\"peer\":\"%s\",\"wire_len\":%u,\"wire_hex\":\"%s\""),
 		(LPCTSTR)strTimestamp,
+		ullEventSeq,
+		(LPCTSTR)strTraceKey,
+		(LPCTSTR)strStateId,
+		(LPCTSTR)strStateLabel,
 		(LPCTSTR)strDirection,
 		(LPCTSTR)strFamily,
 		(LPCTSTR)strPeer,
