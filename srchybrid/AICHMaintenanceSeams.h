@@ -1,0 +1,109 @@
+#pragma once
+
+#include <Windows.h>
+
+#include <cstddef>
+#include <limits>
+
+#include "ProtocolGuards.h"
+#include "types.h"
+
+/**
+ * @brief Captures the current foreground hashing state that can block background AICH sync work.
+ */
+struct AICHSyncForegroundHashState
+{
+	bool bIsClosing;
+	INT_PTR nSharedFileHashingCount;
+	bool bHasPendingPartFileHashing;
+};
+
+/**
+ * @brief Describes whether the background AICH sync loop should exit, continue, or yield briefly.
+ */
+struct AICHSyncForegroundWaitAction
+{
+	bool bShouldExit;
+	DWORD dwSleepMilliseconds;
+};
+
+/**
+ * @brief Describes how duplicate stored AICH hash entries should be handled while compacting hash files.
+ */
+struct StoredAICHHashUpdate
+{
+	bool bShouldReplaceExisting;
+	ULONGLONG nReplacedFilePos;
+};
+
+/**
+ * @brief Describes how a malformed one-sided AICH tree node should be normalized.
+ */
+struct IncompleteAICHTreeNodeAction
+{
+	bool bHasIncompleteChildren;
+	bool bShouldInvalidateNodeHash;
+};
+
+namespace AICHMaintenanceSeams
+{
+/**
+ * @brief Bounded fallback delay used when the AICH sync thread yields to foreground hashing.
+ */
+constexpr DWORD kForegroundHashYieldDelayMs = 1u;
+
+/**
+ * @brief Derives the raw byte span for a sequence of serialized AICH hashes while rejecting overflow.
+ */
+inline bool TryDeriveAICHHashPayloadSize(const size_t nHashSize, const uint32 nHashCount, uint32 *pnPayloadSize)
+{
+	if (pnPayloadSize == NULL)
+		return false;
+
+	size_t nPayloadSize = 0;
+	if (!TryMultiplyAddSize(nHashSize, static_cast<size_t>(nHashCount), 0u, &nPayloadSize)
+		|| nPayloadSize > static_cast<size_t>((std::numeric_limits<uint32>::max)()))
+	{
+		return false;
+	}
+
+	*pnPayloadSize = static_cast<uint32>(nPayloadSize);
+	return true;
+}
+
+/**
+ * @brief Computes the bounded cooperative-wait action for background AICH sync work.
+ */
+inline AICHSyncForegroundWaitAction GetForegroundHashWaitAction(const AICHSyncForegroundHashState &state)
+{
+	if (state.bIsClosing)
+		return {true, 0u};
+
+	if (state.nSharedFileHashingCount > 0 || state.bHasPendingPartFileHashing)
+		return {false, kForegroundHashYieldDelayMs};
+
+	return {false, 0u};
+}
+
+/**
+ * @brief Keeps the newest stored hash position while tolerating duplicate serialized AICH hashes.
+ */
+inline StoredAICHHashUpdate ResolveStoredAICHHashUpdate(ULONGLONG nExistingFilePos, ULONGLONG nNewFilePos)
+{
+	if (nNewFilePos <= nExistingFilePos)
+		return {false, 0u};
+
+	return {true, nExistingFilePos};
+}
+
+/**
+ * @brief Detects and normalizes the unsupported state where only one child branch exists.
+ */
+inline IncompleteAICHTreeNodeAction GetIncompleteAICHTreeNodeAction(bool bHasLeftChild, bool bHasRightChild)
+{
+	if (bHasLeftChild != bHasRightChild)
+		return {true, true};
+
+	return {false, false};
+}
+}

@@ -1,0 +1,82 @@
+#pragma once
+
+#include <limits>
+#include <vector>
+
+#include "types.h"
+
+#define EMULE_TEST_HAVE_COLLECTION_OWNERSHIP_SEAMS 1
+
+struct CollectionSignatureLayout
+{
+	UINT nMessageLength;
+	UINT nSignatureLength;
+};
+
+/**
+ * @brief Builds the signed-message and trailing-signature spans from a serialized collection payload.
+ */
+inline bool TryBuildCollectionSignatureLayout(const ULONGLONG nSerializedLength, const ULONGLONG nSignedLength, CollectionSignatureLayout &layout)
+{
+	if (nSerializedLength <= nSignedLength)
+		return false;
+	if (nSerializedLength > static_cast<ULONGLONG>((std::numeric_limits<UINT>::max)()))
+		return false;
+	if (nSignedLength > static_cast<ULONGLONG>((std::numeric_limits<UINT>::max)()))
+		return false;
+
+	layout.nMessageLength = static_cast<UINT>(nSignedLength);
+	layout.nSignatureLength = static_cast<UINT>(nSerializedLength - nSignedLength);
+	return layout.nSignatureLength > 0;
+}
+
+/**
+ * @brief Converts a serialized collection length into the on-disk 32-bit format when representable.
+ */
+inline bool TryConvertCollectionSerializedLength(const ULONGLONG nSerializedLength, uint32 &dwSerializedLength)
+{
+	if (nSerializedLength > static_cast<ULONGLONG>((std::numeric_limits<uint32>::max)()))
+		return false;
+
+	dwSerializedLength = static_cast<uint32>(nSerializedLength);
+	return true;
+}
+
+/**
+ * @brief Keeps collection import tolerant of malformed individual entries while continuing the outer file load.
+ */
+inline bool ShouldContinueAfterCollectionEntryFailure()
+{
+	return true;
+}
+
+/**
+ * @brief Returns the raw author-key view while preserving the historical NULL-for-empty contract.
+ */
+inline const BYTE *GetCollectionAuthorKeyData(const std::vector<BYTE> &keyData)
+{
+	return keyData.empty() ? NULL : keyData.data();
+}
+
+/**
+ * @brief Replaces the stored collection author key and keeps the serialized size field in sync.
+ */
+inline void AssignCollectionAuthorKey(const BYTE *pKeyData, const uint32 nKeySize, std::vector<BYTE> &keyData, uint32 &rnStoredKeySize)
+{
+	if (pKeyData != NULL && nKeySize != 0u) {
+		keyData.assign(pKeyData, pKeyData + nKeySize);
+		rnStoredKeySize = nKeySize;
+	} else {
+		keyData.clear();
+		rnStoredKeySize = 0u;
+	}
+}
+
+/**
+ * @brief Clears the stored collection author key and resets the serialized size field.
+ */
+inline void ClearCollectionAuthorKey(std::vector<BYTE> &keyData, uint32 &rnStoredKeySize)
+{
+	keyData.clear();
+	rnStoredKeySize = 0u;
+}
