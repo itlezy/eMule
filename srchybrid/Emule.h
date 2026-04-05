@@ -202,6 +202,7 @@ public:
 	bool		DidWeAutoStart()								{ return m_bAutoStart; }
 	bool		IsParityHarnessMode() const;
 	bool		IsParityHarnessSeedPublisher() const;
+	uint32		GetParityHarnessExportSourceIp() const;
 	void		ApplyPendingParityHarnessActions();
 	void		EmitParityHarnessReadyFile();
 	bool		ProcessPendingParityHarnessScenario();
