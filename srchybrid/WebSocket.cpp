@@ -499,9 +499,11 @@ int StartSSL()
 	mbedtls_ssl_ticket_init(&ticket_ctx);
 	int ret = (int)psa_crypto_init();
 	if (!ret) { // PSA_SUCCESS is 0
-		ret = mbedtls_x509_crt_parse_file(&srvcert, thePrefs.GetWebCertPath());
+		CStringA certPath(CT2A(thePrefs.GetWebCertPath()));
+		ret = mbedtls_x509_crt_parse_file(&srvcert, certPath);
 		if (!ret) {
-			ret = mbedtls_pk_parse_keyfile(&pkey, thePrefs.GetWebKeyPath(), NULL);
+			CStringA keyPath(CT2A(thePrefs.GetWebKeyPath()));
+			ret = mbedtls_pk_parse_keyfile(&pkey, keyPath, NULL);
 			if (!ret) {
 				ret = mbedtls_ssl_config_defaults(&conf, MBEDTLS_SSL_IS_SERVER, MBEDTLS_SSL_TRANSPORT_STREAM, MBEDTLS_SSL_PRESET_DEFAULT);
 				if (!ret) {

@@ -42,15 +42,18 @@
     <ProjectGuid>{584EA69D-3443-4197-8994-364880FC1B9B}</ProjectGuid>
     <ProjectName>emule</ProjectName>
     <RootNamespace>emule</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <WorkspaceRoot Condition="'$(WorkspaceRoot)'==''">$(MSBuildThisFileDirectory)..\..\..\</WorkspaceRoot>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
     <CharacterSet>Unicode</CharacterSet>
-    <PlatformToolset Condition="'$(Platform)'!='ARM64'">v141_xp</PlatformToolset>
-    <PlatformToolset Condition="'$(Platform)'=='ARM64'">v145</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
     <UseOfMfc>Static</UseOfMfc>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <Import Project="$(WorkspaceRoot)v0.72a-workspace.props" Condition="Exists('$(WorkspaceRoot)v0.72a-workspace.props')" />
   <ImportGroup Label="ExtensionSettings">
     <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.props" />
   </ImportGroup>
@@ -61,6 +64,15 @@
   <PropertyGroup>
     <_ProjectFileVersion>11.0.60610.1</_ProjectFileVersion>
     <ExtensionsToDeleteOnClean>*.obj;*.ilk;*.pdb;*.tlb;*.tli;*.tlh;*.tmp;*.rsp;*.bat;*.asm;</ExtensionsToDeleteOnClean>
+    <WorkspaceRoot>$([MSBuild]::EnsureTrailingSlash('$(WorkspaceRoot)'))</WorkspaceRoot>
+    <ReposRoot>$(WorkspaceRoot)repos\</ReposRoot>
+    <ThirdPartyRoot>$(ReposRoot)third_party\</ThirdPartyRoot>
+    <Id3libRoot>$(ThirdPartyRoot)eMule-id3lib\</Id3libRoot>
+    <MbedTlsRoot>$(ThirdPartyRoot)eMule-mbedtls\</MbedTlsRoot>
+    <MiniUpnpRoot>$(ThirdPartyRoot)eMule-miniupnp\</MiniUpnpRoot>
+    <ResizableLibRoot>$(ThirdPartyRoot)eMule-ResizableLib\</ResizableLibRoot>
+    <CryptoPpRoot>$(ThirdPartyRoot)eMule-cryptopp\</CryptoPpRoot>
+    <ZlibRoot>$(ThirdPartyRoot)eMule-zlib\</ZlibRoot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Release'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
@@ -72,20 +84,20 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\tf-psa-crypto\include;..\mbedtls\tf-psa-crypto\drivers\builtin\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.26100.0\um\;$(UniversalCRTSdkDir)Include\10.0.26100.0\shared;</AdditionalIncludeDirectories>
-      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew</AdditionalOptions>
+      <AdditionalIncludeDirectories>.;..;$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(ZlibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew /FS</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew /FS</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;..\id3lib\libprj\$(Platform)\$(Configuration)\id3lib.lib;..\mbedtls\visualc\vs2017\$(Platform)\$(Configuration)\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;..\resizablelib\$(Platform)\$(Configuration)\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\$(Configuration)\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)zlib\contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -102,19 +114,19 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\tf-psa-crypto\include;..\mbedtls\tf-psa-crypto\drivers\builtin\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.26100.0\um\;$(UniversalCRTSdkDir)Include\10.0.26100.0\shared;</AdditionalIncludeDirectories>
-      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew</AdditionalOptions>
+      <AdditionalIncludeDirectories>.;..;$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(ZlibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew /FS</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew /FS</AdditionalOptions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <OmitFramePointers>true</OmitFramePointers>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;..\id3lib\libprj\$(Platform)\$(Configuration)\id3lib.lib;..\mbedtls\visualc\vs2017\$(Platform)\$(Configuration)\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;..\resizablelib\$(Platform)\$(Configuration)\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\$(Configuration)\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)zlib\contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -129,20 +141,20 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='_SpecialBootstrapNodes'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;..\id3lib\include;..\mbedtls\include;..\mbedtls\tf-psa-crypto\include;..\mbedtls\tf-psa-crypto\drivers\builtin\include;$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\10.0.26100.0\um\;$(UniversalCRTSdkDir)Include\10.0.26100.0\shared;</AdditionalIncludeDirectories>
-      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew</AdditionalOptions>
+      <AdditionalIncludeDirectories>.;..;$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(ZlibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew /FS</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew /FS</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;_BOOTSTRAPNODESDAT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;_BOOTSTRAPNODESDAT;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;..\cryptopp\$(Platform)\Debug\cryptlib.lib;..\id3lib\libprj\$(Platform)\Debug\id3lib.lib;..\mbedtls\visualc\vs2017\$(Platform)\Debug\mbedtls.lib;..\miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;..\resizablelib\$(Platform)\Debug\resizablelib.lib;..\zlib\contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)cryptopp\$(Platform)\Debug\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\Debug\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\Debug\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\Debug\ResizableLib.lib;$(ZlibRoot)zlib\contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>

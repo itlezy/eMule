@@ -1,4 +1,7 @@
 * text=auto
+.gitattributes text eol=lf
+.editorconfig text eol=lf
+.gitignore text eol=lf
 
 # Windows shell and Visual Studio files should keep CRLF.
 *.cmd text eol=crlf
@@ -17,24 +20,26 @@
 *.rc2 text eol=crlf
 *.iss text eol=crlf
 
-# Source and documentation remain text and normalize consistently.
-*.c text
-*.cc text
-*.cpp text
-*.cxx text
-*.h text
-*.hh text
-*.hpp text
-*.hxx text
-*.inl text
-*.idl text
-*.def text
-*.txt text
-*.md text
-*.json text
-*.xml text
-*.yml text
-*.yaml text
+# Source files keep CRLF to match .editorconfig.
+*.c text eol=crlf
+*.cc text eol=crlf
+*.cpp text eol=crlf
+*.cxx text eol=crlf
+*.h text eol=crlf
+*.hh text eol=crlf
+*.hpp text eol=crlf
+*.hxx text eol=crlf
+*.inl text eol=crlf
+*.idl text eol=crlf
+*.def text eol=crlf
+*.txt text eol=crlf
+
+# Repo metadata and structured text stay LF.
+*.md text eol=lf
+*.json text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
 
 # Common binary assets.
 *.7z binary
