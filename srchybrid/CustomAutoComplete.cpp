@@ -7,7 +7,7 @@
 //
 //  Author:         Klaus H. Probst [kprobst@vbbox.com]
 //  URL:            http://www.vbbox.com/
-//  Copyright:      This work is copyright © 2002, Klaus H. Probst
+//  Copyright:      This work is copyright Â© 2002, Klaus H. Probst
 //  Usage:          You may use this code as you see fit, provided that you assume all
 //                  responsibilities for doing so.
 //  Distribution:   Distribute freely as long as you maintain this notice as part of the
