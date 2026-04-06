@@ -49,6 +49,7 @@
 #include "KnownFileList.h"
 #include "ServerList.h"
 #include "Opcodes.h"
+#include "ProtocolGuards.h"
 #include "SharedFileList.h"
 #include "ED2KLink.h"
 #include "Splashscreen.h"
@@ -3692,7 +3693,7 @@ void CemuleDlg::UpdateStatusBarProgress()
 				m_currentTBP_state = new_state;
 
 			float globalDone = theStats.m_fGlobalDone + finishedsize;
-			float overallProgress = globalDone / globalSize;
+			float overallProgress = CalculateProgressRatio(globalDone, globalSize);
 			if (overallProgress != m_prevProgress) {
 				m_prevProgress = overallProgress;
 				m_pTaskbarList->SetProgressValue(m_hWnd, (ULONGLONG)(overallProgress * 100), 100);
