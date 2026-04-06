@@ -83,6 +83,102 @@ private:
 };
 
 /**
+ * @brief Owns a GDI object and deletes it on scope exit unless ownership was released.
+ */
+class ScopedGdiObject
+{
+public:
+	explicit ScopedGdiObject(HGDIOBJ hObject = NULL) noexcept
+		: m_hObject(hObject)
+	{
+	}
+
+	~ScopedGdiObject() noexcept
+	{
+		if (m_hObject != NULL)
+			::DeleteObject(m_hObject);
+	}
+
+	ScopedGdiObject(const ScopedGdiObject&) = delete;
+	ScopedGdiObject& operator=(const ScopedGdiObject&) = delete;
+
+	HGDIOBJ Get() const noexcept
+	{
+		return m_hObject;
+	}
+
+	HGDIOBJ Release() noexcept
+	{
+		HGDIOBJ hObject = m_hObject;
+		m_hObject = NULL;
+		return hObject;
+	}
+
+private:
+	HGDIOBJ m_hObject;
+};
+
+/**
+ * @brief Owns a scratch DC and deletes it automatically on scope exit.
+ */
+class ScopedDc
+{
+public:
+	explicit ScopedDc(HDC hDC = NULL) noexcept
+		: m_hDC(hDC)
+	{
+	}
+
+	~ScopedDc() noexcept
+	{
+		if (m_hDC != NULL)
+			::DeleteDC(m_hDC);
+	}
+
+	ScopedDc(const ScopedDc&) = delete;
+	ScopedDc& operator=(const ScopedDc&) = delete;
+
+	HDC Get() const noexcept
+	{
+		return m_hDC;
+	}
+
+private:
+	HDC m_hDC;
+};
+
+/**
+ * @brief Restores the previous GDI selection automatically when a DC temporarily selects another object.
+ */
+class ScopedSelectObject
+{
+public:
+	ScopedSelectObject(HDC hDC, HGDIOBJ hObject) noexcept
+		: m_hDC(hDC)
+		, m_hPrevious((hDC != NULL && hObject != NULL) ? ::SelectObject(hDC, hObject) : NULL)
+	{
+	}
+
+	~ScopedSelectObject() noexcept
+	{
+		if (m_hDC != NULL && m_hPrevious != NULL && m_hPrevious != HGDI_ERROR)
+			::SelectObject(m_hDC, m_hPrevious);
+	}
+
+	ScopedSelectObject(const ScopedSelectObject&) = delete;
+	ScopedSelectObject& operator=(const ScopedSelectObject&) = delete;
+
+	bool IsValid() const noexcept
+	{
+		return m_hPrevious != NULL && m_hPrevious != HGDI_ERROR;
+	}
+
+private:
+	HDC m_hDC;
+	HGDIOBJ m_hPrevious;
+};
+
+/**
  * @brief Returns whether the wrapped Win32 handle currently owns a usable OS handle.
  */
 inline bool HasOpenHandle(const ScopedHandle &rHandle) noexcept
