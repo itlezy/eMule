@@ -137,9 +137,8 @@ void CToolBarCtrlX::AdjustFont(int iMaxPointSize, CSize sizButton)
 	if (pFont) {
 		LOGFONT lf;
 		if (pFont->GetLogFont(&lf) > 0) {
-			HDC hDC = ::GetDC(HWND_DESKTOP);
-			int iPointSize = -::MulDiv(lf.lfHeight, 72, ::GetDeviceCaps(hDC, LOGPIXELSY));
-			::ReleaseDC(NULL, hDC);
+			CWindowDC dcScreen(CWnd::GetDesktopWindow());
+			int iPointSize = -::MulDiv(lf.lfHeight, 72, dcScreen.GetDeviceCaps(LOGPIXELSY));
 			if (iPointSize > iMaxPointSize) {
 				CWnd *pwndParent = GetParent();
 				ASSERT(pwndParent != NULL);
