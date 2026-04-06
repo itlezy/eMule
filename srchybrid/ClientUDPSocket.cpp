@@ -25,6 +25,7 @@
 #include "SharedFileList.h"
 #include "UploadQueue.h"
 #include "Preferences.h"
+#include "ProtocolGuards.h"
 #include "ClientList.h"
 #include "EncryptedDatagramSocket.h"
 #include "IPFilter.h"
@@ -92,7 +93,7 @@ void CClientUDPSocket::OnReceive(int nErrorCode)
 				break;
 			case OP_KADEMLIAPACKEDPROT:
 				theStats.AddDownDataOverheadKad(nPacketLen);
-				if (nPacketLen < 2)
+				if (!HasCompressedUdpPayload(static_cast<UINT>(nPacketLen)))
 					strError = _T("Kad packet (compressed) too short");
 				else {
 					BYTE *unpack = NULL;
