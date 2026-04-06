@@ -948,11 +948,11 @@ void CDownloadQueue::SortByPriority()
 	UINT n = (UINT)filelist.GetCount();
 	if (!n)
 		return;
-	for (UINT i = n / 2; i--;)
-		HeapSort(i, n - 1);
-	for (UINT i = n; --i;) {
-		SwapParts(filelist.FindIndex(0), filelist.FindIndex(i));
-		HeapSort(0, i - 1);
+	for (UINT i = n / 2; i > 0; --i)
+		HeapSort(i - 1, n - 1);
+	for (UINT i = n; i > 1; --i) {
+		SwapParts(filelist.FindIndex(0), filelist.FindIndex(i - 1));
+		HeapSort(0, i - 2);
 	}
 }
 
