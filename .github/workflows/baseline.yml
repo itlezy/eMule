@@ -1,0 +1,12 @@
+name: Baseline
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  baseline:
+    uses: itlezy/eMule-tooling/.github/workflows/reusable-baseline.yml@ci/v1
+    with:
+      policy_path: manifests/privacy-guard/policy.v1.json
+      repo_kind: app
