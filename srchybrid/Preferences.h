@@ -366,14 +366,14 @@ public:
 
 	static UINT		m_uTransferWnd1;
 	static UINT		m_uTransferWnd2;
-	//MORPH START - Added by SiRoB, Splitting Bar [O²]
+	//MORPH START - Added by SiRoB, Splitting Bar [OÂ²]
 	static UINT		splitterbarPositionStat;
 	static UINT		splitterbarPositionStat_HL;
 	static UINT		splitterbarPositionStat_HR;
 	static UINT		splitterbarPositionFriend;
 	static UINT		splitterbarPositionIRC;
 	static UINT		splitterbarPositionShared;
-	//MORPH END - Added by SiRoB, Splitting Bar [O²]
+	//MORPH END - Added by SiRoB, Splitting Bar [OÂ²]
 	static UINT		m_uDeadServerRetries;
 	static DWORD	m_dwServerKeepAliveTimeout;
 	// -khaos--+++> Changed data type to avoid overflows
@@ -988,7 +988,7 @@ public:
 	static void		SetTransferWnd1(UINT uWnd1)			{ m_uTransferWnd1 = uWnd1; }
 	static UINT		GetTransferWnd2()					{ return m_uTransferWnd2; }
 	static void		SetTransferWnd2(UINT uWnd2)			{ m_uTransferWnd2 = uWnd2; }
-	//MORPH START - Added by SiRoB, Splitting Bar [O²]
+	//MORPH START - Added by SiRoB, Splitting Bar [OÂ²]
 	static UINT		GetSplitterbarPositionStat()		{ return splitterbarPositionStat; }
 	static void		SetSplitterbarPositionStat(UINT pos) { splitterbarPositionStat = pos; }
 	static UINT		GetSplitterbarPositionStat_HL()		{ return splitterbarPositionStat_HL; }
@@ -1001,7 +1001,7 @@ public:
 	static void		SetSplitterbarPositionIRC(UINT pos)	{ splitterbarPositionIRC = pos; }
 	static UINT		GetSplitterbarPositionShared()		{ return splitterbarPositionShared; }
 	static void		SetSplitterbarPositionShared(UINT pos)	{ splitterbarPositionShared = pos; }
-	//MORPH END   - Added by SiRoB, Splitting Bar [O²]
+	//MORPH END   - Added by SiRoB, Splitting Bar [OÂ²]
 	// -khaos--+++> Changed datatype to avoid overflows
 	static UINT		GetStatsMax()						{ return statsMax; }
 	// <-----khaos-

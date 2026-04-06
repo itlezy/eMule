@@ -1,0 +1,26 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{c,cc,cpp,cxx,h,hh,hpp,hxx,inl,idl,def,txt}]
+end_of_line = crlf
+
+[*.{cmd,bat,ps1,psm1,ps1xml}]
+end_of_line = crlf
+indent_style = tab
+trim_trailing_whitespace = false
+
+[*.{sln,slnx,vcxproj,vcproj,vcxproj.filters,props,targets,rc,rc2}]
+end_of_line = crlf
+
+[*.{rc,rc2}]
+charset = utf-8-bom
+
+[*.md]
+trim_trailing_whitespace = false
