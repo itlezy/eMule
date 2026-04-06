@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "Packets.h"
 #include "OtherFunctions.h"
+#include "ProtocolGuards.h"
 #include "SafeFile.h"
 #include "StringConversion.h"
 #include "zlib/zlib.h"
