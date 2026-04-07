@@ -1,7 +1,7 @@
 #pragma once
 
 #include "WebSocket.h"
-#include "zlib/zlib.h"
+#include "zlib.h"
 
 #define WEB_GRAPH_HEIGHT		120
 #define WEB_GRAPH_WIDTH			500

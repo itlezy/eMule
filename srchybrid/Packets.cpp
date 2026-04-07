@@ -20,7 +20,7 @@
 #include "ProtocolGuards.h"
 #include "SafeFile.h"
 #include "StringConversion.h"
-#include "zlib/zlib.h"
+#include "zlib.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
