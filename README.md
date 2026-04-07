@@ -17,6 +17,6 @@ This repo is the canonical app source for the rebuilt v0.72a line.
 
 ## Build And Test
 
-Builds are driven from the local release workspace under:
-
-`C:\prj\p2p\eMule\cleanroom\20260406-v0.72a-main-restart`
+Builds are driven from the canonical workspace materialized under
+`EMULE_WORKSPACE_ROOT`, using the paired `eMulebb-setup` and `eMule-build`
+repos rather than a machine-local cleanroom path.
