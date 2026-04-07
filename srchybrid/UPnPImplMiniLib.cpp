@@ -241,8 +241,7 @@ int CUPnPImplMiniLib::CStartDiscoveryThread::Run()
 			*m_pOwner->m_achLanIP = 0;
 			*m_pOwner->m_achWanIP = 0;
 			int iResult = UPNP_GetValidIGD(structDeviceList, m_pOwner->m_pURLs, m_pOwner->m_pIGDData
-							, m_pOwner->m_achLanIP, sizeof m_pOwner->m_achLanIP
-							, m_pOwner->m_achWanIP, sizeof m_pOwner->m_achWanIP);
+							, m_pOwner->m_achLanIP, sizeof m_pOwner->m_achLanIP);
 			freeUPNPDevlist(structDeviceList);
 			bool bNotFound = false;
 			switch (iResult) {
@@ -250,13 +249,9 @@ int CUPnPImplMiniLib::CStartDiscoveryThread::Run()
 				DebugLog(_T("Found valid IGD : %S"), m_pOwner->m_pURLs->controlURL);
 				break;
 			case 2:
-				DebugLog(_T("Found an IGD with a reserved IP address (%S) : %S"), m_pOwner->m_achWanIP, m_pOwner->m_pURLs->controlURL);
-				bNotFound = true;
-				break;
-			case 3:
 				DebugLog(_T("Found a (not connected?) IGD : %S - Trying to continue anyway"), m_pOwner->m_pURLs->controlURL);
 				break;
-			case 4:
+			case 3:
 				DebugLog(_T("UPnP device found. Is it an IGD? : %S - Trying to continue anyway"), m_pOwner->m_pURLs->controlURL);
 				break;
 			default:
