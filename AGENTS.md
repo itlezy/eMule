@@ -7,5 +7,5 @@
 - place changes at the earliest layer where they are true, then let later milestones inherit them
 - keep commits isolated by behavior and avoid mixing baseline, seam, and bugfix work
 - do not reintroduce workspace orchestration or dependency policy into this repo root
-- build, dependency materialization, and local status tracking are owned by the cleanroom release workspace under `C:\prj\p2p\eMule\cleanroom\20260406-v0.72a-main-restart`
-- shared tests live in `C:\prj\p2p\eMule\eMulebb\eMule-build-tests`
+- build, dependency materialization, and local status tracking are owned by the canonical workspace rooted at `EMULE_WORKSPACE_ROOT`
+- shared tests live in `EMULE_WORKSPACE_ROOT\repos\eMule-build-tests`
