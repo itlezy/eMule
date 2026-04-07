@@ -32,7 +32,7 @@
 #include "SHAHashSet.h"
 #include "SharedFileList.h"
 #include "Log.h"
-#include "zlib/zlib.h"
+#include "zlib.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

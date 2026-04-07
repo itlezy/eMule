@@ -29,7 +29,7 @@
 #include "packets.h"
 #include "Statistics.h"
 #include "UploadBandwidthThrottler.h"
-#include "zlib/zlib.h"
+#include "zlib.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
