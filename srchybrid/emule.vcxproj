@@ -97,7 +97,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\$(Configuration)\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\$(Configuration)\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -126,7 +126,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)cryptopp\$(Platform)\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\$(Configuration)\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\$(Configuration)\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -154,7 +154,7 @@
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)cryptopp\$(Platform)\Debug\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\Debug\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\Debug\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\Debug\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\Debug\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\Debug\id3lib.lib;$(MbedTlsRoot)visualc\VS2017\$(Platform)\Debug\mbedtls.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\Debug\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalOptions Condition="'$(Platform)'=='Win32'">/safeseh</AdditionalOptions>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
