@@ -88,6 +88,7 @@
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew /FS</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew /FS</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -118,11 +119,14 @@
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew /FS</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew /FS</AdditionalOptions>
       <FunctionLevelLinking>true</FunctionLevelLinking>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <IntrinsicFunctions>true</IntrinsicFunctions>
+      <Optimization>MaxSpeed</Optimization>
       <OmitFramePointers>true</OmitFramePointers>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
@@ -145,6 +149,7 @@
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/Zc:throwingNew /FS</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/Zc:enumTypes /Zc:throwingNew /FS</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
+      <LanguageStandard>stdcpp17</LanguageStandard>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
