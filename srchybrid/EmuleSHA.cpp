@@ -37,7 +37,7 @@
 /* Modified by Camper using extern methods     6.7.2004 */
 
 #include "StdAfx.h"
-#include "SHA.h"
+#include "EmuleSHA.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW

@@ -34,7 +34,7 @@ their client on the eMule forum.
 #include "emuledlg.h"
 #include "opcodes.h"
 #include "Log.h"
-#include "MD4.h"
+#include "EmuleMD4.h"
 #include "StringConversion.h"
 #include "kademliawnd.h"
 #include "kademlia/kademlia/Kademlia.h"

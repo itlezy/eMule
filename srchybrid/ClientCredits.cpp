@@ -23,9 +23,9 @@
 #include "Opcodes.h"
 #include "ServerConnect.h"
 #include "Log.h"
-#include "cryptopp/base64.h"
-#include "cryptopp/osrng.h"
-#include "cryptopp/files.h"
+#include <base64.h>
+#include <osrng.h>
+#include <files.h>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
