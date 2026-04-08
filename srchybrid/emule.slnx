@@ -7,7 +7,7 @@
     <Platform Name="Win32" />
     <Platform Name="x64" />
   </Configurations>
-  <Project Path="../cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">
+  <Project Path="../../../../../repos/third_party/eMule-cryptopp/cryptlib.vcxproj" Id="c39f4b46-6e89-4074-902e-ca57073044d2">
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="../id3lib/libprj/id3lib.vcxproj" Id="4aacbf8d-b90f-41ad-a5be-d5e557c668e3">
@@ -26,7 +26,7 @@
     <BuildType Solution="_SpecialBootstrapNodes|*" Project="Debug" />
   </Project>
   <Project Path="emule.vcxproj" Id="584ea69d-3443-4197-8994-364880fc1b9b">
-    <BuildDependency Project="../cryptopp/cryptlib.vcxproj" />
+    <BuildDependency Project="../../../../../repos/third_party/eMule-cryptopp/cryptlib.vcxproj" />
     <BuildDependency Project="../id3lib/libprj/id3lib.vcxproj" />
     <BuildDependency Project="../mbedtls/visualc/VS2017/mbedTLS.vcxproj" />
     <BuildDependency Project="../miniupnpc/msvc/miniupnpc.vcxproj" />
