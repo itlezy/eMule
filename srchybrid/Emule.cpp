@@ -221,6 +221,24 @@ static void InitDEP()
 				|| (dwFlags & PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION) == 0
 #endif
 
+				)
+			{
+				 // VS2003:	Enable DEP (with ATL-thunk emulation) if not already set by system policy
+				 //			or if the policy is not yet permanent.
+				 //
+				 // VS2005:	Enable DEP (without ATL-thunk emulation) if not already set by system policy
+				 //			or linker "/NXCOMPAT" option or if the policy is not yet permanent. We should
+				 //			not reach this code path at all because the "/NXCOMPAT" option is specified.
+				 //			However, the code path is here for safety reasons.
+				dwFlags = PROCESS_DEP_ENABLE;
+				// VS2005: Disable ATL thunks.
+				dwFlags |= PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION;
+				(*pfnSetProcessDEPPolicy)(dwFlags);
+			}
+		}
+	}
+}
+
 bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
 {
 	if (pszPath == NULL || pszPath[0] == _T('\0'))
@@ -269,23 +287,6 @@ void CemuleApp::InvalidatePartMetWriteGuardCache(LPCTSTR pszPath)
 	CString strVolumeRoot;
 	if (TryGetVolumeRootPath(pszPath, &strVolumeRoot))
 		m_aPartMetWriteGuardByVolume.RemoveKey(strVolumeRoot);
-}
-				)
-			{
-				 // VS2003:	Enable DEP (with ATL-thunk emulation) if not already set by system policy
-				 //			or if the policy is not yet permanent.
-				 //
-				 // VS2005:	Enable DEP (without ATL-thunk emulation) if not already set by system policy
-				 //			or linker "/NXCOMPAT" option or if the policy is not yet permanent. We should
-				 //			not reach this code path at all because the "/NXCOMPAT" option is specified.
-				 //			However, the code path is here for safety reasons.
-				dwFlags = PROCESS_DEP_ENABLE;
-				// VS2005: Disable ATL thunks.
-				dwFlags |= PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION;
-				(*pfnSetProcessDEPPolicy)(dwFlags);
-			}
-		}
-	}
 }
 
 
