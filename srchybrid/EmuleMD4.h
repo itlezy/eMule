@@ -20,7 +20,7 @@
 //
 #pragma once
 #define CRYPTOPP_ENABLE_NAMESPACE_WEAK 1
-#include "cryptopp/md4.h"
+#include <md4.h>
 #include "otherfunctions.h"
 
 #define MD4_BLOCK_SIZE	64
@@ -34,7 +34,7 @@ typedef struct
 class CMD4
 {
 // Attributes
-	CryptoPP::Weak::MD4 m_md4; // netfinity: Use cryptlib
+	CryptoPP::Weak1::MD4 m_md4; // netfinity: Use cryptlib
 	MD4 m_hash;
 // Operations
 public:

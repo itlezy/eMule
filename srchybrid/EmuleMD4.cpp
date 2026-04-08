@@ -25,7 +25,7 @@
 	documentation and/or software.
 */
 #include "StdAfx.h"
-#include "MD4.h"
+#include "EmuleMD4.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
