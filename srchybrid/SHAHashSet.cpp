@@ -20,7 +20,7 @@
 #include "emule.h"
 #include "safefile.h"
 #include "preferences.h"
-#include "sha.h"
+#include "EmuleSHA.h"
 #include "updownclient.h"
 #include "DownloadQueue.h"
 #include "partfile.h"

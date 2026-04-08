@@ -40,7 +40,7 @@
 #include "SafeFile.h"
 #include "shahashset.h"
 #include "Log.h"
-#include "MD4.h"
+#include "EmuleMD4.h"
 #include "Collection.h"
 #include "emuledlg.h"
 #include "SharedFilesWnd.h"

@@ -26,7 +26,7 @@
  */
 #pragma once
 #include "AsyncSocketEx.h"
-#include "cryptopp/integer.h"
+#include <integer.h>
 
 #define ERR_WRONGHEADER				0x01
 #define ERR_TOOBIG					0x02
