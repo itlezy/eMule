@@ -64,6 +64,8 @@
 #include "UPnPImplWrapper.h"
 #include "UploadDiskIOThread.h"
 #include "PartFileWriteThread.h"
+#include "OtherFunctions.h"
+#include "PartFilePersistenceSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -106,6 +108,25 @@ int eMuleAllocHook(int mode, void *pUserData, size_t nSize, int nBlockUse, long 
 #define APP_CRT_DEBUG_LOG_FILE _T("eMule CRT Debug Log.log")
 static TCHAR s_szCrtDebugReportFilePath[MAX_PATH] = APP_CRT_DEBUG_LOG_FILE;
 #endif //_DEBUG
+
+static bool TryGetVolumeRootPath(const CString &strPath, CString *pstrVolumeRoot)
+{
+	if (pstrVolumeRoot == NULL || strPath.IsEmpty())
+		return false;
+
+	CString strVolumeRoot(strPath);
+	LPTSTR pszVolumeRoot = strVolumeRoot.GetBuffer();
+	const BOOL bResult = ::PathStripToRoot(pszVolumeRoot);
+	strVolumeRoot.ReleaseBuffer();
+	if (!bResult)
+		return false;
+	if (strVolumeRoot.IsEmpty())
+		return false;
+
+	slosh(strVolumeRoot);
+	*pstrVolumeRoot = strVolumeRoot;
+	return true;
+}
 
 #ifdef _M_IX86
 ///////////////////////////////////////////////////////////////////////////////
@@ -199,6 +220,56 @@ static void InitDEP()
 #if _ATL_VER>0x0710
 				|| (dwFlags & PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION) == 0
 #endif
+
+bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
+{
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return true;
+
+	CString strVolumeRoot;
+	if (!TryGetVolumeRootPath(pszPath, &strVolumeRoot))
+		return true;
+
+	{
+		CSingleLock lock(&m_partMetWriteGuardLock, TRUE);
+		if (bForceRefresh)
+			m_aPartMetWriteGuardByVolume.RemoveKey(strVolumeRoot);
+		else {
+			void *pCachedCanWrite = NULL;
+			if (PartFilePersistenceSeams::ShouldReusePartMetWriteCache(m_aPartMetWriteGuardByVolume.Lookup(strVolumeRoot, pCachedCanWrite), bForceRefresh))
+				return pCachedCanWrite != NULL;
+		}
+	}
+
+	const uint64 nFreeBytes = GetFreeDiskSpaceX(strVolumeRoot);
+	const bool bCanWrite = PartFilePersistenceSeams::CanWritePartMetWithFreeSpace(nFreeBytes);
+	{
+		CSingleLock lock(&m_partMetWriteGuardLock, TRUE);
+		m_aPartMetWriteGuardByVolume.SetAt(strVolumeRoot, bCanWrite ? reinterpret_cast<void*>(1) : NULL);
+	}
+
+	if (!bCanWrite) {
+		QueueDebugLogLineEx(LOG_WARNING, _T("Part.met disk-space guard blocked metadata writes on \"%s\" (%I64u bytes free, need at least %I64u).")
+			, (LPCTSTR)strVolumeRoot
+			, nFreeBytes
+			, PartFilePersistenceSeams::kMinPartMetWriteFreeBytes);
+	}
+
+	return bCanWrite;
+}
+
+void CemuleApp::InvalidatePartMetWriteGuardCache(LPCTSTR pszPath)
+{
+	CSingleLock lock(&m_partMetWriteGuardLock, TRUE);
+	if (pszPath == NULL || pszPath[0] == _T('\0')) {
+		m_aPartMetWriteGuardByVolume.RemoveAll();
+		return;
+	}
+
+	CString strVolumeRoot;
+	if (TryGetVolumeRootPath(pszPath, &strVolumeRoot))
+		m_aPartMetWriteGuardByVolume.RemoveKey(strVolumeRoot);
+}
 				)
 			{
 				 // VS2003:	Enable DEP (with ATL-thunk emulation) if not already set by system policy

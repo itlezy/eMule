@@ -37,6 +37,7 @@
 #include "IPFilter.h"
 #include "Packets.h"
 #include "Preferences.h"
+#include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "SharedFileList.h"
 #include "ListenSocket.h"
@@ -288,8 +289,11 @@ CPartFile::~CPartFile()
 {
 	// Barry - Ensure all buffered data is written
 	if ((HANDLE)m_hpartfile != INVALID_HANDLE_VALUE) {
+		CPartFileWriteThread *pThread = theApp.m_pPartFileWriteThread;
+		const bool bShouldFlush = PartFilePersistenceSeams::ShouldFlushPartFileOnDestroy(theApp.IsClosing(), pThread != NULL, pThread != NULL && pThread->IsRunning());
 		// commit file and directory entry
-		FlushBuffer(false, true);
+		if (bShouldFlush)
+			FlushBuffer(false, true);
 		CPartFileWriteThread::RemFile(this);
 		m_hpartfile.Close();
 		// Update met file (with the current directory entry)
@@ -1159,6 +1163,8 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 {
 	if (status == PS_WAITINGFORHASH || status == PS_HASHING)
 		return false;
+	if (!theApp.CanWritePartMetFiles(m_fullname))
+		return false;
 	// search part file
 	const CString &searchpath(RemoveFileExtension(m_fullname));
 	CFileFind ff;
@@ -1192,6 +1198,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		CString s;
 		s.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
 		LogError(_T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
+		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
 	::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
@@ -1445,31 +1452,34 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		// need to close the file before removing it.
 		file.Abort(); //Call 'Abort' instead of 'Close' to avoid ASSERT.
 		(void)_tremove(strTmpFile);
+		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
 
 	// after successfully writing the temporary part.met file...
-	if (_tremove(m_fullname) != 0 && errno != ENOENT) {
+	DWORD dwReplaceError = ERROR_SUCCESS;
+	if (!ReplaceFileAtomically(strTmpFile, m_fullname, &dwReplaceError)) {
 		if (thePrefs.GetVerbose())
-			DebugLogError(_T("Failed to remove \"%s\" - %s"), (LPCTSTR)m_fullname, _tcserror(errno));
-	}
-
-	if (_trename(strTmpFile, m_fullname) != 0) {
-		int iErrno = errno;
-		if (thePrefs.GetVerbose())
-			DebugLogError(_T("Failed to move temporary part.met file \"%s\" to \"%s\" - %s"), (LPCTSTR)strTmpFile, (LPCTSTR)m_fullname, _tcserror(iErrno));
+			DebugLogError(_T("Failed to replace temporary part.met file \"%s\" with \"%s\" - %s"), (LPCTSTR)strTmpFile, (LPCTSTR)m_fullname, (LPCTSTR)GetErrorMessage(dwReplaceError));
 
 		CString strError;
 		strError.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
-		strError.AppendFormat(_T(" - %s"), _tcserror(iErrno));
+		strError.AppendFormat(_T(" - %s"), (LPCTSTR)GetErrorMessage(dwReplaceError));
 		LogError(_T("%s"), (LPCTSTR)strError);
+		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
 
 	// create a backup of the successfully written part.met file
-	if (!::CopyFile(m_fullname, m_fullname + PARTMET_BAK_EXT, static_cast<BOOL>(bDontOverrideBak)))
-		if (!bDontOverrideBak)
-			DebugLogError(_T("Failed to create backup of %s (%s) - %s"), (LPCTSTR)m_fullname, (LPCTSTR)GetFileName(), (LPCTSTR)GetErrorMessage(::GetLastError()));
+	const CString strBakFile(m_fullname + PARTMET_BAK_EXT);
+	const CString strBakTmpFile(strBakFile + PARTMET_TMP_EXT);
+	DWORD dwBackupError = ERROR_SUCCESS;
+	if (!CopyFileToTempAndReplace(m_fullname, strBakFile, strBakTmpFile, bDontOverrideBak, &dwBackupError)) {
+		if (!bDontOverrideBak) {
+			DebugLogError(_T("Failed to create backup of %s (%s) - %s"), (LPCTSTR)m_fullname, (LPCTSTR)GetFileName(), (LPCTSTR)GetErrorMessage(dwBackupError));
+			theApp.InvalidatePartMetWriteGuardCache(m_fullname);
+		}
+	}
 
 	return true;
 }

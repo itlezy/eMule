@@ -69,6 +69,8 @@ public:
 	// Barry - To find out if app is running or shutting/shut down
 	bool IsRunning() const	{ return m_app_state == APP_STATE_RUNNING || m_app_state == APP_STATE_ASKCLOSE; }
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
+	bool CanWritePartMetFiles(LPCTSTR pszPath, bool bForceRefresh = false);
+	void InvalidatePartMetWriteGuardCache(LPCTSTR pszPath = NULL);
 
 	// ZZ:UploadSpeedSense -->
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
@@ -224,6 +226,8 @@ protected:
 	CTypedPtrList<CPtrList, SLogItem*> m_QueueDebugLog;
 	CTypedPtrList<CPtrList, SLogItem*> m_QueueLog;
 	// Elandal:ThreadSafeLogging <--
+	CCriticalSection m_partMetWriteGuardLock;
+	CMapStringToPtr m_aPartMetWriteGuardByVolume;
 
 	WSADATA		m_wsaData;
 	uint32		m_dwPublicIP;

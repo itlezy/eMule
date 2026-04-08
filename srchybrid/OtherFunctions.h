@@ -326,6 +326,8 @@ WORD		DetectWinVersion();
 bool		IsRunningXPSP2();
 bool		IsRunningXPSP2OrHigher();
 uint64		GetFreeDiskSpaceX(LPCTSTR pDirectory);
+bool		ReplaceFileAtomically(const CString &strSrc, const CString &strDst, DWORD *pdwLastError = NULL);
+bool		CopyFileToTempAndReplace(const CString &strSrc, const CString &strDst, const CString &strTmp, bool bDontOverride, DWORD *pdwLastError = NULL);
 ULONGLONG	GetDiskFileSize(LPCTSTR pszFilePath);
 int			GetAppImageListColorFlag();
 int			GetDesktopColorDepth();
