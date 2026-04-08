@@ -254,13 +254,16 @@ bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
 			m_aPartMetWriteGuardByVolume.RemoveKey(strVolumeRoot);
 		else {
 			void *pCachedCanWrite = NULL;
-			if (PartFilePersistenceSeams::ShouldReusePartMetWriteCache(m_aPartMetWriteGuardByVolume.Lookup(strVolumeRoot, pCachedCanWrite), bForceRefresh))
-				return pCachedCanWrite != NULL;
+			const bool bHasCachedResult = m_aPartMetWriteGuardByVolume.Lookup(strVolumeRoot, pCachedCanWrite);
+			const PartFilePersistenceSeams::PartMetWriteGuardDecision cachedDecision = PartFilePersistenceSeams::ResolvePartMetWriteGuard(bHasCachedResult, pCachedCanWrite != NULL, bForceRefresh, 0u);
+			if (cachedDecision.UseCachedResult)
+				return cachedDecision.CanWrite;
 		}
 	}
 
 	const uint64 nFreeBytes = GetFreeDiskSpaceX(strVolumeRoot);
-	const bool bCanWrite = PartFilePersistenceSeams::CanWritePartMetWithFreeSpace(nFreeBytes);
+	const PartFilePersistenceSeams::PartMetWriteGuardDecision refreshedDecision = PartFilePersistenceSeams::ResolvePartMetWriteGuard(false, false, bForceRefresh, nFreeBytes);
+	const bool bCanWrite = refreshedDecision.CanWrite;
 	{
 		CSingleLock lock(&m_partMetWriteGuardLock, TRUE);
 		m_aPartMetWriteGuardByVolume.SetAt(strVolumeRoot, bCanWrite ? reinterpret_cast<void*>(1) : NULL);

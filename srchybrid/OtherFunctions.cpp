@@ -37,6 +37,7 @@
 #include "RarFile.h"
 #include "shahashset.h"
 #include "collection.h"
+#include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "Kademlia/Kademlia/kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -319,45 +320,12 @@ void CommitAndClose(CStdioFile &file)
 
 bool ReplaceFileAtomically(const CString &strSrc, const CString &strDst, DWORD *pdwLastError)
 {
-	if (pdwLastError != NULL)
-		*pdwLastError = ERROR_SUCCESS;
-
-	if (::MoveFileEx(strSrc, strDst, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
-		return true;
-
-	if (pdwLastError != NULL)
-		*pdwLastError = ::GetLastError();
-	return false;
+	return PartFilePersistenceSeams::TryReplaceFileAtomically(strSrc, strDst, pdwLastError);
 }
 
 bool CopyFileToTempAndReplace(const CString &strSrc, const CString &strDst, const CString &strTmp, const bool bDontOverride, DWORD *pdwLastError)
 {
-	if (pdwLastError != NULL)
-		*pdwLastError = ERROR_SUCCESS;
-
-	(void)::DeleteFile(strTmp);
-	if (!::CopyFile(strSrc, strTmp, FALSE)) {
-		if (pdwLastError != NULL)
-			*pdwLastError = ::GetLastError();
-		return false;
-	}
-
-	if (bDontOverride && ::PathFileExists(strDst)) {
-		(void)::DeleteFile(strTmp);
-		if (pdwLastError != NULL)
-			*pdwLastError = ERROR_FILE_EXISTS;
-		return false;
-	}
-
-	DWORD dwLastError = ERROR_SUCCESS;
-	if (!ReplaceFileAtomically(strTmp, strDst, &dwLastError)) {
-		(void)::DeleteFile(strTmp);
-		if (pdwLastError != NULL)
-			*pdwLastError = dwLastError;
-		return false;
-	}
-
-	return true;
+	return PartFilePersistenceSeams::TryCopyFileToTempAndReplace(strSrc, strDst, strTmp, bDontOverride, pdwLastError);
 }
 
 HINSTANCE BrowserOpen(LPCTSTR lpURL, LPCTSTR lpDirectory)
