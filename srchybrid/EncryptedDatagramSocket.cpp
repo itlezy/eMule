@@ -145,17 +145,18 @@ struct Crypt_Header_Struct
 
 static CryptoPP::AutoSeededRandomPool cryptRandomGen;
 
-int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwIP, uint32 *nReceiverVerifyKey, uint32 *nSenderVerifyKey)
+int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwIP, uint32 *nReceiverVerifyKey, uint32 *nSenderVerifyKey, EOracleUdpTransportMode *pTransportMode)
 {
 	int nResult = nBufLen;
 	*ppbyBufOut = pbyBufIn;
 
-	if (nReceiverVerifyKey == NULL || nSenderVerifyKey == NULL) {
+	if (nReceiverVerifyKey == NULL || nSenderVerifyKey == NULL || pTransportMode == NULL) {
 		ASSERT(0);
 		return nResult;
 	}
 	*nReceiverVerifyKey = 0;
 	*nSenderVerifyKey = 0;
+	*pTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
 
 	if (nResult <= (int)CRYPT_HEADER_SIZE /*|| !thePrefs.IsCryptLayerEnabled()*/)
 		return nResult;
@@ -275,6 +276,10 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen,
 		*ppbyBufOut = &pbyBufIn[nBufLen - nResult];
 		RC4Crypt((uchar*)*ppbyBufOut, nResult, &keyReceiveKey);
 		theStats.AddDownDataOverheadCrypt(nBufLen - nResult);
+		if (bKad)
+			*pTransportMode = bKadRecvKeyUsed ? ORACLE_UDP_TRANSPORT_RECEIVER_VERIFY_KEY : ORACLE_UDP_TRANSPORT_NODE_ID;
+		else
+			*pTransportMode = ORACLE_UDP_TRANSPORT_USER_HASH;
 		//DEBUG_ONLY( DebugLog(_T("Received obfuscated UDP packet from clientIP: %s, Key: %s, RKey: %u, SKey: %u"), (LPCTSTR)ipstr(dwIP), bKad ? (bKadRecvKeyUsed ? _T("ReceiverKey") : _T("NodeID")) : _T("UserHash")
 		//	, nReceiverVerifyKey != 0 ? *nReceiverVerifyKey : 0, nSenderVerifyKey != 0 ? *nSenderVerifyKey : 0) );
 	} else // pass through, let the Receive function do the error handling on this junk
@@ -286,8 +291,14 @@ int CEncryptedDatagramSocket::DecryptReceivedClient(BYTE *pbyBufIn, int nBufLen,
 // pachClientHashOrKadID != NULL									-> pachClientHashOrKadID
 // pachClientHashOrKadID == NULL && bKad && nReceiverVerifyKey != 0 -> nReceiverVerifyKey
 // else																-> ASSERT
-uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen, const uchar *pachClientHashOrKadID, bool bKad, uint32 nReceiverVerifyKey, uint32 nSenderVerifyKey)
+uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen, const uchar *pachClientHashOrKadID, bool bKad, uint32 nReceiverVerifyKey, uint32 nSenderVerifyKey, EOracleUdpTransportMode *pTransportMode)
 {
+	if (pTransportMode == NULL) {
+		ASSERT(0);
+		return nBufLen;
+	}
+	*pTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
+
 	ASSERT(theApp.GetPublicIP() != 0 || bKad);
 	ASSERT(thePrefs.IsCryptLayerEnabled());
 	ASSERT(pachClientHashOrKadID != NULL || nReceiverVerifyKey);
@@ -299,12 +310,14 @@ uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen
 	if (bKad) {
 		if ((pachClientHashOrKadID == NULL || isnulmd4(pachClientHashOrKadID)) && nReceiverVerifyKey != 0) {
 			byKadRecKeyUsed = 2; //reckey marker
+			*pTransportMode = ORACLE_UDP_TRANSPORT_RECEIVER_VERIFY_KEY;
 			uchar achKeyData[6];
 			PokeUInt32(achKeyData, nReceiverVerifyKey);
 			PokeUInt16(&achKeyData[4], nRandomKeyPart);
 			md5.Calculate(achKeyData, sizeof achKeyData);
 			//DEBUG_ONLY( DebugLog(_T("Creating obfuscated Kad packet encrypted by ReceiverKey (%u)"), nReceiverVerifyKey) );
 		} else if (pachClientHashOrKadID != NULL && !isnulmd4(pachClientHashOrKadID)) {
+			*pTransportMode = ORACLE_UDP_TRANSPORT_NODE_ID;
 			uchar achKeyData[18];
 			md4cpy(achKeyData, pachClientHashOrKadID);
 			PokeUInt16(&achKeyData[16], nRandomKeyPart);
@@ -315,6 +328,7 @@ uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen
 			return nBufLen;
 		}
 	} else {
+		*pTransportMode = ORACLE_UDP_TRANSPORT_USER_HASH;
 		uchar achKeyData[23];
 		md4cpy(achKeyData, pachClientHashOrKadID);
 		PokeUInt32(&achKeyData[16], theApp.GetPublicIP());
@@ -375,10 +389,16 @@ uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen
 	return nBufLen;
 }
 
-int CEncryptedDatagramSocket::DecryptReceivedServer(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwBaseKey, const SOCKADDR_IN &dbgIP)
+int CEncryptedDatagramSocket::DecryptReceivedServer(BYTE *pbyBufIn, int nBufLen, BYTE **ppbyBufOut, uint32 dwBaseKey, uint32 dbgIP, EOracleUdpTransportMode *pTransportMode)
 {
 	int nResult = nBufLen;
 	*ppbyBufOut = pbyBufIn;
+
+	if (pTransportMode == NULL) {
+		ASSERT(0);
+		return nResult;
+	}
+	*pTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
 
 	if (nResult <= (int)CRYPT_HEADER_SIZE || !thePrefs.IsCryptLayerEnabled() || dwBaseKey == 0)
 		return nResult;
@@ -400,13 +420,13 @@ int CEncryptedDatagramSocket::DecryptReceivedServer(BYTE *pbyBufIn, int nBufLen,
 	if (crypt.dwMagic == MAGICVALUE_UDP_SYNC_SERVER) {
 		// yup this is an encrypted packet
 		if (thePrefs.GetDebugServerUDPLevel() > 0)
-			DEBUG_ONLY(DebugLog(_T("Received obfuscated UDP packet from ServerIP: %s:%u"), (LPCTSTR)ipstr(dbgIP.sin_addr.s_addr), ntohs(dbgIP.sin_port)));
+			DEBUG_ONLY(DebugLog(_T("Received obfuscated UDP packet from ServerIP: %s"), (LPCTSTR)ipstr(dbgIP)));
 		RC4Crypt((uchar*)crypt.byPadding, 1, &keyReceiveKey);
 		crypt.byPadding[0] &= 0xf;
 		nResult -= CRYPT_HEADER_WITHOUTPADDING;
 		if (nResult <= crypt.byPadding[0]) {
-			DebugLogError(_T("Invalid obfuscated UDP packet from Server IP=%s:%u, Padding size (%u) larger than received bytes")
-				, (LPCTSTR)ipstr(dbgIP.sin_addr.s_addr), ntohs(dbgIP.sin_port), crypt.byPadding[0]);
+			DebugLogError(_T("Invalid obfuscated UDP packet from ServerIP: %s, Padding size (%u) larger than received bytes")
+				, (LPCTSTR)ipstr(dbgIP), crypt.byPadding[0]);
 			return nBufLen; // pass through, let the Receive function do the error handling on this junk
 		}
 		if (crypt.byPadding[0] > 0) {
@@ -415,16 +435,22 @@ int CEncryptedDatagramSocket::DecryptReceivedServer(BYTE *pbyBufIn, int nBufLen,
 		}
 		*ppbyBufOut = &pbyBufIn[nBufLen - nResult];
 		RC4Crypt((uchar*)*ppbyBufOut, nResult, &keyReceiveKey);
+		*pTransportMode = ORACLE_UDP_TRANSPORT_SERVER_BASE_KEY;
 
 		theStats.AddDownDataOverheadCrypt(nBufLen - nResult);
 	} else // pass through, let the Receive function do the error handling on this junk
-		DebugLogWarning(_T("Obfuscated packet expected, but magicvalue mismatch on UDP packet from Server IP=%s:%u")
-			, (LPCTSTR)ipstr(dbgIP.sin_addr.s_addr), ntohs(dbgIP.sin_port));
+		DebugLogWarning(_T("Obfuscated packet expected, but magicvalue mismatch on UDP packet from ServerIP: %s"), (LPCTSTR)ipstr(dbgIP));
 	return nResult;
 }
 
-uint32 CEncryptedDatagramSocket::EncryptSendServer(uchar *pbyBuf, uint32 nBufLen, uint32 dwBaseKey)
+uint32 CEncryptedDatagramSocket::EncryptSendServer(uchar *pbyBuf, uint32 nBufLen, uint32 dwBaseKey, EOracleUdpTransportMode *pTransportMode)
 {
+	if (pTransportMode == NULL) {
+		ASSERT(0);
+		return nBufLen;
+	}
+	*pTransportMode = ORACLE_UDP_TRANSPORT_SERVER_BASE_KEY;
+
 	ASSERT(thePrefs.IsCryptLayerEnabled());
 	ASSERT(dwBaseKey);
 
