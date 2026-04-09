@@ -289,6 +289,8 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_dwPublicIP()
 	, m_bGuardClipboardPrompt()
 	, m_bAutoStart()
+	, m_bParityHarnessBootstrapIssued()
+	, m_bParityHarnessReadyFileWritten()
 	, m_bStandbyOff()
 {
 	// Initialize Windows security features.
@@ -345,6 +347,122 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 // MOD Note: end
 
 	EnableHtmlHelp();
+}
+
+bool CemuleApp::IsParityHarnessMode() const
+{
+	if (!m_strParityHarnessBootstrapPeers.IsEmpty() || !m_strParityHarnessReadyFile.IsEmpty())
+		return true;
+
+	TCHAR tchBuffer[MAX_PATH];
+	::GetModuleFileName(NULL, tchBuffer, _countof(tchBuffer));
+	tchBuffer[_countof(tchBuffer) - 1] = _T('\0');
+	LPCTSTR pszFileName = _tcsrchr(tchBuffer, _T('\\'));
+	if (pszFileName != NULL)
+		++pszFileName;
+	else
+		pszFileName = tchBuffer;
+
+	return _tcsicmp(pszFileName, _T("eMule_v072a_parity.exe")) == 0
+		|| _tcsicmp(pszFileName, _T("eMule_v060_parity.exe")) == 0;
+}
+
+void CemuleApp::ApplyPendingParityHarnessActions()
+{
+	if (m_bParityHarnessBootstrapIssued || m_strParityHarnessBootstrapPeers.IsEmpty())
+		return;
+
+	if (!Kademlia::CKademlia::IsRunning())
+		return;
+
+	int iStart = 0;
+	while (iStart < m_strParityHarnessBootstrapPeers.GetLength()) {
+		int iSeparator = -1;
+		for (int iCursor = iStart; iCursor < m_strParityHarnessBootstrapPeers.GetLength(); ++iCursor) {
+			const TCHAR chCurrent = m_strParityHarnessBootstrapPeers[iCursor];
+			if (chCurrent == _T(',') || chCurrent == _T(';')) {
+				iSeparator = iCursor;
+				break;
+			}
+		}
+		CString strPeer = (iSeparator >= 0)
+			? m_strParityHarnessBootstrapPeers.Mid(iStart, iSeparator - iStart)
+			: m_strParityHarnessBootstrapPeers.Mid(iStart);
+		strPeer.Trim();
+		if (!strPeer.IsEmpty()) {
+			const int iColon = strPeer.ReverseFind(_T(':'));
+			if (iColon > 0 && iColon + 1 < strPeer.GetLength()) {
+				const CString strAddress = strPeer.Left(iColon);
+				const uint16 nPort = static_cast<uint16>(_tstoi(strPeer.Mid(iColon + 1)));
+				if (!strAddress.IsEmpty() && nPort > 0) {
+					Kademlia::CKademlia::Bootstrap(strAddress, nPort);
+					Log(_T("Parity harness bootstrap peer: %s"), (LPCTSTR)strPeer);
+				}
+			}
+		}
+
+		if (iSeparator < 0)
+			break;
+		iStart = iSeparator + 1;
+	}
+
+	m_bParityHarnessBootstrapIssued = true;
+}
+
+void CemuleApp::EmitParityHarnessReadyFile()
+{
+	if (m_bParityHarnessReadyFileWritten || m_strParityHarnessReadyFile.IsEmpty())
+		return;
+
+	FILE *pFile = _tfsopen(m_strParityHarnessReadyFile, _T("wt"), _SH_DENYWR);
+	if (pFile == NULL)
+		return;
+
+	const CString strProfile(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR, false));
+	_ftprintf(pFile, _T("state=ready\n"));
+	_ftprintf(pFile, _T("pid=%lu\n"), ::GetCurrentProcessId());
+	_ftprintf(pFile, _T("tcp_port=%u\n"), thePrefs.GetPort());
+	_ftprintf(pFile, _T("udp_port=%u\n"), thePrefs.GetUDPPort());
+	_ftprintf(pFile, _T("profile=%s\n"), (LPCTSTR)strProfile);
+	fclose(pFile);
+	m_bParityHarnessReadyFileWritten = true;
+}
+
+static bool TryParseNamedArgument(int &i, LPCTSTR pszLongName, LPCTSTR pszShortName, CString &strValue)
+{
+	LPCTSTR pszArg = __targv[i];
+	if (pszArg[0] != _T('-') && pszArg[0] != _T('/'))
+		return false;
+	++pszArg;
+
+	if (pszShortName != NULL && *pszShortName != _T('\0') && _tcsicmp(pszArg, pszShortName) == 0 && i + 1 < __argc) {
+		strValue = __targv[++i];
+		strValue.Trim();
+		return !strValue.IsEmpty();
+	}
+	if (_tcsicmp(pszArg, pszLongName) == 0 && i + 1 < __argc) {
+		strValue = __targv[++i];
+		strValue.Trim();
+		return !strValue.IsEmpty();
+	}
+
+	const CString strShortPrefix = (pszShortName != NULL && *pszShortName != _T('\0'))
+		? CString(pszShortName) + _T("=")
+		: CString();
+	if (!strShortPrefix.IsEmpty() && _tcsnicmp(pszArg, strShortPrefix, strShortPrefix.GetLength()) == 0) {
+		strValue = pszArg + strShortPrefix.GetLength();
+		strValue.Trim();
+		return !strValue.IsEmpty();
+	}
+
+	const CString strLongPrefix = CString(pszLongName) + _T("=");
+	if (_tcsnicmp(pszArg, strLongPrefix, strLongPrefix.GetLength()) == 0) {
+		strValue = pszArg + strLongPrefix.GetLength();
+		strValue.Trim();
+		return !strValue.IsEmpty();
+	}
+
+	return false;
 }
 
 
@@ -697,6 +815,17 @@ bool CemuleApp::ProcessCommandline()
 {
 	bool bIgnoreRunningInstances = (GetProfileInt(_T("eMule"), _T("IgnoreInstances"), 0) != 0);
 	for (int i = 1; i < __argc; ++i) {
+		CString strBootstrapPeers;
+		if (TryParseNamedArgument(i, _T("bootstrap"), _T("b"), strBootstrapPeers)) {
+			m_strParityHarnessBootstrapPeers = strBootstrapPeers;
+			continue;
+		}
+		CString strReadyFile;
+		if (TryParseNamedArgument(i, _T("readyfile"), _T("r"), strReadyFile)) {
+			m_strParityHarnessReadyFile = strReadyFile;
+			continue;
+		}
+
 		LPCTSTR pszParam = __targv[i];
 		if (pszParam[0] == _T('-') || pszParam[0] == _T('/')) {
 			++pszParam;
