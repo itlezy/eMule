@@ -212,3 +212,4 @@ inline bool TryCopyFileToTempAndReplace(const LPCTSTR pszSrc, const LPCTSTR pszD
 }
 
 #define EMULE_TEST_HAVE_PART_FILE_PERSISTENCE_SEAMS 1
+#define EMULE_TEST_HAVE_PART_FILE_DISKSPACE_FLOOR_SEAMS 1
