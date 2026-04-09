@@ -203,6 +203,8 @@ public:
 	bool		IsParityHarnessMode() const;
 	void		ApplyPendingParityHarnessActions();
 	void		EmitParityHarnessReadyFile();
+	bool		ProcessPendingParityHarnessScenario();
+	bool		HasPendingParityHarnessScenario() const;
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
@@ -234,8 +236,15 @@ protected:
 	bool		m_bAutoStart;
 	bool		m_bParityHarnessBootstrapIssued;
 	bool		m_bParityHarnessReadyFileWritten;
+	bool		m_bParityHarnessShareIssued;
+	bool		m_bParityHarnessLinkWritten;
+	bool		m_bParityHarnessDownloadIssued;
 	CString		m_strParityHarnessBootstrapPeers;
 	CString		m_strParityHarnessReadyFile;
+	CString		m_strParityHarnessShareFile;
+	CString		m_strParityHarnessExportLinkFile;
+	CString		m_strParityHarnessExportSourceIp;
+	CString		m_strParityHarnessDownloadLinkFile;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHelp();
