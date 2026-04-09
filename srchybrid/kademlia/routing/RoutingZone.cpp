@@ -125,10 +125,6 @@ void CRoutingZone::Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &u
 	// Start this zone.
 	StartTimer();
 
-#ifdef _BOOTSTRAPNODESDAT
-	if (m_pSuperZone == NULL)
-		Kademlia::CKademlia::m_pInstance->m_pRoutingZone = this; //otherwise it will fail in CanSplit()
-#endif
 	// If we are initializing the root node, read in our saved contact list.
 	if (m_pSuperZone == NULL && !m_sFilename.IsEmpty())
 		ReadFile();
@@ -140,11 +136,7 @@ CRoutingZone::~CRoutingZone()
 	if (m_pSuperZone == NULL && !m_sFilename.IsEmpty()) {
 		// Hide contacts in the GUI
 		theApp.emuledlg->kademliawnd->StopUpdateContacts();
-#ifndef _BOOTSTRAPNODESDAT
 		WriteFile();
-#else
-		DbgWriteBootstrapFile();
-#endif
 	}
 	// If this zone is a leaf, delete our contact bin.
 	if (IsLeaf())
@@ -382,62 +374,8 @@ void CRoutingZone::WriteFile()
 	}
 }
 
-void CRoutingZone::DbgWriteBootstrapFile()
-{
-#ifdef _BOOTSTRAPNODESDAT
-	DebugLogWarning(_T("Writing special bootstrap nodes.dat - not intended for normal use"));
-	CSafeBufferedFile file;
-	if (!LongPathSeams::OpenFile(file, m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
-		DebugLogError(_T("Unable to store bootstrap file: %s"), (LPCTSTR)m_sFilename);
-		return;
-	}
-	// Write the saved contact list.
-	try {
-		::setvbuf(file.m_pStream, NULL, _IOFBF, 32768);
-		ContactMap mapContacts;
-		// filter out Kad1 nodes and null IDs
-		for (ContactMap::const_iterator itContactMap = mapContacts.begin(); itContactMap != mapContacts.end();) {
-			ContactMap::const_iterator itCurContactMap = itContactMap++;
-			const CContact *pContact = itCurContactMap->second;
-			if (pContact->GetClientID() == 0 || pContact->GetVersion() < KADEMLIA_VERSION2_47a)
-				mapContacts.erase(itCurContactMap);
-		}
-
-		// The bootstrap method gets a very nice sample of contacts to save.
-		CUInt128 uRandom(CUInt128(0ul), 0);
-		CUInt128 uDistance = uRandom;
-		uDistance.Xor(uMe);
-		GetClosestTo(2, uRandom, uDistance, 1200, mapContacts, false, false);
-		// Start file with 0 to prevent older clients from reading it.
-		file.WriteUInt32(0);
-		// Now tag it with a version which happens to be 2 (1 till 0.48a).
-		file.WriteUInt32(3);
-		file.WriteUInt32(1); // if we would use version >=3, this would mean that this is not a normal nodes.dat
-		file.WriteUInt32((uint32)mapContacts.size());
-		for (ContactMap::const_iterator itContactMap = mapContacts.begin(); itContactMap != mapContacts.end(); ++itContactMap) {
-			const CContact &contact = *itContactMap->second;
-			file.WriteUInt128(contact.GetClientID());
-			file.WriteUInt32(contact.GetIPAddress());
-			file.WriteUInt16(contact.GetUDPPort());
-			file.WriteUInt16(contact.GetTCPPort());
-			file.WriteUInt8(contact.GetVersion());
-		}
-		file.Close();
-		AddDebugLogLine(false, _T("Wrote %ld contact to bootstrap file."), mapContacts.size());
-	} catch (CFileException *ex) {
-		ex->Delete();
-		AddDebugLogLine(false, _T("CFileException in CRoutingZone::writeFile"));
-	}
-#endif
-}
-
 bool CRoutingZone::CanSplit() const
 {
-#ifdef _BOOTSTRAPNODESDAT
-	if (Kademlia::CKademlia::GetRoutingZone()->GetNumContacts() < 2000)
-		return true;
-#endif
-
 	// Max levels allowed.
 	if (m_uLevel >= 127)
 		return false;

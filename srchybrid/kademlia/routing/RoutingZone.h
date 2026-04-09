@@ -88,7 +88,6 @@ namespace Kademlia
 			CRoutingZone(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index);
 			void Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index);
 			static void ReadBootstrapNodesDat(CFileDataIO &file);
-			void DbgWriteBootstrapFile();
 
 			void WriteFile();
 			bool IsLeaf() const					{ return m_pBin != NULL; }

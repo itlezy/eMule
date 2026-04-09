@@ -96,14 +96,10 @@ void CSplashScreen::OnPaint()
 			dc.FillSolidRect(rc.left + 1, rc.top + 1, rc.Width() - 2, rc.Height() - 2, RGB(255, 255, 255));
 
 			LOGFONT lf = {};
-#ifdef _BOOTSTRAPNODESDAT
-			lf.lfHeight = 24;
-#else
 #if defined(_DEBUG) && (defined(_BETA) || defined(_DEVBUILD))
 			lf.lfHeight = 28;
 #else
 			lf.lfHeight = 30;
-#endif
 #endif
 			lf.lfWeight = FW_BOLD;
 			lf.lfQuality = ANTIALIASED_QUALITY;
