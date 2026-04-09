@@ -741,6 +741,8 @@ void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*
 				theApp.searchlist->LoadSearches();
 			break;
 		default:
+			if (!theApp.ProcessPendingParityHarnessScenario())
+				break;
 			theApp.emuledlg->StopTimer();
 		}
 	}
@@ -1378,6 +1380,65 @@ LRESULT CemuleDlg::OnWMData(WPARAM, LPARAM lParam)
 						AddLogLine(true, _T("CLI Kad bootstrap: %s"), (LPCTSTR)dest);
 					}
 				}
+			}
+			else if (clcommand.Left(11) == _T("share_file=") && clcommand.GetLength() > 11) {
+				CString filePath(clcommand.Mid(11));
+				filePath.Trim();
+				if (!filePath.IsEmpty()) {
+					const bool shared = theApp.sharedfiles->AddSingleSharedFile(filePath);
+					AddLogLine(true, _T("CLI share file: %s (%s)"), (LPCTSTR)filePath, shared ? _T("accepted") : _T("rejected"));
+				}
+			}
+			else if (clcommand.Left(25) == _T("export_shared_ed2k_link=") && clcommand.GetLength() > 25) {
+				CString payload(clcommand.Mid(25));
+				payload.Trim();
+				int firstSep = payload.Find(_T('|'));
+				int secondSep = (firstSep >= 0) ? payload.Find(_T('|'), firstSep + 1) : -1;
+				if (firstSep > 0 && secondSep > firstSep + 1) {
+					CString filePath(payload.Left(firstSep));
+					CString outputPath(payload.Mid(firstSep + 1, secondSep - firstSep - 1));
+					CString sourceIp(payload.Mid(secondSep + 1));
+					filePath.Trim();
+					outputPath.Trim();
+					sourceIp.Trim();
+					if (!filePath.IsEmpty() && !outputPath.IsEmpty()) {
+						CString normalizedFilePath(filePath);
+						normalizedFilePath.MakeLower();
+						CKnownFile *sharedFile = NULL;
+						for (POSITION pos = theApp.sharedfiles->GetStartPosition(); pos != NULL;) {
+							CKnownFile *candidate = theApp.sharedfiles->GetFileNext(pos);
+							if (candidate == NULL)
+								continue;
+
+							CString candidatePath(candidate->GetFilePath());
+							candidatePath.MakeLower();
+							if (candidatePath == normalizedFilePath) {
+								sharedFile = candidate;
+								break;
+							}
+						}
+
+						if (sharedFile != NULL) {
+							uint32 sourceIpValue = 0;
+							if (!sourceIp.IsEmpty())
+								sourceIpValue = inet_addr(CT2A(sourceIp));
+
+							const CString ed2kLink = sharedFile->GetED2kLink(false, false, false, sourceIpValue != INADDR_NONE && sourceIpValue != 0, sourceIpValue);
+							FILE *file = _tfsopen(outputPath, _T("wt"), _SH_DENYWR);
+							if (file != NULL) {
+								_ftprintf(file, _T("%s\n"), (LPCTSTR)ed2kLink);
+								fclose(file);
+								AddLogLine(true, _T("CLI exported ED2K link: %s"), (LPCTSTR)outputPath);
+							}
+						}
+					}
+				}
+			}
+			else if (clcommand.Left(14) == _T("download_ed2k=") && clcommand.GetLength() > 14) {
+				CString link(clcommand.Mid(14));
+				link.Trim();
+				if (!link.IsEmpty())
+					ProcessED2KLink(link);
 			}
 			else if (clcommand == _T("restore"))
 				RestoreWindow();
