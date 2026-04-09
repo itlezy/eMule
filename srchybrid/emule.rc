@@ -3292,10 +3292,10 @@ END
 STRINGTABLE
 BEGIN
     IDS_HASHINGFILESCOUNT   " (%u hashing)"
-    IDS_CHECKDISKSPACE      "Check disk space"
+    IDS_CHECKDISKSPACE      "Check disk space (always on)"
     IDS_YOURHOSTNAME        "Host name for own eD2K links"
     IDS_INSUFFICIENT        "Insufficient disk space"
-    IDS_MINFREEDISKSPACE    "Min. free disk space [MB]"
+    IDS_MINFREEDISKSPACE    "Min. free disk space [GB]"
     IDS_WARNING             "Warning"
     IDS_IMPORTSPLPF         "Import Downloads (eM,eD,ON)"
     IDS_IMP_STEPREADPF      "Reading temp folder"
@@ -3786,4 +3786,3 @@ CREATEPROCESS_MANIFEST_RESOURCE_ID RT_MANIFEST "res\\emule.manifest"
 
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
-

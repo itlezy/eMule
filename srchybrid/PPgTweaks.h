@@ -83,7 +83,7 @@ protected:
 	HTREEITEM m_htiVerboseGroup;
 	HTREEITEM m_htiYourHostname;
 
-	float m_fMinFreeDiskSpaceMB;
+	int m_iMinFreeDiskSpaceGB;
 	INT_PTR m_iQueueSize;
 	UINT m_uFileBufferSize;
 	UINT m_uServerKeepAliveTimeout;

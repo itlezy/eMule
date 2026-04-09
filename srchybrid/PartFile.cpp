@@ -37,6 +37,8 @@
 #include "IPFilter.h"
 #include "Packets.h"
 #include "Preferences.h"
+#include "PartFilePauseResumeSeams.h"
+#include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "SharedFileList.h"
 #include "ListenSocket.h"
@@ -66,6 +68,23 @@ static char THIS_FILE[] = __FILE__;
 
 // Barry - use this constant for both places
 #define PROGRESS_HEIGHT 3
+
+namespace
+{
+PartFilePauseResumeSeams::RuntimeStatus ResolvePauseResumeRuntimeStatus(const EPartFileStatus eStatus)
+{
+	switch (eStatus) {
+	case PS_ERROR:
+		return PartFilePauseResumeSeams::RuntimeStatus::Error;
+	case PS_COMPLETING:
+		return PartFilePauseResumeSeams::RuntimeStatus::Completing;
+	case PS_COMPLETE:
+		return PartFilePauseResumeSeams::RuntimeStatus::Complete;
+	default:
+		return PartFilePauseResumeSeams::RuntimeStatus::Active;
+	}
+}
+}
 
 CBarShader CPartFile::s_LoadBar(PROGRESS_HEIGHT); // Barry - was 5
 CBarShader CPartFile::s_ChunkBar(16);
@@ -288,8 +307,11 @@ CPartFile::~CPartFile()
 {
 	// Barry - Ensure all buffered data is written
 	if ((HANDLE)m_hpartfile != INVALID_HANDLE_VALUE) {
+		CPartFileWriteThread *pThread = theApp.m_pPartFileWriteThread;
+		const bool bShouldFlush = PartFilePersistenceSeams::ShouldFlushPartFileOnDestroy(theApp.IsClosing(), pThread != NULL, pThread != NULL && pThread->IsRunning());
 		// commit file and directory entry
-		FlushBuffer(false, true);
+		if (bShouldFlush)
+			FlushBuffer(false, true);
 		CPartFileWriteThread::RemFile(this);
 		m_hpartfile.Close();
 		// Update met file (with the current directory entry)
@@ -1159,6 +1181,8 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 {
 	if (status == PS_WAITINGFORHASH || status == PS_HASHING)
 		return false;
+	if (!theApp.CanWritePartMetFiles(m_fullname))
+		return false;
 	// search part file
 	const CString &searchpath(RemoveFileExtension(m_fullname));
 	CFileFind ff;
@@ -1192,6 +1216,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		CString s;
 		s.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
 		LogError(_T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
+		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
 	::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
@@ -1445,31 +1470,34 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		// need to close the file before removing it.
 		file.Abort(); //Call 'Abort' instead of 'Close' to avoid ASSERT.
 		(void)_tremove(strTmpFile);
+		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
 
 	// after successfully writing the temporary part.met file...
-	if (_tremove(m_fullname) != 0 && errno != ENOENT) {
+	DWORD dwReplaceError = ERROR_SUCCESS;
+	if (!ReplaceFileAtomically(strTmpFile, m_fullname, &dwReplaceError)) {
 		if (thePrefs.GetVerbose())
-			DebugLogError(_T("Failed to remove \"%s\" - %s"), (LPCTSTR)m_fullname, _tcserror(errno));
-	}
-
-	if (_trename(strTmpFile, m_fullname) != 0) {
-		int iErrno = errno;
-		if (thePrefs.GetVerbose())
-			DebugLogError(_T("Failed to move temporary part.met file \"%s\" to \"%s\" - %s"), (LPCTSTR)strTmpFile, (LPCTSTR)m_fullname, _tcserror(iErrno));
+			DebugLogError(_T("Failed to replace temporary part.met file \"%s\" with \"%s\" - %s"), (LPCTSTR)strTmpFile, (LPCTSTR)m_fullname, (LPCTSTR)GetErrorMessage(dwReplaceError));
 
 		CString strError;
 		strError.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
-		strError.AppendFormat(_T(" - %s"), _tcserror(iErrno));
+		strError.AppendFormat(_T(" - %s"), (LPCTSTR)GetErrorMessage(dwReplaceError));
 		LogError(_T("%s"), (LPCTSTR)strError);
+		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
 
 	// create a backup of the successfully written part.met file
-	if (!::CopyFile(m_fullname, m_fullname + PARTMET_BAK_EXT, static_cast<BOOL>(bDontOverrideBak)))
-		if (!bDontOverrideBak)
-			DebugLogError(_T("Failed to create backup of %s (%s) - %s"), (LPCTSTR)m_fullname, (LPCTSTR)GetFileName(), (LPCTSTR)GetErrorMessage(::GetLastError()));
+	const CString strBakFile(m_fullname + PARTMET_BAK_EXT);
+	const CString strBakTmpFile(strBakFile + PARTMET_TMP_EXT);
+	DWORD dwBackupError = ERROR_SUCCESS;
+	if (!CopyFileToTempAndReplace(m_fullname, strBakFile, strBakTmpFile, bDontOverrideBak, &dwBackupError)) {
+		if (!bDontOverrideBak) {
+			DebugLogError(_T("Failed to create backup of %s (%s) - %s"), (LPCTSTR)m_fullname, (LPCTSTR)GetFileName(), (LPCTSTR)GetErrorMessage(dwBackupError));
+			theApp.InvalidatePartMetWriteGuardCache(m_fullname);
+		}
+	}
 
 	return true;
 }
@@ -2150,9 +2178,14 @@ uint64 CPartFile::GetNeededSpace() const
 
 EPartFileStatus CPartFile::GetStatus(bool ignorepause) const
 {
-	if ((!m_paused && !m_insufficient) || status == PS_ERROR || status == PS_COMPLETING || status == PS_COMPLETE || ignorepause)
+	switch (PartFilePauseResumeSeams::ResolveVisibleStatus(ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, ignorepause)) {
+	case PartFilePauseResumeSeams::VisibleStatus::Paused:
+		return PS_PAUSED;
+	case PartFilePauseResumeSeams::VisibleStatus::Insufficient:
+		return PS_INSUFFICIENT;
+	default:
 		return status;
-	return m_paused ? PS_PAUSED : PS_INSUFFICIENT;
+	}
 }
 
 void CPartFile::AddDownloadingSource(CUpDownClient *client)
@@ -3284,8 +3317,11 @@ void CPartFile::StopFile(bool bCancel, bool resort)
 	m_LastSearchTimeKad = 0;
 	m_TotalSearchesKad = 0;
 	RemoveAllSources(true);
-	m_paused = m_stopped = true;
-	m_insufficient = false;
+	const PartFilePauseResumeSeams::TransitionResult stopTransition = PartFilePauseResumeSeams::ApplyStopTransition(
+		PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
+	m_paused = stopTransition.NextState.Paused;
+	m_stopped = stopTransition.NextState.Stopped;
+	m_insufficient = stopTransition.NextState.Insufficient;
 	m_datarate = 0;
 	memset(m_anStates, 0, sizeof m_anStates);
 	memset(src_stats, 0, sizeof src_stats);	//Xman Bugfix
@@ -3351,16 +3387,18 @@ void CPartFile::PauseFile(bool bInsufficient, bool resort)
 		}
 	}
 
+	const PartFilePauseResumeSeams::TransitionResult pauseTransition = PartFilePauseResumeSeams::ApplyPauseTransition(
+		PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped }, bInsufficient);
 	if (bInsufficient)
 		LogError(LOG_STATUSBAR, _T("Insufficient disk space - pausing download of \"%s\""), (LPCTSTR)GetFileName());
-	else
-		m_paused = true;
-	m_insufficient = bInsufficient;
+	m_paused = pauseTransition.NextState.Paused;
+	m_insufficient = pauseTransition.NextState.Insufficient;
 
-	NotifyStatusChange();
+	if (pauseTransition.ShouldNotifyStatusChange)
+		NotifyStatusChange();
 	m_datarate = 0;
 	m_anStates[DS_DOWNLOADING] = 0; // -khaos--+++> Renamed var.
-	if (!bInsufficient) {
+	if (pauseTransition.ShouldSavePartFile) {
 		if (resort) {
 			theApp.downloadqueue->SortByPriority();
 			theApp.downloadqueue->CheckDiskspace();
@@ -3394,15 +3432,20 @@ void CPartFile::ResumeFile(bool resort)
 		} else
 			ASSERT(0);
 	} else {
-		m_paused = m_stopped = false;
+		const PartFilePauseResumeSeams::TransitionResult resumeTransition = PartFilePauseResumeSeams::ApplyNormalResumeTransition(
+			PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
+		m_paused = resumeTransition.NextState.Paused;
+		m_stopped = resumeTransition.NextState.Stopped;
 		SetActive(theApp.IsConnected());
 		m_LastSearchTime = 0;
 		if (resort) {
 			theApp.downloadqueue->SortByPriority();
 			theApp.downloadqueue->CheckDiskspace();
 		}
-		SavePartFile();
-		NotifyStatusChange();
+		if (resumeTransition.ShouldSavePartFile)
+			SavePartFile();
+		if (resumeTransition.ShouldNotifyStatusChange)
+			NotifyStatusChange();
 
 		UpdateDisplayedInfo(true);
 	}
@@ -3411,8 +3454,10 @@ void CPartFile::ResumeFile(bool resort)
 void CPartFile::ResumeFileInsufficient()
 {
 	if (status != PS_COMPLETE && status != PS_COMPLETING && m_insufficient) {
+		const PartFilePauseResumeSeams::TransitionResult resumeTransition = PartFilePauseResumeSeams::ApplyInsufficientResumeTransition(
+			PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
 		AddLogLine(false, _T("Resuming download of \"%s\""), (LPCTSTR)GetFileName());
-		m_insufficient = false;
+		m_insufficient = resumeTransition.NextState.Insufficient;
 		SetActive(theApp.IsConnected());
 		m_LastSearchTime = 0;
 		UpdateDisplayedInfo(true);
@@ -3550,9 +3595,7 @@ bool CPartFile::IsReadyForPreview() const
 			return false;
 
 		// check free disk space
-		uint64 uMinFreeDiskSpace = (thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0)
-			? thePrefs.GetMinFreeDiskSpace()
-			: 20 * 1024 * 1024;
+		uint64 uMinFreeDiskSpace = thePrefs.GetMinFreeDiskSpace();
 		if (thePrefs.GetPreviewCopiedArchives())
 			uMinFreeDiskSpace += (uint64)m_nFileSize * 2;
 		else
@@ -4058,7 +4101,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 
 	try {
 		ULONGLONG cursize = m_hpartfile.GetLength();
-		bool bCheckDiskspace = thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0;
+		const ULONGLONG uMinFreeDiskSpace = thePrefs.GetMinFreeDiskSpace();
 		//Previously full file allocation was performed in a special thread. That thread was writing
 		// 1 byte at the end of file. Overlapped I/O is already in a separate thread, and synchronising
 		// 3 threads could be fun. This fun may be avoided by using overlapped I/O for allocation too,
@@ -4085,10 +4128,10 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 		} else
 			newsize = 0; // not calling SetLength
 
-		// Check free disk space if required
-		if (bCheckDiskspace) {
+		// Check free disk space against the enforced minimum.
+		if (uMinFreeDiskSpace > 0) {
 			ULONGLONG uFreeDiskSpace = GetFreeDiskSpaceX(GetTmpPath());
-			ULONGLONG uIncrease = thePrefs.GetMinFreeDiskSpace();
+			ULONGLONG uIncrease = uMinFreeDiskSpace;
 			if (IsNormalFile()) {
 				if (newsize > cursize)
 					uIncrease += newsize - cursize;
@@ -4268,7 +4311,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 			// If using a normal file, we could avoid disk space check if the file was not increased.
 			// If using a compressed or sparse file, we always have to check the space
 			// regardless whether the file was increased in size or not.
-			if (bCheckDiskspace && !IsNormalFile()) {
+			if (uMinFreeDiskSpace > 0 && !IsNormalFile()) {
 				switch (GetStatus()) {
 				case PS_PAUSED:
 				case PS_ERROR:
@@ -4276,7 +4319,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 				case PS_COMPLETE:
 					break;
 				default:
-					if (GetFreeDiskSpaceX(GetTmpPath()) < thePrefs.GetMinFreeDiskSpace()) {
+					if (GetFreeDiskSpaceX(GetTmpPath()) < uMinFreeDiskSpace) {
 						// Compressed/sparse files: always pause the file
 						// Normal files: pause the file only if it would still grow
 						//if (!IsNormalFile() || GetNeededSpace() > 0)
@@ -4296,7 +4339,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 
 void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 {
-	if (thePrefs.IsCheckDiskspaceEnabled() && ex->m_cause == CFileException::diskFull) {
+	if (ex->m_cause == CFileException::diskFull) {
 		CString msg;
 		msg.Format(GetResString(IDS_ERR_OUTOFSPACE), (LPCTSTR)GetFileName());
 		LogError(LOG_STATUSBAR, msg);
@@ -4305,10 +4348,7 @@ void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 
 		// 'CFileException::diskFull' is also used for 'not enough min. free space'
 		if (!theApp.IsClosing())
-			if (thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() == 0)
-				theApp.downloadqueue->CheckDiskspace(true);
-			else
-				PauseFile(true);
+			PauseFile(true);
 	} else {
 		if (thePrefs.IsErrorBeepEnabled())
 			Beep(800, 200);

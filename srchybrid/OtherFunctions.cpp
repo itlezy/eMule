@@ -37,6 +37,7 @@
 #include "RarFile.h"
 #include "shahashset.h"
 #include "collection.h"
+#include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "Kademlia/Kademlia/kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -315,6 +316,16 @@ void CommitAndClose(CStdioFile &file)
 			AfxThrowFileException(CFileException::hardIO, ::GetLastError(), file.GetFileName());
 	}
 	file.Close();
+}
+
+bool ReplaceFileAtomically(const CString &strSrc, const CString &strDst, DWORD *pdwLastError)
+{
+	return PartFilePersistenceSeams::TryReplaceFileAtomically(strSrc, strDst, pdwLastError);
+}
+
+bool CopyFileToTempAndReplace(const CString &strSrc, const CString &strDst, const CString &strTmp, const bool bDontOverride, DWORD *pdwLastError)
+{
+	return PartFilePersistenceSeams::TryCopyFileToTempAndReplace(strSrc, strDst, strTmp, bDontOverride, pdwLastError);
 }
 
 HINSTANCE BrowserOpen(LPCTSTR lpURL, LPCTSTR lpDirectory)

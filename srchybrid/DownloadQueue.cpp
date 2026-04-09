@@ -37,6 +37,7 @@
 #include "TaskbarNotifier.h"
 #include "MenuCmds.h"
 #include "Log.h"
+#include "DownloadQueueDiskSpaceSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -44,6 +45,71 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	using DownloadQueueDiskSpaceSeams::FileDiskSpaceState;
+	using DownloadQueueDiskSpaceSeams::FileDiskSpaceStatus;
+	using DownloadQueueDiskSpaceSeams::VolumeKey;
+	using DownloadQueueDiskSpaceSeams::VolumeResumeBudget;
+
+	VolumeKey ResolveDiskSpaceVolumeKey(const CString &path)
+	{
+		VolumeKey volumeKey = { GetPathDriveNumber(path), std::wstring() };
+		if (volumeKey.DriveNumber >= 0)
+			return volumeKey;
+
+		CString sShare = GetShareName(path);
+		sShare.MakeLower();
+		volumeKey.ShareName = static_cast<LPCTSTR>(sShare);
+		return volumeKey;
+	}
+
+	FileDiskSpaceStatus ResolveFileDiskSpaceStatus(const CPartFile &rFile)
+	{
+		switch (rFile.GetStatus()) {
+		case PS_PAUSED:
+			return FileDiskSpaceStatus::Paused;
+		case PS_INSUFFICIENT:
+			return FileDiskSpaceStatus::Insufficient;
+		case PS_ERROR:
+			return FileDiskSpaceStatus::Error;
+		case PS_COMPLETING:
+			return FileDiskSpaceStatus::Completing;
+		case PS_COMPLETE:
+			return FileDiskSpaceStatus::Complete;
+		default:
+			return FileDiskSpaceStatus::Active;
+		}
+	}
+
+	FileDiskSpaceState BuildFileDiskSpaceState(const CPartFile &rFile)
+	{
+		FileDiskSpaceState state = {
+			ResolveFileDiskSpaceStatus(rFile),
+			ResolveDiskSpaceVolumeKey(rFile.GetTmpPath()),
+			rFile.IsNormalFile(),
+			rFile.GetNeededSpace()
+		};
+		return state;
+	}
+
+	INT_PTR FindDiskSpaceVolumeBudget(const CArray<VolumeResumeBudget, const VolumeResumeBudget&> &aVolumeBudgets, const VolumeKey &rVolumeKey)
+	{
+		for (INT_PTR i = 0; i < aVolumeBudgets.GetCount(); ++i) {
+			if (DownloadQueueDiskSpaceSeams::IsSameVolumeKey(aVolumeBudgets[i].TempVolumeKey, rVolumeKey))
+				return i;
+		}
+		return -1;
+	}
+
+	uint64 GetFileDiskSpaceFreeBytes(const CString &sTmpPath, const bool bNotEnoughSpaceLeft, const uint64 nTotalAvailableSpaceMain)
+	{
+		if (bNotEnoughSpaceLeft)
+			return 0;
+
+		return thePrefs.GetTempDirCount() == 1 ? nTotalAvailableSpaceMain : GetFreeDiskSpaceX(sTmpPath);
+	}
+}
 
 CDownloadQueue::CDownloadQueue()
 	: cur_udpserver()
@@ -969,57 +1035,49 @@ void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 	// sorting the list could be done here, but I prefer to "see" that function call in the calling functions.
 	//SortByPriority();
 
-	// If disabled, resume any previously paused files
-	if (!thePrefs.IsCheckDiskspaceEnabled()) {
-		if (!bNotEnoughSpaceLeft) // avoid the worst case, if we already had 'disk full'
-			for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
-				CPartFile *cur_file = filelist.GetNext(pos);
-				switch (cur_file->GetStatus()) {
-				case PS_PAUSED:
-				case PS_ERROR:
-				case PS_COMPLETING:
-				case PS_COMPLETE:
-					break;
-				default:
-					cur_file->ResumeFileInsufficient();
-				}
-			}
-		return;
-	}
-
 	// 'bNotEnoughSpaceLeft' - avoid worse case of having already 'disk full'
-	uint64 nTotalAvailableSpaceMain = bNotEnoughSpaceLeft ? 0 : GetFreeDiskSpaceX(thePrefs.GetTempDir());
+	const uint64 nMinimumFreeBytes = thePrefs.GetMinFreeDiskSpace();
+	const uint64 nTotalAvailableSpaceMain = bNotEnoughSpaceLeft ? 0 : GetFreeDiskSpaceX(thePrefs.GetTempDir());
 
 	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
 		CPartFile *cur_file = filelist.GetNext(pos);
+		const FileDiskSpaceState state = BuildFileDiskSpaceState(*cur_file);
+		const uint64 nTotalAvailableSpace = GetFileDiskSpaceFreeBytes(cur_file->GetTmpPath(), bNotEnoughSpaceLeft, nTotalAvailableSpaceMain);
+		if (DownloadQueueDiskSpaceSeams::ShouldPauseForDiskSpace(state, nTotalAvailableSpace, nMinimumFreeBytes))
+			cur_file->PauseFile(true);
+	}
 
-		switch (cur_file->GetStatus()) {
-		case PS_PAUSED:
-		case PS_ERROR:
-		case PS_COMPLETING:
-		case PS_COMPLETE:
-			break;
-		default:
-			uint64 nTotalAvailableSpace = bNotEnoughSpaceLeft ? 0 :
-				((thePrefs.GetTempDirCount() == 1) ? nTotalAvailableSpaceMain : GetFreeDiskSpaceX(cur_file->GetTmpPath()));
-			if (thePrefs.GetMinFreeDiskSpace() == 0) {
-				// Pause the file only if it would grow in size and would exceed the currently available free space
-				if (cur_file->GetNeededSpace() <= nTotalAvailableSpace)
-					cur_file->ResumeFileInsufficient();
-				else
-					cur_file->PauseFile(true);
-			} else if (nTotalAvailableSpace < thePrefs.GetMinFreeDiskSpace()) {
-				// Compressed/sparse files: always pause the file
-				// Normal files: pause the file only if it would still grow
-				if (!cur_file->IsNormalFile() || cur_file->GetNeededSpace() > 0)
-					cur_file->PauseFile(true);
-			} else {
-				// Doesn't work this way. Resuming the file without checking if there is a chance to successfully
-				// flush any available buffered file data will pause the file right after it was resumed and disturb
-				// the StopPausedFile function.
-				//cur_file->ResumeFileInsufficient();
-			}
+	CArray<VolumeResumeBudget, const VolumeResumeBudget&> aVolumeBudgets;
+	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
+		CPartFile *cur_file = filelist.GetNext(pos);
+		const FileDiskSpaceState state = BuildFileDiskSpaceState(*cur_file);
+		if (!DownloadQueueDiskSpaceSeams::IsResumeCandidate(state.Status))
+			continue;
+
+		const CString sTmpPath(cur_file->GetTmpPath());
+		INT_PTR iBudget = FindDiskSpaceVolumeBudget(aVolumeBudgets, state.TempVolumeKey);
+		if (iBudget < 0) {
+			VolumeResumeBudget volumeBudget = {
+				state.TempVolumeKey,
+				GetFileDiskSpaceFreeBytes(sTmpPath, bNotEnoughSpaceLeft, nTotalAvailableSpaceMain),
+				0
+			};
+			aVolumeBudgets.Add(volumeBudget);
+			iBudget = aVolumeBudgets.GetUpperBound();
 		}
+
+		DownloadQueueDiskSpaceSeams::AccumulateResumeHeadroom(&aVolumeBudgets[iBudget], state);
+	}
+
+	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
+		CPartFile *cur_file = filelist.GetNext(pos);
+		const FileDiskSpaceState state = BuildFileDiskSpaceState(*cur_file);
+		if (!DownloadQueueDiskSpaceSeams::IsResumeCandidate(state.Status))
+			continue;
+
+		const INT_PTR iBudget = FindDiskSpaceVolumeBudget(aVolumeBudgets, state.TempVolumeKey);
+		if (iBudget >= 0 && DownloadQueueDiskSpaceSeams::ShouldResumeForDiskSpace(state, aVolumeBudgets[iBudget], nMinimumFreeBytes))
+			cur_file->ResumeFileInsufficient();
 	}
 }
 
@@ -1707,7 +1765,7 @@ CString CDownloadQueue::GetOptimalTempDir(UINT nCat, EMFileSize nFileSize)
 
 		if (i >= j) {
 			aDrive[i].iDrive = iDrive;
-			sint64 llSpace = GetFreeDiskSpaceX(sDir) - thePrefs.GetMinFreeDiskSpace();
+			const sint64 llSpace = static_cast<sint64>(GetFreeDiskSpaceX(sDir)) - static_cast<sint64>(thePrefs.GetMinFreeDiskSpace());
 			if (llSpace > llHighestFreeSpace) {
 				nHighestFreeSpaceDrive = i;
 				llHighestFreeSpace = llSpace;
