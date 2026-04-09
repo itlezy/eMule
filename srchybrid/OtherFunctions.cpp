@@ -873,16 +873,34 @@ UINT GetMaxWindowsTCPConnections()
 	return UNLIMITED;
 }
 
+/**
+ * Queries the real NT version through ntdll without relying on deprecated
+ * manifest-sensitive version APIs.
+ */
+static bool TryGetRealWindowsVersion(OSVERSIONINFOEXW *pVersionInfo)
+{
+	if (pVersionInfo == NULL)
+		return false;
+
+	memset(pVersionInfo, 0, sizeof(*pVersionInfo));
+	pVersionInfo->dwOSVersionInfoSize = sizeof(*pVersionInfo);
+	typedef LONG (WINAPI *RtlGetVersionFn)(OSVERSIONINFOW*);
+	HMODULE hNtdll = ::GetModuleHandle(_T("ntdll.dll"));
+	if (hNtdll == NULL)
+		return false;
+
+	RtlGetVersionFn pfnRtlGetVersion = reinterpret_cast<RtlGetVersionFn>(::GetProcAddress(hNtdll, "RtlGetVersion"));
+	if (pfnRtlGetVersion == NULL)
+		return false;
+
+	return pfnRtlGetVersion(reinterpret_cast<OSVERSIONINFOW*>(pVersionInfo)) == 0;
+}
+
 WORD DetectWinVersion()
 {
-	OSVERSIONINFOEX osvi;
-	osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFOEX);
-
-	if (!GetVersionEx((OSVERSIONINFO*)&osvi)) {
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFO);
-		if (!GetVersionEx((OSVERSIONINFO*)&osvi))
-			return 0;
-	}
+	OSVERSIONINFOEXW osvi;
+	if (!TryGetRealWindowsVersion(&osvi))
+		return _WINVER_VISTA_;
 
 	switch (osvi.dwPlatformId) {
 	case VER_PLATFORM_WIN32_NT:
