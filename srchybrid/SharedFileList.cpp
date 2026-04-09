@@ -1235,8 +1235,10 @@ void CSharedFileList::Process()
 
 void CSharedFileList::Publish()
 {
+	const bool bBypassFirewallGateForParitySeed = theApp.IsParityHarnessSeedPublisher();
 	if (!Kademlia::CKademlia::IsConnected()
-		|| (theApp.IsFirewalled()
+		|| (!bBypassFirewallGateForParitySeed
+			&& theApp.IsFirewalled()
 			&& theApp.clientlist->GetBuddyStatus() != Connected
 			//direct callback
 			&& (Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) || !Kademlia::CUDPFirewallTester::IsVerified())

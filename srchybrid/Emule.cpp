@@ -374,6 +374,12 @@ bool CemuleApp::IsParityHarnessMode() const
 		|| _tcsicmp(pszFileName, _T("eMule_v060_parity.exe")) == 0;
 }
 
+bool CemuleApp::IsParityHarnessSeedPublisher() const
+{
+	return IsParityHarnessMode()
+		&& (!m_strParityHarnessShareFile.IsEmpty() || !m_strParityHarnessExportLinkFile.IsEmpty());
+}
+
 void CemuleApp::ApplyPendingParityHarnessActions()
 {
 	if (m_bParityHarnessBootstrapIssued || m_strParityHarnessBootstrapPeers.IsEmpty())
