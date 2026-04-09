@@ -53,11 +53,9 @@
 #include "Server.h"
 #include "ED2KLink.h"
 #include "Preferences.h"
-#include "secrunasuser.h"
 #include "SafeFile.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
-#include "FirewallOpener.h"
 #include "StringConversion.h"
 #include "Log.h"
 #include "Collection.h"
@@ -74,12 +72,8 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 
-#if _MSC_VER>=1400 && defined(_UNICODE)
-#if defined _M_IX86
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#elif defined _M_IA64
-#pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='ia64' publicKeyToken='6595b64144ccf1df' language='*'\"")
-#elif defined _M_X64
+#ifdef _UNICODE
+#if defined _M_X64
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='amd64' publicKeyToken='6595b64144ccf1df' language='*'\"")
 #elif defined _M_ARM64
 #pragma comment(linker,"/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='arm64' publicKeyToken='6595b64144ccf1df' language='*'\"")
@@ -128,44 +122,10 @@ static bool TryGetVolumeRootPath(const CString &strPath, CString *pstrVolumeRoot
 	return true;
 }
 
-#ifdef _M_IX86
-///////////////////////////////////////////////////////////////////////////////
-// SafeSEH - Safe Exception Handlers
-//
-// This security feature must be enabled at compile time, due to using the
-// linker command line option "/SafeSEH". Depending on the used libraries and
-// object files which are used to link eMule.exe, the linker may or may not
-// throw some errors about 'safeseh'. Those errors have to get resolved until
-// the linker is capable of linking eMule.exe *with* "/SafeSEH".
-//
-// At runtime, we just can check if the linker created an according SafeSEH
-// exception table in the '__safe_se_handler_table' object. If SafeSEH was not
-// specified at all during link time, the address of '__safe_se_handler_table'
-// is NULL -> hence, no SafeSEH is enabled.
-///////////////////////////////////////////////////////////////////////////////
-extern "C" PVOID __safe_se_handler_table[];
-extern "C" BYTE  __safe_se_handler_count;
-
-static void InitSafeSEH()
-{
-	// Need to workaround the optimizer of the C-compiler...
-	volatile PVOID safe_se_handler_table = __safe_se_handler_table;
-	if (safe_se_handler_table == NULL)
-		AfxMessageBox(_T("eMule.exe was not linked with /SafeSEH!"), MB_ICONSTOP);
-}
-#endif //_M_IX86
-
 ///////////////////////////////////////////////////////////////////////////////
 // DEP - Data Execution Prevention
 //
-// For Windows XP SP2 and later. Does *not* have any performance impact!
-//
-// VS2003:	DEP must be enabled dynamically because the linker does not support
-//			the "/NXCOMPAT" command line option.
-// VS2005:	DEP can get enabled at link time by using the "/NXCOMPAT" command
-//			line option.
-// VS2008:	DEP can get enabled at link time by using the "DEP" option within
-//			'Visual Studio Linker Advanced Options'.
+// Enables DEP dynamically when the process policy is not already permanent.
 //
 #ifndef PROCESS_DEP_ENABLE
 #define	PROCESS_DEP_ENABLE						0x00000001
@@ -182,40 +142,6 @@ static void InitDEP()
 		DWORD dwFlags;
 		BOOL bPermanent;
 		if ((*pfnGetProcessDEPPolicy)(::GetCurrentProcess(), &dwFlags, &bPermanent)) {
-			// Vista SP1
-			// ===============================================================
-			//
-			// BOOT.INI nx=OptIn,  VS2003/VS2005
-			// ---------------------------------
-			// DEP flags: 00000000
-			// Permanent: 0
-			//
-			// BOOT.INI nx=OptOut, VS2003/VS2005
-			// ---------------------------------
-			// DEP flags: 00000001 (PROCESS_DEP_ENABLE)
-			// Permanent: 0
-			//
-			// BOOT.INI nx=OptIn/OptOut, VS2003 + EditBinX/NXCOMPAT
-			// ----------------------------------------------------
-			// DEP flags: 00000003 (PROCESS_DEP_ENABLE | *PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION*)
-			// Permanent: *1*
-			// ---
-			// There is no way to remove the PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION flag at runtime,
-			// because the DEP policy is already permanent due to the NXCOMPAT flag.
-			//
-			// BOOT.INI nx=OptIn/OptOut, VS2005 + /NXCOMPAT
-			// --------------------------------------------
-			// DEP flags: 00000003 (PROCESS_DEP_ENABLE | PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION)
-			// Permanent: *1*
-			//
-			// NOTE: It is ultimately important to explicitly enable the DEP policy even if the
-			// process' DEP policy is already enabled. If the DEP policy is already enabled due
-			// to an OptOut system policy, the DEP policy is though not yet permanent. As long as
-			// the DEP policy is not permanent it could get changed during runtime...
-			//
-			// So, if the DEP policy for the current process is already enabled but not permanent,
-			// it has to be explicitly enabled by calling 'SetProcessDEPPolicy' to make it permanent.
-			//
 			if (((dwFlags & PROCESS_DEP_ENABLE) == 0 || !bPermanent)
 #if _ATL_VER>0x0710
 				|| (dwFlags & PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION) == 0
@@ -223,15 +149,7 @@ static void InitDEP()
 
 				)
 			{
-				 // VS2003:	Enable DEP (with ATL-thunk emulation) if not already set by system policy
-				 //			or if the policy is not yet permanent.
-				 //
-				 // VS2005:	Enable DEP (without ATL-thunk emulation) if not already set by system policy
-				 //			or linker "/NXCOMPAT" option or if the policy is not yet permanent. We should
-				 //			not reach this code path at all because the "/NXCOMPAT" option is specified.
-				 //			However, the code path is here for safety reasons.
 				dwFlags = PROCESS_DEP_ENABLE;
-				// VS2005: Disable ATL thunks.
 				dwFlags |= PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION;
 				(*pfnSetProcessDEPPolicy)(dwFlags);
 			}
@@ -297,7 +215,7 @@ void CemuleApp::InvalidatePartMetWriteGuardCache(LPCTSTR pszPath)
 ///////////////////////////////////////////////////////////////////////////////
 // Heap Corruption Detection
 //
-// For Windows XP SP3 and later. Does *not* have any performance impact!
+// Enables heap termination-on-corruption when the platform supports it.
 //
 #ifndef HeapEnableTerminationOnCorruption
 #define HeapEnableTerminationOnCorruption (HEAP_INFORMATION_CLASS)1
@@ -366,9 +284,6 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bStandbyOff()
 {
 	// Initialize Windows security features.
-#if !defined(_DEBUG) && !defined(_WIN64)
-	InitSafeSEH();
-#endif
 	InitDEP();
 	InitHeapCorruptionDetection();
 
@@ -519,25 +434,8 @@ BOOL CemuleApp::InitInstance()
 	///////////////////////////////////////////////////////////////////////////
 	// Common Controls initialization
 	//
-	//						Mjr Min
-	// ----------------------------
-	// W98 SE, IE5			5	8
-	// W2K SP4, IE6 SP1		5	81
-	// XP SP2				6   0
-	// XP SP3				6   0
-	// Vista SP1			6   16
 	InitCommonControls();
-	switch (thePrefs.GetWindowsVersion()) {
-	case _WINVER_2K_:
-		m_ullComCtrlVer = MAKEDLLVERULL(5, 81, 0, 0);
-		break;
-	case _WINVER_XP_:
-	case _WINVER_2003_:
-		m_ullComCtrlVer = MAKEDLLVERULL(6, 0, 0, 0);
-		break;
-	default:  //Vista .. Win11
-		m_ullComCtrlVer = MAKEDLLVERULL(6, 16, 0, 0);
-	};
+	m_ullComCtrlVer = MAKEDLLVERULL(6, 16, 0, 0);
 
 	m_sizSmallSystemIcon.cx = ::GetSystemMetrics(SM_CXSMICON);
 	m_sizSmallSystemIcon.cy = ::GetSystemMetrics(SM_CYSMICON);
@@ -569,17 +467,6 @@ BOOL CemuleApp::InitInstance()
 	// create & initialize all the important stuff
 	thePrefs.Init();
 	theStats.Init();
-
-	// check if we have to restart eMule as Secure user
-	if (thePrefs.IsRunAsUserEnabled()) {
-		CSecRunAsUser rau;
-		eResult res = rau.RestartSecure();
-		if (res == RES_OK_NEED_RESTART)
-			return FALSE; // emule restart as secure user, kill this instance
-		if (res == RES_FAILED)
-			// something went wrong
-			theApp.QueueLogLine(false, GetResString(IDS_RAU_FAILED), (LPCTSTR)rau.GetCurrentUserW());
-	}
 
 	if (thePrefs.GetRTLWindowsLayout())
 		EnableRTLWindowsLayout();
@@ -614,30 +501,6 @@ BOOL CemuleApp::InitInstance()
 		Ask4RegFix(false, true, false);
 
 	SetAutoStart(thePrefs.GetAutoStart());
-
-	m_pFirewallOpener = new CFirewallOpener();
-	m_pFirewallOpener->Init(true); // we need to init it now (even if we may not use it yet) because of CoInitializeSecurity - which kinda ruins the sense of the class interface but ooohh well :P
-	// Open WinXP firewall ports if set in preferences and possible
-	if (thePrefs.IsOpenPortsOnStartupEnabled()) {
-		if (m_pFirewallOpener->DoesFWConnectionExist()) {
-			// delete old rules added by eMule
-			m_pFirewallOpener->RemoveRule(EMULE_DEFAULTRULENAME_UDP);
-			m_pFirewallOpener->RemoveRule(EMULE_DEFAULTRULENAME_TCP);
-			// open port for this session
-			if (m_pFirewallOpener->OpenPort(thePrefs.GetPort(), NAT_PROTOCOL_TCP, EMULE_DEFAULTRULENAME_TCP, true))
-				QueueLogLine(false, GetResString(IDS_FO_TEMPTCP_S), thePrefs.GetPort());
-			else
-				QueueLogLine(false, GetResString(IDS_FO_TEMPTCP_F), thePrefs.GetPort());
-
-			if (thePrefs.GetUDPPort()) {
-				// open port for this session
-				if (m_pFirewallOpener->OpenPort(thePrefs.GetUDPPort(), NAT_PROTOCOL_UDP, EMULE_DEFAULTRULENAME_UDP, true))
-					QueueLogLine(false, GetResString(IDS_FO_TEMPUDP_S), thePrefs.GetUDPPort());
-				else
-					QueueLogLine(false, GetResString(IDS_FO_TEMPUDP_F), thePrefs.GetUDPPort());
-			}
-		}
-	}
 
 	// UPnP Port forwarding
 	m_pUPnPFinder = new CUPnPImplWrapper();
@@ -1756,12 +1619,8 @@ void CemuleApp::CreateAllFonts()
 	// (*1) Do not use 'GetStockObject(DEFAULT_GUI_FONT)' to get the 'Tahoma' font. It does
 	// not work...
 	//
-	// The documentation in MSDN states that DEFAULT_GUI_FONT returns 'Tahoma' on
-	// Win2000/XP systems. Though this is wrong, it may be true for US-English locales, but
-	// it is wrong for other locales. Furthermore it is even documented that "MS Shell Dlg"
-	// gets mapped to "MS Sans Serif" on Windows XP systems. Only "MS Shell Dlg 2" would
-	// get mapped to "Tahoma", but "MS Shell Dlg 2" can not be used on prior Windows
-	// systems.
+	// The stock GUI font mapping is inconsistent across locales, so query the main
+	// window font directly instead of relying on DEFAULT_GUI_FONT semantics.
 	//
 	// The reason why "MS Shell Dlg" is though mapped to "Tahoma" when used within dialog
 	// resources is unclear.
@@ -1773,8 +1632,6 @@ void CemuleApp::CreateAllFonts()
 	//
 	LOGFONT lfDefault;
 	AfxGetMainWnd()->GetFont()->GetLogFont(&lfDefault);
-	// WinXP: lfDefault.lfFaceName = "MS Shell Dlg 2" (!)
-	// Vista: lfDefault.lfFaceName = "MS Shell Dlg 2"
 	//
 	// It would not be an error if that font name does not match our pre-determined
 	// font name, I just want to know if that ever happens.
@@ -1792,14 +1649,8 @@ void CemuleApp::CreateAllFonts()
 	///////////////////////////////////////////////////////////////////////////
 	// Server Log-, Message- and IRC-Window font
 	//
-	// Since we use "MS Shell Dlg 2" under WinXP (which will give us "Tahoma"),
-	// that font is nevertheless set to "MS Sans Serif" because a scaled up "Tahoma"
-	// font unfortunately does not look as good as a scaled up "MS Sans Serif" font.
-	//
-	// No! Do *not* use "MS Sans Serif" (never!). This will give a very old fashioned
-	// font on certain Asian Windows systems. So, better use "MS Shell Dlg" or
-	// "MS Shell Dlg 2" to let Windows map that font to the proper font on all Windows
-	// systems.
+	// Keep using the dialog-mapped shell font family here. Hard-coding legacy GUI
+	// fonts causes poor results on localized systems.
 	//
 	LPLOGFONT plfHyperText = thePrefs.GetHyperTextLogFont();
 	if (plfHyperText->lfFaceName[0] == _T('\0') || !m_fontHyperText.CreateFontIndirect(plfHyperText))
@@ -1819,31 +1670,13 @@ void CemuleApp::CreateAllFonts()
 	// Font used for Message and IRC edit control, default font, just a little
 	// larger.
 	//
-	// Since we use "MS Shell Dlg 2" under WinXP (which will give us "Tahoma"),
-	// that font is nevertheless set to "MS Sans Serif" because a scaled up "Tahoma"
-	// font unfortunately does not look as good as a scaled up "MS Sans Serif" font.
-	//
-	// No! Do *not* use "MS Sans Serif" (never!). This will give a very old fashioned
-	// font on certain Asian Windows systems. So, better use "MS Shell Dlg" or
-	// "MS Shell Dlg 2" to let Windows map that font to the proper font on all Windows
-	// systems.
+	// Keep using the dialog-mapped shell font family here as well.
 	//
 	CreatePointFont(m_fontChatEdit, 11 * 10, lfDefault.lfFaceName);
 }
 
 const CString& CemuleApp::GetDefaultFontFaceName()
 {
-/* Support for old Windows was dropped
-	if (m_strDefaultFontFaceName.IsEmpty()) {
-		OSVERSIONINFO osvi;
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof osvi;
-		if (GetVersionEx(&osvi)
-			&& osvi.dwPlatformId == VER_PLATFORM_WIN32_NT
-			&& osvi.dwMajorVersion >= 5) // Win2000/XP or higher
-			m_strDefaultFontFaceName = _T("MS Shell Dlg 2");
-		else
-			m_strDefaultFontFaceName = _T("MS Shell Dlg");
-	}*/
 	return m_strDefaultFontFaceName;
 }
 
@@ -1879,7 +1712,7 @@ void CemuleApp::UpdateDesktopColorDepth()
 		// Don't use 32-bit image lists if not supported by COMCTL32.DLL
 		if (m_iDfltImageListColorFlags == ILC_COLOR32 && m_ullComCtrlVer < MAKEDLLVERULL(6, 0, 0, 0)) {
 			// We fall back to 16-bit image lists because we do not provide 24-bit
-			// versions of icons any longer (due to resource size restrictions for Win98). We
+			// versions of icons any longer.
 			// could also fall back to 24-bit image lists here but the difference is minimal
 			// and considered not to be worth the additional memory consumption.
 			//

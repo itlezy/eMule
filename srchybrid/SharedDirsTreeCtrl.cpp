@@ -108,7 +108,6 @@ void CSharedDirsTreeCtrl::Initialize(CSharedFilesCtrl *pSharedFilesCtrl)
 {
 	m_pSharedFilesCtrl = pSharedFilesCtrl;
 
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 
 	m_bUseIcons = true;

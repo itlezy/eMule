@@ -20,8 +20,8 @@
 #include "TreePropSheetPgFrame.h"
 
 /**
-An implementation of CPropPageFrame, that works well for Windows XP
-styled systems and older windows versions (without themes).
+An implementation of CPropPageFrame that works well with themed and
+classic property sheet rendering.
 
 @author Sven Wiegand
 */
@@ -62,8 +62,7 @@ protected:
 	void FillGradientRectH(CDC *pDc, const CRect &rect, COLORREF clrLeft, COLORREF clrRight);
 
 	/**
-	Returns TRUE if Windows XP theme support is available, FALSE
-	otherwise.
+	Returns TRUE if visual style support is available, FALSE otherwise.
 	*/
 //	BOOL ThemeSupport() const;
 

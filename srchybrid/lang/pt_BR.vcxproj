@@ -5,10 +5,6 @@
       <Configuration>Dynamic</Configuration>
       <Platform>ARM64</Platform>
     </ProjectConfiguration>
-    <ProjectConfiguration Include="Dynamic|Win32">
-      <Configuration>Dynamic</Configuration>
-      <Platform>Win32</Platform>
-    </ProjectConfiguration>
     <ProjectConfiguration Include="Dynamic|x64">
       <Configuration>Dynamic</Configuration>
       <Platform>x64</Platform>

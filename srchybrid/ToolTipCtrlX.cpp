@@ -61,7 +61,6 @@ void CToolTipCtrlX::SetCol2DrawTextFlags(DWORD dwFlags)
 BOOL CToolTipCtrlX::SubclassWindow(HWND hWnd)
 {
 	BOOL bResult = __super::SubclassWindow(hWnd);
-	// Win98/Win2000: Preventive, turning off tooltip animations should help in getting around
 	// some glitches when using customized tooltip drawing. Though, doesn't seem to help a lot.
 	if (theApp.m_ullComCtrlVer <= MAKEDLLVERULL(5, 81, 0, 0))
 		ModifyStyle(0, TTS_NOANIMATE | TTS_NOFADE);
@@ -131,11 +130,9 @@ void CToolTipCtrlX::CustomPaint(LPNMTTCUSTOMDRAW pNMCD)
 	// So, actually we can use the Vista 'TOOLTIP' theme only for getting the proper
 	// tooltip background.
 	//
-	// Windows XP
 	// ----------
 	// Can *not* use the 'TOOLTIP' theme at all because it would give us only a (non-bold)
 	// black font on a white tooltip window background. Seems that the 'TOOLTIP' theme under
-	// WinXP is just using the default Window values (black + white) and does not
 	// use any of the tooltip specific Window metrics...
 	//
 	bool bUseEmbeddedThemeFonts = false;
@@ -449,7 +446,7 @@ void CToolTipCtrlX::CustomPaint(LPNMTTCUSTOMDRAW pNMCD)
 					} else {
 						// Text is written in the currently selected font. If 'nTabPositions' is 0 and 'lpnTabStopPositions' is NULL,
 						// tabs are expanded to eight times the average character width.
-						if (strLine.IsEmpty()) // Win98: To draw an empty line we need to output at least a space.
+						if (strLine.IsEmpty())
 							siz = pdc->TabbedTextOut(ptText.x, ptText.y, _T(" "), 1, NULL, 0);
 						else
 							siz = pdc->TabbedTextOut(ptText.x, ptText.y, strLine, strLine.GetLength(), NULL, 0);
@@ -500,7 +497,6 @@ BOOL CToolTipCtrlX::OnTTShow(LPNMHDR pNMHDR, LRESULT *pResult)
 {
 	//DebugLog(_T("OnTTShow: rcScreen: %d,%d-%d,%d: styles=%08x  exStyles=%08x"), m_rcScreen, GetStyle(), ::GetWindowLongPtr(m_hWnd, GWL_EXSTYLE));
 
-	// Win98/Win2000: The only chance to resize a tooltip window is to do it within the TTN_SHOW notification.
 	if (theApp.m_ullComCtrlVer <= MAKEDLLVERULL(5, 81, 0, 0)) {
 		NMTTCUSTOMDRAW nmttcd = {};
 		nmttcd.uDrawFlags = DT_NOPREFIX | DT_CALCRECT | DT_EXTERNALLEADING | DT_EXPANDTABS | DT_WORDBREAK;
@@ -513,11 +509,8 @@ BOOL CToolTipCtrlX::OnTTShow(LPNMHDR pNMHDR, LRESULT *pResult)
 		CRect rcWnd(nmttcd.nmcd.rc);
 		AdjustRect(&rcWnd);
 
-		// Win98/Win2000: We have to explicitly ensure that the tooltip window remains within the visible desktop window.
 		EnsureWindowVisible(m_rcScreen, rcWnd);
 
-		// Win98/Win2000: The only chance to resize a tooltip window is to do it within the TTN_SHOW notification.
-		// Win98/Win2000: Must *not* specify 'SWP_NOZORDER' - some of the tooltip windows may get drawn behind(!) the application window!
 		::SetWindowPos(pNMHDR->hwndFrom, NULL, rcWnd.left, rcWnd.top, rcWnd.Width(), rcWnd.Height(), SWP_NOACTIVATE /*| SWP_NOZORDER*/);
 
 		return (BOOL)(*pResult = 1); // Windows API: Suppress default positioning
@@ -552,8 +545,6 @@ void CToolTipCtrlX::OnNmCustomDraw(LPNMHDR pNMHDR, LRESULT *pResult)
 	//DebugLog(_T("OnNmCustomDraw: DrawFlags=%08x DrawStage=%08x ItemSpec=%08x ItemState=%08x ItemlParam=%08x rc=%4d,%4d,(%4dx%4d), styles=%08x  exStyles=%08x"), pNMCD->uDrawFlags, pNMCD->nmcd.dwDrawStage, pNMCD->nmcd.dwItemSpec, pNMCD->nmcd.uItemState, pNMCD->nmcd.lItemlParam, pNMCD->nmcd.rc.left, pNMCD->nmcd.rc.top, pNMCD->nmcd.rc.right - pNMCD->nmcd.rc.left, pNMCD->nmcd.rc.bottom - pNMCD->nmcd.rc.top, GetStyle(), ::GetWindowLongPtr(m_hWnd, GWL_EXSTYLE));
 
 	if (theApp.m_ullComCtrlVer <= MAKEDLLVERULL(5, 81, 0, 0)) {
-		// Win98/Win2000: Resize and position the tooltip window in TTN_SHOW.
-		// Win98/Win2000: Customize the tooltip window in CDDS_POSTPAINT.
 		if (pNMCD->nmcd.dwDrawStage == CDDS_PREPAINT) {
 			// PROBLEM: Windows will draw the default tooltip during the non-DT_CALCRECT cycle,
 			// and if the system is very slow (or when using remote desktop), the default tooltip

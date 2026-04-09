@@ -285,8 +285,7 @@ BOOL CMuleSystrayDlg::OnInitDialog()
 	CFont Font;
 	Font.CreateFont(-16, 0, 900, 0, 700, 0, 0, 0, 0, 3, 2, 1, 34, _T("Tahoma"));
 
-	UINT winver = thePrefs.GetWindowsVersion();
-	int iClr = (winver == _WINVER_95_ || winver == _WINVER_NT4_ || g_bLowColorDesktop)
+	int iClr = g_bLowColorDesktop
 		? COLOR_ACTIVECAPTION : COLOR_GRADIENTACTIVECAPTION;
 	m_ctrlSidebar.SetColors(::GetSysColor(COLOR_CAPTIONTEXT), ::GetSysColor(COLOR_ACTIVECAPTION), ::GetSysColor(iClr));
 

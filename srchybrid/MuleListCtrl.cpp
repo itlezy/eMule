@@ -112,7 +112,6 @@ void CMuleListCtrl::PreSubclassWindow()
 {
 	SetColors();
 	CListCtrl::PreSubclassWindow();
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 	SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
@@ -363,33 +362,7 @@ HBITMAP LoadImageAsPARGB(LPCTSTR pszPath)
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok) {
 		Gdiplus::Bitmap bmp(pszPath);
-#if 0
-		Gdiplus::Rect rc(0, 0, bmp.GetWidth(), bmp.GetHeight());
-		// For PNGs with RGBA, it does not make any difference whether the pixel format is specified as:
-		//
-		//	PixelFormat32bppPARGB	(the supposed correct one)
-		//	PixelFormat32bppARGB	(could also work)
-		//	PixelFormat32bppRGB		(should not work)
-		//	PixelFormat24bppRGB		(should not work at all)
-		//
-		// The returned bitmap always contains a correct alpha channel !?
-		//
-		// For ICOs with RGBA, it also does not make any difference what the pixel format is set to, the
-		// returned bitmap is always *wrong* (no alpha).
-		//
-		Gdiplus::Bitmap *pBmpPARGB = bmp.Clone(rc, PixelFormat32bppPARGB);
-		if (pBmpPARGB) {
-			// Regardless whether a PNG or ICO was loaded and regardless what pixel format was specified,
-			// the pixel format here is always 'PixelFormat32bppARGB' !?
-			Gdiplus::PixelFormat pf = pBmpPARGB->GetPixelFormat();
-			ASSERT(pf == PixelFormat32bppARGB);
-
-			pBmpPARGB->GetHBITMAP(NULL, &hbmPARGB);
-			delete pBmpPARGB;
-		}
-#else
 		bmp.GetHBITMAP(NULL, &hbmPARGB);
-#endif
 	}
 	Gdiplus::GdiplusShutdown(gdiplusToken);
 	return hbmPARGB;
@@ -449,21 +422,6 @@ void CMuleListCtrl::SetColors()
 			szFullResPath[_countof(szFullResPath) - 1] = _T('\0');
 		}
 
-#if 0
-		// Explicitly check if the file exists, because 'SetBkImage' will return TRUE even if the file does not exist.
-		if (LongPathSeams::PathExists(szFullResPath)) {
-			// This places the bitmap near the bottom-right border of the client area. But due to that
-			// the position is specified via percentages, the bitmap is never exactly at the bottom
-			// right border, it depends on the window's height. Apart from that, the bitmap gets
-			// scrolled(!) with the window contents.
-			CString strUrl(_T("file:///"));
-			strUrl += szFullResPath;
-			if (SetBkImage(const_cast<LPTSTR>((LPCTSTR)strUrl), FALSE, 100, 92)) {
-				m_crWindowTextBk = CLR_NONE;
-				SetTextBkColor(m_crWindowTextBk);
-			}
-		}
-#else
 		HBITMAP hbm = LoadImageAsPARGB(szFullResPath);
 		if (hbm) {
 			LVBKIMAGE lvbkimg = {};
@@ -476,7 +434,6 @@ void CMuleListCtrl::SetColors()
 			} else
 				::DeleteObject(lvbkimg.hbm);
 		}
-#endif
 	}
 
 	m_crFocusLine = crHighlight;
@@ -1575,9 +1532,7 @@ void CMuleListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 			// Don't show the default label tip for the main item, if the mouse is not over
 			// the main item.
 			if ((pGetInfoTip->dwFlags & LVGIT_UNFOLDED) == 0 && pGetInfoTip->cchTextMax > 0 && pGetInfoTip->pszText[0] != _T('\0')) {
-				// For any reason this does not work with Win98 (COMCTL32 v5.8). Even when
 				// the info tip text is explicitly set to empty, the list view control may
-				// display the unfolded text for the 1st item. It works for WinXP though.
 				pGetInfoTip->pszText[0] = _T('\0');
 			}
 			return;

@@ -787,7 +787,7 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 		// we actually need to change the registry and write an entry for HKCU
 		if (checkOnly)
 			return true;
-		HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+		HKEY hkeyCR = HKEY_CURRENT_USER;
 		if (regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\shell\\open\\command")) == ERROR_SUCCESS) {
 			if (dontAsk || (LocMessageBox(IDS_ASSIGNED2K, MB_ICONQUESTION | MB_YESNO, 0) == IDYES)) {
 				VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
@@ -821,13 +821,8 @@ void BackupReg()
 	//	1)	It must follow the rules: reading from HKCR and writing into HKCU. What we are currently doing
 	//		is not consistent with the other registry function which are dealing with the same keys.
 	//
-	//	2)	It behaves quite(!) differently under Win98 due to an obvious change in the Windows API.
-	//		WinXP: Reading a non existent value returns 'key not found' error.
-	//		Win98: Reading a non existent value returns an empty string (which gets saved and restored by our code).
-	//		This means that saving/restoring existent registry keys works completely differently in Win98/XP.
-	//		Actually it works correctly under Win98 and is broken in WinXP+. Though, did someone notice it at all?
 
-	HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+	HKEY hkeyCR = HKEY_CURRENT_USER;
 	// Look for pre-existing old ed2k links
 	CRegKey regkey;
 	if (regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\shell\\open\\command")) == ERROR_SUCCESS) {
@@ -851,7 +846,7 @@ void BackupReg()
 // Barry - Restore previous values
 void RevertReg()
 {
-	HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+	HKEY hkeyCR = HKEY_CURRENT_USER;
 	// restore previous ed2k links before being assigned to emule
 	CRegKey regkey;
 	if (regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\shell\\open\\command")) == ERROR_SUCCESS) {
@@ -876,61 +871,8 @@ void RevertReg()
 UINT GetMaxWindowsTCPConnections()
 {
 	return UNLIMITED;
-/*	OSVERSIONINFOEX osvi;
-	osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFOEX);
-
-	if (!GetVersionEx((OSVERSIONINFO*)&osvi)) {
-		//if OSVERSIONINFOEX doesn't work, try OSVERSIONINFO
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFO);
-		if (!GetVersionEx((OSVERSIONINFO*)&osvi))
-			return UNLIMITED;  //shouldn't ever happen
-	}
-
-	if (osvi.dwPlatformId == VER_PLATFORM_WIN32_NT) // Windows NT product family
-		return UNLIMITED;  //no limits
-
-	if (osvi.dwPlatformId == VER_PLATFORM_WIN32_WINDOWS) { // Windows 95 product family
-
-		HKEY hKey;
-		if (osvi.dwMajorVersion == 4 && osvi.dwMinorVersion == 0) { //old school 95
-			DWORD dwValue;
-			DWORD dwLength = (DWORD)sizeof dwValue;
-
-			RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("System\\CurrentControlSet\\Services\\VxD\\MSTCP")
-				, 0, KEY_QUERY_VALUE, &hKey);
-			LONG lResult = RegQueryValueEx(hKey, _T("MaxConnections"), NULL, NULL
-				, (LPBYTE)&dwValue, &dwLength);
-			RegCloseKey(hKey);
-
-			if (lResult != ERROR_SUCCESS || dwValue < 1)
-				return 100;  //the default for 95 is 100
-
-			return dwValue;
-
-		}
-		//98 or ME
-		TCHAR szValue[32];
-		DWORD dwLength = (DWORD)sizeof szValue;
-		LONG lResult;
-
-		RegOpenKeyEx(HKEY_LOCAL_MACHINE, _T("System\\CurrentControlSet\\Services\\VxD\\MSTCP")
-			, 0, KEY_QUERY_VALUE, &hKey);
-		lResult = RegQueryValueEx(hKey, TEXT("MaxConnections"), NULL, NULL, (LPBYTE)szValue, &dwLength);
-		RegCloseKey(hKey);
-
-		LONG lMaxConnections;
-		if (lResult != ERROR_SUCCESS || (lMaxConnections = _tstoi(szValue)) < 1)
-			return 100;  //the default for 98/ME is 100
-
-		return lMaxConnections;
-	}
-
-	return UNLIMITED;  //give the user the benefit of the doubt, most use NT+ anyway
-*/
 }
 
-#pragma warning(push)
-#pragma warning(disable: 4996) //GetVersionEx()
 WORD DetectWinVersion()
 {
 	OSVERSIONINFOEX osvi;
@@ -944,16 +886,6 @@ WORD DetectWinVersion()
 
 	switch (osvi.dwPlatformId) {
 	case VER_PLATFORM_WIN32_NT:
-		if (osvi.dwMajorVersion <= 4)
-			return _WINVER_NT4_;
-		if (osvi.dwMajorVersion == 5) {
-			if (osvi.dwMinorVersion == 0)
-				return _WINVER_2K_;
-			if (osvi.dwMinorVersion == 1)
-				return _WINVER_XP_;
-			if (osvi.dwMinorVersion == 2)
-				return _WINVER_2003_;
-		}
 		if (osvi.dwMajorVersion == 6) {
 			if (osvi.dwMinorVersion == 0)
 				return _WINVER_VISTA_;
@@ -966,46 +898,10 @@ WORD DetectWinVersion()
 		}
 		if (osvi.dwMajorVersion == 10 && osvi.dwMinorVersion == 0)
 			return _WINVER_10_; //for Windows 11 - osvi.dwBuildNumber>=22000
-		return _WINVER_7_; // never return Win95 if we get the info about a NT system
-
-	case VER_PLATFORM_WIN32_WINDOWS:
-		if (osvi.dwMajorVersion == 4) {
-			if (osvi.dwMinorVersion == 0)
-				return _WINVER_95_;
-			if (osvi.dwMinorVersion == 10)
-				return _WINVER_98_;
-			if (osvi.dwMinorVersion == 90)
-				return _WINVER_ME_;
-		}
+		return _WINVER_VISTA_;
 	}
 
-	return _WINVER_95_;		// there shouldn't be anything lower than this
-}
-
-bool IsRunningXPSP2()
-{
-	OSVERSIONINFOEX osvi;
-	osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFOEX);
-
-	if (!GetVersionEx((OSVERSIONINFO*)&osvi)) {
-		osvi.dwOSVersionInfoSize = (DWORD)sizeof(OSVERSIONINFO);
-		if (!GetVersionEx((OSVERSIONINFO*)&osvi))
-			return false;
-	}
-
-	return osvi.dwPlatformId == VER_PLATFORM_WIN32_NT
-		&& osvi.dwMajorVersion == 5
-		&& osvi.dwMinorVersion == 1
-		&& osvi.wServicePackMajor >= 2;
-}
-#pragma warning(pop)
-
-bool IsRunningXPSP2OrHigher()
-{
-	WORD wv = thePrefs.GetWindowsVersion();
-	if (wv == _WINVER_XP_)
-		return IsRunningXPSP2();
-	return wv > _WINVER_XP_;
+	return _WINVER_VISTA_;
 }
 
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
@@ -2144,7 +2040,7 @@ LPCTSTR GetShellExecuteErrMsg(DWORD dwShellExecError)
 		_T("Application requires Microsoft Windows 32-bit extensions.")},
 	  /*22-31	 RESERVED FOR FUTURE USE. NOT RETURNED BY VERSION 3.0.*/
 	  {24,
-		_T("Command line too long.")}, // 30.03.99 []: Seen under WinNT 4.0/Win98 for a very long command line!
+		_T("Command line too long.")},
 
 	  /*non-WinExec error codes*/
 	  {/*26*/SE_ERR_SHARE,
@@ -3456,25 +3352,8 @@ int FontPointSizeToLogUnits(int nPointSize)
 	HDC hDC = ::GetDC(HWND_DESKTOP);
 	if (hDC) {
 		POINT pt;
-#if 0
-		// This is the same math which is performed by "CFont::CreatePointFont",
-		// which is flawed because it does not perform any rounding. But without
-		// performing the correct rounding one can not get the correct LOGFONT-height
-		// for an 8pt font!
-		//
-		// PointSize	Result
-		// -------------------
-		// 8*10			10.666 -> 10 (cut down and thus wrong result)
-		pt.y = ::GetDeviceCaps(hDC, LOGPIXELSY) * nPointSize;
-		pt.y /= 720;
-#else
 		// This math accounts for proper rounding and thus we will get the correct results.
-		//
-		// PointSize	Result
-		// -------------------
-		// 8*10			10.666 -> 11 (rounded up and thus correct result)
 		pt.y = ::MulDiv(::GetDeviceCaps(hDC, LOGPIXELSY), nPointSize, 720);
-#endif
 		pt.x = 0;
 		::DPtoLP(hDC, &pt, 1);
 		POINT ptOrg{};
@@ -3677,7 +3556,7 @@ bool DoCollectionRegFix(bool checkOnly)
 		// we actually need to change the registry and write an entry for HKCU
 		if (checkOnly)
 			return true;
-		HKEY hkeyCR = thePrefs.GetWindowsVersion() < _WINVER_2K_ ? HKEY_LOCAL_MACHINE : HKEY_CURRENT_USER;
+		HKEY hkeyCR = HKEY_CURRENT_USER;
 		if (regkey.Create(hkeyCR, _T("Software\\Classes\\eMule\\shell\\open\\command")) == ERROR_SUCCESS) {
 			VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
 
@@ -4170,7 +4049,6 @@ static HBITMAP GreyBitmap(const HBITMAP inbmp)
 	return outbmp;
 }
 
-// Create grey-scaled icon for WinXP and lower
 static HICON GreyIcon(const HICON hIcon)
 {
 	HICON hGreyIcon = 0;

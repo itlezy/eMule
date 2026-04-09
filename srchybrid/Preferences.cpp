@@ -437,11 +437,7 @@ Preferences_Ext_Struct *CPreferences::prefsExt;
 WORD	CPreferences::m_wWinVer;
 CArray<Category_Struct*, Category_Struct*> CPreferences::catArr;
 UINT	CPreferences::m_nWebMirrorAlertLevel;
-bool	CPreferences::m_bRunAsUser;
-bool	CPreferences::m_bPreferRestrictedOverUser;
 bool	CPreferences::m_bUseOldTimeRemaining;
-
-bool	CPreferences::m_bOpenPortsOnStartUp;
 int		CPreferences::m_byLogLevel;
 bool	CPreferences::m_bTrustEveryHash;
 bool	CPreferences::m_bRememberCancelledFiles;
@@ -1729,10 +1725,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("A4AFSaveCpu"), m_bA4AFSaveCpu); // ZZ:DownloadManager
 	ini.WriteBool(_T("HighresTimer"), m_bHighresTimer);
 	ini.WriteInt(_T("WebMirrorAlertLevel"), m_nWebMirrorAlertLevel);
-	ini.WriteBool(_T("RunAsUnprivilegedUser"), m_bRunAsUser);
-	ini.WriteBool(_T("OpenPortsOnStartUp"), m_bOpenPortsOnStartUp);
 	ini.WriteInt(_T("DebugLogLevel"), m_byLogLevel);
-	ini.WriteInt(_T("WinXPSP2OrHigher"), static_cast<int>(IsRunningXPSP2OrHigher()));
 	ini.WriteBool(_T("RememberCancelledFiles"), m_bRememberCancelledFiles);
 	ini.WriteBool(_T("RememberDownloadedFiles"), m_bRememberDownloadedFiles);
 
@@ -1938,12 +1931,6 @@ void CPreferences::LoadPreferences()
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
 	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 9);
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
-
-	// reset max half-open to a default if OS changed to/from XP SP2 or higher
-	int dwSP2OrHigher = ini.GetInt(_T("WinXPSP2OrHigher"), -1);
-	bool dwCurSP2OrHigher = IsRunningXPSP2OrHigher();
-	if (dwSP2OrHigher != static_cast<int>(dwCurSP2OrHigher))
-		maxhalfconnections = dwCurSP2OrHigher ? 9 : 50;
 
 	m_strBindAddrW = ini.GetString(_T("BindAddr")).Trim();
 	m_pszBindAddrW = m_strBindAddrW.IsEmpty() ? NULL : (LPCWSTR)m_strBindAddrW;
@@ -2292,16 +2279,13 @@ void CPreferences::LoadPreferences()
 
 	m_bA4AFSaveCpu = ini.GetBool(_T("A4AFSaveCpu"), false); // ZZ:DownloadManager
 	m_bHighresTimer = ini.GetBool(_T("HighresTimer"), false);
-	m_bRunAsUser = ini.GetBool(_T("RunAsUnprivilegedUser"), false);
-	m_bPreferRestrictedOverUser = ini.GetBool(_T("PreferRestrictedOverUser"), false);
-	m_bOpenPortsOnStartUp = ini.GetBool(_T("OpenPortsOnStartUp"), false);
 	m_byLogLevel = ini.GetInt(_T("DebugLogLevel"), DLP_VERYLOW);
 	m_bTrustEveryHash = ini.GetBool(_T("AICHTrustEveryHash"), false);
 	m_bRememberCancelledFiles = ini.GetBool(_T("RememberCancelledFiles"), true);
 	m_bRememberDownloadedFiles = ini.GetBool(_T("RememberDownloadedFiles"), true);
 	m_bPartiallyPurgeOldKnownFiles = ini.GetBool(_T("PartiallyPurgeOldKnownFiles"), true);
 
-	m_email.bSendMail = IsRunningXPSP2OrHigher() && ini.GetBool(_T("NotifierSendMail"), false);
+	m_email.bSendMail = ini.GetBool(_T("NotifierSendMail"), false);
 	m_email.uAuth = static_cast<SMTPauth>(ini.GetInt(_T("NotifierMailAuth"), 0));
 	m_email.uTLS = static_cast<TLSmode>(ini.GetInt(_T("NotifierMailTLS"), 0));
 	m_email.sFrom = ini.GetString(_T("NotifierMailSender"), _T(""));
@@ -2414,15 +2398,7 @@ WORD CPreferences::GetWindowsVersion()
 
 UINT CPreferences::GetDefaultMaxConperFive()
 {
-	switch (GetWindowsVersion()) {
-	case _WINVER_98_:
-		return 5;
-	case _WINVER_95_:
-	case _WINVER_ME_:
-		return MAXCON5WIN9X;
-	default:
-		return MAXCONPER5SEC;
-	}
+	return MAXCONPER5SEC;
 }
 
 //////////////////////////////////////////////////////////
@@ -2695,17 +2671,6 @@ UINT CPreferences::GetWebMirrorAlertLevel()
 	}
 	// end
 	return UpdateNotify() ? m_nWebMirrorAlertLevel : 0;
-}
-
-bool CPreferences::IsRunAsUserEnabled()
-{
-	switch (GetWindowsVersion()) {
-	case _WINVER_2K_:
-	case _WINVER_XP_:
-	case _WINVER_2003_:
-		return m_bRunAsUser	&& m_nCurrentUserDirMode == 2;
-	}
-	return false;
 }
 
 bool CPreferences::GetUseReBarToolbar()
@@ -3058,10 +3023,6 @@ void CPreferences::ChangeUserDirMode(int nNewMode)
 {
 	if (m_nCurrentUserDirMode == nNewMode)
 		return;
-	if (nNewMode == 1 && GetWindowsVersion() < _WINVER_VISTA_) {
-		ASSERT(0);
-		return;
-	}
 	// check if our registry setting is present which forces the single or multiuser directories
 	// and lets us ignore other defaults
 	// 0 = Multiuser, 1 = Public user, 2 = ExecutableDir.

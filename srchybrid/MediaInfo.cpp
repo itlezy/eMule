@@ -24,15 +24,6 @@
 #include <fcntl.h>
 #ifdef HAVE_WMSDK_H
 #include <wmsdk.h>
-#if !defined(HAVE_VISTA_SDK)
-static const WCHAR g_wszWMPeakBitrate[] = L"WM/PeakBitrate";
-static const WCHAR g_wszWMStreamTypeInfo[] = L"WM/StreamTypeInfo";
-typedef struct
-{
-	GUID	guidMajorType;
-	DWORD	cbFormat;
-} WM_STREAM_TYPE_INFO;
-#endif
 #endif//HAVE_WMSDK_H
 
 #ifdef _DEBUG
@@ -2061,7 +2052,6 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 				// Codec Info:	      Yes
 				//
 				//
-				// Windows XP SP2; WMP 9.00.00.3354
 				// -------------------------------------
 				// WMASF.DLL	9.0.0.3267
 				// WMVCORE.DLL	9.0.0.3267
@@ -2070,15 +2060,6 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 				// WM/StreamTypeInfo: No!
 				// Codec Info:	      Yes
 				//
-				//
-				// Windows 98 SE; WMP 9.00.00.3349
-				// -------------------------------------
-				// WMASF.DLL	9.00.00.2980
-				// WMVCORE.DLL	9.00.00.2980
-				// ---
-				// IWMHeaderInfo3:    Yes
-				// WM/StreamTypeInfo: No!
-				// Codec Info:	      Yes
 				//
 				CComQIPtr<IWMHeaderInfo3> pIWMHeaderInfo3(pIUnkReader);
 
@@ -2113,8 +2094,7 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 				} else
 					ASSERT(0);
 
-				// WMFSDK 7.0 does not support the "WM/ContainerFormat" attribute at all. Though,
-				// v7.0 has no importance any longer - it was originally shipped with WinME.
+				// Older WMF SDK builds do not support the "WM/ContainerFormat" attribute at all. Though,
 				//
 				// If that function is invoked for getting meta data which is to get published,
 				// special care has to be taken for publishing the audio/video codec info.
@@ -2211,7 +2191,6 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 
 					bool bHaveStreamInfo = false;
 					if (pIWMHeaderInfo3) {
-						// 'WM/StreamTypeInfo' is supported only since v10. This means that, WinXP/WMP9 does not have that support.
 						CTempBuffer<BYTE> aStreamInfo;
 						DWORD dwStreamInfoSize;
 						if (GetAttributeEx(pIWMHeaderInfo3, wStream, g_wszWMStreamTypeInfo, aStreamInfo, dwStreamInfoSize) && dwStreamInfoSize >= sizeof(WM_STREAM_TYPE_INFO)) {
@@ -2803,8 +2782,8 @@ bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType)
 #define FMFD_DEFAULT				0x00000000	// No flags specified. Use default behavior for the function.
 #define FMFD_URLASFILENAME			0x00000001	// Treat the specified pwzUrl as a file name.
 #ifndef FMFD_ENABLEMIMESNIFFING
-#define FMFD_ENABLEMIMESNIFFING		0x00000002	// XP SP2 - Use MIME-type detection even if FEATURE_MIME_SNIFFING is detected. Usually, this feature control key would disable MIME-type detection.
-#define FMFD_IGNOREMIMETEXTPLAIN	0x00000004	// XP SP2 - Perform MIME-type detection if "text/plain" is proposed, even if data sniffing is otherwise disabled.
+#define FMFD_ENABLEMIMESNIFFING		0x00000002
+#define FMFD_IGNOREMIMETEXTPLAIN	0x00000004
 #endif
 			// Don't pass the file name to 'FindMimeFromData'. In case 'FindMimeFromData' can not determine the MIME type
 			// from sniffing the header data it will parse the passed file name's extension to guess the MIME type.

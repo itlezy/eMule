@@ -14,9 +14,7 @@
 
 #include <memory>
 
-#if _MSC_VER>=1400
 #pragma warning(push)
-#endif
 
 namespace HighColorTab
 {
@@ -109,6 +107,4 @@ namespace HighColorTab
 	};
 };
 
-#if _MSC_VER>=1400
 #pragma warning(pop)
-#endif

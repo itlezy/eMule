@@ -1,7 +1,6 @@
 // ------------------------------------------------------------
 //  CDialogMinTrayBtn template class
 //  MFC CDialog with minimize to system tray button (0.04)
-//  Supports WinXP styles (thanks to David Yuheng Zhao for CVisualStylesXP - yuheng_zhao@yahoo.com)
 // ------------------------------------------------------------
 //  DialogMinTrayBtn.hpp
 //  zegzav - 2002,2003 - eMule project (https://www.emule-project.net)
@@ -22,18 +21,9 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#if 0
-// define this to use that source file as template
-#define	TEMPLATE	template <class BASE>
-#else
 // define this to instantiate functions for class 'BASE' right in this CPP module
-#if _MSC_VER >= 1310
 #define	TEMPLATE	template <>
-#else
-#define	TEMPLATE
-#endif
 #define BASE		CResizableDialog
-#endif
 
 // ------------------------------
 //  constants
@@ -155,7 +145,7 @@ TEMPLATE LRESULT CDialogMinTrayBtn<BASE>::OnNcHitTest(CPoint point)
 	bool bPreviousHitTest = m_bMinTrayBtnHitTest;
 	m_bMinTrayBtnHitTest = MinTrayBtnHitTest(point);
 	if (!IsWindowsClassicStyle() && m_bMinTrayBtnHitTest != bPreviousHitTest)
-		MinTrayBtnDraw(); // Windows XP Style (hot button)
+		MinTrayBtnDraw();
 	return m_bMinTrayBtnHitTest ? HTMINTRAYBUTTON : BASE::OnNcHitTest(point);
 }
 
@@ -249,9 +239,9 @@ TEMPLATE void CDialogMinTrayBtn<BASE>::MinTrayBtnUpdatePosAndSize()
 
 	// set our frame window button width/height...
 	if (IsWindowsClassicStyle())
-		m_MinTrayBtnSize = szBtn; //the same as Windows' buttons for non WinXP
+		m_MinTrayBtnSize = szBtn;
 	else
-		m_MinTrayBtnSize.cx = m_MinTrayBtnSize.cy = szBtn.cy; //a square for WinXP
+		m_MinTrayBtnSize.cx = m_MinTrayBtnSize.cy = szBtn.cy;
 
 	m_MinTrayBtnPos.x = rcWnd.Width() - (CAPTION_BUTTONSPACE + m_MinTrayBtnSize.cx + CAPTION_BUTTONSPACE + szBtn.cx);
 	m_MinTrayBtnPos.y = CAPTION_BUTTONSPACE;

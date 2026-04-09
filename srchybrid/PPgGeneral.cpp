@@ -95,12 +95,7 @@ void CPPgGeneral::LoadSettings()
 	CheckDlgButton(IDC_STARTMIN, static_cast<UINT>(thePrefs.startMinimized));
 	CheckDlgButton(IDC_STARTWIN, static_cast<UINT>(thePrefs.m_bAutoStart));
 
-	if (thePrefs.GetWindowsVersion() != _WINVER_95_)
-		CheckDlgButton(IDC_PREVENTSTANDBY, static_cast<UINT>(thePrefs.GetPreventStandby()));
-	else {
-		CheckDlgButton(IDC_PREVENTSTANDBY, 0);
-		GetDlgItem(IDC_PREVENTSTANDBY)->EnableWindow(FALSE);
-	}
+	CheckDlgButton(IDC_PREVENTSTANDBY, static_cast<UINT>(thePrefs.GetPreventStandby()));
 
 	CString strBuffer;
 	strBuffer.Format(_T("%u %s"), thePrefs.versioncheckdays, (LPCTSTR)GetResString(IDS_DAYS2));
@@ -304,9 +299,7 @@ void CPPgGeneral::OnLangChange()
 //#define MIRRORS_URL	_T("http://langmirror%u.emule-project.org/lang/%u%u%u%u/")
 
 // Community version mirrors
-#if defined _M_IX86
-#define SBITS _T("32/")
-#elif defined _M_X64
+#if defined _M_X64
 #define SBITS _T("64/")
 #elif defined _M_ARM64
 #define SBITS _T("arm64/")

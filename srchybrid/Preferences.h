@@ -604,13 +604,8 @@ public:
 
 	static int		m_iDbgHeap;
 	static UINT		m_nWebMirrorAlertLevel;
-	static bool		m_bRunAsUser;
-	static bool		m_bPreferRestrictedOverUser;
 
 	static bool		m_bUseOldTimeRemaining;
-
-	// Firewall settings
-	static bool		m_bOpenPortsOnStartUp;
 
 	//AICH Options
 	static bool		m_bTrustEveryHash;
@@ -1325,9 +1320,6 @@ public:
 	static UINT		GetWebMirrorAlertLevel();
 	static bool		UseSimpleTimeRemainingComputation()	{ return m_bUseOldTimeRemaining; }
 
-	static bool		IsRunAsUserEnabled();
-	static bool		IsPreferingRestrictedOverUser()		{ return m_bPreferRestrictedOverUser; }
-
 	// Verbose log options
 	static bool		GetEnableVerboseOptions()			{ return m_bEnableVerboseOptions; }
 	static bool		GetVerbose()						{ return m_bVerbose; }
@@ -1364,9 +1356,6 @@ public:
 	static int		GetDebugSearchResultDetailLevel()	{ return 0; }
 #endif
 
-
-	// Firewall settings
-	static bool		IsOpenPortsOnStartupEnabled()		{ return m_bOpenPortsOnStartUp; }
 
 	//AICH Hash
 	static bool		IsTrustingEveryHash()				{ return m_bTrustEveryHash; } // this is a debug option

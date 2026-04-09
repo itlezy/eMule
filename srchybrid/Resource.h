@@ -1637,7 +1637,6 @@
 #define IDC_SHOWOVERHEAD                2132
 #define IDC_INDICATERATINGS             2133
 #define IDC_USESECIDENT                 2134
-#define IDC_RUNASUSER                   2135
 #define IDC_MMENABLED                   2136
 #define IDC_ENABLEOBFUSCATION           2136
 #define IDC_ONLYOBFUSCATED              2137
@@ -2188,7 +2187,6 @@
 #define IDC_CATS                        2841
 #define IDC_STATICFI                    2842
 #define IDC_RESET                       2843
-#define IDC_OPENPORTS                   2844
 #define IDC_SMILEY                      2844
 #define IDC_TCP                         2845
 #define IDC_UDP                         2846

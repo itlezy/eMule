@@ -11,65 +11,17 @@
 
 #include "emule_site_config.h"
 
-// MSDN: Using the Windows Headers
-// ===========================================================
-//Windows Vista			_WIN32_WINNT>=0x0600	WINVER>=0x0600
-//Windows Server 2003	_WIN32_WINNT>=0x0502    WINVER>=0x0502
-//Windows XP			_WIN32_WINNT>=0x0501	WINVER>=0x0501
-//Windows 2000			_WIN32_WINNT>=0x0500    WINVER>=0x0500
-//Windows NT 4.0		_WIN32_WINNT>=0x0400	WINVER>=0x0400
-//Windows Me			_WIN32_WINDOWS=0x0500	WINVER>=0x0500
-//Windows 98			_WIN32_WINDOWS>=0x0410	WINVER>=0x0410
-//Windows 95			_WIN32_WINDOWS>=0x0400	WINVER>=0x0400
-//
-//IE 7.0				_WIN32_IE>=0x0700
-//IE 6.0 SP2			_WIN32_IE>=0x0603
-//IE 6.0 SP1			_WIN32_IE>=0x0601
-//IE 6.0				_WIN32_IE>=0x0600
-//IE 5.5				_WIN32_IE>=0x0550
-//IE 5.01				_WIN32_IE>=0x0501
-//IE 5.0, 5.0a, 5.0b	_WIN32_IE>=0x0500
-//IE 4.01				_WIN32_IE>=0x0401
-//IE 4.0				_WIN32_IE>=0x0400
-//IE 3.0, 3.01, 3.02	_WIN32_IE>=0x0300
-
-#if defined(HAVE_VISTA_SDK)
-
 #ifndef WINVER
-#define WINVER 0x0502			// 0x0502 == Windows Server 2003, Windows XP (same as VS2005-MFC)
+#define WINVER 0x0600			// Windows Vista or later
 #endif
 
 #ifndef _WIN32_WINNT
-#define _WIN32_WINNT WINVER		// same as VS2005-MFC
-#endif
-
-#ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0410	// 0x0410 == Windows 98
+#define _WIN32_WINNT WINVER
 #endif
 
 #ifndef _WIN32_IE
-#define _WIN32_IE 0x0603		// 0x0603 == Internet Explorer 6.0 SP2
+#define _WIN32_IE 0x0700
 #endif
-
-#else//HAVE_VISTA_SDK
-
-#ifndef WINVER
-#define WINVER 0x0400			// 0x0400 == Windows 98 and Windows NT 4.0 (because of '_WIN32_WINDOWS=0x0410')
-#endif
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0400		// 0x0400 == Windows NT 4.0
-#endif
-
-#ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0410	// 0x0410 == Windows 98
-#endif
-
-#ifndef _WIN32_IE
-#define _WIN32_IE 0x0560		// 0x0560 == Internet Explorer 5.6 -> Comctl32.dll v5.8 (same as MFC internally used)
-#endif
-
-#endif//HAVE_VISTA_SDK
 
 #define _ATL_CSTRING_EXPLICIT_CONSTRUCTORS	// Makes certain CString constructors explicit, preventing any unintentional conversions
 #define	_ATL_EX_CONVERSION_MACROS_ONLY		// Disable old ATL 3.0 string conversion macros
@@ -91,27 +43,13 @@
 #pragma warning(disable:4061) // enumerate in switch of enum is not explicitly handled by a case label
 #pragma warning(disable:4062) // enumerate in switch of enum is not handled
 #pragma warning(disable:4191) // 'type cast' : unsafe conversion from <this> to <that>
-#if _MSC_VER<1400
-#pragma warning(disable:4217) // <func>: member template functions cannot be used for copy-assignment or copy-construction
-#endif
 #pragma warning(disable:4263) // <func> member function does not override any base class virtual member function
 #pragma warning(disable:4264) // <func>: no override available for virtual member function from base <class>; function is hidden
 #pragma warning(disable:4265) // <class>: class has virtual functions, but destructor is not virtual
-#if _MSC_VER>=1400
 #pragma warning(disable:4266) // no override available for virtual member function from base <class>; function is hidden
-#endif
-#if _MSC_VER>=1400
 #pragma warning(disable:4365) // conversion from 'int' to 'UINT', signed/unsigned mismatch
-#endif
-#if _MSC_VER>=1900
 #pragma warning(disable:4435) // Object layout under /vd2 will change due to virtual base
-#endif
-#if _MSC_VER<1400
-#pragma warning(disable:4529) // forming a pointer-to-member requires explicit use of the address-of operator ('&') and a qualified name
-#endif
-#if _MSC_VER>=1400
 #pragma warning(disable:4571) // Informational: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught
-#endif
 #pragma warning(disable:4619) // #pragma warning : there is no warning number <n>
 #pragma warning(disable:4625) // <class> : copy constructor could not be generated because a base class copy constructor is inaccessible
 #pragma warning(disable:4626) // <class> : assignment operator could not be generated because a base class copy constructor is inaccessible
@@ -119,22 +57,17 @@
 #pragma warning(disable:4668) // <name>  is not defined as a preprocessor macro, replacing with '0' for '#if/#elif'
 #pragma warning(disable:4710) // function not inlined
 #pragma warning(disable:4711) // function <func> selected for automatic inline expansion
-#if _MSC_VER>=1400
 #pragma warning(disable:4738) // storing 32-bit float result in memory, possible loss of performance
-#endif
 #ifdef _M_ARM64
 #pragma warning(disable:4746) // volatile access of '<expression>' is subject to /volatile:[iso|ms] setting
 #endif
 #pragma warning(disable:4820) // <n> bytes padding added after member <member>
 #pragma warning(disable:4917) // a GUID can only be associated with a class, interface or namespace
-#if _MSC_VER>=1900
 #pragma warning(disable:5026) // move constructor was implicitly defined as deleted
 #pragma warning(disable:5027) // move assignment operator was implicitly defined as deleted
 #pragma warning(disable:5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #pragma warning(disable:5220) // a non-static data member with a volatile qualified type no longer implies that compiler generated copy/move constructors and copy/move assignment operators are non trivial
-#endif
 
-#if _MSC_VER>=1400
 // _CRT_SECURE_NO_DEPRECATE - Disable all warnings for not using "_s" functions.
 //
 #ifndef _CRT_SECURE_NO_DEPRECATE
@@ -163,16 +96,9 @@
 #endif
 #endif//!defined(_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES) || (_CRT_SECURE_CPP_OVERLOAD_STANDARD_NAMES==0)
 
-#if defined(XP_BUILD) && !defined(_WIN64) && !defined(_USE_32BIT_TIME_T)
-#define _USE_32BIT_TIME_T
-#endif
-
-//Windows XP compatibility requires 'inet_addr' and 'WSAAsyncGetHostByName' (warning C4996)
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
 #endif
-
-#endif//_MSC_VER>=1400
 
 #ifdef _DEBUG
 #define _ATL_DEBUG

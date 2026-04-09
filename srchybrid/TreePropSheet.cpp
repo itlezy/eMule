@@ -696,14 +696,12 @@ BOOL CTreePropSheet::OnInitDialog()
 	// MFC7-support here (Thanks to Rainer Wollgarten)
 #if _MFC_VER >= 0x0700
 	// Using 'CTreeCtrl::CreateEx' (and it's indeed a good idea to call this one), results in
-	// flawed window styles (border is missing) when running under WinXP themed. ???
 	//m_pwndPageTree->CreateEx(
 	//	WS_EX_CLIENTEDGE|WS_EX_NOPARENTNOTIFY,
 	//	WS_TABSTOP|WS_CHILD|WS_VISIBLE|dwTreeStyle,
 	//	rectTree, this, s_unPageTreeId);
 
 	// Feel free to explain to me why we need to call CWnd::CreateEx to get the proper window style
-	// for the tree view control when running under WinXP. Look at CTreeCtrl::CreateEx and CWnd::CreateEx to
 	// see the (minor) difference. However, this could create problems in future MFC versions.
 	m_pwndPageTree->CWnd::CreateEx(
 			WS_EX_CLIENTEDGE | WS_EX_NOPARENTNOTIFY
@@ -724,7 +722,6 @@ BOOL CTreePropSheet::OnInitDialog()
 // to the font which is used for the property pages.
 	m_pwndPageTree->SendMessage(WM_SETFONT, (WPARAM)AfxGetMainWnd()->GetFont()->m_hObject, TRUE);
 
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	m_pwndPageTree->SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 
 	m_pwndPageTree->SetItemHeight(m_pwndPageTree->GetItemHeight() + 6);

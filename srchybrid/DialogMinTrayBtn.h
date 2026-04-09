@@ -1,7 +1,6 @@
 // ------------------------------------------------------------
 //  CDialogMinTrayBtn template class
 //  MFC CDialog with minimize to system tray button (0.04)
-//  Supports WinXP styles (thanks to David Yuheng Zhao for CVisualStylesXP - yuheng_zhao@yahoo.com)
 // ------------------------------------------------------------
 //  DialogMinTrayBtn.h
 //  zegzav - 2002,2003 - eMule project (https://www.emule-project.net)

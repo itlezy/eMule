@@ -37,7 +37,7 @@ inline bool NeedUTF8String(LPCWSTR pwsz)
 	// characters! Thus to evaluate whether a string can safely get stored with
 	// MBCS without losing any characters due to the conversion, the valid
 	// character range must be 0x00-0x7F.
-	while (*pwsz != L'\0' && *pwsz <= 0x007f) // VS2008: ATL_ASCII(0x007f) is no longer defined
+	while (*pwsz != L'\0' && *pwsz <= 0x007f)
 		++pwsz;
 	return *pwsz != L'\0';
 }

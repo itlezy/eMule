@@ -186,7 +186,6 @@ void CDirectoryTreeCtrl::OnTvnGetdispinfo(LPNMHDR pNMHDR, LRESULT *pResult)
 
 void CDirectoryTreeCtrl::Init()
 {
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 
 	ShowWindow(SW_HIDE);

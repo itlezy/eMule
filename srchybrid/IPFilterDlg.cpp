@@ -187,7 +187,6 @@ BOOL CIPFilterDlg::OnInitDialog()
 	EnableSaveRestore(PREF_INI_SECTION);
 
 	ASSERT(m_ipfilter.GetStyle() & LVS_OWNERDATA);
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	m_ipfilter.SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 	m_ipfilter.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP | LVS_EX_GRIDLINES);
 	m_ipfilter.EnableHdrCtrlSortBitmaps();

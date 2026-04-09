@@ -46,7 +46,6 @@ class CIPFilter;
 class CWebServer;
 class CAbstractFile;
 class CUpDownClient;
-class CFirewallOpener;
 class CUPnPImplWrapper;
 class CUploadDiskIOThread;
 class CPartFileWriteThread;
@@ -92,7 +91,6 @@ public:
 	CIPFilter			*ipfilter;
 	CWebServer			*webserver;
 	CScheduler			*scheduler;
-	CFirewallOpener		*m_pFirewallOpener;
 	CUPnPImplWrapper	*m_pUPnPFinder;
 	CUploadDiskIOThread	*m_pUploadDiskIOThread;
 	CPartFileWriteThread *m_pPartFileWriteThread;

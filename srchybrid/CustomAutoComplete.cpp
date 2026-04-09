@@ -33,9 +33,7 @@
 //
 //--------------------------------------------------------------------------------------------
 #include "stdafx.h"
-#if _MSC_VER<=1800 //vs2013
 #include <share.h>
-#endif
 #include "CustomAutoComplete.h"
 #include "OtherFunctions.h"
 

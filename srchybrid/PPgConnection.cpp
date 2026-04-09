@@ -26,7 +26,6 @@
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "HelpIDs.h"
 #include "Statistics.h"
-#include "Firewallopener.h"
 #include "ListenSocket.h"
 #include "ClientUDPSocket.h"
 #include "LastCommonRouteFinder.h"
@@ -63,7 +62,6 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_WM_HSCROLL()
 	ON_BN_CLICKED(IDC_NETWORK_KADEMLIA, OnSettingsChange)
 	ON_WM_HELPINFO()
-	ON_BN_CLICKED(IDC_OPENPORTS, OnBnClickedOpenports)
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
 END_MESSAGE_MAP()
 
@@ -193,13 +191,7 @@ void CPPgConnection::LoadSettings()
 		GetDlgItem(IDC_NETWORK_KADEMLIA)->EnableWindow(thePrefs.GetUDPPort() > 0);
 		CheckDlgButton(IDC_NETWORK_ED2K, static_cast<UINT>(thePrefs.networked2k));
 
-		WORD wv = thePrefs.GetWindowsVersion();
-		// don't try on XP SP2 or higher, not needed there any more
-		GetDlgItem(IDC_OPENPORTS)->ShowWindow(
-			(wv == _WINVER_XP_ && !IsRunningXPSP2() && theApp.m_pFirewallOpener->DoesFWConnectionExist())
-			? SW_SHOW : SW_HIDE);
-
-		GetDlgItem(IDC_PREF_UPNPONSTART)->EnableWindow(wv != _WINVER_95_ && wv != _WINVER_98_ && wv != _WINVER_NT4_);
+		GetDlgItem(IDC_PREF_UPNPONSTART)->EnableWindow(TRUE);
 
 		CheckDlgButton(IDC_PREF_UPNPONSTART, static_cast<UINT>(thePrefs.IsUPnPEnabled()));
 
@@ -369,7 +361,6 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_MAXSRCHARD_LBL, GetResString(IDS_HARDLIMIT));
 		SetDlgItemText(IDC_WIZARD, GetResString(IDS_WIZARD) + _T("..."));
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
-		SetDlgItemText(IDC_OPENPORTS, GetResString(IDS_FO_PREFBUTTON));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));
 		ShowLimitValues();
@@ -484,26 +475,6 @@ BOOL CPPgConnection::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
-}
-
-void CPPgConnection::OnBnClickedOpenports()
-{
-	OnApply();
-	theApp.m_pFirewallOpener->RemoveRule(EMULE_DEFAULTRULENAME_UDP);
-	theApp.m_pFirewallOpener->RemoveRule(EMULE_DEFAULTRULENAME_TCP);
-	bool bAlreadyExisted = theApp.m_pFirewallOpener->DoesRuleExist(thePrefs.GetPort(), NAT_PROTOCOL_TCP)
-		|| theApp.m_pFirewallOpener->DoesRuleExist(thePrefs.GetUDPPort(), NAT_PROTOCOL_UDP);
-	bool bResult = theApp.m_pFirewallOpener->OpenPort(thePrefs.GetPort(), NAT_PROTOCOL_TCP, EMULE_DEFAULTRULENAME_TCP, false);
-	if (thePrefs.GetUDPPort() != 0)
-		bResult = bResult && theApp.m_pFirewallOpener->OpenPort(thePrefs.GetUDPPort(), NAT_PROTOCOL_UDP, EMULE_DEFAULTRULENAME_UDP, false);
-	if (bResult) {
-		if (!bAlreadyExisted)
-			LocMessageBox(IDS_FO_PREF_SUCCCEEDED, MB_ICONINFORMATION | MB_OK, 0);
-		else
-			// TODO: actually we could offer the user to remove existing rules
-			LocMessageBox(IDS_FO_PREF_EXISTED, MB_ICONINFORMATION | MB_OK, 0);
-	} else
-		LocMessageBox(IDS_FO_PREF_FAILED, MB_ICONSTOP | MB_OK, 0);
 }
 
 void CPPgConnection::OnStartPortTest()

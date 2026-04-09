@@ -105,7 +105,6 @@ void DestroyIconsArr(HICON *pIcon, size_t cnt)
 
 bool InitAttachedBrowseButton(HWND hwndButton, HICON &ricoBrowse)
 {
-	// Showing an icon button works for all Windows versions *except* Windows XP w/ active styles
 	if (theApp.IsXPThemeActive())
 		return false;
 

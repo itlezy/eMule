@@ -163,8 +163,6 @@ BOOL CKademliaWnd::OnInitDialog()
 	m_pbtnWnd->SetButtonInfo(0, &tbbi);
 
 	// 'GetMaxSize' does not work properly under:
-	//	- Win98SE with COMCTL32 v5.80
-	//	- Win2000 with COMCTL32 v5.81
 	// The value returned by 'GetMaxSize' is just couple of pixels too small so that the
 	// last toolbar button is nearly not visible at all.
 	// So, to circumvent such problems, the toolbar control should be created right with

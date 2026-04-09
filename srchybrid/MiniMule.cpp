@@ -556,38 +556,6 @@ void CMiniMule::OnDocumentComplete(LPDISPATCH pDisp, LPCTSTR pszUrl)
 		CreateAutoCloseTimer();
 }
 
-#if 0
-UINT GetTaskbarPos(HWND hwndTaskbar)
-{
-	if (hwndTaskbar != NULL) {
-		// See also: Q179908
-		//
-		// However, using 'SHAppBarMessage' is quite *dangerous* because it sends a message to a different thread. This
-		// means that the sending thread will process incoming non-queued messages while waiting for its message to be processed.
-		// In other words, while processing 'SHAppBarMessage' our thread will receive incoming messages.
-		//
-		APPBARDATA abd = {};
-		abd.cbSize = (DWORD)sizeof abd;
-		abd.hWnd = hwndTaskbar;
-		SHAppBarMessage(ABM_GETTASKBARPOS, &abd);
-
-		// SHAppBarMessage may fail to get the rectangle...
-		CRect rcAppBar(abd.rc);
-		if (rcAppBar.IsRectEmpty())
-			GetWindowRect(hwndTaskbar, &abd.rc);
-
-		if (abd.rc.top == abd.rc.left && abd.rc.bottom > abd.rc.right)
-			return ABE_LEFT;
-		else if (abd.rc.top == abd.rc.left && abd.rc.bottom < abd.rc.right)
-			return ABE_TOP;
-		else if (abd.rc.top > abd.rc.left)
-			return ABE_BOTTOM;
-		return ABE_RIGHT;
-	}
-	return ABE_BOTTOM;
-}
-#endif
-
 void CMiniMule::AutoSizeAndPosition(CSize sizClient)
 {
 	ASSERT(GetCurrentThreadId() == g_uMainThreadId);
@@ -613,11 +581,6 @@ void CMiniMule::AutoSizeAndPosition(CSize sizClient)
 		::GetWindowRect(hWndTaskbar, &rcTaskbar);
 
 	UINT uTaskbarPos;
-#if 0
-	// Do *NOT* use 'GetTaskbarPos' (which will use 'SHAppBarMessage') -- it may cause us to crash due to internal
-	// details in 'SHAppBarMessage' !
-	uTaskbarPos = GetTaskbarPos(hWndTaskbar);
-#else
 	if (rcTaskbar.left <= 0) {
 		if (rcTaskbar.top <= 0)
 			uTaskbarPos = (rcTaskbar.Width() > rcTaskbar.Height()) ? ABE_TOP : ABE_LEFT;
@@ -625,7 +588,6 @@ void CMiniMule::AutoSizeAndPosition(CSize sizClient)
 			uTaskbarPos = ABE_BOTTOM;
 	} else
 		uTaskbarPos = ABE_RIGHT;
-#endif
 	POINT ptWnd;
 	switch (uTaskbarPos) {
 	case ABE_TOP:

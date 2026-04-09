@@ -280,7 +280,6 @@ void CClosableTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	}
 
 	// Following background clearing is needed for:
-	//	WinXP/Vista (when used without an application theme)
 	//	Vista (when used with an application theme but without a theme for the tab control)
 	if (!::IsThemeActive() || !::IsAppThemed() || (!hTheme && bVistaThemeActive))
 		pDC->FillSolidRect(rcItem, ::GetSysColor(COLOR_BTNFACE));

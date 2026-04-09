@@ -98,7 +98,6 @@ public:
 		wndclass.lpszClassName = sHelperWnd;
 		::RegisterClassEx(&wndclass);
 
-		//Starting from Win2000, system supports message-only windows that are not visible,
 		//have no z-order, cannot be enumerated, and do not receive broadcast messages.
 		m_hWnd = ::CreateWindow(sHelperWnd, NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, NULL,0);
 		if (m_hWnd)

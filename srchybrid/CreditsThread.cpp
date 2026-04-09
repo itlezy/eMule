@@ -97,26 +97,6 @@ BOOL CCreditsThread::InitInstance()
 	return bResult;
 }
 
-// wait for vertical retrace
-// makes scrolling smoother, especially at fast speeds
-// NT does not like this at all
-void waitvrt()
-{
-#ifdef _M_IX86
-	__asm {
-		mov	dx, 3dah
-		VRT :
-		in		al, dx
-			test	al, 8
-			jnz		VRT
-			NoVRT :
-		in		al, dx
-			test	al, 8
-			jz		NoVRT
-	}
-#endif
-}
-
 void CCreditsThread::SingleStep()
 {
 	// if this is our first time, initialize the credits
@@ -141,10 +121,6 @@ void CCreditsThread::SingleStep()
 	m_dcScreen.BitBlt(0, 0, m_nCreditsBmpWidth, m_nCreditsBmpHeight, &m_dcCredits, 0, nScrollY, SRCINVERT);
 	m_dcScreen.BitBlt(0, 0, m_nCreditsBmpWidth, m_nCreditsBmpHeight, &m_dcMask, 0, nScrollY, SRCAND);
 	m_dcScreen.BitBlt(0, 0, m_nCreditsBmpWidth, m_nCreditsBmpHeight, &m_dcCredits, 0, nScrollY, SRCINVERT);
-
-	// wait for vertical retrace
-	if (m_bWaitVRT)
-		waitvrt();
 
 	m_dc.BitBlt(m_rectScreen.left, m_rectScreen.top, m_rectScreen.Width(), m_rectScreen.Height(), &m_dcScreen, 0, 0, SRCCOPY);
 

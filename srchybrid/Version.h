@@ -1,9 +1,7 @@
 #ifndef __VERSION_H__
 #define __VERSION_H__
 
-#if _MSC_VER > 1000
 #pragma once
-#endif
 
 #ifndef _T
 #define _T(x)	x

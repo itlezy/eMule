@@ -98,7 +98,6 @@
 #include "PartFileWriteThread.h"
 #include "ImportParts.h"
 #include "ClientCredits.h"
-#include "FirewallOpener.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -341,19 +340,7 @@ LRESULT CemuleDlg::OnAreYouEmule(WPARAM, LPARAM)
 
 static void DialogCreateIndirect(CDialog *pWnd, UINT uID)
 {
-#if 0
-	// This could be a nice way to change the font size of the main windows without needing
-	// to re-design the dialog resources. However, that technique does not work for the
-	// SearchWnd and it also introduces new glitches (which would need to get resolved)
-	// in almost all of the main windows.
-	CDialogTemplate dlgTempl;
-	dlgTempl.Load(MAKEINTRESOURCE(uID));
-	dlgTempl.SetFont(_T("MS Shell Dlg"), 8);
-	pWnd->CreateIndirect(dlgTempl.m_hTemplate);
-	FreeResource(dlgTempl.Detach());
-#else
 	pWnd->Create(uID);
-#endif
 }
 
 BOOL CemuleDlg::OnInitDialog()
@@ -1748,7 +1735,6 @@ void CemuleDlg::OnClose()
 	delete theApp.scheduler;				theApp.scheduler = NULL;
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
 	delete theApp.webserver;				theApp.webserver = NULL;
-	delete theApp.m_pFirewallOpener;		theApp.m_pFirewallOpener = NULL;
 	delete theApp.uploadBandwidthThrottler;	theApp.uploadBandwidthThrottler = NULL;
 	delete theApp.lastCommonRouteFinder;	theApp.lastCommonRouteFinder = NULL;
 	delete theApp.m_pUPnPFinder;			theApp.m_pUPnPFinder = NULL;
@@ -2236,7 +2222,6 @@ void CemuleDlg::SetAllIcons()
 	// resource compiler as the 1st icon in the resource table!
 	m_hIcon = AfxGetApp()->LoadIcon(_T("AAAEMULEAPP"));
 	SetIcon(m_hIcon, TRUE);
-	// this scales the 32x32 icon down to 16x16, does not look nice at least under WinXP
 	//SetIcon(m_hIcon, FALSE);
 
 	// connection state

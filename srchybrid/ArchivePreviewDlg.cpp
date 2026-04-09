@@ -227,7 +227,6 @@ BOOL CArchivePreviewDlg::OnInitDialog()
 
 	AddAllOtherAnchors();
 
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	m_ContentList.SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 	// To support full sorting of the archive entries list we'd need a separate list which
 	// is holding the unified archive entries for all different supported archive formats so

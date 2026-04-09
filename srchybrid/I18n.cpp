@@ -299,7 +299,6 @@ void CPreferences::InitThreadLocale()
 	// NOTE: This function is for testing multi language support only.
 	// NOTE: This function is *NOT* to be enabled in release builds nor to be offered by any Mod!
 	if (theApp.GetProfileInt(_T("eMule"), _T("SetLanguageACP"), 0) != 0) {
-		//LCID lcidUser = GetUserDefaultLCID();		// Installation, or altered by user in control panel (WinXP)
 
 		// get the ANSI code page which is to be used for all non-Unicode conversions.
 		LANGID lidSystem = m_wLanguageID;

@@ -510,13 +510,11 @@ void CSearchParamsWnd::InitMethodsCtrl()
 class SFileTypeCbEntry
 {
 public:
-#if _MSC_VER>=1400
 	SFileTypeCbEntry()
 		: m_pszItemData()
 		, m_iImage()
 	{
 	}
-#endif
 	SFileTypeCbEntry(const CString &strLabel, LPCTSTR pszItemData, int iImage)
 		: m_strLabel(strLabel)
 		, m_pszItemData(pszItemData)

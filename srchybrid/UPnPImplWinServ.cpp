@@ -97,24 +97,8 @@ CUPnPImplWinServ::~CUPnPImplWinServ()
 // Helper function to check if UPnP Device Host service is healthy
 // Although SSPD service is dependent on this service but sometimes it may lock up.
 // This will result in application lockup when we call any methods of IUPnPDeviceFinder.
-// ToDo: Add a support for WinME.
 bool CUPnPImplWinServ::IsReady()
 {
-	switch (thePrefs.GetWindowsVersion()) {
-	case _WINVER_ME_:
-		return true;
-	case _WINVER_2K_:
-	case _WINVER_XP_:
-	case _WINVER_2003_:
-	case _WINVER_VISTA_:
-	case _WINVER_7_:
-	case _WINVER_8_:
-	case _WINVER_8_1_:
-	case _WINVER_10_:
-		break;
-	default:
-		return false;
-	}
 	Init();
 
 	bool bResult = false;
@@ -215,9 +199,8 @@ void CUPnPImplWinServ::ProcessAsyncFind(CComBSTR bsSearchType)
 void CUPnPImplWinServ::StopAsyncFind()
 {
 	// This will stop the async find if it is in progress
-	// ToDo: Locks up in WinME, cancelling is required <- critical
 
-	if (m_bInited && thePrefs.GetWindowsVersion() != _WINVER_ME_ && IsAsyncFindRunning()) {
+	if (m_bInited && IsAsyncFindRunning()) {
 		if (FAILED(m_pDeviceFinder->CancelAsyncFind(m_nAsyncFindHandle)))
 			DebugLogError(_T("Cancel AsyncFind failed in UPnP finder."));
 	}

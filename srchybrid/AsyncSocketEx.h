@@ -62,11 +62,7 @@ to tim.kosse@filezilla-project.org
 */
 
 #pragma once
-#if _MSC_VER <= 1800 //VS 2013
-#define THREADLOCAL __declspec(thread)
-#else
 #define THREADLOCAL thread_local
-#endif
 
 #define FD_FORCEREAD (1<<15)
 #define FD_DEFAULT (FD_READ | FD_WRITE | FD_OOB | FD_ACCEPT | FD_CONNECT | FD_CLOSE)

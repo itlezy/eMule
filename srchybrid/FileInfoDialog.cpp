@@ -135,7 +135,7 @@ public:
 				ULONGLONG ullVersion = GetModuleVersion(m_hLib);
 				if (ullVersion >= MAKEDLLVERULL(0, 7, 13, 0)
 					&& (thePrefs.GetWindowsVersion() >= _WINVER_VISTA_ && ullVersion < MAKEDLLVERULL(25, 11, 0, 0)
-						|| ullVersion < MAKEDLLVERULL(21, 4, 0, 0))) //21.03 for Windows XP
+						|| ullVersion < MAKEDLLVERULL(21, 4, 0, 0)))
 				{
 					(FARPROC &)m_pfnMediaInfo_New = ::GetProcAddress(m_hLib, "MediaInfo_New");
 					(FARPROC &)m_pfnMediaInfo_Delete = ::GetProcAddress(m_hLib, "MediaInfo_Delete");
@@ -1729,7 +1729,6 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 		// Try MediaDet object
 		//
 		// Avoid processing of some file types which are known to crash due to bugged DirectShow filters.
-#ifdef HAVE_QEDIT_H
 		if (theApp.GetProfileInt(_T("eMule"), _T("MediaInfo_MediaDet"), 1)
 			&& (thePrefs.GetInspectAllFileTypes()
 				|| (szExt != _T("ogm") && szExt != _T("ogg") && szExt != _T("mkv"))))
@@ -1920,9 +1919,6 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 				ASSERT(0);
 			}
 		}
-#else//HAVE_QEDIT_H
-#pragma message("WARNING: Missing 'qedit.h' header file - some features will get disabled. See the file 'emule_site_config.h' for more information.")
-#endif//HAVE_QEDIT_H
 	}
 
 	if (!bFoundHeader && bGiveMediaInfoLibHint) {

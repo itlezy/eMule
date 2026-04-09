@@ -34,9 +34,7 @@
 * The standard Berkeley Sockets SOCK_RAW socket type, is normally used
 * to create ping (echo request/reply), and sometimes traceroute applications
 * (the original traceroute application from Van Jacobson used UDP, rather
-* than ICMP). Microsoft's WinSock version 2 implementations for NT4 and
-* Windows 95 support raw sockets, but none of their WinSock version 1.1
-* implementations (WFWG, NT3.x or standard Windows 95) did.
+* than ICMP).
 *
 * Microsoft has their own API for an ICMP.DLL that their ping and tracert
 * applications use (by the way, they are both non-GUI text-based console

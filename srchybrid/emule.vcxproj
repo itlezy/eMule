@@ -84,12 +84,11 @@
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\$(Configuration)\mbedtls.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\$(Configuration)\mbedx509.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsLibRoot)$(Configuration)\mbedtls.lib;$(MbedTlsLibRoot)$(Configuration)\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IncrementalLink>true</IncrementalLink>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -118,12 +117,11 @@
       <OmitFramePointers>true</OmitFramePointers>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\$(Configuration)\mbedtls.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\$(Configuration)\mbedx509.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsLibRoot)$(Configuration)\mbedtls.lib;$(MbedTlsLibRoot)$(Configuration)\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -151,12 +149,11 @@
       <Optimization>Disabled</Optimization>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;_BOOTSTRAPNODESDAT;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <PreprocessorDefinitions Condition="'$(Platform)'!='ARM64'">XP_BUILD;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\Debug\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\Debug\id3lib.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\Debug\mbedtls.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\Debug\mbedx509.lib;$(MbedTlsRoot)visualc\VS2017-$(Platform)\library\tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\Debug\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;delayimp.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\Debug\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\Debug\id3lib.lib;$(MbedTlsLibRoot)Debug\mbedtls.lib;$(MbedTlsLibRoot)Debug\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\Debug\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\Debug\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\Debug\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IncrementalLink>true</IncrementalLink>
       <DelayLoadDLLs>gdiplus.dll;msimg32.dll;oleacc.dll;ws2_32.dll;%(DelayLoadDLLs)</DelayLoadDLLs>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
@@ -238,7 +235,6 @@
     <ClCompile Include="FileDetailDlgStatistics.cpp" />
     <ClCompile Include="FileIdentifier.cpp" />
     <ClCompile Include="FileInfoDialog.cpp" />
-    <ClCompile Include="FirewallOpener.cpp" />
     <ClCompile Include="FrameGrabThread.cpp" />
     <ClCompile Include="Friend.cpp" />
     <ClCompile Include="FriendList.cpp" />
@@ -361,7 +357,6 @@
     <ClCompile Include="SearchListCtrl.cpp" />
     <ClCompile Include="SearchParamsWnd.cpp" />
     <ClCompile Include="SearchResultsWnd.cpp" />
-    <ClCompile Include="SecRunAsUser.cpp" />
     <ClCompile Include="SelfTest.cpp" />
     <ClCompile Include="SendMail.cpp" />
     <ClCompile Include="Server.cpp" />
@@ -517,7 +512,6 @@
     <ClInclude Include="FileDetailDlgStatistics.h" />
     <ClInclude Include="FileIdentifier.h" />
     <ClInclude Include="FileInfoDialog.h" />
-    <ClInclude Include="FirewallOpener.h" />
     <ClInclude Include="FrameGrabThread.h" />
     <ClInclude Include="Friend.h" />
     <ClInclude Include="FriendList.h" />
@@ -653,7 +647,6 @@
     <ClInclude Include="SearchParams.h" />
     <ClInclude Include="SearchParamsWnd.h" />
     <ClInclude Include="SearchResultsWnd.h" />
-    <ClInclude Include="SecRunAsUser.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="ServerConnect.h" />
     <ClInclude Include="ServerList.h" />

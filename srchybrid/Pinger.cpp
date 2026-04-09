@@ -27,8 +27,7 @@
 * - Although the IcmpSendEcho() docs say it can return multiple
 *    responses, if I receive multiple responses (e.g. sending to
 *    a limited or subnet broadcast address) IcmpSendEcho() only
-*    returns one.  Interesting that NT4 and Win98 don't respond
-*    to broadcast pings.
+*    returns one.
 * - using winsock.h  WSOCK32.LIB and version 1.1 works as well as
 *    using winsock2.h WS2_32.LIB  and version 2.2
 *
@@ -37,9 +36,7 @@
 * The standard Berkeley Sockets SOCK_RAW socket type, is normally used
 * to create ping (echo request/reply), and sometimes traceroute applications
 * (the original traceroute application from Van Jacobson used UDP, rather
-* than ICMP). Microsoft's WinSock version 2 implementations for NT4 and
-* Windows 95 support raw sockets, but none of their WinSock version 1.1
-* implementations (WFWG, NT3.x or standard Windows 95) did.
+* than ICMP).
 *
 * Microsoft has their own API for an ICMP.DLL that their ping and tracert
 * applications use (by the way, they are both non-GUI text-based console
@@ -374,39 +371,6 @@ PingStatus Pinger::PingICMP(uint32 lAddr, DWORD ttl, bool doLog)
 
 void Pinger::PIcmpErr(LPCTSTR pszMsg, DWORD nICMPErr)
 {
-#ifdef XP_BUILD
-	static LPCTSTR const aszSendEchoErr[] =
-	{
-		_T("IP_STATUS_BASE (11000)"),
-		_T("IP_BUF_TOO_SMALL (11001)"),
-		_T("IP_DEST_NET_UNREACHABLE (11002)"),
-		_T("IP_DEST_HOST_UNREACHABLE (11003)"),
-		_T("IP_DEST_PROT_UNREACHABLE (11004)"),
-		_T("IP_DEST_PORT_UNREACHABLE (11005)"),
-		_T("IP_NO_RESOURCES (11006)"),
-		_T("IP_BAD_OPTION (11007)"),
-		_T("IP_HW_ERROR (11008)"),
-		_T("IP_PACKET_TOO_BIG (11009)"),
-		_T("IP_REQ_TIMED_OUT (11010)"),
-		_T("IP_BAD_REQ (11011)"),
-		_T("IP_BAD_ROUTE (11012)"),
-		_T("IP_TTL_EXPIRED_TRANSIT (11013)"),
-		_T("IP_TTL_EXPIRED_REASSEM (11014)"),
-		_T("IP_PARAM_PROBLEM (11015)"),
-		_T("IP_SOURCE_QUENCH (11016)"),
-		_T("IP_OPTION_TOO_BIG (11017)"),
-		_T("IP_BAD_DESTINATION (11018)"),
-		_T("IP_ADDR_DELETED (11019)"),
-		_T("IP_SPEC_MTU_CHANGE (11020)"),
-		_T("IP_MTU_CHANGE (11021)"),
-		_T("IP_UNLOAD (11022)")
-	};
-
-	bool b = (nICMPErr >= IP_STATUS_BASE && nICMPErr < IP_STATUS_BASE + _countof(aszSendEchoErr));
-	theApp.QueueDebugLogLine(false, _T("%sPinger: %s")
-		, pszMsg ? pszMsg : _T("")
-		, (LPCTSTR)(b ? aszSendEchoErr[nICMPErr - IP_STATUS_BASE] : GetErrorMessage(nICMPErr, 1)));
-#else
 	DWORD dwSize = 511;
 	CStringW sErr;
 	bool b = (GetIpErrorString(nICMPErr, sErr.GetBuffer(dwSize), &dwSize) == NO_ERROR);
@@ -414,5 +378,4 @@ void Pinger::PIcmpErr(LPCTSTR pszMsg, DWORD nICMPErr)
 	theApp.QueueDebugLogLine(false, _T("%sPinger: %s")
 		, pszMsg ? pszMsg : _T("")
 		, (LPCTSTR)(b ? (CString)sErr.Trim() : GetErrorMessage(nICMPErr, 1)));
-#endif
 }

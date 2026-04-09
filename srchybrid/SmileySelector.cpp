@@ -125,7 +125,6 @@ BOOL CSmileySelector::CreateWnd(CWnd *pWndParent, LPCRECT pRect, CEdit *pwndEdit
 	{
 		return FALSE;
 	}
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	m_tb.SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 
 	//////////////////////////////////////////////////////////////////////////

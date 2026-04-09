@@ -197,9 +197,9 @@ BOOL CChatWnd::OnInitDialog()
 
 	SIZE size;
 	m_wndFormat.GetMaxSize(&size);
-	if (size.cx < 24) // avoid glitch with COMCTL32 v5.81 and Win2000
+	if (size.cx < 24)
 		size.cx = 24;
-	if (size.cy < 22) // avoid glitch with COMCTL32 v5.81 and Win2000
+	if (size.cy < 22)
 		size.cy = 22;
 	::SetWindowPos(m_wndFormat, NULL, 0, 0, size.cx, size.cy, SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE);
 

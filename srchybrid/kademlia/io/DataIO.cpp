@@ -491,16 +491,6 @@ namespace Kademlia
 		// from 0x80-0xFF and more.
 		//rwstr.MakeLower();
 
-#if 0
-		//PROBLEM: LCMapStringW does not work on Win9x (the string is not changed and LCMapStringW returns 0!)
-		// Possible solution: use a pre-computed static character map.
-		int iLen = rwstr.GetLength();
-		LPWSTR pwsz = rwstr.GetBuffer(iLen);
-		int iSize = LCMapStringW(MAKELCID(MAKELANGID(LANG_ENGLISH, SUBLANG_ENGLISH_US), SORT_DEFAULT)
-			, LCMAP_LOWERCASE, pwsz, -1, pwsz, iLen + 1);
-		ASSERT(iSize - 1 == iLen);
-		rwstr.ReleaseBuffer(iLen);
-#else
 		// NOTE: It's very important that the Unicode->LowerCase map already was initialized!
 		if (s_awcLowerMap[L'A'] != L'a') {
 			AfxMessageBox(_T("Kad Unicode lower case character map not initialized!"));
@@ -512,7 +502,6 @@ namespace Kademlia
 		while ((*pwsz = s_awcLowerMap[*pwsz]) != L'\0')
 			++pwsz;
 		rwstr.ReleaseBuffer(iLen);
-#endif
 	}
 
 	bool EqualKadTagStr(LPCWSTR dst, LPCWSTR src) noexcept

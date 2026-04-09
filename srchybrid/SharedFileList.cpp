@@ -1594,7 +1594,6 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 				TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
 				return;
 			}
-			// Win98: Would need to implement a different code path which is using 'IShellLinkA' on Win9x.
 			CComPtr<IShellLink> pShellLink;
 			if (SUCCEEDED(pShellLink.CoCreateInstance(CLSID_ShellLink))) {
 				CComQIPtr<IPersistFile> pPersistFile(pShellLink);

@@ -38,7 +38,7 @@ their client on the eMule forum.
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#if (_MSC_FULL_VER > 13009037) && (defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM64))
+#if (_MSC_FULL_VER > 13009037) && (defined(_M_X64) || defined(_M_ARM64))
 #pragma intrinsic(_byteswap_ulong)
 #endif
 
@@ -98,7 +98,7 @@ CUInt128& CUInt128::SetValueGUID()
 	if (CoCreateGuid(&guid) == S_OK) {
 		m_uData[0] = guid.Data1;
 		m_uData[1] = ((ULONG)guid.Data2) << 16 | guid.Data3;
-#if (_MSC_FULL_VER > 13009037) && (defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM64))
+#if (_MSC_FULL_VER > 13009037) && (defined(_M_X64) || defined(_M_ARM64))
 		m_uData[2] = _byteswap_ulong(*(ULONG*)guid.Data4);
 		m_uData[3] = _byteswap_ulong(*(ULONG*)&guid.Data4[4]);
 #else
@@ -166,7 +166,7 @@ void CUInt128::ToBinaryString(CString &str, bool bTrim) const
 
 void CUInt128::ToByteArray(byte *pby) const
 {
-#if (_MSC_FULL_VER > 13009037) && (defined(_M_IX86) || defined(_M_X64) || defined(_M_ARM64))
+#if (_MSC_FULL_VER > 13009037) && (defined(_M_X64) || defined(_M_ARM64))
 	((uint32*)pby)[0] = _byteswap_ulong(m_uData[0]);
 	((uint32*)pby)[1] = _byteswap_ulong(m_uData[1]);
 	((uint32*)pby)[2] = _byteswap_ulong(m_uData[2]);

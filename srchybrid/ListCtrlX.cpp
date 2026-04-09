@@ -314,7 +314,6 @@ void UpdateHdrImageList(CListCtrl &lv, CImageList &imlHdr, UINT uIDHdrImgList
 		CBitmap bmSortStates;
 		bmSortStates.Attach(hbmHdr);
 
-		// Create image list with a mask (NOTE: The mask is needed for WinXP!)
 		HIMAGELIST himlHeaderOld = imlHdr.Detach();
 		if (imlHdr.Create(sizeHdrImgListIcon.cx, sizeHdrImgListIcon.cy, ILC_COLOR | ILC_MASK, iHdrImgListImages, 0)) {
 			// Fill images and masks into image list
@@ -333,7 +332,7 @@ void UpdateHdrImageList(CListCtrl &lv, CImageList &imlHdr, UINT uIDHdrImgList
 				::ImageList_Destroy(himlHeaderOld);
 
 #if defined(HDM_GETBITMAPMARGIN) && defined(HDM_SETBITMAPMARGIN)
-			int iBmpMargin = (int)pHdrCtrl->SendMessage(HDM_GETBITMAPMARGIN); // Win2000: default is '6' (3*GetSystemMetrics(SM_CXEDGE))
+			int iBmpMargin = (int)pHdrCtrl->SendMessage(HDM_GETBITMAPMARGIN);
 			// Use same bitmap margin as Windows (W2K) Explorer -- this saves some pixels which
 			// may be required for rather small column titles!
 			int iNewBmpMargin = ::GetSystemMetrics(SM_CXEDGE) + ::GetSystemMetrics(SM_CXEDGE) / 2;

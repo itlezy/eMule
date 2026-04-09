@@ -10,7 +10,6 @@
 //		 (now handles the presence of quick launch or any other bar).
 //		 Remove the Handlers for WM_CREATE and WM_DESTROY
 //		 SetSkin is now called SetBitmap
-// 14 July 2002: - Changed the GenerateRegion func by a new one (to correct a win98 bug)
 // kei-kun modifications:
 // 30 October  2002: - Added event type management (TBN_*) for eMule project
 // 04 November 2002: - added skin support via .ini file

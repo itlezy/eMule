@@ -210,7 +210,7 @@ LRESULT CToolbarWnd::OnInitDialog(WPARAM, LPARAM)
 
 	// older Windows versions image lists cannot create monochrome (disabled) icons with alpha support
 	// so we have to take care of this ourself
-	if (thePrefs.GetWindowsVersion() < _WINVER_VISTA_ && nFlags != ILC_COLOR4) {
+	if (nFlags != ILC_COLOR4) {
 		CImageList iml2;
 		iml2.Create(16, 16, nFlags, 1, 1);
 		for (unsigned i = 0; i < _countof(sIconNames); ++i)

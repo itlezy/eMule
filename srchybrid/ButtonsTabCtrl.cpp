@@ -124,7 +124,6 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 		bVistaHotTracked = false;
 
 	// Following background clearing is needed for:
-	//	WinXP/Vista (when used without an application theme)
 	//	Vista (when used with an application theme but without a theme for the tab control)
 	if (!::IsThemeActive() || !::IsAppThemed() || (hTheme == NULL && bVistaThemeActive))
 		pDC->FillSolidRect(&lpDIS->rcItem, ::GetSysColor(COLOR_BTNFACE));

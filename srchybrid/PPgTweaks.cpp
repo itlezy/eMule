@@ -86,7 +86,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiExtractMetaDataID3Lib()
 	, m_htiExtractMetaDataNever()
 	, m_htiFilterLANIPs()
-	, m_htiFirewallStartup()
 	, m_htiFullAlloc()
 	, m_htiImportParts()
 	, m_htiLog2Disk()
@@ -144,7 +143,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bDynUpEnabled()
 	, m_bExtControls()
 	, m_bFilterLANIPs()
-	, m_bFirewallStartup()
 	, m_bFullAlloc()
 	, m_bImportParts()
 	, m_bInitializedTreeOpts()
@@ -209,7 +207,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		//
 		m_htiAutoTakeEd2kLinks = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_AUTOTAKEED2KLINKS), TVI_ROOT, m_bAutoTakeEd2kLinks);
 		m_htiCreditSystem = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USECREDITSYSTEM), TVI_ROOT, m_bCreditSystem);
-		m_htiFirewallStartup = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FO_PREF_STARTUP), TVI_ROOT, m_bFirewallStartup);
 		m_htiFilterLANIPs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PW_FILTER), TVI_ROOT, m_bFilterLANIPs);
 		m_htiExtControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWEXTSETTINGS), TVI_ROOT, m_bExtControls);
 		m_htiA4AFSaveCpu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_A4AF_SAVE_CPU), TVI_ROOT, m_bA4AFSaveCpu); // ZZ:DownloadManager
@@ -325,8 +322,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	WORD wv = thePrefs.GetWindowsVersion();
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoTakeEd2kLinks, m_bAutoTakeEd2kLinks);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCreditSystem, m_bCreditSystem);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFirewallStartup, m_bFirewallStartup);
-	m_ctrlTreeOptions.SetCheckBoxEnable(m_htiFirewallStartup, wv == _WINVER_XP_ && !IsRunningXPSP2());
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFilterLANIPs, m_bFilterLANIPs);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtControls, m_bExtControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiA4AFSaveCpu, m_bA4AFSaveCpu);
@@ -459,7 +454,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bResolveShellLinks = thePrefs.GetResolveSharedShellLinks();
 	m_iMinFreeDiskSpaceGB = static_cast<int>(PartFilePersistenceSeams::ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(thePrefs.GetMinFreeDiskSpace()));
 	m_sYourHostname = thePrefs.GetYourHostname();
-	m_bFirewallStartup = ((thePrefs.GetWindowsVersion() == _WINVER_XP_) ? thePrefs.m_bOpenPortsOnStartUp : 0);
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
 
 	m_bDynUpEnabled = thePrefs.m_bDynUpEnabled;
@@ -590,8 +584,6 @@ BOOL CPPgTweaks::OnApply()
 		thePrefs.SetYourHostname(m_sYourHostname);
 		theApp.emuledlg->serverwnd->UpdateMyInfo();
 	}
-	thePrefs.m_bOpenPortsOnStartUp = m_bFirewallStartup;
-
 	thePrefs.m_bDynUpEnabled = m_bDynUpEnabled;
 	thePrefs.m_minupload = (uint32)m_iDynUpMinUpload;
 	thePrefs.m_iDynUpPingTolerance = m_iDynUpPingTolerance;
@@ -689,7 +681,6 @@ void CPPgTweaks::Localize()
 		//LocalizeItemText(m_htiExtractMetaDataMediaDet, IDS_META_DATA_MEDIADET);
 		LocalizeItemText(m_htiExtractMetaDataNever, IDS_NEVER);
 		LocalizeItemText(m_htiFilterLANIPs, IDS_PW_FILTER);
-		LocalizeItemText(m_htiFirewallStartup, IDS_FO_PREF_STARTUP);
 		LocalizeItemText(m_htiFullAlloc, IDS_FULLALLOC);
 		LocalizeItemText(m_htiImportParts, IDS_ENABLEIMPORTPARTS);
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
@@ -758,7 +749,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiCheckDiskspace = NULL;
 	m_htiMinFreeDiskSpace = NULL;
 	m_htiYourHostname = NULL;
-	m_htiFirewallStartup = NULL;
 	m_htiDynUp = NULL;
 	m_htiDynUpEnabled = NULL;
 	m_htiDynUpMinUpload = NULL;

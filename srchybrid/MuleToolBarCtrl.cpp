@@ -111,7 +111,6 @@ void CMuleToolbarCtrl::Init()
 {
 	m_astrToolbarPaths.RemoveAll();
 
-	// Win98: Explicitly set to Unicode to receive Unicode notifications.
 	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 
 	ModifyStyle(0, TBSTYLE_FLAT | TBSTYLE_ALTDRAG | CCS_ADJUSTABLE | TBSTYLE_TRANSPARENT | TBSTYLE_TOOLTIPS | CCS_NODIVIDER);
@@ -275,7 +274,6 @@ void CMuleToolbarCtrl::SetAllButtonsWidth()
 	} else {
 		int iSmallIconsButtonHeight;
 		if (theApp.m_ullComCtrlVer < MAKEDLLVERULL(6, 0, 0, 0)) {
-			// Win98,WinME,Win2000: Comtrl32 prior to 6.0 cannot make a toolbar smaller than 22 pixels
 			// in height and if it gets larger than 22 pixels the icons do not get centered vertically.
 			iSmallIconsButtonHeight = 22;
 		} else
@@ -843,7 +841,6 @@ void CMuleToolbarCtrl::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 	// Vista: There are certain situations where the toolbar control does not redraw/resize
 	// correctly under Vista. Unfortunately Vista just sends a WM_SETTINGCHANGE when certain
 	// system settings have changed. Furthermore Vista sends that particular message way
-	// more often than WinXP.
 	// Whenever the toolbar control receives a WM_SETTINGCHANGE, it tries to resize itself
 	// (most likely because it thinks that some system font settings have changed). However,
 	// that resizing does fail when the toolbar control has certain non-standard metrics
