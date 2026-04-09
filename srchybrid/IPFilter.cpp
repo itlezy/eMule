@@ -72,7 +72,7 @@ INT_PTR	CIPFilter::LoadFromDefaultFile(bool bShowResponse)
 INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 {
 	const DWORD dwStart = ::GetTickCount();
-	FILE *readFile = _tfsopen(pszFilePath, _T("r"), _SH_DENYWR);
+	FILE *readFile = LongPathSeams::OpenFileStreamDenyWriteLongPath(pszFilePath, _T("r"));
 	if (readFile != NULL) {
 		int iFoundRanges = 0;
 		int iLine = 0;
@@ -263,7 +263,7 @@ INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 void CIPFilter::SaveToDefaultFile()
 {
 	const CString &strFilePath(GetDefaultFilePath());
-	FILE *fp = _tfsopen(strFilePath, _T("wt"), _SH_DENYWR);
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(strFilePath, _T("wt"));
 	if (fp != NULL) {
 		for (INT_PTR i = 0; i < m_iplist.GetCount(); ++i) {
 			const SIPFilter *flt = m_iplist[i];

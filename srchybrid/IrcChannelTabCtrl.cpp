@@ -31,6 +31,7 @@
 #include "emule.h"
 #include "IrcWnd.h"
 #include "IrcMain.h"
+#include "LongPathSeams.h"
 #include "otherfunctions.h"
 #include "HTRichEditCtrl.h"
 #include "UserMsgs.h"
@@ -256,7 +257,7 @@ Channel* CIrcChannelTabCtrl::NewChannel(const CString &sChannel, Channel::EType 
 			m_pParent->AddColorLine(_T("\017normal\r\n"), pChannel->m_wndLog);
 
 			LPCWSTR log = L"C:\\Program\\mIRC 2\\channels\\MindForge_Sorted_X.txt";
-			FILE *fp = _wfopen(log, L"rt");
+			FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(log, _T("rt"));
 			if (fp) {
 				int i = 0;
 				int iMax = 10000;

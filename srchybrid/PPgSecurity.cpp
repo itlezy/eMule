@@ -41,6 +41,32 @@ bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType);
 
 #define	IPFILTERUPDATEURL_STRINGS_PROFILE	_T("AC_IPFilterUpdateURLs.dat")
 
+namespace
+{
+	/**
+	 * @brief Builds the temporary IP-filter download and unpack paths beside the configured destination file.
+	 */
+	CString BuildIpFilterTempPath(LPCTSTR pszSuffix)
+	{
+		return thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + DFLT_IPFILTER_FILENAME + (pszSuffix != NULL ? pszSuffix : _T(""));
+	}
+
+	/**
+	 * @brief Promotes a downloaded or unpacked IP-filter file into place through long-path-safe move/delete helpers.
+	 */
+	bool PromoteIpFilterFile(LPCTSTR pszSourcePath, LPCTSTR pszDownloadedArchivePath = NULL)
+	{
+		const CString &strTargetPath = theApp.ipfilter->GetDefaultFilePath();
+		if (!LongPathSeams::DeleteFileIfExists(strTargetPath))
+			TRACE(_T("*** Error: Failed to remove default IP filter file \"%s\" - %s\n"), (LPCTSTR)strTargetPath, _tcserror(errno));
+		if (!LongPathSeams::MoveFileEx(pszSourcePath, strTargetPath, MOVEFILE_REPLACE_EXISTING))
+			TRACE(_T("*** Error: Failed to move IP filter file \"%s\" to default IP filter file \"%s\" - %s\n"), pszSourcePath, (LPCTSTR)strTargetPath, _tcserror(errno));
+		if (pszDownloadedArchivePath != NULL && !LongPathSeams::DeleteFileIfExists(pszDownloadedArchivePath))
+			TRACE(_T("*** Error: Failed to remove temporary IP filter file \"%s\" - %s\n"), pszDownloadedArchivePath, _tcserror(errno));
+		return LongPathSeams::PathExists(strTargetPath);
+	}
+}
+
 IMPLEMENT_DYNAMIC(CPPgSecurity, CPropertyPage)
 
 BEGIN_MESSAGE_MAP(CPPgSecurity, CPropertyPage)
@@ -214,17 +240,14 @@ void CPPgSecurity::OnLoadIPFFromURL()
 		if (m_pacIPFilterURL && m_pacIPFilterURL->IsBound())
 			m_pacIPFilterURL->AddItem(url, 0);
 
-		const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
-		CString strTempFilePath;
-		_tmakepathlimit(strTempFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T("tmp"));
-		strTempFilePath.ReleaseBuffer();
+		const CString strTempFilePath(BuildIpFilterTempPath(_T(".tmp")));
 
 		CHttpDownloadDlg dlgDownload;
 		dlgDownload.m_strTitle = GetResString(IDS_DWL_IPFILTERFILE);
 		dlgDownload.m_sURLToDownload = url;
 		dlgDownload.m_sFileToDownloadInto = strTempFilePath;
 		if (dlgDownload.DoModal() != IDOK) {
-			(void)_tremove(strTempFilePath);
+			(void)LongPathSeams::DeleteFileIfExists(strTempFilePath);
 			CString strError(GetResString(IDS_DWLIPFILTERFAILED));
 			if (!dlgDownload.GetError().IsEmpty())
 				strError.AppendFormat(_T("\r\n\r\n%s"), (LPCTSTR)dlgDownload.GetError());
@@ -248,19 +271,12 @@ void CPPgSecurity::OnLoadIPFFromURL()
 					zfile = zip.GetFile(_T("guardian.p2p"));
 			}
 			if (zfile) {
-				CString strTempUnzipFilePath;
-				_tmakepathlimit(strTempUnzipFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T(".unzip.tmp"));
-				strTempUnzipFilePath.ReleaseBuffer();
+				const CString strTempUnzipFilePath(BuildIpFilterTempPath(_T(".unzip.tmp")));
 
 				if (zfile->Extract(strTempUnzipFilePath)) {
 					zip.Close();
 
-					if (_tremove(theApp.ipfilter->GetDefaultFilePath()) != 0)
-						TRACE(_T("*** Error: Failed to remove default IP filter file \"%s\" - %s\n"), (LPCTSTR)theApp.ipfilter->GetDefaultFilePath(), _tcserror(errno));
-					if (_trename(strTempUnzipFilePath, theApp.ipfilter->GetDefaultFilePath()) != 0)
-						TRACE(_T("*** Error: Failed to rename uncompressed IP filter file \"%s\" to default IP filter file \"%s\" - %s\n"), (LPCTSTR)strTempUnzipFilePath, (LPCTSTR)theApp.ipfilter->GetDefaultFilePath(), _tcserror(errno));
-					if (_tremove(strTempFilePath) != 0)
-						TRACE(_T("*** Error: Failed to remove temporary IP filter file \"%s\" - %s\n"), (LPCTSTR)strTempFilePath, _tcserror(errno));
+					(void)PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath);
 					bUncompressed = true;
 					bHaveNewFilterFile = true;
 				} else {
@@ -286,18 +302,11 @@ void CPPgSecurity::OnLoadIPFFromURL()
 						|| strFile.CompareNoCase(_T("guarding.p2p")) == 0
 						|| strFile.CompareNoCase(_T("guardian.p2p")) == 0))
 				{
-					CString strTempUnzipFilePath;
-					_tmakepathlimit(strTempUnzipFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T(".unzip.tmp"));
-					strTempUnzipFilePath.ReleaseBuffer();
+					const CString strTempUnzipFilePath(BuildIpFilterTempPath(_T(".unzip.tmp")));
 					if (rar.Extract(strTempUnzipFilePath)) {
 						rar.Close();
 
-						if (_tremove(theApp.ipfilter->GetDefaultFilePath()) != 0)
-							TRACE(_T("*** Error: Failed to remove default IP filter file \"%s\" - %s\n"), (LPCTSTR)theApp.ipfilter->GetDefaultFilePath(), _tcserror(errno));
-						if (_trename(strTempUnzipFilePath, theApp.ipfilter->GetDefaultFilePath()) != 0)
-							TRACE(_T("*** Error: Failed to rename uncompressed IP filter file \"%s\" to default IP filter file \"%s\" - %s\n"), (LPCTSTR)strTempUnzipFilePath, (LPCTSTR)theApp.ipfilter->GetDefaultFilePath(), _tcserror(errno));
-						if (_tremove(strTempFilePath) != 0)
-							TRACE(_T("*** Error: Failed to remove temporary IP filter file \"%s\" - %s\n"), (LPCTSTR)strTempFilePath, _tcserror(errno));
+						(void)PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath);
 						bUncompressed = true;
 						bHaveNewFilterFile = true;
 					} else {
@@ -321,9 +330,7 @@ void CPPgSecurity::OnLoadIPFFromURL()
 			if (gz.Open(strTempFilePath)) {
 				bIsArchiveFile = true;
 
-				CString strTempUnzipFilePath;
-				_tmakepathlimit(strTempUnzipFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T(".unzip.tmp"));
-				strTempUnzipFilePath.ReleaseBuffer();
+				CString strTempUnzipFilePath(BuildIpFilterTempPath(_T(".unzip.tmp")));
 
 				// add filename and extension of uncompressed file to temporary file
 				const CString &strUncompressedFileName(gz.GetUncompressedFileName());
@@ -333,12 +340,7 @@ void CPPgSecurity::OnLoadIPFFromURL()
 				if (gz.Extract(strTempUnzipFilePath)) {
 					gz.Close();
 
-					if (_tremove(theApp.ipfilter->GetDefaultFilePath()) != 0)
-						TRACE(_T("*** Error: Failed to remove default IP filter file \"%s\" - %s\n"), (LPCTSTR)theApp.ipfilter->GetDefaultFilePath(), _tcserror(errno));
-					if (_trename(strTempUnzipFilePath, theApp.ipfilter->GetDefaultFilePath()) != 0)
-						TRACE(_T("*** Error: Failed to rename uncompressed IP filter file \"%s\" to default IP filter file \"%s\" - %s\n"), (LPCTSTR)strTempUnzipFilePath, (LPCTSTR)theApp.ipfilter->GetDefaultFilePath(), _tcserror(errno));
-					if (_tremove(strTempFilePath) != 0)
-						TRACE(_T("*** Error: Failed to remove temporary IP filter file \"%s\" - %s\n"), (LPCTSTR)strTempFilePath, _tcserror(errno));
+					(void)PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath);
 					bUncompressed = true;
 					bHaveNewFilterFile = true;
 				} else {
@@ -353,7 +355,7 @@ void CPPgSecurity::OnLoadIPFFromURL()
 		if (!bIsArchiveFile && !bUncompressed) {
 			// Check first lines of downloaded file for potential HTML content (e.g. 404 error pages)
 			bool bValidIPFilterFile = true;
-			FILE *fp = _tfsopen(strTempFilePath, _T("rb"), _SH_DENYWR);
+			FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(strTempFilePath, _T("rb"));
 			if (fp) {
 				char szBuff[16384];
 				size_t iRead = fread(szBuff, 1, sizeof szBuff - 1, fp);
@@ -372,8 +374,7 @@ void CPPgSecurity::OnLoadIPFFromURL()
 			}
 
 			if (bValidIPFilterFile) {
-				(void)_tremove(theApp.ipfilter->GetDefaultFilePath());
-				VERIFY(_trename(strTempFilePath, theApp.ipfilter->GetDefaultFilePath()) == 0);
+				VERIFY(PromoteIpFilterFile(strTempFilePath));
 				bHaveNewFilterFile = true;
 			} else
 				LocMessageBox(IDS_DWLIPFILTERFAILED, MB_ICONERROR, 0);

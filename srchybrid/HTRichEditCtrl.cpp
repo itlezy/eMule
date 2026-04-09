@@ -567,7 +567,7 @@ bool CHTRichEditCtrl::SaveLog(LPCTSTR pszDefName)
 	const CString &fname(pszDefName ? pszDefName : m_strTitle);
 	CFileDialog dlg(FALSE, _T("log"), (LPCTSTR)ValidFilename(fname), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, _T("Log Files (*.log)|*.log||"), this, 0);
 	if (dlg.DoModal() == IDOK) {
-		FILE *fp = _tfsopen(dlg.GetPathName(), _T("wb"), _SH_DENYWR);
+		FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(dlg.GetPathName(), _T("wb"));
 		if (fp) {
 			// write Unicode byte order mark 0xFEFF
 			fputwc(u'\xFEFF', fp);

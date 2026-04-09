@@ -24,6 +24,7 @@
 #include "SharedFilelist.h"
 #include "emule.h"
 #include "Log.h"
+#include "LongPathSeams.h"
 #include "md5sum.h"
 
 #ifdef _DEBUG
@@ -122,7 +123,7 @@ void CCollection::SetCollectionAuthorKey(const byte *abyCollectionAuthorKey, uin
 bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString &sFileName)
 {
 	CSafeFile data;
-	if (!data.Open(sFilePath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary))
+	if (!LongPathSeams::OpenFile(data, sFilePath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary))
 		return false;
 	bool bCollectionLoaded = false;
 	try {
@@ -197,11 +198,11 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 	}
 
 	if (!bCollectionLoaded) {
-		CStdioFile data1;
-		if (data1.Open(sFilePath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeText)) {
+		CSafeBufferedFile data1;
+		if (LongPathSeams::OpenFile(data1, sFilePath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeText)) {
 			try {
 				CString sLink;
-				while (data1.ReadString(sLink)) {
+				while (data1.CStdioFile::ReadString(sLink)) {
 					//Ignore all lines that start with #.
 					//These lines can be used for future features.
 					if (sLink.Find(_T('#')) != 0) {
@@ -243,12 +244,12 @@ void CCollection::WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSi
 	sFilePath.AppendFormat(_T("%s%s"), (LPCTSTR)m_sCollectionName, COLLECTION_FILEEXTENSION);
 
 	if (m_bTextFormat) {
-		CStdioFile data;
-		if (data.Open(sFilePath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeText)) {
+		CSafeBufferedFile data;
+		if (LongPathSeams::OpenFile(data, sFilePath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeText)) {
 			try {
 				for (const CCollectionFilesMap::CPair *pair = m_CollectionFilesMap.PGetFirstAssoc(); pair != NULL; pair = m_CollectionFilesMap.PGetNextAssoc(pair))
 					if (pair->value)
-						data.WriteString(pair->value->GetED2kLink() + _T('\n'));
+						data.CStdioFile::WriteString(pair->value->GetED2kLink() + _T('\n'));
 
 				data.Close();
 			} catch (CFileException *ex) {
@@ -261,7 +262,7 @@ void CCollection::WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSi
 		}
 	} else {
 		CSafeFile data;
-		if (data.Open(sFilePath, CFile::modeCreate | CFile::modeReadWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
+		if (LongPathSeams::OpenFile(data, sFilePath, CFile::modeCreate | CFile::modeReadWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
 			try {
 				//Version
 				// check first if we have any large files in the map - write use lowest version possible

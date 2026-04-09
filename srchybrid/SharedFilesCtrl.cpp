@@ -896,12 +896,12 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 						break;
 					}
 
-					CString newpath;
-					::PathCombine(newpath.GetBuffer(MAX_PATH), pKnownFile->GetPath(), newname);
-					newpath.ReleaseBuffer();
-					if (_trename(pKnownFile->GetFilePath(), newpath) != 0) {
+					CString newpath(pKnownFile->GetPath());
+					slosh(newpath);
+					newpath += newname;
+					if (!LongPathSeams::MoveFile(pKnownFile->GetFilePath(), newpath)) {
 						CString strError;
-						strError.Format(GetResString(IDS_ERR_RENAMESF), (LPCTSTR)pKnownFile->GetFilePath(), (LPCTSTR)newpath, _tcserror(errno));
+						strError.Format(GetResString(IDS_ERR_RENAMESF), (LPCTSTR)pKnownFile->GetFilePath(), (LPCTSTR)newpath, (LPCTSTR)GetErrorMessage(::GetLastError()));
 						AfxMessageBox(strError);
 						break;
 					}

@@ -314,7 +314,7 @@ bool CAICHSyncThread::ConvertKnown2ToKnown264(CSafeFile &TargetFile)
 	const CString &newfullpath(sConfDir + KNOWN2_MET_FILENAME);
 
 	// continue only if the old file does exist, and the new file does not
-	if (::PathFileExists(newfullpath) || !::PathFileExists(oldfullpath))
+	if (LongPathSeams::PathExists(newfullpath) || !LongPathSeams::PathExists(oldfullpath))
 		return false;
 
 	CSafeFile oldfile;

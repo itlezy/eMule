@@ -25,6 +25,7 @@
 #include "kademlia/utils/LookupHistory.h"
 #include "kademlia/kademlia/search.h"
 #include "CustomAutoComplete.h"
+#include "LongPathSeams.h"
 #include "OtherFunctions.h"
 #include "emuledlg.h"
 #include "log.h"
@@ -460,7 +461,7 @@ void CKademliaWnd::UpdateNodesDatFromURL(const CString &strURL)
 		theApp.emuledlg->ShowConnectionState();
 	}
 	Kademlia::CKademlia::GetRoutingZone()->ReadFile(strTempFilename);
-	(void)_tremove(strTempFilename);
+	(void)LongPathSeams::DeleteFileIfExists(strTempFilename);
 }
 
 BOOL CKademliaWnd::OnHelpInfo(HELPINFO*)

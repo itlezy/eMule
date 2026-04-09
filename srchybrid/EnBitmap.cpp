@@ -16,7 +16,10 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "EnBitmap.h"
+#include "LongPathSeams.h"
+#include "SafeFile.h"
 #include <atlimage.h>
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -24,6 +27,38 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+/**
+ * @brief Wraps an in-memory image buffer in a COM stream for long-path-safe image decoding.
+ */
+IStream* CreateStreamFromImageBuffer(const BYTE *pBuff, const size_t nSize)
+{
+	if (pBuff == NULL || nSize == 0u)
+		return NULL;
+
+	HGLOBAL hGlobal = ::GlobalAlloc(GMEM_MOVEABLE, nSize);
+	if (hGlobal == NULL)
+		return NULL;
+
+	void *pData = ::GlobalLock(hGlobal);
+	if (pData == NULL) {
+		::GlobalFree(hGlobal);
+		return NULL;
+	}
+
+	memcpy(pData, pBuff, nSize);
+	::GlobalUnlock(hGlobal);
+
+	IStream *pStream = NULL;
+	if (CreateStreamOnHGlobal(hGlobal, TRUE, &pStream) != S_OK) {
+		::GlobalFree(hGlobal);
+		return NULL;
+	}
+
+	return pStream;
+}
+}
 
 const int HIMETRIC_INCH = 2540;
 
@@ -74,24 +109,32 @@ BOOL CEnBitmap::LoadImage(LPCTSTR szImagePath, COLORREF crBack)
 		return FALSE;
 	}
 
-	CImage img;
-	if (SUCCEEDED(img.Load(szImagePath)))
-		return CBitmap::Attach(img.Detach());
-
 	BOOL bResult = FALSE;
 	CFileException ex;
-	CFile cFile;
-	if (cFile.Open(szImagePath, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite, &ex)) {
-		int nSize = (int)cFile.GetLength();
-		BYTE *pBuff = new BYTE[nSize];
-		if (cFile.Read(pBuff, nSize) > 0) {
-			IPicture *pPicture = LoadFromBuffer(pBuff, nSize);
-			if (pPicture) {
-				bResult = Attach(pPicture, crBack);
-				pPicture->Release();
+	CSafeFile cFile;
+	if (LongPathSeams::OpenFile(cFile, szImagePath, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite, &ex)) {
+		const ULONGLONG nFileLength = cFile.GetLength();
+		if (nFileLength > 0u && nFileLength <= static_cast<ULONGLONG>(INT_MAX)) {
+			std::vector<BYTE> bytes(static_cast<size_t>(nFileLength));
+			if (cFile.Read(bytes.data(), static_cast<UINT>(bytes.size())) == bytes.size()) {
+				IStream *pStream = CreateStreamFromImageBuffer(bytes.data(), bytes.size());
+				if (pStream != NULL) {
+					CImage img;
+					if (SUCCEEDED(img.Load(pStream))) {
+						bResult = CBitmap::Attach(img.Detach());
+					}
+					pStream->Release();
+				}
+
+				if (!bResult) {
+					IPicture *pPicture = LoadFromBuffer(bytes.data(), static_cast<int>(bytes.size()));
+					if (pPicture) {
+						bResult = Attach(pPicture, crBack);
+						pPicture->Release();
+					}
+				}
 			}
 		}
-		delete[] pBuff;
 	}
 	return bResult;
 }

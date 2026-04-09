@@ -163,7 +163,7 @@ void CCatDialog::OnBnClickedOk()
 	if (!thePrefs.IsShareableDirectory(m_myCat->strIncomingPath))
 		m_myCat->strIncomingPath = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
 
-	if (!::PathFileExists(m_myCat->strIncomingPath) && !::CreateDirectory(m_myCat->strIncomingPath, 0)) {
+	if (!LongPathSeams::PathExists(m_myCat->strIncomingPath) && !LongPathSeams::CreateDirectory(m_myCat->strIncomingPath, 0)) {
 		ErrorBalloon(IDC_INCOMING, IDS_ERR_BADFOLDER);
 		m_myCat->strIncomingPath = oldpath;
 		return;

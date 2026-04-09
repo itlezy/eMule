@@ -144,7 +144,7 @@ bool CUploadDiskIOThread::AssociateFile(CKnownFile *pFile)
 		CString fullname = (pFile->IsPartFile())
 			? RemoveFileExtension(static_cast<const CPartFile*>(pFile)->GetFullName())
 			: pFile->GetFilePath();
-		pFile->m_hRead = ::CreateFile(fullname, GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
+		pFile->m_hRead = LongPathSeams::CreateFile(fullname, GENERIC_READ, FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED | FILE_FLAG_SEQUENTIAL_SCAN, NULL);
 		if (pFile->m_hRead == INVALID_HANDLE_VALUE) {
 			theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to open \"%s\" for overlapped read: %s"), (LPCTSTR)fullname, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
 			return false;

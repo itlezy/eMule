@@ -511,6 +511,7 @@ BOOL CemuleApp::InitInstance()
 	//_tsetlocale(LC_CTYPE, _T("C"));		// set character types category to 'C' (VERY IMPORTANT, we need binary string compares!)
 
 	AfxOleInit();
+	DetectWin32LongPathsSupportAtStartup();
 
 	if (ProcessCommandline())
 		return FALSE;
@@ -601,6 +602,8 @@ BOOL CemuleApp::InitInstance()
 		theVerboseLog.Log(_T("\r\n"));
 	}
 	Log(_T("Starting eMule v%s"), (LPCTSTR)m_strCurVersionLong);
+	if (!IsWin32LongPathsEnabled())
+		QueueLogLineEx(LOG_WARNING, _T("Windows long-path support is disabled. Overlong paths may fail until LongPathsEnabled is turned on."));
 
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 
@@ -728,7 +731,7 @@ int CemuleApp::ExitInstance()
 #ifdef _DEBUG
 static int CrtDebugReportCB(int reportType, char *message, int *returnValue) noexcept
 {
-	FILE *fp = _tfsopen(s_szCrtDebugReportFilePath, _T("a"), _SH_DENYWR);
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(s_szCrtDebugReportFilePath, _T("a"));
 	if (fp) {
 		time_t tNow = time(NULL);
 		TCHAR szTime[40];
@@ -1009,7 +1012,7 @@ void CemuleApp::OnlineSig() // Added By Bouc7
 	//		compatibility with older eMule versions.
 	CSafeBufferedFile file;
 	CFileException fex;
-	if (!file.Open(strSigPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary, &fex)) {
+	if (!LongPathSeams::OpenFile(file, strSigPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary, &fex)) {
 		LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), _szFileName, (LPCTSTR)CExceptionStrDash(fex));
 		return;
 	}
@@ -1077,7 +1080,7 @@ bool CemuleApp::GetLangHelpFilePath(CString &strResult)
 		strResult.Truncate(pos);
 		strResult.AppendFormat(_T("\\eMule%s.chm"), (LPCTSTR)temp);
 	}
-	bool bFound = ::PathFileExists(strResult);
+	bool bFound = LongPathSeams::PathExists(strResult);
 	if (!bFound && langID > 0) {
 		strResult = m_pszHelpFilePath; // if not exists, use original help (English)
 		strResult.Replace(_T(".HLP"), _T(".chm"));

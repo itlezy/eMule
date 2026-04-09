@@ -1114,9 +1114,9 @@ UINT AFX_CDECL CArchivePreviewDlg::RunArchiveScanner(LPVOID pParam)
 	archiveScannerThreadParams_s *tp = static_cast<archiveScannerThreadParams_s*>(pParam);
 
 	int ret;
-	CFile inFile;
+	CSafeFile inFile;
 
-	if (!inFile.Open(tp->file->GetFilePath(), CFile::modeRead | CFile::shareDenyNone))
+	if (!LongPathSeams::OpenFile(inFile, tp->file->GetFilePath(), CFile::modeRead | CFile::shareDenyNone))
 		ret = -1;
 	else {
 		switch (tp->type) {

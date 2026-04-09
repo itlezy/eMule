@@ -350,14 +350,14 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 	SetFileName(in_filename);
 
 	// open file
-	CString strFilePath;
-	if (!_tmakepathlimit(strFilePath.GetBuffer(MAX_PATH), NULL, in_directory, in_filename, NULL)) {
+	CString strFilePath(in_directory);
+	strFilePath += in_filename;
+	if (strFilePath.IsEmpty()) {
 		LogError(GetResString(IDS_ERR_FILEOPEN), in_filename, _T(""));
 		return false;
 	}
-	strFilePath.ReleaseBuffer();
 	SetFilePath(strFilePath);
-	FILE *file = _tfsopen(strFilePath, _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
+	FILE *file = OpenFileStreamSharedReadLongPath(strFilePath, false); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), _tcserror(errno));
 		return false;
@@ -493,7 +493,7 @@ bool CKnownFile::CreateAICHHashSetOnly()
 {
 	ASSERT(!IsPartFile());
 
-	FILE *file = _tfsopen(GetFilePath(), _T("rbS"), _SH_DENYNO); // can not use _SH_DENYWR because we may access a completing part file
+	FILE *file = OpenFileStreamSharedReadLongPath(GetFilePath(), false); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file) {
 		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)GetFilePath(), _T(""), _tcserror(errno));
 		return false;

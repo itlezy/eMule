@@ -283,7 +283,7 @@ bool CLogFile::Open()
 	if (m_fp != NULL)
 		return true;
 
-	m_fp = _tfsopen(m_strFilePath, _T("a+b"), _SH_DENYWR);
+	m_fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strFilePath, _T("a+b"));
 	if (m_fp != NULL) {
 		m_tStarted = time(NULL);
 		m_uBytesWritten = _filelength(_fileno(m_fp));
@@ -394,15 +394,13 @@ void CLogFile::StartNewLogFile()
 	CString strLogBakNam;
 	strLogBakNam.Format(_T("%s - %s"), szNam, szDateLogStarted);
 
-	TCHAR szLogBakFilePath[MAX_PATH];
-	if (!_tmakepathlimit(szLogBakFilePath, szDrv, szDir, strLogBakNam, szExt)) {
-		// Skip rotation when the derived backup path does not fit in MAX_PATH.
-		Open();
-		return;
-	}
+	CString strLogBakFilePath(szDrv);
+	strLogBakFilePath += szDir;
+	strLogBakFilePath += strLogBakNam;
+	strLogBakFilePath += szExt;
 
-	if (_trename(m_strFilePath, szLogBakFilePath) != 0)
-		VERIFY(_tremove(m_strFilePath) == 0);
+	if (!LongPathSeams::MoveFile(m_strFilePath, strLogBakFilePath))
+		VERIFY(LongPathSeams::DeleteFile(m_strFilePath) != FALSE);
 
 	Open();
 }

@@ -409,14 +409,14 @@ void CPartFile::CreatePartFile(UINT cat)
 	int i = 0;
 	do
 		filename.Format(_T("%s%03i.part"), (LPCTSTR)tempdirtouse, ++i);
-	while (::PathFileExists(filename));
+	while (LongPathSeams::GetFileAttributes(filename) != INVALID_FILE_ATTRIBUTES);
 	SetPath(tempdirtouse);
 	m_partmetfilename.Format(_T("%03i.part.met"), i);
 	m_fullname.Format(_T("%s%s"), (LPCTSTR)tempdirtouse, (LPCTSTR)m_partmetfilename);
 	const CString &partfull(RemoveFileExtension(m_fullname));
 	SetFilePath(partfull);
 
-	if (!m_hpartfile.Open(partfull, CFile::modeCreate | CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan)) {
+	if (!LongPathSeams::OpenFile(m_hpartfile, partfull, CFile::modeCreate | CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan)) {
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_CREATEPARTFILE));
 		SetStatus(PS_ERROR);
 		return;
@@ -452,7 +452,7 @@ void CPartFile::CreatePartFile(UINT cat)
 		AddDebugLogLine(false, _T("Failed to get file date for \"%s\" - %s"), (LPCTSTR)partfull, _tcserror(errno));
 	}
 
-	m_dwFileAttributes = ::GetFileAttributes(partfull);
+	m_dwFileAttributes = LongPathSeams::GetFileAttributes(partfull);
 	if (m_dwFileAttributes == INVALID_FILE_ATTRIBUTES)
 		m_dwFileAttributes = 0;
 
@@ -510,9 +510,9 @@ EPartFileLoadResult CPartFile::ImportShareazaTempfile(LPCTSTR in_directory, LPCT
 	fullname.Format(_T("%s%s"), in_directory, in_filename);
 
 	// open the file
-	CFile sdFile;
+	CSafeFile sdFile;
 	CFileException fex;
-	if (!sdFile.Open(fullname, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
+	if (!LongPathSeams::OpenFile(sdFile, fullname, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
 		CString s;
 		s.Format(GetResString(IDS_ERR_OPENMET), in_filename, _T(""));
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
@@ -735,15 +735,14 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 	m_fullname.Format(_T("%s%s"), (LPCTSTR)GetPath(), (LPCTSTR)m_partmetfilename);
 
 	// read data from part.met file
-	CSafeBufferedFile metFile;
+	CSafeFile metFile;
 	CFileException fex;
-	if (!metFile.Open(m_fullname, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
+	if (!LongPathSeams::OpenFile(metFile, m_fullname, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
 		CString s;
 		s.Format(GetResString(IDS_ERR_OPENMET), (LPCTSTR)m_partmetfilename, _T(""));
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
 		return PLR_FAILED_METFILE_NOACCESS;
 	}
-	::setvbuf(metFile.m_pStream, NULL, _IOFBF, 16384);
 
 	try {
 		uint8 version = metFile.ReadUInt8();
@@ -1076,7 +1075,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 	const CString &searchpath(RemoveFileExtension(m_fullname));
 	ASSERT(searchpath.Right(5) == _T(".part"));
 	//CFileException fex;
-	if (!m_hpartfile.Open(searchpath, CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan, &fex)) {
+	if (!LongPathSeams::OpenFile(m_hpartfile, searchpath, CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan, &fex)) {
 		CString s;
 		s.Format(GetResString(IDS_ERR_FILEOPEN), (LPCTSTR)searchpath, (LPCTSTR)GetFileName());
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
@@ -1093,7 +1092,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 
 	try {
 		SetFilePath(searchpath);
-		m_dwFileAttributes = ::GetFileAttributes(GetFilePath());
+		m_dwFileAttributes = LongPathSeams::GetFileAttributes(GetFilePath());
 		if (m_dwFileAttributes == INVALID_FILE_ATTRIBUTES)
 			m_dwFileAttributes = 0;
 
@@ -1183,20 +1182,16 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		return false;
 	if (!theApp.CanWritePartMetFiles(m_fullname))
 		return false;
-	// search part file
 	const CString &searchpath(RemoveFileExtension(m_fullname));
-	CFileFind ff;
-	BOOL bFound = ff.FindFile(searchpath);
-	if (bFound)
-		ff.FindNextFile();
-	if (!bFound || ff.IsDirectory()) {
+	WIN32_FILE_ATTRIBUTE_DATA fileAttributes = {};
+	if (!LongPathSeams::GetFileAttributesEx(searchpath, GetFileExInfoStandard, &fileAttributes)
+		|| (fileAttributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+	{
 		LogError(GetResString(IDS_ERR_SAVEMET) + _T(" - %s"), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName(), (LPCTSTR)GetResString(IDS_ERR_PART_FNF));
 		return false;
 	}
-	// get file date
-	FILETIME lwtime;
-	ff.GetLastWriteTime(&lwtime);
-	m_tLastModified = (time_t)FileTimeToUnixTime(lwtime);
+
+	m_tLastModified = (time_t)FileTimeToUnixTime(fileAttributes.ftLastWriteTime);
 	if (m_tLastModified <= 0)
 		m_tLastModified = (time_t)-1;
 	m_tUtcLastModified = m_tLastModified;
@@ -1204,22 +1199,20 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Failed to get file date of \"%s\" (%s)"), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
 	} else
-		AdjustNTFSDaylightFileTime(m_tUtcLastModified, ff.GetFilePath());
-	ff.Close();
+		AdjustNTFSDaylightFileTime(m_tUtcLastModified, searchpath);
 
 	const CString &strTmpFile(m_fullname + PARTMET_TMP_EXT);
 
 	// save file data to part.met file
-	CSafeBufferedFile file;
+	CSafeFile file;
 	CFileException fex;
-	if (!file.Open(strTmpFile, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
+	if (!LongPathSeams::OpenFile(file, strTmpFile, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
 		CString s;
 		s.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
 		LogError(_T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
 		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
-	::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
 
 	try {
 		//version
@@ -1469,7 +1462,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 		// remove the partially written or otherwise damaged temporary file,
 		// need to close the file before removing it.
 		file.Abort(); //Call 'Abort' instead of 'Close' to avoid ASSERT.
-		(void)_tremove(strTmpFile);
+		(void)LongPathSeams::DeleteFile(strTmpFile);
 		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
 	}
@@ -2766,7 +2759,7 @@ UINT CPartFile::CompleteThreadProc(LPVOID pvParams)
 void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 {
 	// check, if it's a compressed file
-	DWORD dwAttr = ::GetFileAttributes(pszFilePath);
+	DWORD dwAttr = LongPathSeams::GetFileAttributes(pszFilePath);
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) == 0)
 		return;
 
@@ -2775,11 +2768,11 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 	strDir.ReleaseBuffer();
 
 	// If the directory of the file has the 'Compress' attribute, do not uncompress the file
-	dwAttr = ::GetFileAttributes(strDir);
+	dwAttr = LongPathSeams::GetFileAttributes(strDir);
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) != 0)
 		return;
 
-	HANDLE hFile = ::CreateFile(pszFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hFile = LongPathSeams::CreateFile(pszFilePath, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
 	if (hFile == INVALID_HANDLE_VALUE) {
 		if (thePrefs.GetVerbose())
 			theApp.QueueDebugLogLine(true, _T("Failed to open file \"%s\" for decompressing - %s"), pszFilePath, (LPCTSTR)GetErrorMessage(::GetLastError(), 1));
@@ -2874,7 +2867,7 @@ BOOL CPartFile::PerformFileComplete()
 	_tcscpy(newfilename, (LPCTSTR)StripInvalidFilenameChars(newfilename));
 
 	CString indir;
-	if (::PathFileExists(thePrefs.GetCategory(GetCategory())->strIncomingPath))
+	if (LongPathSeams::PathExists(thePrefs.GetCategory(GetCategory())->strIncomingPath))
 		indir = thePrefs.GetCategory(GetCategory())->strIncomingPath;
 	else
 		indir = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
@@ -2890,7 +2883,7 @@ BOOL CPartFile::PerformFileComplete()
 
 	CString strNewname(indir);
 	strNewname += newfilename;
-	bool renamed = ::PathFileExists(strNewname);
+	bool renamed = LongPathSeams::PathExists(strNewname);
 	if (renamed) {
 		size_t length = _tcslen(newfilename);
 		ASSERT(length); //name should never be empty
@@ -2926,14 +2919,14 @@ BOOL CPartFile::PerformFileComplete()
 		CString strTestName;
 		do
 			strTestName.Format(_T("%s%s(%d).%s"), (LPCTSTR)indir, newfilename, ++namecount, ext);
-		while (::PathFileExists(strTestName));
+		while (LongPathSeams::PathExists(strTestName));
 		strNewname = strTestName;
 	}
 	free(newfilename);
 
 	bNoNewReads = true; //this file is on the move and cannot be read
 	for (bool bFirstTry = true; ;) {
-		if (::MoveFileWithProgress(strPartfilename, strNewname, CopyProgressRoutine, this, MOVEFILE_COPY_ALLOWED))
+		if (LongPathSeams::MoveFileWithProgress(strPartfilename, strNewname, CopyProgressRoutine, this, MOVEFILE_COPY_ALLOWED))
 			break;
 		DWORD dwMoveResult = ::GetLastError();
 		if (dwMoveResult != ERROR_SHARING_VIOLATION || !bFirstTry) {
@@ -2971,14 +2964,14 @@ BOOL CPartFile::PerformFileComplete()
 	// in known.met because of a different file date!
 	ASSERT((HANDLE)m_hpartfile == INVALID_HANDLE_VALUE); // the file must be closed/committed!
 	struct _stat64 st;
-	if (statUTC(strNewname, st) == 0) {
+	if (statUTC(PreparePathForLongPath(strNewname), st) == 0) {
 		m_tUtcLastModified = m_tLastModified = (time_t)st.st_mtime;
 		AdjustNTFSDaylightFileTime(m_tUtcLastModified, strNewname);
 	}
 
 	static LPCTSTR const pszErrfmt = _T(" - %s");
 	// remove part.met file
-	if (!::DeleteFile(m_fullname)) {
+	if (!LongPathSeams::DeleteFile(m_fullname)) {
 		CString sFmt(GetResString(IDS_ERR_DELETEFAILED));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		theApp.QueueLogLine(true, sFmt, (LPCTSTR)m_fullname);
@@ -2986,14 +2979,14 @@ BOOL CPartFile::PerformFileComplete()
 
 	// remove backup files
 	const CString &BAKName(m_fullname + PARTMET_BAK_EXT);
-	if (!_taccess(BAKName, 0) && !::DeleteFile(BAKName)) {
+	if (!LongPathSeams::DeleteFileIfExists(BAKName)) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		theApp.QueueLogLine(true, sFmt, (LPCTSTR)BAKName);
 	}
 
 	const CString &TMPName(m_fullname + PARTMET_TMP_EXT);
-	if (!_taccess(TMPName, 0) && !::DeleteFile(TMPName)) {
+	if (!LongPathSeams::DeleteFileIfExists(TMPName)) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		theApp.QueueLogLine(true, sFmt, (LPCTSTR)TMPName);
@@ -3126,28 +3119,28 @@ void CPartFile::DeletePartFile()
 		m_hpartfile.Close();
 
 	static LPCTSTR const pszErrfmt = _T(" - %s");
-	if (_tremove(m_fullname)) {
+	if (!LongPathSeams::DeleteFileIfExists(m_fullname)) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
-		sFmt.AppendFormat(pszErrfmt, _tcserror(errno));
+		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		LogError(LOG_STATUSBAR, sFmt, (LPCTSTR)m_fullname);
 	}
 
 	const CString &partfilename(RemoveFileExtension(m_fullname));
-	if (_tremove(partfilename)) {
+	if (!LongPathSeams::DeleteFileIfExists(partfilename)) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
-		sFmt.AppendFormat(pszErrfmt, _tcserror(errno));
+		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		LogError(LOG_STATUSBAR, sFmt, (LPCTSTR)partfilename);
 	}
 
 	const CString &BAKName(m_fullname + PARTMET_BAK_EXT);
-	if (!_taccess(BAKName, 0) && !::DeleteFile(BAKName)) {
+	if (!LongPathSeams::DeleteFileIfExists(BAKName)) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		LogError(LOG_STATUSBAR, sFmt, (LPCTSTR)BAKName);
 	}
 
 	const CString &TMPName(m_fullname + PARTMET_TMP_EXT);
-	if (!_taccess(TMPName, 0) && !::DeleteFile(TMPName)) {
+	if (!LongPathSeams::DeleteFileIfExists(TMPName)) {
 		CString sFmt(GetResString(IDS_ERR_DELETE));
 		sFmt.AppendFormat(pszErrfmt, (LPCTSTR)GetErrorMessage(::GetLastError()));
 		LogError(LOG_STATUSBAR, sFmt, (LPCTSTR)TMPName);
@@ -5009,8 +5002,9 @@ bool CPartFile::CopyPartFile(CArray<Gap_Struct> &raFilled, const CString &tempFi
 	ASSERT(iLast >= 0);
 	try {
 		// Create destination file and set length to the last filled end position
-		CFile destFile;
-		destFile.Open(tempFileName, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::osSequentialScan);
+		CSafeFile destFile;
+		if (!LongPathSeams::OpenFile(destFile, tempFileName, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::osSequentialScan))
+			CFileException::ThrowOsError((LONG)::GetLastError(), tempFileName);
 		destFile.SetLength(raFilled[iLast].end);
 
 		// Loop through the filled areas and copy data

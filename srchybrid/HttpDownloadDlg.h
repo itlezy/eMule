@@ -12,6 +12,7 @@ All rights reserved.
 ////////////////////////////////// Macros ///////////////////////////
 #pragma once
 #include <afxinet.h>
+#include "SafeFile.h"
 
 
 /////////////////////////// Classes /////////////////////////////////
@@ -81,7 +82,7 @@ protected:
 	void UpdateControlsDuringTransfer(DWORD dwStartTicks, DWORD &dwCurrentTicks, DWORD dwTotalBytesRead, DWORD &dwLastTotalBytes
 				, DWORD &dwLastPercentage, BOOL bGotFileSize, DWORD dwFileSize);
 
-	CFile			m_FileToWrite;
+	CSafeFile		m_FileToWrite;
 	CString			m_sError;
 	CString			m_sServer;
 	CString			m_sObject;

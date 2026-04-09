@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "resource.h"
+#include "LongPathSeams.h"
 #include "OtherFunctions.h"
 #include "MediaInfo.h"
 #include "SafeFile.h"
@@ -1159,7 +1160,7 @@ bool GetRMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsRM, bool bFullI
 	ASSERT(!bFullInfo || mi->strInfo.m_hWnd != NULL);
 
 	CSafeBufferedFile file;
-	if (!file.Open(pszFileName, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary))
+	if (!LongPathSeams::OpenFile(file, pszFileName, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary))
 		return false;
 	::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
 
@@ -1745,7 +1746,7 @@ public:
 			, DWORD dwCreationDisposition = OPEN_EXISTING
 			, DWORD grfMode = STGM_READ | STGM_SHARE_DENY_NONE)
 	{
-		HANDLE hFile = ::CreateFile(pszFileName, dwDesiredAccess, dwShareMode, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, NULL);
+		HANDLE hFile = LongPathSeams::CreateFile(pszFileName, dwDesiredAccess, dwShareMode, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hFile == INVALID_HANDLE_VALUE)
 			return HRESULT_FROM_WIN32(::GetLastError());
 		CFileStream *pFileStream = new CFileStream(hFile, grfMode);

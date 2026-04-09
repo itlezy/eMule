@@ -3,6 +3,7 @@
 #include "WebSocket.h"
 #include "WebServer.h"
 #include "Preferences.h"
+#include "SafeFile.h"
 #include "StringConversion.h"
 #include "Log.h"
 
@@ -502,8 +503,8 @@ int StartSSL()
 	if (!ret) { // PSA_SUCCESS is 0
 		// Load certificate via CFile so non-ASCII Windows paths are preserved.
 		{
-			CFile certFile;
-			if (!certFile.Open(thePrefs.GetWebCertPath(), CFile::modeRead | CFile::shareDenyWrite)) {
+			CSafeFile certFile;
+			if (!LongPathSeams::OpenFile(certFile, thePrefs.GetWebCertPath(), CFile::modeRead | CFile::shareDenyWrite)) {
 				ret = MBEDTLS_ERR_X509_FILE_IO_ERROR;
 			} else {
 				const ULONGLONG fileLen = certFile.GetLength();
@@ -514,8 +515,8 @@ int StartSSL()
 			}
 		}
 		if (!ret) {
-			CFile keyFile;
-			if (!keyFile.Open(thePrefs.GetWebKeyPath(), CFile::modeRead | CFile::shareDenyWrite)) {
+			CSafeFile keyFile;
+			if (!LongPathSeams::OpenFile(keyFile, thePrefs.GetWebKeyPath(), CFile::modeRead | CFile::shareDenyWrite)) {
 				ret = MBEDTLS_ERR_PK_FILE_IO_ERROR;
 			} else {
 				const ULONGLONG fileLen = keyFile.GetLength();

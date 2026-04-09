@@ -23,6 +23,8 @@ class CUpDownClient;
 class CAICHHash;
 class CPartFile;
 class CSafeMemFile;
+class CSafeBufferedFile;
+class CSafeFile;
 class CShareableFile;
 
 enum EFileType : uint8
@@ -205,9 +207,12 @@ bool		DirAccsess(const CString &strDir);
 #else
 #define CompareLocaleStringNoCase	CompareLocaleStringNoCaseA
 #endif // !UNICODE
+#include "LongPathSeams.h"
 bool IsThumbsDb(const CString &sFilePath, const CString &sFileName);
 bool CheckFileOpen(LPCTSTR pszFilePath, LPCTSTR pszFileTitle = NULL);
-bool CFileOpen(CFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg);
+bool CFileOpen(CSafeFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg);
+bool CFileOpen(CSafeBufferedFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg);
+void CommitAndClose(CFile &file);
 void CommitAndClose(CStdioFile &file);
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -497,6 +502,11 @@ bool AdjustNTFSDaylightFileTime(time_t &ruFileDate, LPCTSTR pszFilePath);
 __time64_t FileTimeToUnixTime(const FILETIME &ft);
 int statUTC(LPCTSTR pName, struct _stat64 &ft);
 int statUTC(HANDLE hFile, struct _stat64 &ft);
+bool IsWin32LongPathsEnabled();
+void DetectWin32LongPathsSupportAtStartup();
+CString PreparePathForLongPath(const CString &path);
+FILE* OpenFileStreamSharedReadLongPath(const CString &path, bool bTextMode);
+int OpenCrtReadOnlyLongPath(LPCTSTR pszFilePath);
 
 ///////////////////////////////////////////////////////////////////////////////
 // Random Numbers

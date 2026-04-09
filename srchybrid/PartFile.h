@@ -18,6 +18,7 @@
 #include "KnownFile.h"
 #include "DeadSourceList.h"
 #include "CorruptionBlackBox.h"
+#include "SafeFile.h"
 
 enum EPartFileStatus : uint8
 {
@@ -331,7 +332,7 @@ public:
 	CUpDownClientPtrList srclist;
 	CUpDownClientPtrList A4AFsrclist;	//<<-- enkeyDEV(Ottavio84) -A4AF-
 	CTime	lastseencomplete;
-	CFile	m_hpartfile;				// permanent opened handle to avoid write conflicts
+	CSafeFile m_hpartfile;				// permanent opened handle to avoid write conflicts
 	CMutex	m_FileCompleteMutex;		// Lord KiRon - Mutex for file completion
 	HANDLE	m_hWrite;					// asynchronous part file writing
 	int		m_iWrites;					// outstanding I/O counter - read only in the main thread

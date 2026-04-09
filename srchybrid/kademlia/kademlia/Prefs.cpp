@@ -36,6 +36,7 @@ their client on the eMule forum.
 #include "serverlist.h"
 #include "Log.h"
 #include "MD5Sum.h"
+#include "LongPathSeams.h"
 #include "OtherFunctions.h"
 #include "kademlia/kademlia/Prefs.h"
 #include "kademlia/kademlia/kademlia.h"
@@ -96,7 +97,7 @@ void CPrefs::Init(LPCTSTR szFilename)
 void CPrefs::ReadFile()
 {
 	CSafeBufferedFile file;
-	if (!file.Open(m_sFilename, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, NULL))
+	if (!LongPathSeams::OpenFile(file, m_sFilename, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, NULL))
 		return;
 
 	::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
@@ -120,7 +121,7 @@ void CPrefs::WriteFile()
 {
 	try {
 		CSafeBufferedFile file;
-		if (file.Open(m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
+		if (LongPathSeams::OpenFile(file, m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
 			::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
 			file.WriteUInt32(m_uIP);
 			file.WriteUInt16(0); //This is no longer used.

@@ -317,7 +317,7 @@ bool CServerWnd::UpdateServerMetFromURL(const CString &strURL)
 	serverlistctrl.Hide();
 	serverlistctrl.AddServerMetToList(strTempFilename);
 	serverlistctrl.Visible();
-	(void)_tremove(strTempFilename);
+	(void)LongPathSeams::DeleteFileIfExists(strTempFilename);
 	return true;
 }
 

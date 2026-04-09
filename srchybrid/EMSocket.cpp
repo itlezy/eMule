@@ -23,6 +23,7 @@
 #include "emsocket.h"
 #include "AsyncProxySocketLayer.h"
 #include "Packets.h"
+#include "LongPathSeams.h"
 #include "OtherFunctions.h"
 #include "UploadBandwidthThrottler.h"
 #include "Preferences.h"
@@ -52,7 +53,7 @@ namespace
 		_strdate(osDate);
 		int len = snprintf(temp, _countof(temp), "%s %s: %s\r\n", osDate, osTime, bufferline);
 		if (len > 0) {
-			HANDLE hFile = ::CreateFile(_T("c:\\tmp\\EMSocket.log")	// ensure valid path to a writable location
+			HANDLE hFile = LongPathSeams::CreateFile(_T("c:\\tmp\\EMSocket.log")	// ensure valid path to a writable location
 				, GENERIC_WRITE			// open for writing
 				, FILE_SHARE_READ		// share for reading
 				, NULL					// no security

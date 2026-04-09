@@ -1368,7 +1368,7 @@ LRESULT CemuleDlg::OnWMData(WPARAM, LPARAM lParam)
 			else if (clcommand == _T("resume"))
 				theApp.downloadqueue->StartNextFile();
 			else if (clcommand == _T("status")) {
-				FILE *file = _tfsopen(thePrefs.GetMuleDirectory(EMULE_CONFIGBASEDIR) + _T("status.log"), _T("wt"), _SH_DENYWR);
+				FILE *file = LongPathSeams::OpenFileStreamDenyWriteLongPath(thePrefs.GetMuleDirectory(EMULE_CONFIGBASEDIR) + _T("status.log"), _T("wt"));
 				if (file) {
 					UINT uid;
 					if (theApp.serverconnect->IsConnected())

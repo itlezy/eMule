@@ -85,6 +85,17 @@ public:
 	virtual ULONGLONG Seek(LONGLONG lOff, UINT nFrom);
 	virtual ULONGLONG GetPosition() const;
 	virtual ULONGLONG GetLength() const;
+
+	/**
+	 * @brief Attaches an already opened Win32 handle to this safe file and marks it owned by the instance.
+	 */
+	void AttachLongPathHandle(HANDLE hFile, LPCTSTR lpszFileName)
+	{
+		Abort();
+		CommonBaseInit(hFile, NULL);
+		m_bCloseOnDelete = TRUE;
+		SetFilePath(lpszFileName);
+	}
 };
 
 
@@ -151,6 +162,17 @@ public:
 	virtual ULONGLONG GetLength() const;
 
 	int printf(LPCTSTR pszFmt, ...);
+
+	/**
+	 * @brief Attaches an already opened stdio stream to this safe buffered file and marks it owned by the instance.
+	 */
+	void AttachLongPathStream(FILE *pOpenStream, LPCTSTR lpszFileName)
+	{
+		Abort();
+		CommonBaseInit(pOpenStream, NULL);
+		m_bCloseOnDelete = TRUE;
+		SetFilePath(lpszFileName);
+	}
 };
 
 

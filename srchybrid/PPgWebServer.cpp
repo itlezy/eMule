@@ -49,15 +49,9 @@ struct options
 
 static int write_buffer(LPCTSTR output_file, const unsigned char *buffer)
 {
-	FILE *f = _tfopen(output_file, _T("wb"));
-	if (f == NULL)
+	const size_t len = strlen((const char*)buffer);
+	if (!LongPathSeams::WriteAllBytes(output_file, buffer, len))
 		return -1;
-	size_t len = strlen((char*)buffer);
-	if (fwrite((void*)buffer, 1, len, f) != len) {
-		fclose(f);
-		return -1;
-	}
-	fclose(f);
 	return 0;
 }
 
@@ -288,7 +282,7 @@ BOOL CPPgWebServer::OnApply()
 		// get and check template file existence...
 		CString sBuf;
 		GetDlgItemText(IDC_TMPLPATH, sBuf);
-		if (bWSIsEnabled && !::PathFileExists(sBuf)) {
+		if (bWSIsEnabled && !LongPathSeams::PathExists(sBuf)) {
 			CString buffer;
 			buffer.Format(GetResString(IDS_WEB_ERR_CANTLOAD), (LPCTSTR)sBuf);
 			AfxMessageBox(buffer, MB_OK);
@@ -303,7 +297,7 @@ BOOL CPPgWebServer::OnApply()
 		bool bHTTPS = IsDlgButtonChecked(IDC_WEB_HTTPS) != 0;
 		GetDlgItemText(IDC_CERTPATH, sBuf);
 		if (bWSIsEnabled && bHTTPS) {
-			if (!::PathFileExists(sBuf)) {
+			if (!LongPathSeams::PathExists(sBuf)) {
 				AfxMessageBox(GetResString(IDS_CERT_NOT_FOUND), MB_OK);
 				return FALSE;
 			}
@@ -314,7 +308,7 @@ BOOL CPPgWebServer::OnApply()
 
 		GetDlgItemText(IDC_KEYPATH, sBuf);
 		if (bWSIsEnabled && bHTTPS) {
-			if (!::PathFileExists(sBuf)) {
+			if (!LongPathSeams::PathExists(sBuf)) {
 				AfxMessageBox(GetResString(IDS_KEY_NOT_FOUND), MB_OK);
 				return FALSE;
 			}

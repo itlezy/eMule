@@ -15,12 +15,10 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <share.h>
 #include <io.h>
 #include "zlib.h"
 #include "GZipFile.h"
+#include "LongPathSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -38,7 +36,13 @@ bool CGZIPFile::Open(LPCTSTR pszFilePath)
 	ASSERT(m_gzFile == 0);
 	Close();
 
-	m_gzFile = gzopen(CStringA(pszFilePath), "rb");
+	const int fdIn = LongPathSeams::OpenCrtReadOnlyLongPath(pszFilePath);
+	if (fdIn == -1)
+		return false;
+
+	m_gzFile = gzdopen(fdIn, "rb");
+	if (m_gzFile == 0)
+		_close(fdIn);
 	if (m_gzFile) {
 		// Use gzip-uncompress only for real gzip-compressed files and do not let handle it also uncompressed files.
 		// This way the 'Open' function can be used to check if that file is a 'gzip' file at all.
@@ -83,7 +87,7 @@ CString CGZIPFile::GetUncompressedFileName() const
 
 bool CGZIPFile::Extract(LPCTSTR pszFilePath)
 {
-	int fdOut = _tsopen(pszFilePath, _O_CREAT | _O_TRUNC | _O_WRONLY | _O_BINARY, _SH_DENYWR, _S_IREAD | _S_IWRITE);
+	const int fdOut = LongPathSeams::OpenCrtWriteOnlyLongPath(pszFilePath, CREATE_ALWAYS, FILE_SHARE_READ);
 	if (fdOut == -1)
 		return false;
 
@@ -106,6 +110,6 @@ bool CGZIPFile::Extract(LPCTSTR pszFilePath)
 	delete[] pucBuff;
 	_close(fdOut);
 	if (!bResult)
-		VERIFY(_tremove(pszFilePath) == 0);
+		VERIFY(LongPathSeams::DeleteFileIfExists(pszFilePath));
 	return bResult;
 }

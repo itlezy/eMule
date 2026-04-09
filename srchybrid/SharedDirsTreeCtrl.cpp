@@ -288,7 +288,7 @@ void CSharedDirsTreeCtrl::FilterTreeAddSubDirectories(CDirectoryItem *pDirectory
 		const CString &strCurrent(liDirs.GetNext(pos));
 		if ((iLen <= 0 || _tcsnicmp(strCurrent, strDirectoryPath, iLen) == 0) && iLen != strCurrent.GetLength()) {
 			if (!FilterTreeIsSubDirectory(strCurrent, strDirectoryPath, liDirs)) {
-				bool bAccessible = bParentAccessible ? (_taccess(strCurrent, 0) == 0) : false;
+				bool bAccessible = bParentAccessible ? LongPathSeams::PathExists(strCurrent) : false;
 				const CString &strName(GetFolderLabel(strCurrent, nLevel == 0, bAccessible));
 				CDirectoryItem *pNewItem = new CDirectoryItem(strCurrent);
 				pNewItem->m_htItem = InsertItem(TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE, strName, 5, 5, 0, 0, (LPARAM)pNewItem, pDirectory->m_htItem, TVI_SORT);
@@ -336,7 +336,7 @@ void CSharedDirsTreeCtrl::FilterTreeReloadTree()
 								&& m_strliCatIncomingDirs.Find(strCatIncomingPath) == NULL)
 							{
 								m_strliCatIncomingDirs.AddTail(strCatIncomingPath);
-								bool bAccessible = _taccess(strCatIncomingPath, 00) == 0;
+								bool bAccessible = LongPathSeams::PathExists(strCatIncomingPath);
 								const CString &strName(GetFolderLabel(strCatIncomingPath, true, bAccessible));
 								CDirectoryItem *pCatInc = new CDirectoryItem(strCatIncomingPath, 0, SDI_CATINCOMING);
 								pCatInc->m_htItem = InsertItem(TVIF_TEXT | TVIF_PARAM | TVIF_IMAGE | TVIF_SELECTEDIMAGE, strName, 5, 5, 0, 0, (LPARAM)pCatInc, pCurrent->m_htItem, TVI_SORT);

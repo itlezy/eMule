@@ -159,10 +159,10 @@ bool CWebServer::ReloadTemplates()
 	m_Params.sETag = MD5Sum(m_Params.sLastModified).GetHashString();
 
 	const CString &sFile(thePrefs.GetTemplate());
-	CStdioFile file;
-	if (file.Open(sFile, CFile::modeRead | CFile::shareDenyWrite | CFile::typeText)) {
+	CSafeBufferedFile file;
+	if (LongPathSeams::OpenFile(file, sFile, CFile::modeRead | CFile::shareDenyWrite | CFile::typeText)) {
 		CString sAll, sLine;
-		while (file.ReadString(sLine))
+		while (file.CStdioFile::ReadString(sLine))
 			sAll.AppendFormat(_T("%s\n"), (LPCTSTR)sLine);
 		file.Close();
 
@@ -513,8 +513,8 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 						return;
 					}
 
-					CFile file;
-					if (file.Open(kf->GetFilePath(), CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary)) {
+					CSafeFile file;
+					if (LongPathSeams::OpenFile(file, kf->GetFilePath(), CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary)) {
 						EMFileSize filesize = kf->GetFileSize();
 
 #define SENDFILEBUFSIZE 2048
@@ -4138,8 +4138,8 @@ void CWebServer::_ProcessFileReq(const ThreadData &Data)
 		filename.Delete(0, 1);
 	filename.Insert(0, thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR));
 
-	CFile file;
-	if (file.Open(filename, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary)) {
+	CSafeFile file;
+	if (LongPathSeams::OpenFile(file, filename, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary)) {
 		if (thePrefs.GetMaxWebUploadFileSizeMB() == 0 || file.GetLength() <= thePrefs.GetMaxWebUploadFileSizeMB() * 1024ull * 1024ull) {
 			UINT filesize = (UINT)file.GetLength();
 

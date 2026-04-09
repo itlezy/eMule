@@ -26,6 +26,10 @@
 #include "TransferDlg.h"
 #include "DownloadListCtrl.h"
 #include "Preferences.h"
+#include "LongPathSeams.h"
+
+#include <string>
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -246,29 +250,29 @@ void CCollectionCreateDialog::OnBnClickedOk()
 		if (m_CollectionCreateSignNameKeyCheck.GetCheck()) {
 			bool bCreateNewKey = false;
 			const CString &collkeypath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("collectioncryptkey.dat"));
-			HANDLE hKeyFile = ::CreateFile(collkeypath, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-			if (hKeyFile != INVALID_HANDLE_VALUE) {
-				if (::GetFileSize(hKeyFile, NULL) == 0)
-					bCreateNewKey = true;
-				::CloseHandle(hKeyFile);
-			} else
+			std::vector<unsigned char> keyFileBytes;
+			if (!LongPathSeams::ReadAllBytes(collkeypath, keyFileBytes) || keyFileBytes.empty())
 				bCreateNewKey = true;
 
-			const CStringA collkeypathA(collkeypath);
 			if (bCreateNewKey)
 				try {
 					AutoSeededRandomPool rng;
 					InvertibleRSAFunction privkey;
 					privkey.Initialize(rng, 1024);
-					Base64Encoder privkeysink(new FileSink(collkeypathA));
+					std::string encodedKey;
+					Base64Encoder privkeysink(new StringSink(encodedKey));
 					privkey.DEREncode(privkeysink);
 					privkeysink.MessageEnd();
+					if (!LongPathSeams::WriteAllBytes(collkeypath, reinterpret_cast<const unsigned char*>(encodedKey.data()), encodedKey.size()))
+						throw 0;
 				} catch (...) {
 					ASSERT(0);
 				}
 
 			try {
-				FileSource filesource(collkeypathA, true, new Base64Decoder);
+				if (!LongPathSeams::ReadAllBytes(collkeypath, keyFileBytes) || keyFileBytes.empty())
+					throw 0;
+				StringSource filesource(keyFileBytes.data(), keyFileBytes.size(), true, new Base64Decoder);
 				pSignkey = new RSASSA_PKCS1v15_SHA_Signer(filesource);
 				RSASSA_PKCS1v15_SHA_Verifier pubkey(*pSignkey);
 				byte abyMyPublicKey[1000];
@@ -284,7 +288,7 @@ void CCollectionCreateDialog::OnBnClickedOk()
 			m_pCollection->m_sCollectionAuthorName = thePrefs.GetUserNick();
 		}
 
-		if (::PathFileExists(sFilePath)) {
+		if (LongPathSeams::PathExists(sFilePath)) {
 			if (LocMessageBox(IDS_COLL_REPLACEEXISTING, MB_ICONWARNING | MB_DEFBUTTON2 | MB_YESNO, 0) == IDNO)
 				return;
 

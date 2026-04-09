@@ -451,7 +451,7 @@ void CMuleListCtrl::SetColors()
 
 #if 0
 		// Explicitly check if the file exists, because 'SetBkImage' will return TRUE even if the file does not exist.
-		if (::PathFileExists(szFullResPath)) {
+		if (LongPathSeams::PathExists(szFullResPath)) {
 			// This places the bitmap near the bottom-right border of the client area. But due to that
 			// the position is specified via percentages, the bitmap is never exactly at the bottom
 			// right border, it depends on the window's height. Apart from that, the bitmap gets

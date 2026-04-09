@@ -494,8 +494,8 @@ void CPreferences::MovePreferences(EDefaultDirectory eSrc, LPCTSTR const sFile, 
 {
 	const CString &src(GetMuleDirectory(eSrc));
 	const CString &pathTxt(src + sFile);
-	if (::PathFileExists(pathTxt))
-		::MoveFile(pathTxt, dst + sFile);
+	if (LongPathSeams::PathExists(pathTxt))
+		(void)LongPathSeams::MoveFile(pathTxt, dst + sFile);
 }
 
 void CPreferences::Init()
@@ -514,7 +514,7 @@ void CPreferences::Init()
 	for (BOOL bFound = ff.FindFile(GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule*.log")); bFound;) {
 		bFound = ff.FindNextFile();
 		if (!ff.IsDirectory() && !ff.IsSystem() && !ff.IsHidden())
-			::MoveFile(ff.GetFilePath(), GetMuleDirectory(EMULE_LOGDIR) + ff.GetFileName());
+			(void)LongPathSeams::MoveFile(ff.GetFilePath(), GetMuleDirectory(EMULE_LOGDIR) + ff.GetFileName());
 	}
 	ff.Close();
 
@@ -531,7 +531,7 @@ void CPreferences::Init()
 
 	// load preferences.dat or set standard values
 	CString strFullPath(sConfDir + strPreferencesDat);
-	FILE *preffile = _tfsopen(strFullPath, _T("rb"), _SH_DENYWR);
+	FILE *preffile = LongPathSeams::OpenFileStreamDenyWriteLongPath(strFullPath, _T("rb"));
 
 	LoadPreferences();
 
@@ -551,14 +551,14 @@ void CPreferences::Init()
 	bool bIsUnicodeFile = IsUnicodeFile(strFullPath); // check for BOM
 	// open the text file either as ANSI (text) or Unicode (binary),
 	// this way we can read old and new files with almost the same code.
-	CStdioFile sdirfile;
-	if (sdirfile.Open(strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0))) {
+	CSafeBufferedFile sdirfile;
+	if (LongPathSeams::OpenFile(sdirfile, strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0))) {
 		try {
 			if (bIsUnicodeFile)
 				sdirfile.Seek(sizeof(WORD), CFile::begin); // skip BOM
 
 			CString toadd;
-			while (sdirfile.ReadString(toadd)) {
+			while (sdirfile.CStdioFile::ReadString(toadd)) {
 				toadd.Trim(_T(" \t\r\n")); // need to trim '\r' in binary mode
 				if (!toadd.IsEmpty()) {
 					MakeFoldername(toadd);
@@ -578,13 +578,13 @@ void CPreferences::Init()
 	// server list addresses
 	strFullPath.Format(_T("%s") _T("addresses.dat"), (LPCTSTR)sConfDir);
 	bIsUnicodeFile = IsUnicodeFile(strFullPath);
-	if (sdirfile.Open(strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0))) {
+	if (LongPathSeams::OpenFile(sdirfile, strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0))) {
 		try {
 			if (bIsUnicodeFile)
 				sdirfile.Seek(sizeof(WORD), CFile::current); // skip BOM
 
 			CString toadd;
-			while (sdirfile.ReadString(toadd)) {
+			while (sdirfile.CStdioFile::ReadString(toadd)) {
 				toadd.Trim(_T(" \t\r\n")); // need to trim '\r' in binary mode
 				if (!toadd.IsEmpty())
 					addresses_list.AddTail(toadd);
@@ -597,35 +597,35 @@ void CPreferences::Init()
 	}
 
 	// Explicitly inform the user about errors with incoming/temp folders!
-	if (!::PathFileExists(GetMuleDirectory(EMULE_INCOMINGDIR)) && !::CreateDirectory(GetMuleDirectory(EMULE_INCOMINGDIR), 0)) {
+	if (!LongPathSeams::PathExists(GetMuleDirectory(EMULE_INCOMINGDIR)) && !LongPathSeams::CreateDirectory(GetMuleDirectory(EMULE_INCOMINGDIR), 0)) {
 		CString strError;
 		strError.Format(GetResString(IDS_ERR_CREATE_DIR), (LPCTSTR)GetResString(IDS_PW_INCOMING), (LPCTSTR)GetMuleDirectory(EMULE_INCOMINGDIR), (LPCTSTR)GetErrorMessage(::GetLastError()));
 		AfxMessageBox(strError, MB_ICONERROR);
 
 		m_strIncomingDir = GetDefaultDirectory(EMULE_INCOMINGDIR, true); // will also try to create it if needed
-		if (!::PathFileExists(GetMuleDirectory(EMULE_INCOMINGDIR))) {
+		if (!LongPathSeams::PathExists(GetMuleDirectory(EMULE_INCOMINGDIR))) {
 			strError.Format(GetResString(IDS_ERR_CREATE_DIR), (LPCTSTR)GetResString(IDS_PW_INCOMING), (LPCTSTR)GetMuleDirectory(EMULE_INCOMINGDIR), (LPCTSTR)GetErrorMessage(::GetLastError()));
 			AfxMessageBox(strError, MB_ICONERROR);
 		}
 	}
-	if (!::PathFileExists(GetTempDir()) && !::CreateDirectory(GetTempDir(), 0)) {
+	if (!LongPathSeams::PathExists(GetTempDir()) && !LongPathSeams::CreateDirectory(GetTempDir(), 0)) {
 		CString strError;
 		strError.Format(GetResString(IDS_ERR_CREATE_DIR), (LPCTSTR)GetResString(IDS_PW_TEMP), GetTempDir(), (LPCTSTR)GetErrorMessage(::GetLastError()));
 		AfxMessageBox(strError, MB_ICONERROR);
 
 		tempdir[0] = GetDefaultDirectory(EMULE_TEMPDIR, true); // will also try to create it if needed;
-		if (!::PathFileExists(GetTempDir())) {
+		if (!LongPathSeams::PathExists(GetTempDir())) {
 			strError.Format(GetResString(IDS_ERR_CREATE_DIR), (LPCTSTR)GetResString(IDS_PW_TEMP), GetTempDir(), (LPCTSTR)GetErrorMessage(::GetLastError()));
 			AfxMessageBox(strError, MB_ICONERROR);
 		}
 	}
 
 	// Create 'skins' directory
-	if (!::PathFileExists(GetMuleDirectory(EMULE_SKINDIR)) && !::CreateDirectory(GetMuleDirectory(EMULE_SKINDIR), 0))
+	if (!LongPathSeams::PathExists(GetMuleDirectory(EMULE_SKINDIR)) && !LongPathSeams::CreateDirectory(GetMuleDirectory(EMULE_SKINDIR), 0))
 		m_strSkinProfileDir = GetDefaultDirectory(EMULE_SKINDIR, true); // will also try to create it if needed
 
 	// Create 'toolbars' directory
-	if (!::PathFileExists(GetMuleDirectory(EMULE_TOOLBARDIR)) && !::CreateDirectory(GetMuleDirectory(EMULE_TOOLBARDIR), 0))
+	if (!LongPathSeams::PathExists(GetMuleDirectory(EMULE_TOOLBARDIR)) && !LongPathSeams::CreateDirectory(GetMuleDirectory(EMULE_TOOLBARDIR), 0))
 		m_sToolbarBitmapFolder = GetDefaultDirectory(EMULE_TOOLBARDIR, true); // will also try to create it if needed;
 }
 
@@ -1195,13 +1195,13 @@ bool CPreferences::LoadStats(int loadBackUp)
 	case 0:
 	default:
 		// for transition...
-		if (::PathFileExists(sINI + _T("statistics.ini")))
+		if (LongPathSeams::PathExists(sINI + _T("statistics.ini")))
 			sINI += _T("statistics.ini");
 		else
 			sINI += _T("preferences.ini");
 	}
 
-	BOOL fileex = ::PathFileExists(sINI);
+	BOOL fileex = LongPathSeams::PathExists(sINI);
 	CIni ini(sINI, _T("Statistics"));
 
 	totalDownloadedBytes = ini.GetUInt64(_T("TotalDownloadedBytes"));
@@ -1330,8 +1330,8 @@ bool CPreferences::LoadStats(int loadBackUp)
 		// This allows us to undo a restore, so to speak, just in case we don't like the restored values...
 		CString sINIBackUp(sConfDir + _T("statbkuptmp.ini"));
 		if (findBackUp.FindFile(sINIBackUp)) {
-			::DeleteFile(sINI);				// Remove the backup that we just restored from
-			::MoveFile(sINIBackUp, sINI);	// Rename our temporary backup to the normal statbkup.ini filename.
+			(void)LongPathSeams::DeleteFile(sINI);				// Remove the backup that we just restored from
+			(void)LongPathSeams::MoveFile(sINIBackUp, sINI);	// Rename our temporary backup to the normal statbkup.ini filename.
 		}
 
 		// Since we know this is a restore, now we should call ShowStatistics to update the data items to the new ones we just loaded.
@@ -1418,7 +1418,7 @@ bool CPreferences::Save()
 	const CString &strPrefPath(sConfDir + strPreferencesDat);
 	bool error;
 
-	FILE *preffile = _tfsopen(strPrefPath + stmp, _T("wb"), _SH_DENYWR); //keep contents
+	FILE *preffile = LongPathSeams::OpenFileStreamDenyWriteLongPath(strPrefPath + stmp, _T("wb")); //keep contents
 	if (preffile) {
 		prefsExt->version = PREFFILE_VERSION;
 		md4cpy(prefsExt->userhash, userhash);
@@ -1426,7 +1426,7 @@ bool CPreferences::Save()
 		error = (fwrite(prefsExt, sizeof(Preferences_Ext_Struct), 1, preffile) != 1);
 		error |= (fclose(preffile) != 0);
 		if (!error)
-			error = !MoveFileEx(strPrefPath + stmp, strPrefPath, MOVEFILE_REPLACE_EXISTING);
+			error = !LongPathSeams::MoveFileEx(strPrefPath + stmp, strPrefPath, MOVEFILE_REPLACE_EXISTING);
 	} else
 		error = true;
 
@@ -1434,18 +1434,18 @@ bool CPreferences::Save()
 	SaveStats();
 
 	const CString &strSharesPath(sConfDir + SHAREDDIRS);
-	CStdioFile file;
-	if (file.Open(strSharesPath + stmp, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
+	CSafeBufferedFile file;
+	if (LongPathSeams::OpenFile(file, strSharesPath + stmp, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
 		try {
 			// write UTF-16LE byte order mark 0xFEFF
 			static const WORD wBOM = u'\xFEFF';
 			file.Write(&wBOM, sizeof wBOM);
 			for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
-				file.WriteString(shareddir_list.GetNext(pos));
+				file.CStdioFile::WriteString(shareddir_list.GetNext(pos));
 				file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
 			}
 			file.Close();
-			error |= (MoveFileEx(strSharesPath + stmp, strSharesPath, MOVEFILE_REPLACE_EXISTING) == 0);
+			error |= (LongPathSeams::MoveFileEx(strSharesPath + stmp, strSharesPath, MOVEFILE_REPLACE_EXISTING) == 0);
 		} catch (CFileException *ex) {
 			if (thePrefs.GetVerbose())
 				AddDebugLogLine(true, _T("Failed to save %s%s"), (LPCTSTR)strSharesPath, (LPCTSTR)CExceptionStrDash(*ex));
@@ -1454,8 +1454,8 @@ bool CPreferences::Save()
 	} else
 		error = true;
 
-	::CreateDirectory(GetMuleDirectory(EMULE_INCOMINGDIR), 0);
-	::CreateDirectory(GetTempDir(), 0);
+	LongPathSeams::CreateDirectory(GetMuleDirectory(EMULE_INCOMINGDIR), 0);
+	LongPathSeams::CreateDirectory(GetTempDir(), 0);
 	return error;
 }
 
@@ -1907,7 +1907,7 @@ void CPreferences::LoadPreferences()
 				break;
 			}
 
-		if (!bDup && (::PathFileExists(sTmp) || ::CreateDirectory(sTmp, NULL)) || tempdir.IsEmpty())
+		if (!bDup && (LongPathSeams::PathExists(sTmp) || LongPathSeams::CreateDirectory(sTmp, NULL)) || tempdir.IsEmpty())
 			tempdir.Add(sTmp);
 	}
 
@@ -2218,7 +2218,7 @@ void CPreferences::LoadPreferences()
 	// if emule is using the default, check if the file is in the config folder, as it used to be val prior version
 	// and might be wanted by the user when switching to a personalized template
 	if (m_strTemplateFile.Compare(GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule.tmpl")) == 0)
-		if (::PathFileExists(GetMuleDirectory(EMULE_CONFIGDIR) + _T("eMule.tmpl")))
+		if (LongPathSeams::PathExists(GetMuleDirectory(EMULE_CONFIGDIR) + _T("eMule.tmpl")))
 			m_strTemplateFile = GetMuleDirectory(EMULE_CONFIGDIR) + _T("eMule.tmpl");
 
 	messageFilter = ini.GetStringLong(_T("MessageFilter"), _T("fastest download speed|fastest eMule"));
@@ -2433,7 +2433,7 @@ void CPreferences::SaveCats()
 {
 	CString strCatIniFilePath;
 	strCatIniFilePath.Format(_T("%s") _T("Category.ini"), (LPCTSTR)GetMuleDirectory(EMULE_CONFIGDIR));
-	(void)_tremove(strCatIniFilePath);
+	(void)LongPathSeams::DeleteFile(strCatIniFilePath);
 	CIni ini(strCatIniFilePath);
 	ini.WriteInt(_T("Count"), (int)catArr.GetCount() - 1, _T("General"));
 	for (INT_PTR i = 0; i < catArr.GetCount(); ++i) {
@@ -2476,7 +2476,7 @@ void CPreferences::LoadCats()
 			newcat->strIncomingPath = ini.GetStringUTF8(_T("Incoming"));
 			MakeFoldername(newcat->strIncomingPath);
 			if (!IsShareableDirectory(newcat->strIncomingPath)
-				|| (!::PathFileExists(newcat->strIncomingPath) && !::CreateDirectory(newcat->strIncomingPath, 0)))
+				|| (!LongPathSeams::PathExists(newcat->strIncomingPath) && !LongPathSeams::CreateDirectory(newcat->strIncomingPath, 0)))
 			{
 				newcat->strIncomingPath = GetMuleDirectory(EMULE_INCOMINGDIR);
 			}
@@ -2866,7 +2866,7 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		m_nCurrentUserDirMode = 2; // To let us know which "mode" we are using in case we want to switch per options
 
 		// check if preferences.ini exists already in our default / fallback dir
-		bool bConfigAvailableExecutable = (::PathFileExists(strSelectedConfigBaseDirectory + CONFIGFOLDER _T("preferences.ini")) != FALSE);
+		bool bConfigAvailableExecutable = LongPathSeams::PathExists(strSelectedConfigBaseDirectory + CONFIGFOLDER _T("preferences.ini"));
 
 		// check if our registry setting is present which forces the single or multiuser directories
 		// and lets us ignore other defaults
@@ -2917,9 +2917,9 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 
 							if (nRegistrySetting == _UI32_MAX) {
 								// no registry default, check if we find a preferences.ini to use
-								if (::PathFileExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+								if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
 									m_nCurrentUserDirMode = 0;
-								else if (::PathFileExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+								else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
 									m_nCurrentUserDirMode = 1;
 								else if (bConfigAvailableExecutable)
 									m_nCurrentUserDirMode = 2;
@@ -2962,7 +2962,7 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 						if (nRegistrySetting == 0	// registry setting overwrites, use these folders
 							|| (nRegistrySetting == _UI32_MAX
 								&& !bConfigAvailableExecutable
-								&& ::PathFileExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
+								&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
 						{
 							slosh(const_cast<CString&>(strAppData));
 							slosh(const_cast<CString&>(strPersonal));
@@ -3002,18 +3002,18 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		switch (eDirectory) { // create the underlying directory first - be sure to adjust this if changing default directories
 		case EMULE_CONFIGDIR:
 		case EMULE_LOGDIR:
-			::CreateDirectory(m_astrDefaultDirs[EMULE_CONFIGBASEDIR], NULL);
+			LongPathSeams::CreateDirectory(m_astrDefaultDirs[EMULE_CONFIGBASEDIR], NULL);
 			break;
 		case EMULE_TEMPDIR:
 		case EMULE_INCOMINGDIR:
-			::CreateDirectory(m_astrDefaultDirs[EMULE_DATABASEDIR], NULL);
+			LongPathSeams::CreateDirectory(m_astrDefaultDirs[EMULE_DATABASEDIR], NULL);
 			break;
 		case EMULE_ADDLANGDIR:
 		case EMULE_SKINDIR:
 		case EMULE_TOOLBARDIR:
-			::CreateDirectory(m_astrDefaultDirs[EMULE_EXPANSIONDIR], NULL);
+			LongPathSeams::CreateDirectory(m_astrDefaultDirs[EMULE_EXPANSIONDIR], NULL);
 		}
-		::CreateDirectory(m_astrDefaultDirs[eDirectory], NULL);
+		LongPathSeams::CreateDirectory(m_astrDefaultDirs[eDirectory], NULL);
 		m_abDefaultDirsCreated[eDirectory] = true;
 	}
 	return m_astrDefaultDirs[eDirectory];

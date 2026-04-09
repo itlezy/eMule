@@ -229,7 +229,7 @@ BOOL CMiniMule::OnInitDialog()
 	ASSERT(m_iInCallback == 0);
 	const CString &strHtmlFile(theApp.GetSkinFileItem(_T("MiniMule"), _T("HTML")));
 	if (!strHtmlFile.IsEmpty()) {
-		if (_taccess(strHtmlFile, 0) == 0) {
+		if (LongPathSeams::PathExists(strHtmlFile)) {
 			m_strCurrentUrl = CreateFilePathUrl(strHtmlFile, INTERNET_SCHEME_FILE);
 			m_nHtmlResID = 0;
 			m_szHtmlResID = NULL;

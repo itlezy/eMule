@@ -37,6 +37,17 @@ namespace Kademlia
 	class CBufferedFileIO : public CStdioFile, public CDataIO
 	{
 	public:
+		/**
+		 * @brief Attaches an already opened stdio stream to this buffered file and marks it owned by the instance.
+		 */
+		void AttachLongPathStream(FILE *pOpenStream, LPCTSTR lpszFileName)
+		{
+			Abort();
+			CommonBaseInit(pOpenStream, NULL);
+			m_bCloseOnDelete = TRUE;
+			SetFilePath(lpszFileName);
+		}
+
 		virtual void ReadArray(LPVOID lpResult, uint32 uByteCount);
 		virtual void WriteArray(LPCVOID lpVal, uint32 uByteCount);
 		virtual UINT GetAvailable() const;

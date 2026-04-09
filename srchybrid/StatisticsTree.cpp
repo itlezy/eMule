@@ -28,6 +28,8 @@
 #include "emule.h"
 #include "StatisticsTree.h"
 #include "StatisticsDlg.h"
+#include "LongPathSeams.h"
+#include "SafeFile.h"
 #include "emuledlg.h"
 #include "Preferences.h"
 #include "OtherFunctions.h"
@@ -119,7 +121,7 @@ void CStatisticsTree::DoMenu(CPoint doWhere)
 
 void CStatisticsTree::DoMenu(CPoint doWhere, UINT nFlags)
 {
-	int myFlags = ::PathFileExists(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("statbkup.ini")) ? MF_STRING : MF_GRAYED;
+	int myFlags = LongPathSeams::PathExists(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("statbkup.ini")) ? MF_STRING : MF_GRAYED;
 
 	mnuContext.CreatePopupMenu();
 	mnuContext.AddMenuTitle(GetResString(IDS_STATS_MNUTREETITLE), true);
@@ -555,8 +557,14 @@ void CStatisticsTree::ExportHTML()
 			, (LPCTSTR)GetResString(IDS_SF_STATISTICS), (LPCTSTR)GetResString(IDS_CD_UNAME), (LPCTSTR)thePrefs.GetUserNick()
 			, (LPCTSTR)GetHTMLForExport());
 
-		CFile htmlFile;
-		htmlFile.Open(saveAsDlg.GetPathName(), CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite);
+		CSafeFile htmlFile;
+		CFileException ex;
+		if (!LongPathSeams::OpenFile(htmlFile, saveAsDlg.GetPathName(), CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite, &ex)) {
+			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), (LPCTSTR)saveAsDlg.GetPathName(), (LPCTSTR)CExceptionStrDash(ex));
+			if (*szCurDir)
+				VERIFY(SetCurrentDirectory(szCurDir));
+			return;
+		}
 
 		CStringA strHtmlA(wc2utf8(strHTML));
 		htmlFile.Write(strHtmlA, strHtmlA.GetLength());
@@ -574,7 +582,7 @@ void CStatisticsTree::ExportHTML()
 		CString strSrc(thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR));
 
 		for (size_t i = 0; i < _countof(s_apcFileNames); ++i)
-			::CopyFile(strSrc + s_apcFileNames[i], strDst + s_apcFileNames[i], FALSE);
+			(void)LongPathSeams::CopyFile(strSrc + s_apcFileNames[i], strDst + s_apcFileNames[i], FALSE);
 	}
 
 	if (*szCurDir)

@@ -59,6 +59,7 @@ their client on the eMule forum.
 #include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/net/KademliaUDPListener.h"
+#include "LongPathSeams.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/routing/RoutingBin.h"
 #include "kademlia/utils/KadUDPKey.h"
@@ -166,7 +167,7 @@ void CRoutingZone::ReadFile(const CString &strSpecialNodesdate)
 		return;
 	}
 	CSafeBufferedFile file;
-	if (!file.Open(strSpecialNodesdate.IsEmpty() ? m_sFilename : strSpecialNodesdate, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
+	if (!LongPathSeams::OpenFile(file, strSpecialNodesdate.IsEmpty() ? m_sFilename : strSpecialNodesdate, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
 		DebugLogWarning(_T("Unable to read Kad file: %s"), (LPCTSTR)m_sFilename);
 		return;
 	}
@@ -346,7 +347,7 @@ void CRoutingZone::WriteFile()
 	}
 
 	CSafeBufferedFile file;
-	if (!file.Open(m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
+	if (!LongPathSeams::OpenFile(file, m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
 		DebugLogError(_T("Unable to store Kad file: %s"), (LPCTSTR)m_sFilename);
 		return;
 	}
@@ -386,7 +387,7 @@ void CRoutingZone::DbgWriteBootstrapFile()
 #ifdef _BOOTSTRAPNODESDAT
 	DebugLogWarning(_T("Writing special bootstrap nodes.dat - not intended for normal use"));
 	CSafeBufferedFile file;
-	if (!file.Open(m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
+	if (!LongPathSeams::OpenFile(file, m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
 		DebugLogError(_T("Unable to store bootstrap file: %s"), (LPCTSTR)m_sFilename);
 		return;
 	}

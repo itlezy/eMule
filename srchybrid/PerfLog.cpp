@@ -110,7 +110,7 @@ void CPerfLog::WriteSamples(UINT nCurDn, UINT nCurUp, UINT nCurDnOH, UINT nCurUp
 		// do not localize this date/time string!
 		strftime(szTime, _countof(szTime), "%m/%d/%Y %H:%M:%S", localtime(&tNow));
 
-		FILE *fp = _tfsopen(m_strFilePath, (m_eMode == OneSample) ? _T("wt") : _T("at"), _SH_DENYWR);
+		FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strFilePath, (m_eMode == OneSample) ? _T("wt") : _T("at"));
 		if (fp == NULL) {
 			LogError(LOG_DEFAULT, _T("Failed to open performance log file \"%s\" - %s"), (LPCTSTR)m_strFilePath, _tcserror(errno));
 			return;
@@ -123,14 +123,14 @@ void CPerfLog::WriteSamples(UINT nCurDn, UINT nCurUp, UINT nCurDnOH, UINT nCurUp
 	} else {
 		ASSERT(m_eFileFormat == MRTG);
 
-		FILE *fp = _tfsopen(m_strMRTGDataFilePath, (m_eMode == OneSample) ? _T("wt") : _T("at"), _SH_DENYWR);
+		FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strMRTGDataFilePath, (m_eMode == OneSample) ? _T("wt") : _T("at"));
 		if (fp != NULL) {
 			fprintf(fp, "%u\n%u\n\n\n", nCurDn, nCurUp);
 			fclose(fp);
 		} else
 			LogError(LOG_DEFAULT, _T("Failed to open performance log file \"%s\" - %s"), (LPCTSTR)m_strMRTGDataFilePath, _tcserror(errno));
 
-		fp = _tfsopen(m_strMRTGOverheadFilePath, (m_eMode == OneSample) ? _T("wt") : _T("at"), _SH_DENYWR);
+		fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strMRTGOverheadFilePath, (m_eMode == OneSample) ? _T("wt") : _T("at"));
 		if (fp != NULL) {
 			fprintf(fp, "%u\n%u\n\n\n", nCurDnOH, nCurUpOH);
 			fclose(fp);

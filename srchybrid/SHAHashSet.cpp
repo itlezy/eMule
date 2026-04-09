@@ -722,7 +722,7 @@ bool CAICHRecoveryHashSet::SaveHashSet()
 
 	CSafeFile file;
 	CFileException fex;
-	if (!file.Open(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + KNOWN2_MET_FILENAME
+	if (!LongPathSeams::OpenFile(file, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + KNOWN2_MET_FILENAME
 		, CFile::modeCreate | CFile::modeReadWrite | CFile::modeNoTruncate | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyNone, &fex))
 	{
 		if (fex.m_cause != CFileException::fileNotFound)
@@ -795,7 +795,7 @@ bool CAICHRecoveryHashSet::LoadHashSet()
 
 	CSafeFile file;
 	CFileException fex;
-	if (!file.Open(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + KNOWN2_MET_FILENAME
+	if (!LongPathSeams::OpenFile(file, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + KNOWN2_MET_FILENAME
 		, CFile::modeCreate | CFile::modeRead | CFile::modeNoTruncate | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyNone, &fex))
 	{
 		if (fex.m_cause != CFileException::fileNotFound)

@@ -38,6 +38,7 @@
 #include "Log.h"
 #include "Collection.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
+#include "LongPathSeams.h"
 #include "ImportParts.h"
 #include "MD5Sum.h"
 
@@ -319,8 +320,8 @@ uint16 CAddFileThread::SetPartToImport(LPCTSTR import)
 
 bool CAddFileThread::ImportParts()
 {
-	CFile f;
-	if (!f.Open(m_strImport, CFile::modeRead | CFile::shareDenyNone)) {
+	CSafeFile f;
+	if (!LongPathSeams::OpenFile(f, m_strImport, CFile::modeRead | CFile::shareDenyNone)) {
 		LogError(LOG_STATUSBAR, GetResString(IDS_IMPORTPARTS_ERR_CANTOPENFILE), (LPCTSTR)m_strImport);
 		return false;
 	}
@@ -514,7 +515,7 @@ CSharedFileList::~CSharedFileList()
 	//Delete the test file
 	CString sTest(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
 	sTest += m_strBetaFileName;
-	::DeleteFile(sTest);
+	(void)LongPathSeams::DeleteFileIfExists(sTest);
 #endif
 }
 
@@ -536,7 +537,7 @@ void CSharedFileList::FindSharedFiles()
 			if (!cur_file->IsKindOf(RUNTIME_CLASS(CPartFile))
 				|| theApp.downloadqueue->IsPartFile(cur_file)
 				|| theApp.knownfiles->IsFilePtrInList(cur_file)
-				|| _taccess(cur_file->GetFilePath(), 0) != 0)
+				|| LongPathSeams::GetFileAttributes(cur_file->GetFilePath()) == INVALID_FILE_ATTRIBUTES)
 			{
 				m_UnsharedFiles_map[CSKey(cur_file->GetFileHash())] = true;
 				listlock.Lock();
@@ -553,14 +554,14 @@ void CSharedFileList::FindSharedFiles()
 
 #if defined(_BETA) || defined(_DEVBUILD)
 	//Create the test file (before adding the Incoming directory)
-	CStdioFile f;
-	if (!f.Open(tempDir + m_strBetaFileName, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite))
+	CSafeBufferedFile f;
+	if (!LongPathSeams::OpenFile(f, tempDir + m_strBetaFileName, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite))
 		ASSERT(0);
 	else {
 		try {
 			// do not translate the content!
-			f.WriteString(m_strBetaFileName); // guarantees a different hash on different versions
-			f.WriteString(_T("\nThis file is automatically created by eMule Beta versions to help the developers testing and debugging the new features.")
+			f.CStdioFile::WriteString(m_strBetaFileName); // guarantees a different hash on different versions
+			f.CStdioFile::WriteString(_T("\nThis file is automatically created by eMule Beta versions to help the developers testing and debugging the new features.")
 				_T("\neMule will delete this file when exiting, otherwise you can remove this file at any time.")
 				_T("\nThanks for beta testing eMule :)"));
 			f.Close();
@@ -594,6 +595,25 @@ void CSharedFileList::FindSharedFiles()
 void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
 {
 	ASSERT(rstrDirectory.Right(1) == _T("\\"));
+
+	if (rstrDirectory.GetLength() >= MAX_PATH || rstrDirectory.Left(4).CompareNoCase(_T("\\\\?\\")) == 0) {
+		WIN32_FIND_DATA findData = {};
+		HANDLE hFind = LongPathSeams::FindFirstFile(rstrDirectory + _T('*'), &findData);
+		if (hFind == INVALID_HANDLE_VALUE) {
+			DWORD dwError = ::GetLastError();
+			if (dwError != ERROR_FILE_NOT_FOUND)
+				LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrDirectory, (LPCTSTR)GetErrorMessage(dwError));
+			return;
+		}
+
+		do {
+			if (_tcscmp(findData.cFileName, _T(".")) != 0 && _tcscmp(findData.cFileName, _T("..")) != 0)
+				CheckAndAddSingleFile(rstrDirectory, findData);
+		} while (::FindNextFile(hFind, &findData));
+
+		::FindClose(hFind);
+		return;
+	}
 
 	CFileFind ff;
 	BOOL bFound = ff.FindFile(rstrDirectory + _T('*'));
@@ -635,6 +655,24 @@ bool CSharedFileList::AddSingleSharedFile(const CString &rstrFilePath, bool bNoU
 
 bool CSharedFileList::CheckAndAddSingleFile(const CString &rstrFilePath)
 {
+	if (rstrFilePath.GetLength() >= MAX_PATH || rstrFilePath.Left(4).CompareNoCase(_T("\\\\?\\")) == 0) {
+		WIN32_FIND_DATA findData = {};
+		HANDLE hFind = LongPathSeams::FindFirstFile(rstrFilePath, &findData);
+		if (hFind == INVALID_HANDLE_VALUE) {
+			DWORD dwError = ::GetLastError();
+			if (dwError != ERROR_FILE_NOT_FOUND)
+				LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrFilePath, (LPCTSTR)GetErrorMessage(dwError));
+			return false;
+		}
+
+		::FindClose(hFind);
+		const int iSlash = rstrFilePath.ReverseFind(_T('\\'));
+		CheckAndAddSingleFile(iSlash >= 0 ? rstrFilePath.Left(iSlash + 1) : CString(), findData);
+		HashNextFile();
+		bHaveSingleSharedFiles = true;
+		return true;
+	}
+
 	CFileFind ff;
 	if (!ff.FindFile(rstrFilePath)) {
 		DWORD dwError = ::GetLastError();
@@ -649,6 +687,72 @@ bool CSharedFileList::CheckAndAddSingleFile(const CString &rstrFilePath)
 	bHaveSingleSharedFiles = true;
 	// GUI update to be done by the caller
 	return true;
+}
+
+void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const WIN32_FIND_DATA &findData)
+{
+	if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY)) != 0)
+		return;
+
+	const ULONGLONG ullFoundFileSize = (static_cast<ULONGLONG>(findData.nFileSizeHigh) << 32) | findData.nFileSizeLow;
+	if (ullFoundFileSize == 0 || ullFoundFileSize > MAX_EMULE_FILE_SIZE)
+		return;
+
+	CString strFoundDirectory(strDirectory);
+	if (!strFoundDirectory.IsEmpty() && strFoundDirectory.Right(1) != _T("\\"))
+		strFoundDirectory += _T("\\");
+
+	const CString strFoundFileName(findData.cFileName);
+	const CString strFoundFilePath(strFoundDirectory + strFoundFileName);
+
+	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;)
+		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0)
+			return;
+
+	if (ExtensionIs(strFoundFileName, _T(".lnk")))
+		return;
+
+	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {
+		TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
+		return;
+	}
+
+	time_t fdate = (time_t)FileTimeToUnixTime(findData.ftLastWriteTime);
+	if (fdate <= 0)
+		fdate = (time_t)-1;
+	if (fdate == (time_t)-1) {
+		if (thePrefs.GetVerbose())
+			AddDebugLogLine(false, _T("Failed to get file date of \"%s\""), (LPCTSTR)strFoundFilePath);
+	} else
+		AdjustNTFSDaylightFileTime(fdate, strFoundFilePath);
+
+	CKnownFile *toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
+	if (toadd) {
+		CCKey key(toadd->GetFileHash());
+		CKnownFile *pFileInMap;
+		if (m_Files_map.Lookup(key, pFileInMap)) {
+			TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFilePath());
+			TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(toadd->GetFileHash()), (LPCTSTR)strFoundFilePath);
+			if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap)) {
+				if (strFoundFilePath.CompareNoCase(pFileInMap->GetFilePath()) != 0)
+					LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)strFoundFilePath);
+				else
+					DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
+			}
+		} else {
+			toadd->SetPath(strFoundDirectory);
+			toadd->SetFilePath(strFoundFilePath);
+			AddFile(toadd);
+		}
+	} else {
+		if (!IsHashing(strFoundDirectory, strFoundFileName) && !thePrefs.IsTempFile(strFoundDirectory, strFoundFileName)) {
+			UnknownFile_Struct *tohash = new UnknownFile_Struct;
+			tohash->strDirectory = strFoundDirectory;
+			tohash->strName = strFoundFileName;
+			waitingforhash_list.AddTail(tohash);
+		} else
+			TRACE(_T("%hs: Did not share file \"%s\" - already hashing or temp. file\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
+	}
 }
 
 bool CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
@@ -1576,19 +1680,19 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 void CSharedFileList::Save() const
 {
 	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SHAREDFILES_FILE);
-	CStdioFile file;
-	if (file.Open(strFullPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
+	CSafeBufferedFile file;
+	if (LongPathSeams::OpenFile(file, strFullPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
 		try {
 			// write Unicode byte order mark 0xFEFF
 			static const WORD wBOM = u'\xFEFF';
 			file.Write(&wBOM, sizeof(wBOM));
 
 			for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL;) {
-				file.WriteString(m_liSingleSharedFiles.GetNext(pos));
+				file.CStdioFile::WriteString(m_liSingleSharedFiles.GetNext(pos));
 				file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
 			}
 			for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;) {
-				file.WriteString(_T('-') + m_liSingleExcludedFiles.GetNext(pos)); // a '-' prefix means excluded
+				file.CStdioFile::WriteString(_T('-') + m_liSingleExcludedFiles.GetNext(pos)); // a '-' prefix means excluded
 				file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
 			}
 			CommitAndClose(file);
@@ -1604,14 +1708,14 @@ void CSharedFileList::LoadSingleSharedFilesList()
 {
 	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SHAREDFILES_FILE);
 	bool bIsUnicodeFile = IsUnicodeFile(strFullPath); // check for BOM
-	CStdioFile sdirfile;
-	if (sdirfile.Open(strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0))) {
+	CSafeBufferedFile sdirfile;
+	if (LongPathSeams::OpenFile(sdirfile, strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0))) {
 		try {
 			if (bIsUnicodeFile)
 				sdirfile.Seek(sizeof(WORD), CFile::current); // skip BOM
 
 			CString toadd;
-			while (sdirfile.ReadString(toadd)) {
+			while (sdirfile.CStdioFile::ReadString(toadd)) {
 				toadd.Trim(_T(" \t\r\n")); // need to trim '\r' in binary mode
 				if (toadd.IsEmpty())
 					continue;

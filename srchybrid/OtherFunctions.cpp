@@ -37,8 +37,11 @@
 #include "RarFile.h"
 #include "shahashset.h"
 #include "collection.h"
+#include "LongPathSeams.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
+#include "kademlia/io/BufferedFileIO.h"
+#include "ResourceOwnershipSeams.h"
 #include "Kademlia/Kademlia/kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "Log.h"
@@ -53,6 +56,7 @@ static char THIS_FILE[] = __FILE__;
 extern bool GetDRM(LPCTSTR pszFilePath);
 
 CWebServices theWebServices;
+static bool g_bWin32LongPathsEnabled = false;
 
 // Base chars for encode and decode functions
 static const byte base16Chars[17] = "0123456789ABCDEF";
@@ -96,6 +100,119 @@ const struct LinkScheme s_apszSchemes[] =
 	{ _T("magnet:?"), 8 },
 	{ NULL, 0 }
 };
+
+namespace
+{
+	void SetFileOpenException(CFileException *pError, const LONG lOsError, LPCTSTR lpszFileName)
+	{
+		if (pError == NULL)
+			return;
+		pError->m_cause = CFileException::OsErrorToException(lOsError);
+		pError->m_lOsError = lOsError;
+		pError->m_strFileName = lpszFileName;
+	}
+
+	void SetCrtOpenException(CFileException *pError, LPCTSTR lpszFileName)
+	{
+		if (pError == NULL)
+			return;
+		pError->m_cause = CFileException::ErrnoToException(errno);
+		pError->m_lOsError = errno;
+		pError->m_strFileName = lpszFileName;
+	}
+
+	bool MapMfcOpenFlags(const UINT nOpenFlags, DWORD &dwDesiredAccess, DWORD &dwShareMode, DWORD &dwCreationDisposition, DWORD &dwFlagsAndAttributes, SECURITY_ATTRIBUTES &securityAttributes)
+	{
+		dwDesiredAccess = 0;
+		switch (nOpenFlags & 3u) {
+			case CFile::modeRead:
+				dwDesiredAccess = GENERIC_READ;
+				break;
+			case CFile::modeWrite:
+				dwDesiredAccess = GENERIC_WRITE;
+				break;
+			case CFile::modeReadWrite:
+				dwDesiredAccess = GENERIC_READ | GENERIC_WRITE;
+				break;
+			default:
+				return false;
+		}
+
+		switch (nOpenFlags & 0x70u) {
+			case CFile::shareCompat:
+			case CFile::shareExclusive:
+				dwShareMode = 0;
+				break;
+			case CFile::shareDenyWrite:
+				dwShareMode = FILE_SHARE_READ;
+				break;
+			case CFile::shareDenyRead:
+				dwShareMode = FILE_SHARE_WRITE;
+				break;
+			case CFile::shareDenyNone:
+				dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE;
+				break;
+			default:
+				return false;
+		}
+
+		if (nOpenFlags & CFile::modeCreate)
+			dwCreationDisposition = (nOpenFlags & CFile::modeNoTruncate) ? OPEN_ALWAYS : CREATE_ALWAYS;
+		else
+			dwCreationDisposition = OPEN_EXISTING;
+
+		dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+		if (nOpenFlags & CFile::osNoBuffer)
+			dwFlagsAndAttributes |= FILE_FLAG_NO_BUFFERING;
+		if (nOpenFlags & CFile::osWriteThrough)
+			dwFlagsAndAttributes |= FILE_FLAG_WRITE_THROUGH;
+		if (nOpenFlags & CFile::osRandomAccess)
+			dwFlagsAndAttributes |= FILE_FLAG_RANDOM_ACCESS;
+		if (nOpenFlags & CFile::osSequentialScan)
+			dwFlagsAndAttributes |= FILE_FLAG_SEQUENTIAL_SCAN;
+
+		securityAttributes.nLength = sizeof(securityAttributes);
+		securityAttributes.lpSecurityDescriptor = NULL;
+		securityAttributes.bInheritHandle = (nOpenFlags & CFile::modeNoInherit) == 0;
+		return true;
+	}
+
+	void BuildStdioOpenMode(const UINT nOpenFlags, int &nHandleFlags, char (&szMode)[4])
+	{
+		int nMode = 0;
+		if (nOpenFlags & CFile::modeCreate) {
+			if (nOpenFlags & CFile::modeNoTruncate)
+				szMode[nMode++] = 'a';
+			else
+				szMode[nMode++] = 'w';
+		} else if (nOpenFlags & CFile::modeWrite)
+			szMode[nMode++] = 'a';
+		else
+			szMode[nMode++] = 'r';
+
+		if ((szMode[0] == 'r' && (nOpenFlags & CFile::modeReadWrite)) || (szMode[0] != 'r' && !(nOpenFlags & CFile::modeWrite)))
+			szMode[nMode++] = '+';
+
+		// The Win32 handle already carries the actual read/write access. The CRT flags here
+		// only need to describe stream translation mode for `_open_osfhandle` / `_fdopen`.
+		nHandleFlags = _O_TEXT;
+
+		if (nOpenFlags & CFile::typeBinary) {
+			szMode[nMode++] = 'b';
+			nHandleFlags = (nHandleFlags & ~_O_TEXT) | _O_BINARY;
+		} else
+			szMode[nMode++] = 't';
+
+#ifdef _UNICODE
+		if (nOpenFlags & CFile::typeUnicode) {
+			nHandleFlags &= ~_O_TEXT;
+			nHandleFlags |= _O_WTEXT;
+		}
+#endif
+
+		szMode[nMode++] = '\0';
+	}
+}
 
 CString CastItoXBytes(uint16 count, bool isK, bool isPerSec, uint32 decimal)
 {
@@ -297,15 +414,153 @@ CString CExceptionStrDash(CException &ex)
 	return s;
 }
 
-bool CFileOpen(CFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg)
+namespace LongPathSeams
+{
+	bool OpenFile(CSafeFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, CFileException *pError)
+	{
+		if (lpszFileName == NULL || lpszFileName[0] == _T('\0')) {
+			::SetLastError(ERROR_INVALID_NAME);
+			SetFileOpenException(pError, ERROR_INVALID_NAME, lpszFileName);
+			return false;
+		}
+
+		DWORD dwDesiredAccess = 0;
+		DWORD dwShareMode = 0;
+		DWORD dwCreationDisposition = 0;
+		DWORD dwFlagsAndAttributes = 0;
+		SECURITY_ATTRIBUTES securityAttributes = {};
+		if (!MapMfcOpenFlags(nOpenFlags, dwDesiredAccess, dwShareMode, dwCreationDisposition, dwFlagsAndAttributes, securityAttributes)) {
+			::SetLastError(ERROR_INVALID_PARAMETER);
+			SetFileOpenException(pError, ERROR_INVALID_PARAMETER, lpszFileName);
+			return false;
+		}
+
+		HANDLE hFile = LongPathSeams::CreateFile(
+			lpszFileName,
+			dwDesiredAccess,
+			dwShareMode,
+			&securityAttributes,
+			dwCreationDisposition,
+			dwFlagsAndAttributes,
+			NULL);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			SetFileOpenException(pError, ::GetLastError(), lpszFileName);
+			return false;
+		}
+
+		try {
+			file.AttachLongPathHandle(hFile, lpszFileName);
+		} catch (...) {
+			::CloseHandle(hFile);
+			throw;
+		}
+		return true;
+	}
+
+	template <typename TBufferedFile>
+	bool OpenBufferedStreamFile(TBufferedFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, CFileException *pError)
+	{
+		if (lpszFileName == NULL || lpszFileName[0] == _T('\0')) {
+			::SetLastError(ERROR_INVALID_NAME);
+			SetFileOpenException(pError, ERROR_INVALID_NAME, lpszFileName);
+			return false;
+		}
+
+		DWORD dwDesiredAccess = 0;
+		DWORD dwShareMode = 0;
+		DWORD dwCreationDisposition = 0;
+		DWORD dwFlagsAndAttributes = 0;
+		SECURITY_ATTRIBUTES securityAttributes = {};
+		if (!MapMfcOpenFlags(nOpenFlags, dwDesiredAccess, dwShareMode, dwCreationDisposition, dwFlagsAndAttributes, securityAttributes)) {
+			::SetLastError(ERROR_INVALID_PARAMETER);
+			SetFileOpenException(pError, ERROR_INVALID_PARAMETER, lpszFileName);
+			return false;
+		}
+
+		HANDLE hFile = LongPathSeams::CreateFile(
+			lpszFileName,
+			dwDesiredAccess,
+			dwShareMode,
+			&securityAttributes,
+			dwCreationDisposition,
+			dwFlagsAndAttributes,
+			NULL);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			SetFileOpenException(pError, ::GetLastError(), lpszFileName);
+			return false;
+		}
+
+		int nHandleFlags = 0;
+		char szMode[4] = {};
+		BuildStdioOpenMode(nOpenFlags, nHandleFlags, szMode);
+		const int nFileDescriptor = _open_osfhandle(reinterpret_cast<intptr_t>(hFile), nHandleFlags);
+		if (nFileDescriptor == -1) {
+			const LONG lOsError = (errno != 0) ? errno : ERROR_OPEN_FAILED;
+			::CloseHandle(hFile);
+			SetCrtOpenException(pError, lpszFileName);
+			::SetLastError(lOsError);
+			return false;
+		}
+
+		FILE *pOpenStream = _fdopen(nFileDescriptor, szMode);
+		if (pOpenStream == NULL) {
+			const LONG lOsError = (errno != 0) ? errno : ERROR_OPEN_FAILED;
+			_close(nFileDescriptor);
+			SetCrtOpenException(pError, lpszFileName);
+			::SetLastError(lOsError);
+			return false;
+		}
+
+		try {
+			file.AttachLongPathStream(pOpenStream, lpszFileName);
+		} catch (...) {
+			fclose(pOpenStream);
+			throw;
+		}
+		return true;
+	}
+
+	bool OpenFile(CSafeBufferedFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, CFileException *pError)
+	{
+		return OpenBufferedStreamFile(file, lpszFileName, nOpenFlags, pError);
+	}
+
+	bool OpenFile(Kademlia::CBufferedFileIO &file, LPCTSTR lpszFileName, UINT nOpenFlags, CFileException *pError)
+	{
+		return OpenBufferedStreamFile(file, lpszFileName, nOpenFlags, pError);
+	}
+}
+
+bool CFileOpen(CSafeFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg)
 {
 	CFileException ex;
-	if (!file.Open(lpszFileName, nOpenFlags, &ex)) {
+	if (!LongPathSeams::OpenFile(file, lpszFileName, nOpenFlags, &ex)) {
 		if (ex.m_cause != CFileException::fileNotFound)
 			LogError(LOG_STATUSBAR, _T("%s%s"), lpszMsg, (LPCTSTR)CExceptionStrDash(ex));
 		return false;
 	}
 	return true;
+}
+
+bool CFileOpen(CSafeBufferedFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg)
+{
+	CFileException ex;
+	if (!LongPathSeams::OpenFile(file, lpszFileName, nOpenFlags, &ex)) {
+		if (ex.m_cause != CFileException::fileNotFound)
+			LogError(LOG_STATUSBAR, _T("%s%s"), lpszMsg, (LPCTSTR)CExceptionStrDash(ex));
+		return false;
+	}
+	return true;
+}
+
+void CommitAndClose(CFile &file)
+{
+	if (thePrefs.GetCommitFiles() >= 2 || (thePrefs.GetCommitFiles() >= 1 && theApp.IsClosing())) {
+		file.Flush();
+		if (!::FlushFileBuffers((HANDLE)file))
+			AfxThrowFileException(CFileException::hardIO, ::GetLastError(), file.GetFileName());
+	}
+	file.Close();
 }
 
 void CommitAndClose(CStdioFile &file)
@@ -320,12 +575,17 @@ void CommitAndClose(CStdioFile &file)
 
 bool ReplaceFileAtomically(const CString &strSrc, const CString &strDst, DWORD *pdwLastError)
 {
-	return PartFilePersistenceSeams::TryReplaceFileAtomically(strSrc, strDst, pdwLastError);
+	const CString strPreparedSrc(LongPathSeams::PreparePathForLongPath(strSrc).c_str());
+	const CString strPreparedDst(LongPathSeams::PreparePathForLongPath(strDst).c_str());
+	return PartFilePersistenceSeams::TryReplaceFileAtomically(strPreparedSrc, strPreparedDst, pdwLastError);
 }
 
 bool CopyFileToTempAndReplace(const CString &strSrc, const CString &strDst, const CString &strTmp, const bool bDontOverride, DWORD *pdwLastError)
 {
-	return PartFilePersistenceSeams::TryCopyFileToTempAndReplace(strSrc, strDst, strTmp, bDontOverride, pdwLastError);
+	const CString strPreparedSrc(LongPathSeams::PreparePathForLongPath(strSrc).c_str());
+	const CString strPreparedDst(LongPathSeams::PreparePathForLongPath(strDst).c_str());
+	const CString strPreparedTmp(LongPathSeams::PreparePathForLongPath(strTmp).c_str());
+	return PartFilePersistenceSeams::TryCopyFileToTempAndReplace(strPreparedSrc, strPreparedDst, strPreparedTmp, bDontOverride, pdwLastError);
 }
 
 HINSTANCE BrowserOpen(LPCTSTR lpURL, LPCTSTR lpDirectory)
@@ -350,7 +610,7 @@ void ShellDefaultVerb(LPCTSTR lpName)
 
 bool ShellDeleteFile(LPCTSTR pszFilePath)
 {
-	if (!::PathFileExists(pszFilePath))
+	if (!LongPathSeams::PathExists(pszFilePath))
 		return true;
 	if (thePrefs.GetRemoveToBin()) {
 		TCHAR todel[MAX_PATH + 1] = {};
@@ -366,7 +626,7 @@ bool ShellDeleteFile(LPCTSTR pszFilePath)
 		} __except (EXCEPTION_EXECUTE_HANDLER) {
 		}
 	}
-	return ::DeleteFile(pszFilePath) != 0;
+	return LongPathSeams::DeleteFile(pszFilePath) != 0;
 }
 
 CString ShellGetFolderPath(int iCSIDL)
@@ -929,7 +1189,7 @@ INT_PTR CWebServices::ReadAllServices()
 	RemoveAllServices();
 
 	const CString &strFilePath(GetDefaultServicesFile());
-	FILE *readFile = _tfsopen(strFilePath, _T("r"), _SH_DENYWR);
+	FILE *readFile = LongPathSeams::OpenFileStreamDenyWriteLongPath(strFilePath, _T("r"));
 	if (readFile != NULL) {
 		CString sbuffer;
 		while (!feof(readFile)) {
@@ -2515,13 +2775,13 @@ ULONGLONG GetDiskFileSize(LPCTSTR pszFilePath)
 {
 	// If the file is not compressed nor sparse, 'GetCompressedFileSize' returns the 'normal' file size.
 	ULONGLONG ullCompFileSize;
-	((LPDWORD)&ullCompFileSize)[0] = ::GetCompressedFileSize(pszFilePath, &((LPDWORD)&ullCompFileSize)[1]);
+	((LPDWORD)&ullCompFileSize)[0] = LongPathSeams::GetCompressedFileSize(pszFilePath, &((LPDWORD)&ullCompFileSize)[1]);
 	if (((LPDWORD)&ullCompFileSize)[0] != INVALID_FILE_SIZE || ::GetLastError() == NO_ERROR)
 		return ullCompFileSize;
 
 	// If 'GetCompressedFileSize' failed or is not available, use the default function
 	WIN32_FIND_DATA fd;
-	HANDLE hFind = ::FindFirstFile(pszFilePath, &fd);
+	HANDLE hFind = LongPathSeams::FindFirstFile(pszFilePath, &fd);
 	if (hFind == INVALID_HANDLE_VALUE)
 		return 0;
 	::FindClose(hFind);
@@ -2849,7 +3109,7 @@ __time64_t FileTimeToUnixTime(const FILETIME &ft)
 int statUTC(LPCTSTR pName, struct _stat64 &ft)
 {
 	WIN32_FILE_ATTRIBUTE_DATA fa;
-	if (::GetFileAttributesEx(pName, GetFileExInfoStandard, &fa)) {
+	if (LongPathSeams::GetFileAttributesEx(pName, GetFileExInfoStandard, &fa)) {
 		memset(&ft, 0, sizeof ft);
 		ft.st_atime = FileTimeToUnixTime(fa.ftLastAccessTime);
 		ft.st_ctime = FileTimeToUnixTime(fa.ftCreationTime);
@@ -2935,7 +3195,7 @@ void DisableAutoSelect(CRichEditCtrl &re)
 
 void InstallSkin(LPCTSTR pszSkinPackage)
 {
-	if (thePrefs.GetMuleDirectory(EMULE_SKINDIR).IsEmpty() || _taccess(thePrefs.GetMuleDirectory(EMULE_SKINDIR), 0) != 0) {
+	if (thePrefs.GetMuleDirectory(EMULE_SKINDIR).IsEmpty() || !LongPathSeams::PathExists(thePrefs.GetMuleDirectory(EMULE_SKINDIR))) {
 		LocMessageBox(IDS_INSTALL_SKIN_NODIR, MB_ICONERROR, 0);
 		return;
 	}
@@ -2975,7 +3235,7 @@ void InstallSkin(LPCTSTR pszSkinPackage)
 						CString strDstDirPath(thePrefs.GetMuleDirectory(EMULE_SKINDIR));
 						strDstDirPath += zf->m_sName.Left(zf->m_sName.GetLength() - 1);
 						canonical(strDstDirPath);
-						if (!::CreateDirectory(strDstDirPath, NULL)) {
+						if (!LongPathSeams::CreateDirectory(strDstDirPath, NULL)) {
 							DWORD dwError = ::GetLastError();
 							CString strError;
 							strError.Format(GetResString(IDS_INSTALL_SKIN_DIR_ERROR), (LPCTSTR)strDstDirPath, (LPCTSTR)GetErrorMessage(dwError));
@@ -3272,7 +3532,7 @@ bool CreatePointFont(CFont &rFont, int nPointSize, LPCTSTR lpszFaceName)
 bool IsUnicodeFile(LPCTSTR pszFilePath)
 {
 	WORD wBOM;
-	FILE *fp = _tfsopen(pszFilePath, _T("rb"), _SH_DENYWR);
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(pszFilePath, _T("rb"));
 	bool bResult = (fp != NULL) && fread(&wBOM, sizeof wBOM, 1, fp) == 1 && wBOM == u'\xFEFF';
 	if (fp != NULL)
 		fclose(fp);
@@ -3599,8 +3859,8 @@ EFileType GetFileTypeEx(CShareableFile *kfile, bool checkextention, bool checkfi
 			&& pfile->IsCompleteBD(0x8000, 0x8000 + HEADERCHECKSIZE)));
 	if (checkfileheader && (!kfile->IsPartFile() || pfile->IsCompleteBDSafe(0, HEADERCHECKSIZE) || test4iso)) {
 		try {
-			CFile inFile;
-			if (inFile.Open(kfile->GetFilePath(), CFile::modeRead | CFile::shareDenyNone)) {
+			CSafeFile inFile;
+			if (LongPathSeams::OpenFile(inFile, kfile->GetFilePath(), CFile::modeRead | CFile::shareDenyNone)) {
 				unsigned char headerbuf[HEADERCHECKSIZE];
 				if (!kfile->IsPartFile() || pfile->IsCompleteBDSafe(0, HEADERCHECKSIZE)) {
 					int read = inFile.Read(headerbuf, HEADERCHECKSIZE);
@@ -3803,7 +4063,7 @@ bool DirAccsess(const CString &strDir)
 	if (iDrive >= 0 && iDrive <= 25) {
 		TCHAR szRootPath[4] = _T("@:\\");
 		*szRootPath = (TCHAR)(_T('A') + iDrive);
-		if (::GetDriveType(szRootPath) == DRIVE_FIXED && _taccess(strDir, 0) != 0)
+		if (::GetDriveType(szRootPath) == DRIVE_FIXED && !LongPathSeams::PathExists(strDir))
 			return false;
 	}
 	return true;
@@ -3992,4 +4252,38 @@ HICON ReplaceIconGreyedInImageList(CImageList &rList, int nPos)
 		return hIcon;
 	}
 	return 0;
+}
+
+bool IsWin32LongPathsEnabled()
+{
+	return g_bWin32LongPathsEnabled;
+}
+
+void DetectWin32LongPathsSupportAtStartup()
+{
+	g_bWin32LongPathsEnabled = false;
+
+	CRegKey regKey;
+	if (regKey.Open(HKEY_LOCAL_MACHINE, _T("SYSTEM\\CurrentControlSet\\Control\\FileSystem"), KEY_READ) == ERROR_SUCCESS) {
+		DWORD dwLongPathsEnabled = 0;
+		if (regKey.QueryDWORDValue(_T("LongPathsEnabled"), dwLongPathsEnabled) == ERROR_SUCCESS)
+			g_bWin32LongPathsEnabled = (dwLongPathsEnabled != 0);
+	}
+
+	TRACE(_T("Win32 long paths support: %s\n"), g_bWin32LongPathsEnabled ? _T("enabled") : _T("disabled"));
+}
+
+CString PreparePathForLongPath(const CString &path)
+{
+	return CString(LongPathSeams::PreparePathForLongPath(path).c_str());
+}
+
+FILE* OpenFileStreamSharedReadLongPath(const CString &path, const bool bTextMode)
+{
+	return LongPathSeams::OpenFileStreamSharedReadLongPath(path, bTextMode);
+}
+
+int OpenCrtReadOnlyLongPath(LPCTSTR pszFilePath)
+{
+	return LongPathSeams::OpenCrtReadOnlyLongPath(pszFilePath);
 }

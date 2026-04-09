@@ -37,6 +37,7 @@
 #include <share.h>
 #endif
 #include "CustomAutoComplete.h"
+#include "OtherFunctions.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -288,7 +289,7 @@ HRESULT CCustomAutoComplete::EnDisable(bool p_bEnable)
 
 bool CCustomAutoComplete::LoadList(LPCTSTR pszFileName)
 {
-	FILE *fp = _tfsopen(pszFileName, _T("rb"), _SH_DENYWR);
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(pszFileName, _T("rb"));
 	if (fp == NULL)
 		return false;
 
@@ -309,7 +310,7 @@ bool CCustomAutoComplete::LoadList(LPCTSTR pszFileName)
 
 bool CCustomAutoComplete::SaveList(LPCTSTR pszFileName)
 {
-	FILE *fp = _tfsopen(pszFileName, _T("wb"), _SH_DENYWR);
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(pszFileName, _T("wb"));
 	if (fp == NULL)
 		return false;
 	bool ret = (fputwc(u'\xFEFF', fp) != WEOF); // write Unicode byte order mark 0xFEFF

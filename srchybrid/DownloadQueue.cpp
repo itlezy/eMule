@@ -1675,7 +1675,7 @@ void CDownloadQueue::ExportPartMetFilesOverview() const
 
 	CSafeBufferedFile file;
 	CFileException fex;
-	if (!file.Open(strTmpFileListPath, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
+	if (!LongPathSeams::OpenFile(file, strTmpFileListPath, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
 		LogError(_T("Failed to create part.met file list%s"), (LPCTSTR)CExceptionStrDash(fex));
 		return;
 	}
@@ -1709,16 +1709,16 @@ void CDownloadQueue::ExportPartMetFilesOverview() const
 		::PathRenameExtension(strBakFileListPath.GetBuffer(MAX_PATH), _T(".bak"));
 		strBakFileListPath.ReleaseBuffer();
 
-		if (_taccess(strBakFileListPath, 0) == 0)
-			CFile::Remove(strBakFileListPath);
-		if (_taccess(strFileListPath, 0) == 0)
-			CFile::Rename(strFileListPath, strBakFileListPath);
-		CFile::Rename(strTmpFileListPath, strFileListPath);
+		if (LongPathSeams::PathExists(strBakFileListPath))
+			(void)LongPathSeams::DeleteFile(strBakFileListPath);
+		if (LongPathSeams::PathExists(strFileListPath))
+			(void)LongPathSeams::MoveFileEx(strFileListPath, strBakFileListPath, MOVEFILE_REPLACE_EXISTING);
+		VERIFY(LongPathSeams::MoveFileEx(strTmpFileListPath, strFileListPath, MOVEFILE_REPLACE_EXISTING));
 	} catch (CFileException *ex) {
 		LogError(_T("Failed to write part.met file list%s"), (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
 		file.Abort();
-		(void)_tremove(file.GetFilePath());
+		(void)LongPathSeams::DeleteFile(file.GetFilePath());
 	}
 }
 

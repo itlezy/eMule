@@ -21,6 +21,7 @@
 
 #include "StdAfx.h"
 #include "ZIPFile.h"
+#include "LongPathSeams.h"
 #include "zlib.h"
 
 #ifdef _DEBUG
@@ -58,7 +59,7 @@ bool CZIPFile::Open(LPCTSTR pszFile)
 	Close();
 
 	m_bAttach = false;
-	m_hFile = ::CreateFile(pszFile, GENERIC_READ, FILE_SHARE_READ, NULL
+	m_hFile = LongPathSeams::CreateFile(pszFile, GENERIC_READ, FILE_SHARE_READ, NULL
 						, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (m_hFile == INVALID_HANDLE_VALUE)
 		return false;
@@ -393,13 +394,13 @@ bool CZIPFile::File::Extract(LPCTSTR pszFile)
 	z_stream pStream;
 	HANDLE hFile;
 
-	hFile = ::CreateFile(pszFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
+	hFile = LongPathSeams::CreateFile(pszFile, GENERIC_WRITE, 0, NULL, CREATE_NEW, FILE_ATTRIBUTE_NORMAL, NULL);
 	if (hFile == INVALID_HANDLE_VALUE)
 		return false;
 
 	if (!PrepareToDecompress(&pStream)) {
 		::CloseHandle(hFile);
-		::DeleteFile(pszFile);
+		LongPathSeams::DeleteFileIfExists(pszFile);
 		return false;
 	}
 
@@ -460,6 +461,6 @@ bool CZIPFile::File::Extract(LPCTSTR pszFile)
 	if (nUncompressed >= m_nSize)
 		return true;
 
-	::DeleteFile(pszFile);
+	LongPathSeams::DeleteFileIfExists(pszFile);
 	return false;
 }

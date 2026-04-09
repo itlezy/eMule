@@ -143,7 +143,7 @@ CIndexed::~CIndexed()
 			uint32 uTotalLoad = 0;
 
 			CBufferedFileIO fileLoad;
-			if (fileLoad.Open(m_sLoadFileName, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite)) {
+			if (LongPathSeams::OpenFile(fileLoad, m_sLoadFileName, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite)) {
 				::setvbuf(fileLoad.m_pStream, NULL, _IOFBF, 32768);
 				static const uint32 uVersion = 1;
 				fileLoad.WriteUInt32(uVersion);
@@ -163,7 +163,7 @@ CIndexed::~CIndexed()
 				DebugLogError(_T("Unable to store Kad file: %s"), (LPCTSTR)m_sLoadFileName);
 
 			CBufferedFileIO fileSource;
-			if (fileSource.Open(m_sSourceFileName, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite)) {
+			if (LongPathSeams::OpenFile(fileSource, m_sSourceFileName, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite)) {
 				::setvbuf(fileSource.m_pStream, NULL, _IOFBF, 32768);
 				static const uint32 uVersion = 2;
 				fileSource.WriteUInt32(uVersion);
@@ -197,7 +197,7 @@ CIndexed::~CIndexed()
 				DebugLogError(_T("Unable to store Kad file: %s"), (LPCTSTR)m_sSourceFileName);
 
 			CBufferedFileIO fileKey;
-			if (fileKey.Open(m_sKeyFileName, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite)) {
+			if (LongPathSeams::OpenFile(fileKey, m_sKeyFileName, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite)) {
 				::setvbuf(fileKey.m_pStream, NULL, _IOFBF, 32768);
 				uint32 uVersion = 4;
 				fileKey.WriteUInt32(uVersion);
@@ -916,7 +916,7 @@ int CIndexed::CLoadDataThread::Run()
 
 		if (!m_pOwner->m_bAbortLoading) {
 			CBufferedFileIO fileLoad;
-			if (fileLoad.Open(m_sLoadFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite)) {
+			if (LongPathSeams::OpenFile(fileLoad, m_sLoadFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite)) {
 				::setvbuf(fileLoad.m_pStream, NULL, _IOFBF, 32768);
 				uint32 uVersion = fileLoad.ReadUInt32();
 				if (uVersion < 2) {
@@ -935,7 +935,7 @@ int CIndexed::CLoadDataThread::Run()
 
 		if (!m_pOwner->m_bAbortLoading) {
 			CBufferedFileIO fileKey;
-			if (fileKey.Open(m_sKeyFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite)) {
+			if (LongPathSeams::OpenFile(fileKey, m_sKeyFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite)) {
 				::setvbuf(fileKey.m_pStream, NULL, _IOFBF, 32768);
 
 				uint32 uVersion = fileKey.ReadUInt32();
@@ -1001,7 +1001,7 @@ int CIndexed::CLoadDataThread::Run()
 
 		if (!m_pOwner->m_bAbortLoading) {
 			CBufferedFileIO fileSource;
-			if (fileSource.Open(m_sSourceFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite)) {
+			if (LongPathSeams::OpenFile(fileSource, m_sSourceFileName, CFile::modeRead | CFile::typeBinary | CFile::shareDenyWrite)) {
 				::setvbuf(fileSource.m_pStream, NULL, _IOFBF, 32768);
 
 				uint32 uTotalSource = 0;

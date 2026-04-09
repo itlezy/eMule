@@ -23,15 +23,42 @@
 #include "Opcodes.h"
 #include "ServerConnect.h"
 #include "Log.h"
+#include "LongPathSeams.h"
 #include <base64.h>
 #include <osrng.h>
 #include <files.h>
+#include <string>
+#include <vector>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+/**
+ * @brief Loads a Base64-encoded Crypto++ key file through the shared long-path byte reader.
+ */
+bool ReadBase64TextFileLongPath(LPCTSTR pszPath, std::string &rText)
+{
+	std::vector<unsigned char> fileBytes;
+	if (!LongPathSeams::ReadAllBytes(pszPath, fileBytes))
+		return false;
+
+	rText.assign(reinterpret_cast<const char*>(fileBytes.data()), fileBytes.size());
+	return true;
+}
+
+/**
+ * @brief Stores a Base64-encoded Crypto++ key file through the shared long-path byte writer.
+ */
+bool WriteBase64TextFileLongPath(LPCTSTR pszPath, const std::string &rText)
+{
+	return LongPathSeams::WriteAllBytes(pszPath, reinterpret_cast<const unsigned char*>(rText.data()), rText.size());
+}
+}
 
 #define CLIENTS_MET_FILENAME	_T("clients.met")
 
@@ -176,7 +203,7 @@ void CClientCreditsList::LoadList()
 
 		BOOL bCreateBackup = TRUE;
 
-		HANDLE hBakFile = ::CreateFile(strBakFileName, GENERIC_READ, FILE_SHARE_READ, NULL
+		HANDLE hBakFile = LongPathSeams::CreateFile(strBakFileName, GENERIC_READ, FILE_SHARE_READ, NULL
 									, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 		if (hBakFile != INVALID_HANDLE_VALUE) {
 			// OK, the backup exist, get the size
@@ -193,7 +220,7 @@ void CClientCreditsList::LoadList()
 		if (bCreateBackup) {
 			file.Close(); // close the file before copying
 
-			if (!::CopyFile(strFileName, strBakFileName, FALSE))
+			if (!LongPathSeams::CopyFile(strFileName, strBakFileName, FALSE))
 				LogError(GetResString(IDS_ERR_MAKEBAKCREDITFILE));
 
 			// reopen file
@@ -241,7 +268,7 @@ void CClientCreditsList::SaveList()
 		AddDebugLogLine(false, _T("Saving clients credit list file \"%s\""), CLIENTS_MET_FILENAME);
 	m_nLastSaved = ::GetTickCount();
 
-	CFile file;// no buffering needed here since we swap out the entire array
+	CSafeFile file;// no buffering needed here since we swap out the entire array
 	if (!CFileOpen(file
 		, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + CLIENTS_MET_FILENAME
 		, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite
@@ -358,21 +385,19 @@ void CClientCreditsList::InitalizeCrypting()
 	// check if keyfile is there
 	bool bCreateNewKey = false;
 	const CString &cryptkeypath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("cryptkey.dat"));
-	HANDLE hKeyFile = ::CreateFile(cryptkeypath
-		, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-	if (hKeyFile != INVALID_HANDLE_VALUE) {
-		if (::GetFileSize(hKeyFile, NULL) == 0)
-			bCreateNewKey = true;
-		::CloseHandle(hKeyFile);
-	} else
+	std::string keyFileText;
+	if (!ReadBase64TextFileLongPath(cryptkeypath, keyFileText) || keyFileText.empty())
 		bCreateNewKey = true;
 	if (bCreateNewKey)
 		CreateKeyPair();
 
 	// load key
 	try {
+		if (!ReadBase64TextFileLongPath(cryptkeypath, keyFileText) || keyFileText.empty())
+			throw 0;
+
 		// load private key
-		FileSource filesource((CStringA)cryptkeypath, true, new Base64Decoder);
+		StringSource filesource(reinterpret_cast<const byte*>(keyFileText.data()), keyFileText.size(), true, new Base64Decoder);
 		m_pSignkey = new RSASSA_PKCS1v15_SHA_Signer(filesource);
 		// calculate and store public key
 		RSASSA_PKCS1v15_SHA_Verifier pubkey(*m_pSignkey);
@@ -396,9 +421,12 @@ bool CClientCreditsList::CreateKeyPair()
 		InvertibleRSAFunction privkey;
 		privkey.Initialize(rng, RSAKEYSIZE);
 
-		Base64Encoder privkeysink(new FileSink((CStringA)(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("cryptkey.dat"))));
+		std::string encodedKey;
+		Base64Encoder privkeysink(new StringSink(encodedKey));
 		privkey.DEREncode(privkeysink);
 		privkeysink.MessageEnd();
+		if (!WriteBase64TextFileLongPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("cryptkey.dat"), encodedKey))
+			return false;
 
 		if (thePrefs.GetLogSecureIdent())
 			AddDebugLogLine(false, _T("Created new RSA keypair"));

@@ -27,6 +27,7 @@
 #include "ZipFile.h"
 #include "GZipFile.h"
 #include "RarFile.h"
+#include "LongPathSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -34,6 +35,19 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+/**
+ * @brief Builds the temporary extracted IP-filter path beside the config `ipfilter.dat`.
+ */
+CString BuildIpFilterImportTempPath(const CString &strConfigDir)
+{
+	CString strTempPath(strConfigDir);
+	strTempPath += DFLT_IPFILTER_FILENAME;
+	strTempPath += _T(".unzip.tmp");
+	return strTempPath;
+}
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // COLUMN_INIT -- List View Columns
@@ -335,8 +349,7 @@ void CIPFilterDlg::OnBnClickedAppend()
 				if (zfile == NULL)
 					zfile = zip.GetFile(_T("guardian.p2p"));
 				if (zfile) {
-					_tmakepathlimit(strTempUnzipFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T(".unzip.tmp"));
-					strTempUnzipFilePath.ReleaseBuffer();
+					strTempUnzipFilePath = BuildIpFilterImportTempPath(sConfDir);
 					if (zfile->Extract(strTempUnzipFilePath)) {
 						strFilePath = strTempUnzipFilePath;
 						bExtractedArchive = true;
@@ -365,8 +378,7 @@ void CIPFilterDlg::OnBnClickedAppend()
 						|| strFile.CompareNoCase(_T("guarding.p2p")) == 0
 						|| strFile.CompareNoCase(_T("guardian.p2p")) == 0))
 				{
-					_tmakepathlimit(strTempUnzipFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T(".unzip.tmp"));
-					strTempUnzipFilePath.ReleaseBuffer();
+					strTempUnzipFilePath = BuildIpFilterImportTempPath(sConfDir);
 					if (rar.Extract(strTempUnzipFilePath)) {
 						strFilePath = strTempUnzipFilePath;
 						bExtractedArchive = true;
@@ -389,8 +401,7 @@ void CIPFilterDlg::OnBnClickedAppend()
 		} else if (szExt == _T("gz")) {
 			CGZIPFile gz;
 			if (gz.Open(strFilePath)) {
-				_tmakepathlimit(strTempUnzipFilePath.GetBuffer(MAX_PATH), NULL, sConfDir, DFLT_IPFILTER_FILENAME, _T(".unzip.tmp"));
-				strTempUnzipFilePath.ReleaseBuffer();
+				strTempUnzipFilePath = BuildIpFilterImportTempPath(sConfDir);
 
 				// add filename and extension of uncompressed file to temporary file
 				const CString &strUncompressedFileName = gz.GetUncompressedFileName();
@@ -417,7 +428,7 @@ void CIPFilterDlg::OnBnClickedAppend()
 		}
 
 		if (!strTempUnzipFilePath.IsEmpty())
-			VERIFY(_tremove(strTempUnzipFilePath) == 0);
+			VERIFY(LongPathSeams::DeleteFileIfExists(strTempUnzipFilePath));
 	}
 
 	if (szCurDir[0] != _T('\0'))

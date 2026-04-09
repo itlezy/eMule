@@ -20,6 +20,7 @@ All rights reserved.
 #include "HttpDownloadDlg.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
+#include "LongPathSeams.h"
 #include "Log.h"
 
 ///////////////////////////////// Defines /////////////////////////////////////
@@ -292,7 +293,7 @@ BOOL CHttpDownloadDlg::OnInitDialog()
 	}*/
 
 	//Try to open the file we will be downloading into
-	if (!m_FileToWrite.Open(m_sFileToDownloadInto, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite)) {
+	if (!LongPathSeams::OpenFile(m_FileToWrite, m_sFileToDownloadInto, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite)) {
 		DWORD dwError = ::GetLastError();
 		CString sMsg;
 		sMsg.Format(GetResString(IDS_HTTPDOWNLOAD_FAIL_FILE_OPEN), (LPCTSTR)GetErrorMessage(dwError));
@@ -415,7 +416,7 @@ void CHttpDownloadDlg::HandleThreadErrorWithLastError(const CString &strIDError,
 		ex->Delete();
 	}
 	//Delete the file
-	::DeleteFile(m_sFileToDownloadInto);
+	(void)LongPathSeams::DeleteFileIfExists(m_sFileToDownloadInto);
 
 	PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED, 1);
 }
@@ -626,7 +627,7 @@ resend:
 	}
 	//Delete the file being downloaded to if it exists and download was aborted
 	if (m_bAbort)
-		::DeleteFile(m_sFileToDownloadInto);
+		(void)LongPathSeams::DeleteFileIfExists(m_sFileToDownloadInto);
 
 	//We've finished
 	PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);

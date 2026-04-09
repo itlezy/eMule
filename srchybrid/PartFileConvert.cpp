@@ -23,6 +23,7 @@
 #include "Preferences.h"
 #include "SharedFileList.h"
 #include "Log.h"
+#include "LongPathSeams.h"
 #include "opcodes.h"
 #include "MuleListCtrl.h"
 
@@ -99,7 +100,7 @@ int CPartFileConvert::ScanFolderToAdd(const CString &folder, bool deletesource)
 
 void CPartFileConvert::ConvertToeMule(const CString &folder, bool deletesource)
 {
-	if (!::PathFileExists(folder))
+	if (!LongPathSeams::PathExists(folder))
 		return;
 	//if (folder.Left(strlen(thePrefs.GetTempDir())).CompareNoCase(thePrefs.GetTempDir()) == 0)
 	//	return;
@@ -244,7 +245,7 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 			file->m_hpartfile.SetLength(pfconverting->spaceneeded);
 
 			CString buffer;
-			CFile inputfile;
+			CSafeFile inputfile;
 			unsigned curindex = 0;
 			for (BOOL bFound = finder.FindFile(sDir + filepartindex + _T(".*.part")); bFound;) {
 				bFound = finder.FindNextFile();
@@ -265,7 +266,8 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 				ULONGLONG chunkstart = fileindex * PARTSIZE + PARTSIZE - 1;
 
 				// open, read data of the part-part-file into buffer, close file
-				inputfile.Open(finder.GetFilePath(), CFile::modeRead | CFile::shareDenyWrite);
+				if (!LongPathSeams::OpenFile(inputfile, finder.GetFilePath(), CFile::modeRead | CFile::shareDenyWrite))
+					CFileException::ThrowOsError((LONG)::GetLastError(), finder.GetFilePath());
 				UINT nRead = inputfile.Read(ba.GetData(), (UINT)PARTSIZE);
 				inputfile.Close();
 
@@ -305,12 +307,12 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 		file->m_hpartfile.Close();
 
 		UpdateGUI(92.0f, GetResString(IDS_COPY));
-		::DeleteFile(newfilename.Left(newfilename.GetLength() - 4));
+		(void)LongPathSeams::DeleteFile(newfilename.Left(newfilename.GetLength() - 4));
 
 		BOOL ret;
-		if (!::PathFileExists(oldfile)) {
+		if (!LongPathSeams::PathExists(oldfile)) {
 			// data file does not exist. well, then create a 0 byte big one
-			HANDLE hFile = ::CreateFile(newfilename.Left(newfilename.GetLength() - 4)	// file to open
+			HANDLE hFile = LongPathSeams::CreateFile(newfilename.Left(newfilename.GetLength() - 4)	// file to open
 				, GENERIC_WRITE			// open for reading
 				, FILE_SHARE_READ		// share for reading
 				, NULL					// default security
@@ -322,9 +324,9 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 
 			::CloseHandle(hFile);
 		} else if (pfconverting->removeSource)
-			ret = ::MoveFile(oldfile, newfilename.Left(newfilename.GetLength() - 4));
+			ret = LongPathSeams::MoveFile(oldfile, newfilename.Left(newfilename.GetLength() - 4));
 		else
-			ret = ::CopyFile(oldfile, newfilename.Left(newfilename.GetLength() - 4), FALSE);
+			ret = LongPathSeams::CopyFile(oldfile, newfilename.Left(newfilename.GetLength() - 4), FALSE);
 
 		if (!ret) {
 			file->DeletePartFile(); //delayed delete
@@ -334,11 +336,11 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 
 	UpdateGUI(94.0f, GetResString(IDS_IMP_GETPFINFO));
 
-	::DeleteFile(newfilename);
+	(void)LongPathSeams::DeleteFile(newfilename);
 	if (pfconverting->removeSource)
-		::MoveFile(sDir + partfile, newfilename);
+		(void)LongPathSeams::MoveFile(sDir + partfile, newfilename);
 	else
-		::CopyFile(sDir + partfile, newfilename, FALSE);
+		(void)LongPathSeams::CopyFile(sDir + partfile, newfilename, FALSE);
 
 	// clean up
 	file->GetFileIdentifier().DeleteMD4Hashset();
@@ -367,11 +369,11 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 	if (pfconverting->removeSource) {
 		for (BOOL bFound = finder.FindFile(sDir + filepartindex + _T(".*")); bFound;) {
 			bFound = finder.FindNextFile();
-			VERIFY(_tunlink(finder.GetFilePath()) == 0);
+			VERIFY(LongPathSeams::DeleteFileIfExists(finder.GetFilePath()));
 		}
 
 		if (pfconverting->partmettype == PMT_SPLITTED)
-			RemoveDirectory(sDir);
+			(void)LongPathSeams::RemoveDirectory(sDir);
 	}
 
 	return CONV_OK;

@@ -72,9 +72,9 @@ void CServerList::AutoUpdate()
 	const CString &servermetbackup(confdir + _T("server_met.old"));
 	const CString &servermet(confdir + SERVER_MET_FILENAME);
 
-	(void)_tremove(servermetbackup);
-	(void)_tremove(servermetdownload);
-	(void)_trename(servermet, servermetbackup);
+	(void)LongPathSeams::DeleteFile(servermetbackup);
+	(void)LongPathSeams::DeleteFile(servermetdownload);
+	(void)LongPathSeams::MoveFile(servermet, servermetbackup);
 
 	bool bDownloaded = false;
 	for (POSITION Pos = thePrefs.addresses_list.GetHeadPosition(); Pos != NULL;) {
@@ -90,10 +90,10 @@ void CServerList::AutoUpdate()
 	}
 
 	if (bDownloaded)
-		(void)_trename(servermet, servermetdownload);
+		(void)LongPathSeams::MoveFile(servermet, servermetdownload);
 	else
-		(void)_tremove(servermet);
-	(void)_trename(servermetbackup, servermet);
+		(void)LongPathSeams::DeleteFile(servermet);
+	(void)LongPathSeams::MoveFile(servermetbackup, servermet);
 }
 
 bool CServerList::Init()
@@ -129,7 +129,7 @@ bool CServerList::AddServerMetToList(const CString &strFile, bool bMerge)
 
 	CSafeBufferedFile servermet;
 	CFileException fex;
-	if (!servermet.Open(strFile, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
+	if (!LongPathSeams::OpenFile(servermet, strFile, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
 		if (!bMerge)
 			LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)GetResString(IDS_ERR_LOADSERVERMET), (LPCTSTR)CExceptionStrDash(fex));
 		return false;
@@ -727,8 +727,8 @@ bool CServerList::SaveServermetToFile()
 		}
 		CommitAndClose(file);
 
-		MoveFileEx(curservermet, sConfDir + _T("server_met.old"), MOVEFILE_REPLACE_EXISTING);
-		MoveFileEx(newservermet, curservermet, MOVEFILE_REPLACE_EXISTING);
+		LongPathSeams::MoveFileEx(curservermet, sConfDir + _T("server_met.old"), MOVEFILE_REPLACE_EXISTING);
+		LongPathSeams::MoveFileEx(newservermet, curservermet, MOVEFILE_REPLACE_EXISTING);
 	} catch (CFileException *ex) {
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)GetResString(IDS_ERR_SAVESERVERMET2), (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
@@ -739,11 +739,11 @@ bool CServerList::SaveServermetToFile()
 
 void CServerList::AddServersFromTextFile(const CString &strFilename) const
 {
-	CStdioFile f;
+	CSafeBufferedFile f;
 	// open a text file either in ANSI (text) or Unicode (binary),
 	// this way we can read old and new files with nearly the same code.
 	bool bIsUnicodeFile = IsUnicodeFile(strFilename); // check for BOM
-	if (!f.Open(strFilename, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0)))
+	if (!LongPathSeams::OpenFile(f, strFilename, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0)))
 		return;
 
 	try {
@@ -753,7 +753,7 @@ void CServerList::AddServersFromTextFile(const CString &strFilename) const
 		CString strLine;
 		CString strHost;
 		CString strName;
-		while (f.ReadString(strLine)) {
+		while (f.CStdioFile::ReadString(strLine)) {
 			// format is host:port,priority,Name
 			if (strLine.GetLength() < 5)
 				continue;
@@ -817,7 +817,7 @@ void CServerList::AddServersFromTextFile(const CString &strFilename) const
 
 bool CServerList::SaveStaticServers()
 {
-	FILE *fpStaticServers = _tfsopen(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("staticservers.dat"), _T("wb"), _SH_DENYWR);
+	FILE *fpStaticServers = LongPathSeams::OpenFileStreamDenyWriteLongPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("staticservers.dat"), _T("wb"));
 	if (fpStaticServers == NULL) {
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERROR_SSF));
 		return false;

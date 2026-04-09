@@ -147,7 +147,7 @@ INT_PTR CPreviewApps::ReadAllApps()
 	RemoveAllApps();
 
 	const CString &strFilePath(GetDefaultAppsFile());
-	FILE *readFile = _tfsopen(strFilePath, _T("r"), _SH_DENYWR);
+	FILE *readFile = LongPathSeams::OpenFileStreamDenyWriteLongPath(strFilePath, _T("r"));
 	if (readFile != NULL) {
 		CString sbuffer;
 		while (!feof(readFile)) {

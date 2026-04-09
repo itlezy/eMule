@@ -115,7 +115,7 @@ bool CArchiveRecovery::performRecovery(CPartFile *partFile, CArray<Gap_Struct> *
 
 	bool success = false;
 	try {
-		CFile temp;
+		CSafeFile temp;
 		CString tempFileName;
 		if (bCreatePartFileCopy) {
 			// Copy the file
@@ -124,9 +124,9 @@ bool CArchiveRecovery::performRecovery(CPartFile *partFile, CArray<Gap_Struct> *
 				return false;
 
 			// Open temp file for reading
-			if (!temp.Open(tempFileName, CFile::modeRead | CFile::shareDenyWrite))
+			if (!LongPathSeams::OpenFile(temp, tempFileName, CFile::modeRead | CFile::shareDenyWrite))
 				return false;
-		} else if (!temp.Open(partFile->GetFilePath(), CFile::modeRead | CFile::shareDenyNone))
+		} else if (!LongPathSeams::OpenFile(temp, partFile->GetFilePath(), CFile::modeRead | CFile::shareDenyNone))
 			return false;
 
 		// Open the output file
@@ -151,9 +151,9 @@ bool CArchiveRecovery::performRecovery(CPartFile *partFile, CArray<Gap_Struct> *
 
 		CString outputFileName;
 		outputFileName.Format(_T("%s%s-rec%s"), (LPCTSTR)partFile->GetTmpPath(), (LPCTSTR)partFile->GetFileName().Left(5), ext);
-		CFile output;
+		CSafeFile output;
 		ULONGLONG ulTempFileSize = 0;
-		if (output.Open(outputFileName, CFile::modeWrite | CFile::shareDenyWrite | CFile::modeCreate)) {
+		if (LongPathSeams::OpenFile(output, outputFileName, CFile::modeWrite | CFile::shareDenyWrite | CFile::modeCreate)) {
 			// Process the output file
 			switch (myAtype) {
 			case ARCHIVE_ZIP:

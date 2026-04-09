@@ -206,9 +206,9 @@ BOOL CPPgDirectories::OnApply()
 		for (INT_PTR i = 0; i < temptempfolders.GetCount(); ++i) {
 			CString toadd(temptempfolders[i]);
 			MakeFoldername(toadd);
-			if (!::PathFileExists(toadd))
-				::CreateDirectory(toadd, NULL);
-			if (::PathFileExists(toadd))
+			if (!LongPathSeams::PathExists(toadd))
+				LongPathSeams::CreateDirectory(toadd, NULL);
+			if (LongPathSeams::PathExists(toadd))
 				thePrefs.tempdir.Add(toadd);
 		}
 	}
