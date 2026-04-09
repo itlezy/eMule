@@ -37,6 +37,7 @@
 #include "IPFilter.h"
 #include "Packets.h"
 #include "Preferences.h"
+#include "PartFilePauseResumeSeams.h"
 #include "SafeFile.h"
 #include "SharedFileList.h"
 #include "ListenSocket.h"
@@ -66,6 +67,23 @@ static char THIS_FILE[] = __FILE__;
 
 // Barry - use this constant for both places
 #define PROGRESS_HEIGHT 3
+
+namespace
+{
+PartFilePauseResumeSeams::RuntimeStatus ResolvePauseResumeRuntimeStatus(const EPartFileStatus eStatus)
+{
+	switch (eStatus) {
+	case PS_ERROR:
+		return PartFilePauseResumeSeams::RuntimeStatus::Error;
+	case PS_COMPLETING:
+		return PartFilePauseResumeSeams::RuntimeStatus::Completing;
+	case PS_COMPLETE:
+		return PartFilePauseResumeSeams::RuntimeStatus::Complete;
+	default:
+		return PartFilePauseResumeSeams::RuntimeStatus::Active;
+	}
+}
+}
 
 CBarShader CPartFile::s_LoadBar(PROGRESS_HEIGHT); // Barry - was 5
 CBarShader CPartFile::s_ChunkBar(16);
@@ -2150,9 +2168,14 @@ uint64 CPartFile::GetNeededSpace() const
 
 EPartFileStatus CPartFile::GetStatus(bool ignorepause) const
 {
-	if ((!m_paused && !m_insufficient) || status == PS_ERROR || status == PS_COMPLETING || status == PS_COMPLETE || ignorepause)
+	switch (PartFilePauseResumeSeams::ResolveVisibleStatus(ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, ignorepause)) {
+	case PartFilePauseResumeSeams::VisibleStatus::Paused:
+		return PS_PAUSED;
+	case PartFilePauseResumeSeams::VisibleStatus::Insufficient:
+		return PS_INSUFFICIENT;
+	default:
 		return status;
-	return m_paused ? PS_PAUSED : PS_INSUFFICIENT;
+	}
 }
 
 void CPartFile::AddDownloadingSource(CUpDownClient *client)
@@ -3279,8 +3302,11 @@ void CPartFile::StopFile(bool bCancel, bool resort)
 	m_LastSearchTimeKad = 0;
 	m_TotalSearchesKad = 0;
 	RemoveAllSources(true);
-	m_paused = m_stopped = true;
-	m_insufficient = false;
+	const PartFilePauseResumeSeams::TransitionResult stopTransition = PartFilePauseResumeSeams::ApplyStopTransition(
+		PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
+	m_paused = stopTransition.NextState.Paused;
+	m_stopped = stopTransition.NextState.Stopped;
+	m_insufficient = stopTransition.NextState.Insufficient;
 	m_datarate = 0;
 	memset(m_anStates, 0, sizeof m_anStates);
 	memset(src_stats, 0, sizeof src_stats);	//Xman Bugfix
@@ -3346,16 +3372,18 @@ void CPartFile::PauseFile(bool bInsufficient, bool resort)
 		}
 	}
 
+	const PartFilePauseResumeSeams::TransitionResult pauseTransition = PartFilePauseResumeSeams::ApplyPauseTransition(
+		PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped }, bInsufficient);
 	if (bInsufficient)
 		LogError(LOG_STATUSBAR, _T("Insufficient disk space - pausing download of \"%s\""), (LPCTSTR)GetFileName());
-	else
-		m_paused = true;
-	m_insufficient = bInsufficient;
+	m_paused = pauseTransition.NextState.Paused;
+	m_insufficient = pauseTransition.NextState.Insufficient;
 
-	NotifyStatusChange();
+	if (pauseTransition.ShouldNotifyStatusChange)
+		NotifyStatusChange();
 	m_datarate = 0;
 	m_anStates[DS_DOWNLOADING] = 0; // -khaos--+++> Renamed var.
-	if (!bInsufficient) {
+	if (pauseTransition.ShouldSavePartFile) {
 		if (resort) {
 			theApp.downloadqueue->SortByPriority();
 			theApp.downloadqueue->CheckDiskspace();
@@ -3389,15 +3417,20 @@ void CPartFile::ResumeFile(bool resort)
 		} else
 			ASSERT(0);
 	} else {
-		m_paused = m_stopped = false;
+		const PartFilePauseResumeSeams::TransitionResult resumeTransition = PartFilePauseResumeSeams::ApplyNormalResumeTransition(
+			PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
+		m_paused = resumeTransition.NextState.Paused;
+		m_stopped = resumeTransition.NextState.Stopped;
 		SetActive(theApp.IsConnected());
 		m_LastSearchTime = 0;
 		if (resort) {
 			theApp.downloadqueue->SortByPriority();
 			theApp.downloadqueue->CheckDiskspace();
 		}
-		SavePartFile();
-		NotifyStatusChange();
+		if (resumeTransition.ShouldSavePartFile)
+			SavePartFile();
+		if (resumeTransition.ShouldNotifyStatusChange)
+			NotifyStatusChange();
 
 		UpdateDisplayedInfo(true);
 	}
@@ -3406,8 +3439,10 @@ void CPartFile::ResumeFile(bool resort)
 void CPartFile::ResumeFileInsufficient()
 {
 	if (status != PS_COMPLETE && status != PS_COMPLETING && m_insufficient) {
+		const PartFilePauseResumeSeams::TransitionResult resumeTransition = PartFilePauseResumeSeams::ApplyInsufficientResumeTransition(
+			PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
 		AddLogLine(false, _T("Resuming download of \"%s\""), (LPCTSTR)GetFileName());
-		m_insufficient = false;
+		m_insufficient = resumeTransition.NextState.Insufficient;
 		SetActive(theApp.IsConnected());
 		m_LastSearchTime = 0;
 		UpdateDisplayedInfo(true);
