@@ -970,8 +970,7 @@ void CAICHRecoveryHashSet::UntrustedHashReceived(const CAICHHash &Hash, uint32 d
 		return;
 	}
 	// the check if we trust any hash
-	if (thePrefs.IsTrustingEveryHash()
-		|| (nMostTrustedIPs >= MINUNIQUEIPS_TOTRUST && (100 * nMostTrustedIPs) / nSigningIPsTotal >= MINPERCENTAGE_TOTRUST))
+	if (nMostTrustedIPs >= MINUNIQUEIPS_TOTRUST && (100 * nMostTrustedIPs) / nSigningIPsTotal >= MINPERCENTAGE_TOTRUST)
 	{
 		//trusted
 		//theApp.QueueDebugLogLine(false, _T("AICH Hash received: %s (%sadded), We have now %u hash from %u unique IPs. We trust the Hash %s from %u clients (%u%%). Added IP:%s, file: %s")

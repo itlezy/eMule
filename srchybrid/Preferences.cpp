@@ -440,7 +440,6 @@ CArray<Category_Struct*, Category_Struct*> CPreferences::catArr;
 UINT	CPreferences::m_nWebMirrorAlertLevel;
 bool	CPreferences::m_bUseOldTimeRemaining;
 int		CPreferences::m_byLogLevel;
-bool	CPreferences::m_bTrustEveryHash;
 bool	CPreferences::m_bRememberCancelledFiles;
 bool	CPreferences::m_bRememberDownloadedFiles;
 bool	CPreferences::m_bPartiallyPurgeOldKnownFiles;
@@ -1744,6 +1743,27 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("RemoveFilesToBin"), m_bRemove2bin);
 	//ini.WriteBool(_T("ShowCopyEd2kLinkCmd"),m_bShowCopyEd2kLinkCmd);
 	ini.WriteBool(_T("AutoArchivePreviewStart"), m_bAutomaticArcPreviewStart);
+	// Hidden runtime preferences exposed in the advanced tree.
+	ini.WriteBool(_T("RestoreLastMainWndDlg"), m_bRestoreLastMainWndDlg);
+	ini.WriteBool(_T("RestoreLastLogPane"), m_bRestoreLastLogPane);
+	ini.WriteInt(_T("FileBufferTimeLimit"), static_cast<int>(m_uFileBufferTimeLimit / SEC2MS(1)));
+	ini.WriteString(_T("DateTimeFormat4Lists"), m_strDateTimeFormat4Lists);
+	ini.WriteBool(_T("PreviewCopiedArchives"), m_bPreviewCopiedArchives);
+	ini.WriteInt(_T("InspectAllFileTypes"), m_iInspectAllFileTypes);
+	ini.WriteBool(_T("PreviewOnIconDblClk"), m_bPreviewOnIconDblClk);
+	ini.WriteBool(_T("ShowActiveDownloadsBold"), m_bShowActiveDownloadsBold);
+	ini.WriteBool(_T("UseSystemFontForMainControls"), m_bUseSystemFontForMainControls);
+	ini.WriteBool(_T("ReBarToolbar"), m_bReBarToolbar);
+	ini.WriteBool(_T("ShowUpDownIconInTaskbar"), m_bShowUpDownIconInTaskbar);
+	ini.WriteBool(_T("ShowVerticalHourMarkers"), m_bShowVerticalHourMarkers);
+	ini.WriteBool(_T("ForceSpeedsToKB"), m_bForceSpeedsToKB);
+	ini.WriteBool(_T("ExtraPreviewWithMenu"), m_bExtraPreviewWithMenu);
+	ini.WriteBool(_T("KeepUnavailableFixedSharedDirs"), m_bKeepUnavailableFixedSharedDirs);
+	ini.WriteBool(_T("PartiallyPurgeOldKnownFiles"), m_bPartiallyPurgeOldKnownFiles);
+	ini.WriteBool(_T("AdjustNTFSDaylightFileTime"), m_bAdjustNTFSDaylightFileTime);
+	ini.WriteBool(_T("MessageFromValidSourcesOnly"), msgsecure);
+	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
+	ini.DeleteKey(_T("AICHTrustEveryHash"));
 
 	// Toolbar
 	ini.WriteString(_T("ToolbarSetting"), m_sToolbarSettings);
@@ -2325,7 +2345,6 @@ void CPreferences::LoadPreferences()
 	m_bA4AFSaveCpu = ini.GetBool(_T("A4AFSaveCpu"), false); // ZZ:DownloadManager
 	m_bHighresTimer = ini.GetBool(_T("HighresTimer"), false);
 	m_byLogLevel = ini.GetInt(_T("DebugLogLevel"), DLP_VERYLOW);
-	m_bTrustEveryHash = ini.GetBool(_T("AICHTrustEveryHash"), false);
 	m_bRememberCancelledFiles = ini.GetBool(_T("RememberCancelledFiles"), true);
 	m_bRememberDownloadedFiles = ini.GetBool(_T("RememberDownloadedFiles"), true);
 	m_bPartiallyPurgeOldKnownFiles = ini.GetBool(_T("PartiallyPurgeOldKnownFiles"), true);

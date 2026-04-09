@@ -609,9 +609,6 @@ public:
 
 	static bool		m_bUseOldTimeRemaining;
 
-	//AICH Options
-	static bool		m_bTrustEveryHash;
-
 	// files
 	static bool		m_bRememberCancelledFiles;
 	static bool		m_bRememberDownloadedFiles;
@@ -1365,10 +1362,6 @@ public:
 	static int		GetDebugClientKadUDPLevel()			{ return 0; }
 	static int		GetDebugSearchResultDetailLevel()	{ return 0; }
 #endif
-
-
-	//AICH Hash
-	static bool		IsTrustingEveryHash()				{ return m_bTrustEveryHash; } // this is a debug option
 
 	static bool		IsRememberingDownloadedFiles()		{ return m_bRememberDownloadedFiles; }
 	static bool		IsRememberingCancelledFiles()		{ return m_bRememberCancelledFiles; }

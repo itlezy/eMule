@@ -48,6 +48,10 @@ protected:
 	HTREEITEM m_htiDynUpRadioPingTolerance;
 	HTREEITEM m_htiDynUpRadioPingToleranceMilliseconds;
 	HTREEITEM m_htiExtControls;
+	HTREEITEM m_htiHiddenDisplay;
+	HTREEITEM m_htiHiddenFile;
+	HTREEITEM m_htiHiddenSecurity;
+	HTREEITEM m_htiHiddenStartup;
 	HTREEITEM m_htiExtractMetaData;
 	HTREEITEM m_htiExtractMetaDataID3Lib;
 	//HTREEITEM m_htiExtractMetaDataMediaDet;
@@ -55,6 +59,7 @@ protected:
 	HTREEITEM m_htiFilterLANIPs;
 	HTREEITEM m_htiFullAlloc;
 	HTREEITEM m_htiImportParts;
+	HTREEITEM m_htiInspectAllFileTypes;
 	HTREEITEM m_htiLog2Disk;
 	HTREEITEM m_htiLogA4AF;
 	HTREEITEM m_htiLogBannedClients;
@@ -66,6 +71,24 @@ protected:
 	HTREEITEM m_htiLogUlDlEvents;
 	HTREEITEM m_htiMaxCon5Sec;
 	HTREEITEM m_htiMaxHalfOpen;
+	HTREEITEM m_htiDateTimeFormat4Lists;
+	HTREEITEM m_htiPreviewCopiedArchives;
+	HTREEITEM m_htiPreviewOnIconDblClk;
+	HTREEITEM m_htiShowActiveDownloadsBold;
+	HTREEITEM m_htiUseSystemFontForMainControls;
+	HTREEITEM m_htiReBarToolbar;
+	HTREEITEM m_htiShowUpDownIconInTaskbar;
+	HTREEITEM m_htiShowVerticalHourMarkers;
+	HTREEITEM m_htiForceSpeedsToKB;
+	HTREEITEM m_htiExtraPreviewWithMenu;
+	HTREEITEM m_htiKeepUnavailableFixedSharedDirs;
+	HTREEITEM m_htiPartiallyPurgeOldKnownFiles;
+	HTREEITEM m_htiAdjustNTFSDaylightFileTime;
+	HTREEITEM m_htiRearrangeKadSearchKeywords;
+	HTREEITEM m_htiMessageFromValidSourcesOnly;
+	HTREEITEM m_htiFileBufferTimeLimit;
+	HTREEITEM m_htiRestoreLastLogPane;
+	HTREEITEM m_htiRestoreLastMainWndDlg;
 	HTREEITEM m_htiMinFreeDiskSpace;
 	HTREEITEM m_htiResolveShellLinks;
 	HTREEITEM m_htiServerKeepAliveTimeout;
@@ -95,14 +118,18 @@ protected:
 	int m_iDynUpPingToleranceMilliseconds;
 	int m_iDynUpRadioPingTolerance;
 	int m_iExtractMetaData;
+	int m_iInspectAllFileTypes;
 	int m_iLogLevel;
 	int m_iMaxConnPerFive;
 	int m_iMaxHalfOpen;
 	int m_iShareeMule;
 
+	CString m_sDateTimeFormat4Lists;
+
 	bool m_bA4AFSaveCpu;
 	bool m_bAutoArchDisable;
 	bool m_bAutoTakeEd2kLinks;
+	bool m_bAdjustNTFSDaylightFileTime;
 	bool m_bCheckDiskspace;
 	bool m_bCloseUPnPOnExit;
 	bool m_bConditionalTCPAccept;
@@ -111,10 +138,12 @@ protected:
 	bool m_bDebugSourceExchange;
 	bool m_bDynUpEnabled;
 	bool m_bExtControls;
+	bool m_bExtraPreviewWithMenu;
 	bool m_bFilterLANIPs;
 	bool m_bFullAlloc;
 	bool m_bImportParts;
 	bool m_bInitializedTreeOpts;
+	bool m_bKeepUnavailableFixedSharedDirs;
 	bool m_bLog2Disk;
 	bool m_bLogA4AF;
 	bool m_bLogBannedClients;
@@ -123,12 +152,27 @@ protected:
 	bool m_bLogRatingDescReceived;
 	bool m_bLogSecureIdent;
 	bool m_bLogUlDlEvents;
+	bool m_bMessageFromValidSourcesOnly;
+	bool m_bPartiallyPurgeOldKnownFiles;
+	bool m_bPreviewCopiedArchives;
+	bool m_bPreviewOnIconDblClk;
+	bool m_bRearrangeKadSearchKeywords;
+	bool m_bReBarToolbar;
 	bool m_bResolveShellLinks;
+	bool m_bRestoreLastLogPane;
+	bool m_bRestoreLastMainWndDlg;
 	bool m_bShowedWarning;
+	bool m_bShowActiveDownloadsBold;
+	bool m_bShowUpDownIconInTaskbar;
+	bool m_bShowVerticalHourMarkers;
 	bool m_bSkipWANIPSetup;
 	bool m_bSkipWANPPPSetup;
 	bool m_bSparsePartFiles;
+	bool m_bUseSystemFontForMainControls;
 	bool m_bVerbose;
+	bool m_bForceSpeedsToKB;
+
+	UINT m_uFileBufferTimeLimitSeconds;
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();
