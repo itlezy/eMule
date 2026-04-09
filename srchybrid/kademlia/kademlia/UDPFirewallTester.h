@@ -49,8 +49,8 @@ namespace Kademlia
 		static bool		m_bTimedOut;
 		static uint8	m_byFWChecksRunningUDP;
 		static uint8	m_byFWChecksFinishedUDP;
-		static DWORD	m_dwTestStart;
-		static DWORD	m_dwLastSucceededTime;
+		static ULONGLONG m_dwTestStart;
+		static ULONGLONG m_dwLastSucceededTime;
 		static CList<CContact> m_liPossibleTestClients;
 		static CList<UsedClient_Struct> m_liUsedTestClients;
 	};

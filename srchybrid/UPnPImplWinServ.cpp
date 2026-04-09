@@ -46,7 +46,7 @@ CUPnPImplWinServ::CUPnPImplWinServ()
 	, m_sLocalIP()
 	, m_sExternalIP()
 	, m_nAsyncFindHandle()
-	, m_tLastEvent(::GetTickCount())
+	, m_tLastEvent(::GetTickCount64())
 	, m_bCOM()
 	, m_bPortIsFree(true)
 	, m_bADSL()
@@ -184,7 +184,7 @@ void CUPnPImplWinServ::ProcessAsyncFind(CComBSTR bsSearchType)
 		return DebugLogError(_T("CreateAsyncFind failed in UPnP finder."));
 
 	m_bAsyncFindRunning = true;
-	m_tLastEvent = ::GetTickCount();
+	m_tLastEvent = ::GetTickCount64();
 
 	if (FAILED(m_pDeviceFinder->StartAsyncFind(m_nAsyncFindHandle))) {
 		if (FAILED(m_pDeviceFinder->CancelAsyncFind(m_nAsyncFindHandle)))
@@ -256,7 +256,7 @@ void CUPnPImplWinServ::AddDevice(DevicePointer device, bool bAddChildren, int nL
 	//We are going to add a device
 	CComBSTR bsFriendlyName, bsUniqueName;
 
-	m_tLastEvent = ::GetTickCount();
+	m_tLastEvent = ::GetTickCount64();
 	HRESULT hr = device->get_FriendlyName(&bsFriendlyName);
 
 	if (FAILED(hr)) {
@@ -767,7 +767,7 @@ HRESULT CUPnPImplWinServ::InvokeAction(ServicePointer pService
 	if (pService == NULL || action == NULL)
 		return E_POINTER;
 
-	m_tLastEvent = ::GetTickCount();
+	m_tLastEvent = ::GetTickCount64();
 	CString strInArgs(pszInArgString ? pszInArgString : _T(""));
 
 	CComVariant vaActionArgs, vaArray, vaOutArgs, vaRet;
@@ -1090,7 +1090,7 @@ HRESULT __stdcall CServiceCallback::StateVariableChanged(IUPnPService *pService,
 	LPCWSTR pszStateVarName, VARIANT varValue)
 {
 	CComBSTR bsServiceId;
-	m_instance.m_tLastEvent = ::GetTickCount();
+	m_instance.m_tLastEvent = ::GetTickCount64();
 
 	HRESULT hr = pService->get_Id(&bsServiceId);
 	if (!FAILED(hr))

@@ -71,7 +71,7 @@ INT_PTR	CIPFilter::LoadFromDefaultFile(bool bShowResponse)
 #pragma warning(disable:4701) //local variables 'level' 'end' 'start'
 INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 {
-	const DWORD dwStart = ::GetTickCount();
+	const ULONGLONG dwStart = ::GetTickCount64();
 	FILE *readFile = LongPathSeams::OpenFileStreamDenyWriteLongPath(pszFilePath, _T("r"));
 	if (readFile != NULL) {
 		int iFoundRanges = 0;
@@ -251,7 +251,7 @@ INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 
 		if (thePrefs.GetVerbose()) {
 			AddDebugLogLine(false, _T("Loaded IP filters from \"%s\""), pszFilePath);
-			AddDebugLogLine(false, _T("Parsed lines/entries:%u  Found IP ranges:%u  Duplicate:%u  Merged:%u  Time:%s"), iLine, iFoundRanges, iDuplicate, iMerged, (LPCTSTR)CastSecondsToHM((::GetTickCount() - dwStart + 500) / 1000));
+			AddDebugLogLine(false, _T("Parsed lines/entries:%u  Found IP ranges:%u  Duplicate:%u  Merged:%u  Time:%s"), iLine, iFoundRanges, iDuplicate, iMerged, (LPCTSTR)CastSecondsToHM((::GetTickCount64() - dwStart + 500) / 1000));
 		}
 		AddLogLine(bShowResponse, GetResString(IDS_IPFILTERLOADED), m_iplist.GetCount());
 	}

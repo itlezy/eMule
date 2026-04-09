@@ -576,8 +576,8 @@ resend:
 	SetStatus(GetResString(IDS_HTTPDOWNLOAD_RETREIVEING_FILE));
 
 	//Now do the actual read of the file
-	DWORD dwStartTicks = ::GetTickCount();
-	DWORD dwCurrentTicks = dwStartTicks;
+	ULONGLONG dwStartTicks = ::GetTickCount64();
+	ULONGLONG dwCurrentTicks = dwStartTicks;
 	DWORD dwBytesRead = 0;
 	char szReadBuf[1024];
 	DWORD dwBytesToRead = sizeof szReadBuf;
@@ -633,7 +633,7 @@ resend:
 	PostMessage(WM_HTTPDOWNLOAD_THREAD_FINISHED);
 }
 
-void CHttpDownloadDlg::UpdateControlsDuringTransfer(DWORD dwStartTicks, DWORD &dwCurrentTicks, DWORD dwTotalBytesRead, DWORD &dwLastTotalBytes,
+void CHttpDownloadDlg::UpdateControlsDuringTransfer(ULONGLONG dwStartTicks, ULONGLONG &dwCurrentTicks, DWORD dwTotalBytesRead, DWORD &dwLastTotalBytes,
 	DWORD &dwLastPercentage, BOOL bGotFileSize, DWORD dwFileSize)
 {
 	if (bGotFileSize) {
@@ -649,8 +649,8 @@ void CHttpDownloadDlg::UpdateControlsDuringTransfer(DWORD dwStartTicks, DWORD &d
 	}
 
 	//Update the transfer rate and estimated time left every second
-	const DWORD curTick = ::GetTickCount();
-	DWORD dwTimeTaken = curTick - dwCurrentTicks;
+	const ULONGLONG curTick = ::GetTickCount64();
+	const ULONGLONG dwTimeTaken = curTick - dwCurrentTicks;
 	if (dwTimeTaken > SEC2MS(1)) {
 		double KbPerSecond = (dwTotalBytesRead - dwLastTotalBytes) / (double)dwTimeTaken;
 		SetTransferRate(KbPerSecond);

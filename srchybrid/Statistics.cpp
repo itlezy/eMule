@@ -51,9 +51,9 @@ float	CStatistics::rateUp;
 DWORD	CStatistics::timeTransfers;
 DWORD	CStatistics::timeDownloads;
 DWORD	CStatistics::timeUploads;
-DWORD	CStatistics::start_timeTransfers;
-DWORD	CStatistics::start_timeDownloads;
-DWORD	CStatistics::start_timeUploads;
+ULONGLONG CStatistics::start_timeTransfers;
+ULONGLONG CStatistics::start_timeDownloads;
+ULONGLONG CStatistics::start_timeUploads;
 DWORD	CStatistics::time_thisTransfer;
 DWORD	CStatistics::time_thisDownload;
 DWORD	CStatistics::time_thisUpload;
@@ -94,10 +94,10 @@ uint64	CStatistics::sessionReceivedBytes;
 uint64	CStatistics::sessionSentBytes;
 uint64	CStatistics::sessionSentBytesToFriend;
 uint16	CStatistics::reconnects;
-DWORD	CStatistics::transferStarttime;
-DWORD	CStatistics::serverConnectTime;
+ULONGLONG CStatistics::transferStarttime;
+ULONGLONG CStatistics::serverConnectTime;
 uint32	CStatistics::filteredclients;
-DWORD	CStatistics::starttime;
+ULONGLONG CStatistics::starttime;
 
 
 CStatistics::CStatistics()
@@ -217,7 +217,7 @@ void CStatistics::UpdateConnectionStats(float uploadrate, float downloadrate)
 
 	// Transfer Times (Increment Session)
 	if (uploadrate > 0 || downloadrate > 0) {
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 		if (start_timeTransfers)
 			time_thisTransfer = (curTick - start_timeTransfers) / SEC2MS(1);
 		else
@@ -260,7 +260,7 @@ void CStatistics::UpdateConnectionStats(float uploadrate, float downloadrate)
 	if (theStats.serverConnectTime == 0)
 		time_thisServerDuration = 0;
 	else
-		time_thisServerDuration = (::GetTickCount() - theStats.serverConnectTime) / SEC2MS(1);
+		time_thisServerDuration = (::GetTickCount64() - theStats.serverConnectTime) / SEC2MS(1);
 }
 
 void CStatistics::RecordRate()
@@ -269,7 +269,7 @@ void CStatistics::RecordRate()
 		return;
 
 	// Accurate data rate calculation
-	DWORD curTick = ::GetTickCount();
+	ULONGLONG curTick = ::GetTickCount64();
 	downrate_hist.AddTail(TransferredData{theStats.sessionReceivedBytes, curTick});
 	uprate_hist.AddTail(TransferredData{theStats.sessionSentBytes, curTick});
 
@@ -290,21 +290,21 @@ float CStatistics::GetAvgDownloadRate(int averageType)
 	switch (averageType) {
 	case AVG_TOTAL:
 		if (theStats.transferStarttime > 0) {
-			DWORD running = ::GetTickCount() - theStats.transferStarttime;
+			ULONGLONG running = ::GetTickCount64() - theStats.transferStarttime;
 			if (running >= 5)
 				return (theStats.sessionReceivedBytes / (1.024f * running) + thePrefs.GetConnAvgDownRate()) / 2.0F;
 		}
 		return thePrefs.GetConnAvgDownRate();
 	case AVG_SESSION:
 		if (theStats.transferStarttime > 0) {
-			DWORD running = ::GetTickCount() - theStats.transferStarttime;
+			ULONGLONG running = ::GetTickCount64() - theStats.transferStarttime;
 			if (running >= 5)
 				return theStats.sessionReceivedBytes / (1.024f * running);
 		}
 		break;
 	case AVG_TIME:
 		if (!downrate_hist.IsEmpty()) {
-			DWORD running = downrate_hist.Tail().timestamp - downrate_hist.Head().timestamp;
+			ULONGLONG running = downrate_hist.Tail().timestamp - downrate_hist.Head().timestamp;
 			if (running > 0)
 				return (downrate_hist.Tail().datalen - downrate_hist.Head().datalen) / (1.024f * running);
 		}
@@ -317,21 +317,21 @@ float CStatistics::GetAvgUploadRate(int averageType)
 	switch (averageType) {
 	case AVG_TOTAL:
 		if (theStats.transferStarttime > 0) {
-			DWORD running = ::GetTickCount() - theStats.transferStarttime;
+			ULONGLONG running = ::GetTickCount64() - theStats.transferStarttime;
 			if (running >= 5)
 				return (theStats.sessionSentBytes / (1.024f * running) + thePrefs.GetConnAvgUpRate()) / 2.0F;
 		}
 		return thePrefs.GetConnAvgUpRate();
 	case AVG_SESSION:
 		if (theStats.transferStarttime) {
-			DWORD running = ::GetTickCount() - theStats.transferStarttime;
+			ULONGLONG running = ::GetTickCount64() - theStats.transferStarttime;
 			if (running >= 5)
 				return theStats.sessionSentBytes / (1.024f * running);
 		}
 		break;
 	case AVG_TIME:
 		if (!uprate_hist.IsEmpty()) {
-			DWORD running = uprate_hist.Tail().timestamp - uprate_hist.Head().timestamp;
+			ULONGLONG running = uprate_hist.Tail().timestamp - uprate_hist.Head().timestamp;
 			if (running > 0)
 				return (uprate_hist.Tail().datalen - uprate_hist.Head().datalen) / (1.024f * running);
 		}
@@ -342,7 +342,7 @@ float CStatistics::GetAvgUploadRate(int averageType)
 //This method is called every 100 ms
 void CStatistics::CompDownDatarateOverhead()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	m_AverageDDRO_hist.AddTail(TransferredData{m_nDownDataRateMSOverhead, curTick});
 	m_sumavgDDRO += m_nDownDataRateMSOverhead;
 	m_nDownDataRateMSOverhead = 0;
@@ -364,7 +364,7 @@ void CStatistics::CompDownDatarateOverhead()
 //This method is called every 100 ms
 void CStatistics::CompUpDatarateOverhead()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	m_AverageUDRO_hist.AddTail(TransferredData{m_nUpDataRateMSOverhead, curTick});
 	m_sumavgUDRO += m_nUpDataRateMSOverhead;
 	m_nUpDataRateMSOverhead = 0;

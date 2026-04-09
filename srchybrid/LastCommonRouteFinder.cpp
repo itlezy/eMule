@@ -527,7 +527,7 @@ UINT LastCommonRouteFinder::RunInternal()
 			// Set the upload to the starting point
 			m_upload = startUpload;
 			::Sleep(SEC2MS(1));
-			DWORD initTime = ::GetTickCount();
+			ULONGLONG initTime = ::GetTickCount64();
 
 			// if all pings returned 0, initial_ping will not be changed from default value.
 			// then set initial_ping to lowestInitialPingAllowed
@@ -566,7 +566,7 @@ UINT LastCommonRouteFinder::RunInternal()
 			// ping at the set TTL.
 			bool restart = false;
 
-			DWORD lastLoopTick = ::GetTickCount();
+			ULONGLONG lastLoopTick = ::GetTickCount64();
 
 			while (m_bRun && enabled && !restart) {
 				DWORD ticksBetweenPings;
@@ -581,9 +581,9 @@ UINT LastCommonRouteFinder::RunInternal()
 				} else
 					ticksBetweenPings = SEC2MS(1);
 
-				const DWORD curTick = ::GetTickCount();
+				const ULONGLONG curTick = ::GetTickCount64();
 
-				DWORD timeSinceLastLoop = curTick - lastLoopTick;
+				ULONGLONG timeSinceLastLoop = curTick - lastLoopTick;
 				if (timeSinceLastLoop < ticksBetweenPings) {
 					//theApp.QueueDebugLogLine(false,_T("UploadSpeedSense: Sleeping %i ms, timeSinceLastLoop %i ms ticksBetweenPings %i ms"), ticksBetweenPings-timeSinceLastLoop, timeSinceLastLoop, ticksBetweenPings);
 					::Sleep(ticksBetweenPings - timeSinceLastLoop);
@@ -602,7 +602,7 @@ UINT LastCommonRouteFinder::RunInternal()
 				lowestInitialPingAllowed = m_LowestInitialPingAllowed; // PENDING
 				prefsLocker.Unlock();
 
-				DWORD diffTick = ::GetTickCount();
+				ULONGLONG diffTick = ::GetTickCount64();
 				if (::InterlockedExchange8(&m_initiateFastReactionPeriod, 0)) {
 					const CString &s(GetResString(IDS_USS_MANUALUPLOADLIMITDETECTED));
 					theApp.QueueDebugLogLine(false, s);

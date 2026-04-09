@@ -300,7 +300,7 @@ bool CServerWnd::UpdateServerMetFromURL(const CString &strURL)
 		m_pacServerMetURL->AddItem(strURL, 0);
 
 	CString strTempFilename(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
-	strTempFilename.AppendFormat(_T("temp-%u-server.met"), ::GetTickCount());
+	strTempFilename.AppendFormat(_T("temp-%I64u-server.met"), ::GetTickCount64());
 
 	// try to download server.met
 	Log(GetResString(IDS_DOWNLOADING_SERVERMET_FROM), (LPCTSTR)strURL);

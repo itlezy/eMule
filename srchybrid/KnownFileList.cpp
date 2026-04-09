@@ -57,7 +57,7 @@ CKnownFileList::CKnownFileList()
 {
 	m_Files_map.InitHashTable(2063);
 	m_mapCancelledFiles.InitHashTable(1031);
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 	Init();
 }
 
@@ -191,7 +191,7 @@ void CKnownFileList::Save()
 {
 	if (thePrefs.GetLogFileSaving())
 		AddDebugLogLine(false, _T("Saving known files list in \"%s\""), KNOWN_MET_FILENAME);
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	CSafeBufferedFile file;
 	if (CFileOpen(file
@@ -268,7 +268,7 @@ void CKnownFileList::Clear()
 
 void CKnownFileList::Process()
 {
-	if (::GetTickCount() >= m_nLastSaved + MIN2MS(11))
+	if (::GetTickCount64() >= m_nLastSaved + MIN2MS(11))
 		Save();
 }
 

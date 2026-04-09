@@ -97,7 +97,7 @@ protected:
 
 	inline bool IsAsyncFindRunning()
 	{
-		if (m_pDeviceFinder != NULL && m_bAsyncFindRunning && ::GetTickCount() >= m_tLastEvent + SEC2MS(10)) {
+		if (m_pDeviceFinder != NULL && m_bAsyncFindRunning && ::GetTickCount64() >= m_tLastEvent + SEC2MS(10)) {
 			m_pDeviceFinder->CancelAsyncFind(m_nAsyncFindHandle);
 			m_bAsyncFindRunning = false;
 		}
@@ -166,7 +166,7 @@ private:
 	CString m_sLocalIP;
 	CString m_sExternalIP;
 	LONG m_nAsyncFindHandle;
-	DWORD m_tLastEvent;	// When the last event was received?
+	ULONGLONG m_tLastEvent;	// When the last event was received?
 	bool m_bCOM;
 	bool m_bPortIsFree;
 	bool m_bADSL;	// Is the device ADSL?

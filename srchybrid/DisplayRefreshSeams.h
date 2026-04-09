@@ -36,7 +36,7 @@ inline bool ShouldQueueDisplayRefresh(UINT uCurrentThreadId, UINT uMainThreadId)
 /**
  * @brief Applies the existing randomized throttling window used by UI refresh helpers.
  */
-inline bool ShouldRunDisplayRefresh(bool bForce, DWORD dwCurrentTick, DWORD dwLastRefreshTick, DWORD dwMinimumWait, DWORD dwRandomWait = 0)
+inline bool ShouldRunDisplayRefresh(bool bForce, ULONGLONG dwCurrentTick, ULONGLONG dwLastRefreshTick, ULONGLONG dwMinimumWait, ULONGLONG dwRandomWait = 0)
 {
 	return bForce || dwCurrentTick >= dwLastRefreshTick + dwMinimumWait + dwRandomWait;
 }

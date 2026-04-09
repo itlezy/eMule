@@ -242,10 +242,10 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		sText.Format(_T("%u"), client->GetAskedCount());
 		break;
 	case 6:
-		sText = CastSecondsToHM((::GetTickCount() - client->GetLastUpRequest()) / SEC2MS(1));
+		sText = CastSecondsToHM((::GetTickCount64() - client->GetLastUpRequest()) / SEC2MS(1));
 		break;
 	case 7:
-		sText = CastSecondsToHM((::GetTickCount() - client->GetWaitStartTime()) / SEC2MS(1));
+		sText = CastSecondsToHM((::GetTickCount64() - client->GetWaitStartTime()) / SEC2MS(1));
 		break;
 	case 8:
 		sText = GetResString(client->IsBanned() ? IDS_YES : IDS_NO);

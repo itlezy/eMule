@@ -42,7 +42,7 @@ CCollection::CCollection()
 	, m_pabyCollectionAuthorKey()
 {
 	m_CollectionFilesMap.InitHashTable(1031);
-	m_sCollectionName.Format(_T("New Collection-%u"), ::GetTickCount());
+	m_sCollectionName.Format(_T("New Collection-%I64u"), ::GetTickCount64());
 }
 
 CCollection::CCollection(const CCollection *pCollection)

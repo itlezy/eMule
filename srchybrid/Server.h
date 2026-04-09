@@ -105,8 +105,8 @@ public:
 	time_t	GetRealLastPingedTime() const			{ return m_RealLastPingedTime; } // last pinged time without any random modifier
 	void	SetRealLastPingedTime(time_t in_lastpingedtime)	{ m_RealLastPingedTime = in_lastpingedtime; }
 
-	DWORD	GetLastPinged() const					{ return lastpinged; }
-	void	SetLastPinged(DWORD in_lastpinged)		{ lastpinged = in_lastpinged; }
+	ULONGLONG GetLastPinged() const				{ return lastpinged; }
+	void	SetLastPinged(ULONGLONG in_lastpinged)	{ lastpinged = in_lastpinged; }
 
 	UINT	GetLastDescPingedCount() const			{ return lastdescpingedcout; }
 	void	SetLastDescPingedCount(bool bReset);
@@ -176,7 +176,7 @@ private:
 	time_t	m_RealLastPingedTime;
 	uint32	challenge;
 	uint32	m_uDescReqChallenge;
-	uint32	lastpinged; //This is to get the ping delay.
+	ULONGLONG lastpinged; //This is to get the ping delay.
 	uint32	lastdescpingedcout;
 	uint32	files;
 	uint32	users;

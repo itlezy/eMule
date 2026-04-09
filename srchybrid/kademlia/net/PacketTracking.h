@@ -21,14 +21,14 @@ namespace Kademlia
 {
 	struct TrackPackets_Struct
 	{
-		DWORD	dwInserted;
+		ULONGLONG dwInserted;
 		uint32	dwIP;
 		uint8	byOpcode;
 	};
 
 	struct TrackChallenge_Struct
 	{
-		DWORD	dwInserted;
+		ULONGLONG dwInserted;
 		uint32	uIP;
 		CUInt128 uContactID;
 		CUInt128 uChallenge;
@@ -39,7 +39,7 @@ namespace Kademlia
 	{
 		struct TrackedRequestIn_Struct
 		{
-			DWORD	m_dwLatest;
+			ULONGLONG m_dwLatest;
 			int		m_tokens; //tokens are equal to milliseconds in this Token Bucket algorithm implementation
 			uint8	m_byOpcode;
 			bool	m_bDbgLogged;
@@ -51,7 +51,7 @@ namespace Kademlia
 		{
 		}
 
-		DWORD	m_dwLastExpire;
+		ULONGLONG m_dwLastExpire;
 		uint32	m_uIP;
 		CArray<TrackedRequestIn_Struct> m_aTrackedRequests;
 	};
@@ -77,6 +77,6 @@ namespace Kademlia
 		CList<TrackChallenge_Struct> listChallengeRequests;
 		CTypedPtrList<CPtrList, TrackPacketsIn_Struct*>	m_liTrackPacketsIn;
 		CMap<int, int, TrackPacketsIn_Struct*, TrackPacketsIn_Struct*> m_mapTrackPacketsIn;
-		DWORD dwLastTrackInCleanup;
+		ULONGLONG dwLastTrackInCleanup;
 	};
 }

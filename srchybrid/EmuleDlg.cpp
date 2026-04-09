@@ -345,7 +345,7 @@ static void DialogCreateIndirect(CDialog *pWnd, UINT uID)
 
 BOOL CemuleDlg::OnInitDialog()
 {
-	theStats.starttime = ::GetTickCount();
+	theStats.starttime = ::GetTickCount64();
 #ifdef HAVE_WIN7_SDK_H
 	// allow the TaskbarButtonCreated- & (tbb-)WM_COMMAND message to be sent to our window if our app is running elevated
 	if (thePrefs.GetWindowsVersion() >= _WINVER_7_) {
@@ -2773,7 +2773,7 @@ void CemuleDlg::ShowSplash()
 		if (m_pSplashWnd->Create(CSplashScreen::IDD, this)) {
 			m_pSplashWnd->ShowWindow(SW_SHOW);
 			m_pSplashWnd->UpdateWindow();
-			m_dwSplashTime = ::GetTickCount();
+			m_dwSplashTime = ::GetTickCount64();
 		} else {
 			delete m_pSplashWnd;
 			m_pSplashWnd = NULL;
@@ -2821,7 +2821,7 @@ BOOL CemuleApp::IsIdleMessage(MSG *pMsg)
 	if (pMsg->message == WM_TIMER) {
 		// Allow this WM_TIMER message to trigger idle processing only if we did not do so
 		// since some seconds.
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 		if (curTick >= s_dwLastIdleMessage + SEC2MS(5)) {
 			s_dwLastIdleMessage = curTick;
 			return TRUE;// Request idle processing (will send a WM_KICKIDLE)
@@ -2832,7 +2832,7 @@ BOOL CemuleApp::IsIdleMessage(MSG *pMsg)
 	if (!CWinApp::IsIdleMessage(pMsg))
 		return FALSE;	// No idle processing
 
-	s_dwLastIdleMessage = ::GetTickCount();
+	s_dwLastIdleMessage = ::GetTickCount64();
 	return TRUE;		// Request idle processing (will send a WM_KICKIDLE)
 }
 
@@ -2841,7 +2841,7 @@ LRESULT CemuleDlg::OnKickIdle(WPARAM, LPARAM lIdleCount)
 	LRESULT lResult = 0;
 
 	if (m_pSplashWnd) {
-		if (::GetTickCount() >= m_dwSplashTime + (DWORD)SEC2MS(2.5)) {
+		if (::GetTickCount64() >= m_dwSplashTime + static_cast<ULONGLONG>(SEC2MS(2.5))) {
 			// timeout expired, destroy the splash window
 			DestroySplash();
 			UpdateWindow();
@@ -2858,7 +2858,7 @@ LRESULT CemuleDlg::OnKickIdle(WPARAM, LPARAM lIdleCount)
 		if (!theApp.IsClosing()) {
 //#ifdef _DEBUG
 //			TCHAR szDbg[80];
-//			wsprintf(szDbg, L"%10u: lIdleCount=%d, %s", ::GetTickCount(), lIdleCount, (lIdleCount > 0) ? L"FreeTempMaps" : L"");
+//			wsprintf(szDbg, L"%10u: lIdleCount=%d, %s", ::GetTickCount64(), lIdleCount, (lIdleCount > 0) ? L"FreeTempMaps" : L"");
 //			SetWindowText(szDbg);
 //			TRACE(_T("%s\n"), szDbg);
 //#endif

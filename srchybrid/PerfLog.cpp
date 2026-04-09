@@ -144,7 +144,7 @@ void CPerfLog::LogSamples()
 	if (m_eMode == None)
 		return;
 
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	if (curTick < m_dwLastSampled + m_dwInterval)
 		return;
 

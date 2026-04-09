@@ -26,7 +26,7 @@ struct UDPPack
 	Packet	*packet;
 	uint32	dwIP;
 	uint16	nPort;
-	DWORD	dwTime;
+	ULONGLONG dwTime;
 	bool	bEncrypt;
 	bool	bKad;
 	uint32	nReceiverVerifyKey;

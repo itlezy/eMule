@@ -263,9 +263,9 @@ public:
 	UINT	GetAvailablePartCount() const				{ return (status == PS_COMPLETING || status == PS_COMPLETE) ? GetPartCount() : availablePartsCount; }
 	void	UpdateAvailablePartsCount();
 
-	DWORD	GetLastAnsweredTime() const					{ return m_ClientSrcAnswered; }
-	void	SetLastAnsweredTime()						{ m_ClientSrcAnswered = ::GetTickCount(); }
-	void	SetLastAnsweredTimeTimeout()				{ m_ClientSrcAnswered = ::GetTickCount() + 2 * CONNECTION_LATENCY - SOURCECLIENTREASKS; }
+	ULONGLONG GetLastAnsweredTime() const				{ return m_ClientSrcAnswered; }
+	void	SetLastAnsweredTime()						{ m_ClientSrcAnswered = ::GetTickCount64(); }
+	void	SetLastAnsweredTimeTimeout()				{ m_ClientSrcAnswered = ::GetTickCount64() + 2 * CONNECTION_LATENCY - SOURCECLIENTREASKS; }
 
 	uint64	GetCorruptionLoss() const					{ return m_uCorruptionLoss; }
 	uint64	GetCompressionGain() const					{ return m_uCompressionGain; }
@@ -308,8 +308,8 @@ public:
 	bool	IsAICHPartHashSetNeeded() const				{ return m_FileIdentifier.HasAICHHash() && !m_FileIdentifier.HasExpectedAICHHashCount() && m_bAICHPartHashsetNeeded; }
 	void	SetAICHHashSetNeeded(bool bVal)				{ m_bAICHPartHashsetNeeded = bVal; }
 
-	bool	AllowSwapForSourceExchange(DWORD dwTick) const { return dwTick >= lastSwapForSourceExchangeTick + SEC2MS(30); } // ZZ:DownloadManager
-	void	SetSwapForSourceExchangeTick()				{ lastSwapForSourceExchangeTick = ::GetTickCount(); } // ZZ:DownloadManager
+	bool	AllowSwapForSourceExchange(ULONGLONG dwTick) const { return dwTick >= lastSwapForSourceExchangeTick + SEC2MS(30); } // ZZ:DownloadManager
+	void	SetSwapForSourceExchangeTick()				{ lastSwapForSourceExchangeTick = ::GetTickCount64(); } // ZZ:DownloadManager
 
 	UINT	SetPrivateMaxSources(uint32 in)				{ return m_uMaxSources = in; }
 	UINT	GetPrivateMaxSources() const				{ return m_uMaxSources; }
@@ -336,8 +336,8 @@ public:
 	CMutex	m_FileCompleteMutex;		// Lord KiRon - Mutex for file completion
 	HANDLE	m_hWrite;					// asynchronous part file writing
 	int		m_iWrites;					// outstanding I/O counter - read only in the main thread
-	DWORD	m_LastSearchTime;
-	DWORD	m_LastSearchTimeKad;
+	ULONGLONG m_LastSearchTime;
+	ULONGLONG m_LastSearchTimeKad;
 	uint16	src_stats[4];
 	uint16	net_stats[3];
 	uint8	m_TotalSearchesKad;
@@ -385,19 +385,19 @@ private:
 	time_t	m_tLastModified;	// last file modification time (NT's version of UTC), to be used for stats only!
 	time_t	m_tCreated;			// file creation time (NT's version of UTC), to be used for stats only!
 	volatile WPARAM m_uFileOpProgress;
-	DWORD	lastSwapForSourceExchangeTick; // ZZ:DownloadManaager
-	DWORD	m_lastRefreshedDLDisplay;
-	DWORD	m_nLastBufferFlushTime;
-	DWORD	m_nNextMetFlushTime; //update .part.met file
-	DWORD	m_nFileFlushTime; //if file is idle long enough, flush new data to disk
+	ULONGLONG lastSwapForSourceExchangeTick; // ZZ:DownloadManaager
+	ULONGLONG m_lastRefreshedDLDisplay;
+	ULONGLONG m_nLastBufferFlushTime;
+	ULONGLONG m_nNextMetFlushTime; //update .part.met file
+	ULONGLONG m_nFileFlushTime; //if file is idle long enough, flush new data to disk
 	DWORD	m_dwFileAttributes;
-	DWORD	m_random_update_wait;
+	ULONGLONG m_random_update_wait;
 	UINT	m_anStates[STATES_COUNT];
 	UINT	m_category;
 	UINT	m_uMaxSources;
 	UINT	availablePartsCount;
-	DWORD	m_ClientSrcAnswered;
-	DWORD	m_lastpurgetime;
+	ULONGLONG m_ClientSrcAnswered;
+	ULONGLONG m_lastpurgetime;
 	uint32	m_LastNoNeededCheck;
 	uint32	m_uPartsSavedDueICH;
 	uint32	m_datarate;

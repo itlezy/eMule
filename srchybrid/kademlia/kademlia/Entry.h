@@ -109,7 +109,7 @@ namespace Kademlia
 		CArray<CAICHHash>	m_aAICHHashes;
 		static CMap<uint32, uint32, uint32, uint32> s_mapGlobalPublishIPs; // tracks count of publishings for each 255.255.255.0/28 subnet
 		CList<structPublishingIP> *m_pliPublishingIPs;
-		DWORD	dwLastTrustValueCalc;
+		ULONGLONG dwLastTrustValueCalc;
 	private:
 		bool SearchTermsMatch(const SSearchTerm &rSearchTerm) const;
 		CKadTagValueString m_strSearchTermCacheCommonFileNameLowerCase; // contains a valid value only while 'SearchTermsMatch' is running.

@@ -47,7 +47,7 @@ void CPacketTracking::AddTrackedOutPacket(uint32 dwIP, uint8 byOpcode)
 	// this tracklist monitors _outgoing_ request packets, to make sure incoming answer packets were requested
 	// later we will check only tracked packets
 	if (IsTrackedOutListRequestPacket(byOpcode)) {
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 		listTrackedRequests.AddHead(TrackPackets_Struct{curTick, dwIP, byOpcode});
 		while (!listTrackedRequests.IsEmpty() && curTick >= listTrackedRequests.GetTail().dwInserted + SEC2MS(180))
 			listTrackedRequests.RemoveTail();
@@ -81,7 +81,7 @@ bool CPacketTracking::IsOnOutTrackList(uint32 dwIP, uint8 byOpcode, bool bDontRe
 	if (!IsTrackedOutListRequestPacket(byOpcode))
 		ASSERT(0); // code error / bug
 #endif
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	for (POSITION pos = listTrackedRequests.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
 		const TrackPackets_Struct &req = listTrackedRequests.GetNext(pos);
@@ -151,7 +151,7 @@ int CPacketTracking::InTrackListIsAllowedPacket(uint32 uIP, uint8 byOpcode, bool
 		// not a request packets, but a response - no further checks at this point
 		return 0;
 	}
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	// time for cleaning up?
 	if (curTick >= dwLastTrackInCleanup + MIN2MS(12))
 		InTrackListCleanup();
@@ -210,7 +210,7 @@ int CPacketTracking::InTrackListIsAllowedPacket(uint32 uIP, uint8 byOpcode, bool
 
 void CPacketTracking::InTrackListCleanup()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	const INT_PTR dbgOldSize = m_liTrackPacketsIn.GetCount();
 	dwLastTrackInCleanup = curTick;
 	for (POSITION pos = m_liTrackPacketsIn.GetHeadPosition(); pos != NULL;) {
@@ -227,7 +227,7 @@ void CPacketTracking::InTrackListCleanup()
 
 void CPacketTracking::AddLegacyChallenge(const CUInt128 &uContactID, const CUInt128 &uChallengeID, uint32 uIP, uint8 byOpcode)
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	listChallengeRequests.AddHead(TrackChallenge_Struct{curTick, uIP, uContactID, uChallengeID, byOpcode});
 	while (!listChallengeRequests.IsEmpty() && curTick >= listChallengeRequests.GetTail().dwInserted + SEC2MS(180)) {
 		DEBUG_ONLY(DebugLog(_T("Challenge timed out, client not verified - %s"), (LPCTSTR)ipstr(htonl(listChallengeRequests.GetTail().uIP))));
@@ -238,7 +238,7 @@ void CPacketTracking::AddLegacyChallenge(const CUInt128 &uContactID, const CUInt
 bool CPacketTracking::IsLegacyChallenge(const CUInt128 &uChallengeID, uint32 uIP, uint8 byOpcode, CUInt128 &ruContactID)
 {
 	bool bDbgWarning = false;
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	for (POSITION pos = listChallengeRequests.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
 		const TrackChallenge_Struct &tc = listChallengeRequests.GetNext(pos);
@@ -261,7 +261,7 @@ bool CPacketTracking::IsLegacyChallenge(const CUInt128 &uChallengeID, uint32 uIP
 
 bool CPacketTracking::HasActiveLegacyChallenge(uint32 uIP) const
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	for (POSITION pos = listChallengeRequests.GetHeadPosition(); pos != NULL;) {
 		const TrackChallenge_Struct &tcstruct = listChallengeRequests.GetNext(pos);
 		if (curTick >= tcstruct.dwInserted + SEC2MS(180))

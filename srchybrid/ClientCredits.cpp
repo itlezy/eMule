@@ -75,7 +75,7 @@ CClientCredits::CClientCredits(const uchar *key)
 {
 	md4cpy(&m_Credits.abyKey, key);
 	InitalizeIdent();
-	m_dwSecureWaitTime = m_dwUnSecureWaitTime = ::GetTickCount();
+	m_dwSecureWaitTime = m_dwUnSecureWaitTime = ::GetTickCount64();
 	m_dwWaitTimeIP = 0;
 }
 
@@ -162,7 +162,7 @@ float CClientCredits::GetScoreRatio(uint32 dwForIP) const
 
 CClientCreditsList::CClientCreditsList()
 {
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 	LoadList();
 
 	InitalizeCrypting();
@@ -266,7 +266,7 @@ void CClientCreditsList::SaveList()
 {
 	if (thePrefs.GetLogFileSaving())
 		AddDebugLogLine(false, _T("Saving clients credit list file \"%s\""), CLIENTS_MET_FILENAME);
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 
 	CSafeFile file;// no buffering needed here since we swap out the entire array
 	if (!CFileOpen(file
@@ -312,7 +312,7 @@ CClientCredits* CClientCreditsList::GetCredit(const uchar *key)
 
 void CClientCreditsList::Process()
 {
-	if (::GetTickCount() >= m_nLastSaved + MIN2MS(13))
+	if (::GetTickCount64() >= m_nLastSaved + MIN2MS(13))
 		SaveList();
 }
 
@@ -588,7 +588,7 @@ bool CClientCreditsList::Debug_CheckCrypting()
 }
 #endif
 
-DWORD CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
+ULONGLONG CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
 {
 	if (m_dwUnSecureWaitTime == 0 || m_dwSecureWaitTime == 0)
 		SetSecWaitStartTime(dwForIP);
@@ -611,7 +611,7 @@ DWORD CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
 		if (thePrefs.GetLogSecureIdent())
 			AddDebugLogLine(false, "Warning: WaitTime reset due to Invalid Ident for Userhash %s", buffer);*/
 
-		m_dwUnSecureWaitTime = ::GetTickCount();
+		m_dwUnSecureWaitTime = ::GetTickCount64();
 		m_dwWaitTimeIP = dwForIP;
 	}
 	// not a SecureHash Client - handle it like before for now (no security checks)
@@ -620,7 +620,7 @@ DWORD CClientCredits::GetSecureWaitStartTime(uint32 dwForIP)
 
 void CClientCredits::SetSecWaitStartTime(uint32 dwForIP)
 {
-	m_dwUnSecureWaitTime = ::GetTickCount() - 1;
+	m_dwUnSecureWaitTime = ::GetTickCount64() - 1;
 	m_dwSecureWaitTime = m_dwUnSecureWaitTime;
 	m_dwWaitTimeIP = dwForIP;
 }

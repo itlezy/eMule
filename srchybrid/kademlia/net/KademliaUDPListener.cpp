@@ -1923,7 +1923,7 @@ bool CKademliaUDPListener::FindNodeIDByIP(CKadClientSearcher *pRequester, uint32
 	if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 		DebugSend("KADEMLIA2_HELLO_REQ", dwIP, nUDPPort);
 	SendMyDetails(KADEMLIA2_HELLO_REQ, dwIP, nUDPPort, KADEMLIA_VERSION, CKadUDPKey(), NULL, false); // todo: we send this unobfuscated, which is not perfect, see if this can be avoided in the future
-	FetchNodeID_Struct sRequest = {dwIP, nTCPPort, ::GetTickCount() + SEC2MS(60), pRequester};
+	FetchNodeID_Struct sRequest = {dwIP, nTCPPort, ::GetTickCount64() + SEC2MS(60), pRequester};
 	listFetchNodeIDRequests.AddTail(sRequest);
 	return true;
 }
@@ -1935,7 +1935,7 @@ void CKademliaUDPListener::ExpireClientSearch(const CKadClientSearcher *pExpireI
 		const FetchNodeID_Struct &sRequest = listFetchNodeIDRequests.GetNext(pos);
 		if (sRequest.pRequester == pExpireImmediately)
 			listFetchNodeIDRequests.RemoveAt(pos2);
-		else if (::GetTickCount() >= sRequest.dwExpire) {
+		else if (::GetTickCount64() >= sRequest.dwExpire) {
 			sRequest.pRequester->KadSearchNodeIDByIPResult(KCSR_TIMEOUT, NULL);
 			listFetchNodeIDRequests.RemoveAt(pos2);
 		}

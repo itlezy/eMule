@@ -441,7 +441,7 @@ void CKademliaWnd::ContactRef(const Kademlia::CContact *contact)
 void CKademliaWnd::UpdateNodesDatFromURL(const CString &strURL)
 {
 	CString strTempFilename(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
-	strTempFilename.AppendFormat(_T("temp-%lu-nodes.dat"), ::GetTickCount());
+	strTempFilename.AppendFormat(_T("temp-%I64u-nodes.dat"), ::GetTickCount64());
 
 	// try to download nodes.dat
 	Log(GetResString(IDS_DOWNLOADING_NODESDAT_FROM), (LPCTSTR)strURL);

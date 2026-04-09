@@ -489,7 +489,7 @@ void CKeyEntry::RecalcualteTrustValue()
 		ASSERT(0);
 		return;
 	}
-	dwLastTrustValueCalc = ::GetTickCount();
+	dwLastTrustValueCalc = ::GetTickCount64();
 	m_fTrustValue = 0;
 	ASSERT(!m_pliPublishingIPs->IsEmpty());
 	for (POSITION pos = m_pliPublishingIPs->GetHeadPosition(); pos != NULL;) {
@@ -508,7 +508,7 @@ void CKeyEntry::RecalcualteTrustValue()
 float CKeyEntry::GetTrustValue()
 {
 	// update if last calculation is too old, will assert if this entry is not supposed to have a trust value
-	if (::GetTickCount() >= dwLastTrustValueCalc + MIN2MS(10))
+	if (::GetTickCount64() >= dwLastTrustValueCalc + MIN2MS(10))
 		RecalcualteTrustValue();
 	return m_fTrustValue;
 }

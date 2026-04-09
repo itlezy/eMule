@@ -138,7 +138,7 @@ private:
 	INT_PTR	m_currFileNotes;
 	time_t	m_lastPublishKadSrc;
 	time_t	m_lastPublishKadNotes;
-	DWORD	m_lastPublishED2K;
+	ULONGLONG m_lastPublishED2K;
 	bool	m_lastPublishED2KFlag;
 	bool	bHaveSingleSharedFiles;
 };

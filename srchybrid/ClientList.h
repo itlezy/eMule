@@ -42,12 +42,12 @@ struct PORTANDHASH
 struct IPANDTICS
 {
 	uint32 dwIP;
-	DWORD dwInserted;
+	ULONGLONG dwInserted;
 };
 struct CONNECTINGCLIENT
 {
 	CUpDownClient *pClient;
-	DWORD dwInserted;
+	ULONGLONG dwInserted;
 };
 
 
@@ -56,7 +56,7 @@ class CDeletedClient
 public:
 	explicit CDeletedClient(const CUpDownClient *pClient);
 	CArray<PORTANDHASH> m_ItemsList;
-	DWORD				m_dwInserted;
+	ULONGLONG			m_dwInserted;
 	uint32				m_cBadRequest;
 };
 
@@ -156,15 +156,15 @@ protected:
 private:
 	CUpDownClientPtrList list;
 	CUpDownClientPtrList m_KadList;
-	CMap<uint32, uint32, DWORD, DWORD> m_bannedList;
+	CMap<uint32, uint32, ULONGLONG, ULONGLONG> m_bannedList;
 	typedef CMap<uint32, uint32, CDeletedClient*, CDeletedClient*> CDeletedClientMap;
 	CDeletedClientMap m_trackedClientsMap;
 	CUpDownClient *m_pBuddy;
 	CList<IPANDTICS> listFirewallCheckRequests;
 	CList<IPANDTICS> listDirectCallbackRequests;
 	CList<CONNECTINGCLIENT> m_liConnectingClients;
-	DWORD	m_dwLastBanCleanUp;
-	DWORD	m_dwLastTrackedCleanUp;
-	DWORD	m_dwLastClientCleanUp;
+	ULONGLONG	m_dwLastBanCleanUp;
+	ULONGLONG	m_dwLastTrackedCleanUp;
+	ULONGLONG	m_dwLastClientCleanUp;
 	uint8	m_nBuddyStatus;
 };

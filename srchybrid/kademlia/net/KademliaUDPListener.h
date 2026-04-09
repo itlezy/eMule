@@ -44,7 +44,7 @@ namespace Kademlia
 	{
 		uint32 dwIP;
 		uint32 dwTCPPort;
-		uint32 dwExpire;
+		ULONGLONG dwExpire;
 		CKadClientSearcher *pRequester;
 	};
 

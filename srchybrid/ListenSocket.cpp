@@ -114,12 +114,12 @@ void CClientReqSocket::SetClient(CUpDownClient *pClient)
 
 void CClientReqSocket::ResetTimeOutTimer()
 {
-	timeout_timer = ::GetTickCount();
+	timeout_timer = ::GetTickCount64();
 }
 
 bool CClientReqSocket::CheckTimeOut()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	if (m_nOnConnect == SS_Half) {
 		//This socket is still in a half connection state. Because of SP2, we don't know
 		//if this socket is actually failing, or if this socket is just queued in SP2's new
@@ -187,7 +187,7 @@ void CClientReqSocket::Delete_Timed()
 // it seems that MFC Sockets call socket functions after they are deleted, even if the socket is closed
 // and select(0) is set. So we need to wait some time to make sure this doesn't happen
 // we currently also rely on this for multithreading; rework synchronization if this ever changes
-	if (::GetTickCount() >= deltimer + SEC2MS(10))
+	if (::GetTickCount64() >= deltimer + SEC2MS(10))
 		delete this;
 }
 
@@ -196,7 +196,7 @@ void CClientReqSocket::Safe_Delete()
 	ASSERT(theApp.listensocket->IsValidSocket(this));
 	CEMSocket::SetConState(EMS_DISCONNECTED);
 	AsyncSelect(FD_CLOSE);
-	deltimer = ::GetTickCount();
+	deltimer = ::GetTickCount64();
 	if (m_SocketData.hSocket != INVALID_SOCKET) // deadlake PROXYSUPPORT - changed to AsyncSocketEx
 		ShutDown(CAsyncSocket::both);
 	if (client) {
@@ -984,7 +984,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 						}
 						//Although this shouldn't happen, it's just in case for any Mods that mess with version numbers.
 						if (byRequestedVersion > 0 || client->GetSourceExchange1Version() > 1) {
-							DWORD dwTimePassed = ::GetTickCount() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
+							ULONGLONG dwTimePassed = ::GetTickCount64() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
 							bool bNeverAskedBefore = client->GetLastSrcReqTime() == 0;
 							if ( //if not complete and file is rare
 								(reqfile->IsPartFile()
@@ -1201,7 +1201,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 					// part status which may get cleared with the call of 'SetUploadFileID'.
 					client->SetUploadFileID(reqfile);
 
-					DWORD dwTimePassed = ::GetTickCount() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
+					ULONGLONG dwTimePassed = ::GetTickCount64() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
 					bool bNeverAskedBefore = (client->GetLastSrcReqTime() == 0);
 					if ( //if not complete and file is rare
 						(reqfile->IsPartFile()

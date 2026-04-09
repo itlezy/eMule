@@ -134,9 +134,9 @@ public:
 	static DWORD	timeTransfers;
 	static DWORD	timeDownloads;
 	static DWORD	timeUploads;
-	static DWORD	start_timeTransfers;
-	static DWORD	start_timeDownloads;
-	static DWORD	start_timeUploads;
+	static ULONGLONG start_timeTransfers;
+	static ULONGLONG start_timeDownloads;
+	static ULONGLONG start_timeUploads;
 	static DWORD	time_thisTransfer;
 	static DWORD	time_thisDownload;
 	static DWORD	time_thisUpload;
@@ -150,10 +150,10 @@ public:
 	static uint64	sessionSentBytes;
 	static uint64	sessionSentBytesToFriend;
 	static uint16	reconnects;
-	static DWORD	transferStarttime;
-	static DWORD	serverConnectTime;
+	static ULONGLONG transferStarttime;
+	static ULONGLONG serverConnectTime;
 	static uint32	filteredclients;
-	static DWORD	starttime;
+	static ULONGLONG starttime;
 
 private:
 	CRing<TransferredData> downrate_hist;

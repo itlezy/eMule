@@ -131,7 +131,7 @@ public:
 	void	ResetLocalServerRequests();
 
 	// searching in Kad
-	void	SetLastKademliaFileRequest()					{ m_lastkademliafilerequest = ::GetTickCount(); }
+	void	SetLastKademliaFileRequest()					{ m_lastkademliafilerequest = ::GetTickCount64(); }
 	bool	DoKademliaFileRequest() const;
 	void	KademliaSearchFile(uint32 nSearchID, const Kademlia::CUInt128 *pcontactID, const Kademlia::CUInt128 *pbuddyID, uint8 type, uint32 ip, uint16 tcp, uint16 udp, uint32 dwBuddyIP, uint16 dwBuddyPort, uint8 byCryptOptions);
 
@@ -172,12 +172,12 @@ private:
 	CSourceHostnameResolveWnd m_srcwnd;
 	uint64	m_datarateMS;
 	CPartFile *m_lastfile;
-	DWORD	m_dwLastA4AFtime; // ZZ:DownloadManager
-	DWORD	m_lastcheckdiskspacetime;
-	DWORD	m_lastudpsearchtime;
-	DWORD	m_lastudpstattime;
-	DWORD	m_lastkademliafilerequest;
-	DWORD	m_dwNextTCPSrcReq;
+	ULONGLONG m_dwLastA4AFtime; // ZZ:DownloadManager
+	ULONGLONG m_lastcheckdiskspacetime;
+	ULONGLONG m_lastudpsearchtime;
+	ULONGLONG m_lastudpstattime;
+	ULONGLONG m_lastkademliafilerequest;
+	ULONGLONG m_dwNextTCPSrcReq;
 	UINT	m_udcounter;
 	UINT	m_cRequestsSentToServer;
 	int		m_iSearchedServers;

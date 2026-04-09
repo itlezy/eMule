@@ -435,7 +435,7 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 
 	sendLocker.Lock();
 // <-- ZZ:UploadBandWithThrottler (UDP)
-	curTick = ::GetTickCount();
+	curTick = ::GetTickCount64();
 	while (!controlpacket_queue.IsEmpty() && !IsBusy() && sentBytes < maxNumberOfBytesToSend) { // ZZ:UploadBandWithThrottler (UDP)
 		UDPPack *cur_packet = controlpacket_queue.RemoveHead();
 		if (curTick < cur_packet->dwTime + UDPMAXQUEUETIME) {
@@ -458,7 +458,7 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 			} else {
 				controlpacket_queue.AddHead(cur_packet); //try to resend
 				::Sleep(20);
-				curTick = ::GetTickCount();
+				curTick = ::GetTickCount64();
 			}
 			delete[] sendbuffer;
 		} else {
@@ -501,7 +501,7 @@ bool CClientUDPSocket::SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, boo
 	newpending->dwIP = dwIP;
 	newpending->nPort = nPort;
 	newpending->packet = packet;
-	newpending->dwTime = ::GetTickCount();
+	newpending->dwTime = ::GetTickCount64();
 	newpending->bEncrypt = bEncrypt && (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0));
 	newpending->bKad = bKad;
 	newpending->nReceiverVerifyKey = nReceiverVerifyKey;

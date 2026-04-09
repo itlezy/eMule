@@ -211,9 +211,9 @@ bool CUpDownClient::AskForDownload()
 
 bool CUpDownClient::IsSourceRequestAllowed(CPartFile *partfile, bool sourceExchangeCheck) const
 {
-	DWORD dwTicks = ::GetTickCount() + CONNECTION_LATENCY;
-	DWORD nTimePassedClient = dwTicks - GetLastAskedForSources(); //was GetLastSrcAnswerTime();
-	DWORD nTimePassedFile = dwTicks - partfile->GetLastAnsweredTime();
+	ULONGLONG dwTicks = ::GetTickCount64() + CONNECTION_LATENCY;
+	ULONGLONG nTimePassedClient = dwTicks - GetLastAskedForSources(); //was GetLastSrcAnswerTime();
+	ULONGLONG nTimePassedFile = dwTicks - partfile->GetLastAnsweredTime();
 	bool bNeverAskedBefore = (GetLastAskedForSources() == 0);
 	UINT uSources = partfile->GetSourceCount();
 	UINT uValidSources = partfile->GetValidSourcesCount();
@@ -311,7 +311,7 @@ void CUpDownClient::SendFileRequest()
 				if (GetLastAskedForSources() == 0)
 					Debug(_T("  first source request\n"));
 				else
-					Debug(_T("  last source request was before %s\n"), (LPCTSTR)CastSecondsToHM((::GetTickCount() - GetLastAskedForSources()) / SEC2MS(1)));
+					Debug(_T("  last source request was before %s\n"), (LPCTSTR)CastSecondsToHM((::GetTickCount64() - GetLastAskedForSources()) / SEC2MS(1)));
 			}
 			if (SupportsSourceExchange2()) {
 				dataFileReq.WriteUInt8(OP_REQUESTSOURCES2);
@@ -385,7 +385,7 @@ void CUpDownClient::SendFileRequest()
 				if (GetLastAskedForSources() == 0)
 					Debug(_T("  first source request\n"));
 				else
-					Debug(_T("  last source request was before %s\n"), (LPCTSTR)CastSecondsToHM((::GetTickCount() - GetLastAskedForSources()) / SEC2MS(1)));
+					Debug(_T("  last source request was before %s\n"), (LPCTSTR)CastSecondsToHM((::GetTickCount64() - GetLastAskedForSources()) / SEC2MS(1)));
 			}
 			m_reqfile->SetLastAnsweredTimeTimeout();
 
@@ -616,7 +616,7 @@ void CUpDownClient::SetDownloadState(EDownloadState nNewState, LPCTSTR pszReason
 		case DS_TOOMANYCONNSKAD:
 			//This client had already been set to DS_CONNECTING.
 			//So we reset this time so it isn't stuck at TOOMANYCONNS for 20 mins.
-			m_dwLastTriedToConnect = ::GetTickCount() - MIN2MS(20);
+			m_dwLastTriedToConnect = ::GetTickCount64() - MIN2MS(20);
 			break;
 		case DS_WAITCALLBACKKAD:
 		case DS_WAITCALLBACK:
@@ -788,7 +788,7 @@ void CUpDownClient::CreateBlockRequests(int blockCount)
 
 void CUpDownClient::SendBlockRequests()
 {
-	m_dwLastBlockReceived = ::GetTickCount();
+	m_dwLastBlockReceived = ::GetTickCount64();
 	if (!m_reqfile)
 		return;
 
@@ -947,7 +947,7 @@ void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool pa
 	}
 
 	// Update stats
-	m_dwLastBlockReceived = ::GetTickCount();
+	m_dwLastBlockReceived = ::GetTickCount64();
 
 	// Read data from packet
 	CSafeMemFile data(packet, size);
@@ -1251,7 +1251,7 @@ int CUpDownClient::unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32
 uint32 CUpDownClient::CalculateDownloadRate()
 {
 	// Patch By BadWolf - Accurate data rate Calculation
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	m_AverageDDR_hist.AddTail(TransferredData{m_nDownDataRateMS, curTick});
 	m_nSumForAvgDownDataRate += m_nDownDataRateMS;
 	m_nDownDataRateMS = 0;
@@ -1275,7 +1275,7 @@ uint32 CUpDownClient::CalculateDownloadRate()
 
 void CUpDownClient::CheckDownloadTimeout()
 {
-	if (::GetTickCount() >= m_dwLastBlockReceived + DOWNLOADTIMEOUT) {
+	if (::GetTickCount64() >= m_dwLastBlockReceived + DOWNLOADTIMEOUT) {
 		if (socket != NULL && !socket->IsRawDataMode())
 			SendCancelTransfer();
 		else
@@ -1400,7 +1400,7 @@ void CUpDownClient::UDPReaskForDownload()
 
 void CUpDownClient::UpdateDisplayedInfo(bool force)
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 #ifndef _DEBUG
 	if (!force && curTick < m_lastRefreshedDLDisplay + MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE + m_random_update_wait)
 		return;
@@ -1452,13 +1452,13 @@ bool CUpDownClient::SwapToRightFile(CPartFile *SwapTo, CPartFile *cur_file, bool
 			if (printDebug)
 				AddDebugLogLine(DLP_VERYLOW, false, _T("oooo Debug: No suspend block."));
 
-			DWORD curTick = ::GetTickCount();
-			DWORD curAsked = GetLastAskedTime(cur_file);
-			DWORD swapAsked = GetLastAskedTime(SwapTo);
+			ULONGLONG curTick = ::GetTickCount64();
+			ULONGLONG curAsked = GetLastAskedTime(cur_file);
+			ULONGLONG swapAsked = GetLastAskedTime(SwapTo);
 			bool rightFileHasHigherPrio = CPartFile::RightFileHasHigherPrio(SwapTo, cur_file);
 			// wait two re-ask interval for each nnp file before re-asking an nnp file
-			DWORD allNnpReaskTime = (DWORD)(FILEREASKTIME * 2 * (m_OtherNoNeeded_list.GetCount() + static_cast<int>(GetDownloadState() == DS_NONEEDEDPARTS)));
-			DWORD curReask = curAsked + allNnpReaskTime;
+			ULONGLONG allNnpReaskTime = FILEREASKTIME * 2ULL * (m_OtherNoNeeded_list.GetCount() + static_cast<int>(GetDownloadState() == DS_NONEEDEDPARTS));
+			ULONGLONG curReask = curAsked + allNnpReaskTime;
 
 			if (!SwapToIsNNPFile && (!curFileisNNPFile || curAsked == 0 || curTick >= curReask) && rightFileHasHigherPrio
 				|| SwapToIsNNPFile && curFileisNNPFile &&
@@ -1834,7 +1834,7 @@ bool CUpDownClient::DoSwap(CPartFile *SwapTo, bool bRemoveCompletely, LPCTSTR re
 
 void CUpDownClient::DontSwapTo(/*const*/ CPartFile *file)
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 
 	for (POSITION pos = m_DontSwap_list.GetHeadPosition(); pos != NULL;) {
 		PartFileStamp &pfs = m_DontSwap_list.GetNext(pos);
@@ -1862,7 +1862,7 @@ bool CUpDownClient::IsSwapSuspended(const CPartFile *file, const bool allowShort
 		POSITION pos2 = pos;
 		const PartFileStamp &pfs = m_DontSwap_list.GetNext(pos);
 		if (pfs.file == file) {
-			if (::GetTickCount() >= pfs.timestamp + PURGESOURCESWAPSTOP) {
+			if (::GetTickCount64() >= pfs.timestamp + PURGESOURCESWAPSTOP) {
 				m_DontSwap_list.RemoveAt(pos2);
 				return false;
 			}
@@ -1875,11 +1875,11 @@ bool CUpDownClient::IsSwapSuspended(const CPartFile *file, const bool allowShort
 	return false;
 }
 
-DWORD CUpDownClient::GetTimeUntilReask(const CPartFile *file, const bool allowShortReaskTime, const bool useGivenNNP, const bool givenNNP) const
+ULONGLONG CUpDownClient::GetTimeUntilReask(const CPartFile *file, const bool allowShortReaskTime, const bool useGivenNNP, const bool givenNNP) const
 {
-	DWORD lastAskedTimeTick = GetLastAskedTime(file);
+	const ULONGLONG lastAskedTimeTick = GetLastAskedTime(file);
 	if (lastAskedTimeTick > 0) {
-		DWORD reaskTime;
+		ULONGLONG reaskTime;
 		if (allowShortReaskTime || (file == m_reqfile && GetDownloadState() == DS_NONE))
 			reaskTime = MIN_REQUESTTIME;
 		else if (  (useGivenNNP && givenNNP)
@@ -1890,19 +1890,19 @@ DWORD CUpDownClient::GetTimeUntilReask(const CPartFile *file, const bool allowSh
 		} else
 			reaskTime = FILEREASKTIME;
 
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 		if (curTick < lastAskedTimeTick + reaskTime)
 			return reaskTime - (curTick - lastAskedTimeTick);
 	}
 	return 0;
 }
 
-DWORD CUpDownClient::GetTimeUntilReask(const CPartFile *file) const
+ULONGLONG CUpDownClient::GetTimeUntilReask(const CPartFile *file) const
 {
 	return GetTimeUntilReask(file, false);
 }
 
-DWORD CUpDownClient::GetTimeUntilReask() const
+ULONGLONG CUpDownClient::GetTimeUntilReask() const
 {
 	return GetTimeUntilReask(m_reqfile);
 }
@@ -2012,7 +2012,7 @@ void CUpDownClient::CheckQueueRankFlood()
 	}
 }
 
-DWORD CUpDownClient::GetLastAskedTime(const CPartFile *pFile) const
+ULONGLONG CUpDownClient::GetLastAskedTime(const CPartFile *pFile) const
 {
 	const CFileReaskTimesMap::CPair *pair = m_fileReaskTimes.PLookup(pFile ? pFile : m_reqfile);
 	return pair ? pair->value : 0;
@@ -2020,7 +2020,7 @@ DWORD CUpDownClient::GetLastAskedTime(const CPartFile *pFile) const
 
 void CUpDownClient::SetLastAskedTime()
 {
-	m_fileReaskTimes[m_reqfile] = ::GetTickCount();
+	m_fileReaskTimes[m_reqfile] = ::GetTickCount64();
 }
 
 // TODO fileident optimize to save some memory

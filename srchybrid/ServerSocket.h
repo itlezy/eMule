@@ -29,7 +29,7 @@ public:
 
 	void ConnectTo(CServer *server, bool bNoCrypt = false);
 	int GetConnectionState() const							{ return connectionstate; }
-	DWORD GetLastTransmission() const						{ return m_dwLastTransmission; }
+	ULONGLONG GetLastTransmission() const					{ return m_dwLastTransmission; }
 	virtual void SendPacket(Packet *packet, bool controlpacket = true, uint32 actualPayloadSize = 0, bool bForceImmediateSend = false);
 	virtual void OnClose(int nErrorCode);
 	virtual void OnConnect(int nErrorCode);
@@ -47,7 +47,7 @@ private:
 
 	CServerConnect *serverconnect;
 	CServer *cur_server; // holds a copy of a CServer from the CServerList
-	DWORD m_dwLastTransmission;
+	ULONGLONG m_dwLastTransmission;
 	int connectionstate;
 	bool m_bIsDeleting;	// true: socket is already in deletion phase, don't destroy it in ::StopConnectionTry
 	bool m_bStartNewMessageLog;

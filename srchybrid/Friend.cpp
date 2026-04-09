@@ -302,11 +302,11 @@ void CFriend::UpdateFriendConnectionState(EFriendConnectReport eEvent)
 		if (m_FriendConnectState == FCS_CONNECTING || m_FriendConnectState == FCS_AUTH) {
 			if (m_FriendConnectState == FCS_CONNECTING && Kademlia::CKademlia::IsRunning()
 				&& Kademlia::CKademlia::IsConnected() && !isnulmd4(m_abyKadID)
-				&& (m_dwLastKadSearch == 0 || ::GetTickCount() >= m_dwLastKadSearch + MIN2MS(10)))
+				&& (m_dwLastKadSearch == 0 || ::GetTickCount64() >= m_dwLastKadSearch + MIN2MS(10)))
 			{
 				// connecting failed to the last known IP, now we search kad for an updated IP of our friend
 				m_FriendConnectState = FCS_KADSEARCHING;
-				m_dwLastKadSearch = ::GetTickCount();
+				m_dwLastKadSearch = ::GetTickCount64();
 				for (POSITION pos = m_liConnectionReport.GetHeadPosition(); pos != NULL;) {
 					CFriendConnectionListener *flistener = m_liConnectionReport.GetNext(pos);
 					flistener->ReportConnectionProgress(GetLinkedClient(), _T(" ...") + GetResString(IDS_FAILED) + _T('\n'), true);

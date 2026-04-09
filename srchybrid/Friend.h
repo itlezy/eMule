@@ -102,7 +102,7 @@ private:
 	uchar	m_abyKadID[MDX_DIGEST_SIZE];
 	CTypedPtrList<CPtrList, CFriendConnectionListener*> m_liConnectionReport;
 	CUpDownClient *m_LinkedClient;
-	DWORD	m_dwLastKadSearch;
+	ULONGLONG m_dwLastKadSearch;
 	EFriendConnectState	m_FriendConnectState;
 	bool	m_friendSlot;
 };

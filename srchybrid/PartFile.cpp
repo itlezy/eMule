@@ -269,7 +269,7 @@ void CPartFile::Init()
 	m_tLastModified = (time_t)-1;
 	m_tCreated = 0;
 	m_uFileOpProgress = 0;
-	lastSwapForSourceExchangeTick = m_lastpurgetime = ::GetTickCount();
+	lastSwapForSourceExchangeTick = m_lastpurgetime = ::GetTickCount64();
 	m_lastRefreshedDLDisplay = 0;
 	m_nLastBufferFlushTime = 0;
 	m_nNextMetFlushTime = 0;
@@ -2202,7 +2202,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 		ASSERT_VALID(this);
 
 	UINT nOldTransSourceCount = GetSrcStatisticsValue(DS_DOWNLOADING);
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	if (curTick < m_nLastBufferFlushTime) {
 		ASSERT(0);
 		m_nLastBufferFlushTime = curTick;
@@ -4063,7 +4063,7 @@ uint32 CPartFile::WriteToBuffer(uint64 transize, const BYTE *data, uint64 start,
 
 void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 {
-	m_nLastBufferFlushTime = ::GetTickCount();
+	m_nLastBufferFlushTime = ::GetTickCount64();
 	if (GetPartCount() <= 0) //&& m_BufferedData_list.IsEmpty())
 		return;
 
@@ -4428,7 +4428,7 @@ void CPartFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 void CPartFile::UpdateDisplayedInfo(bool force)
 {
 	if (!theApp.IsClosing()) {
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 
 		if (force || curTick >= m_lastRefreshedDLDisplay + MINWAIT_BEFORE_DLDISPLAY_WINDOWUPDATE + m_random_update_wait) {
 			theApp.emuledlg->transferwnd->GetDownloadList()->UpdateItem(this);
@@ -4556,7 +4556,7 @@ void CPartFile::DeleteWrittenItem(const POSITION pos)
 	delete item;
 
 	if (!m_nFileFlushTime)
-		m_nFileFlushTime = ::GetTickCount();
+		m_nFileFlushTime = ::GetTickCount64();
 }
 
 void CPartFile::SetCategory(UINT cat)

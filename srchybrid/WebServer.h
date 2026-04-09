@@ -29,7 +29,7 @@ typedef struct
 struct BadLogin
 {
 	uint32	ip;
-	DWORD	timestamp;
+	ULONGLONG timestamp;
 };
 
 typedef struct

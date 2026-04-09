@@ -69,8 +69,8 @@ protected:
 	void	CleanUp();
 
 private:
-	typedef CMap<CDeadSource, const CDeadSource&, DWORD, DWORD> CDeadSourcesMap;
+	typedef CMap<CDeadSource, const CDeadSource&, ULONGLONG, ULONGLONG> CDeadSourcesMap;
 	CDeadSourcesMap m_mapDeadSources;
-	DWORD	m_dwLastCleanUp;
+	ULONGLONG m_dwLastCleanUp;
 	bool	m_bGlobalList;
 };

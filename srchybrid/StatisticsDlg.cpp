@@ -1652,7 +1652,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 		if (forceUpdate || m_stattree.IsExpanded(htime_s)) {
 			int i = 0;
 			// Run Time
-			time_t sessionRunTime = (::GetTickCount() - theStats.starttime) / SEC2MS(1);
+			time_t sessionRunTime = (::GetTickCount64() - theStats.starttime) / SEC2MS(1);
 			sText.Format(_T("%s: %s"), (LPCTSTR)GetResString(IDS_STATS_RUNTIME), (LPCTSTR)CastSecondsToLngHM(sessionRunTime));
 			m_stattree.SetItemText(tvitime_s[i], sText);
 			++i;
@@ -1699,7 +1699,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 		if (forceUpdate || m_stattree.IsExpanded(htime_t)) {
 			int i = 0;
 			// Run Time
-			time_t totalRunTime = (::GetTickCount() - theStats.starttime) / SEC2MS(1) + thePrefs.GetConnRunTime();
+			time_t totalRunTime = (::GetTickCount64() - theStats.starttime) / SEC2MS(1) + thePrefs.GetConnRunTime();
 			sText.Format(_T("%s: %s"), (LPCTSTR)GetResString(IDS_STATS_RUNTIME), (LPCTSTR)CastSecondsToLngHM(totalRunTime));
 			m_stattree.SetItemText(tvitime_t[i], sText);
 			++i;

@@ -158,7 +158,7 @@ void CServerSocket::OnReceive(int nErrorCode)
 		serverconnect->DestroySocket(this);
 	else {
 		CEMSocket::OnReceive(nErrorCode);
-		m_dwLastTransmission = ::GetTickCount();
+		m_dwLastTransmission = ::GetTickCount64();
 	}
 }
 
@@ -757,6 +757,6 @@ void CServerSocket::SetConnectionState(int newstate)
 
 void CServerSocket::SendPacket(Packet *packet, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend)
 {
-	m_dwLastTransmission = ::GetTickCount();
+	m_dwLastTransmission = ::GetTickCount64();
 	CEMSocket::SendPacket(packet, controlpacket, actualPayloadSize, bForceImmediateSend);
 }

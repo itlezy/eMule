@@ -197,7 +197,7 @@ protected:
 #endif
 
 	// Splash screen
-	DWORD m_dwSplashTime;
+	ULONGLONG m_dwSplashTime;
 	void ShowSplash();
 	void DestroySplash();
 

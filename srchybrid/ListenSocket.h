@@ -72,8 +72,8 @@ protected:
 	void	PacketToDebugLogLine(LPCTSTR protocol, const uchar *packet, uint32 size, UINT opcode);
 	void	SetConState(SocketState val);
 
-	DWORD	timeout_timer;
-	DWORD	deltimer;
+	ULONGLONG timeout_timer;
+	ULONGLONG deltimer;
 	uint32	m_nOnConnect;
 	bool	deletethis;
 	bool	m_bPortTestCon;

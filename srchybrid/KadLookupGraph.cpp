@@ -421,7 +421,7 @@ void CKadLookupGraph::OnPaint()
 				if (sEntry->m_uRespondedContact > 0)
 					iIconIdx = sEntry->m_bProvidedCloser ? 0 : 1; // green or blue
 				else
-					iIconIdx = (::GetTickCount() >= sEntry->m_dwAskedContactsTime + SEC2MS(3)) ? 3 : 2; // red or yellow
+					iIconIdx = (::GetTickCount64() >= sEntry->m_dwAskedContactsTime + SEC2MS(3)) ? 3 : 2; // red or yellow
 			} else if (sEntry->m_bForcedInteresting)
 				iIconIdx = 2;
 			else {
@@ -452,7 +452,7 @@ void CKadLookupGraph::OnPaint()
 						if (sEntry->m_uRespondedSearchItem > 0)
 							nOverlayImage = 1;
 						else
-							nOverlayImage = (::GetTickCount() >= sEntry->m_dwAskedSearchItemTime + SEC2MS(5)) ? 2 : 0;
+							nOverlayImage = (::GetTickCount64() >= sEntry->m_dwAskedSearchItemTime + SEC2MS(5)) ? 2 : 0;
 						m_iml.Draw(&dc, 4, pointIndicator, ILD_NORMAL | INDEXTOOVERLAYMASK(nOverlayImage));
 					}
 					break;
@@ -512,7 +512,7 @@ void CKadLookupGraph::UpdateToolTip()
 		CString strFoundNodes;
 		if (sEntry->m_dwAskedContactsTime > 0) {
 			if (sEntry->m_uRespondedContact == 0) {
-				if (::GetTickCount() >= sEntry->m_dwAskedContactsTime + SEC2MS(3))
+				if (::GetTickCount64() >= sEntry->m_dwAskedContactsTime + SEC2MS(3))
 					strFoundNodes = GetResString(IDS_NORESPONSE);
 				else
 					strFoundNodes = GetResString(IDS_ASKING);
@@ -530,7 +530,7 @@ void CKadLookupGraph::UpdateToolTip()
 		CString strFoundResults;
 		if (sEntry->m_dwAskedSearchItemTime > 0) {
 			if (sEntry->m_uRespondedSearchItem == 0) {
-				if (::GetTickCount() >= sEntry->m_dwAskedSearchItemTime + SEC2MS(5))
+				if (::GetTickCount64() >= sEntry->m_dwAskedSearchItemTime + SEC2MS(5))
 					strFoundResults = GetResString(IDS_BUDDYNONE);
 				else
 					strFoundResults = GetResString(IDS_ASKING);

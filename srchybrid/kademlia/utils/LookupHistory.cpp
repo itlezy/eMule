@@ -106,7 +106,7 @@ void CLookupHistory::ContactAskedKad(const CContact *pContact)
 		if (pContact->GetClientID() == m_aHistoryEntries[i]->m_uContactID) {
 			if (!m_aHistoryEntries[i]->IsInteresting())
 				m_aIntrestingHistoryEntries.Add(m_aHistoryEntries[i]);
-			m_aHistoryEntries[i]->m_dwAskedContactsTime = ::GetTickCount();
+			m_aHistoryEntries[i]->m_dwAskedContactsTime = ::GetTickCount64();
 			return;
 		}
 
@@ -130,7 +130,7 @@ void CLookupHistory::ContactAskedKeyword(const CContact *pContact)
 		if (pContact->GetClientID() == m_aHistoryEntries[i]->m_uContactID) {
 			if (!m_aHistoryEntries[i]->IsInteresting())
 				m_aIntrestingHistoryEntries.Add(m_aHistoryEntries[i]);
-			m_aHistoryEntries[i]->m_dwAskedSearchItemTime = ::GetTickCount();
+			m_aHistoryEntries[i]->m_dwAskedSearchItemTime = ::GetTickCount64();
 			ASSERT(m_aHistoryEntries[i]->m_uRespondedSearchItem == 0);
 			return;
 		}

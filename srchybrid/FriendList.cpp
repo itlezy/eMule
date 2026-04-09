@@ -38,7 +38,7 @@ CFriendList::CFriendList()
 	: m_wndOutput()
 {
 	LoadList();
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 }
 
 CFriendList::~CFriendList()
@@ -88,7 +88,7 @@ void CFriendList::SaveList()
 {
 	if (thePrefs.GetLogFileSaving())
 		AddDebugLogLine(false, _T("Saving friends list file \"%s\""), EMFRIENDS_MET_FILENAME);
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 
 	CSafeBufferedFile file;
 	if (!CFileOpen(file
@@ -225,7 +225,7 @@ void CFriendList::RemoveAllFriendSlots()
 
 void CFriendList::Process()
 {
-	if (::GetTickCount() >= m_nLastSaved + MIN2MS(19))
+	if (::GetTickCount64() >= m_nLastSaved + MIN2MS(19))
 		SaveList();
 }
 

@@ -77,7 +77,7 @@ void CEditDelayed::OnTimer(UINT_PTR nIDEvent)
 {
 	//ASSERT(nIDEvent == DELAYED_EVALUATE_TIMER_ID);
 	if (nIDEvent == DELAYED_EVALUATE_TIMER_ID) {
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 		if (curTick >= m_dwLastModified + 400) {
 			DoDelayedEvalute();
 			m_dwLastModified = curTick;
@@ -124,7 +124,7 @@ void CEditDelayed::OnEnChange()
 	if (m_uTimerResult != 0) {
 		// Edit control contents were changed while the control was active (had focus)
 		ASSERT(GetFocus() == this);
-		m_dwLastModified = ::GetTickCount();
+		m_dwLastModified = ::GetTickCount64();
 	} else {
 		// Edit control contents were changed while the control was not active (e.g.
 		// someone called 'SetWindowText' from within an other window).

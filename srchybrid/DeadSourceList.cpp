@@ -101,13 +101,13 @@ void CDeadSourceList::Init(bool bGlobalList)
 {
 	m_mapDeadSources.InitHashTable(bGlobalList ? 3001 : 503);
 	m_bGlobalList = bGlobalList;
-	m_dwLastCleanUp = ::GetTickCount();
+	m_dwLastCleanUp = ::GetTickCount64();
 }
 
 bool CDeadSourceList::IsDeadSource(const CUpDownClient &client) const
 {
 	const CDeadSourcesMap::CPair *pair = m_mapDeadSources.PLookup(CDeadSource(client));
-	return pair && ::GetTickCount() < pair->value;
+	return pair && ::GetTickCount64() < pair->value;
 }
 
 void CDeadSourceList::AddDeadSource(const CUpDownClient &client)
@@ -117,7 +117,7 @@ void CDeadSourceList::AddDeadSource(const CUpDownClient &client)
 	//		, m_bGlobalList? _T("Global") : _T("Local")
 	//		, (pToAdd->GetRequestFile() != NULL) ? (LPCTSTR)pToAdd->GetRequestFile()->GetFileName() : _T("???")
 	//		, (LPCTSTR)pToAdd->DbgGetClientInfo());
-	DWORD curTick = ::GetTickCount();
+	ULONGLONG curTick = ::GetTickCount64();
 	m_mapDeadSources[CDeadSource(client)] = curTick + (client.HasLowID() ? BLOCKTIMEFW : BLOCKTIME);
 
 	if (curTick >= m_dwLastCleanUp + CLEANUPTIME)
@@ -131,13 +131,13 @@ void CDeadSourceList::RemoveDeadSource(const CUpDownClient &client)
 
 void CDeadSourceList::CleanUp()
 {
-	m_dwLastCleanUp = ::GetTickCount();
+	m_dwLastCleanUp = ::GetTickCount64();
 	//if (thePrefs.GetLogFilteredIPs())
 	//	AddDebugLogLine(DLP_VERYLOW, false, _T("Cleaning up DeadSourceList (%s), %i clients on List..."),  m_bGlobalList ? _T("Global") : _T("Local"), m_mapDeadSources.GetCount());
 
 	CDeadSource dsKey;
 	for (POSITION pos = m_mapDeadSources.GetStartPosition(); pos != NULL;) {
-		DWORD dwExpTime;
+		ULONGLONG dwExpTime;
 		m_mapDeadSources.GetNextAssoc(pos, dsKey, dwExpTime);
 		if (m_dwLastCleanUp >= dwExpTime)
 			m_mapDeadSources.RemoveKey(dsKey);

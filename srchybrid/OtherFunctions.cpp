@@ -3075,7 +3075,7 @@ uint16 GetRandomUInt16()
 	ASSERT(uRand0 != 41 || uRand1 != 18467);
 
 	uRand0 |= (uRand1 & 0x4000) << 1;
-	srand(::GetTickCount() ^ (uRand0 << 16));
+	srand(::GetTickCount64() ^ (uRand0 << 16));
 	return (uint16)uRand0;
 #else
 #error "Implement it!"
@@ -3093,7 +3093,7 @@ uint32 GetRandomUInt32()
 
 	uRand0 = (uRand0 << 15) | (uRand1 & 0x6000);
 	uRand0 = (uRand0 << 2) | rand();
-	srand(::GetTickCount() ^ uRand0);
+	srand(::GetTickCount64() ^ uRand0);
 	return uRand0;
 #else
 #error "Implement it!"

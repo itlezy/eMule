@@ -208,14 +208,14 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (onlybasevalue)
 		dwBaseValue = SEC2MS(100);
 	else if (!isdownloading)
-		dwBaseValue = ::GetTickCount() - GetWaitStartTime();
+		dwBaseValue = ::GetTickCount64() - GetWaitStartTime();
 	else {
 		// we don't want one client to download forever
 		// the first 15 min download time counts as 15 min waiting time and you get
 		// a 15 min bonus while you are in the first 15 min :)
 		// (to avoid 20 sec downloads) after this the score won't rise any more
 		dwBaseValue = m_dwUploadTime - GetWaitStartTime();
-		dwBaseValue += MIN2MS(::GetTickCount() >= m_dwUploadTime + MIN2MS(15) ? 15 : 30);
+		dwBaseValue += MIN2MS(::GetTickCount64() >= m_dwUploadTime + MIN2MS(15) ? 15 : 30);
 		//ASSERT ( m_dwUploadTime - GetWaitStartTime() >= 0 ); //oct 28, 02: changed this from "> 0" to ">= 0" -> // 02-Okt-2006 []: ">=0" is always true!
 	}
 	float fBaseValue = dwBaseValue / SEC2MS(1.0f);
@@ -424,7 +424,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 
 void CUpDownClient::UpdateUploadingStatisticsData()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	uint32 sentBytesFile;
 	CEMSocket *sock = GetFileUploadSocket();
 	if (sock) {
@@ -596,7 +596,7 @@ void CUpDownClient::SendCommentInfo(/*const */CKnownFile *file)
 
 void CUpDownClient::AddRequestCount(const uchar *fileid)
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 
 	for (POSITION pos = m_RequestedFiles_list.GetHeadPosition(); pos != NULL;) {
 		Requested_File_Struct *cur_struct = m_RequestedFiles_list.GetNext(pos);
@@ -655,13 +655,13 @@ void CUpDownClient::Ban(LPCTSTR pszReason)
 		socket->ShutDown(CAsyncSocket::receives); // let the socket timeout, since we don't want to risk to delete the client right now. This isn't actually perfect, could be changed later
 }
 
-DWORD CUpDownClient::GetWaitStartTime() const
+ULONGLONG CUpDownClient::GetWaitStartTime() const
 {
 	if (credits == NULL) {
 		ASSERT(0);
 		return 0;
 	}
-	DWORD dwResult = credits->GetSecureWaitStartTime(GetIP());
+	ULONGLONG dwResult = credits->GetSecureWaitStartTime(GetIP());
 	if (dwResult > m_dwUploadTime && IsDownloading()) {
 		//this happens only if two clients with invalid securehash are in the queue - if at all
 		dwResult = m_dwUploadTime - 1;

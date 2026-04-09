@@ -848,7 +848,7 @@ void CPreferences::SaveStats(int bBackUp)
 	ini.WriteFloat(_T("ConnMaxUpRate"), GetConnMaxUpRate());
 
 	// Overall Run Time
-	ini.WriteInt(_T("ConnRunTime"), (UINT)((::GetTickCount() - theStats.starttime) / SEC2MS(1) + GetConnRunTime()));
+	ini.WriteInt(_T("ConnRunTime"), (UINT)((::GetTickCount64() - theStats.starttime) / SEC2MS(1) + GetConnRunTime()));
 
 	// Number of Reconnects
 	ini.WriteInt(_T("ConnNumReconnects"), GetConnNumReconnects() + theStats.reconnects - static_cast<uint32>(theStats.reconnects > 0));

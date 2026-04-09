@@ -44,13 +44,13 @@ typedef struct
 {
 	uint64	upBytes;
 	uint64	upFriendBytes;
-	DWORD	timestamp;
+	ULONGLONG timestamp;
 } AverageUploadRate;
 
 typedef struct
 {
 	INT_PTR	slots;
-	DWORD	timestamp;
+	ULONGLONG timestamp;
 } ActiveClientsData;
 
 
@@ -119,7 +119,7 @@ protected:
 private:
 	void	UpdateMaxClientScore();
 	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
-	void	UpdateActiveClientsInfo(DWORD curTick);
+	void	UpdateActiveClientsInfo(ULONGLONG curTick);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
@@ -143,11 +143,11 @@ private:
 	uint32	successfullupcount;
 	uint32	failedupcount;
 	uint32	totaluploadtime;
-	DWORD	m_nLastStartUpload;
+	ULONGLONG m_nLastStartUpload;
 	uint32	m_dwRemovedClientByScore;
 	uint32	m_imaxscore;
 
-	DWORD	m_dwLastCalculatedAverageCombinedFilePrioAndCredit;
+	ULONGLONG m_dwLastCalculatedAverageCombinedFilePrioAndCredit;
 	float	m_fAverageCombinedFilePrioAndCredit;
 	INT_PTR	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall;
 	INT_PTR	m_MaxActiveClients;
@@ -155,8 +155,8 @@ private:
 
 	uint64	m_sendingBytes;
 	uint64	m_average_ur_sum;
-	DWORD	m_lastCalculatedDataRateTick;
+	ULONGLONG m_lastCalculatedDataRateTick;
 
-	DWORD	m_dwLastResortedUploadSlots;
+	ULONGLONG m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;
 };

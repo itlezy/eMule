@@ -79,7 +79,7 @@ protected:
 	void SetTransferRate(double KbPerSecond);
 	void PlayAnimation();
 	void SetProgress(DWORD dwBytesRead);
-	void UpdateControlsDuringTransfer(DWORD dwStartTicks, DWORD &dwCurrentTicks, DWORD dwTotalBytesRead, DWORD &dwLastTotalBytes
+	void UpdateControlsDuringTransfer(ULONGLONG dwStartTicks, ULONGLONG &dwCurrentTicks, DWORD dwTotalBytesRead, DWORD &dwLastTotalBytes
 				, DWORD &dwLastPercentage, BOOL bGotFileSize, DWORD dwFileSize);
 
 	CSafeFile		m_FileToWrite;

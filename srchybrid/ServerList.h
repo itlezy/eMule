@@ -82,6 +82,6 @@ private:
 	INT_PTR		searchserverpos;
 	INT_PTR		statserverpos;
 	UINT		delservercount;
-	DWORD		m_nLastSaved;
+	ULONGLONG	m_nLastSaved;
 	uint8		version;
 };

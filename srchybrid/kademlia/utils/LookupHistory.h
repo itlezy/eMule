@@ -28,9 +28,9 @@ namespace Kademlia
 			CUInt128	m_uContactID;
 			CUInt128	m_uDistance;
 			CArray<int, int>	m_liReceivedFromIdx;
-			DWORD		m_dwAskedContactsTime;
+			ULONGLONG	m_dwAskedContactsTime;
 			uint32		m_uRespondedContact;
-			DWORD		m_dwAskedSearchItemTime;
+			ULONGLONG	m_dwAskedSearchItemTime;
 			uint32		m_uRespondedSearchItem;
 			uint32		m_uIP;
 			uint16		m_uPort;

@@ -423,7 +423,7 @@ void CDownloadQueue::Process()
 	} else
 		downspeed = 0;
 
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	while (!average_dr_hist.IsEmpty() && curTick >= average_dr_hist.Head().timestamp + SEC2MS(10)) {
 		m_datarateMS -= average_dr_hist.Head().datalen;
 		average_dr_hist.RemoveHead();
@@ -966,7 +966,7 @@ bool CDownloadQueue::SendNextUDPPacket()
 void CDownloadQueue::StopUDPRequests()
 {
 	cur_udpserver = NULL;
-	m_lastudpsearchtime = ::GetTickCount();
+	m_lastudpsearchtime = ::GetTickCount64();
 	m_lastfile = NULL;
 	m_iSearchedServers = 0;
 }
@@ -1024,13 +1024,13 @@ void CDownloadQueue::SortByPriority()
 
 void CDownloadQueue::CheckDiskspaceTimed()
 {
-	if (!m_lastcheckdiskspacetime || ::GetTickCount() >= m_lastcheckdiskspacetime + DISKSPACERECHECKTIME)
+	if (!m_lastcheckdiskspacetime || ::GetTickCount64() >= m_lastcheckdiskspacetime + DISKSPACERECHECKTIME)
 		CheckDiskspace();
 }
 
 void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 {
-	m_lastcheckdiskspacetime = ::GetTickCount();
+	m_lastcheckdiskspacetime = ::GetTickCount64();
 
 	// sorting the list could be done here, but I prefer to "see" that function call in the calling functions.
 	//SortByPriority();
@@ -1359,7 +1359,7 @@ void CDownloadQueue::RemoveLocalServerRequest(CPartFile *pFile)
 
 void CDownloadQueue::ProcessLocalRequests()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	if (!m_localServerReqQueue.IsEmpty() && curTick >= m_dwNextTCPSrcReq) {
 		CSafeMemFile dataTcpFrame(22);
 		const int iMaxFilesPerTcpFrame = 15;
@@ -1561,7 +1561,7 @@ LRESULT CSourceHostnameResolveWnd::OnHostnameResolved(WPARAM, LPARAM lParam)
 
 bool CDownloadQueue::DoKademliaFileRequest() const
 {
-	return ::GetTickCount() >= m_lastkademliafilerequest + KADEMLIAASKTIME;
+	return ::GetTickCount64() >= m_lastkademliafilerequest + KADEMLIAASKTIME;
 }
 
 void CDownloadQueue::KademliaSearchFile(uint32 nSearchID, const Kademlia::CUInt128 *pcontactID, const Kademlia::CUInt128 *pbuddyID, uint8 type, uint32 ip, uint16 tcp, uint16 udp, uint32 dwBuddyIP, uint16 dwBuddyPort, uint8 byCryptOptions)

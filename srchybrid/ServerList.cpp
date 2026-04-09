@@ -48,7 +48,7 @@ CServerList::CServerList()
 	, searchserverpos()
 	, statserverpos()
 	, delservercount()
-	, m_nLastSaved(::GetTickCount())
+	, m_nLastSaved(::GetTickCount64())
 	, version()
 {
 }
@@ -282,7 +282,7 @@ void CServerList::ServerStats()
 				pRawPacket[i] = (uint8)rand();
 
 			ping_server->SetChallenge(uChallenge);
-			ping_server->SetLastPinged(::GetTickCount());
+			ping_server->SetLastPinged(::GetTickCount64());
 			ping_server->SetLastPingedTime(tNow - UDPSERVSTATREASKTIME + 20); // give it 20 seconds to respond
 
 			if (thePrefs.GetDebugServerUDPLevel() > 0)
@@ -304,7 +304,7 @@ void CServerList::ServerStats()
 			uint32 uChallenge = 0x55AA0000 + GetRandomUInt16();
 			ping_server->SetChallenge(uChallenge);
 			PokeUInt32(packet->pBuffer, uChallenge);
-			ping_server->SetLastPinged(::GetTickCount());
+			ping_server->SetLastPinged(::GetTickCount64());
 			ping_server->SetLastPingedTime(tNow - (rand() % HR2S(1)));
 			ping_server->IncFailedCount();
 			theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(ping_server);
@@ -575,7 +575,7 @@ bool CServerList::SaveServermetToFile()
 {
 	if (thePrefs.GetLogFileSaving())
 		AddDebugLogLine(false, _T("Saving servers list file \"%s\""), SERVER_MET_FILENAME);
-	m_nLastSaved = ::GetTickCount();
+	m_nLastSaved = ::GetTickCount64();
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	const CString &curservermet(sConfDir + SERVER_MET_FILENAME);
 	const CString &newservermet(curservermet + _T(".new"));
@@ -844,7 +844,7 @@ bool CServerList::SaveStaticServers()
 
 void CServerList::Process()
 {
-	if (::GetTickCount() >= m_nLastSaved + MIN2MS(17))
+	if (::GetTickCount64() >= m_nLastSaved + MIN2MS(17))
 		SaveServermetToFile();
 }
 

@@ -415,7 +415,7 @@ void CDownloadListCtrl::DrawFileItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT 
 			HGDIOBJ hOldBitmap;
 			CDC cdcStatus;
 			cdcStatus.CreateCompatibleDC(&dc);
-			const DWORD curTick = ::GetTickCount();
+			const ULONGLONG curTick = ::GetTickCount64();
 			if (!(HBITMAP)pCtrlItem->status || curTick >= pCtrlItem->dwUpdated
 				|| pCtrlItem->status.GetBitmapDimension() != CSize(iWidth, iHeight))
 			{
@@ -628,7 +628,7 @@ void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UIN
 			HGDIOBJ hOldBitmap;
 			CDC cdcStatus;
 			cdcStatus.CreateCompatibleDC(&dc);
-			const DWORD curTick = ::GetTickCount();
+			const ULONGLONG curTick = ::GetTickCount64();
 			if (!(HBITMAP)pCtrlItem->status || curTick >= pCtrlItem->dwUpdated
 				|| pCtrlItem->status.GetBitmapDimension() != CSize(iWidth, iHeight))
 			{
@@ -2527,7 +2527,7 @@ CImageList* CDownloadListCtrl::CreateDragImage(int /*iItem*/, LPPOINT lpPoint)
 
 bool CDownloadListCtrl::ReportAvailableCommands(CList<int> &liAvailableCommands)
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 
 	if (curTick < m_dwLastAvailableCommandsCheck + SEC2MS(3) && !m_availableCommandsDirty)
 		return false;

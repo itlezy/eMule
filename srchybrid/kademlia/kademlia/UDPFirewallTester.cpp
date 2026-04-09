@@ -43,8 +43,8 @@ bool CUDPFirewallTester::m_bNodeSearchStarted = false;
 bool CUDPFirewallTester::m_bTimedOut = false;
 uint8 CUDPFirewallTester::m_byFWChecksRunningUDP = 0;
 uint8 CUDPFirewallTester::m_byFWChecksFinishedUDP = 0;
-DWORD CUDPFirewallTester::m_dwTestStart = 0;
-DWORD CUDPFirewallTester::m_dwLastSucceededTime = 0;
+ULONGLONG CUDPFirewallTester::m_dwTestStart = 0;
+ULONGLONG CUDPFirewallTester::m_dwLastSucceededTime = 0;
 CList<CContact> CUDPFirewallTester::m_liPossibleTestClients;
 CList<UsedClient_Struct> CUDPFirewallTester::m_liUsedTestClients;
 
@@ -60,7 +60,7 @@ bool CUDPFirewallTester::IsFirewalledUDP(bool bLastStateIfTesting)
 	} else if (bCheckingFW) {
 		//For now we don't allow to get firewalled by timeouts if we have succeeded a test before; might be changed later
 		if (!m_bFirewalledUDP && CKademlia::IsFirewalled() && m_dwTestStart != 0
-			&& !m_bIsFWVerifiedUDP && ::GetTickCount() >= m_dwTestStart + MIN2MS(6))
+			&& !m_bIsFWVerifiedUDP && ::GetTickCount64() >= m_dwTestStart + MIN2MS(6))
 		{
 			DebugLogWarning(_T("Firewall UDP Tester: Timeout: Setting UDP status to firewalled after being unable to get results for 6 minutes"));
 			m_bTimedOut = true;
@@ -82,7 +82,7 @@ void CUDPFirewallTester::SetUDPFWCheckResult(bool bSucceeded, bool bTestCancelle
 		return;
 	// see if we actually requested a firewall check from this client
 	bool bRequested = false;
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	for (POSITION pos = m_liUsedTestClients.GetHeadPosition(); pos != NULL;) {
 		UsedClient_Struct &ucs = m_liUsedTestClients.GetNext(pos);
 		if (ucs.contact.GetIPAddress() == uFromIP) {
@@ -171,7 +171,7 @@ void CUDPFirewallTester::ReCheckFirewallUDP(bool bSetUnverified)
 	m_byFWChecksRunningUDP = 0;
 	m_byFWChecksFinishedUDP = 0;
 	m_dwLastSucceededTime = 0;
-	m_dwTestStart = ::GetTickCount();
+	m_dwTestStart = ::GetTickCount64();
 	m_bTimedOut = false;
 	m_bFirewalledLastStateUDP = m_bFirewalledUDP;
 	m_bIsFWVerifiedUDP = (m_bIsFWVerifiedUDP && !bSetUnverified);
@@ -185,7 +185,7 @@ void CUDPFirewallTester::Connected()
 	if (!m_bNodeSearchStarted && IsFWCheckUDPRunning()) {
 		CSearchManager::FindNodeFWCheckUDP(); // start a lookup for a random node to find suitable IPs
 		m_bNodeSearchStarted = true;
-		m_dwTestStart = ::GetTickCount();
+		m_dwTestStart = ::GetTickCount64();
 		m_bTimedOut = false;
 	}
 }

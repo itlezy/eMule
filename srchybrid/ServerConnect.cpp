@@ -126,7 +126,7 @@ void CServerConnect::ConnectToServer(CServer *server, bool multiconnect, bool bN
 	m_lstOpenSockets.AddTail((void*)newsocket);
 	newsocket->Create(0, SOCK_STREAM, FD_READ | FD_WRITE | FD_CLOSE | FD_CONNECT, thePrefs.GetBindAddr());
 	newsocket->ConnectTo(server, bNoCrypt);
-	connectionattempts[::GetTickCount()] = newsocket;
+	connectionattempts[::GetTickCount64()] = newsocket;
 }
 
 void CServerConnect::StopConnectionTry()
@@ -211,7 +211,7 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		SendPacket(packet, sender);
 	} else if (sender->GetConnectionState() == CS_CONNECTED) {
 		++theStats.reconnects;
-		theStats.serverConnectTime = ::GetTickCount();
+		theStats.serverConnectTime = ::GetTickCount64();
 		connected = true;
 		const CServer *cserver = sender->cur_server;
 		CString strMsg;
@@ -408,7 +408,7 @@ void CServerConnect::CheckForTimeout()
 	if (thePrefs.GetProxySettings().bUseProxy)
 		dwServerConnectTimeout = max(dwServerConnectTimeout, CONNECTION_TIMEOUT);
 
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	for (POSITION pos = connectionattempts.GetStartPosition(); pos != NULL;) {
 		DWORD tmpkey;
 		CServerSocket *tmpsock;
@@ -562,7 +562,7 @@ void CServerConnect::KeepConnectionAlive()
 {
 	DWORD dwServerKeepAliveTimeout = thePrefs.GetServerKeepAliveTimeout();
 	if (dwServerKeepAliveTimeout && connected && connectedsocket && connectedsocket->connectionstate == CS_CONNECTED
-		&& ::GetTickCount() >= connectedsocket->GetLastTransmission() + dwServerKeepAliveTimeout)
+		&& ::GetTickCount64() >= connectedsocket->GetLastTransmission() + dwServerKeepAliveTimeout)
 	{
 		// "Ping" the server if the TCP connection was not used for the specified interval with
 		// an empty publish files packet -> recommended by lugdunummaster himself!

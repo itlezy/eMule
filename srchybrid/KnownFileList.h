@@ -69,7 +69,7 @@ private:
 	// make sure to change this if needed)
 	KnonwFilesByAICHMap m_mapKnownFilesByAICH;
 	uint32	m_dwCancelledFilesSeed;
-	DWORD	m_nLastSaved;
+	ULONGLONG m_nLastSaved;
 	uint16	requested;
 	uint16	accepted;
 };

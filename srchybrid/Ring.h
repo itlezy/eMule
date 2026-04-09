@@ -18,7 +18,7 @@
 
 typedef struct {
 	uint64	datalen;
-	DWORD	timestamp;
+	ULONGLONG timestamp;
 } TransferredData;
 
 template<class TYPE> class CRing

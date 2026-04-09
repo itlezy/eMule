@@ -86,7 +86,7 @@ public:
 	uint32	m_dwCryptRndChallengeFor;
 	uint32	m_dwCryptRndChallengeFrom;
 	EIdentState	GetCurrentIdentState(uint32 dwForIP) const; // can be != IdentState
-	DWORD	GetSecureWaitStartTime(uint32 dwForIP);
+	ULONGLONG GetSecureWaitStartTime(uint32 dwForIP);
 	void	SetSecWaitStartTime(uint32 dwForIP);
 protected:
 	void	Verified(uint32 dwForIP);
@@ -95,8 +95,8 @@ private:
 	void	InitalizeIdent();
 	CreditStruct m_Credits;
 	uint32	m_dwIdentIP;
-	DWORD	m_dwSecureWaitTime;
-	DWORD	m_dwUnSecureWaitTime;
+	ULONGLONG m_dwSecureWaitTime;
+	ULONGLONG m_dwUnSecureWaitTime;
 	uint32	m_dwWaitTimeIP;			// client IP assigned to the waittime
 	byte	m_abyPublicKey[80];		// even keys which are not verified will be stored here, and - if verified - copied into the struct
 	uint8	m_nPublicKeyLen;
@@ -129,7 +129,7 @@ private:
 	typedef CMap<CCKey, const CCKey&, CClientCredits*, CClientCredits*> CClientCreditsMap;
 	CClientCreditsMap m_mapClients;
 	CryptoPP::RSASSA_PKCS1v15_SHA_Signer *m_pSignkey;
-	DWORD			m_nLastSaved;
+	ULONGLONG		m_nLastSaved;
 	byte			m_abyMyPublicKey[80];
 	uint8			m_nMyPublicKeyLen;
 };

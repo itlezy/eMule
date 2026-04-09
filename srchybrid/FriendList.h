@@ -45,5 +45,5 @@ public:
 private:
 	CTypedPtrList<CPtrList, CFriend*>	m_listFriends;
 	CFriendListCtrl						*m_wndOutput;
-	DWORD								m_nLastSaved;
+	ULONGLONG							m_nLastSaved;
 };

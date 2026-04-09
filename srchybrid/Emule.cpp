@@ -737,7 +737,7 @@ void CemuleApp::UpdateSentBytes(uint32 bytesToAdd, bool sentToFriend)
 void CemuleApp::SetTimeOnTransfer()
 {
 	if (theStats.transferStarttime <= 0)
-		theStats.transferStarttime = ::GetTickCount();
+		theStats.transferStarttime = ::GetTickCount64();
 }
 
 CString CemuleApp::CreateKadSourceLink(const CAbstractFile *f)

@@ -69,7 +69,7 @@ CUploadQueue::CUploadQueue()
 	, failedupcount()
 	, totaluploadtime()
 	, m_nLastStartUpload()
-	, m_dwRemovedClientByScore(::GetTickCount())
+	, m_dwRemovedClientByScore(::GetTickCount64())
 	, m_imaxscore()
 	, m_dwLastCalculatedAverageCombinedFilePrioAndCredit()
 	, m_fAverageCombinedFilePrioAndCredit()
@@ -109,7 +109,7 @@ CUpDownClient* CUploadQueue::FindBestClientInQueue()
 	uint32 bestlowscore = 0;
 	CUpDownClient *newclient = NULL;
 	CUpDownClient *lowclient = NULL;
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
@@ -220,7 +220,7 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 
 	InsertInUploadingList(newclient, false);
 
-	m_nLastStartUpload = ::GetTickCount();
+	m_nLastStartUpload = ::GetTickCount64();
 
 	// statistic
 	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)newclient->GetUploadFileID());
@@ -232,14 +232,14 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	return true;
 }
 
-void CUploadQueue::UpdateActiveClientsInfo(DWORD curTick)
+void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 {
 	// Save number of active clients for statistics
 	INT_PTR tempHighest = theApp.uploadBandwidthThrottler->GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset();
 
 	//if(thePrefs.GetLogUlDlEvents() && theApp.uploadBandwidthThrottler->GetStandardListSize() > uploadinglist.GetCount())
 		// debug info, will remove this when I'm done.
-	//	AddDebugLogLine(false, _T("UploadQueue: Error! Throttler has more slots than UploadQueue! Throttler: %i UploadQueue: %i Tick: %i"), theApp.uploadBandwidthThrottler->GetStandardListSize(), uploadinglist.GetCount(), ::GetTickCount());
+	//	AddDebugLogLine(false, _T("UploadQueue: Error! Throttler has more slots than UploadQueue! Throttler: %i UploadQueue: %i Tick: %i"), theApp.uploadBandwidthThrottler->GetStandardListSize(), uploadinglist.GetCount(), ::GetTickCount64());
 
 	tempHighest = min(tempHighest, uploadinglist.GetCount() + 1);
 	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = tempHighest;
@@ -282,7 +282,7 @@ void CUploadQueue::UpdateActiveClientsInfo(DWORD curTick)
  */
 void CUploadQueue::Process()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	UpdateActiveClientsInfo(curTick);
 
 	if (ForceNewClient())
@@ -417,7 +417,7 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
 		return true;
 
-	if (::GetTickCount() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
+	if (::GetTickCount64() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
 	if (!AcceptNewClient(curUploadSlots) || !theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
@@ -655,7 +655,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 
 float CUploadQueue::GetAverageCombinedFilePrioAndCredit()
 {
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 
 	if (curTick >= m_dwLastCalculatedAverageCombinedFilePrioAndCredit + SEC2MS(5)) {
 		m_dwLastCalculatedAverageCombinedFilePrioAndCredit = curTick;
@@ -801,7 +801,7 @@ bool CUploadQueue::CheckForTimeOver(const CUpDownClient *client)
 
 		// Check if another client has a higher score than the current client
 		if (client->GetScore(true, true) < GetMaxClientScore()) {
-			const DWORD curTick = ::GetTickCount();
+			const ULONGLONG curTick = ::GetTickCount64();
 			if (curTick >= m_dwRemovedClientByScore) {
 				if (thePrefs.GetLogUlDlEvents())
 					AddDebugLogLine(DLP_VERYLOW, false, _T("%s: Upload session ended due to score."), client->GetUserName());
@@ -1027,12 +1027,12 @@ CUpDownClient* CUploadQueue::GetNextClient(const CUpDownClient *lastclient) cons
 void CUploadQueue::UpdateDatarates()
 {
 	// Calculate average data rate
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	if (curTick < m_lastCalculatedDataRateTick + (SEC2MS(1) / 2))
 		return;
 	m_lastCalculatedDataRateTick = curTick;
 	if (average_ur_hist.Count() > 1 && average_ur_hist.Tail().timestamp > average_ur_hist.Head().timestamp) {
-		DWORD duration = average_ur_hist.Tail().timestamp - average_ur_hist.Head().timestamp;
+		ULONGLONG duration = average_ur_hist.Tail().timestamp - average_ur_hist.Head().timestamp;
 		datarate = (uint32)(SEC2MS(m_average_ur_sum - average_ur_hist.Head().upBytes) / duration);
 		friendDatarate = (uint32)(SEC2MS(average_ur_hist.Tail().upFriendBytes - average_ur_hist.Head().upFriendBytes) / duration);
 	}

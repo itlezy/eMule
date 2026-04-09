@@ -375,7 +375,7 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 
 		// check for being banned
 		int myfaults = 0;
-		const DWORD curTick = ::GetTickCount();
+		const ULONGLONG curTick = ::GetTickCount64();
 		for (INT_PTR i = pThis->m_Params.badlogins.GetCount(); --i >= 0;)
 			if (curTick >= pThis->m_Params.badlogins[i].timestamp + MIN2MS(15))
 				pThis->m_Params.badlogins.RemoveAt(i); // remove outdated entries
@@ -2084,11 +2084,11 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 		|| (nCountQueueFriend > 0 && pThis->m_Params.bShowUploadQueueFriend))
 	{
 #ifdef _DEBUG
-		const DWORD dwStart = ::GetTickCount();
+		const ULONGLONG dwStart = ::GetTickCount64();
 #endif
 		QueueArray.QuickSort(pThis->m_Params.bQueueSortReverse);
 #ifdef _DEBUG
-		AddDebugLogLine(false, _T("WebServer: Waitingqueue with %u elements sorted in %u ms"), QueueArray.GetCount(), ::GetTickCount() - dwStart);
+		AddDebugLogLine(false, _T("WebServer: Waitingqueue with %u elements sorted in %I64u ms"), QueueArray.GetCount(), ::GetTickCount64() - dwStart);
 #endif
 	}
 

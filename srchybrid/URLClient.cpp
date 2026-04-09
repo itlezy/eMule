@@ -131,7 +131,7 @@ void CUrlClient::SendBlockRequests()
 
 bool CUrlClient::SendHttpBlockRequests()
 {
-	m_dwLastBlockReceived = ::GetTickCount();
+	m_dwLastBlockReceived = ::GetTickCount64();
 	if (m_reqfile == NULL)
 		throwCStr(_T("Failed to send block requests - No 'reqfile' attached"));
 
@@ -364,7 +364,7 @@ void CUpDownClient::ProcessHttpBlockPacket(const BYTE *pucData, UINT uSize)
 	if (!(GetDownloadState() == DS_DOWNLOADING || GetDownloadState() == DS_NONEEDEDPARTS))
 		throwCStr(_T("Failed to process HTTP data block - Invalid download state"));
 
-	m_dwLastBlockReceived = ::GetTickCount();
+	m_dwLastBlockReceived = ::GetTickCount64();
 
 	if (nEndPos <= nStartPos)
 		throwCStr(_T("Failed to process HTTP data block - Invalid block start/end offsets"));

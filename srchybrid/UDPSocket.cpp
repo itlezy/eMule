@@ -72,7 +72,7 @@ struct SRawServerPacket
 struct SServerDNSRequest
 {
 	SServerDNSRequest(HANDLE hDNSTask, CServer *pServer)
-		: m_dwCreated(::GetTickCount())
+		: m_dwCreated(::GetTickCount64())
 		, m_hDNSTask(hDNSTask)
 		, m_DnsHostBuffer()
 		, m_pServer(pServer)
@@ -200,7 +200,7 @@ void CUDPSocket::OnReceive(int nErrorCode)
 			// If we are not currently pinging this server, increase the failure counter
 			CServer *pServer = theApp.serverlist->GetServerByIPUDP(sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), true);
 			if (pServer)
-				if (!pServer->GetCryptPingReplyPending() && ::GetTickCount() >= pServer->GetLastPinged() + SEC2MS(30)) {
+				if (!pServer->GetCryptPingReplyPending() && ::GetTickCount64() >= pServer->GetLastPinged() + SEC2MS(30)) {
 					pServer->IncFailedCount();
 					theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(pServer);
 				} else if (pServer->GetCryptPingReplyPending())
@@ -400,7 +400,7 @@ bool CUDPSocket::ProcessPacket(const BYTE *packet, UINT size, UINT opcode, uint3
 				if (!nUDPObfuscationPort && (uUDPFlags & SRV_UDPFLG_UDPOBFUSCATION))
 					nUDPObfuscationPort = pServer->GetPort() + 12;
 
-				pServer->SetPing(::GetTickCount() - pServer->GetLastPinged());
+				pServer->SetPing(::GetTickCount64() - pServer->GetLastPinged());
 				pServer->SetUserCount(cur_user);
 				pServer->SetFileCount(cur_files);
 				pServer->SetMaxUsers(cur_maxusers);
@@ -735,7 +735,7 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 {
 	// Just for safety.
 	// Ensure that there are no stalled DNS queries and/or packets hanging endlessly in the queue.
-	const DWORD curTick = ::GetTickCount();
+	const ULONGLONG curTick = ::GetTickCount64();
 	for (POSITION pos = m_aDNSReqs.GetHeadPosition(); pos != NULL;) {
 		POSITION posPrev = pos;
 		const SServerDNSRequest *pDNSReq = m_aDNSReqs.GetNext(pos);
