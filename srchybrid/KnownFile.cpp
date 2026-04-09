@@ -1554,7 +1554,9 @@ bool CKnownFile::PublishSrc()
 {
 	uint32 lastBuddyIP;
 	time_t tNow = time(NULL);
-	if (theApp.IsFirewalled()
+	const bool bBypassFirewallGateForParitySeed = theApp.IsParityHarnessSeedPublisher();
+	if (!bBypassFirewallGateForParitySeed
+		&& theApp.IsFirewalled()
 		&& (Kademlia::CUDPFirewallTester::IsFirewalledUDP(true) || !Kademlia::CUDPFirewallTester::IsVerified()))
 	{
 		CUpDownClient *buddy = theApp.clientlist->GetBuddy();
