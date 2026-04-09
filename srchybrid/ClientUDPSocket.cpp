@@ -38,6 +38,26 @@
 #include "kademlia/utils/KadUDPKey.h"
 #include "zlib.h"
 
+namespace
+{
+LPCTSTR OracleUdpTransportModeToString(const EOracleUdpTransportMode eTransportMode)
+{
+	switch (eTransportMode) {
+	case ORACLE_UDP_TRANSPORT_NODE_ID:
+		return _T("node_id");
+	case ORACLE_UDP_TRANSPORT_RECEIVER_VERIFY_KEY:
+		return _T("receiver_verify_key");
+	case ORACLE_UDP_TRANSPORT_USER_HASH:
+		return _T("user_hash");
+	case ORACLE_UDP_TRANSPORT_SERVER_BASE_KEY:
+		return _T("server_base_key");
+	case ORACLE_UDP_TRANSPORT_PLAINTEXT:
+	default:
+		return _T("plaintext");
+	}
+}
+} // namespace
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -80,8 +100,24 @@ void CClientUDPSocket::OnReceive(int nErrorCode)
 	BYTE *pBuffer;
 	uint32 nReceiverVerifyKey;
 	uint32 nSenderVerifyKey;
-	int nPacketLen = DecryptReceivedClient(buffer, nRealLen, &pBuffer, sockAddr.sin_addr.s_addr, &nReceiverVerifyKey, &nSenderVerifyKey);
+	EOracleUdpTransportMode eTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
+	int nPacketLen = DecryptReceivedClient(buffer, nRealLen, &pBuffer, sockAddr.sin_addr.s_addr, &nReceiverVerifyKey, &nSenderVerifyKey, &eTransportMode);
 	if (nPacketLen > 0) {
+		const bool bKadPacket = pBuffer[0] == OP_KADEMLIAHEADER || pBuffer[0] == OP_KADEMLIAPACKEDPROT;
+		CString strOpcode(_T("n/a"));
+		if (nPacketLen >= 2)
+			strOpcode.Format(_T("0x%02X"), pBuffer[1]);
+		CString strMetadata;
+		strMetadata.Format(
+			_T("transport_mode=%s protocol=0x%02X opcode=%s raw_obfuscated=%s receiver_verify_key=%u sender_verify_key=%u"),
+			OracleUdpTransportModeToString(eTransportMode),
+			pBuffer[0],
+			(LPCTSTR)strOpcode,
+			(nPacketLen != nRealLen) ? _T("yes") : _T("no"),
+			nReceiverVerifyKey,
+			nSenderVerifyKey);
+		OracleUdpDump(_T("recv"), bKadPacket ? _T("kad") : _T("client_udp"), sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), buffer, nRealLen, strMetadata, pBuffer, nPacketLen);
+
 		CString strError;
 		try {
 			switch (pBuffer[0]) {
@@ -446,10 +482,25 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 			memcpy(&sendbuffer[iLen], cur_packet->packet->GetUDPHeader(), 2);
 			memcpy(&sendbuffer[iLen + 2], cur_packet->packet->pBuffer, cur_packet->packet->size);
 
+			const UINT uDecodedLen = static_cast<UINT>(nLen);
+			uchar *decodedbuffer = new uchar[uDecodedLen];
+			memcpy(decodedbuffer, sendbuffer + iLen, uDecodedLen);
+			EOracleUdpTransportMode eTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
 			if (iLen) {
-				nLen = EncryptSendClient(sendbuffer, nLen, cur_packet->pachTargetClientHashORKadID, cur_packet->bKad, cur_packet->nReceiverVerifyKey, (cur_packet->bKad ? Kademlia::CPrefs::GetUDPVerifyKey(cur_packet->dwIP) : 0u));
+				nLen = EncryptSendClient(sendbuffer, nLen, cur_packet->pachTargetClientHashORKadID, cur_packet->bKad, cur_packet->nReceiverVerifyKey, (cur_packet->bKad ? Kademlia::CPrefs::GetUDPVerifyKey(cur_packet->dwIP) : 0u), &eTransportMode);
 				//DEBUG_ONLY(  AddDebugLogLine(DLP_VERYLOW, false, _T("Sent obfuscated UDP packet to clientIP: %s, Kad: %s, ReceiverKey: %u"), (LPCTSTR)ipstr(cur_packet->dwIP), cur_packet->bKad ? _T("Yes") : _T("No"), cur_packet->nReceiverVerifyKey) );
 			}
+			CString strMetadata;
+			strMetadata.Format(
+				_T("transport_mode=%s protocol=0x%02X opcode=0x%02X raw_obfuscated=%s requested_obfuscation=%s receiver_verify_key=%u"),
+				OracleUdpTransportModeToString(eTransportMode),
+				cur_packet->packet->GetUDPHeader()[0],
+				cur_packet->packet->opcode,
+				(iLen != 0) ? _T("yes") : _T("no"),
+				cur_packet->bEncrypt ? _T("yes") : _T("no"),
+				cur_packet->nReceiverVerifyKey);
+			OracleUdpDump(_T("send"), cur_packet->bKad ? _T("kad") : _T("client_udp"), cur_packet->dwIP, cur_packet->nPort, sendbuffer, nLen, strMetadata, decodedbuffer, uDecodedLen);
+			delete[] decodedbuffer;
 			iLen = SendTo(sendbuffer, nLen, cur_packet->dwIP, cur_packet->nPort);
 			if (iLen >= 0) {
 				sentBytes += iLen; // ZZ:UploadBandWithThrottler (UDP)

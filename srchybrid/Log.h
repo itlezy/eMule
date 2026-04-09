@@ -88,3 +88,10 @@ protected:
 
 extern CLogFile theLog;
 extern CLogFile theVerboseLog;
+extern CLogFile theOracleUdpDumpLog;
+extern CLogFile theOracleEd2kTcpDumpLog;
+
+void OracleUdpDump(LPCTSTR pszDirection, LPCTSTR pszFamily, uint32 dwIP, uint16 nPort, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata = NULL, const BYTE *pDecodedPayload = NULL, UINT uDecodedPayloadLen = 0);
+void OracleUdpDumpPeerLabel(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerLabel, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszMetadata = NULL, const BYTE *pDecodedPayload = NULL, UINT uDecodedPayloadLen = 0);
+void OracleEd2kTcpDumpMeta(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszPeerLabel, LPCTSTR pszTransportMode, LPCTSTR pszNote = NULL);
+void OracleEd2kTcpDumpPacket(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszDirection, LPCTSTR pszPeerLabel, LPCTSTR pszTransportMode, uint8 byProtocol, uint8 byOpcode, const BYTE *pPayload, UINT uPayloadLen, LPCTSTR pszNote = NULL);
