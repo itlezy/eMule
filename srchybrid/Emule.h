@@ -200,6 +200,9 @@ public:
 	// Elandal:ThreadSafeLogging <--
 
 	bool		DidWeAutoStart() const							{ return m_bAutoStart; }
+	bool		IsParityHarnessMode() const;
+	void		ApplyPendingParityHarnessActions();
+	void		EmitParityHarnessReadyFile();
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
@@ -229,6 +232,10 @@ protected:
 	uint32		m_dwPublicIP;
 	bool		m_bGuardClipboardPrompt;
 	bool		m_bAutoStart;
+	bool		m_bParityHarnessBootstrapIssued;
+	bool		m_bParityHarnessReadyFileWritten;
+	CString		m_strParityHarnessBootstrapPeers;
+	CString		m_strParityHarnessReadyFile;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHelp();

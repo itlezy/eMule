@@ -726,6 +726,8 @@ void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*
 
 				if (thePrefs.DoAutoConnect())
 					theApp.emuledlg->OnBnClickedConnect();
+				theApp.ApplyPendingParityHarnessActions();
+				theApp.EmitParityHarnessReadyFile();
 
 #ifdef HAVE_WIN7_SDK_H
 				theApp.emuledlg->UpdateStatusBarProgress();
@@ -1362,6 +1364,20 @@ LRESULT CemuleDlg::OnWMData(WPARAM, LPARAM lParam)
 					thePrefs.SetMaxUpload(_tstoi(clcommand));
 			} else if (clcommand == _T("reloadipf"))
 				theApp.ipfilter->LoadFromDefaultFile();
+			else if (clcommand.Left(14) == _T("kad_bootstrap=") && clcommand.GetLength() > 14) {
+				CString dest(clcommand.Mid(14));
+				const int pos = dest.ReverseFind(_T(':'));
+				if (pos > 0 && pos + 1 < dest.GetLength()) {
+					const CString ip = dest.Left(pos);
+					const uint16 port = static_cast<uint16>(_tstoi(dest.Mid(pos + 1)));
+					if (!ip.IsEmpty() && port > 0) {
+						if (!Kademlia::CKademlia::IsRunning())
+							Kademlia::CKademlia::Start();
+						Kademlia::CKademlia::Bootstrap(ip, port);
+						AddLogLine(true, _T("CLI Kad bootstrap: %s"), (LPCTSTR)dest);
+					}
+				}
+			}
 			else if (clcommand == _T("restore"))
 				RestoreWindow();
 			else if (clcommand == _T("resume"))
