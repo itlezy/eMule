@@ -11,7 +11,7 @@ constexpr uint64_t kMinDiskSpaceFloorGiB = 1ull;
 constexpr uint64_t kMaxDiskSpaceFloorGiB = 5ull * 1024ull;
 constexpr uint64_t kMinDownloadFreeBytes = kMinDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
 constexpr uint64_t kMaxDownloadFreeBytes = kMaxDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
-constexpr uint64_t kMinPartMetWriteFreeBytes = 4ull * 1024ull * 1024ull;
+constexpr uint64_t kMinPartMetWriteFreeBytes = kMinDownloadFreeBytes;
 constexpr uint64_t kMaxInsufficientResumeHeadroomBytes = 1ull * kDiskSpaceFloorUnitBytes;
 
 inline uint64_t ConvertDiskSpaceFloorGiBToBytes(const uint64_t nGiB)
