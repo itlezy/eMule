@@ -16,6 +16,8 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 
+#include "PartFilePersistenceSeams.h"
+
 extern LPCTSTR const strDefaultToolbar;
 
 enum EViewSharedFilesAccess
@@ -431,7 +433,7 @@ public:
 	static int		m_iLastLogPaneID;
 	static UINT		MaxConperFive;
 	static bool		checkDiskspace;
-	static UINT		m_uMinFreeDiskSpace;
+	static ULONGLONG m_uMinFreeDiskSpace;
 	static bool		m_bSparsePartFiles;
 	static bool		m_bImportParts;
 	static CString	m_strYourHostname;
@@ -1143,8 +1145,12 @@ public:
 
 	static const CString& GetYourHostname()				{ return m_strYourHostname; }
 	static void		SetYourHostname(LPCTSTR pszHostname) { m_strYourHostname = pszHostname; }
-	static bool		IsCheckDiskspaceEnabled()			{ return checkDiskspace; }
-	static UINT		GetMinFreeDiskSpace()				{ return m_uMinFreeDiskSpace; }
+	static bool		IsCheckDiskspaceEnabled()			{ return true; }
+	static ULONGLONG GetMinFreeDiskSpaceFloor()			{ return PartFilePersistenceSeams::kMinDownloadFreeBytes; }
+	static ULONGLONG GetMaxFreeDiskSpaceFloor()			{ return PartFilePersistenceSeams::kMaxDownloadFreeBytes; }
+	static ULONGLONG NormalizeMinFreeDiskSpace(ULONGLONG nBytes) { return PartFilePersistenceSeams::NormalizeDownloadFreeSpaceFloor(nBytes); }
+	static UINT		NormalizeMinFreeDiskSpaceGiB(UINT nGiB) { return static_cast<UINT>(PartFilePersistenceSeams::NormalizeDownloadFreeSpaceFloorGiB(nGiB)); }
+	static ULONGLONG GetMinFreeDiskSpace()				{ return NormalizeMinFreeDiskSpace(m_uMinFreeDiskSpace); }
 	static bool		GetSparsePartFiles();
 	static void		SetSparsePartFiles(bool bEnable)	{ m_bSparsePartFiles = bEnable; }
 	static bool		GetResolveSharedShellLinks()		{ return m_bResolveSharedShellLinks; }

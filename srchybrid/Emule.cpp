@@ -262,7 +262,8 @@ bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
 	}
 
 	const uint64 nFreeBytes = GetFreeDiskSpaceX(strVolumeRoot);
-	const PartFilePersistenceSeams::PartMetWriteGuardDecision refreshedDecision = PartFilePersistenceSeams::ResolvePartMetWriteGuard(false, false, bForceRefresh, nFreeBytes);
+	const uint64 nRequiredBytes = thePrefs.GetMinFreeDiskSpace();
+	const PartFilePersistenceSeams::PartMetWriteGuardDecision refreshedDecision = PartFilePersistenceSeams::ResolvePartMetWriteGuard(false, false, bForceRefresh, nFreeBytes, nRequiredBytes);
 	const bool bCanWrite = refreshedDecision.CanWrite;
 	{
 		CSingleLock lock(&m_partMetWriteGuardLock, TRUE);
@@ -273,7 +274,7 @@ bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
 		QueueDebugLogLineEx(LOG_WARNING, _T("Part.met disk-space guard blocked metadata writes on \"%s\" (%I64u bytes free, need at least %I64u).")
 			, (LPCTSTR)strVolumeRoot
 			, nFreeBytes
-			, PartFilePersistenceSeams::kMinPartMetWriteFreeBytes);
+			, nRequiredBytes);
 	}
 
 	return bCanWrite;

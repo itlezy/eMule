@@ -3560,9 +3560,7 @@ bool CPartFile::IsReadyForPreview() const
 			return false;
 
 		// check free disk space
-		uint64 uMinFreeDiskSpace = (thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0)
-			? thePrefs.GetMinFreeDiskSpace()
-			: 20 * 1024 * 1024;
+		uint64 uMinFreeDiskSpace = thePrefs.GetMinFreeDiskSpace();
 		if (thePrefs.GetPreviewCopiedArchives())
 			uMinFreeDiskSpace += (uint64)m_nFileSize * 2;
 		else
@@ -4068,7 +4066,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 
 	try {
 		ULONGLONG cursize = m_hpartfile.GetLength();
-		bool bCheckDiskspace = thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() > 0;
+		const ULONGLONG uMinFreeDiskSpace = thePrefs.GetMinFreeDiskSpace();
 		//Previously full file allocation was performed in a special thread. That thread was writing
 		// 1 byte at the end of file. Overlapped I/O is already in a separate thread, and synchronising
 		// 3 threads could be fun. This fun may be avoided by using overlapped I/O for allocation too,
@@ -4095,10 +4093,10 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 		} else
 			newsize = 0; // not calling SetLength
 
-		// Check free disk space if required
-		if (bCheckDiskspace) {
+		// Check free disk space against the enforced minimum.
+		if (uMinFreeDiskSpace > 0) {
 			ULONGLONG uFreeDiskSpace = GetFreeDiskSpaceX(GetTmpPath());
-			ULONGLONG uIncrease = thePrefs.GetMinFreeDiskSpace();
+			ULONGLONG uIncrease = uMinFreeDiskSpace;
 			if (IsNormalFile()) {
 				if (newsize > cursize)
 					uIncrease += newsize - cursize;
@@ -4278,7 +4276,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 			// If using a normal file, we could avoid disk space check if the file was not increased.
 			// If using a compressed or sparse file, we always have to check the space
 			// regardless whether the file was increased in size or not.
-			if (bCheckDiskspace && !IsNormalFile()) {
+			if (uMinFreeDiskSpace > 0 && !IsNormalFile()) {
 				switch (GetStatus()) {
 				case PS_PAUSED:
 				case PS_ERROR:
@@ -4286,7 +4284,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 				case PS_COMPLETE:
 					break;
 				default:
-					if (GetFreeDiskSpaceX(GetTmpPath()) < thePrefs.GetMinFreeDiskSpace()) {
+					if (GetFreeDiskSpaceX(GetTmpPath()) < uMinFreeDiskSpace) {
 						// Compressed/sparse files: always pause the file
 						// Normal files: pause the file only if it would still grow
 						//if (!IsNormalFile() || GetNeededSpace() > 0)
@@ -4306,7 +4304,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 
 void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 {
-	if (thePrefs.IsCheckDiskspaceEnabled() && ex->m_cause == CFileException::diskFull) {
+	if (ex->m_cause == CFileException::diskFull) {
 		CString msg;
 		msg.Format(GetResString(IDS_ERR_OUTOFSPACE), (LPCTSTR)GetFileName());
 		LogError(LOG_STATUSBAR, msg);
@@ -4315,10 +4313,7 @@ void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 
 		// 'CFileException::diskFull' is also used for 'not enough min. free space'
 		if (!theApp.IsClosing())
-			if (thePrefs.IsCheckDiskspaceEnabled() && thePrefs.GetMinFreeDiskSpace() == 0)
-				theApp.downloadqueue->CheckDiskspace(true);
-			else
-				PauseFile(true);
+			PauseFile(true);
 	} else {
 		if (thePrefs.IsErrorBeepEnabled())
 			Beep(800, 200);

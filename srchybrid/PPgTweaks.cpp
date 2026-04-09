@@ -115,7 +115,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiVerbose()
 	, m_htiVerboseGroup()
 	, m_htiYourHostname()
-	, m_fMinFreeDiskSpaceMB()
+	, m_iMinFreeDiskSpaceGB()
 	, m_iQueueSize()
 	, m_uFileBufferSize()
 	, m_uServerKeepAliveTimeout()
@@ -223,6 +223,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), TVI_ROOT, m_bSparsePartFiles);
 		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), TVI_ROOT, m_bFullAlloc);
 		m_htiCheckDiskspace = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_CHECKDISKSPACE), TVI_ROOT, m_bCheckDiskspace);
+		m_ctrlTreeOptions.SetCheckBoxEnable(m_htiCheckDiskspace, false);
 		m_htiMinFreeDiskSpace = m_ctrlTreeOptions.InsertItem(GetResString(IDS_MINFREEDISKSPACE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiCheckDiskspace);
 		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpace, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiCommit = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_COMMITFILES), iImgBackup, TVI_ROOT);
@@ -340,8 +341,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiImportParts, m_bImportParts);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCheckDiskspace, m_bCheckDiskspace);
-	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_fMinFreeDiskSpaceMB);
-	DDV_MinMaxFloat(pDX, m_fMinFreeDiskSpaceMB, 0.0, _UI32_MAX / (1024.0f * 1024.0f));
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_iMinFreeDiskSpaceGB);
+	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceGB, static_cast<int>(PartFilePersistenceSeams::kMinDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiExtractMetaData, m_iExtractMetaData);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiResolveShellLinks, m_bResolveShellLinks);
@@ -454,9 +455,9 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bSparsePartFiles = thePrefs.GetSparsePartFiles();
 	m_bImportParts = thePrefs.m_bImportParts;
 	m_bFullAlloc = thePrefs.m_bAllocFull;
-	m_bCheckDiskspace = thePrefs.checkDiskspace;
+	m_bCheckDiskspace = true;
 	m_bResolveShellLinks = thePrefs.GetResolveSharedShellLinks();
-	m_fMinFreeDiskSpaceMB = (float)(thePrefs.m_uMinFreeDiskSpace / (1024.0 * 1024.0));
+	m_iMinFreeDiskSpaceGB = static_cast<int>(PartFilePersistenceSeams::ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(thePrefs.GetMinFreeDiskSpace()));
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bFirewallStartup = ((thePrefs.GetWindowsVersion() == _WINVER_XP_) ? thePrefs.m_bOpenPortsOnStartUp : 0);
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
@@ -582,9 +583,9 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_dwServerKeepAliveTimeout = MIN2MS(m_uServerKeepAliveTimeout);
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
-	thePrefs.checkDiskspace = m_bCheckDiskspace;
+	thePrefs.checkDiskspace = true;
 	thePrefs.m_bResolveSharedShellLinks = m_bResolveShellLinks;
-	thePrefs.m_uMinFreeDiskSpace = (UINT)(m_fMinFreeDiskSpaceMB * (1024 * 1024));
+	thePrefs.m_uMinFreeDiskSpace = thePrefs.NormalizeMinFreeDiskSpace(PartFilePersistenceSeams::ConvertDiskSpaceFloorGiBToBytes(thePrefs.NormalizeMinFreeDiskSpaceGiB(static_cast<UINT>(m_iMinFreeDiskSpaceGB))));
 	if (thePrefs.GetYourHostname() != m_sYourHostname) {
 		thePrefs.SetYourHostname(m_sYourHostname);
 		theApp.emuledlg->serverwnd->UpdateMyInfo();
