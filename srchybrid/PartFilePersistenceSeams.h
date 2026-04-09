@@ -6,7 +6,59 @@
 
 namespace PartFilePersistenceSeams
 {
+constexpr uint64_t kDiskSpaceFloorUnitBytes = 1024ull * 1024ull * 1024ull;
+constexpr uint64_t kMinDiskSpaceFloorGiB = 1ull;
+constexpr uint64_t kMaxDiskSpaceFloorGiB = 5ull * 1024ull;
+constexpr uint64_t kMinDownloadFreeBytes = kMinDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
+constexpr uint64_t kMaxDownloadFreeBytes = kMaxDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
 constexpr uint64_t kMinPartMetWriteFreeBytes = 4ull * 1024ull * 1024ull;
+constexpr uint64_t kMaxInsufficientResumeHeadroomBytes = 1ull * kDiskSpaceFloorUnitBytes;
+
+inline uint64_t ConvertDiskSpaceFloorGiBToBytes(const uint64_t nGiB)
+{
+	return nGiB * kDiskSpaceFloorUnitBytes;
+}
+
+inline uint64_t NormalizeDownloadFreeSpaceFloor(const uint64_t nConfiguredBytes, const uint64_t nMinimumBytes = kMinDownloadFreeBytes, const uint64_t nMaximumBytes = kMaxDownloadFreeBytes)
+{
+	const uint64_t nClampedToMin = nConfiguredBytes >= nMinimumBytes ? nConfiguredBytes : nMinimumBytes;
+	return nClampedToMin <= nMaximumBytes ? nClampedToMin : nMaximumBytes;
+}
+
+inline uint64_t NormalizeDownloadFreeSpaceFloorGiB(const uint64_t nConfiguredGiB, const uint64_t nMinimumGiB = kMinDiskSpaceFloorGiB, const uint64_t nMaximumGiB = kMaxDiskSpaceFloorGiB)
+{
+	const uint64_t nClampedToMin = nConfiguredGiB >= nMinimumGiB ? nConfiguredGiB : nMinimumGiB;
+	return nClampedToMin <= nMaximumGiB ? nClampedToMin : nMaximumGiB;
+}
+
+inline uint64_t ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(const uint64_t nConfiguredBytes)
+{
+	const uint64_t nNormalizedBytes = NormalizeDownloadFreeSpaceFloor(nConfiguredBytes);
+	return NormalizeDownloadFreeSpaceFloorGiB((nNormalizedBytes + (kDiskSpaceFloorUnitBytes - 1ull)) / kDiskSpaceFloorUnitBytes);
+}
+
+inline uint64_t GetInsufficientResumeHeadroomBytes(const uint64_t nNeededBytes, const uint64_t nMaximumHeadroomBytes = kMaxInsufficientResumeHeadroomBytes)
+{
+	return nNeededBytes <= nMaximumHeadroomBytes ? nNeededBytes : nMaximumHeadroomBytes;
+}
+
+inline uint64_t AddInsufficientResumeHeadroomBytes(const uint64_t nCurrentHeadroomBytes, const uint64_t nNeededBytes, const uint64_t nMaximumHeadroomBytes = kMaxInsufficientResumeHeadroomBytes)
+{
+	const uint64_t nAdditionalHeadroomBytes = GetInsufficientResumeHeadroomBytes(nNeededBytes, nMaximumHeadroomBytes);
+	const uint64_t nRemainingCapacity = static_cast<uint64_t>(-1) - nCurrentHeadroomBytes;
+	return nAdditionalHeadroomBytes <= nRemainingCapacity ? nCurrentHeadroomBytes + nAdditionalHeadroomBytes : static_cast<uint64_t>(-1);
+}
+
+inline uint64_t GetInsufficientResumeThresholdBytes(const uint64_t nMinimumFreeBytes, const uint64_t nHeadroomBytes)
+{
+	const uint64_t nRemainingCapacity = static_cast<uint64_t>(-1) - nMinimumFreeBytes;
+	return nHeadroomBytes <= nRemainingCapacity ? nMinimumFreeBytes + nHeadroomBytes : static_cast<uint64_t>(-1);
+}
+
+inline bool CanResumeInsufficientFileWithFreeSpace(const uint64_t nFreeBytes, const uint64_t nMinimumFreeBytes, const uint64_t nHeadroomBytes)
+{
+	return nFreeBytes >= GetInsufficientResumeThresholdBytes(nMinimumFreeBytes, nHeadroomBytes);
+}
 
 struct PartMetWriteGuardDecision
 {
