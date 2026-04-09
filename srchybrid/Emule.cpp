@@ -380,6 +380,18 @@ bool CemuleApp::IsParityHarnessSeedPublisher() const
 		&& (!m_strParityHarnessShareFile.IsEmpty() || !m_strParityHarnessExportLinkFile.IsEmpty());
 }
 
+uint32 CemuleApp::GetParityHarnessExportSourceIp() const
+{
+	if (m_strParityHarnessExportSourceIp.IsEmpty())
+		return ntohl(inet_addr("127.0.0.1"));
+
+	const uint32 rawIp = inet_addr(CT2A(m_strParityHarnessExportSourceIp));
+	if (rawIp == INADDR_NONE)
+		return ntohl(inet_addr("127.0.0.1"));
+
+	return ntohl(rawIp);
+}
+
 void CemuleApp::ApplyPendingParityHarnessActions()
 {
 	if (m_bParityHarnessBootstrapIssued || m_strParityHarnessBootstrapPeers.IsEmpty())
