@@ -950,9 +950,7 @@ void CSharedDirsTreeCtrl::EditSharedDirectories(const CDirectoryItem *pDir, bool
 	FilterTreeReloadTree();
 
 	// sync with the preferences list
-	thePrefs.shareddir_list.RemoveAll();
-	// copy list
-	thePrefs.shareddir_list.AddTail(&m_strliSharedDirs);
+	thePrefs.ReplaceSharedDirectoryList(m_strliSharedDirs);
 
 	// update the shared files list
 	theApp.emuledlg->sharedfileswnd->Reload();
@@ -965,13 +963,15 @@ void CSharedDirsTreeCtrl::Reload(bool bForce)
 {
 	if (!bForce) {
 		// check for changes in shared dirs
-		bForce = (thePrefs.shareddir_list.GetCount() != m_strliSharedDirs.GetCount());
+		CStringList sharedDirs;
+		thePrefs.CopySharedDirectoryList(sharedDirs);
+		bForce = (sharedDirs.GetCount() != m_strliSharedDirs.GetCount());
 		if (!bForce) {
 			POSITION pos = m_strliSharedDirs.GetHeadPosition();
-			POSITION pos2 = thePrefs.shareddir_list.GetHeadPosition();
+			POSITION pos2 = sharedDirs.GetHeadPosition();
 			while (pos != NULL && pos2 != NULL) {
 				const CString &str(m_strliSharedDirs.GetNext(pos));
-				const CString &str2(thePrefs.shareddir_list.GetNext(pos2));
+				const CString &str2(sharedDirs.GetNext(pos2));
 				if (str.CompareNoCase(str2) != 0) {
 					bForce = true;
 					break;
@@ -1016,8 +1016,7 @@ void CSharedDirsTreeCtrl::Reload(bool bForce)
 void CSharedDirsTreeCtrl::FetchSharedDirsList()
 {
 	RemoveAllSharedDirectories();
-	// copy list
-	m_strliSharedDirs.AddTail(&thePrefs.shareddir_list);
+	thePrefs.CopySharedDirectoryList(m_strliSharedDirs);
 }
 
 void CSharedDirsTreeCtrl::OnTvnBeginDrag(LPNMHDR pNMHDR, LRESULT *pResult)

@@ -576,8 +576,10 @@ void CSharedFileList::FindSharedFiles()
 	for (INT_PTR i = 1; i < thePrefs.GetCatCount(); ++i)
 		AddDirectory(thePrefs.GetCatPath(i), l_sAdded);
 
-	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;)
-		AddDirectory(thePrefs.shareddir_list.GetNext(pos), l_sAdded);
+	CStringList sharedDirs;
+	thePrefs.CopySharedDirectoryList(sharedDirs);
+	for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;)
+		AddDirectory(sharedDirs.GetNext(pos), l_sAdded);
 
 	// add all single shared files
 	for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL;)
@@ -1512,9 +1514,8 @@ bool CSharedFileList::ShouldBeShared(const CString &sDirPath, LPCTSTR const pFil
 				return true;
 	}
 
-	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;)
-		if (EqualPaths(sDirPath, thePrefs.shareddir_list.GetNext(pos)))
-			return true;
+	if (thePrefs.IsSharedDirectoryListed(sDirPath))
+		return true;
 
 	return false;
 }
@@ -1746,7 +1747,8 @@ bool CSharedFileList::AddSingleSharedDirectory(const CString &rstrFilePath, bool
 		return false;
 
 	// add the new directory as shared, GUI update to be done by the caller
-	thePrefs.shareddir_list.AddTail(rstrFilePath);
+	if (!thePrefs.AddSharedDirectoryIfAbsent(rstrFilePath))
+		return false;
 	if (!bNoUpdate) {
 		AddFilesFromDirectory(rstrFilePath);
 		HashNextFile();

@@ -2935,8 +2935,10 @@ void CUpDownClient::SendSharedDirectories()
 	theApp.sharedfiles->ResetPseudoDirNames(); //purge stale data
 	// add shared directories
 	CStringArray arFolders;
-	for (POSITION pos = thePrefs.shareddir_list.GetHeadPosition(); pos != NULL;) {
-		const CString &strDir(theApp.sharedfiles->GetPseudoDirName(thePrefs.shareddir_list.GetNext(pos)));
+	CStringList sharedDirs;
+	thePrefs.CopySharedDirectoryList(sharedDirs);
+	for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;) {
+		const CString &strDir(theApp.sharedfiles->GetPseudoDirName(sharedDirs.GetNext(pos)));
 		if (!strDir.IsEmpty())
 			arFolders.Add(strDir);
 	}

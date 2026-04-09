@@ -598,6 +598,8 @@ public:
 	static bool		m_bHighresTimer;
 
 	static bool		m_bResolveSharedShellLinks;
+	/// Guards ownership of the live shared-directory list.
+	static CCriticalSection m_csSharedDirList;
 	static CStringList shareddir_list;
 	static CStringList addresses_list;
 	static bool		m_bKeepUnavailableFixedSharedDirs;
@@ -665,6 +667,14 @@ public:
 
 	static LPCTSTR	GetTempDir(INT_PTR id = 0)			{ return (LPCTSTR)tempdir[(id < tempdir.GetCount()) ? id : 0]; }
 	static INT_PTR	GetTempDirCount()					{ return tempdir.GetCount(); }
+	/// Copies the live shared-directory list into a caller-owned snapshot.
+	static void		CopySharedDirectoryList(CStringList &out);
+	/// Replaces the live shared-directory list with a prepared snapshot.
+	static void		ReplaceSharedDirectoryList(const CStringList &in);
+	/// Adds a shared directory if no equivalent path is already listed.
+	static bool		AddSharedDirectoryIfAbsent(const CString &dir);
+	/// Checks whether an equivalent shared-directory path is already listed.
+	static bool		IsSharedDirectoryListed(const CString &dir);
 	static bool		CanFSHandleLargeFiles(int nForCat);
 	static LPCTSTR	GetConfigFile();
 	static const CString& GetFileCommentsFilePath()		{ return m_strFileCommentsFilePath; }

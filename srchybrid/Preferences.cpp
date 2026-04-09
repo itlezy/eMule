@@ -430,6 +430,7 @@ bool    CPreferences::m_bA4AFSaveCpu;
 bool    CPreferences::m_bHighresTimer;
 bool	CPreferences::m_bResolveSharedShellLinks;
 bool	CPreferences::m_bKeepUnavailableFixedSharedDirs;
+CCriticalSection CPreferences::m_csSharedDirList;
 CStringList CPreferences::shareddir_list;
 CStringList CPreferences::addresses_list;
 CString CPreferences::m_strFileCommentsFilePath;
@@ -445,6 +446,46 @@ bool	CPreferences::m_bRememberDownloadedFiles;
 bool	CPreferences::m_bPartiallyPurgeOldKnownFiles;
 
 EmailSettings CPreferences::m_email;
+
+void CPreferences::CopySharedDirectoryList(CStringList &out)
+{
+	if (&out == &shareddir_list)
+		return;
+	out.RemoveAll();
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;)
+		out.AddTail(shareddir_list.GetNext(pos));
+}
+
+void CPreferences::ReplaceSharedDirectoryList(const CStringList &in)
+{
+	if (&in == &shareddir_list)
+		return;
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	shareddir_list.RemoveAll();
+	shareddir_list.AddTail(const_cast<CStringList*>(&in));
+}
+
+bool CPreferences::AddSharedDirectoryIfAbsent(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
+		if (EqualPaths(shareddir_list.GetNext(pos), dir))
+			return false;
+	}
+	shareddir_list.AddTail(dir);
+	return true;
+}
+
+bool CPreferences::IsSharedDirectoryListed(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
+		if (EqualPaths(shareddir_list.GetNext(pos), dir))
+			return true;
+	}
+	return false;
+}
 
 bool	CPreferences::m_bWinaTransToolbar;
 bool	CPreferences::m_bShowDownloadToolbar;
@@ -553,6 +594,7 @@ void CPreferences::Init()
 			if (bIsUnicodeFile)
 				sdirfile.Seek(sizeof(WORD), CFile::begin); // skip BOM
 
+			CStringList sharedDirs;
 			CString toadd;
 			while (sdirfile.CStdioFile::ReadString(toadd)) {
 				toadd.Trim(_T(" \t\r\n")); // need to trim '\r' in binary mode
@@ -561,9 +603,10 @@ void CPreferences::Init()
 					// skip non-shareable directories
 					// maybe skip non-existing directories on fixed disks only
 					if (IsShareableDirectory(toadd) && (m_bKeepUnavailableFixedSharedDirs || DirAccsess(toadd)))
-						shareddir_list.AddTail(toadd);
+						sharedDirs.AddTail(toadd);
 				}
 			}
+			ReplaceSharedDirectoryList(sharedDirs);
 		} catch (CFileException *ex) {
 			ASSERT(0);
 			ex->Delete();
@@ -1435,9 +1478,11 @@ bool CPreferences::Save()
 		try {
 			// write UTF-16LE byte order mark 0xFEFF
 			static const WORD wBOM = u'\xFEFF';
+			CStringList sharedDirs;
+			CopySharedDirectoryList(sharedDirs);
 			file.Write(&wBOM, sizeof wBOM);
-			for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
-				file.CStdioFile::WriteString(shareddir_list.GetNext(pos));
+			for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;) {
+				file.CStdioFile::WriteString(sharedDirs.GetNext(pos));
 				file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
 			}
 			file.Close();
