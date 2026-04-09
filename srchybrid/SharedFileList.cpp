@@ -20,6 +20,9 @@
 #include "SharedFileList.h"
 #include "Packets.h"
 #include "Kademlia/Kademlia/Kademlia.h"
+#include "kademlia/kademlia/Prefs.h"
+#include "kademlia/kademlia/Entry.h"
+#include "kademlia/kademlia/Indexed.h"
 #include "kademlia/kademlia/search.h"
 #include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/kademlia/Tag.h"
@@ -49,6 +52,52 @@ static char THIS_FILE[] = __FILE__;
 
 typedef CSimpleArray<CKnownFile*> CSimpleKnownFileArray;
 #define	SHAREDFILES_FILE	_T("sharedfiles.dat")
+
+static void MaybeSelfIndexParityHarnessSource(CKnownFile *pKnownFile)
+{
+	if (pKnownFile == NULL || !theApp.IsParityHarnessSeedPublisher())
+		return;
+
+	Kademlia::CIndexed *pIndexed = Kademlia::CKademlia::GetIndexed();
+	if (pIndexed == NULL)
+		return;
+
+	Kademlia::CEntry *pEntry = new Kademlia::CEntry();
+	uint8 uLoad = 0;
+	try {
+		const uint32 uSourceIp = theApp.GetParityHarnessExportSourceIp();
+		const uint16 uKadPort = Kademlia::CKademlia::GetPrefs()->GetInternKadPort();
+		const uint16 uTcpPort = thePrefs.GetPort();
+		const uint32 uSourceType = (pKnownFile->GetFileSize() > OLD_MAX_EMULE_FILE_SIZE) ? 4 : 1;
+		const Kademlia::CUInt128 uFileHash(pKnownFile->GetFileHash());
+		const Kademlia::CUInt128 uSourceId(Kademlia::CKademlia::GetPrefs()->GetClientHash());
+
+		pEntry->m_uIP = uSourceIp;
+		pEntry->m_uUDPPort = uKadPort;
+		pEntry->m_uTCPPort = uTcpPort;
+		pEntry->m_uKeyID.SetValue(uFileHash);
+		pEntry->m_uSourceID.SetValue(uSourceId);
+		pEntry->m_bSource = true;
+		pEntry->m_tLifetime = time(NULL) + KADEMLIAREPUBLISHTIMES;
+		pEntry->m_uSize = pKnownFile->GetFileSize();
+		pEntry->AddTag(new Kademlia::CKadTagUInt(TAG_SOURCEIP, uSourceIp));
+		pEntry->AddTag(new Kademlia::CKadTagUInt(TAG_SOURCETYPE, uSourceType));
+		pEntry->AddTag(new Kademlia::CKadTagUInt(TAG_SOURCEPORT, uTcpPort));
+		pEntry->AddTag(new Kademlia::CKadTagUInt16(TAG_SOURCEUPORT, uKadPort));
+		pEntry->AddTag(new Kademlia::CKadTagUInt8(TAG_ENCRYPTION, static_cast<uint8>(Kademlia::CKademlia::GetPrefs()->GetMyConnectOptions(true, true))));
+
+		if (pIndexed->AddSources(uFileHash, uSourceId, pEntry, uLoad)) {
+			DebugLog(_T("Oracle parity self-indexed source file=%s hash=%s load=%u")
+				, (LPCTSTR)pKnownFile->GetFileName()
+				, (LPCTSTR)md4str(pKnownFile->GetFileHash())
+				, static_cast<unsigned>(uLoad));
+		} else
+			delete pEntry;
+	} catch (...) {
+		delete pEntry;
+		throw;
+	}
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -1315,9 +1364,11 @@ void CSharedFileList::Publish()
 			if (m_currFileSrc >= GetCount())
 				m_currFileSrc = 0;
 			CKnownFile *pCurKnownFile = GetFileByIndex(m_currFileSrc);
-			if (pCurKnownFile && pCurKnownFile->PublishSrc())
+			if (pCurKnownFile && pCurKnownFile->PublishSrc()) {
+				MaybeSelfIndexParityHarnessSource(pCurKnownFile);
 				if (Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::STOREFILE, true, Kademlia::CUInt128(pCurKnownFile->GetFileHash())) == NULL)
 					pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
+			}
 
 			++m_currFileSrc;
 
