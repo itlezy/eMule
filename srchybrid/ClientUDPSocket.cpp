@@ -440,7 +440,7 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 		UDPPack *cur_packet = controlpacket_queue.RemoveHead();
 		if (curTick < cur_packet->dwTime + UDPMAXQUEUETIME) {
 			int nLen = (int)cur_packet->packet->size + 2;
-			int iLen = cur_packet->bEncrypt && (theApp.GetPublicIP() > 0 || cur_packet->bKad)
+			int iLen = cur_packet->bEncrypt && thePrefs.IsCryptLayerEnabled() && (theApp.GetPublicIP() > 0 || cur_packet->bKad)
 				? EncryptOverheadSize(cur_packet->bKad) : 0;
 			uchar *sendbuffer = new uchar[nLen + iLen];
 			memcpy(&sendbuffer[iLen], cur_packet->packet->GetUDPHeader(), 2);
@@ -502,7 +502,9 @@ bool CClientUDPSocket::SendPacket(Packet *packet, uint32 dwIP, uint16 nPort, boo
 	newpending->nPort = nPort;
 	newpending->packet = packet;
 	newpending->dwTime = ::GetTickCount64();
-	newpending->bEncrypt = bEncrypt && (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0));
+	newpending->bEncrypt = thePrefs.IsCryptLayerEnabled()
+		&& bEncrypt
+		&& (pachTargetClientHashORKadID != NULL || (bKad && nReceiverVerifyKey != 0));
 	newpending->bKad = bKad;
 	newpending->nReceiverVerifyKey = nReceiverVerifyKey;
 
