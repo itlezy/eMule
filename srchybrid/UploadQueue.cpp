@@ -86,14 +86,11 @@ CUploadQueue::CUploadQueue()
 	, failedupcount()
 	, totaluploadtime()
 	, m_nLastStartUpload()
-	, m_dwLastCalculatedAverageCombinedFilePrioAndCredit()
-	, m_fAverageCombinedFilePrioAndCredit()
 	, m_iHighestNumberOfFullyActivatedSlotsSinceLastCall()
 	, m_MaxActiveClients()
 	, m_MaxActiveClientsShortTime()
 	, m_average_ur_sum()
 	, m_lastCalculatedDataRateTick()
-	, m_dwLastResortedUploadSlots()
 	, m_bStatisticsWaitingListDirty(true)
 	, m_bThrottlerWantsMoreSlotsHint()
 	, m_uploadSlotPhases()
@@ -134,77 +131,119 @@ bool CUploadQueue::ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLO
 		|| GetRequestedUploadFile(client) == NULL;
 }
 
-bool CUploadQueue::IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const
+float CUploadQueue::GetWaitingClientCreditFactor(const CUpDownClient *client) const
 {
-	if (currentBest == NULL)
-		return true;
-
-	const CKnownFile *pCandidateFile = GetRequestedUploadFile(candidate);
-	const CKnownFile *pCurrentFile = GetRequestedUploadFile(currentBest);
-	if (pCandidateFile == NULL)
-		return false;
-	if (pCurrentFile == NULL)
-		return true;
-
-	const float fCandidateRatio = pCandidateFile->GetAllTimeUploadRatio();
-	const float fCurrentRatio = pCurrentFile->GetAllTimeUploadRatio();
-	if (fCandidateRatio != fCurrentRatio)
-		return fCandidateRatio < fCurrentRatio;
-
-	if (candidate->GetWaitStartTime() != currentBest->GetWaitStartTime())
-		return candidate->GetWaitStartTime() < currentBest->GetWaitStartTime();
-
-	if (candidate->GetFriendSlot() != currentBest->GetFriendSlot())
-		return candidate->GetFriendSlot();
-
-	const float fCandidateCredit = (thePrefs.UseCreditSystem() && candidate->Credits()) ? candidate->Credits()->GetScoreRatio(candidate->GetIP()) : 1.0f;
-	const float fCurrentCredit = (thePrefs.UseCreditSystem() && currentBest->Credits()) ? currentBest->Credits()->GetScoreRatio(currentBest->GetIP()) : 1.0f;
-	if (fCandidateCredit != fCurrentCredit)
-		return fCandidateCredit > fCurrentCredit;
-
-	if (candidate->GetFilePrioAsNumber() != currentBest->GetFilePrioAsNumber())
-		return candidate->GetFilePrioAsNumber() > currentBest->GetFilePrioAsNumber();
-
-	return false;
+	if (!thePrefs.UseCreditSystem() || client == NULL || client->Credits() == NULL)
+		return 1.0f;
+	return client->Credits()->GetScoreRatio(client->GetIP());
 }
 
-CUpDownClient* CUploadQueue::SelectNextWaitingClient()
+int CUploadQueue::CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const
 {
-	CUpDownClient *bestClient = NULL;
-	const ULONGLONG curTick = ::GetTickCount64();
+	if (left == right)
+		return 0;
+	if (left == NULL)
+		return 1;
+	if (right == NULL)
+		return -1;
 
+	const CKnownFile *pLeftFile = GetRequestedUploadFile(left);
+	const CKnownFile *pRightFile = GetRequestedUploadFile(right);
+	if (pLeftFile == NULL)
+		return 1;
+	if (pRightFile == NULL)
+		return -1;
+
+	const float fLeftRatio = pLeftFile->GetAllTimeUploadRatio();
+	const float fRightRatio = pRightFile->GetAllTimeUploadRatio();
+	if (fLeftRatio < fRightRatio)
+		return -1;
+	if (fLeftRatio > fRightRatio)
+		return 1;
+
+	if (left->GetWaitStartTime() < right->GetWaitStartTime())
+		return -1;
+	if (left->GetWaitStartTime() > right->GetWaitStartTime())
+		return 1;
+
+	if (left->GetFriendSlot() != right->GetFriendSlot())
+		return left->GetFriendSlot() ? -1 : 1;
+
+	const float fLeftCredit = GetWaitingClientCreditFactor(left);
+	const float fRightCredit = GetWaitingClientCreditFactor(right);
+	if (fLeftCredit > fRightCredit)
+		return -1;
+	if (fLeftCredit < fRightCredit)
+		return 1;
+
+	if (left->GetFilePrioAsNumber() > right->GetFilePrioAsNumber())
+		return -1;
+	if (left->GetFilePrioAsNumber() < right->GetFilePrioAsNumber())
+		return 1;
+
+	return (left < right) ? -1 : 1;
+}
+
+bool CUploadQueue::IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const
+{
+	return CompareWaitingClientsByRank(candidate, currentBest) < 0;
+}
+
+void CUploadQueue::PurgeStaleWaitingClients(ULONGLONG curTick)
+{
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
 		const POSITION currentPos = pos;
 		CUpDownClient *client = waitinglist.GetNext(pos);
 		ASSERT(client->GetLastUpRequest());
 
-		if (ShouldPurgeWaitingClient(client, curTick)) {
-			client->ClearWaitStartTime();
-			RemoveWaitingClientAt(currentPos, true);
-			continue;
-		}
-
-		if (!IsClientEligibleForImmediateUpload(client))
+		if (!ShouldPurgeWaitingClient(client, curTick))
 			continue;
 
-		if (IsHigherPriorityWaitingClient(client, bestClient))
-			bestClient = client;
+		client->ClearWaitStartTime();
+		RemoveWaitingClientAt(currentPos, true);
 	}
+}
 
-	return bestClient;
+void CUploadQueue::BuildRankedWaitingClients(std::vector<CUpDownClient*> &clients) const
+{
+	clients.clear();
+	clients.reserve(static_cast<size_t>(waitinglist.GetCount()));
+	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;)
+		clients.push_back(waitinglist.GetNext(pos));
+
+	std::sort(clients.begin(), clients.end(),
+		[this](const CUpDownClient *left, const CUpDownClient *right) {
+			return CompareWaitingClientsByRank(left, right) < 0;
+		});
+}
+
+void CUploadQueue::GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients)
+{
+	PurgeStaleWaitingClients(::GetTickCount64());
+	BuildRankedWaitingClients(clients);
+}
+
+CUpDownClient* CUploadQueue::SelectNextWaitingClient()
+{
+	PurgeStaleWaitingClients(::GetTickCount64());
+	std::vector<CUpDownClient*> rankedClients;
+	BuildRankedWaitingClients(rankedClients);
+	for (CUpDownClient *client : rankedClients) {
+		if (IsClientEligibleForImmediateUpload(client))
+			return client;
+	}
+	return NULL;
 }
 
 CUpDownClient* CUploadQueue::FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient) const
 {
-	CUpDownClient *worstClient = NULL;
-	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
-		CUpDownClient *client = waitinglist.GetNext(pos);
-		if (client == excludeClient)
-			continue;
-		if (worstClient == NULL || IsHigherPriorityWaitingClient(worstClient, client))
-			worstClient = client;
+	std::vector<CUpDownClient*> rankedClients;
+	BuildRankedWaitingClients(rankedClients);
+	for (auto it = rankedClients.rbegin(); it != rankedClients.rend(); ++it) {
+		if (*it != excludeClient)
+			return *it;
 	}
-	return worstClient;
+	return NULL;
 }
 
 bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client) const
@@ -786,10 +825,12 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 
 void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 {
+	client->SetWaitStartTime();
+	client->SetAskedCount(1);
 	SetUploadSlotPhase(client, EUploadSlotPhase::Waiting);
 	m_bStatisticsWaitingListDirty = true;
 	waitinglist.AddTail(client);
-	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client, true);
+	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client);
 	theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
 	client->SendRankingInfo();
 }
@@ -991,18 +1032,17 @@ void CUploadQueue::DeleteAll()
 	// PENDING: Remove from UploadBandwidthThrottler as well!
 }
 
-UINT CUploadQueue::GetWaitingPosition(CUpDownClient *client)
+UINT CUploadQueue::GetWaitingPosition(const CUpDownClient *client)
 {
-	if (!IsOnUploadQueue(client))
+	if (!IsClientWaitingForUpload(client))
 		return 0;
-	UINT rank = 1;
-	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
-		CUpDownClient *queuedClient = waitinglist.GetNext(pos);
-		if (queuedClient != client)
-			rank += static_cast<UINT>(IsHigherPriorityWaitingClient(queuedClient, client));
+	std::vector<CUpDownClient*> rankedClients;
+	GetWaitingClientsInRankOrder(rankedClients);
+	for (size_t i = 0; i < rankedClients.size(); ++i) {
+		if (rankedClients[i] == client)
+			return static_cast<UINT>(i + 1);
 	}
-
-	return rank;
+	return 0;
 }
 
 VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /*idEvent*/, DWORD /*dwTime*/) noexcept
@@ -1141,21 +1181,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 		thePerfLog.LogSamples();
 	}
 	CATCH_DFLT_EXCEPTIONS(_T("CUploadQueue::UploadTimer"))
-}
-
-CUpDownClient* CUploadQueue::GetNextClient(const CUpDownClient *lastclient) const
-{
-	if (waitinglist.IsEmpty())
-		return NULL;
-	if (!lastclient)
-		return waitinglist.GetHead();
-	POSITION pos = waitinglist.Find(const_cast<CUpDownClient*>(lastclient));
-	if (!pos) {
-		TRACE("Error: CUploadQueue::GetNextClient");
-		return waitinglist.GetHead();
-	}
-	waitinglist.GetNext(pos);
-	return pos ? waitinglist.GetAt(pos) : NULL;
 }
 
 void CUploadQueue::UpdateDatarates()

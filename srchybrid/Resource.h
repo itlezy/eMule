@@ -2394,6 +2394,8 @@
 #define IDS_BB_SESSION_TIME_LIMIT       1680
 #define IDS_BB_SESSION_TRANSFER_PERCENT_VALUE 1681
 #define IDS_BB_SESSION_TRANSFER_MIB_VALUE 1682
+#define IDS_QUEUE_POSITION              1683
+#define IDS_CREDIT_FACTOR               1684
 #define IDA_ENTER                       32771
 
 // Next default values for new objects

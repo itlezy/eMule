@@ -3725,6 +3725,8 @@ BEGIN
     IDS_BB_SESSION_TIME_LIMIT "Session time limit [sec.]"
     IDS_BB_SESSION_TRANSFER_PERCENT_VALUE "Percent value"
     IDS_BB_SESSION_TRANSFER_MIB_VALUE "MiB value"
+    IDS_QUEUE_POSITION     "Queue Position"
+    IDS_CREDIT_FACTOR      "Credit Factor"
     IDS_SPAM                "Spam"
     IDS_MARKSPAM            "Mark as Spam"
     IDS_MARKNOTSPAM         "Mark as not Spam"

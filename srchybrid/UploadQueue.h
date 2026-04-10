@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "ring.h"
+#include <vector>
 #include <unordered_map>
 
 struct Requested_Block_Struct;
@@ -66,7 +67,7 @@ public:
 	void	Process();
 	void	AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit = false);
 	bool	HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason = NULL, bool removeWaiting = false, bool updatewindow = true, bool earlyabort = false);
-	bool	IsOnUploadQueue(CUpDownClient *client)	const	{ return (waitinglist.Find(client) != 0); }
+	bool	IsOnUploadQueue(CUpDownClient *client)	const	{ return IsClientWaitingForUpload(client); }
 	bool	IsDownloading(const CUpDownClient *client)	const { return (GetUploadingClientStructByClient(client) != NULL); }
 
 	void	UpdateDatarates();
@@ -84,20 +85,18 @@ public:
 	CUpDownClient* GetNextFromUploadList(POSITION &curpos) const { return static_cast<UploadingToClient_Struct*>(uploadinglist.GetNext(curpos))->m_pClient; }
 	CUpDownClient* GetQueueClientAt(POSITION &curpos) const	{ return static_cast<UploadingToClient_Struct*>(uploadinglist.GetAt(curpos))->m_pClient; }
 
-	POSITION GetFirstFromWaitingList() const				{ return waitinglist.GetHeadPosition(); }
-	CUpDownClient* GetNextFromWaitingList(POSITION &curpos) const { return waitinglist.GetNext(curpos); }
-	CUpDownClient* GetWaitClientAt(POSITION &curpos) const	{ return waitinglist.GetAt(curpos); }
-
 	CUpDownClient* GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs = NULL);
 	CUpDownClient* GetWaitingClientByIP(uint32 dwIP) const;
-	CUpDownClient* GetNextClient(const CUpDownClient *lastclient) const;
+	void	GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients);
+	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;
+	float	GetWaitingClientCreditFactor(const CUpDownClient *client) const;
 
 	UploadingToClient_Struct* GetUploadingClientStructByClient(const CUpDownClient *pClient) const;
 
 	const CUploadingPtrList& GetUploadListTS(CCriticalSection **outUploadListReadLock);
 
 	void	DeleteAll();
-	UINT	GetWaitingPosition(CUpDownClient *client);
+	UINT	GetWaitingPosition(const CUpDownClient *client);
 	bool	IsClientManagedByUploadQueue(const CUpDownClient *client) const;
 	bool	IsClientWaitingForUpload(const CUpDownClient *client) const;
 	bool	IsClientUploadActivating(const CUpDownClient *client) const;
@@ -166,6 +165,8 @@ private:
 	const CKnownFile* GetRequestedUploadFile(const CUpDownClient *client) const;
 	bool	ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLONG curTick) const;
 	bool	IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const;
+	void	PurgeStaleWaitingClients(ULONGLONG curTick);
+	void	BuildRankedWaitingClients(std::vector<CUpDownClient*> &clients) const;
 	CUpDownClient* SelectNextWaitingClient();
 	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL) const;
 	bool	PassesQueueAdmissionLimit(const CUpDownClient *client) const;
@@ -219,8 +220,6 @@ private:
 	uint32	totaluploadtime;
 	ULONGLONG m_nLastStartUpload;
 
-	ULONGLONG m_dwLastCalculatedAverageCombinedFilePrioAndCredit;
-	float	m_fAverageCombinedFilePrioAndCredit;
 	INT_PTR	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall;
 	INT_PTR	m_MaxActiveClients;
 	INT_PTR	m_MaxActiveClientsShortTime;
@@ -229,7 +228,6 @@ private:
 	uint64	m_average_ur_sum;
 	ULONGLONG m_lastCalculatedDataRateTick;
 
-	ULONGLONG m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
 	std::unordered_map<const CUpDownClient*, EUploadSlotPhase> m_uploadSlotPhases;

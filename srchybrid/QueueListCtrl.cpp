@@ -40,10 +40,10 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
-	CString FormatUploadRatio(float fRatio)
+	CString FormatDecimalValue(float fValue)
 	{
 		CString str;
-		str.Format(_T("%.1f"), fRatio);
+		str.Format(_T("%.1f"), fValue);
 		return str;
 	}
 
@@ -56,7 +56,7 @@ namespace
 		return str;
 	}
 
-	int CompareRatio(float fLeft, float fRight)
+	int CompareFloat(float fLeft, float fRight)
 	{
 		if (fLeft < fRight)
 			return -1;
@@ -103,8 +103,8 @@ void CQueueListCtrl::Init()
 	InsertColumn(0, _T(""),	LVCFMT_LEFT, DFLT_CLIENTNAME_COL_WIDTH);	//IDS_QL_USERNAME
 	InsertColumn(1, _T(""),	LVCFMT_LEFT, DFLT_FILENAME_COL_WIDTH);		//IDS_FILE
 	InsertColumn(2, _T(""),	LVCFMT_LEFT, DFLT_PRIORITY_COL_WIDTH);		//IDS_FILEPRIO
-	InsertColumn(3, _T(""),	LVCFMT_LEFT,  60);							//IDS_QL_RATING
-	InsertColumn(4, _T(""),	LVCFMT_LEFT,  60);							//IDS_SCORE
+	InsertColumn(3, _T(""),	LVCFMT_RIGHT,  70);							//IDS_QUEUE_POSITION
+	InsertColumn(4, _T(""),	LVCFMT_RIGHT,  75);							//IDS_CREDIT_FACTOR
 	InsertColumn(5, _T(""),	LVCFMT_LEFT,  60);							//IDS_ASKED
 	InsertColumn(6, _T(""),	LVCFMT_LEFT, 110);							//IDS_LASTSEEN
 	InsertColumn(7, _T(""),	LVCFMT_LEFT, 110);							//IDS_ENTERQUEUE
@@ -125,7 +125,7 @@ void CQueueListCtrl::Localize()
 {
 	static const UINT uids[13] =
 	{
-		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_QL_RATING, IDS_SCORE
+		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_QUEUE_POSITION, IDS_CREDIT_FACTOR
 		, IDS_ASKED, IDS_LASTSEEN, IDS_ENTERQUEUE, IDS_BANNED, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS
 	};
 
@@ -255,16 +255,16 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		}
 		break;
 	case 3:
-		sText.Format(_T("%u"), client->GetScore(false, false, true));
+		{
+			const UINT uQueuePosition = theApp.uploadqueue->GetWaitingPosition(client);
+			if (uQueuePosition != 0)
+				sText.Format(_T("%u"), uQueuePosition);
+			else
+				sText = _T("-");
+		}
 		break;
 	case 4:
-		{
-			UINT uScore = client->GetScore(false);
-			if (client->HasLowID())
-				sText.Format(_T("%u (%s)"), uScore, (LPCTSTR)GetResString(IDS_IDLOW));
-			else
-				sText.Format(_T("%u"), uScore);
-		}
+		sText = FormatDecimalValue(theApp.uploadqueue->GetWaitingClientCreditFactor(client));
 		break;
 	case 5:
 		sText.Format(_T("%u"), client->GetAskedCount());
@@ -281,13 +281,13 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 	case 9:
 		{
 			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-			sText = file ? FormatUploadRatio(file->GetAllTimeUploadRatio()) : _T("-");
+			sText = file ? FormatDecimalValue(file->GetAllTimeUploadRatio()) : _T("-");
 		}
 		break;
 	case 10:
 		{
 			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-			sText = file ? FormatUploadRatio(file->GetSessionUploadRatio()) : _T("-");
+			sText = file ? FormatDecimalValue(file->GetSessionUploadRatio()) : _T("-");
 		}
 		break;
 	case 11:
@@ -330,8 +330,7 @@ void CQueueListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	if (GetSortItem() != pNMLV->iSubItem)
 		switch (pNMLV->iSubItem) {
 		case 2: // Up Priority
-		case 3: // Rating
-		case 4: // Score
+		case 4: // Credit factor
 		case 5: // Ask Count
 		case 8: // Banned
 		case 9: // All-time ratio
@@ -389,11 +388,11 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 
 		}
 		break;
-	case 3:
-		iResult = CompareUnsigned(item1->GetScore(false, false, true), item2->GetScore(false, false, true));
+	case 3: // Queue position
+		iResult = theApp.uploadqueue->CompareWaitingClientsByRank(item1, item2);
 		break;
-	case 4:
-		iResult = CompareUnsigned(item1->GetScore(false), item2->GetScore(false));
+	case 4: // Credit factor
+		iResult = CompareFloat(theApp.uploadqueue->GetWaitingClientCreditFactor(item1), theApp.uploadqueue->GetWaitingClientCreditFactor(item2));
 		break;
 	case 5:
 		iResult = CompareUnsigned(item1->GetAskedCount(), item2->GetAskedCount());
@@ -412,7 +411,7 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
 			if (file1 != NULL && file2 != NULL)
-				iResult = CompareRatio(file1->GetAllTimeUploadRatio(), file2->GetAllTimeUploadRatio());
+				iResult = CompareFloat(file1->GetAllTimeUploadRatio(), file2->GetAllTimeUploadRatio());
 			else
 				iResult = (file1 == NULL) ? 1 : -1;
 		}
@@ -422,7 +421,7 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
 			if (file1 != NULL && file2 != NULL)
-				iResult = CompareRatio(file1->GetSessionUploadRatio(), file2->GetSessionUploadRatio());
+				iResult = CompareFloat(file1->GetSessionUploadRatio(), file2->GetSessionUploadRatio());
 			else
 				iResult = (file1 == NULL) ? 1 : -1;
 		}
@@ -529,12 +528,8 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 	return TRUE;
 }
 
-void CQueueListCtrl::AddClient(CUpDownClient *client, bool resetclient)
+void CQueueListCtrl::AddClient(CUpDownClient *client)
 {
-	if (resetclient && client) {
-		client->SetWaitStartTime();
-		client->SetAskedCount(1);
-	}
 	if (!thePrefs.IsQueueListDisabled() && !theApp.IsClosing()) {
 		int iItemCount = GetItemCount();
 		int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, iItemCount, LPSTR_TEXTCALLBACK, 0, 0, 0, (LPARAM)client);
@@ -572,6 +567,11 @@ void CQueueListCtrl::RefreshClient(const CUpDownClient *client)
 	}
 }
 
+void CQueueListCtrl::Resort()
+{
+	SortItems(SortProc, MAKELONG(GetSortItem(), !GetSortAscending()));
+}
+
 void CQueueListCtrl::ShowSelectedUserDetails()
 {
 	CPoint point;
@@ -596,8 +596,11 @@ void CQueueListCtrl::ShowSelectedUserDetails()
 void CQueueListCtrl::ShowQueueClients()
 {
 	DeleteAllItems();
-	for (CUpDownClient *update = NULL; (update = theApp.uploadqueue->GetNextClient(update)) != NULL;)
-		AddClient(update, false);
+	std::vector<CUpDownClient*> rankedClients;
+	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedClients);
+	for (CUpDownClient *client : rankedClients)
+		AddClient(client);
+	Resort();
 }
 
 // Barry - Refresh the queue every 10 secs
@@ -610,9 +613,11 @@ void CALLBACK CQueueListCtrl::QueueUpdateTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UI
 			&& theApp.emuledlg->transferwnd->GetQueueList()->IsWindowVisible()
 			&& !theApp.IsClosing()) // Don't do anything if the app is shutting down - can cause unhandled exceptions
 		{
-			const CUpDownClient *update = NULL;
-			while ((update = theApp.uploadqueue->GetNextClient(update)) != NULL)
-				theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(update);
+			std::vector<CUpDownClient*> rankedClients;
+			theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedClients);
+			for (const CUpDownClient *client : rankedClients)
+				theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
+			theApp.emuledlg->transferwnd->GetQueueList()->Resort();
 		}
 	}
 	CATCH_DFLT_EXCEPTIONS(_T("CQueueListCtrl::QueueUpdateTimer"))

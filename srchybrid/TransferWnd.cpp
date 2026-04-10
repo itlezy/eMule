@@ -648,8 +648,11 @@ void CTransferWnd::LocalizeToolbars()
 
 void CTransferWnd::OnBnClickedQueueRefreshButton()
 {
-	for (CUpDownClient *update = theApp.uploadqueue->GetNextClient(NULL); update != NULL; update = theApp.uploadqueue->GetNextClient(update))
-		queuelistctrl.RefreshClient(update);
+	std::vector<CUpDownClient*> rankedClients;
+	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedClients);
+	for (const CUpDownClient *client : rankedClients)
+		queuelistctrl.RefreshClient(client);
+	queuelistctrl.Resort();
 }
 
 void CTransferWnd::OnHoverUploadList(LPNMHDR, LRESULT *pResult)

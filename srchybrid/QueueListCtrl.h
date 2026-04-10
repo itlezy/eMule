@@ -30,12 +30,13 @@ public:
 	virtual	~CQueueListCtrl();
 
 	void	Init();
-	void	AddClient(CUpDownClient *client, bool resetclient = true);
+	void	AddClient(CUpDownClient *client);
 	void	RemoveClient(const CUpDownClient *client);
 	void	RefreshClient(const CUpDownClient *client);
 	void	Hide()						{ ShowWindow(SW_HIDE); }
 	void	Show()						{ ShowWindow(SW_SHOW); }
 	void	Localize();
+	void	Resort();
 	void	ShowSelectedUserDetails();
 	void	ShowQueueClients();
 

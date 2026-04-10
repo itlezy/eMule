@@ -156,18 +156,19 @@ BOOL CClientDetailPage::OnSetActive()
 			SetDlgItemText(IDC_CDIDENT, _T("?"));
 		}
 
-		if (client->GetUserName() && clcredits != NULL) {
-			buffer.Format(_T("%.1f"), (float)client->GetScore(false, theApp.uploadqueue->IsClientUploadActive(client), true));
+		if (file != NULL) {
+			buffer.Format(_T("%.1f"), file->GetAllTimeUploadRatio());
 			SetDlgItemText(IDC_DRATING, buffer);
 		} else
-			SetDlgItemText(IDC_DRATING, _T("?"));
+			SetDlgItemText(IDC_DRATING, _T("-"));
 
-		if (theApp.uploadqueue->IsClientManagedByUploadQueue(client) && clcredits != NULL) {
-			if (!client->GetFriendSlot())
-				SetDlgItemInt(IDC_DSCORE, client->GetScore(false, theApp.uploadqueue->IsClientUploadActive(client), false));
-			else
-				SetDlgItemText(IDC_DSCORE, GetResString(IDS_FRIENDDETAIL));
-		} else
+		if (theApp.uploadqueue->IsClientWaitingForUpload(client))
+			SetDlgItemInt(IDC_DSCORE, theApp.uploadqueue->GetWaitingPosition(client));
+		else if (theApp.uploadqueue->IsClientUploadActive(client))
+			SetDlgItemText(IDC_DSCORE, GetResString(IDS_UPLOADING));
+		else if (theApp.uploadqueue->IsClientUploadActivating(client))
+			SetDlgItemText(IDC_DSCORE, GetResString(IDS_CONNECTING));
+		else
 			SetDlgItemText(IDC_DSCORE, _T("-"));
 
 		SetDlgItemText(IDC_CLIENTDETAIL_KADCON, GetResString(client->GetKadPort() ? IDS_CONNECTED : IDS_DISCONNECTED));
@@ -209,8 +210,8 @@ void CClientDetailPage::Localize()
 
 	SetDlgItemText(IDC_STATIC50, GetResString(IDS_CD_SCORES));
 	SetDlgItemText(IDC_STATIC51, GetResString(IDS_CD_MOD));
-	SetDlgItemText(IDC_STATIC52, GetResString(IDS_CD_RATING));
-	SetDlgItemText(IDC_STATIC53, GetResString(IDS_CD_USCORE));
+	SetDlgItemText(IDC_STATIC52, GetResString(IDS_ALL_TIME_RATIO) + _T(':'));
+	SetDlgItemText(IDC_STATIC53, GetResString(IDS_QUEUE_POSITION) + _T(':'));
 	SetDlgItemText(IDC_STATIC133x, GetResString(IDS_CD_IDENT));
 	SetDlgItemText(IDC_CLIENTDETAIL_KAD, GetResString(IDS_KADEMLIA) + _T(':'));
 }

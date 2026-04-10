@@ -160,11 +160,8 @@ int CUpDownClient::GetFilePrioAsNumber() const
 }
 
 /*
- * Gets the ranking score for this client, taking into consideration waiting
- * time, priority of requested file, and the client's credits.
- *
- * Slot eligibility such as cooldown or LowID readiness is handled by
- * CUploadQueue and is intentionally not part of this score.
+ * Legacy score surface kept for compatibility outside the native upload
+ * scheduler. Queue ordering now lives in CUploadQueue.
  */
 uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasevalue) const
 {
