@@ -288,6 +288,12 @@ private:
 	bool	AttachActiveUploadSession(CUpDownClient *client);
 	void	ResetUploadSessionState(const UploadSessionPtr &session);
 	bool	DetachActiveUploadSession(CUpDownClient *client, UploadSessionPtr &session);
+	void	RefreshWaitingQueueUiCount() const;
+	void	NotifyWaitingClientAdded(CUpDownClient *client) const;
+	void	NotifyWaitingClientRefreshed(CUpDownClient *client) const;
+	void	NotifyWaitingClientRemoved(CUpDownClient *client) const;
+	void	NotifyActiveUploadAdded(CUpDownClient *client) const;
+	void	NotifyActiveUploadRemoved(CUpDownClient *client) const;
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
@@ -315,8 +321,9 @@ private:
 	void	MarkWaitingSnapshotDirty()						{ m_waitingSnapshotDirty = true; }
 	void	MarkActiveSnapshotDirty()						{ m_activeUploadSnapshotDirty = true; }
 	void	FlushDirtySnapshots();
-	CCriticalSection	m_csWaitingSnapshotRead;
-	CCriticalSection	m_csActiveUploadState; // Queue-state lock. Protects queue-owned membership, entries, and active-session ownership.
+	CCriticalSection	m_csWaitingSnapshotRead;	// Reader-side waiting snapshot publication lock.
+	CCriticalSection	m_csActiveSnapshotRead;	// Reader-side active snapshot publication lock.
+	CCriticalSection	m_csQueueState;			// Mutable queue-state lock. Protects queue-owned membership, entries, and active-session ownership.
 
 	// By BadWolf - Accurate Speed Measurement
 	CRing<AverageUploadRate> average_ur_hist;
