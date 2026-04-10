@@ -65,7 +65,6 @@ public:
 	void	Process();
 	void	AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit = false);
 	bool	HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason = NULL, bool removeWaiting = false, bool updatewindow = true, bool earlyabort = false);
-	bool	RemoveFromWaitingQueue(CUpDownClient *client, bool updatewindow = true);
 	bool	IsOnUploadQueue(CUpDownClient *client)	const	{ return (waitinglist.Find(client) != 0); }
 	bool	IsDownloading(const CUpDownClient *client)	const { return (GetUploadingClientStructByClient(client) != NULL); }
 
@@ -116,7 +115,6 @@ public:
 	CUpDownClientPtrList waitinglist;
 
 protected:
-	void		RemoveFromWaitingQueue(POSITION pos, bool updatewindow);
 	bool		StartNextUpload(LPCTSTR pszReason);
 
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
@@ -146,7 +144,7 @@ private:
 		Retiring
 	};
 
-	struct UploadSlotPhaseState
+	struct UploadSlotState
 	{
 		EUploadSlotPhase phase = EUploadSlotPhase::None;
 		bool collectionSlot = false;
@@ -172,18 +170,19 @@ private:
 
 	/** Returns true if the client can immediately take an upload slot. */
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
+	UploadSlotState GetUploadSlotState(const CUpDownClient *client) const;
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
-	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
-	void	SetCollectionUploadSlot(CUpDownClient *client, bool bValue);
+	void	SetUploadSlotState(CUpDownClient *client, const UploadSlotState &state);
 	void	SyncLegacyUploadState(CUpDownClient *client);
-	void	ClearUploadSlotPhase(CUpDownClient *client);
+	void	ClearUploadSlotState(CUpDownClient *client);
 	void	UpdateReconnectReservation(CUpDownClient *reservedClient);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
 	bool	ActivateUploadClient(CUpDownClient *client, LPCTSTR pszReason, bool bRemoveFromWaitingQueue);
 	/** Removes an active upload slot and performs all associated side effects. */
-	bool	RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReason = NULL, bool updatewindow = true, bool earlyabort = false);
+	bool	RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReason = NULL, bool updatewindow = true, bool earlyabort = false);
+	bool	RemoveWaitingClient(CUpDownClient *client, bool updatewindow = true);
 	/** Captures the scheduler inputs used for one admission or retention decision. */
 	UploadSchedulingSnapshot CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const;
 	/** Removes an active upload slot and requeues the client when requested. */
@@ -200,7 +199,7 @@ private:
 	uint32	GetSlowUploadRateThreshold() const;
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
-	void	RemoveFromWaitingQueueInternal(POSITION pos, bool updatewindow, bool preserveSlotPhase);
+	void	RemoveWaitingClientAt(POSITION pos, bool updatewindow);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
@@ -239,5 +238,5 @@ private:
 	ULONGLONG m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
-	std::unordered_map<const CUpDownClient*, UploadSlotPhaseState> m_uploadSlotPhaseStates;
+	std::unordered_map<const CUpDownClient*, UploadSlotState> m_uploadSlotStates;
 };

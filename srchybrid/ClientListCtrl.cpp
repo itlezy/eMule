@@ -265,7 +265,7 @@ int CALLBACK CClientListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			iResult = -1; // place clients with no user names at bottom
 		break;
 	case 1: //upload status
-		iResult = item1->GetUploadState() - item2->GetUploadState();
+		iResult = (item1->IsBanned() ? US_BANNED : item1->GetUploadState()) - (item2->IsBanned() ? US_BANNED : item2->GetUploadState());
 		break;
 	case 2: //transferred up
 		if (item1->credits && item2->credits)

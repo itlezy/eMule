@@ -96,7 +96,7 @@ CUploadQueue::CUploadQueue()
 	, m_dwLastResortedUploadSlots()
 	, m_bStatisticsWaitingListDirty(true)
 	, m_bThrottlerWantsMoreSlotsHint()
-	, m_uploadSlotPhaseStates()
+	, m_uploadSlotStates()
 {
 	i1sec = i2sec = i5sec = i60sec = 0;
 	VERIFY((h_timer = ::SetTimer(NULL, 0, SEC2MS(1)/10, UploadTimer)) != 0);
@@ -136,7 +136,7 @@ CUpDownClient* CUploadQueue::FindBestClientInQueue()
 		if ((curTick >= cur_client->GetLastUpRequest() + MAX_PURGEQUEUETIME) || !theApp.sharedfiles->GetFileByID(cur_client->GetUploadFileID())) {
 			//This client has either not been seen in a long time, or we no longer share the file he wanted any more.
 			cur_client->ClearWaitStartTime();
-			RemoveFromWaitingQueue(pos2, true);
+			RemoveWaitingClientAt(pos2, true);
 		} else {
 			// finished clearing
 			uint32 cur_score = cur_client->GetScore(false);
@@ -175,15 +175,20 @@ bool CUploadQueue::IsClientEligibleForImmediateUpload(const CUpDownClient *clien
 		&& (!client->HasLowID() || (client->socket && client->socket->IsConnected()));
 }
 
+CUploadQueue::UploadSlotState CUploadQueue::GetUploadSlotState(const CUpDownClient *client) const
+{
+	const auto it = m_uploadSlotStates.find(client);
+	return (it != m_uploadSlotStates.cend()) ? it->second : UploadSlotState{};
+}
+
 CUploadQueue::EUploadSlotPhase CUploadQueue::GetUploadSlotPhase(const CUpDownClient *client) const
 {
-	const auto it = m_uploadSlotPhaseStates.find(client);
-	return (it != m_uploadSlotPhaseStates.cend()) ? it->second.phase : EUploadSlotPhase::None;
+	return GetUploadSlotState(client).phase;
 }
 
 bool CUploadQueue::IsClientManagedByUploadQueue(const CUpDownClient *client) const
 {
-	return m_uploadSlotPhaseStates.find(client) != m_uploadSlotPhaseStates.cend();
+	return m_uploadSlotStates.find(client) != m_uploadSlotStates.cend();
 }
 
 bool CUploadQueue::IsClientWaitingForUpload(const CUpDownClient *client) const
@@ -213,46 +218,25 @@ bool CUploadQueue::HasUploadSlot(const CUpDownClient *client) const
 
 bool CUploadQueue::HasCollectionUploadSlot(const CUpDownClient *client) const
 {
-	const auto it = m_uploadSlotPhaseStates.find(client);
-	return it != m_uploadSlotPhaseStates.cend() && it->second.collectionSlot;
+	return GetUploadSlotState(client).collectionSlot;
 }
 
-void CUploadQueue::SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase)
+void CUploadQueue::SetUploadSlotState(CUpDownClient *client, const UploadSlotState &state)
 {
-	if (phase == EUploadSlotPhase::None) {
-		const auto it = m_uploadSlotPhaseStates.find(client);
-		if (it == m_uploadSlotPhaseStates.end())
-			return;
-		if (it->second.collectionSlot)
-			it->second.phase = EUploadSlotPhase::None;
-		else
-			m_uploadSlotPhaseStates.erase(it);
+	if (client == NULL)
 		return;
-	}
 
-	m_uploadSlotPhaseStates[client].phase = phase;
-	SyncLegacyUploadState(client);
-}
-
-void CUploadQueue::SetCollectionUploadSlot(CUpDownClient *client, bool bValue)
-{
-	if (bValue) {
-		m_uploadSlotPhaseStates[client].collectionSlot = true;
-		return;
-	}
-
-	const auto it = m_uploadSlotPhaseStates.find(client);
-	if (it == m_uploadSlotPhaseStates.end())
-		return;
-	if (it->second.phase == EUploadSlotPhase::None)
-		m_uploadSlotPhaseStates.erase(it);
+	if (state.phase == EUploadSlotPhase::None && !state.collectionSlot)
+		m_uploadSlotStates.erase(client);
 	else
-		it->second.collectionSlot = false;
+		m_uploadSlotStates[client] = state;
+
+	SyncLegacyUploadState(client);
 }
 
 void CUploadQueue::SyncLegacyUploadState(CUpDownClient *client)
 {
-	if (client == NULL || client->GetUploadState() == US_BANNED)
+	if (client == NULL)
 		return;
 
 	switch (GetUploadSlotPhase(client)) {
@@ -274,9 +258,9 @@ void CUploadQueue::SyncLegacyUploadState(CUpDownClient *client)
 	}
 }
 
-void CUploadQueue::ClearUploadSlotPhase(CUpDownClient *client)
+void CUploadQueue::ClearUploadSlotState(CUpDownClient *client)
 {
-	m_uploadSlotPhaseStates.erase(client);
+	m_uploadSlotStates.erase(client);
 	SyncLegacyUploadState(client);
 }
 
@@ -284,12 +268,15 @@ void CUploadQueue::UpdateReconnectReservation(CUpDownClient *reservedClient)
 {
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
 		CUpDownClient *client = waitinglist.GetNext(pos);
-		const EUploadSlotPhase phase = GetUploadSlotPhase(client);
+		UploadSlotState state = GetUploadSlotState(client);
 		if (client == reservedClient) {
-			if (phase != EUploadSlotPhase::ReservedForReconnect)
-				SetUploadSlotPhase(client, EUploadSlotPhase::ReservedForReconnect);
-		} else if (phase == EUploadSlotPhase::ReservedForReconnect) {
-			SetUploadSlotPhase(client, EUploadSlotPhase::Waiting);
+			if (state.phase != EUploadSlotPhase::ReservedForReconnect) {
+				state.phase = EUploadSlotPhase::ReservedForReconnect;
+				SetUploadSlotState(client, state);
+			}
+		} else if (state.phase == EUploadSlotPhase::ReservedForReconnect) {
+			state.phase = EUploadSlotPhase::Waiting;
+			SetUploadSlotState(client, state);
 		}
 	}
 }
@@ -324,7 +311,10 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 		POSITION pos = waitinglist.Find(newclient);
 		if (pos == NULL)
 			return false;
-		RemoveFromWaitingQueueInternal(pos, true, true);
+		m_bStatisticsWaitingListDirty = true;
+		waitinglist.RemoveAt(pos);
+		theApp.emuledlg->transferwnd->GetQueueList()->RemoveClient(newclient);
+		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
 	}
 
 	if (pszReason && thePrefs.GetLogUlDlEvents())
@@ -332,14 +322,16 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 
 	// tell the client that we are now ready to upload
 	if (!newclient->socket || !newclient->socket->IsConnected() || !newclient->CheckHandshakeFinished()) {
-		SetUploadSlotPhase(newclient, EUploadSlotPhase::Activating);
+		UploadSlotState state = GetUploadSlotState(newclient);
+		state.phase = EUploadSlotPhase::Activating;
+		SetUploadSlotState(newclient, state);
 		if (!newclient->TryToConnect(true)) {
-			ClearUploadSlotPhase(newclient);
+			ClearUploadSlotState(newclient);
 			return false;
 		}
 	} else {
 		if (!CompleteUploadActivation(newclient)) {
-			ClearUploadSlotPhase(newclient);
+			ClearUploadSlotState(newclient);
 			return false;
 		}
 	}
@@ -376,7 +368,9 @@ bool CUploadQueue::CompleteUploadActivation(CUpDownClient *client)
 	if (client == NULL || client->socket == NULL || !client->socket->IsConnected() || !client->CheckHandshakeFinished())
 		return false;
 
-	SetUploadSlotPhase(client, EUploadSlotPhase::Active);
+	UploadSlotState state = GetUploadSlotState(client);
+	state.phase = EUploadSlotPhase::Active;
+	SetUploadSlotState(client, state);
 
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_AcceptUploadReq", client);
@@ -470,13 +464,13 @@ void CUploadQueue::Process()
 			ASSERT_VALID(cur_client);
 		//It seems chatting or friend slots can get stuck at times in upload. This needs to be looked into.
 		if (cur_client->socket == NULL) {
-			RemoveFromUploadQueue(cur_client, _T("Uploading to client without socket? (CUploadQueue::Process)"));
+			HandleUploadSlotTeardown(cur_client, _T("Uploading to client without socket? (CUploadQueue::Process)"));
 			if (cur_client->Disconnected(_T("CUploadQueue::Process")))
 				delete cur_client;
 		} else {
 			cur_client->UpdateUploadingStatisticsData();
 			if (pCurClientStruct->m_bIOError) {
-				RemoveFromUploadQueue(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), true);
+				HandleUploadSlotTeardown(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), false, true);
 				continue;
 			}
 			const UploadSlotEndDecision endDecision = EvaluateUploadSlotEnd(cur_client, retentionSnapshot);
@@ -512,7 +506,7 @@ void CUploadQueue::Process()
 					if (pCurrentUploadFile != NULL)
 						cur_client->SetUploadFileID(pCurrentUploadFile);
 					else
-						RemoveFromUploadQueue(cur_client, _T("Requested FileID in block request not found in shared files"), true);
+						HandleUploadSlotTeardown(cur_client, _T("Requested FileID in block request not found in shared files"), false, true);
 				}
 			}
 		}
@@ -737,7 +731,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 				// remove both since we do not know who the bad one is
 				if (thePrefs.GetVerbose())
 					AddDebugLogLine(false, (LPCTSTR)GetResString(IDS_SAMEUSERHASH), client->GetUserName(), cur_client->GetUserName(), _T("Both"));
-				RemoveFromWaitingQueue(pos2, true);
+				RemoveWaitingClientAt(pos2, true);
 				if (!cur_client->socket && cur_client->Disconnected(_T("AddClientToQueue - same userhash 2")))
 					delete cur_client;
 				return;
@@ -745,7 +739,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 			//client has a valid secure hash, add him and remove the other one
 			if (thePrefs.GetVerbose())
 				AddDebugLogLine(false, (LPCTSTR)GetResString(IDS_SAMEUSERHASH), client->GetUserName(), cur_client->GetUserName(), cur_client->GetUserName());
-			RemoveFromWaitingQueue(pos2, true);
+			RemoveWaitingClientAt(pos2, true);
 			if (!cur_client->socket && cur_client->Disconnected(_T("AddClientToQueue - same userhash 1")))
 				delete cur_client;
 		} else if (client->GetIP() == cur_client->GetIP()) {
@@ -774,14 +768,16 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 
 	// emule collection will bypass the queue
 	if (reqfile != NULL && CCollection::HasCollectionExtention(reqfile->GetFileName()) && reqfile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE
-		&& !client->IsDownloading() && client->socket != NULL && client->socket->IsConnected())
+		&& !HasUploadSlot(client) && client->socket != NULL && client->socket->IsConnected())
 	{
-		SetCollectionUploadSlot(client, true);
+		UploadSlotState state = GetUploadSlotState(client);
+		state.collectionSlot = true;
+		SetUploadSlotState(client, state);
 		ActivateUploadClient(client, _T("Collection Priority Slot"), false);
 		return;
 	}
 
-	SetCollectionUploadSlot(client, false);
+	ClearUploadSlotState(client);
 
 	// cap the list
 	// the queue limit in prefs is only a soft limit. Hard limit is higher up to 25% to accept
@@ -800,7 +796,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		// block client from getting on queue
 		return;
 	}
-	if (client->IsDownloading()) {
+	if (IsClientUploadActive(client)) {
 		// he's already downloading and probably only wants another file
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP_AcceptUploadReq", client);
@@ -824,8 +820,9 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 
 void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 {
-	SetCollectionUploadSlot(client, false);
-	SetUploadSlotPhase(client, EUploadSlotPhase::Waiting);
+	UploadSlotState state;
+	state.phase = EUploadSlotPhase::Waiting;
+	SetUploadSlotState(client, state);
 	m_bStatisticsWaitingListDirty = true;
 	waitinglist.AddTail(client);
 	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client, true);
@@ -853,16 +850,18 @@ float CUploadQueue::GetAverageCombinedFilePrioAndCredit()
 
 bool CUploadQueue::HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason, bool removeWaiting, bool updatewindow, bool earlyabort)
 {
-	const bool removedUpload = RemoveFromUploadQueue(client, pszReason, updatewindow, earlyabort);
-	const bool removedWaiting = removeWaiting ? RemoveFromWaitingQueue(client, updatewindow) : false;
+	const bool removedUpload = RemoveActiveUploadSlot(client, pszReason, updatewindow, earlyabort);
+	const bool removedWaiting = removeWaiting ? RemoveWaitingClient(client, updatewindow) : false;
 	if (!removedUpload && !removedWaiting && removeWaiting)
-		ClearUploadSlotPhase(client);
+		ClearUploadSlotState(client);
 	return removedUpload || removedWaiting;
 }
 
-bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReason, bool updatewindow, bool earlyabort)
+bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReason, bool updatewindow, bool earlyabort)
 {
-	SetUploadSlotPhase(client, EUploadSlotPhase::Retiring);
+	UploadSlotState state = GetUploadSlotState(client);
+	state.phase = EUploadSlotPhase::Retiring;
+	SetUploadSlotState(client, state);
 	bool result = false;
 	uint32 slotCounter = 1;
 	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
@@ -902,7 +901,7 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReaso
 				requestedFile->UpdatePartsInfo();
 
 			theApp.clientlist->AddTrackClient(client); // Keep track of this client
-			ClearUploadSlotPhase(client);
+			ClearUploadSlotState(client);
 
 			m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;
 
@@ -913,7 +912,7 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReaso
 		}
 	}
 	if (!result)
-		ClearUploadSlotPhase(client);
+		ClearUploadSlotState(client);
 	return result;
 }
 
@@ -922,22 +921,17 @@ uint32 CUploadQueue::GetAverageUpTime() const
 	return successfullupcount ? (totaluploadtime / successfullupcount) : 0;
 }
 
-bool CUploadQueue::RemoveFromWaitingQueue(CUpDownClient *client, bool updatewindow)
+bool CUploadQueue::RemoveWaitingClient(CUpDownClient *client, bool updatewindow)
 {
 	POSITION pos = waitinglist.Find(client);
 	if (pos) {
-		RemoveFromWaitingQueueInternal(pos, updatewindow, false);
+		RemoveWaitingClientAt(pos, updatewindow);
 		return true;
 	}
 	return false;
 }
 
-void CUploadQueue::RemoveFromWaitingQueue(POSITION pos, bool updatewindow)
-{
-	RemoveFromWaitingQueueInternal(pos, updatewindow, false);
-}
-
-void CUploadQueue::RemoveFromWaitingQueueInternal(POSITION pos, bool updatewindow, bool preserveSlotPhase)
+void CUploadQueue::RemoveWaitingClientAt(POSITION pos, bool updatewindow)
 {
 	m_bStatisticsWaitingListDirty = true;
 	CUpDownClient *todelete = waitinglist.GetAt(pos);
@@ -946,9 +940,7 @@ void CUploadQueue::RemoveFromWaitingQueueInternal(POSITION pos, bool updatewindo
 		theApp.emuledlg->transferwnd->GetQueueList()->RemoveClient(todelete);
 		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
 	}
-	if (!preserveSlotPhase) {
-		ClearUploadSlotPhase(todelete);
-	}
+	ClearUploadSlotState(todelete);
 }
 
 LPCTSTR CUploadQueue::GetUploadSlotEndReasonText(EUploadSlotEndReason eReason)
@@ -972,7 +964,7 @@ bool CUploadQueue::EndUploadSession(CUpDownClient *client, const UploadSlotEndDe
 	if (!decision.shouldEnd)
 		return false;
 
-	if (!RemoveFromUploadQueue(client, GetUploadSlotEndReasonText(decision.reason), true))
+	if (!RemoveActiveUploadSlot(client, GetUploadSlotEndReasonText(decision.reason), true))
 		return false;
 
 	if (decision.requeue)
@@ -1059,17 +1051,17 @@ void CUploadQueue::DeleteAll()
 {
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
 		CUpDownClient *client = waitinglist.GetNext(pos);
-		ClearUploadSlotPhase(client);
+		ClearUploadSlotState(client);
 	}
 	waitinglist.RemoveAll();
 	m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
 	while (!uploadinglist.IsEmpty()) {
 		UploadingToClient_Struct *uploading = uploadinglist.RemoveHead();
-		ClearUploadSlotPhase(uploading->m_pClient);
+		ClearUploadSlotState(uploading->m_pClient);
 		delete uploading;
 	}
 	m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();
-	m_uploadSlotPhaseStates.clear();
+	m_uploadSlotStates.clear();
 	// PENDING: Remove from UploadBandwidthThrottler as well!
 }
 

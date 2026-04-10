@@ -22,6 +22,7 @@
 #include "ClientCredits.h"
 #include "Server.h"
 #include "ServerList.h"
+#include "UploadQueue.h"
 #include "SharedFileList.h"
 #include "HighColorTab.hpp"
 #include "UserMsgs.h"
@@ -156,14 +157,14 @@ BOOL CClientDetailPage::OnSetActive()
 		}
 
 		if (client->GetUserName() && clcredits != NULL) {
-			buffer.Format(_T("%.1f"), (float)client->GetScore(false, client->IsDownloading(), true));
+			buffer.Format(_T("%.1f"), (float)client->GetScore(false, theApp.uploadqueue->IsClientUploadActive(client), true));
 			SetDlgItemText(IDC_DRATING, buffer);
 		} else
 			SetDlgItemText(IDC_DRATING, _T("?"));
 
-		if (client->GetUploadState() != US_NONE && clcredits != NULL) {
+		if (theApp.uploadqueue->IsClientManagedByUploadQueue(client) && clcredits != NULL) {
 			if (!client->GetFriendSlot())
-				SetDlgItemInt(IDC_DSCORE, client->GetScore(false, client->IsDownloading(), false));
+				SetDlgItemInt(IDC_DSCORE, client->GetScore(false, theApp.uploadqueue->IsClientUploadActive(client), false));
 			else
 				SetDlgItemText(IDC_DSCORE, GetResString(IDS_FRIENDDETAIL));
 		} else

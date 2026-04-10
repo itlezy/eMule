@@ -2267,10 +2267,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 			if (nCountForState == DS_ONQUEUE && cur_src->IsRemoteQueueFull())
 				nCountForState = DS_REMOTEQUEUEFULL;
 
-			// this is a performance killer -> avoid calling 'IsBanned' for gathering stats
-			//if (cur_src->IsBanned())
-			//	nCountForState = DS_BANNED;
-			if (cur_src->GetUploadState() == US_BANNED) // not as accurate as 'IsBanned', but way faster and good enough for stats.
+			if (cur_src->IsBanned())
 				nCountForState = DS_BANNED;
 
 			if (cur_src->GetSourceFrom() >= SF_SERVER && cur_src->GetSourceFrom() <= SF_PASSIVE)
@@ -2367,7 +2364,7 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 			case DS_WAITCALLBACK:
 			case DS_WAITCALLBACKKAD:
 				if (theApp.IsConnected() && cur_src->GetTimeUntilReask() == 0) { // ZZ:DownloadManager (one re-ask timestamp for each file)
-					if (cur_src->socket && cur_src->socket->IsConnected() && cur_src->CheckHandshakeFinished() && cur_src->GetUploadState() != US_BANNED) {
+					if (cur_src->socket && cur_src->socket->IsConnected() && cur_src->CheckHandshakeFinished() && !cur_src->IsBanned()) {
 						// netfinity: Ask immediately if already connected and if allowed, or we may lose the source
 						cur_src->SetDownloadState(DS_CONNECTED);
 						cur_src->SetLastTriedToConnectTime();

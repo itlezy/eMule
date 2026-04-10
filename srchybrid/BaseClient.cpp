@@ -2352,6 +2352,9 @@ LPCTSTR CUpDownClient::DbgGetDownloadState() const
 
 LPCTSTR CUpDownClient::DbgGetUploadState() const
 {
+	if (IsBanned())
+		return _T("Banned");
+
 	static LPCTSTR const apszState[] =
 	{
 		_T("Uploading"),
@@ -2502,13 +2505,13 @@ CString CUpDownClient::GetDownloadStateDisplayString() const
 
 CString CUpDownClient::GetUploadStateDisplayString() const
 {
+	if (IsBanned())
+		return GetResString(IDS_BANNED);
+
 	UINT uid;
 	switch (GetUploadState()) {
 	case US_ONUPLOADQUEUE:
 		uid = IDS_ONQUEUE;
-		break;
-	case US_BANNED:
-		uid = IDS_BANNED;
 		break;
 	case US_CONNECTING:
 		uid = IDS_CONNECTING;

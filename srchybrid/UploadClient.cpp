@@ -717,6 +717,7 @@ void CUpDownClient::Ban(LPCTSTR pszReason)
 {
 	SetChatState(MS_NONE);
 	theApp.clientlist->AddTrackClient(this);
+	theApp.uploadqueue->HandleUploadSlotTeardown(this, pszReason ? pszReason : _T("Banned client"), true, true, true);
 	if (!IsBanned()) {
 		if (thePrefs.GetLogBannedClients())
 			AddDebugLogLine(false, _T("Banned: %s; %s"), pszReason == NULL ? _T("Aggressive behaviour") : pszReason, (LPCTSTR)DbgGetClientInfo());
@@ -728,7 +729,8 @@ void CUpDownClient::Ban(LPCTSTR pszReason)
 	}
 #endif
 	theApp.clientlist->AddBannedClient(GetIP());
-	SetUploadState(US_BANNED);
+	SetUploadState(US_NONE);
+	ClearWaitStartTime();
 	theApp.emuledlg->transferwnd->ShowQueueCount(theApp.uploadqueue->GetWaitingUserCount());
 	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(this);
 	if (socket != NULL && socket->IsConnected())
@@ -742,7 +744,7 @@ ULONGLONG CUpDownClient::GetWaitStartTime() const
 		return 0;
 	}
 	ULONGLONG dwResult = credits->GetSecureWaitStartTime(GetIP());
-	if (dwResult > m_dwUploadTime && IsDownloading()) {
+	if (dwResult > m_dwUploadTime && theApp.uploadqueue->IsClientUploadActive(this)) {
 		//this happens only if two clients with invalid securehash are in the queue - if at all
 		dwResult = m_dwUploadTime - 1;
 
