@@ -31,6 +31,7 @@
 #include "kademlia/kademlia/Error.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
+#include "kademlia/routing/RoutingZone.h"
 #include "kademlia/utils/UInt128.h"
 #include "PerfLog.h"
 #include "LastCommonRouteFinder.h"
@@ -290,6 +291,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bGuardClipboardPrompt()
 	, m_bAutoStart()
 	, m_bParityHarnessBootstrapIssued()
+	, m_tParityHarnessBootstrapLastAttempt()
 	, m_bParityHarnessReadyFileWritten()
 	, m_bParityHarnessShareIssued()
 	, m_bParityHarnessLinkWritten()
@@ -406,10 +408,22 @@ static CString NormalizeParityHarnessDirectoryArgument(const CString &strValue)
 
 void CemuleApp::ApplyPendingParityHarnessActions()
 {
-	if (m_bParityHarnessBootstrapIssued || m_strParityHarnessBootstrapPeers.IsEmpty())
+	if (m_strParityHarnessBootstrapPeers.IsEmpty())
 		return;
 
 	if (!Kademlia::CKademlia::IsRunning())
+		return;
+
+	Kademlia::CRoutingZone *pRoutingZone = Kademlia::CKademlia::GetRoutingZone();
+	if (Kademlia::CKademlia::IsConnected()
+		|| (pRoutingZone != NULL && pRoutingZone->GetNumContacts() > 0))
+	{
+		m_bParityHarnessBootstrapIssued = true;
+		return;
+	}
+
+	const time_t tNow = time(NULL);
+	if (m_bParityHarnessBootstrapIssued && tNow < m_tParityHarnessBootstrapLastAttempt + 5)
 		return;
 
 	int iStart = 0;
@@ -433,7 +447,7 @@ void CemuleApp::ApplyPendingParityHarnessActions()
 				const uint16 nPort = static_cast<uint16>(_tstoi(strPeer.Mid(iColon + 1)));
 				if (!strAddress.IsEmpty() && nPort > 0) {
 					Kademlia::CKademlia::Bootstrap(strAddress, nPort);
-					Log(_T("Parity harness bootstrap peer: %s"), (LPCTSTR)strPeer);
+					Log(_T("Parity harness bootstrap peer queued: %s"), (LPCTSTR)strPeer);
 				}
 			}
 		}
@@ -444,6 +458,7 @@ void CemuleApp::ApplyPendingParityHarnessActions()
 	}
 
 	m_bParityHarnessBootstrapIssued = true;
+	m_tParityHarnessBootstrapLastAttempt = tNow;
 }
 
 void CemuleApp::EmitParityHarnessReadyFile()

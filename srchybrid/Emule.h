@@ -240,6 +240,7 @@ protected:
 	bool		m_bGuardClipboardPrompt;
 	bool		m_bAutoStart;
 	bool		m_bParityHarnessBootstrapIssued;
+	time_t		m_tParityHarnessBootstrapLastAttempt;
 	bool		m_bParityHarnessReadyFileWritten;
 	bool		m_bParityHarnessShareIssued;
 	bool		m_bParityHarnessLinkWritten;
