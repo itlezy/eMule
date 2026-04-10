@@ -203,6 +203,8 @@ public:
 	bool		IsParityHarnessMode() const;
 	bool		IsParityHarnessSeedPublisher() const;
 	uint32		GetParityHarnessExportSourceIp() const;
+	bool		HasConfigRootOverride() const					{ return !m_strConfigRootOverride.IsEmpty(); }
+	const CString& GetConfigRootOverride() const				{ return m_strConfigRootOverride; }
 	void		ApplyPendingParityHarnessActions();
 	void		EmitParityHarnessReadyFile();
 	bool		ProcessPendingParityHarnessScenario();
@@ -210,6 +212,7 @@ public:
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
+	void ProcessEarlyCommandlineOverrides();
 	bool ProcessCommandline();
 	void SetTimeOnTransfer();
 	static BOOL CALLBACK SearchEmuleWindow(HWND hWnd, LPARAM lParam) noexcept;
@@ -241,6 +244,7 @@ protected:
 	bool		m_bParityHarnessShareIssued;
 	bool		m_bParityHarnessLinkWritten;
 	bool		m_bParityHarnessDownloadIssued;
+	CString		m_strConfigRootOverride;
 	CString		m_strParityHarnessBootstrapPeers;
 	CString		m_strParityHarnessReadyFile;
 	CString		m_strParityHarnessShareFile;

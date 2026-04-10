@@ -70,11 +70,6 @@ LPCTSTR GetOracleEd2kTcpFlow(const CUpDownClient *pClient)
 	return IsOracleFirewallHelperFlow(pClient) ? _T("udp_firewall_check") : _T("listener");
 }
 
-LPCTSTR GetOracleEd2kTcpPhase(const CUpDownClient *pClient, LPCTSTR pszDefaultPhase)
-{
-	return IsOracleFirewallHelperFlow(pClient) ? _T("hello_exchange") : pszDefaultPhase;
-}
-
 CString GetOracleEd2kPeerLabel(const CUpDownClient *pClient)
 {
 	CString strPeer;
@@ -93,9 +88,116 @@ LPCTSTR GetOracleEd2kTransportMode(const CUpDownClient *pClient)
 	return (pClient != NULL && pClient->IsObfuscatedConnectionEstablished()) ? _T("user_hash") : _T("plaintext");
 }
 
-void OracleEd2kDumpRecv(const CUpDownClient *pClient, uint8 byProtocol, uint8 byOpcode, const BYTE *pPacket, uint32 uPacketLen, LPCTSTR pszPhase)
+CString GetOracleEd2kPeerLabel(CClientReqSocket *pSocket, const CUpDownClient *pClient)
 {
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(pClient), pszPhase, _T("recv"), GetOracleEd2kPeerLabel(pClient), GetOracleEd2kTransportMode(pClient), byProtocol, byOpcode, pPacket, uPacketLen);
+	if (pClient != NULL)
+		return GetOracleEd2kPeerLabel(pClient);
+
+	CString strPeer(_T("unknown"));
+	if (pSocket == NULL)
+		return strPeer;
+
+	SOCKADDR_IN sockAddr = {};
+	int nSockAddrLen = sizeof sockAddr;
+	if (pSocket->GetPeerName(reinterpret_cast<LPSOCKADDR>(&sockAddr), &nSockAddrLen) == 0)
+		strPeer.Format(_T("%s:%u"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
+	return strPeer;
+}
+
+LPCTSTR GetOracleEd2kTransportMode(CClientReqSocket *pSocket, const CUpDownClient *pClient)
+{
+	if (pSocket != NULL && pSocket->IsObfusicating())
+		return _T("user_hash");
+	return GetOracleEd2kTransportMode(pClient);
+}
+
+LPCTSTR GetOracleEd2kRecvPhase(const CUpDownClient *pClient, uint8 byProtocol, uint8 byOpcode)
+{
+	// Preserve the dedicated firewall-helper labels; everything else falls back to the
+	// generic session trace so the dump captures every packet without per-opcode hooks.
+	if (byProtocol == OP_EMULEPROT && byOpcode == OP_FWCHECKUDPREQ)
+		return _T("fwcheck_request");
+	if (byProtocol == OP_EMULEPROT && byOpcode == OP_KAD_FWTCPCHECK_ACK)
+		return _T("fwcheck_ack");
+	if (IsOracleFirewallHelperFlow(pClient))
+		return _T("hello_exchange");
+	return _T("session");
+}
+
+LPCTSTR GetOracleEd2kSendPhase(const CUpDownClient *pClient, uint8 byProtocol, uint8 byOpcode)
+{
+	switch (byProtocol) {
+	case OP_EDONKEYPROT:
+		switch (byOpcode) {
+		case OP_HELLO:
+			return _T("hello_request");
+		case OP_HELLOANSWER:
+			return _T("hello_answer");
+		case OP_REQFILENAMEANSWER:
+			return _T("filename_answer");
+		case OP_FILESTATUS:
+			return _T("file_status");
+		}
+		break;
+	case OP_EMULEPROT:
+		switch (byOpcode) {
+		case OP_EMULEINFO:
+			return _T("mule_info");
+		case OP_EMULEINFOANSWER:
+			return _T("mule_info_answer");
+		case OP_PUBLICKEY:
+			return _T("public_key");
+		case OP_SIGNATURE:
+			return _T("signature");
+		case OP_SECIDENTSTATE:
+			return _T("secure_ident_probe");
+		case OP_FWCHECKUDPREQ:
+			return _T("fwcheck_request");
+		case OP_KAD_FWTCPCHECK_ACK:
+			return _T("fwcheck_ack");
+		}
+		break;
+	}
+
+	if (IsOracleFirewallHelperFlow(pClient))
+		return _T("hello_exchange");
+	return _T("session");
+}
+
+void OracleEd2kDumpRecv(CClientReqSocket *pSocket, const CUpDownClient *pClient, const Packet *pPacket)
+{
+	if (pPacket == NULL)
+		return;
+
+	// Dump the raw packet before higher-level handlers mutate or unpack it so the harness
+	// can compare the exact wire image against the Rust implementation.
+	OracleEd2kTcpDumpPacket(
+		GetOracleEd2kTcpFlow(pClient),
+		GetOracleEd2kRecvPhase(pClient, pPacket->prot, pPacket->opcode),
+		_T("recv"),
+		GetOracleEd2kPeerLabel(pSocket, pClient),
+		GetOracleEd2kTransportMode(pSocket, pClient),
+		pPacket->prot,
+		pPacket->opcode,
+		reinterpret_cast<const BYTE *>(pPacket->pBuffer),
+		pPacket->size);
+}
+
+void OracleEd2kDumpSend(CClientReqSocket *pSocket, const CUpDownClient *pClient, const Packet *pPacket)
+{
+	if (pPacket == NULL)
+		return;
+
+	OracleEd2kTcpDumpPacket(
+		GetOracleEd2kTcpFlow(pClient),
+		GetOracleEd2kSendPhase(pClient, pPacket->prot, pPacket->opcode),
+		_T("send"),
+		GetOracleEd2kPeerLabel(pSocket, pClient),
+		GetOracleEd2kTransportMode(pSocket, pClient),
+		pPacket->prot,
+		pPacket->opcode,
+		reinterpret_cast<const BYTE *>(pPacket->pBuffer),
+		pPacket->size);
 }
 }
 
@@ -263,7 +365,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 	case OP_HELLOANSWER:
 		theStats.AddDownDataOverheadOther(size);
 		client->ProcessHelloAnswer(packet, size);
-		OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_HELLOANSWER, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		if (thePrefs.GetDebugClientTCPLevel() > 0) {
 			DebugRecv("OP_HelloAnswer", client);
 			Debug(_T("  %s\n"), (LPCTSTR)client->DbgGetClientInfo());
@@ -320,8 +421,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 
 			theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(client);
 
-			OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_HELLO, packet, size, _T("session"));
-
 			// send a response packet with standard informations
 			const bool bSendMuleInfo = client->GetHashType() == SO_EMULE && !bIsMuleHello;
 #ifdef _DEBUG
@@ -356,7 +455,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 		return;
 	case OP_REQUESTFILENAME:
 		{
-			OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_REQUESTFILENAME, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 			if (thePrefs.GetDebugClientTCPLevel() > 0)
 				DebugRecv("OP_FileRequest", client, (size >= 16) ? packet : NULL);
 			theStats.AddDownDataOverheadFileRequest(size);
@@ -405,7 +503,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				data_out.WriteString(reqfile->GetFileName(), client->GetUnicodeSupport());
 				Packet *packet1 = new Packet(data_out);
 				packet1->opcode = OP_REQFILENAMEANSWER;
-				OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(client), _T("filename_answer"), _T("send"), GetOracleEd2kPeerLabel(client), GetOracleEd2kTransportMode(client), packet1->prot, packet1->opcode, reinterpret_cast<const BYTE *>(packet1->pBuffer), packet1->size);
 				if (thePrefs.GetDebugClientTCPLevel() > 0)
 					DebugSend("OP_FileReqAnswer", client, reqfile->GetFileHash());
 				theStats.AddUpDataOverheadFileRequest(packet1->size);
@@ -425,7 +522,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 		return;
 	case OP_SETREQFILEID:
 		{
-			OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_SETREQFILEID, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 			if (thePrefs.GetDebugClientTCPLevel() > 0)
 				DebugRecv("OP_SetReqFileID", client, (size >= 16) ? packet : NULL);
 			theStats.AddDownDataOverheadFileRequest(size);
@@ -458,7 +554,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 					data.WriteUInt16(0);
 				Packet *packet2 = new Packet(data);
 				packet2->opcode = OP_FILESTATUS;
-				OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(client), _T("file_status"), _T("send"), GetOracleEd2kPeerLabel(client), GetOracleEd2kTransportMode(client), packet2->prot, packet2->opcode, reinterpret_cast<const BYTE *>(packet2->pBuffer), packet2->size);
 				if (thePrefs.GetDebugClientTCPLevel() > 0)
 					DebugSend("OP_FileStatus", client, reqfile->GetFileHash());
 				theStats.AddUpDataOverheadFileRequest(packet2->size);
@@ -532,7 +627,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 		}
 		return;
 	case OP_STARTUPLOADREQ:
-		OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_STARTUPLOADREQ, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugRecv("OP_StartUpLoadReq", client, (size >= 16) ? packet : NULL);
 		theStats.AddDownDataOverheadFileRequest(size);
@@ -567,7 +661,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 		return;
 	case OP_REQUESTPARTS:
 		{
-			OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_REQUESTPARTS, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 			// see also OP_REQUESTPARTS_I64
 			if (thePrefs.GetDebugClientTCPLevel() > 0)
 				DebugRecv("OP_RequestParts", client, (size >= 16) ? packet : NULL);
@@ -615,7 +708,6 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			client->CheckFailedFileIdReqs(packet);
 		return;
 	case OP_HASHSETREQUEST:
-		OracleEd2kDumpRecv(client, OP_EDONKEYPROT, OP_HASHSETREQUEST, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugRecv("OP_HashSetReq", client, (size >= 16) ? packet : NULL);
 		theStats.AddDownDataOverheadFileRequest(size);
@@ -1174,7 +1266,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 	case OP_EMULEINFO:
 		theStats.AddDownDataOverheadOther(uRawSize);
 		client->ProcessMuleInfoPacket(packet, size);
-		OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_EMULEINFO, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		if (thePrefs.GetDebugClientTCPLevel() > 0) {
 			DebugRecv("OP_EmuleInfo", client);
 			Debug(_T("  %s\n"), (LPCTSTR)client->DbgGetMuleInfo());
@@ -1190,7 +1281,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 	case OP_EMULEINFOANSWER:
 		theStats.AddDownDataOverheadOther(uRawSize);
 		client->ProcessMuleInfoPacket(packet, size);
-		OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_EMULEINFOANSWER, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		if (thePrefs.GetDebugClientTCPLevel() > 0) {
 			DebugRecv("OP_EmuleInfoAnswer", client);
 			Debug(_T("  %s\n"), (LPCTSTR)client->DbgGetMuleInfo());
@@ -1206,7 +1296,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 			DebugRecv("OP_SecIdentState", client);
 		theStats.AddDownDataOverheadOther(uRawSize);
 
-		OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_SECIDENTSTATE, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		client->ProcessSecIdentStatePacket(packet, size);
 		if (client->GetSecureIdentState() == IS_SIGNATURENEEDED)
 			client->SendSignaturePacket();
@@ -1220,7 +1309,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 			DebugRecv("OP_PublicKey", client);
 		theStats.AddDownDataOverheadOther(uRawSize);
 
-		OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_PUBLICKEY, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		client->ProcessPublicKeyPacket(packet, size);
 		return;
 	case OP_SIGNATURE:
@@ -1228,7 +1316,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 			DebugRecv("OP_Signature", client);
 		theStats.AddDownDataOverheadOther(uRawSize);
 
-		OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_SIGNATURE, packet, size, GetOracleEd2kTcpPhase(client, _T("session")));
 		client->ProcessSignaturePacket(packet, size);
 		return;
 	case OP_QUEUERANKING:
@@ -1695,7 +1782,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 			// Kad related packet
 			if (thePrefs.GetDebugClientTCPLevel() > 0)
 				DebugRecv("OP_FWCHECKUDPREQ", client);
-			OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_FWCHECKUDPREQ, packet, size, _T("fwcheck_request"));
 			theStats.AddDownDataOverheadOther(uRawSize);
 			CSafeMemFile data(packet, size);
 			client->ProcessFirewallCheckUDPRequest(data);
@@ -1705,7 +1791,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 		// Kad related packet, replaces KADEMLIA_FIREWALLED_ACK_RES
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugRecv("OP_KAD_FWTCPCHECK_ACK", client);
-		OracleEd2kDumpRecv(client, OP_EMULEPROT, OP_KAD_FWTCPCHECK_ACK, packet, size, _T("fwcheck_ack"));
 		if (theApp.clientlist->IsKadFirewallCheckIP(client->GetIP())) {
 			if (Kademlia::CKademlia::IsRunning())
 				Kademlia::CKademlia::GetPrefs()->IncFirewalled();
@@ -1810,6 +1895,7 @@ bool CClientReqSocket::PacketReceived(Packet *packet)
 	bool bDelClient;
 	try {
 		try {
+			OracleEd2kDumpRecv(this, client, packet);
 			switch (packet->prot) {
 			case OP_EDONKEYPROT:
 				if (client) {
@@ -1920,6 +2006,7 @@ SocketSentBytes CClientReqSocket::SendFileAndControlData(uint32 maxNumberOfBytes
 void CClientReqSocket::SendPacket(Packet *packet, bool controlpacket, uint32 actualPayloadSize, bool bForceImmediateSend)
 {
 	ResetTimeOutTimer();
+	OracleEd2kDumpSend(this, client, packet);
 	CEMSocket::SendPacket(packet, controlpacket, actualPayloadSize, bForceImmediateSend);
 }
 

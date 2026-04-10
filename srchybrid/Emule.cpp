@@ -392,6 +392,18 @@ uint32 CemuleApp::GetParityHarnessExportSourceIp() const
 	return ntohl(rawIp);
 }
 
+static CString NormalizeParityHarnessDirectoryArgument(const CString &strValue)
+{
+	CString strNormalized(strValue);
+	strNormalized.Trim();
+	strNormalized.Trim(_T("\""));
+	strNormalized.Replace(_T('/'), _T('\\'));
+	if (!strNormalized.IsEmpty() && strNormalized.Right(1) != _T("\\"))
+		strNormalized += _T("\\");
+
+	return strNormalized;
+}
+
 void CemuleApp::ApplyPendingParityHarnessActions()
 {
 	if (m_bParityHarnessBootstrapIssued || m_strParityHarnessBootstrapPeers.IsEmpty())
@@ -443,12 +455,27 @@ void CemuleApp::EmitParityHarnessReadyFile()
 	if (pFile == NULL)
 		return;
 
-	const CString strProfile(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR, false));
+	const CString strConfigDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR, false));
+	const CString strProfileRoot(thePrefs.GetMuleDirectory(EMULE_CONFIGBASEDIR, false));
+	const CString strLogDir(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false));
+	const CString strBindAddr(thePrefs.GetBindAddr() != NULL ? thePrefs.GetBindAddr() : _T(""));
 	_ftprintf(pFile, _T("state=ready\n"));
 	_ftprintf(pFile, _T("pid=%lu\n"), ::GetCurrentProcessId());
 	_ftprintf(pFile, _T("tcp_port=%u\n"), thePrefs.GetPort());
 	_ftprintf(pFile, _T("udp_port=%u\n"), thePrefs.GetUDPPort());
-	_ftprintf(pFile, _T("profile=%s\n"), (LPCTSTR)strProfile);
+	_ftprintf(pFile, _T("server_udp_port=%u\n"), thePrefs.GetServerUDPPort());
+	_ftprintf(pFile, _T("network_ed2k=%u\n"), thePrefs.GetNetworkED2K() ? 1 : 0);
+	_ftprintf(pFile, _T("network_kademlia=%u\n"), thePrefs.GetNetworkKademlia() ? 1 : 0);
+	_ftprintf(pFile, _T("autoconnect=%u\n"), thePrefs.DoAutoConnect() ? 1 : 0);
+	_ftprintf(pFile, _T("crypt_layer_supported=%u\n"), thePrefs.IsCryptLayerEnabled() ? 1 : 0);
+	_ftprintf(pFile, _T("crypt_layer_preferred=%u\n"), thePrefs.IsCryptLayerPreferred() ? 1 : 0);
+	_ftprintf(pFile, _T("crypt_layer_required=%u\n"), thePrefs.IsCryptLayerRequired() ? 1 : 0);
+	_ftprintf(pFile, _T("parity_mode=%u\n"), IsParityHarnessMode() ? 1 : 0);
+	_ftprintf(pFile, _T("bind_addr=%s\n"), (LPCTSTR)strBindAddr);
+	_ftprintf(pFile, _T("profile_root=%s\n"), (LPCTSTR)strProfileRoot);
+	_ftprintf(pFile, _T("config_dir=%s\n"), (LPCTSTR)strConfigDir);
+	_ftprintf(pFile, _T("log_dir=%s\n"), (LPCTSTR)strLogDir);
+	_ftprintf(pFile, _T("profile=%s\n"), (LPCTSTR)strConfigDir);
 	fclose(pFile);
 	m_bParityHarnessReadyFileWritten = true;
 }
@@ -562,6 +589,16 @@ static bool TryParseNamedArgument(int &i, LPCTSTR pszLongName, LPCTSTR pszShortN
 	return false;
 }
 
+void CemuleApp::ProcessEarlyCommandlineOverrides()
+{
+	for (int i = 1; i < __argc; ++i) {
+		CString strConfigRoot;
+		if (TryParseNamedArgument(i, _T("configdir"), _T("c"), strConfigRoot)) {
+			m_strConfigRootOverride = NormalizeParityHarnessDirectoryArgument(strConfigRoot);
+			break;
+		}
+	}
+}
 
 CemuleApp theApp(_T("eMule"));
 
@@ -622,6 +659,7 @@ BOOL CemuleApp::InitInstance()
 	// output all ASSERT messages to debug device
 	_CrtSetReportMode(_CRT_ASSERT, _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_REPORT_MODE) | _CRTDBG_MODE_DEBUG);
 #endif
+	ProcessEarlyCommandlineOverrides();
 	free((void*)m_pszProfileName);
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	m_pszProfileName = _tcsdup(sConfDir + _T("preferences.ini"));
@@ -912,6 +950,11 @@ bool CemuleApp::ProcessCommandline()
 {
 	bool bIgnoreRunningInstances = (GetProfileInt(_T("eMule"), _T("IgnoreInstances"), 0) != 0);
 	for (int i = 1; i < __argc; ++i) {
+		CString strConfigRoot;
+		if (TryParseNamedArgument(i, _T("configdir"), _T("c"), strConfigRoot)) {
+			m_strConfigRootOverride = NormalizeParityHarnessDirectoryArgument(strConfigRoot);
+			continue;
+		}
 		CString strBootstrapPeers;
 		if (TryParseNamedArgument(i, _T("bootstrap"), _T("b"), strBootstrapPeers)) {
 			m_strParityHarnessBootstrapPeers = strBootstrapPeers;
