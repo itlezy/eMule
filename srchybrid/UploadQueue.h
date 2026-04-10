@@ -269,9 +269,11 @@ private:
 	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);
 	void	TrackExternalQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const;
 	void	RecordExternalQueueRequestStat(CUpDownClient *client) const;
-	bool	HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client, uint16 cSameIP) const;
+	uint16	GetQueuedSameIPCount(const CUpDownClient *client) const;
+	bool	HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client) const;
 	bool	RefreshQueuedClient(CUpDownClient *client);
-	bool	ResolveExternalQueueConflicts(CUpDownClient *client, uint16 &cSameIP);
+	void	DropQueuedDuplicateClient(CUpDownClient *client, LPCTSTR disconnectReason);
+	bool	ResolveExternalQueueConflicts(CUpDownClient *client);
 	bool	TryAcceptActiveUploadRequest(CUpDownClient *client) const;
 	bool	AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediateActivationReason);
 	bool	RequeueClientAfterUploadSession(CUpDownClient *client);

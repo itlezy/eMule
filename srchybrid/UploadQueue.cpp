@@ -533,9 +533,19 @@ void CUploadQueue::RecordExternalQueueRequestStat(CUpDownClient *client) const
 		reqfile->statistic.AddRequest();
 }
 
-bool CUploadQueue::HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client, uint16 cSameIP) const
+uint16 CUploadQueue::GetQueuedSameIPCount(const CUpDownClient *client) const
 {
-	if (cSameIP >= 3) {
+	if (client == NULL || client->GetIP() == 0)
+		return 0;
+
+	const auto ipIt = m_waitingClientsByIP.find(client->GetIP());
+	return (ipIt != m_waitingClientsByIP.cend()) ? static_cast<uint16>(ipIt->second.size()) : 0;
+}
+
+bool CUploadQueue::HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client) const
+{
+	const uint16 sameIPCount = GetQueuedSameIPCount(client);
+	if (sameIPCount >= 3) {
 		if (thePrefs.GetVerbose())
 			DEBUG_ONLY(AddDebugLogLine(false, _T("%s's (%s) request to enter the queue was rejected, because of too many clients with the same IP"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP())));
 		return true;
@@ -562,7 +572,14 @@ bool CUploadQueue::RefreshQueuedClient(CUpDownClient *client)
 	return true;
 }
 
-bool CUploadQueue::ResolveExternalQueueConflicts(CUpDownClient *client, uint16 &cSameIP)
+void CUploadQueue::DropQueuedDuplicateClient(CUpDownClient *client, LPCTSTR disconnectReason)
+{
+	RemoveWaitingClient(client, true);
+	if (!client->socket && client->Disconnected(disconnectReason))
+		delete client;
+}
+
+bool CUploadQueue::ResolveExternalQueueConflicts(CUpDownClient *client)
 {
 	if (HasWaitingMember(client))
 		return RefreshQueuedClient(client);
@@ -585,23 +602,13 @@ bool CUploadQueue::ResolveExternalQueueConflicts(CUpDownClient *client, uint16 &
 			if (client->credits == NULL || client->credits->GetCurrentIdentState(client->GetIP()) != IS_IDENTIFIED) {
 				if (thePrefs.GetVerbose())
 					AddDebugLogLine(false, (LPCTSTR)GetResString(IDS_SAMEUSERHASH), client->GetUserName(), cur_client->GetUserName(), _T("Both"));
-				RemoveWaitingClient(cur_client, true);
-				if (!cur_client->socket && cur_client->Disconnected(_T("AddClientToQueue - same userhash 2")))
-					delete cur_client;
+				DropQueuedDuplicateClient(cur_client, _T("AddClientToQueue - same userhash 2"));
 				return true;
 			}
 			if (thePrefs.GetVerbose())
 				AddDebugLogLine(false, (LPCTSTR)GetResString(IDS_SAMEUSERHASH), client->GetUserName(), cur_client->GetUserName(), cur_client->GetUserName());
-			RemoveWaitingClient(cur_client, true);
-			if (!cur_client->socket && cur_client->Disconnected(_T("AddClientToQueue - same userhash 1")))
-				delete cur_client;
+			DropQueuedDuplicateClient(cur_client, _T("AddClientToQueue - same userhash 1"));
 		}
-	}
-
-	if (client->GetIP() != 0) {
-		const auto ipIt = m_waitingClientsByIP.find(client->GetIP());
-		if (ipIt != m_waitingClientsByIP.cend())
-			cSameIP = static_cast<uint16>(ipIt->second.size());
 	}
 	return false;
 }
@@ -1443,11 +1450,10 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 	TrackExternalQueueRequest(client, bIgnoreTimelimit);
 	if (client->IsBanned())
 		return;
-	uint16 cSameIP = 0;
-	if (ResolveExternalQueueConflicts(client, cSameIP))
+	if (ResolveExternalQueueConflicts(client))
 		return;
 
-	if (HasTooManyQueuedClientsFromSameIP(client, cSameIP))
+	if (HasTooManyQueuedClientsFromSameIP(client))
 		return;
 
 	RecordExternalQueueRequestStat(client);
