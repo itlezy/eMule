@@ -67,6 +67,12 @@ extern LPCWSTR g_awszInvKadKeywordChars;
 
 using namespace Kademlia;
 
+static bool IsParityHarnessLoopbackPeer(uint32 uIP)
+{
+	return theApp.IsParityHarnessMode()
+		&& (uIP & 0xFF000000) == 0x7F000000;
+}
+
 CKademliaUDPListener::~CKademliaUDPListener()
 {
 // report timeout to all pending FetchNodeIDRequests
@@ -479,7 +485,7 @@ bool CKademliaUDPListener::AddContact_KADEMLIA2(const byte *pbyData, uint32 uLen
 		CKademlia::GetPrefs()->StatsIncTCPFirewalledNodes(bTCPFirewalled);
 	}
 
-	if (!bUDPFirewalled) // do not add (or update) UDP firewalled sources to our routing table
+	if (!bUDPFirewalled || IsParityHarnessLoopbackPeer(uIP)) // parity harness loopback peers need routing-table presence even while the local firewall probe is still pending
 		return CKademlia::GetRoutingZone()->Add(uID, uIP, uUDPPort, uTCPPort, uVersion, cUDPKey, rbIPVerified, bUpdate, false, true);
 
 	//DEBUG_ONLY( AddDebugLogLine(DLP_LOW, false, _T("Kad: Not adding firewalled client to routing table (%s)"), (LPCTSTR)ipstr(htonl(uIP))) );

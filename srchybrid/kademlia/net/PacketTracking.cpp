@@ -30,6 +30,12 @@ static char THIS_FILE[] = __FILE__;
 
 using namespace Kademlia;
 
+static bool IsParityHarnessLoopbackPeer(uint32 uIP)
+{
+    return theApp.IsParityHarnessMode()
+        && (uIP & 0xFF000000) == 0x7F000000;
+}
+
 CPacketTracking::CPacketTracking()
 	: dwLastTrackInCleanup()
 {
@@ -181,6 +187,8 @@ int CPacketTracking::InTrackListIsAllowedPacket(uint32 uIP, uint8 byOpcode, bool
 		pTrackEntry->m_dwLastExpire = max(pTrackEntry->m_dwLastExpire, curTick + abs(TrackedRequest.m_tokens) + token);
 
 		if (CKademlia::IsRunningInLANMode() && IsLANIP(ntohl(uIP))) // no flood detection in LanMode
+			return 0;
+		if (IsParityHarnessLoopbackPeer(uIP))
 			return 0;
 
 		// now the actual check if this request is allowed
