@@ -64,7 +64,7 @@ public:
 
 	void	Process();
 	void	AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit = false);
-	bool	RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReason = NULL, bool updatewindow = true, bool earlyabort = false);
+	bool	HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason = NULL, bool removeWaiting = false, bool updatewindow = true, bool earlyabort = false);
 	bool	RemoveFromWaitingQueue(CUpDownClient *client, bool updatewindow = true);
 	bool	IsOnUploadQueue(CUpDownClient *client)	const	{ return (waitinglist.Find(client) != 0); }
 	bool	IsDownloading(const CUpDownClient *client)	const { return (GetUploadingClientStructByClient(client) != NULL); }
@@ -99,7 +99,8 @@ public:
 	void	DeleteAll();
 	UINT	GetWaitingPosition(CUpDownClient *client);
 	bool	IsReconnectReserved(const CUpDownClient *client) const;
-	void	OnUploadSlotReady(CUpDownClient *client);
+	bool	HasCollectionUploadSlot(const CUpDownClient *client) const;
+	bool	CompleteUploadActivation(CUpDownClient *client);
 
 	uint32	GetSuccessfullUpCount() const					{ return successfullupcount; }
 	uint32	GetFailedUpCount() const						{ return failedupcount; }
@@ -143,6 +144,7 @@ private:
 	struct UploadSlotPhaseState
 	{
 		EUploadSlotPhase phase = EUploadSlotPhase::None;
+		bool collectionSlot = false;
 	};
 
 	/** Reasons for ending an active upload slot. */
@@ -167,12 +169,15 @@ private:
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
 	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
+	void	SetCollectionUploadSlot(CUpDownClient *client, bool bValue);
 	void	ClearUploadSlotPhase(CUpDownClient *client);
 	void	UpdateReconnectReservation(CUpDownClient *reservedClient);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
 	bool	ActivateUploadClient(CUpDownClient *client, LPCTSTR pszReason, bool bRemoveFromWaitingQueue);
+	/** Removes an active upload slot and performs all associated side effects. */
+	bool	RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReason = NULL, bool updatewindow = true, bool earlyabort = false);
 	/** Captures the scheduler inputs used for one admission or retention decision. */
 	UploadSchedulingSnapshot CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const;
 	/** Removes an active upload slot and requeues the client when requested. */

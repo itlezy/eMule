@@ -124,7 +124,6 @@ void CUpDownClient::Init()
 	m_Friend = NULL;
 	m_abyUpPartStatus = NULL;
 	m_lastPartAsked = _UI16_MAX;
-	m_bAddNextConnect = false;
 
 	if (socket) {
 		SOCKADDR_IN sockAddr = {};
@@ -212,7 +211,6 @@ void CUpDownClient::Init()
 	m_ullSlowUploadCooldownUntil = 0;
 	md4clr(requpfileid);
 	m_slotNumber = 0;
-	m_bCollectionUploadSlot = false;
 
 	m_pReqFileAICHHash = NULL;
 	m_cDownAsked = 0;
@@ -1149,7 +1147,7 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 
 	if (GetUploadState() == US_UPLOADING || GetUploadState() == US_CONNECTING)
 		// sets US_NONE
-		theApp.uploadqueue->RemoveFromUploadQueue(this, CString(_T("CUpDownClient::Disconnected: ")) + pszReason);
+		theApp.uploadqueue->HandleUploadSlotTeardown(this, CString(_T("CUpDownClient::Disconnected: ")) + pszReason);
 
 	if (GetDownloadState() == DS_DOWNLOADING) {
 		ASSERT(m_eConnectingState == CCS_NONE);
@@ -1572,13 +1570,7 @@ void CUpDownClient::ConnectionEstablished()
 	}
 
 	if (GetUploadState() == US_CONNECTING && theApp.uploadqueue->IsDownloading(this)) {
-		SetUploadState(US_UPLOADING);
-		theApp.uploadqueue->OnUploadSlotReady(this);
-		if (thePrefs.GetDebugClientTCPLevel() > 0)
-			DebugSend("OP_AcceptUploadReq", this);
-		Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
-		theStats.AddUpDataOverheadFileRequest(packet->size);
-		SendPacket(packet);
+		theApp.uploadqueue->CompleteUploadActivation(this);
 	}
 
 	if (m_iFileListRequested == 1) {
@@ -2325,7 +2317,6 @@ void CUpDownClient::AssertValid() const
 	ASSERT(m_eChatstate >= MS_NONE && m_eChatstate <= MS_UNABLETOCONNECT);
 	(void)m_strFileComment;
 	(void)m_uFileRating;
-	CHECK_BOOL(m_bCollectionUploadSlot);
 #undef CHECK_PTR
 #undef CHECK_BOOL
 }

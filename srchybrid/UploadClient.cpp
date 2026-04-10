@@ -346,7 +346,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			return;
 		}
 
-		if (HasCollectionUploadSlot()) {
+		if (theApp.uploadqueue->HasCollectionUploadSlot(this)) {
 			CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(reqblock->FileID);
 			if (pDownloadingFile != NULL) {
 				if (!CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) || pDownloadingFile->GetFileSize() > (uint64)MAXPRIORITYCOLL_SIZE) {
@@ -782,10 +782,4 @@ CEMSocket* CUpDownClient::GetFileUploadSocket(bool bLog)
 	if (bLog && thePrefs.GetVerbose())
 		AddDebugLogLine(false, _T("%s got normal socket."), (LPCTSTR)DbgGetClientInfo());
 	return socket;
-}
-
-void CUpDownClient::SetCollectionUploadSlot(bool bValue)
-{
-	ASSERT(!IsDownloading() || bValue == m_bCollectionUploadSlot);
-	m_bCollectionUploadSlot = bValue;
 }

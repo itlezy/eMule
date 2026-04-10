@@ -161,8 +161,7 @@ void CClientList::RemoveClient(CUpDownClient *toremove, LPCTSTR pszReason)
 {
 	POSITION pos = list.Find(toremove);
 	if (pos) {
-		theApp.uploadqueue->RemoveFromUploadQueue(toremove, CString(_T("CClientList::RemoveClient: ")) + pszReason);
-		theApp.uploadqueue->RemoveFromWaitingQueue(toremove);
+		theApp.uploadqueue->HandleUploadSlotTeardown(toremove, CString(_T("CClientList::RemoveClient: ")) + pszReason, true);
 		theApp.downloadqueue->RemoveSource(toremove);
 		theApp.emuledlg->transferwnd->GetClientList()->RemoveClient(toremove);
 		list.RemoveAt(pos);

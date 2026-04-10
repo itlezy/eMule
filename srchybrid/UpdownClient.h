@@ -253,8 +253,6 @@ public:
 	void			FlushSendBlocks(); // call this when you stop upload, or the socket might be not able to send
 	ULONGLONG		GetLastUpRequest() const						{ return m_dwLastUpRequest; }
 	void			SetLastUpRequest()								{ m_dwLastUpRequest = ::GetTickCount64(); }
-	void			SetCollectionUploadSlot(bool bValue);
-	bool			HasCollectionUploadSlot() const					{ return m_bCollectionUploadSlot; }
 	void			ResetSlowUploadTracking();
 	void			UpdateSlowUploadTracking(ULONGLONG curTick, uint32 slowThresholdBytesPerSec);
 	bool			ShouldRecycleSlowUpload(UINT slowGraceMs, UINT zeroGraceMs) const;
@@ -451,7 +449,6 @@ public:
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherRequests_list;
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherNoNeeded_list;
 	uint16			m_lastPartAsked;
-	bool			m_bAddNextConnect;
 
 	void			SetSlotNumber(UINT newValue)					{ m_slotNumber = newValue; }
 	UINT			GetSlotNumber() const							{ return m_slotNumber; }
@@ -555,7 +552,6 @@ protected:
 	//
 	int GetFilePrioAsNumber() const;
 
-	bool		m_bCollectionUploadSlot;
 	uint16		m_nUpPartCount;
 	uint16		m_nUpCompleteSourcesCount;
 

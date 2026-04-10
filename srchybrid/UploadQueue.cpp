@@ -186,21 +186,47 @@ bool CUploadQueue::IsReconnectReserved(const CUpDownClient *client) const
 	return GetUploadSlotPhase(client) == EUploadSlotPhase::ReservedForReconnect;
 }
 
+bool CUploadQueue::HasCollectionUploadSlot(const CUpDownClient *client) const
+{
+	const auto it = m_uploadSlotPhaseStates.find(client);
+	return it != m_uploadSlotPhaseStates.cend() && it->second.collectionSlot;
+}
+
 void CUploadQueue::SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase)
 {
 	if (phase == EUploadSlotPhase::None) {
-		ClearUploadSlotPhase(client);
+		const auto it = m_uploadSlotPhaseStates.find(client);
+		if (it == m_uploadSlotPhaseStates.end())
+			return;
+		if (it->second.collectionSlot)
+			it->second.phase = EUploadSlotPhase::None;
+		else
+			m_uploadSlotPhaseStates.erase(it);
 		return;
 	}
 
 	m_uploadSlotPhaseStates[client].phase = phase;
-	client->m_bAddNextConnect = (phase == EUploadSlotPhase::ReservedForReconnect);
+}
+
+void CUploadQueue::SetCollectionUploadSlot(CUpDownClient *client, bool bValue)
+{
+	if (bValue) {
+		m_uploadSlotPhaseStates[client].collectionSlot = true;
+		return;
+	}
+
+	const auto it = m_uploadSlotPhaseStates.find(client);
+	if (it == m_uploadSlotPhaseStates.end())
+		return;
+	if (it->second.phase == EUploadSlotPhase::None)
+		m_uploadSlotPhaseStates.erase(it);
+	else
+		it->second.collectionSlot = false;
 }
 
 void CUploadQueue::ClearUploadSlotPhase(CUpDownClient *client)
 {
 	m_uploadSlotPhaseStates.erase(client);
-	client->m_bAddNextConnect = false;
 }
 
 void CUploadQueue::UpdateReconnectReservation(CUpDownClient *reservedClient)
@@ -226,8 +252,6 @@ void CUploadQueue::InsertInUploadingList(CUpDownClient *newclient, bool bNoLocki
 
 void CUploadQueue::InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking)
 {
-	//Lets make sure any client that is added to the list has the legacy reconnect flag reset.
-	pNewClientUploadStruct->m_pClient->m_bAddNextConnect = false;
 	// Add it last
 	theApp.uploadBandwidthThrottler->AddToStandardList(uploadinglist.GetCount(), pNewClientUploadStruct->m_pClient->GetFileUploadSocket());
 
@@ -265,13 +289,11 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 			return false;
 		}
 	} else {
-		SetUploadSlotPhase(newclient, EUploadSlotPhase::Active);
-		if (thePrefs.GetDebugClientTCPLevel() > 0)
-			DebugSend("OP_AcceptUploadReq", newclient);
-		Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
-		theStats.AddUpDataOverheadFileRequest(packet->size);
-		newclient->SendPacket(packet);
-		newclient->SetUploadState(US_UPLOADING);
+		if (!CompleteUploadActivation(newclient)) {
+			ClearUploadSlotPhase(newclient);
+			newclient->SetUploadState(US_NONE);
+			return false;
+		}
 	}
 	newclient->SetUpStartTime();
 	newclient->ResetSessionUp();
@@ -301,10 +323,20 @@ bool CUploadQueue::StartNextUpload(LPCTSTR pszReason)
 	return ActivateUploadClient(newclient, pszReason, true);
 }
 
-void CUploadQueue::OnUploadSlotReady(CUpDownClient *client)
+bool CUploadQueue::CompleteUploadActivation(CUpDownClient *client)
 {
-	if (GetUploadSlotPhase(client) == EUploadSlotPhase::Activating)
-		SetUploadSlotPhase(client, EUploadSlotPhase::Active);
+	if (client == NULL || client->socket == NULL || !client->socket->IsConnected() || !client->CheckHandshakeFinished())
+		return false;
+
+	SetUploadSlotPhase(client, EUploadSlotPhase::Active);
+	client->SetUploadState(US_UPLOADING);
+
+	if (thePrefs.GetDebugClientTCPLevel() > 0)
+		DebugSend("OP_AcceptUploadReq", client);
+	Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
+	theStats.AddUpDataOverheadFileRequest(packet->size);
+	client->SendPacket(packet);
+	return true;
 }
 
 void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
@@ -697,12 +729,12 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 	if (reqfile != NULL && CCollection::HasCollectionExtention(reqfile->GetFileName()) && reqfile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE
 		&& !client->IsDownloading() && client->socket != NULL && client->socket->IsConnected())
 	{
-		client->SetCollectionUploadSlot(true);
+		SetCollectionUploadSlot(client, true);
 		ActivateUploadClient(client, _T("Collection Priority Slot"), false);
 		return;
 	}
 
-	client->SetCollectionUploadSlot(false);
+	SetCollectionUploadSlot(client, false);
 
 	// cap the list
 	// the queue limit in prefs is only a soft limit. Hard limit is higher up to 25% to accept
@@ -745,6 +777,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 
 void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 {
+	SetCollectionUploadSlot(client, false);
 	SetUploadSlotPhase(client, EUploadSlotPhase::Waiting);
 	m_bStatisticsWaitingListDirty = true;
 	waitinglist.AddTail(client);
@@ -770,6 +803,15 @@ float CUploadQueue::GetAverageCombinedFilePrioAndCredit()
 	}
 
 	return m_fAverageCombinedFilePrioAndCredit;
+}
+
+bool CUploadQueue::HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason, bool removeWaiting, bool updatewindow, bool earlyabort)
+{
+	const bool removedUpload = RemoveFromUploadQueue(client, pszReason, updatewindow, earlyabort);
+	const bool removedWaiting = removeWaiting ? RemoveFromWaitingQueue(client, updatewindow) : false;
+	if (!removedUpload && !removedWaiting && removeWaiting)
+		ClearUploadSlotPhase(client);
+	return removedUpload || removedWaiting;
 }
 
 bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReason, bool updatewindow, bool earlyabort)
@@ -815,7 +857,6 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReaso
 
 			theApp.clientlist->AddTrackClient(client); // Keep track of this client
 			client->SetUploadState(US_NONE);
-			client->SetCollectionUploadSlot(false);
 			ClearUploadSlotPhase(client);
 
 			m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;
@@ -907,7 +948,7 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 
 	const bool bShouldOpenReplacementSlot = ShouldOpenUploadSlot(snapshot, false, false);
 
-	if (client->HasCollectionUploadSlot()) {
+	if (HasCollectionUploadSlot(client)) {
 		const CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
 		if (pDownloadingFile == NULL)
 			decision.shouldEnd = true;
