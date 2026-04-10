@@ -375,8 +375,11 @@ BOOL CemuleDlg::OnInitDialog()
 	}
 #endif
 
-	// temporary disable the 'startup minimized' option, otherwise no window will be shown at all
-	if (!thePrefs.IsFirstStart())
+	const bool bParityHarnessMode = theApp.IsParityHarnessMode();
+
+	// The tracing harness should come up in a ready-to-run state even if the
+	// profile is still missing normal first-run markers.
+	if (!thePrefs.IsFirstStart() || bParityHarnessMode)
 		m_bStartMinimized = thePrefs.GetStartMinimized() || theApp.DidWeAutoStart();
 
 	// show splash screen as early as possible to "entertain" user while starting emule up
@@ -434,7 +437,7 @@ BOOL CemuleDlg::OnInitDialog()
 	}
 
 	// set title
-	SetWindowText(_T("eMule v") + theApp.m_strCurVersionLong);
+	SetWindowText(_T("eMule harness v") + theApp.m_strCurVersionLong);
 
 	// Init taskbar notifier
 	m_wndTaskbarNotifier.CreateWnd(this);
@@ -613,7 +616,7 @@ BOOL CemuleDlg::OnInitDialog()
 	if (thePrefs.IsUPnPEnabled())
 		StartUPnP();
 
-	if (thePrefs.IsFirstStart()) {
+	if (thePrefs.IsFirstStart() && !bParityHarnessMode) {
 		// temporary disable the 'startup minimized' option, otherwise no window will be shown at all
 		m_bStartMinimized = false;
 		DestroySplash();
@@ -1135,7 +1138,7 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 	}
 	if (IsWindowVisible() && thePrefs.ShowRatesOnTitle()) {
 		CString szBuff;
-		szBuff.Format(_T("(U:%.1f D:%.1f) eMule v%s"), m_uUpDatarate / 1024.0f, m_uDownDatarate / 1024.0f, (LPCTSTR)theApp.m_strCurVersionLong);
+		szBuff.Format(_T("(U:%.1f D:%.1f) eMule harness v%s"), m_uUpDatarate / 1024.0f, m_uDownDatarate / 1024.0f, (LPCTSTR)theApp.m_strCurVersionLong);
 		SetWindowText(szBuff);
 	}
 	if (m_pMiniMule && m_pMiniMule->m_hWnd && m_pMiniMule->IsWindowVisible() && !m_pMiniMule->GetAutoClose() && !m_pMiniMule->IsInInitDialog())

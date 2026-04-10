@@ -725,7 +725,6 @@ void CUpDownClient::SendHelloPacket()
 	packet->opcode = OP_HELLO;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_Hello", this);
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("hello_request"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadOther(packet->size);
 	SendPacket(packet);
 
@@ -767,7 +766,6 @@ void CUpDownClient::SendMuleInfoPacket(bool bAnswer)
 
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend(bAnswer ? "OP_EmuleInfoAnswer" : "OP_EmuleInfo", this);
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), bAnswer ? _T("mule_info_answer") : _T("mule_info"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadOther(packet->size);
 	SendPacket(packet);
 }
@@ -940,7 +938,6 @@ void CUpDownClient::SendHelloAnswer()
 	packet->opcode = OP_HELLOANSWER;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_HelloAnswer", this);
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("hello_answer"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadOther(packet->size);
 
 	// Servers send a FIN right in the data packet on check connection, so we need to force the response immediate
@@ -1879,7 +1876,6 @@ void CUpDownClient::SendPublicKeyPacket()
 	packet->pBuffer[0] = theApp.clientcredits->GetPubKeyLen();
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_PublicKey", this);
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("public_key"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	SendPacket(packet);
 	m_SecureIdentState = IS_SIGNATURENEEDED;
 }
@@ -1935,7 +1931,6 @@ void CUpDownClient::SendSignaturePacket()
 		packet->pBuffer[1 + siglen] = byChaIPKind;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_Signature", this);
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("signature"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	SendPacket(packet);
 	m_SecureIdentState = IS_ALLREQUESTSSEND;
 }
@@ -2048,7 +2043,6 @@ void CUpDownClient::SendSecIdentStatePacket()
 		PokeUInt32(&packet->pBuffer[1], dwRandom);
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP_SecIdentState", this);
-		OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("secure_ident_probe"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 		SendPacket(packet);
 	} else
 		ASSERT(0);
@@ -2908,7 +2902,6 @@ void CUpDownClient::SendFirewallCheckUDPRequest()
 	data.WriteUInt16(Kademlia::CKademlia::GetPrefs()->GetExternalKadPort());
 	data.WriteUInt32(Kademlia::CKademlia::GetPrefs()->GetUDPVerifyKey(GetConnectIP()));
 	Packet *packet = new Packet(data, OP_EMULEPROT, OP_FWCHECKUDPREQ);
-	OracleEd2kTcpDumpPacket(GetOracleEd2kTcpFlow(this), _T("fwcheck_request"), _T("send"), GetOracleEd2kPeerLabel(this), (socket != NULL && socket->IsObfusicating()) ? _T("user_hash") : _T("plaintext"), packet->prot, packet->opcode, reinterpret_cast<const BYTE *>(packet->pBuffer), packet->size);
 	theStats.AddUpDataOverheadKad(packet->size);
 	SafeConnectAndSendPacket(packet);
 }
