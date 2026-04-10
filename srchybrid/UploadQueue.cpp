@@ -44,6 +44,7 @@
 #include "Log.h"
 #include "collection.h"
 #include <algorithm>
+#include <unordered_set>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -148,6 +149,14 @@ bool CUploadQueue::ShouldRejectLowIdQueueRequest(const CUpDownClient *client) co
 		&& GetWaitingUserCount() > 50;
 }
 
+CUploadQueue::WaitingUserHashKey CUploadQueue::MakeWaitingUserHashKey(const CUpDownClient *client)
+{
+	WaitingUserHashKey key;
+	if (client != NULL && client->HasValidHash())
+		md4cpy(key.bytes.data(), client->GetUserHash());
+	return key;
+}
+
 float CUploadQueue::GetWaitingClientCreditFactor(const CUpDownClient *client) const
 {
 	if (!thePrefs.UseCreditSystem() || client == NULL || client->Credits() == NULL)
@@ -227,6 +236,79 @@ void CUploadQueue::PublishWaitingSnapshot()
 	m_waitingSnapshot = snapshot;
 }
 
+void CUploadQueue::RebuildWaitingIndexes()
+{
+	m_waitingClientIndexes.clear();
+	m_waitingClientsByIP.clear();
+	m_waitingClientsByUserPort.clear();
+	m_waitingClientsByKadPort.clear();
+	m_waitingClientsByHybridId.clear();
+	m_waitingClientsByHash.clear();
+
+	m_waitingClientIndexes.reserve(m_waitingClients.size());
+	for (size_t index = 0; index < m_waitingClients.size(); ++index) {
+		CUpDownClient *client = m_waitingClients[index];
+		if (client == NULL)
+			continue;
+
+		m_waitingClientIndexes[client] = index;
+
+		if (client->GetIP() != 0)
+			m_waitingClientsByIP[client->GetIP()].push_back(client);
+		if (client->GetUserPort() != 0)
+			m_waitingClientsByUserPort[client->GetUserPort()].push_back(client);
+		if (client->GetKadPort() != 0)
+			m_waitingClientsByKadPort[client->GetKadPort()].push_back(client);
+		if (client->GetUserIDHybrid() != 0)
+			m_waitingClientsByHybridId[client->GetUserIDHybrid()].push_back(client);
+		if (client->HasValidHash())
+			m_waitingClientsByHash[MakeWaitingUserHashKey(client)].push_back(client);
+	}
+}
+
+void CUploadQueue::CollectDuplicateWaitingCandidates(const CUpDownClient *client, std::vector<CUpDownClient*> &candidates) const
+{
+	candidates.clear();
+	if (client == NULL)
+		return;
+
+	std::unordered_set<CUpDownClient*> seen;
+	seen.reserve(m_waitingClients.size());
+
+	const auto appendBucket = [&candidates, &seen](const std::vector<CUpDownClient*> &bucket) {
+		for (CUpDownClient *candidate : bucket) {
+			if (candidate != NULL && seen.insert(candidate).second)
+				candidates.push_back(candidate);
+		}
+	};
+
+	if (client->HasValidHash()) {
+		const auto hashIt = m_waitingClientsByHash.find(MakeWaitingUserHashKey(client));
+		if (hashIt != m_waitingClientsByHash.cend())
+			appendBucket(hashIt->second);
+	}
+	if (client->GetIP() != 0) {
+		const auto ipIt = m_waitingClientsByIP.find(client->GetIP());
+		if (ipIt != m_waitingClientsByIP.cend())
+			appendBucket(ipIt->second);
+	}
+	if (client->GetUserPort() != 0) {
+		const auto portIt = m_waitingClientsByUserPort.find(client->GetUserPort());
+		if (portIt != m_waitingClientsByUserPort.cend())
+			appendBucket(portIt->second);
+	}
+	if (client->GetKadPort() != 0) {
+		const auto kadIt = m_waitingClientsByKadPort.find(client->GetKadPort());
+		if (kadIt != m_waitingClientsByKadPort.cend())
+			appendBucket(kadIt->second);
+	}
+	if (client->GetUserIDHybrid() != 0) {
+		const auto hybridIt = m_waitingClientsByHybridId.find(client->GetUserIDHybrid());
+		if (hybridIt != m_waitingClientsByHybridId.cend())
+			appendBucket(hybridIt->second);
+	}
+}
+
 std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> CUploadQueue::GetWaitingSnapshot() const
 {
 	CSingleLock lock(const_cast<CCriticalSection*>(&m_csWaitingSnapshotRead), TRUE);
@@ -302,7 +384,7 @@ void CUploadQueue::PurgeStaleWaitingClients(ULONGLONG curTick)
 		}
 
 		client->ClearWaitStartTime();
-		removedAny |= RemoveWaitingClientAt(index, true);
+		removedAny |= RemoveWaitingClientAt(index, true, false);
 	}
 
 	if (removedAny)
@@ -387,6 +469,7 @@ bool CUploadQueue::HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client
 
 bool CUploadQueue::HandleExistingQueueRequest(CUpDownClient *client)
 {
+	RebuildWaitingIndexes();
 	PublishWaitingSnapshot();
 	client->SendRankingInfo();
 	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
@@ -395,8 +478,14 @@ bool CUploadQueue::HandleExistingQueueRequest(CUpDownClient *client)
 
 bool CUploadQueue::ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &cSameIP)
 {
-	for (size_t index = 0; index < m_waitingClients.size();) {
-		CUpDownClient *cur_client = m_waitingClients[index];
+	if (HasWaitingMember(client))
+		return HandleExistingQueueRequest(client);
+
+	std::vector<CUpDownClient*> candidates;
+	CollectDuplicateWaitingCandidates(client, candidates);
+	for (CUpDownClient *cur_client : candidates) {
+		if (!HasWaitingMember(cur_client))
+			continue;
 		if (cur_client == client)
 			return HandleExistingQueueRequest(client);
 
@@ -410,21 +499,23 @@ bool CUploadQueue::ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &c
 			if (client->credits == NULL || client->credits->GetCurrentIdentState(client->GetIP()) != IS_IDENTIFIED) {
 				if (thePrefs.GetVerbose())
 					AddDebugLogLine(false, (LPCTSTR)GetResString(IDS_SAMEUSERHASH), client->GetUserName(), cur_client->GetUserName(), _T("Both"));
-				RemoveWaitingClientAt(index, true);
+				RemoveWaitingClient(cur_client, true);
 				if (!cur_client->socket && cur_client->Disconnected(_T("AddClientToQueue - same userhash 2")))
 					delete cur_client;
 				return true;
 			}
 			if (thePrefs.GetVerbose())
 				AddDebugLogLine(false, (LPCTSTR)GetResString(IDS_SAMEUSERHASH), client->GetUserName(), cur_client->GetUserName(), cur_client->GetUserName());
-			RemoveWaitingClientAt(index, true);
+			RemoveWaitingClient(cur_client, true);
 			if (!cur_client->socket && cur_client->Disconnected(_T("AddClientToQueue - same userhash 1")))
 				delete cur_client;
-			continue;
-		} else if (client->GetIP() == cur_client->GetIP()) {
-			++cSameIP;
 		}
-		++index;
+	}
+
+	if (client->GetIP() != 0) {
+		const auto ipIt = m_waitingClientsByIP.find(client->GetIP());
+		if (ipIt != m_waitingClientsByIP.cend())
+			cSameIP = static_cast<uint16>(ipIt->second.size());
 	}
 	return false;
 }
@@ -584,7 +675,18 @@ bool CUploadQueue::HasWaitingMember(const CUpDownClient *client) const
 {
 	CSingleLock lock(const_cast<CCriticalSection*>(&m_csActiveUploadState), TRUE);
 	const ClientQueueEntry *entry = FindClientQueueEntry(client);
-	return entry != NULL && entry->phase == EUploadSlotPhase::Waiting;
+	return entry != NULL
+		&& entry->phase == EUploadSlotPhase::Waiting
+		&& m_waitingClientIndexes.find(client) != m_waitingClientIndexes.cend();
+}
+
+bool CUploadQueue::FindWaitingClientIndex(const CUpDownClient *client, size_t &index) const
+{
+	const auto it = m_waitingClientIndexes.find(client);
+	if (it == m_waitingClientIndexes.cend())
+		return false;
+	index = it->second;
+	return true;
 }
 
 UploadSessionPtr CUploadQueue::GetUploadSession(const CUpDownClient *client) const
@@ -707,10 +809,9 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 		return false;
 
 	if (bRemoveFromWaitingQueue) {
-		const auto it = std::find(m_waitingClients.begin(), m_waitingClients.end(), newclient);
-		if (it == m_waitingClients.end())
+		size_t index = 0;
+		if (!FindWaitingClientIndex(newclient, index))
 			return false;
-		const size_t index = static_cast<size_t>(std::distance(m_waitingClients.begin(), it));
 		if (!RemoveWaitingClientAt(index, true))
 			return false;
 	}
@@ -1100,6 +1201,7 @@ void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 	EnterWaitingState(client);
 	m_bStatisticsWaitingListDirty = true;
 	m_waitingClients.push_back(client);
+	RebuildWaitingIndexes();
 	PublishWaitingSnapshot();
 	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client);
 	theApp.emuledlg->transferwnd->ShowQueueCount(GetWaitingUserCount());
@@ -1172,13 +1274,11 @@ uint32 CUploadQueue::GetAverageUpTime() const
 
 bool CUploadQueue::RemoveWaitingClient(CUpDownClient *client, bool updatewindow)
 {
-	const auto it = std::find(m_waitingClients.begin(), m_waitingClients.end(), client);
-	return (it != m_waitingClients.end())
-		? RemoveWaitingClientAt(static_cast<size_t>(std::distance(m_waitingClients.begin(), it)), updatewindow)
-		: false;
+	size_t index = 0;
+	return FindWaitingClientIndex(client, index) ? RemoveWaitingClientAt(index, updatewindow) : false;
 }
 
-bool CUploadQueue::RemoveWaitingClientAt(size_t index, bool updatewindow)
+bool CUploadQueue::RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshot)
 {
 	if (index >= m_waitingClients.size())
 		return false;
@@ -1186,7 +1286,9 @@ bool CUploadQueue::RemoveWaitingClientAt(size_t index, bool updatewindow)
 	m_bStatisticsWaitingListDirty = true;
 	CUpDownClient *todelete = m_waitingClients[index];
 	m_waitingClients.erase(m_waitingClients.begin() + static_cast<std::ptrdiff_t>(index));
-	PublishWaitingSnapshot();
+	RebuildWaitingIndexes();
+	if (publishSnapshot)
+		PublishWaitingSnapshot();
 	if (updatewindow) {
 		theApp.emuledlg->transferwnd->GetQueueList()->RemoveClient(todelete);
 		theApp.emuledlg->transferwnd->ShowQueueCount(GetWaitingUserCount());
@@ -1287,6 +1389,7 @@ void CUploadQueue::DeleteAll()
 		ClearClientQueueEntry(client);
 	}
 	m_waitingClients.clear();
+	RebuildWaitingIndexes();
 	PublishWaitingSnapshot();
 
 	{

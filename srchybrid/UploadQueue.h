@@ -16,9 +16,10 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "ring.h"
+#include <array>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 struct Requested_Block_Struct;
 class CUpDownClient;
@@ -178,6 +179,28 @@ private:
 		UploadSessionPtr session;
 	};
 
+	struct WaitingUserHashKey
+	{
+		static constexpr size_t HashBytes = 16;
+		std::array<uchar, HashBytes> bytes{};
+
+		bool operator==(const WaitingUserHashKey &other) const noexcept
+		{
+			return bytes == other.bytes;
+		}
+	};
+
+	struct WaitingUserHashKeyHasher
+	{
+		size_t operator()(const WaitingUserHashKey &key) const noexcept
+		{
+			size_t hash = 1469598103934665603ull;
+			for (uchar byte : key.bytes)
+				hash = (hash ^ byte) * 1099511628211ull;
+			return hash;
+		}
+	};
+
 	struct WaitingQueueSnapshot
 	{
 		CUpDownClientPtrList compatibilityMembers;
@@ -209,6 +232,9 @@ private:
 	bool	ShouldRejectLowIdQueueRequest(const CUpDownClient *client) const;
 	bool	IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const;
 	void	PurgeStaleWaitingClients(ULONGLONG curTick);
+	static WaitingUserHashKey MakeWaitingUserHashKey(const CUpDownClient *client);
+	void	RebuildWaitingIndexes();
+	void	CollectDuplicateWaitingCandidates(const CUpDownClient *client, std::vector<CUpDownClient*> &candidates) const;
 	void	PublishWaitingSnapshot();
 	std::shared_ptr<const WaitingQueueSnapshot> GetWaitingSnapshot() const;
 	void	PublishActiveUploadSnapshot();
@@ -225,6 +251,7 @@ private:
 	bool	TryActivateQueueCandidateImmediately(CUpDownClient *client);
 	INT_PTR	GetWaitingMemberCount() const					{ return static_cast<INT_PTR>(m_waitingClients.size()); }
 	bool	HasWaitingMember(const CUpDownClient *client) const;
+	bool	FindWaitingClientIndex(const CUpDownClient *client, size_t &index) const;
 	UploadSessionPtr GetUploadSession(const CUpDownClient *client) const;
 	std::vector<UploadSessionPtr> GetActiveUploadSessions() const;
 	bool	IsCurrentUploadSession(const UploadSessionPtr &session) const;
@@ -254,7 +281,7 @@ private:
 	uint32	GetSlowUploadRateThreshold() const;
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
-	bool	RemoveWaitingClientAt(size_t index, bool updatewindow);
+	bool	RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshot = true);
 	CCriticalSection	m_csWaitingSnapshotRead;
 	CCriticalSection	m_csActiveUploadState;
 
@@ -283,6 +310,12 @@ private:
 	bool	m_bThrottlerWantsMoreSlotsHint;
 	std::unordered_map<const CUpDownClient*, ClientQueueEntry> m_clientEntries;
 	std::vector<CUpDownClient*> m_waitingClients;
+	std::unordered_map<const CUpDownClient*, size_t> m_waitingClientIndexes;
+	std::unordered_map<uint32, std::vector<CUpDownClient*>> m_waitingClientsByIP;
+	std::unordered_map<uint16, std::vector<CUpDownClient*>> m_waitingClientsByUserPort;
+	std::unordered_map<uint16, std::vector<CUpDownClient*>> m_waitingClientsByKadPort;
+	std::unordered_map<uint32, std::vector<CUpDownClient*>> m_waitingClientsByHybridId;
+	std::unordered_map<WaitingUserHashKey, std::vector<CUpDownClient*>, WaitingUserHashKeyHasher> m_waitingClientsByHash;
 	std::shared_ptr<const WaitingQueueSnapshot> m_waitingSnapshot;
 	std::vector<CUpDownClient*> m_activeUploadClients;
 	std::shared_ptr<const ActiveUploadSnapshot> m_activeUploadSnapshot;
