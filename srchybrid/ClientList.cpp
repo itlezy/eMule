@@ -25,7 +25,6 @@
 #include "Kademlia/net/kademliaudplistener.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/utils/UInt128.h"
-#include "LastCommonRouteFinder.h"
 #include "UpDownClient.h"
 #include "UploadQueue.h"
 #include "DownloadQueue.h"
@@ -157,14 +156,6 @@ void CClientList::AddClient(CUpDownClient *toadd, bool bSkipDupTest)
 		list.AddTail(toadd);
 	}
 }
-
-// ZZ:UploadSpeedSense -->
-bool CClientList::GiveClientsForTraceRoute()
-{
-	// this is a host that lastCommonRouteFinder can use to traceroute
-	return theApp.lastCommonRouteFinder->AddHostsToCheck(list);
-}
-// ZZ:UploadSpeedSense <--
 
 void CClientList::RemoveClient(CUpDownClient *toremove, LPCTSTR pszReason)
 {

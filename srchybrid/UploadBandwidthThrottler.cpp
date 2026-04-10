@@ -20,7 +20,6 @@
 #include "UploadBandwidthThrottler.h"
 #include "EMSocket.h"
 #include "opcodes.h"
-#include "LastCommonRouteFinder.h"
 #include "OtherFunctions.h"
 #include "uploadqueue.h"
 #include "preferences.h"
@@ -320,8 +319,9 @@ UINT UploadBandwidthThrottler::RunInternal()
 
 		DWORD timeSinceLastLoop = timeGetTime() - lastLoopTick;
 
-		// Get the current speed from UploadSpeedSense
-		uint32 allowedDataRate = theApp.lastCommonRouteFinder->GetUpload();
+		uint32 allowedDataRate = (thePrefs.GetMaxUpload() == UNLIMITED)
+			? (thePrefs.GetMaxGraphUploadRate(true) * 1024u)
+			: (thePrefs.GetMaxUpload() * 1024u);
 
 		// check busy level for all the slots (WSAEWOULDBLOCK status)
 		uint32 nBusy = 0;

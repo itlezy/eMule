@@ -754,10 +754,6 @@ BEGIN
     IDS_METATAGS            "メタタグ カウント:"
     IDS_FILEFORMAT          "ファイル形式:"
     IDS_UDPREASKS           "UDPファイル再問い合わせ"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping許容値 (ﾐﾘ秒)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Ping許容値の形式"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "ミリ秒 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "パーセント (%)"
 END
 
 STRINGTABLE
@@ -1448,16 +1444,10 @@ BEGIN
     IDS_IMP_DELSRC          "インポートに成功したダウンロードのソースファイルを削除して宜しいですか"
     IDS_IMP_SIZE            "%s (ディスク:%s)"
     IDS_IMP_STATUS          "インポート中 %s: %s"
-    IDS_DYNUPENABLED        "自動的に最適なアップロード制限を探す"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping許容値(最低Ping割合)"
-    IDS_DYNUP_GOINGUPDIVIDER "アップロードを遅くする"
-    IDS_DYNUP_GOINGDOWNDIVIDER "ダウンロードを遅くする"
-    IDS_DYNUP_NUMBEROFPINGS "平均用のPing最大数"
-    IDS_DYNUP_MINUPLOAD     "最低アップロード速度"
     IDS_ESTTIMELEFT         "残り時間:"
     IDS_TRANSFER_RATE_LABEL "転送速度:"
     IDS_SAVELOG             "記録を保存する"
@@ -1485,7 +1475,6 @@ BEGIN
     IDS_EM_HELP             "ヘルプ"
     IDS_WRN_FRIENDDUPLIPPORT
                             "友達は追加されませんでした\r\n\r\n既に同じIPアドレスとポートを持った友達が存在します"
-    IDS_DYNUP               "アップロード速度感知 (非推奨)"
     IDS_KADOVERHEAD         "Kadオーバーヘッド(パケット): %s (%s)"
     IDS_FIND                "検索..."
     IDS_LOG_BANNED_CLIENTS  "BANしたクライアントのログを採る"
@@ -1789,14 +1778,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "コレクションを単純なテキスト形式で保存する"
     IDS_SEARCHAUTHORCOLLECTION "作者のコレクションを検索"
     IDS_ERR_DUPL_FILES      "共有ファイルを分割: ""%s"" と ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "アップロード速度感知: トレースルーチングの失敗が多すぎるため、アップロード速度感知を無効にします。"
-    IDS_USS_STARTING        "アップロード速度感知: 準備完了しました。アップロード速度の管理を開始します (60秒間は高速反応モードになります)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "アップロード速度感知: 設定によりアップロード制限が高くなりました。60秒間高速反応モードに入ります"
-    IDS_USS_STATE_PREPARING "準備中..."
-    IDS_USS_STATE_WAITING   "待機中..."
-    IDS_USS_STATE_ERROR     "エラー!"
     IDS_SHAREWARNING        "(フォルダが共有されます!)"
     IDS_REMOVEALLSERVERS    "全てのサーバーを削除して本当に宜しいですか?"
     IDS_SEARCH_UNKATTR      "'%s'は未知のの検索属性です"

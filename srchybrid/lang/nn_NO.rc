@@ -1368,16 +1368,10 @@ BEGIN
     IDS_IMP_DELSRC          "Vil du slette kjeldefilene frå ferdige nedlastingar?"
     IDS_IMP_SIZE            "%s (Disk:%s)"
     IDS_IMP_STATUS          "Importerer %s: %s"
-    IDS_DYNUPENABLED        "Finn beste opplastingsgrense automatisk"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Pingtoleranse (% av lågaste ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Gå opp sakte"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Gå ned sakte"
-    IDS_DYNUP_NUMBEROFPINGS "Maks gjennomsnittleg pingtal"
-    IDS_DYNUP_MINUPLOAD     "Lågast lovlege opplastingsfart"
     IDS_ESTTIMELEFT         "Beregna attståande tid:"
     IDS_TRANSFER_RATE_LABEL "Overføringsrate:"
     IDS_SAVELOG             "Lagre logg"
@@ -1403,7 +1397,6 @@ BEGIN
     IDS_MINLENGTH           "Min. lengde [tt:mm:ss]"
     IDS_EM_HELP             "Hjelp"
     IDS_WRN_FRIENDDUPLIPPORT "Ven ikke lagd til.\r\n\r\nDet finst allereie ein ven med same IP og port tilgjengeleg."
-    IDS_DYNUP               "Opplastingsfartsmålar (ikkje tilrådd)"
     IDS_KADOVERHEAD         "Kad-dataoverskot (pakkar): %s (%s)"
     IDS_FIND                "Finn..."
     IDS_LOG_BANNED_CLIENTS  "Logg nekta klientar"
@@ -1481,10 +1474,6 @@ BEGIN
     IDS_METATAGS            "Metataggtelling:"
     IDS_FILEFORMAT          "Filformat"
     IDS_UDPREASKS           "UDP filspurnader"
-    IDS_DYNUP_PINGTOLERANCE_MS "Pingtoleranse (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metode til pingtoleranse"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Millisekund (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Prosent (%)"
 END
 
 STRINGTABLE
@@ -1735,12 +1724,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Lagre samling i eit enkelt tekstformat"
     IDS_SEARCHAUTHORCOLLECTION "Søk i opphavspersonens samlingar"
     IDS_ERR_DUPL_FILES      "Like filer delt: ""%s"" og ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED "Opplastingsfartsfølar: Sporruting feila for mange gonger. Avsluttar USS."
-    IDS_USS_STARTING        "Opplastingsfartsfølar: Ferdig med førebuingar. Startar kontroll av opplastingsfart. (Første 60 sekund vert i snøggreaksjonsmodus)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED "Opplastingsfartsfølar: Auka opplastingsgrense i innstillingar oppdaga. Går til snøggreaksjonsmodus i 60 sekund."
-    IDS_USS_STATE_PREPARING "Gjer klar..."
-    IDS_USS_STATE_WAITING   "Ventar..."
-    IDS_USS_STATE_ERROR     "Feil!"
     IDS_SHAREWARNING        "(Mappe vil verte delt!)"
     IDS_REMOVEALLSERVERS    "Vil du verkeleg fjerne alle tenarar?"
     IDS_SEARCH_UNKATTR      "Ukjend søkjeattributt '%s'"

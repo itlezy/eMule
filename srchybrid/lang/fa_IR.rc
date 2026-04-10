@@ -792,10 +792,6 @@ BEGIN
     IDS_METATAGS            "به حساب آوردن برچسب هاي اطلاعاتي فايلها:"
     IDS_FILEFORMAT          "پسوند فايل"
     IDS_UDPREASKS           "فايلهاي يو دي پي دوباره جواب داده شد"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping سرعت (ميلي ثانيه)َ"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "روش براي سرعت پينگ"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "ميلي ثانيه (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "درصد (%)"
     IDS_LOG_A4AF            "گزارش كن A4AF عمليات"
     IDS_A4AF_SAVE_CPU       "کدگذاري را غير فعال كن براي کاهش در عمليات سي پي يو(A4AF)"
     IDS_SEARCH_DOC          "نوشته ها"
@@ -1401,9 +1397,6 @@ BEGIN
     IDS_PASTE               "چسباندن"
     IDS_SEARCHAUTHORCOLLECTION "جستجوي مجموعه سازنده"
     IDS_ERR_DUPL_FILES      "همانند فايل هاي به اشتراک گذاشته شده ""%s"" و ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "کنترل هوشمند آپلود: دنبال کردن مسير دفعات زيادي با شکست مواجه شد. از کار انداختن آپلود SpeedSense."
-    IDS_USS_STARTING        "کنترل هوشمند آپلود: اقدامات مقدماتي انجام شد. کنترل کردن سرعت آپلود آغاز مي شود (60 ثانيه اول در حالت واکنش سريع خواهد بود)َ"
     IDS_A4AF                "به کار گرفتن منبع"
     IDS_AUTOCAT_LABEL       "دسته بندي خودکار (نمونه,جدا شده توسط |)َ"
     IDS_SHOWEXTSETTINGS     "«نمايش کنترل هاي بيشتر (حالت کنترل هاي پيشرفته)َ"
@@ -1506,16 +1499,10 @@ BEGIN
     IDS_IMP_DELSRC          "آيا مي خواهيد فايل هاي اصلي دانلود هايي که با موفقيت وارد شده اند حذف شوند؟"
     IDS_IMP_SIZE            "%s (ديسک:%s)"
     IDS_IMP_STATUS          "در حال وادر کردن %s: %s"
-    IDS_DYNUPENABLED        "بهترين حد آپلود را به صورت خودکار جستجو کن"
-    IDS_DYNUP_PINGTOLERANCE "قدرت پينگ (%)از کمترين پينگ"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "به آهستگي بالا رفتن"
-    IDS_DYNUP_GOINGDOWNDIVIDER "به آهستگي پايين رفتن"
-    IDS_DYNUP_NUMBEROFPINGS "بالا رفتن حد پينگ ها براي رسيدن به حد متوسط"
-    IDS_DYNUP_MINUPLOAD     "پايين ترين ميزان سرعت مجاز براي آپلود کردن"
     IDS_ESTTIMELEFT         "زمان تخميني باقي مانده:"
     IDS_TRANSFER_RATE_LABEL "سرعت انتقال"
     IDS_SAVELOG             "ذخيره کردن گزارش"
@@ -1561,7 +1548,6 @@ BEGIN
     IDS_EM_HELP             "&راهنما"
     IDS_WRN_FRIENDDUPLIPPORT
                             "دوست اضافه نشد.\r\n\r\nيک دوست از قبل با آدرس آي پي و پورت مشابه در دسترس است.َ"
-    IDS_DYNUP               "تعيين سرعت آپلود (توصيه نمي شود)َ"
     IDS_KADOVERHEAD         "Kad سربار (بسته هاي اطلاعاتي)َ: %s (%s)"
     IDS_FIND                "يافتن...َ"
     IDS_LOG_BANNED_CLIENTS  "مشتري هايي با ممنوعيت ورود"
@@ -1757,11 +1743,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "ذخيره کردن مجموعه در يک پسوند نوشتاري ساده"
     IDS_RUNNINGRESTRICTED   "ايمول با امتيازات کد گذاري يافته در حال اجرا است"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "کنترل هوشمند آپلود: حد آپلود افزايش يافته در قسمت اولويت ها پيدا شد. به مدت 60 ثانيه به حالت واکنش سريع مي رود"
-    IDS_USS_STATE_PREPARING "درحال آماده سازي...َ"
-    IDS_USS_STATE_WAITING   "صبر کنيد...َ"
-    IDS_USS_STATE_ERROR     "خطا!َ"
     IDS_SHAREWARNING        "(فولدر به اشتراک گذاشته خواهد شد!َ)"
     IDS_REMOVEALLSERVERS    "آيا واقعاً قصد داريد تمام سرورها را حذف نماييد؟"
     IDS_SEARCH_UNKATTR      "جزء جستجو نا معلوم'%s'"

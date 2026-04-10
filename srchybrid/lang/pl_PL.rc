@@ -795,10 +795,6 @@ BEGIN
     IDS_METATAGS            "Ilość znaczników meta:"
     IDS_FILEFORMAT          "Format pliku"
     IDS_UDPREASKS           "Ponowne zapytania UDP o plik"
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Odchylenie Ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Metoda obliczania odchylenia"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Millisekundy (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Procent (%)"
     IDS_LOG_A4AF            "Loguj akcje A4AF"
     IDS_A4AF_SAVE_CPU       "Wyłącz sprawdzanie A4AF - oszczędza procesor"
     IDS_SEARCH_DOC          "Dokument"
@@ -1404,9 +1400,6 @@ BEGIN
     IDS_PASTE               "Wklej"
     IDS_SEARCHAUTHORCOLLECTION "Przeszukaj kolekcje autora"
     IDS_ERR_DUPL_FILES      "Powielane (zduplikowane) pliki: ""%s"" and ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "USS: Śledzenie trasy pingu nie powiódło się zbyt wiele razy. Wyłączanie Upload Speed Sense."
-    IDS_USS_STARTING        "USS: Wykonane zgodnie z ustawieniami. Start automatycznej czułości wysyłania. Pierwsze 60 sekund jest w trybie 'szybkiej reakcji'"
     IDS_A4AF                "Zarządzanie źródłami"
     IDS_AUTOCAT_LABEL       "Automatyczne przydzielanie kategorii (separator |)"
     IDS_SHOWEXTSETTINGS     "Pokaż więcej kontrolek (zaawansowane)"
@@ -1510,16 +1503,10 @@ BEGIN
     IDS_IMP_DELSRC          "Czy chcesz by po udanym imporcie skasować źródłowe pliki części?"
     IDS_IMP_SIZE            "%s (Dysk:%s)"
     IDS_IMP_STATUS          "Import %s: %s"
-    IDS_DYNUPENABLED        "Znajdź najlepszą prędkość wysyłania automatycznie"
-    IDS_DYNUP_PINGTOLERANCE "Tolerancja pinga (% najniższego)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "Spowolnienie w górę"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Spowolnienie w dół"
-    IDS_DYNUP_NUMBEROFPINGS "Największa ilość pingów - średnia"
-    IDS_DYNUP_MINUPLOAD     "Najniższa dozwolona prędkość wysyłania"
     IDS_ESTTIMELEFT         "Przewidywany czas:"
     IDS_TRANSFER_RATE_LABEL "Prędkość transferu:"
     IDS_SAVELOG             "Zapisz log"
@@ -1565,7 +1552,6 @@ BEGIN
     IDS_EM_HELP             "&Pomoc"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Znajomy nie dodany.\r\n\r\nJest już znajomy z tym samym adresem IP i portem."
-    IDS_DYNUP               "Wysyłanie SpeedSense (niezalecane)"
     IDS_KADOVERHEAD         "Narzut Kad (pakietów): %s (%s)"
     IDS_FIND                "Szukaj..."
     IDS_LOG_BANNED_CLIENTS  "Loguj banowanych klientów"
@@ -1762,11 +1748,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Zapisz kolekcję w pliku testowym"
     IDS_RUNNINGRESTRICTED   "eMule jest uruchomiony z ograniczonymi uprawnieniami"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "USS: Samoczynnie podnosi limit wysyłania. (przez 60 sekund czujnik jest w trybie 'szybkiej reakcji')"
-    IDS_USS_STATE_PREPARING "Przygotownie..."
-    IDS_USS_STATE_WAITING   "Czekaj..."
-    IDS_USS_STATE_ERROR     "Bład!"
     IDS_SHAREWARNING        "(Folder będzie udostępniany)"
     IDS_REMOVEALLSERVERS    "Czy jesteś pewien, że chcesz usunąć wszystkie serwery?"
     IDS_SEARCH_UNKATTR      "Nieznany atrybut szukania '%s'"

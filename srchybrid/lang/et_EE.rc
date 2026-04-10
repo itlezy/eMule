@@ -1375,16 +1375,10 @@ BEGIN
     IDS_IMP_DELSRC          "Kas soovid algsed part failid pärast õnnestunud importi kustutada?"
     IDS_IMP_SIZE            "%s (ketas:%s)"
     IDS_IMP_STATUS          "Impordin %s: %s"
-    IDS_DYNUPENABLED        "Leia parim saatmiskiirus automaatselt"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping'i kõikumine (% madalaimast)"
-    IDS_DYNUP_GOINGUPDIVIDER "Kiiruse kasvamise aeglus"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Kiiruse kahanemise aeglus"
-    IDS_DYNUP_NUMBEROFPINGS "Mitu ping'i keskmistada"
-    IDS_DYNUP_MINUPLOAD     "Vähim lubatud saatmiskiirus"
     IDS_ESTTIMELEFT         "Aega jäänud arvatavalt:"
     IDS_TRANSFER_RATE_LABEL "Ülekandekiirus:"
     IDS_SAVELOG             "Salvesta logi"
@@ -1411,7 +1405,6 @@ BEGIN
     IDS_EM_HELP             "&Appi"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Sõber jäi lisamata.\r\n\r\nMeil juba on üks sama IP aadressi ja pordiga sõber."
-    IDS_DYNUP               "Saatmiskiiruse regulaator - USS (not recommended)"
     IDS_KADOVERHEAD         "Kad Overhead (pakette): %s (%s)"
     IDS_FIND                "Leia..."
     IDS_LOG_BANNED_CLIENTS  "Logi bännitud kasutajad"
@@ -1501,10 +1494,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Ping tolerans (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Meetod ping-imise tolerans"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Millisekundid (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Protsent (%)"
     IDS_LOG_A4AF            "A4AF tegevuse logi"
     IDS_A4AF_SAVE_CPU       "Blokeeri A4AF märgistuse salvestust CPU"
     IDS_SEARCH_DOC          "Dokument"
@@ -1772,14 +1761,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Salvesta kogum liht tekst vormigust"
     IDS_SEARCHAUTHORCOLLECTION "Otsi autorite kogumikest"
     IDS_ERR_DUPL_FILES      "Dubleeritud jagatud failid: ""%s"" ja ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting failed too many times. Disabling Upload SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: Done with preparations. Starting control of upload speed. (First 60 seconds will be in fast reaction mode)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Raised upload limit in prefs detected. Going into fast reaction mode for 60 seconds."
-    IDS_USS_STATE_PREPARING "Valmistan ette..."
-    IDS_USS_STATE_WAITING   "Ootan..."
-    IDS_USS_STATE_ERROR     "Tõrge!"
     IDS_SHAREWARNING        "(Kausta hakatakse jagama!)"
     IDS_REMOVEALLSERVERS    "Kas sa tõesti tahad eemaltada kõik serverid?"
     IDS_SEARCH_UNKATTR      "Tundmatud otsingu omadused '%s'"

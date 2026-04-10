@@ -1392,16 +1392,10 @@ BEGIN
     IDS_IMP_DELSRC          "Szeretnéd megtartani a forrás részfájlt a sikeresen importált letöltésekből?"
     IDS_IMP_SIZE            "%s (Lemez:%s)"
     IDS_IMP_STATUS          "Importálás %s: %s"
-    IDS_DYNUPENABLED        "Automatikus feltöltési határ beállítása"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping tűréshatár (legkisebb ping %)"
-    IDS_DYNUP_GOINGUPDIVIDER "Gyorsítás"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Lassítás"
-    IDS_DYNUP_NUMBEROFPINGS "Átlagos pingelés max. száma"
-    IDS_DYNUP_MINUPLOAD     "Megengedett legkisebb feltöltési sebesség"
     IDS_ESTTIMELEFT         "Hátralévő idő:"
     IDS_TRANSFER_RATE_LABEL "Átviteli ráta:"
     IDS_SAVELOG             "Napló mentése"
@@ -1448,7 +1442,6 @@ BEGIN
     IDS_EM_HELP             "Súgó"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Friend not added.\r\n\r\nThere is already a friend with same IP address and port available."
-    IDS_DYNUP               "Feltöltési érzékenység (not recommended)"
     IDS_KADOVERHEAD         "Kad előny (Csomag): %s (%s)"
     IDS_FIND                "Keresés..."
     IDS_LOG_BANNED_CLIENTS  "Kitiltott kliensek naplózása"
@@ -1511,10 +1504,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Ping tolerancia (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Ping tolerancia metódusa"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Milliszekundum (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Százalék (%)"
     IDS_LOG_A4AF            "A4AF események naplózása"
     IDS_A4AF_SAVE_CPU       "A4AF ellenőrzések tiltása processzorkímélés érdekében"
     IDS_SEARCH_DOC          "Dokumentum"
@@ -1783,14 +1772,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Kollekció mentése egyszerű szöveges fájlformátumban"
     IDS_SEARCHAUTHORCOLLECTION "Szerző kollekciójának keresése"
     IDS_ERR_DUPL_FILES      "Kétszer van megosztva: ""%s"" és ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "USS: Az útvonalkeresés túl sokszor sikertelen. Kikapcsolom az USS-t. (Feltöltési sebesség érzékelés)"
-    IDS_USS_STARTING        "USS: Előkészületek rendben. Feltöltési sebesség vezérlését megkezdtem. (Az első 60 másodpercben gyorsreagálású lesz)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "USS: Észrevettem a beállításokban megemelt feltöltési határértéket. Gyorsreagálású leszek 60 másodpercig."
-    IDS_USS_STATE_PREPARING "Felkészülés..."
-    IDS_USS_STATE_WAITING   "Várakozás..."
-    IDS_USS_STATE_ERROR     "Hiba!"
     IDS_SHAREWARNING        "(A mappa meg lesz osztva!)"
     IDS_REMOVEALLSERVERS    "Biztosan törölni akarod az összes kiszolgálót?"
     IDS_SEARCH_UNKATTR      "Ismeretlen keresési attribútum: '%s'"

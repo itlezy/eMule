@@ -82,7 +82,6 @@ public:
 	void SetActiveDialog(CWnd *dlg);
 	CWnd* GetActiveDialog() const				{ return activewnd; }
 	void ShowTransferRate(bool bForceAll = false);
-	void ShowPing();
 	void Localize();
 
 #ifdef HAVE_WIN7_SDK_H

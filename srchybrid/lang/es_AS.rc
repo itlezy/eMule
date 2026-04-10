@@ -750,10 +750,6 @@ BEGIN
     IDS_METATAGS            "Númberu de Meta Tag:"
     IDS_FILEFORMAT          "Formatu"
     IDS_UDPREASKS           "Pidíos reiteraos d’un archivu vía UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Tolerancia de Ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Métodu de tolerancia de ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milisegundos (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Porcentax (%)"
 END
 
 STRINGTABLE
@@ -1364,9 +1360,6 @@ BEGIN
     IDS_PASTE               "Apegar"
     IDS_SEARCHAUTHORCOLLECTION "Buscar colecciones del Autor"
     IDS_ERR_DUPL_FILES      "Archivos compartíos duplicaos: ""%s"" y ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Sensor de velocidá de Subida: Errores abondo en Tracerouting. Desactivando sensor de velocidá de Subida."
-    IDS_USS_STARTING        "Sensor de velocidá de Subida: Preparáu. Entamando control de velocidá de Subida. (Va emplegase mou de reaición rápida durante 60 seg)"
     IDS_A4AF                "Fontes"
     IDS_AUTOCAT_LABEL       "Auto asignar categoría (formatu, separtáu por |)"
     IDS_SHOWEXTSETTINGS     "Amosar más controles (controles básicos avanzaos)"
@@ -1469,16 +1462,10 @@ BEGIN
     IDS_IMP_DELSRC          "¿Quies eliminar l’archivu de partes-fontes de les descargues importaes??"
     IDS_IMP_SIZE            "%s (Discu:%s)"
     IDS_IMP_STATUS          "Importando %s: %s"
-    IDS_DYNUPENABLED        "Buscar el meyor límite de subida automáticamente"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolerancia de Ping (% del ping más baxo)"
-    IDS_DYNUP_GOINGUPDIVIDER "Aumentar velocidá"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Disminuir velocidá"
-    IDS_DYNUP_NUMBEROFPINGS "Númberu máximu de pings de promediu"
-    IDS_DYNUP_MINUPLOAD     "Velocidá de subida permitida más baxa"
     IDS_ESTTIMELEFT         "Tiempu restante estimáu:"
     IDS_TRANSFER_RATE_LABEL "Índiz de treferencia:"
     IDS_SAVELOG             "Guardar rexistru"
@@ -1506,7 +1493,6 @@ BEGIN
     IDS_EM_HELP             "&Ayuda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Collaciu ensin amestar.\r\n\r\nYá esiste un collaciu cola mesma dirección IP y puertu disponible."
-    IDS_DYNUP               "Sensor de Velocidá de Subida (not recommended)"
     IDS_KADOVERHEAD         "Tráficu escedente Kad (Paquetes): %s (%s)"
     IDS_FIND                "Alcontrar..."
     IDS_LOG_BANNED_CLIENTS  "Rexistrar veceros bloqueaos"
@@ -1784,11 +1770,6 @@ BEGIN
     IDS_VIEWCOLLECTION      "Güeyar coleición"
     IDS_COLL_TEXTFORMAT     "Guardar colección nun formatu de testu cenciellu"
     IDS_RUNNINGRESTRICTED   "eMule ta furrulando con privilexos reducíos"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Sensor de velocidá de Subida: Detectáu un aumentu del límite de subida en Preferencies. Va emplegase’l mou de reaición rápida durante 60 seg."
-    IDS_USS_STATE_PREPARING "Preparando..."
-    IDS_USS_STATE_WAITING   "Aguardando..."
-    IDS_USS_STATE_ERROR     "¡Error!"
     IDS_FULLALLOC           "Allocate full filesize for non-sparse part files"
     IDS_X_SHAREAZA_IMPORT_NO_HASH "Hash not found."
     IDS_X_SHAREAZA_IMPORT_GAP_LIST_CORRUPT "Gap list corrupt."

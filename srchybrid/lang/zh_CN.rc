@@ -794,10 +794,6 @@ BEGIN
     IDS_METATAGS            "Meta 标签数:"
     IDS_FILEFORMAT          "文件格式"
     IDS_UDPREASKS           "UDP文件重新查询"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping 容限 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Ping 容限所使用的方法"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "毫秒 (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "百分比 (%)"
     IDS_LOG_A4AF            "记录 A4AF 动作"
     IDS_A4AF_SAVE_CPU       "为节省CPU资源禁用A4AF"
     IDS_SEARCH_DOC          "文档"
@@ -1403,9 +1399,6 @@ BEGIN
     IDS_PASTE               "粘贴"
     IDS_SEARCHAUTHORCOLLECTION "搜索该作者的收藏"
     IDS_ERR_DUPL_FILES      "重复的共享文件: ""%s"" 和 ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "USS: 路由跟踪多次失败. 关闭USS."
-    IDS_USS_STARTING        "USS: 准备就绪. 开始控制上传速度. (起初的60秒内将采取快速反应模式)"
     IDS_A4AF                "来源处理"
     IDS_AUTOCAT_LABEL       "自动指定类别(形式,用‘|’分隔)"
     IDS_SHOWEXTSETTINGS     "显示更多控制(高级模式控制)"
@@ -1508,16 +1501,10 @@ BEGIN
     IDS_IMP_DELSRC          "你想要删除已成功导入的下载的源Partfile吗?"
     IDS_IMP_SIZE            "%s(磁盘:%s)"
     IDS_IMP_STATUS          "正在导入%s: %s"
-    IDS_DYNUPENABLED        "自动设置上传限制"
-    IDS_DYNUP_PINGTOLERANCE "Ping 容限 (% 最低Ping)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "向上缓慢"
-    IDS_DYNUP_GOINGDOWNDIVIDER "向下缓慢"
-    IDS_DYNUP_NUMBEROFPINGS "平均最大Ping次数"
-    IDS_DYNUP_MINUPLOAD     "最低允许的上传速度"
     IDS_ESTTIMELEFT         "估计剩余时间:"
     IDS_TRANSFER_RATE_LABEL "传输比例:"
     IDS_SAVELOG             "保存日志"
@@ -1563,7 +1550,6 @@ BEGIN
     IDS_EM_HELP             "帮助(&H)"
     IDS_WRN_FRIENDDUPLIPPORT
                             "朋友没有添加.\r\n\r\n已存在一个有着相同的IP和端口的朋友."
-    IDS_DYNUP               "上传速度侦测 - USS (不推荐)"
     IDS_KADOVERHEAD         "Kad开销(包):%s (%s)"
     IDS_FIND                "查找 ..."
     IDS_LOG_BANNED_CLIENTS  "记录被禁止的客户"
@@ -1759,11 +1745,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "以简单文本方式保存收藏集"
     IDS_RUNNINGRESTRICTED   "eMule运行在受限状态下"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "USS: 检测到选项中的上传速度限制被提高. 进入快速反应模式60秒."
-    IDS_USS_STATE_PREPARING "正在处理..."
-    IDS_USS_STATE_WAITING   "请稍后..."
-    IDS_USS_STATE_ERROR     "错误!"
     IDS_SHAREWARNING        "(文件夹将被共享!)"
     IDS_REMOVEALLSERVERS    "你确定要删除所有的服务器?"
     IDS_SEARCH_UNKATTR      "未知的搜索属性 '%s'"

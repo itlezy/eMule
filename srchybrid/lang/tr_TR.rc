@@ -1308,9 +1308,6 @@ BEGIN
     IDS_PASTE               "Yapıştır"
     IDS_SEARCHAUTHORCOLLECTION "Yazarın Koleksiyonlarını Ara"
     IDS_ERR_DUPL_FILES      "Kopya paylaşılmış dosyalar: ""%s"" ve ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Gönderme Hızı Algılama: Yönlendirerek İzleme bir çok kez başarısız oldu. Gönderme Hızı Algılama Etkisizleştiriliyor."
-    IDS_USS_STARTING        "Gönderme Hızı Algılama: Hazırlanma bitti. Gönderme hızı denetimi başlatılıyor. (İlk 60 saniye hızlı tepki kipinde olacaktır)"
     IDS_A4AF                "Kaynak Saptama"
     IDS_AUTOCAT_LABEL       "Otomatik Kat-Belirleme (örnek, | ile ayırın)"
     IDS_SHOWEXTSETTINGS     "Daha fazla denetim göster (Gelişmiş Denetim kipi)"
@@ -1413,16 +1410,10 @@ BEGIN
     IDS_IMP_DELSRC          "Başarılı olarak içeri aktarılmış indirmelerin kaynak dosyalarının silinmesini istiyor musunuz?"
     IDS_IMP_SIZE            "%s (Disk:%s)" //!
     IDS_IMP_STATUS          "%s içeri aktarılıyor: %s"
-    IDS_DYNUPENABLED        "Otomatik olarak en iyi gönderme sınırını bul"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping toleransı (en düşük ping yüzdesi)"
-    IDS_DYNUP_GOINGUPDIVIDER "Artış yavaşlığı"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Düşüş yavaşlığı"
-    IDS_DYNUP_NUMBEROFPINGS "Ortalama için azami ping sayısı"
-    IDS_DYNUP_MINUPLOAD     "İzin verilmiş en düşük gönderme hızı"
     IDS_ESTTIMELEFT         "Tahmini kalan süre:"
     IDS_TRANSFER_RATE_LABEL "Aktarma hızı:"
     IDS_SAVELOG             "Günlüğü Kaydet"
@@ -1450,7 +1441,6 @@ BEGIN
     IDS_EM_HELP             "&Yardım"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Arkadaş eklenmedi.\r\n\r\nZaten aynı IP adresi ve bağlantı noktası olan arkadaş var."
-    IDS_DYNUP               "Gönderme Hızı Algılama (önerilmez)"
     IDS_KADOVERHEAD         "Kad Ek Yükü (Paket): %s (%s)"
     IDS_FIND                "Bul..."
     IDS_LOG_BANNED_CLIENTS  "Yasaklı istemcileri günlükle"
@@ -1528,10 +1518,6 @@ BEGIN
     IDS_METATAGS            "Üst etiket sayısı:"
     IDS_FILEFORMAT          "Biçim"
     IDS_UDPREASKS           "UDP Dosya Tkr.Sorması"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping toleransı (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Ping Toleransı için Yöntem"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milisaniye (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Yüzde (%)"
 END
 
 STRINGTABLE
@@ -1791,11 +1777,6 @@ BEGIN
     IDS_VIEWCOLLECTION      "Koleksiyonu Görüntüle"
     IDS_COLL_TEXTFORMAT     "Koleksiyonu Basit Metin Biçiminde Kaydet"
     IDS_RUNNINGRESTRICTED   "eMule azaltılmış yetkiler ile çalışıyor"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Gönderme Hızı Algılama: Seçeneklerde arttırılmış gönderme sınırı saptandı. 60 saniye için hızlı tepki kipine gidilecek."
-    IDS_USS_STATE_PREPARING "Hazırlanıyor..."
-    IDS_USS_STATE_WAITING   "Bekliyor..."
-    IDS_USS_STATE_ERROR     "Hata!"
     IDS_SHAREWARNING        "(Klasör paylaştırılacak!)"
     IDS_REMOVEALLSERVERS    "Tüm sunucuları kaldırmak istediğinize emin misiniz?"
     IDS_SEARCH_UNKATTR      "Bilinmeyen arama özniteliği '%s'"

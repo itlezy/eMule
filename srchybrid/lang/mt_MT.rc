@@ -751,10 +751,6 @@ BEGIN
     IDS_METATAGS            "Ammont ta' 'Meta Tags':"
     IDS_FILEFORMAT          "Format"
     IDS_UDPREASKS           "'UDP File Reasks'"
-    IDS_DYNUP_PINGTOLERANCE_MS "'Ping tolerance' (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metodu għall-'ping tolerance'"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Millisekondi (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Persentaġġ (%)"
 END
 
 STRINGTABLE
@@ -1365,9 +1361,6 @@ BEGIN
     IDS_PASTE               "Ippejstja"
     IDS_SEARCHAUTHORCOLLECTION "Fittexx il-kollezzjonijiet tal-Awtur"
     IDS_ERR_DUPL_FILES      "Files ixxerjati idduplikati: ""%s"" u ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: It-Tracerouting falla ħafna drabi. L-iSpeedSense tal-upload ġie mitfi."
-    IDS_USS_STARTING        "UploadSpeedSense: Il-preparazzjonijiet lesti. Se jibda il-kontroll tal-veloċita' tal-upload. (L-ewwel 60 sekonda jkunu b'veloċita għolja biex tiġi ċċekjata r-rejazzjoni)"
     IDS_A4AF                "L-immaniġġjar tas-Sorsi"
     IDS_AUTOCAT_LABEL       "Sat-Assignment awtomatiku (uża pattern, separat b' | )"
     IDS_SHOWEXTSETTINGS     "Ara iktar għażliet avvanzati"
@@ -1470,16 +1463,10 @@ BEGIN
     IDS_IMP_DELSRC          "Tixtieq is-sors tal-files ta' downloads importati jitħassru?"
     IDS_IMP_SIZE            "%s (Disk:%s)"
     IDS_IMP_STATUS          "Qed jiġu mportati %s: %s"
-    IDS_DYNUPENABLED        "Sib l-aħjar limitu ta' upload awtomatikament"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolleranza tal-Pinge (% tal-iżgħar ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Veloċita meta ttella"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Veloċita meta tniżżel"
-    IDS_DYNUP_NUMBEROFPINGS "Numru massimu ta' pings għall-medja"
-    IDS_DYNUP_MINUPLOAD     "L-inqas veloċita permessa għall-upload"
     IDS_ESTTIMELEFT         "Stima ta' ħin li fadal:"
     IDS_TRANSFER_RATE_LABEL "Rata ta' transfer:"
     IDS_SAVELOG             "Issejvja il-Log"
@@ -1507,7 +1494,6 @@ BEGIN
     IDS_EM_HELP             "Għajnuna"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Ħabib mhux miżjud. \r\n\r\nDiġa hemm ħabib bl-istess indirizz tal-IP u port."
-    IDS_DYNUP               "SpeedSense fl-Upload (mhux rikomandat)"
     IDS_KADOVERHEAD         "Il-ħela mill-Kad (Pakketti): %s (%s)"
     IDS_FIND                "Sib..."
     IDS_LOG_BANNED_CLIENTS  "Żomm nota tal-klijenti ibbenjati"
@@ -1785,11 +1771,6 @@ BEGIN
     IDS_VIEWCOLLECTION      "Ara l-kollezzjoni"
     IDS_COLL_TEXTFORMAT     "Issejvja l-kollezzjoni f'sempliċi text format"
     IDS_RUNNINGRESTRICTED   "L-eMule qed jaħdem bi privileġġi mnaqqsa"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Upload limit miżjud fil-preferenzi. Is-60 sekonda li ġejjin se jkunu 'reaction mode' b'veloċita għolja."
-    IDS_USS_STATE_PREPARING "Preparamenti..."
-    IDS_USS_STATE_WAITING   "Stenna..."
-    IDS_USS_STATE_ERROR     "Problema!"
     IDS_SHAREWARNING        "(Folder will be shared!)"
     IDS_REMOVEALLSERVERS    "Żgur li trid tneħħi is-servers kollha?"
     IDS_SEARCH_UNKATTR      "Ma jistax jiġi magħruf '%s'"

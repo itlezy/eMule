@@ -791,10 +791,6 @@ BEGIN
     IDS_METATAGS            " خەتكۈچ سانى:"
     IDS_FILEFORMAT          "ھۆججەت فورمات"
     IDS_UDPREASKS           "‫UDP ھۆججەتنى قايتىدىن ئىزدە‬"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping يول قويۇش چېكى (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "‫Ping يول قويۇش چېكى ئىشلەتكەن ئۇسۇل‬"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "مىللىسېكۇنت (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "پىرسەنتى (%)"
     IDS_LOG_A4AF            "‫A4AF ھەرىكىتىنى خاتىرىلە‬"
     IDS_A4AF_SAVE_CPU       "‫CPU مەنبەسىنى تېجەش ئۈچۈن A4AF نى چەكلە‬"
     IDS_SEARCH_DOC          "ھۆججەت"
@@ -1400,9 +1396,6 @@ BEGIN
     IDS_PASTE               "چاپلا"
     IDS_SEARCHAUTHORCOLLECTION "بۇ ئاپتورنىڭ يىغقۇچىنى ئىزدە"
     IDS_ERR_DUPL_FILES      "تەكرار ھەمبەھىر ھۆججەت: «%s» ۋە «%s»"
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "‫USS: يول تاللاش ئىز قوغلىشى كۆپ قېتىم مەغلۇپ بولدى. USS تاقا.‬"
-    IDS_USS_STARTING        "‫USS: تەييارلاندى. يوللاش سۈرئىتىنى كونترول قىلىشقا باشلىدى. (دەسلەپكى 60 سېكۇنتتا تېز ئىنكاس شەكلى قوللىنىدۇ)‬"
     IDS_A4AF                "مەنبە بىر تەرەپ قىلىش"
     IDS_AUTOCAT_LABEL       "ئۆزلۈكىدىن تىپىنى بېكىتىش (ئىپادىسى، «|» بىلەن ئايرىلىدۇ)‏"
     IDS_SHOWEXTSETTINGS     "تېخىمۇ كۆپ كونترولنى كۆرسىتىش (ئالىي شەكىل كونترول)‏"
@@ -1505,16 +1498,10 @@ BEGIN
     IDS_IMP_DELSRC          "مۇۋەپپەقىيەتلىك ئەكىرگەن چۈشۈرىدىغان ئەسلى ھۆججەتنى ئۆچۈرەمسىز؟"
     IDS_IMP_SIZE            "%s (دىسكا:%s)"
     IDS_IMP_STATUS          "ئەكىرىۋاتىدۇ %s: %s"
-    IDS_DYNUPENABLED        "يوللاش چەكلىمىسىنى ئۆزلۈكىدىن تەڭشە"
-    IDS_DYNUP_PINGTOLERANCE "‫Pingيول قويۇش چېكى (Ping% ئەڭ تۆۋەن)‬"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "ئاستا يۇقىرىغا"
-    IDS_DYNUP_GOINGDOWNDIVIDER "ئاستا تۆۋەنگە"
-    IDS_DYNUP_NUMBEROFPINGS "‫ئوتتۇرىچە ئەڭ كۆپ Ping قېتىم سانى‬"
-    IDS_DYNUP_MINUPLOAD     "يول قويۇلىدىغان ئەڭ تۆۋەن يوللاش سۈرئىتى"
     IDS_ESTTIMELEFT         "مۆلچەردىكى قالغان ۋاقىت:"
     IDS_TRANSFER_RATE_LABEL "يوللاش نىسبىتى:"
     IDS_SAVELOG             "كۈندىلىك خاتىرىنى ساقلا"
@@ -1560,7 +1547,6 @@ BEGIN
     IDS_EM_HELP             "ياردەم"
     IDS_WRN_FRIENDDUPLIPPORT
                             "دوست قوشمىدى.\r\n\r\nئوخشاش‫ IP ئادرېسى بار دوستتىن بىرسى مەۋجۇد.‬"
-    IDS_DYNUP               "يوللاش سۈرئىتىنى تەكشۈر (ئىشلىتىش تەۋسىيە قىلىنمايدۇ)‏"
     IDS_KADOVERHEAD         "Kad سەرپىياتى (: %s (%s(بوغچا)"
     IDS_FIND                "ئىزدە…‏"
     IDS_LOG_BANNED_CLIENTS  "خاتىرە چەكلەنگەن خېرىدار"
@@ -1756,11 +1742,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "ئاددى تېكست شەكلىدە يىغقۇچ توپلىمىنى ساقلا"
     IDS_RUNNINGRESTRICTED   "‫eMule چەكلەش ھالىتىدە ئىجرا بولۇۋاتىدۇ‬"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "يوللاش سۈرئىتى سەزگۈسى: تاللىغان يوللاش سۈرئەت چەكلىمىسى ئۆستۈرۈلگەنلىكى بايقالدى. تېز ئىنكاس شەكلىگە كىرىش 60 سېكۇنت"
-    IDS_USS_STATE_PREPARING "تەييارلىنىۋاتىدۇ…‏"
-    IDS_USS_STATE_WAITING   "سەل ساقلاڭ…‏"
-    IDS_USS_STATE_ERROR     "خاتا!‏"
     IDS_SHAREWARNING        "(قىسقۇچ ھەمبەھىرلەنمەكچى)"
     IDS_REMOVEALLSERVERS    "بارلىق مۇلازىمېتىرنى ئۆچۈرەمسىز؟"
     IDS_SEARCH_UNKATTR      "نامەلۇم ئىزدەش خاسلىقى «%s»"

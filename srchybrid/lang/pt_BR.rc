@@ -1286,9 +1286,6 @@ BEGIN
     IDS_PASTE               "Colar"
     IDS_SEARCHAUTHORCOLLECTION "Pesquisar nas coleções do autor..."
     IDS_ERR_DUPL_FILES      "Arquivos compartilhados duplicados: ""%s"" e ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: O roteamento falhou muito. Desabilitando Upload SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: Preparação terminada. Iniciando o controle da velocidade de upload. (Primeiros 60s em modo de reação rápida)"
     IDS_A4AF                "Gerenciar fontes"
     IDS_AUTOCAT_LABEL       "Atribuição automática de categorias (modelo, separado por |)"
     IDS_SHOWEXTSETTINGS     "Exibir mais controles (controles do modo avançado)"
@@ -1392,16 +1389,10 @@ BEGIN
     IDS_IMP_DELSRC          "Você deseja que os arquivos de origem importados com sucesso sejam apagados?"
     IDS_IMP_SIZE            "%s (Disco: %s)"
     IDS_IMP_STATUS          "Importando %s: %s"
-    IDS_DYNUPENABLED        "Encontrar automaticamente o melhor limite de upload"
-    IDS_DYNUP_PINGTOLERANCE "Tolerância de ping (% de ping baixo)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "Tempo para aumentar limite"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Tempo para diminuir limite"
-    IDS_DYNUP_NUMBEROFPINGS "Número máximo de pings para média"
-    IDS_DYNUP_MINUPLOAD     "Menor velocidade de upload permitida"
     IDS_ESTTIMELEFT         "Tempo restante estimado:"
     IDS_TRANSFER_RATE_LABEL "Taxa de transferência:"
     IDS_SAVELOG             "Salvar log"
@@ -1467,7 +1458,6 @@ BEGIN
     IDS_EM_HELP             "Aj&uda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Amigo não adicionado.\r\n\r\nJá existe um amigo com o mesmo endereço IP e porta na lista."
-    IDS_DYNUP               "Sensor de velocidade de upload (não recomendado)"
     IDS_KADOVERHEAD         "Overhead na rede Kad (pacotes): %s (%s)"
     IDS_FIND                "Localizar..."
     IDS_LOG_BANNED_CLIENTS  "Registrar usuários banidos"
@@ -1507,10 +1497,6 @@ BEGIN
     IDS_METATAGS            "Contagem de meta elementos:"
     IDS_FILEFORMAT          "Formato"
     IDS_UDPREASKS           "Perguntou por arquivos via UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Tolerância de ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Método para tolerância de ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milissegundos (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Porcentagem (%)"
     IDS_LOG_A4AF            "Registrar ações A4AF"
     IDS_A4AF_SAVE_CPU       "Desabilitar verificação A4AF para preservar a CPU"
     IDS_SEARCH_DOC          "Documento"
@@ -1770,11 +1756,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Salvar coleção em formato de texto simples"
     IDS_RUNNINGRESTRICTED   "eMule está executando com privilégios reduzidos"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Detectado aumento do limite de upload nas preferências. Usando modo de reação rápida por 60 segundos."
-    IDS_USS_STATE_PREPARING "Preparando..."
-    IDS_USS_STATE_WAITING   "Aguardando..."
-    IDS_USS_STATE_ERROR     "Erro!"
     IDS_SHAREWARNING        "(Esta pasta será compartilhada!)"
     IDS_REMOVEALLSERVERS    "Você realmente deseja remover todos os servidores?"
     IDS_SEARCH_UNKATTR      "Atributo de pesquisa desconhecido '%s'"

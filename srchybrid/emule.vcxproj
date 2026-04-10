@@ -247,7 +247,6 @@
     <ClCompile Include="KadSearchListCtrl.cpp" />
     <ClCompile Include="KnownFile.cpp" />
     <ClCompile Include="KnownFileList.cpp" />
-    <ClCompile Include="LastCommonRouteFinder.cpp" />
     <ClCompile Include="LayeredWindowHelperST.cpp" />
     <ClCompile Include="ListBoxST.cpp" />
     <ClCompile Include="ListCtrlEditable.cpp" />
@@ -533,7 +532,6 @@
     <ClInclude Include="KnownFile.h" />
     <ClInclude Include="KnownFileList.h" />
     <ClInclude Include="langids.h" />
-    <ClInclude Include="LastCommonRouteFinder.h" />
     <ClInclude Include="LayeredWindowHelperST.h" />
     <ClInclude Include="ListBoxST.h" />
     <ClInclude Include="ListCtrlEditable.h" />

@@ -751,10 +751,6 @@ BEGIN
     IDS_METATAGS            "Брой мета тагове:"
     IDS_FILEFORMAT          "Формат"
     IDS_UDPREASKS           "Повторно запитване по UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Отклонение за пинг (мсек.)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Метод на пинг"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Милисекунди (мсек.)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Проценти (%)"
 END
 
 STRINGTABLE
@@ -1455,16 +1451,10 @@ BEGIN
     IDS_IMP_DELSRC          "Искате ли да изтриете старата папка с временни частични файлове след успешно импортиране?"
     IDS_IMP_SIZE            "%s (Диск:%s)"
     IDS_IMP_STATUS          "Импортиране на %s: %s"
-    IDS_DYNUPENABLED        "Автоматично определяне на най-добрия лимит за качване"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Отклонение за пинг (% от най-ниския)"
-    IDS_DYNUP_GOINGUPDIVIDER "Плавно повишение"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Плавно понижение"
-    IDS_DYNUP_NUMBEROFPINGS "Макс. среден брой на пинг"
-    IDS_DYNUP_MINUPLOAD     "Мин. разрешена скорост за качване"
     IDS_ESTTIMELEFT         "Оставащо време:"
     IDS_TRANSFER_RATE_LABEL "Скорост:"
     IDS_SAVELOG             "Запиши отчета"
@@ -1492,7 +1482,6 @@ BEGIN
     IDS_EM_HELP             "Помощ"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Приятелят не е добавен.\r\n\r\nВече съществува приятел със същият IP адрес и порт."
-    IDS_DYNUP               "'Умно' качване (не се препоръчва)"
     IDS_KADOVERHEAD         "Превишение за Kad (пакета): %s (%s)"
     IDS_FIND                "Търси..."
     IDS_LOG_BANNED_CLIENTS  "Отчет за забранените клиенти"
@@ -1767,14 +1756,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Запиши колекцията в обикновен текстов формат"
     IDS_SEARCHAUTHORCOLLECTION "Търси авторски колекции"
     IDS_ERR_DUPL_FILES      "Дублирани споделени файлове: ""%s"" и ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "'Умно' качване: Проследяването на пътя е неуспешно твърде много пъти. Изключване на 'умното' качване."
-    IDS_USS_STARTING        "'Умно' качване: Направено е с подготовката. Стартиран е контрол над скоростта на качване. (Първите 60 секунди ще са в режим 'бързо взаимодействие')"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "'Умно' качване: В настройките е открито ограничение на скоростта на качване. Преминаване в режим 'бързо взаимодействие' за 60 секунди."
-    IDS_USS_STATE_PREPARING "Подготовка..."
-    IDS_USS_STATE_WAITING   "Изчакване..."
-    IDS_USS_STATE_ERROR     "Грешка!"
     IDS_SHAREWARNING        "(Папката ще бъде споделена!)"
     IDS_REMOVEALLSERVERS    "Наистина ли искате да изтриете всички сървъри?"
     IDS_SEARCH_UNKATTR      "Неизвестен параметър за търсене '%s'"

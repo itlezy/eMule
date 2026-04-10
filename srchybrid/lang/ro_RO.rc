@@ -745,10 +745,6 @@ BEGIN
     IDS_METATAGS            "Număr Meta Tag:"
     IDS_FILEFORMAT          "Format fişier"
     IDS_UDPREASKS           "Cereri repetate fişiere UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Toleranţă Ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metoda toleranţei Ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milisecunde (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Procent (%)"
 END
 
 STRINGTABLE
@@ -1416,16 +1412,10 @@ BEGIN
     IDS_IMP_DELSRC          "Vrei să ştergi fişierul Part original al descărcărilor importate corect?"
     IDS_IMP_SIZE            "%s (discul: %s)"
     IDS_IMP_STATUS          "Importez %s: %s"
-    IDS_DYNUPENABLED        "Găseşte automat limita optimă de upload"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Toleranţa ping (% din ping-ul minim)"
-    IDS_DYNUP_GOINGUPDIVIDER "Viteză de creştere"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Viteză de scădere"
-    IDS_DYNUP_NUMBEROFPINGS "Număr maxim de ping pe medie"
-    IDS_DYNUP_MINUPLOAD     "Viteza de trimitere minimă acceptată"
     IDS_ESTTIMELEFT         "Timp rămas estimat:"
     IDS_TRANSFER_RATE_LABEL "Viteză de transfer:"
     IDS_SAVELOG             "Salvare log"
@@ -1453,7 +1443,6 @@ BEGIN
     IDS_EM_HELP             "&Ajutor"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Slot prieten neadăugat.\r\n\r\nExistă deja un prieten cu acelaşi IP şi port."
-    IDS_DYNUP               "Upload dinamic (nerecomandat)"
     IDS_KADOVERHEAD         "Adiţional Kad (Pachete): %s (%s)"
     IDS_FIND                "Caută..."
     IDS_LOG_BANNED_CLIENTS  "Loghează clienţii alungaţi"
@@ -1746,14 +1735,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Salvează colecţia ca simplu text"
     IDS_SEARCHAUTHORCOLLECTION "Caută în colecţiile autorului"
     IDS_ERR_DUPL_FILES      "Dublură la fişiere share: ""%s"" şi ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Autodetecţie viteză UL: Detecţia a eşuat de prea multe ori. Dezactivez autodetecţia viteză UL."
-    IDS_USS_STARTING        "Autodetecţie viteză UL: Pregătit. Încep controlul vitezei de UL. (Primele 60 sec. vor fi în modul reacţie rapidă)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Autodetecţie viteză UL: Am detectat creşterea limitei UL în Preferinţe. Intru în modul reacţie rapidă pentru 60 sec."
-    IDS_USS_STATE_PREPARING "Pregătesc..."
-    IDS_USS_STATE_WAITING   "Aştept..."
-    IDS_USS_STATE_ERROR     "Eroare!"
     IDS_SHAREWARNING        "(Dosarul va fi partajat!)"
     IDS_REMOVEALLSERVERS    "Chiar vrei să ştergi toate serverele?"
     IDS_SEARCH_UNKATTR      "Atribut de căutare '%s' necunoscut"

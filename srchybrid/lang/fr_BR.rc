@@ -1374,16 +1374,10 @@ BEGIN
 	IDS_IMP_DELSRC	"Ha fellout a ra deoc'h dilemel ar restroù part orin diouzh ar pellgargañ a zo bet kaset a-benn o enporzhiañ ?"
 	IDS_IMP_SIZE	"%s (Kantenn :%s)"
 	IDS_IMP_STATUS	"Enporzhiañ %s: %s"
-	IDS_DYNUPENABLED	"Kavout ent-emgefre an harz kas gwelloc'h"
 END
 
 STRINGTABLE FIXED IMPURE
 BEGIN
-	IDS_DYNUP_PINGTOLERANCE	"Gouzañvusted ar ping (% eus ar ping bihanañ)"
-	IDS_DYNUP_GOINGUPDIVIDER	"Amzer oc'h ersaviñ d'an digreskaat"
-	IDS_DYNUP_GOINGDOWNDIVIDER	"Amzer oc'h ersaviñ d'ar greskaat"
-	IDS_DYNUP_NUMBEROFPINGS	"Niver ping uhelañ evit ar c'heitad"
-	IDS_DYNUP_MINUPLOAD	"Tizh bihanañ aotreet o kas"
 	IDS_ESTTIMELEFT	"Amzer o chom istimet :"
 	IDS_TRANSFER_RATE_LABEL	"Feur kas :"
 	IDS_SAVELOG	"Enrollañ ar c'herzh-levr"
@@ -1447,7 +1441,6 @@ BEGIN
 	IDS_MINLENGTH	"Padelezh izel. [hh:mm:ss]"
 	IDS_EM_HELP	"&Skoazell"
 	IDS_WRN_FRIENDDUPLIPPORT	"Mignon ket ouzhpennet.\r\n\r\nUr mignon all a zo dija enrollet gant ar memes chomlec'h IP ha porzh."
-	IDS_DYNUP	"Dizoloiñ an tizh kas (not recommended)"
 	IDS_KADOVERHEAD	"Bann tremen dreistniverel Kad (Pakadoù): %s (%s)"
 	IDS_FIND	"Kavout..."
 	IDS_LOG_BANNED_CLIENTS	"Enskrivañ an ostizien forbannet"
@@ -1487,10 +1480,6 @@ BEGIN
 	IDS_METATAGS	"Hollad Gour Balizenn:"
 	IDS_FILEFORMAT	"Mentrezh restr"
 	IDS_UDPREASKS	"Adc'houlennata UDP restr"
-	IDS_DYNUP_PINGTOLERANCE_MS	"Gouzañvusted ar ping (ms)"
-	IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER	"Hentenn gouzañvusted ar ping"
-	IDS_DYNUP_RADIO_PINGTOLERANCE_MS	"Mili-eilennoù (ms)"
-	IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT	"Dregantad (%)"
 END
 
 STRINGTABLE FIXED IMPURE
@@ -1746,14 +1735,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT	"Enrollañ dastumadenn dindan ur restr a ventrezh eeun"
     IDS_SEARCHAUTHORCOLLECTION "Klask dastumadennoù a aozerien"
     IDS_ERR_DUPL_FILES	"Eilet restroù eskemmet : ""%s"" ha ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-	"UploadSpeedSense: Tracerouting faziet re a wezhioù. Disaotren Upload SpeedSense."
-    IDS_USS_STARTING	"UploadSpeedSense: Echu eo gant ar prientiñ. O loc'hañ ar reoliñ eus an tizh treuzkas (an 60 eilenn kentañ a vo er mod reaktion trumm)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-	"UploadSpeedSense: harz treuzkas en dibaboù dizoloet. Aet d'ar mod respont trumm evit 60 eilenn."
-    IDS_USS_STATE_PREPARING "O prientiñ..."
-    IDS_USS_STATE_WAITING	"O c'hortoz..."
-    IDS_USS_STATE_ERROR	"Fazi !"
     IDS_SHAREWARNING	"(ingalet e vo an teuliad !)"
     IDS_REMOVEALLSERVERS	"Ha fellout a ra deoc’h dilemel an holl servijerioù ?"
     IDS_SEARCH_UNKATTR	"Doareenn glask dianav '%s'"

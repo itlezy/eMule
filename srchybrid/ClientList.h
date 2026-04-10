@@ -141,11 +141,6 @@ public:
 	void	Process();
 	bool	IsValidClient(CUpDownClient *tocheck) const;
 	void	Debug_SocketDeleted(CClientReqSocket *deleted) const;
-
-	// ZZ:UploadSpeedSense -->
-	bool GiveClientsForTraceRoute();
-	// ZZ:UploadSpeedSense <--
-
 	void	ProcessA4AFClients() const; // ZZ:DownloadManager
 	CDeadSourceList	m_globDeadSourceList;
 

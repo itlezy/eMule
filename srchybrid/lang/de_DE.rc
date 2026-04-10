@@ -1282,9 +1282,6 @@ BEGIN
     IDS_PASTE               "Einfügen"
     IDS_SEARCHAUTHORCOLLECTION "Suche Kollektionen des Autors"
     IDS_ERR_DUPL_FILES      "Doppelte freigegebene Datei: ""%s"" und ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting zu oft fehlgeschlafen. UploadSpeedSense wird deaktiviert."
-    IDS_USS_STARTING        "UploadSpeedSense: Vorbereitungen beendet. Regelung der Uploadgeschwindigkeit wird gestartet. (erste 60 Sekunden im schnellen Reaktionsmodus)"
     IDS_A4AF                "Quellen-Kontrolle"
     IDS_AUTOCAT_LABEL       "Autom. Kategorien-Zuweisung ( | trennt Muster)"
     IDS_SHOWEXTSETTINGS     "Zusätzliche Kontrollen anzeigen (für Fortgeschrittene)"
@@ -1387,16 +1384,10 @@ BEGIN
     IDS_IMP_DELSRC          "Sollen die Quelldateien (Partfiles) nach dem erfolgreichen Import gelöscht werden?"
     IDS_IMP_SIZE            "%s (Disk:%s)" //!
     IDS_IMP_STATUS          "Importiere %s: %s"
-    IDS_DYNUPENABLED        "Automatisch beste Uploadgeschw. ermitteln"
-    IDS_DYNUP_PINGTOLERANCE "Ping-Toleranz (% des niedrigsten Pings)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "Anstiegsgeschwindigkeit"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Verringerungsgeschwindigkeit"
-    IDS_DYNUP_NUMBEROFPINGS "Max. Anzahl von Pings"
-    IDS_DYNUP_MINUPLOAD     "Upload Minimum"
     IDS_ESTTIMELEFT         "Restzeit:"
     IDS_TRANSFER_RATE_LABEL "Transferrate:"
     IDS_SAVELOG             "Log abspeichern"
@@ -1442,7 +1433,6 @@ BEGIN
     IDS_EM_HELP             "&Hilfe"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Freund wurde nicht hinzugefügt.\r\n\r\nEs gibt bereits einen Freund mit gleicher IP und Port."
-    IDS_DYNUP               "Upload SpeedSense (nicht empfohlen)"
     IDS_KADOVERHEAD         "Kad Overhead (Pakete): %s (%s)"
     IDS_FIND                "Suche..."
     IDS_LOG_BANNED_CLIENTS  "Logge gebannte Clients"
@@ -1502,10 +1492,6 @@ BEGIN
     IDS_METATAGS            "Meta Tag Anzahl:"
     IDS_FILEFORMAT          "Dateiformat"
     IDS_UDPREASKS           "UDP Datei-Neuanfragen"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping-Toleranz (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Methode der Ping-Toleranz"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Millisekunden (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Prozent (%)"
     IDS_LOG_A4AF            "Logge A4AF Aktionen"
     IDS_A4AF_SAVE_CPU       "A4AF-Prüfungen deaktivieren (CPU schonen)"
     IDS_SEARCH_DOC          "Dokument"
@@ -1767,11 +1753,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Kollektion im einfachen Textformat speichern"
     IDS_RUNNINGRESTRICTED   "eMule läuft mit eingeschränkten Rechten"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Änderung des Uploadlimits in den Einstellungen festgestellt. Für 60 Sekunden wird der schnelle Reaktionsmodus aktiviert."
-    IDS_USS_STATE_PREPARING "Vorbereitung..."
-    IDS_USS_STATE_WAITING   "Warte..."
-    IDS_USS_STATE_ERROR     "Fehler!"
     IDS_SHAREWARNING        "(Inhalt wird freigegeben!)"
     IDS_REMOVEALLSERVERS    "Sind Sie sich sicher, alle Server zu entfernen?"
     IDS_SEARCH_UNKATTR      "Unbekanntes Suchattribut '%s'"

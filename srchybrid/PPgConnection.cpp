@@ -28,7 +28,6 @@
 #include "Statistics.h"
 #include "ListenSocket.h"
 #include "ClientUDPSocket.h"
-#include "LastCommonRouteFinder.h"
 #include "PreferencesDlg.h"
 #include "PPgWebServer.h"
 
@@ -231,10 +230,6 @@ BOOL CPPgConnection::OnApply()
 			u = v * 4 / 5; //80%
 	} else
 		u = UNLIMITED;
-
-	if (u > thePrefs.GetMaxUpload())
-		// make USS go up to higher ul limit faster
-		theApp.lastCommonRouteFinder->InitiateFastReactionPeriod();
 
 	thePrefs.SetMaxUpload(u);
 

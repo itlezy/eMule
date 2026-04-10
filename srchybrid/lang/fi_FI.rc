@@ -792,10 +792,6 @@ BEGIN
     IDS_METATAGS            "Metatietojen lukumäärä:"
     IDS_FILEFORMAT          "Tiedoston tyyppi"
     IDS_UDPREASKS           "UDP-tiedostojen uudelleenpyynnöt"
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Ping-toleranssi (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Ping-toleranssin tyyppi"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Millisekuntia (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Prosenttia (%)"
     IDS_LOG_A4AF            "Kirjaa A4AF-tapahtumat lokiin"
     IDS_A4AF_SAVE_CPU       "Poista A4AF-tarkitustukset käytöstä (pienempi prosessorinkulutus)"
     IDS_SEARCH_DOC          "Dokumentit"
@@ -1402,9 +1398,6 @@ BEGIN
     IDS_PASTE               "Liitä"
     IDS_SEARCHAUTHORCOLLECTION "Etsi tekijän kokoelmia"
     IDS_ERR_DUPL_FILES      "Sama tiedosto on jaettu kahdesti: ""%s"" ja ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "Lähetysnopeuden tunnustelu: Reitinjäljitys epäonnistui liian monta kertaa. Lähetysnopeuden tunnustelu ei ole käytössä."
-    IDS_USS_STARTING        "Lähetysnopeuden tunnustelu: Valmistelut on tehty, ja aloitan nyt lähetysnopeuden säätelyn. Ensimmäisen 60 sekunnin ajan reagoin muutoksiin nopeasti."
     IDS_A4AF                "Lähteiden käsittely"
     IDS_AUTOCAT_LABEL       "Automaattinen kategoriaan sijoitus (kaava, erotin |)"
     IDS_SHOWEXTSETTINGS     "Näytä enemmän asetuksia"
@@ -1507,16 +1500,10 @@ BEGIN
     IDS_IMP_DELSRC          "Haluatko poistaa alkuperäiset tiedostot onnistuneesti tuoduille latauksille?"
     IDS_IMP_SIZE            "%s (Levy: %s)"
     IDS_IMP_STATUS          "Tuodaan %s: %s"
-    IDS_DYNUPENABLED        "Etsi paras lähetysnopeys automaattisesti"
-    IDS_DYNUP_PINGTOLERANCE "Ping-viiveen sietoraja (prosenttia alhaisimmasta)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_GOINGUPDIVIDER "Nopeuden kasvamishitaus"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Nopeuden laskemishitaus"
-    IDS_DYNUP_NUMBEROFPINGS "Enimmäismäärä ping-paketteja keskiarvolle"
-    IDS_DYNUP_MINUPLOAD     "Alhaisin salllittu lähetysnopeus"
     IDS_ESTTIMELEFT         "Aikaa jäljellä arviolta:"
     IDS_TRANSFER_RATE_LABEL "Siirtonopeus:"
     IDS_SAVELOG             "Tallenna loki"
@@ -1562,7 +1549,6 @@ BEGIN
     IDS_EM_HELP             "&Ohje"
     IDS_WRN_FRIENDDUPLIPPORT
                             "En lisännyt kaveria.\r\n\r\nToinen kaveri on olemassa samalla IP-osoitteella ja portilla."
-    IDS_DYNUP               "Lähetysnopeuden tunnustelu (ei suositella)"
     IDS_KADOVERHEAD         "Kademlian kokonaisliikenne %s (paketteja: %s)"
     IDS_FIND                "Etsi..."
     IDS_LOG_BANNED_CLIENTS  "Kirjaa lokiin estetyt käyttäjät"
@@ -1758,11 +1744,6 @@ STRINGTABLE
 BEGIN
     IDS_COLL_TEXTFORMAT     "Tallenna kokoelma tekstimuodossa"
     IDS_RUNNINGRESTRICTED   "eMule on käynnissä rajoitetuilla oikeuksilla"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "Lähetysnopeuden tunnustelu: Olen havainnut kohotetun lähetysrajan ohjelman asetuksissa.  Siirryn nopeaan reagointiin 60 sekunniksi."
-    IDS_USS_STATE_PREPARING "Valmistaudun..."
-    IDS_USS_STATE_WAITING   "Odotan..."
-    IDS_USS_STATE_ERROR     "Virhe!"
     IDS_SHAREWARNING        "(hakemisto on jaettu)"
     IDS_REMOVEALLSERVERS    "Haluatko todella poistaa kaikki palvelimet?"
     IDS_SEARCH_UNKATTR      "Tuntematon hakuehto  '%s'"

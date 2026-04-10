@@ -752,10 +752,6 @@ BEGIN
     IDS_METATAGS            "Tổng các Thẻ Meta:"
     IDS_FILEFORMAT          "Định dạng"
     IDS_UDPREASKS           "Yêu cầu lại tập tin UDP"
-    IDS_DYNUP_PINGTOLERANCE_MS "Cố gắng PING (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Phương pháp cố gắng PING"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milli giây (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Phần trăm (%)"
 END
 
 STRINGTABLE
@@ -1366,9 +1362,6 @@ BEGIN
     IDS_PASTE               "Dán"
     IDS_SEARCHAUTHORCOLLECTION "Tìm Bộ sưu tập của Tác giả này"
     IDS_ERR_DUPL_FILES      "Tập tin chia sẻ trùng lập: ""%s"" và ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "ĐoánTốcĐộ-TảiLên: ĐịnhTuyến-tracerouting thất bại nhiều lần. Đã hủy bỏ ĐoánTốcĐộ-TảiLên."
-    IDS_USS_STARTING        "ĐoánTốcĐộ-TảiLên: Chuẩn bị xong. Bắt đầu điều khiển tốc độ tải lên. (60 giây đầu sẽ ở chế độ phản ứng nhanh)"
     IDS_A4AF                "Xử lý Nguồn"
     IDS_AUTOCAT_LABEL       "Tự động cho vào DMục (mẫu, cách nhau bởi |)"
     IDS_SHOWEXTSETTINGS     "Hiển thị Bộ điều khiển Nâng cao"
@@ -1471,16 +1464,10 @@ BEGIN
     IDS_IMP_DELSRC          "Bạn có muốn xóa tập tin nguồn của các tác vụ đã thêm vào không?"
     IDS_IMP_SIZE            "%s (Đĩa:%s)"
     IDS_IMP_STATUS          "Đang thêm vào %s: %s"
-    IDS_DYNUPENABLED        "Tự động tìm Giới hạn tải lên tốt nhất"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Cố gắng PING (% PING thấp nhất)"
-    IDS_DYNUP_GOINGUPDIVIDER "Lên chậm"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Xuống chậm"
-    IDS_DYNUP_NUMBEROFPINGS "Số lần PING trung bình lớn nhất"
-    IDS_DYNUP_MINUPLOAD     "Tốc độ tải lên nhỏ nhất cho phép"
     IDS_ESTTIMELEFT         "Thời gian còn lại dự kiến:"
     IDS_TRANSFER_RATE_LABEL "Tỉ lệ truyền tải:"
     IDS_SAVELOG             "Lưu bản ghi"
@@ -1508,7 +1495,6 @@ BEGIN
     IDS_EM_HELP             "&Trợ Giúp"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Bạn bè không được thêm vào.\r\n\r\nĐã có bạn với cùng địa chỉ IP và cổng này rồi."
-    IDS_DYNUP               "ĐoánTốcĐộ-TảiLên (không khuyến khích)"
     IDS_KADOVERHEAD         "Phần dư Kad (Gói): %s (%s)"
     IDS_FIND                "Tìm..."
     IDS_LOG_BANNED_CLIENTS  "Ghi lại các máy khách bị cấm"
@@ -1786,11 +1772,6 @@ BEGIN
     IDS_VIEWCOLLECTION      "Xem Bộ sưu tập"
     IDS_COLL_TEXTFORMAT     "Lưu bộ sưu tập ở định dạng văn bản đơn giản"
     IDS_RUNNINGRESTRICTED   "eMule đang chạy với quyền hạn chế"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "ĐoánTốcĐộTảiLên: Phát hiện đã nâng giới hạn tải lên trong Tùy Chọn. Chuyển sang chế độ phản ứng nhanh trong 60 giây."
-    IDS_USS_STATE_PREPARING "Đang chuẩn bị..."
-    IDS_USS_STATE_WAITING   "Đang đợi..."
-    IDS_USS_STATE_ERROR     "Bị lỗi!"
     IDS_SHAREWARNING        "(Thư mục sẽ được chia sẻ!)"
     IDS_REMOVEALLSERVERS    "Bạn chắn chắn xóa tất cả máy chủ?"
     IDS_SEARCH_UNKATTR      "Thuộc tính tìm kiếm '%s' không xác định"

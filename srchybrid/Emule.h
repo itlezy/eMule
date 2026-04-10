@@ -32,7 +32,6 @@ class CListenSocket;
 class CDownloadQueue;
 class CScheduler;
 class UploadBandwidthThrottler;
-class LastCommonRouteFinder;
 class CemuleDlg;
 class CClientList;
 class CKnownFileList;
@@ -71,10 +70,7 @@ public:
 	bool CanWritePartMetFiles(LPCTSTR pszPath, bool bForceRefresh = false);
 	void InvalidatePartMetWriteGuardCache(LPCTSTR pszPath = NULL);
 
-	// ZZ:UploadSpeedSense -->
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
-	LastCommonRouteFinder *lastCommonRouteFinder;
-	// ZZ:UploadSpeedSense <--
 	CemuleDlg			*emuledlg;
 	CClientList			*clientlist;
 	CKnownFileList		*knownfiles;

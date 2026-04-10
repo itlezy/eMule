@@ -67,8 +67,6 @@ void CMuleStatusBarCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 	case SBarChatMsg:
 		theApp.emuledlg->SetActiveDialog(theApp.emuledlg->chatwnd);
 		break;
-	case SBarUSS:
-		theApp.emuledlg->ShowPreferences(IDD_PPG_TWEAKS);
 	}
 }
 

@@ -1390,16 +1390,10 @@ BEGIN
     IDS_IMP_DELSRC          "Máte zájem o smazání zdrojového .part souboru úspěšně importovaných downloadů?"
     IDS_IMP_SIZE            "%s (Disk: %s)"
     IDS_IMP_STATUS          "Importování %s: %s"
-    IDS_DYNUPENABLED        "Automaticky najít nejlepší limit uploadu"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Tolerance pingů (% z nejnižších pingů)"
-    IDS_DYNUP_GOINGUPDIVIDER "Rostoucí pomalost"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Klesající pomalost"
-    IDS_DYNUP_NUMBEROFPINGS "Maximální počet pingů pro průměr"
-    IDS_DYNUP_MINUPLOAD     "Nejnižší povolená rychlost uploadu"
     IDS_ESTTIMELEFT         "Odhadovaný zbývající čas:"
     IDS_TRANSFER_RATE_LABEL "Přenosová rychlost:"
     IDS_SAVELOG             "Uložit log"
@@ -1427,7 +1421,6 @@ BEGIN
     IDS_EM_HELP             "&Nápověda"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Přítel nepřidán.\r\n\r\nJiž je zde přítel se stejnou IP adresou i portem."
-    IDS_DYNUP               "Citlivost na rychlost uploadu (není doporučeno)"
     IDS_KADOVERHEAD         "Kad Overhead (Pakety): %s (%s)"
     IDS_FIND                "Najít..."
     IDS_LOG_BANNED_CLIENTS  "Logovat zakázané klienty"
@@ -1505,10 +1498,6 @@ BEGIN
     IDS_METATAGS            "Počet meta tagů:"
     IDS_FILEFORMAT          "Formát souboru"
     IDS_UDPREASKS           "Opětovné UDP požadavky souborů"
-    IDS_DYNUP_PINGTOLERANCE_MS "Tolerance pingů (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metoda pro toleranci pingů"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Milisekund (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Procent (%)"
 END
 
 STRINGTABLE
@@ -1739,14 +1728,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Uložit kolekci v jednoduchém textovém formátu"
     IDS_SEARCHAUTHORCOLLECTION "Hledat kolekce autora"
     IDS_ERR_DUPL_FILES      "Duplicitní sdílené soubory: ""%s"" a ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting selhal příliš mnohokrát. Upload SpeedSense bude deaktivován."
-    IDS_USS_STARTING        "UploadSpeedSense: Skončila přípravná fáze. Spouští se kontrola rychlosti uploadu. (Prvních 60 sekund bude nastaven režim rychlé reakce)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Bylo zjištěno navýšení limitu pro upload. Na 60 sekund bude nastaven režim rychlé reakce."
-    IDS_USS_STATE_PREPARING "Příprava..."
-    IDS_USS_STATE_WAITING   "Čekání..."
-    IDS_USS_STATE_ERROR     "Chyba!"
     IDS_SHAREWARNING        "(Složka bude sdílena!)"
     IDS_REMOVEALLSERVERS    "Opravdu si přejete smazat všechny servery?"
     IDS_SEARCH_UNKATTR      "Neznámý vyhledávací atribut '%s'"

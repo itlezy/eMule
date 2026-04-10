@@ -1389,16 +1389,10 @@ BEGIN
     IDS_IMP_DELSRC          "Wilt u het origineel van succesvol geïmporteerde downloads verwijderen?"
     IDS_IMP_SIZE            "%s (schijf:%s)"
     IDS_IMP_STATUS          "Importeren van %s: %s"
-    IDS_DYNUPENABLED        "Zoek automatisch limiet voor beste uploadsnelheid"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Pingtolerantie (% van laagste ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Opgaande vertraging"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Neergaande vertraging"
-    IDS_DYNUP_NUMBEROFPINGS "Maximum aantal pings"
-    IDS_DYNUP_MINUPLOAD     "Laagst toegestane uploadsnelheid"
     IDS_ESTTIMELEFT         "Geschatte tijd over:"
     IDS_TRANSFER_RATE_LABEL "Overdrachtssnelheid:"
     IDS_SAVELOG             "Logboek opslaan"
@@ -1445,7 +1439,6 @@ BEGIN
     IDS_EM_HELP             "Help"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Vriend niet toegevoegd.\r\n\r\nEr is al een vriend met hetzelfde IP-adres en poort beschikbaar."
-    IDS_DYNUP               "Uploadsnelheidssensor (niet aangeraden)"
     IDS_KADOVERHEAD         "Kad-overhead (pakketten): %s (%s)"
     IDS_FIND                "Zoeken..."
     IDS_LOG_BANNED_CLIENTS  "Verbannen cliënten loggen"
@@ -1508,10 +1501,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Pingtolerantie (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Methode voor pingtolerantie"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Milliseconden (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Percentage (%)"
     IDS_LOG_A4AF            "A4AF-actie loggen"
     IDS_A4AF_SAVE_CPU       "Deactiveer A4AF-besturing om CPU te besparen"
     IDS_SEARCH_DOC          "Document" //!
@@ -1780,14 +1769,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Collectie opslaan in simpel tekstformaat"
     IDS_SEARCHAUTHORCOLLECTION "Zoeken naar de collecties van de auteur"
     IDS_ERR_DUPL_FILES      "Dubbele gedeelde bestanden: ""%s"" en ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting mislukt te vaak. De-activeer UploadSpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: klaar met de voorbereidingen. Bezig met starten van aanpassing van uploadsnelheid (eerste 60 seconden zullen in snelle reactie-modi gaan)."
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: verhoog uploadlimiet in instellingen. 60 seconden in snelle reactie-modi."
-    IDS_USS_STATE_PREPARING "Voorbereiden..."
-    IDS_USS_STATE_WAITING   "Wachten..."
-    IDS_USS_STATE_ERROR     "Fout!"
     IDS_SHAREWARNING        "(map wordt gedeeld!)"
     IDS_REMOVEALLSERVERS    "Wilt u alle niet-statische servers verwijderen?"
     IDS_SEARCH_UNKATTR      "Onbekend zoekattribuut '%s'"

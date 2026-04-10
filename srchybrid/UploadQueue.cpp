@@ -25,7 +25,6 @@
 #include "PerfLog.h"
 #include "UploadBandwidthThrottler.h"
 #include "ClientList.h"
-#include "LastCommonRouteFinder.h"
 #include "DownloadQueue.h"
 #include "FriendList.h"
 #include "Statistics.h"
@@ -379,17 +378,12 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
 		return false;
 
-	uint32 MaxSpeed;
-	if (thePrefs.IsDynUpEnabled())
-		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024;
-	else
-		MaxSpeed = thePrefs.GetMaxUpload();
+	const uint32 MaxSpeed = thePrefs.GetMaxUpload();
 	uint32 TargetRate = GetTargetClientDataRate(false);
 	if (curUploadSlots >= (INT_PTR)(datarate / GetTargetClientDataRate(true)) || curUploadSlots >= (INT_PTR)(MaxSpeed * 1024 / TargetRate))
 		return false;
 
 	return MaxSpeed != UNLIMITED
-		|| thePrefs.IsDynUpEnabled()
 		|| thePrefs.GetMaxGraphUploadRate(true) <= 0
 		|| curUploadSlots < (INT_PTR)(thePrefs.GetMaxGraphUploadRate(false) * 1024 / TargetRate);
 }
@@ -420,14 +414,10 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (::GetTickCount64() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
-	if (!AcceptNewClient(curUploadSlots) || !theApp.lastCommonRouteFinder->AcceptNewClient()) // UploadSpeedSense can veto a new slot if USS enabled
+	if (!AcceptNewClient(curUploadSlots))
 		return false;
 
-	uint32 MaxSpeed;
-	if (thePrefs.IsDynUpEnabled())
-		MaxSpeed = theApp.lastCommonRouteFinder->GetUpload() / 1024;
-	else
-		MaxSpeed = thePrefs.GetMaxUpload();
+	const uint32 MaxSpeed = thePrefs.GetMaxUpload();
 
 	uint32 upPerClient = GetTargetClientDataRate(false);
 
@@ -853,24 +843,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 		theApp.HandleLogQueue();
 		// Elandal: ThreadSafeLogging <--
 
-		// ZZ:UploadSpeedSense -->
-		struct CurrentParamStruct cur;
-		cur.dPingTolerance = (thePrefs.GetDynUpPingTolerance() > 100) ? ((thePrefs.GetDynUpPingTolerance() - 100) / 100.0) : 0;
-		cur.uCurUpload = theApp.uploadqueue->GetDatarate();
-		cur.uMinUpload = thePrefs.GetMinUpload();
-		cur.uMaxUpload = (thePrefs.GetMaxUpload() ? thePrefs.GetMaxUpload() : thePrefs.GetMaxGraphUploadRate(false));
-		cur.uPingToleranceMilliseconds = thePrefs.GetDynUpPingToleranceMilliseconds();
-		cur.uGoingUpDivider = thePrefs.GetDynUpGoingUpDivider();
-		cur.uGoingDownDivider = thePrefs.GetDynUpGoingDownDivider();
-		cur.uNumberOfPingsForAverage = thePrefs.GetDynUpNumberOfPings();
-		cur.uLowestInitialPingAllowed = 20; // PENDING: Hard coded min pLowestPingAllowed
-		cur.bUseMillisecondPingTolerance = thePrefs.IsDynUpUseMillisecondPingTolerance();
-		cur.bEnabled = thePrefs.IsDynUpEnabled();
-
-		if (theApp.lastCommonRouteFinder->SetPrefs(cur))
-			theApp.emuledlg->SetStatusBarPartsSize();
-		// ZZ:UploadSpeedSense <--
-
 		theApp.uploadqueue->Process();
 		theApp.downloadqueue->Process();
 		if (thePrefs.ShowOverhead()) {
@@ -940,15 +912,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 
 			//save rates every second
 			theStats.RecordRate();
-
-			// ZZ:UploadSpeedSense -->
-			theApp.emuledlg->ShowPing();
-
-			bool gotEnoughHosts = theApp.clientlist->GiveClientsForTraceRoute();
-			if (!gotEnoughHosts)
-				theApp.serverlist->GiveServersForTraceRoute();
-
-			// ZZ:UploadSpeedSense <--
 
 			if (theApp.emuledlg->IsTrayIconToFlash())
 				theApp.emuledlg->ShowTransferRate(true);

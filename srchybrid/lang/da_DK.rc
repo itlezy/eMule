@@ -1405,16 +1405,10 @@ BEGIN
     IDS_IMP_DELSRC          "Ønsker du at kilde part filen fra succesfulde importerede downloads skal slettes?"
     IDS_IMP_SIZE            "%s (Disk:%s)"
     IDS_IMP_STATUS          "Importerer %s: %s"
-    IDS_DYNUPENABLED        "Find bedste upload grænse automatisk"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping tolerance (% af laveste ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Gå op langsomhed"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Gå ned langsomhed"
-    IDS_DYNUP_NUMBEROFPINGS "Max antal pings som gennemsnit"
-    IDS_DYNUP_MINUPLOAD     "Lavest tilladte upload hastighed"
     IDS_ESTTIMELEFT         "Anslået tid tilbage:"
     IDS_TRANSFER_RATE_LABEL "Overførselsrate:"
     IDS_SAVELOG             "Gem log"
@@ -1442,7 +1436,6 @@ BEGIN
     IDS_EM_HELP             "&Hjælp"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Ven ikke tilføjet.\r\n\r\nDer er allerede en ven med samme IP og port tilrådig."
-    IDS_DYNUP               "Upload SpeedSense (ikke anbefalet)"
     IDS_KADOVERHEAD         "Kad Overhead (Pakker): %s (%s)"
     IDS_FIND                "Find..."
     IDS_LOG_BANNED_CLIENTS  "Log bandlyste klienter"
@@ -1520,10 +1513,6 @@ BEGIN
     IDS_METATAGS            "Meta Tag Tælling:"
     IDS_FILEFORMAT          "Fil format"
     IDS_UDPREASKS           "UDP Fil Genspørgsler"
-    IDS_DYNUP_PINGTOLERANCE_MS "Ping tolerance (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Metode til ping tolerance"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Millisekunder (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Procent (%)"
 END
 
 STRINGTABLE
@@ -1784,14 +1773,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Gem samling i et simpelt tekstformat"
     IDS_SEARCHAUTHORCOLLECTION "Søg i ophavsmandens samlinger"
     IDS_ERR_DUPL_FILES      "Duplikerede delte filer: ""%s"" og ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting mislykket for mange gange. Deaktiverer Upload SpeedSense."
-    IDS_USS_STARTING        "UploadSpeedSense: Afsluttet forberedelser. Starter kontrol af upload hastighed. (Første 60 sekunder vil være i hurtig-reaktion mode)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Forøget uploadbegrænsning i indstillingerne opdaget. Første 60 sekunder vil være i hurtig-reaktion mode."
-    IDS_USS_STATE_PREPARING "Forbereder..."
-    IDS_USS_STATE_WAITING   "Venter..."
-    IDS_USS_STATE_ERROR     "Fejl!"
     IDS_SHAREWARNING        "(Mappe vil blive delt!)"
     IDS_REMOVEALLSERVERS    "Ønsker du virkelig at fjerne alle servere??"
     IDS_SEARCH_UNKATTR      "Ukendt søgningsattribut '%s'"

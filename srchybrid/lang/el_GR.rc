@@ -1359,16 +1359,10 @@ BEGIN
     IDS_IMP_DELSRC          "Θέλετε να σβήσετε τα πρωτότυπα αρχεία part που προστέθηκαν επιτυχώς;"
     IDS_IMP_SIZE            "%s (Δίσκος:%s)"
     IDS_IMP_STATUS          "Εισαγωγή %s: %s"
-    IDS_DYNUPENABLED        "Εύρεση αυτόματα του καλύτερου ορίου ανεβάσματος"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ανοχή ping (% ελάχιστου ping)"
-    IDS_DYNUP_GOINGUPDIVIDER "Επιβράδυνση στο ανέβασμα (ms)"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Επιβράδυνση στο κατέβασμα (ms)"
-    IDS_DYNUP_NUMBEROFPINGS "Μέγιστος αριθμός ping για μέσο όρο"
-    IDS_DYNUP_MINUPLOAD     "Ελάχιστη επιτρεπτή ταχύτητα ανεβάσματος"
     IDS_ESTTIMELEFT         "Yπόλοιπο:"
     IDS_TRANSFER_RATE_LABEL "Ταχύτητα:"
     IDS_SAVELOG             "Αποθήκευση γεγονότων"
@@ -1394,7 +1388,6 @@ BEGIN
     IDS_MINLENGTH           "Ελάχ. μήκος [ωω:λλ:δδ]"
     IDS_EM_HELP             "&Βοήθεια"
     IDS_WRN_FRIENDDUPLIPPORT "Ο φίλος δεν προστέθηκε.\r\n\r\nΥπάρχει ήδη ένας φίλος διαθέσιμος με την ίδια διεύθυνση IP και port."
-    IDS_DYNUP               "Διαίσθηση ταχύτητας ανεβάσματος (δεν προτείνεται)"
     IDS_KADOVERHEAD         "Kademlia (Πακέτα): %s (%s)"
     IDS_FIND                "Αναζήτηση..."
     IDS_LOG_BANNED_CLIENTS  "Καταγραφή εμποδισμένων χρηστών"
@@ -1476,10 +1469,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS "Ανοχή ping (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER "Μέθοδος ανοχής ping"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS "Χιλιοστά δευτερολέπτου (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT "Ποσοστό (%)"
     IDS_LOG_A4AF            "Καταγραφή ενεργειών A4AF"
     IDS_A4AF_SAVE_CPU       "Απενεργοποίηση ελέγχων A4AF"
     IDS_SEARCH_DOC          "Έγγραφο"
@@ -1708,12 +1697,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Αποθήκευση συλλογής σε απλό αρχείο κειμένου"
     IDS_SEARCHAUTHORCOLLECTION "Αναζήτηση στις συλλογές του δημιουργού"
     IDS_ERR_DUPL_FILES      "Διπλά κοινόχρηστα αρχεία: ""%s"" και ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED "Διαίσθηση ταχύτητας ανεβάσματος: Η διαδικασία του tracerouting απέτυχε πάρα πολλές φορές. Απενεργοποίηση της διαίσθησης της ταχύτητας ανεβάσματος."
-    IDS_USS_STARTING        "Διαίσθηση ταχύτητας ανεβάσματος: Ολοκληρώθηκαν οι προετοιμασίες. Έναρξη ελέγχου της ταχύτητας ανεβάσματος. (Τα πρώτα 60 δευτερόλεπτα θα είναι σε κατάσταση γρήγορης αντίδρασης)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED "Διαίσθηση ταχύτητας ανεβάσματος: Ανιχνεύθηκε στις προτιμήσεις αυξημένο όριο ανεβάσματος. Ενεργοποίηση κατάστασης γρήγορης αντίδρασης για 60 δευτερόλεπτα."
-    IDS_USS_STATE_PREPARING "Προετοιμασία..."
-    IDS_USS_STATE_WAITING   "Αναμονή..."
-    IDS_USS_STATE_ERROR     "Σφάλμα!"
 END
 
 STRINGTABLE

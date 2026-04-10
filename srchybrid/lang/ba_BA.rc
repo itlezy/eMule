@@ -1395,16 +1395,10 @@ BEGIN
     IDS_IMP_DELSRC          "Aukeratutako fitxategien zatien-iturrien fitxategiak ezabatu nahi dituzu?"
     IDS_IMP_SIZE            "%s (Diskoa:%s)"
     IDS_IMP_STATUS          "%s inportatzen: %s"
-    IDS_DYNUPENABLED        "Igoera muga onena aurkitu automatikoki"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE "Ping perdoia (ping baxuenaren %)"
-    IDS_DYNUP_GOINGUPDIVIDER "Abiadura handitu"
-    IDS_DYNUP_GOINGDOWNDIVIDER "Abiadura gutxitu"
-    IDS_DYNUP_NUMBEROFPINGS "Batez besteko ping kopuru max."
-    IDS_DYNUP_MINUPLOAD     "Onartutako igoera abiadura baxuena"
     IDS_ESTTIMELEFT         "Falta den denbora:"
     IDS_TRANSFER_RATE_LABEL "Transferentzia indizea:"
     IDS_SAVELOG             "Log fitxategia gorde"
@@ -1451,7 +1445,6 @@ BEGIN
     IDS_EM_HELP             "Laguntza"
     IDS_WRN_FRIENDDUPLIPPORT
                             "Laguna ez da gehitu.\r\n\r\nBadago dagoeneko IP eta portu berdina dituen lagun bat."
-    IDS_DYNUP               "Igoera abiadura sentsorea (ez da gomendagarria)"
     IDS_KADOVERHEAD         "Kad trafiko gainkarga (paketeak): %s (%s)"
     IDS_FIND                "Aurkitu..."
     IDS_LOG_BANNED_CLIENTS  "Blokeatutako bezeroak log fitxategian gorde"
@@ -1514,10 +1507,6 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_DYNUP_PINGTOLERANCE_MS 			"Ping perdoia (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_HEADER 	"Ping perdoi metodoa"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_MS 		"Milisegunduak (ms)"
-    IDS_DYNUP_RADIO_PINGTOLERANCE_PERCENT 	"Portzentaia (%)"
     IDS_LOG_A4AF            "A4AF ekintzak log fitxategian gorde"
     IDS_A4AF_SAVE_CPU       "A4AF desaktibatu CPU-a aurrezteko"
     IDS_SEARCH_DOC          "Dokumentuak"
@@ -1785,14 +1774,6 @@ BEGIN
     IDS_COLL_TEXTFORMAT     "Kolekzioa testu sinplezko formatuan gorde"
     IDS_SEARCHAUTHORCOLLECTION "Egilearen kolekzioak bilatu"
     IDS_ERR_DUPL_FILES      "Konpartitutako fitxategia bikoiztua: ""%s"" eta ""%s"""
-    IDS_USS_TRACEROUTEOFTENFAILED
-                            "UploadSpeedSense: Tracerouting-ak behin baino gehiagotan huts egin du."
-    IDS_USS_STARTING        "UploadSpeedSense: Prest. Igoera abiaduraren kontrola hasi da. (Lehen 60 segundoak erreakzio azkarrean izango dira)"
-    IDS_USS_MANUALUPLOADLIMITDETECTED
-                            "UploadSpeedSense: Raised upload limit in prefs detected. Going into fast reaction mode for 60 seconds."
-    IDS_USS_STATE_PREPARING "Prestatzen..."
-    IDS_USS_STATE_WAITING   "Itxaroten..."
-    IDS_USS_STATE_ERROR     "Errorea!"
     IDS_SHAREWARNING        "(Karpeta konpartitu egingo da!)"
     IDS_REMOVEALLSERVERS    "Ziur zaude zerbitzari guztiak ezabatu nahi dituzuna?"
     IDS_SEARCH_UNKATTR      "Bilaketa atributu ezezaguna: '%s'"
