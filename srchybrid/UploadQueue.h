@@ -65,9 +65,24 @@ class CUploadQueue
 {
 
 public:
+	struct ActiveUploadRange
+	{
+		uint64 startOffset = 0;
+		uint64 endOffset = 0;
+	};
+
+	struct ActiveUploadVisualState
+	{
+		UINT slotNumber = 0;
+		bool isActivating = false;
+		bool isActive = false;
+		std::vector<ActiveUploadRange> pendingRanges;
+		std::vector<ActiveUploadRange> completedRanges;
+	};
+
 	class CWaitingListCompatView
 	{
-	public:
+public:
 		explicit CWaitingListCompatView(const CUploadQueue *owner = NULL) noexcept
 			: m_owner(owner)
 		{
@@ -110,6 +125,7 @@ public:
 	CUpDownClient* GetWaitingClientByIP(uint32 dwIP) const;
 	void	GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients);
 	void	GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const;
+	bool	TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const;
 	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;
 	float	GetWaitingClientCreditFactor(const CUpDownClient *client) const;
 

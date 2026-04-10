@@ -1925,52 +1925,8 @@ CString CWebServer::_GetTransferList(const ThreadData &Data)
 	qsort_s(FilesArray.GetData(), FilesArray.GetCount(), sizeof(DownloadFiles), &_DownloadCmp, &dprm);
 
 	CArray<UploadUsers> UploadArray;
-	std::vector<CUpDownClient*> activeUploadClients;
-	theApp.uploadqueue->GetActiveUploadClientsInSlotOrder(activeUploadClients);
-	for (CUpDownClient *pActiveClient : activeUploadClients) {
-		UploadUsers dUser;
-		const CUpDownClient &cur_client(*pActiveClient);
-		dUser.sUserHash = md4str(cur_client.GetUserHash());
-		if (cur_client.GetUploadDatarate() > 0) {
-			dUser.sActive = _T("downloading");
-			dUser.sClientState = _T("uploading");
-		} else {
-			dUser.sActive = _T("waiting");
-			dUser.sClientState = _T("connecting");
-		}
-
-		dUser.sFileInfo = _SpecialChars(_GetClientSummary(cur_client), false);
-		dUser.sFileInfo.Replace(_T("\\"), _T("\\\\"));
-		dUser.sFileInfo.Replace(_T("\n"), _T("<br>"));
-		dUser.sFileInfo.Replace(_T("'"), _T("&#8217;"));
-
-		_GetClientversionImage(cur_client, dUser.sClientSoft);
-
-		if (cur_client.IsBanned())
-			dUser.sClientExtra = _T("banned");
-		else if (cur_client.IsFriend())
-			dUser.sClientExtra = _T("friend");
-		else if (cur_client.Credits()->GetScoreRatio(cur_client.GetIP()) > 1)
-			dUser.sClientExtra = _T("credit");
-		else
-			dUser.sClientExtra = _T("none");
-
-		CString cname(cur_client.GetUserName());
-		if (cname.GetLength() > SHORT_LENGTH_MIN) {
-			cname.Truncate(SHORT_LENGTH_MIN - 3);
-			cname += _T("...");
-		}
-		dUser.sUserName = _SpecialChars(cname);
-
-		CKnownFile *file = theApp.sharedfiles->GetFileByID(cur_client.GetUploadFileID());
-		dUser.sFileName = file ? _SpecialChars(file->GetFileName()) : _GetPlainResString(IDS_REQ_UNKNOWNFILE);
-		dUser.nTransferredDown = cur_client.GetTransferredDown();
-		dUser.nTransferredUp = cur_client.GetTransferredUp();
-		UINT uDataRate = cur_client.GetUploadDatarate();
-		dUser.nDataRate = (uDataRate == UNLIMITED) ? 0 : uDataRate;
-		dUser.sClientNameVersion = cur_client.GetClientSoftVer();
-		UploadArray.Add(dUser);
-	}
+	// Legacy Web upload details are intentionally stubbed. Keep this path compiling
+	// without preserving active-session rendering semantics.
 
 	SortParams uprm{(int)pThis->m_Params.UploadSort, pThis->m_Params.bUploadSortReverse};
 	qsort_s(UploadArray.GetData(), UploadArray.GetCount(), sizeof(UploadUsers), &_UploadCmp, &uprm);

@@ -776,6 +776,49 @@ void CUploadQueue::GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*>
 	clients = (snapshot != NULL) ? snapshot->activeClients : std::vector<CUpDownClient*>();
 }
 
+bool CUploadQueue::TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const
+{
+	state = ActiveUploadVisualState();
+	if (client == NULL)
+		return false;
+
+	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
+	if (snapshot != NULL) {
+		const auto slotIt = snapshot->slotNumberByClient.find(client);
+		if (slotIt != snapshot->slotNumberByClient.cend())
+			state.slotNumber = slotIt->second;
+	}
+
+	state.isActivating = IsClientUploadActivating(client);
+	state.isActive = IsClientUploadActive(client);
+
+	const UploadSessionPtr session = GetUploadSession(client);
+	if (session == NULL)
+		return state.slotNumber != 0 || state.isActivating || state.isActive;
+
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	if (!session->blockRequests.IsEmpty()) {
+		const Requested_Block_Struct *block = session->blockRequests.GetHead();
+		if (block != NULL) {
+			const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
+			state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
+		}
+	}
+	if (!session->completedBlocks.IsEmpty()) {
+		const Requested_Block_Struct *block = session->completedBlocks.GetHead();
+		if (block != NULL) {
+			const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
+			state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
+		}
+		for (POSITION pos = session->completedBlocks.GetHeadPosition(); pos != NULL;) {
+			block = session->completedBlocks.GetNext(pos);
+			if (block != NULL)
+				state.completedRanges.push_back(ActiveUploadRange{block->StartOffset, block->EndOffset + 1});
+		}
+	}
+	return true;
+}
+
 bool CUploadQueue::AddActiveUploadSession(CUpDownClient *client)
 {
 	if (client == NULL)

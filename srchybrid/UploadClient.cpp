@@ -51,9 +51,14 @@ CBarShader CUpDownClient::s_UpStatusBar(16);
 void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect, bool  bFlat) const
 {
 	COLORREF crNeither, crNextSending, crBoth, crSending;
+	CUploadQueue::ActiveUploadVisualState visualState;
+	const bool bHasVisualState = theApp.uploadqueue->TryGetActiveUploadVisualState(this, visualState);
+	const UINT uVisualSlotNumber = (bHasVisualState && visualState.slotNumber != 0) ? visualState.slotNumber : GetSlotNumber();
+	const bool bVisualActivating = bHasVisualState ? visualState.isActivating : theApp.uploadqueue->IsClientUploadActivating(this);
+	const bool bVisualActive = bHasVisualState ? visualState.isActive : theApp.uploadqueue->IsClientUploadActive(this);
 
-	if (GetSlotNumber() <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
-		|| (!theApp.uploadqueue->IsClientUploadActive(this) && !theApp.uploadqueue->IsClientUploadActivating(this)))
+	if (uVisualSlotNumber <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
+		|| (!bVisualActive && !bVisualActivating))
 	{
 		crNeither = RGB(224, 224, 224); //light grey
 		crNextSending = RGB(255, 208, 0); //dark yellow
@@ -82,32 +87,10 @@ void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrec
 				if (m_abyUpPartStatus[i])
 					s_UpStatusBar.FillRange(i * PARTSIZE, i * PARTSIZE + PARTSIZE, crBoth);
 
-		const UploadSessionPtr pUpClientStruct = theApp.uploadqueue->GetUploadSession(this);
-		//ASSERT(pUpClientStruct != NULL || theApp.uploadqueue->IsOnUploadQueue((CUpDownClient*)this) != NULL);
-		if (pUpClientStruct != NULL) {
-			CSingleLock lockBlockLists(&pUpClientStruct->blockListsLock, TRUE);
-			ASSERT(lockBlockLists.IsLocked());
-			const Requested_Block_Struct *block;
-			if (!pUpClientStruct->blockRequests.IsEmpty()) {
-				block = pUpClientStruct->blockRequests.GetHead();
-				if (block) {
-					uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
-					s_UpStatusBar.FillRange(start, start + PARTSIZE, crNextSending);
-				}
-			}
-			if (!pUpClientStruct->completedBlocks.IsEmpty()) {
-				block = pUpClientStruct->completedBlocks.GetHead();
-				if (block) {
-					uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
-					s_UpStatusBar.FillRange(start, start + PARTSIZE, crNextSending);
-				}
-				for (POSITION pos = pUpClientStruct->completedBlocks.GetHeadPosition();pos != 0;) {
-					block = pUpClientStruct->completedBlocks.GetNext(pos);
-					s_UpStatusBar.FillRange(block->StartOffset, block->EndOffset + 1, crSending);
-				}
-			}
-			lockBlockLists.Unlock();
-		}
+		for (const CUploadQueue::ActiveUploadRange &range : visualState.pendingRanges)
+			s_UpStatusBar.FillRange(range.startOffset, range.endOffset, crNextSending);
+		for (const CUploadQueue::ActiveUploadRange &range : visualState.completedRanges)
+			s_UpStatusBar.FillRange(range.startOffset, range.endOffset, crSending);
 		s_UpStatusBar.Draw(dc, rect.left, rect.top, bFlat);
 	}
 }
