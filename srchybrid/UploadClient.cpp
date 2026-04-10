@@ -159,59 +159,6 @@ int CUpDownClient::GetFilePrioAsNumber() const
 	return 7;
 }
 
-/*
- * Legacy score surface kept for compatibility outside the native upload
- * scheduler. Queue ordering now lives in CUploadQueue.
- */
-uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasevalue) const
-{
-	if (!m_pszUsername)
-		return 0;
-
-	if (!credits) {
-		ASSERT(IsKindOf(RUNTIME_CLASS(CUrlClient)));
-		return 0;
-	}
-
-	if (!theApp.sharedfiles->GetFileByID(requpfileid)) //is any file requested?
-		return 0;
-
-	// bad clients (see note in function)
-	if (credits->GetCurrentIdentState(GetIP()) == IS_IDBADGUY)
-		return 0;
-	if (IsBanned() || m_bGPLEvildoer)
-		return 0;
-
-	(void)sysvalue;
-
-	// calculate score, based on waiting time and other factors
-	DWORD dwBaseValue;
-	if (onlybasevalue)
-		dwBaseValue = SEC2MS(100);
-	else if (!isdownloading)
-		dwBaseValue = ::GetTickCount64() - GetWaitStartTime();
-	else {
-		// we don't want one client to download forever
-		// the first 15 min download time counts as 15 min waiting time and you get
-		// a 15 min bonus while you are in the first 15 min :)
-		// (to avoid 20 sec downloads) after this the score won't rise any more
-		dwBaseValue = m_dwUploadTime - GetWaitStartTime();
-		dwBaseValue += MIN2MS(::GetTickCount64() >= m_dwUploadTime + MIN2MS(15) ? 15 : 30);
-		//ASSERT ( m_dwUploadTime - GetWaitStartTime() >= 0 ); //oct 28, 02: changed this from "> 0" to ">= 0" -> // 02-Okt-2006 []: ">=0" is always true!
-	}
-	float fBaseValue = dwBaseValue / SEC2MS(1.0f);
-	if (thePrefs.UseCreditSystem())
-		fBaseValue *= credits->GetScoreRatio(GetIP());
-
-	if (!onlybasevalue)
-		fBaseValue *= GetFilePrioAsNumber() / 10.0f;
-
-	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
-		fBaseValue *= 0.5f;
-
-	return (uint32)fBaseValue;
-}
-
 bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqfile)
 {
 	delete[] m_abyUpPartStatus;

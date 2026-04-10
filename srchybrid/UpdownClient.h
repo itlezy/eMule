@@ -233,7 +233,6 @@ public:
 	ULONGLONG		GetWaitTime() const								{ return m_dwUploadTime - GetWaitStartTime(); }
 	bool			IsDownloading() const							{ return (m_eUploadState == US_UPLOADING); }
 	UINT			GetUploadDatarate() const						{ return m_nUpDatarate; }
-	UINT			GetScore(bool sysvalue, bool isdownloading = false, bool onlybasevalue = false) const;
 	void			AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIOThread);
 	ULONGLONG		GetUpStartTime() const							{ return m_dwUploadTime; }
 	ULONGLONG		GetUpStartTimeDelay() const						{ return ::GetTickCount64() - m_dwUploadTime; }

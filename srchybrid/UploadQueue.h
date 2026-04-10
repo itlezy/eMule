@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "ring.h"
+#include <memory>
 #include <vector>
 #include <unordered_map>
 
@@ -61,6 +62,24 @@ class CUploadQueue
 {
 
 public:
+	class CWaitingListCompatView
+	{
+	public:
+		explicit CWaitingListCompatView(const CUploadQueue *owner = NULL) noexcept
+			: m_owner(owner)
+		{
+		}
+
+		POSITION GetHeadPosition() const;
+		CUpDownClient* GetNext(POSITION &pos) const;
+		INT_PTR GetCount() const;
+
+	private:
+		const CUploadQueue *m_owner;
+		mutable CCriticalSection m_csThreadSnapshots;
+		mutable std::unordered_map<DWORD, std::shared_ptr<const void>> m_threadSnapshots;
+	};
+
 	CUploadQueue();
 	~CUploadQueue();
 
@@ -74,7 +93,7 @@ public:
 	uint32	GetDatarate() const								{ return datarate; }
 	uint32  GetToNetworkDatarate() const;
 
-	INT_PTR	GetWaitingUserCount() const						{ return waitinglist.GetCount(); }
+	INT_PTR	GetWaitingUserCount() const;
 	INT_PTR	GetUploadQueueLength() const					{ return uploadinglist.GetCount(); }
 	INT_PTR	GetActiveUploadsCount()	const					{ return m_MaxActiveClientsShortTime; }
 	uint32	GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged);
@@ -108,7 +127,7 @@ public:
 	uint32	GetFailedUpCount() const						{ return failedupcount; }
 	uint32	GetAverageUpTime() const;
 
-	CUpDownClientPtrList waitinglist;
+	CWaitingListCompatView waitinglist;
 
 protected:
 	bool		StartNextUpload(LPCTSTR pszReason);
@@ -116,8 +135,6 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
-	static constexpr ULONGLONG WAITING_RANK_CACHE_MAX_AGE_MS = SEC2MS(1) / 4;
-
 	/** Stable scheduler inputs used for one admission or retention decision. */
 	struct UploadSchedulingSnapshot
 	{
@@ -158,20 +175,32 @@ private:
 		EUploadSlotEndReason	reason = EUploadSlotEndReason::None;
 	};
 
+	struct UploadQueueClientState
+	{
+		EUploadSlotPhase phase = EUploadSlotPhase::None;
+	};
+
+	struct WaitingQueueSnapshot
+	{
+		CUpDownClientPtrList compatibilityMembers;
+		std::vector<CUpDownClient*> memberClients;
+		std::vector<CUpDownClient*> rankedClients;
+		std::unordered_map<const CUpDownClient*, UINT> positionByClient;
+	};
+
 	/** Returns true if the client can immediately take an upload slot. */
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
 	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
 	void	SyncLegacyUploadState(CUpDownClient *client);
 	void	ClearUploadSlotPhase(CUpDownClient *client);
-	void	InvalidateRankedWaitingClients();
 	const CKnownFile* GetRequestedUploadFile(const CUpDownClient *client) const;
 	bool	ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLONG curTick) const;
 	bool	ShouldRejectLowIdQueueRequest(const CUpDownClient *client) const;
 	bool	IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const;
-	void	EnsureRankedWaitingClients(ULONGLONG curTick);
 	void	PurgeStaleWaitingClients(ULONGLONG curTick);
-	void	BuildRankedWaitingClients(std::vector<CUpDownClient*> &clients) const;
+	void	PublishWaitingSnapshot();
+	std::shared_ptr<const WaitingQueueSnapshot> GetWaitingSnapshot() const;
 	CUpDownClient* SelectNextWaitingClient();
 	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL);
 	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);
@@ -182,6 +211,8 @@ private:
 	bool	ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &cSameIP);
 	bool	TryAcceptActiveUploadRequest(CUpDownClient *client) const;
 	bool	TryActivateQueueCandidateImmediately(CUpDownClient *client);
+	INT_PTR	GetWaitingMemberCount() const					{ return static_cast<INT_PTR>(m_waitingClients.size()); }
+	bool	HasWaitingMember(const CUpDownClient *client) const;
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
@@ -205,7 +236,7 @@ private:
 	uint32	GetSlowUploadRateThreshold() const;
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
-	void	RemoveWaitingClientAt(POSITION pos, bool updatewindow);
+	bool	RemoveWaitingClientAt(size_t index, bool updatewindow);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
@@ -216,6 +247,7 @@ private:
 	// Don't acquire other locks while having this one in any thread
 	// other than UploadDiskIOThread or make sure deadlocks are impossible
 	CCriticalSection	m_csUploadListMainThrdWriteOtherThrdsRead;
+	CCriticalSection	m_csWaitingSnapshotRead;
 
 	// By BadWolf - Accurate Speed Measurement
 	CRing<AverageUploadRate> average_ur_hist;
@@ -240,8 +272,7 @@ private:
 
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
-	bool	m_bRankedWaitingClientsDirty;
-	ULONGLONG m_ullRankedWaitingClientsLastRefresh;
-	std::unordered_map<const CUpDownClient*, EUploadSlotPhase> m_uploadSlotPhases;
-	std::vector<CUpDownClient*> m_rankedWaitingClients;
+	std::unordered_map<const CUpDownClient*, UploadQueueClientState> m_clientStates;
+	std::vector<CUpDownClient*> m_waitingClients;
+	std::shared_ptr<const WaitingQueueSnapshot> m_waitingSnapshot;
 };

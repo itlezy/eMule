@@ -1996,9 +1996,11 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 	int nCountQueueFriendSecure = 0;
 
 	CQArray<QueueUsers, QueueUsers> QueueArray;
-	for (POSITION pos = theApp.uploadqueue->waitinglist.GetHeadPosition(); pos != NULL;) {
+	std::vector<CUpDownClient*> rankedWaitingClients;
+	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedWaitingClients);
+	for (size_t iQueue = 0; iQueue < rankedWaitingClients.size(); ++iQueue) {
 		QueueUsers dUser;
-		const CUpDownClient &cur_client(*theApp.uploadqueue->waitinglist.GetNext(pos));
+		const CUpDownClient &cur_client(*rankedWaitingClients[iQueue]);
 		int iSecure = static_cast<int>(cur_client.Credits()->GetCurrentIdentState(cur_client.GetIP()) == IS_IDENTIFIED);
 		if (cur_client.IsBanned()) {
 			dUser.sClientExtra = _T("banned");
@@ -2025,8 +2027,8 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 		CKnownFile *file = theApp.sharedfiles->GetFileByID(cur_client.GetUploadFileID());
 		dUser.sFileName = file ? _SpecialChars(file->GetFileName()) : _GetPlainResString(IDS_REQ_UNKNOWNFILE);
 		dUser.sClientState = dUser.sClientExtra;
-		dUser.sClientStateSpecial = _T("connecting");
-		dUser.nScore = cur_client.GetScore(false);
+		dUser.sClientStateSpecial = _T("queued");
+		dUser.nScore = static_cast<uint32>(rankedWaitingClients.size() - iQueue);
 
 		_GetClientversionImage(cur_client, dUser.sClientSoft);
 
@@ -2051,17 +2053,9 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 		QueueArray.Add(dUser);
 	}
 
-	INT_PTR nNextPos = 0;	// position in queue of the user with the highest score -> next upload user
-	uint32 nNextScore = 0;	// highest score -> next upload user
-	for (INT_PTR i = QueueArray.GetCount(); --i >= 0;)
-		if (QueueArray[i].nScore > nNextScore) {
-			nNextPos = i;
-			nNextScore = QueueArray[i].nScore;
-		}
-
-	if (theApp.uploadqueue->waitinglist.GetHeadPosition() != NULL) {
-		QueueArray[nNextPos].sClientState = _T("next");
-		QueueArray[nNextPos].sClientStateSpecial = QueueArray[nNextPos].sClientState;
+	if (QueueArray.GetCount() > 0) {
+		QueueArray[0].sClientState = _T("next");
+		QueueArray[0].sClientStateSpecial = QueueArray[0].sClientState;
 	}
 
 	if ((nCountQueue > 0 && pThis->m_Params.bShowUploadQueue)
