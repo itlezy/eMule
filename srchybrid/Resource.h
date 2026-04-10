@@ -2346,6 +2346,10 @@
 #define IDC_SMTPPASS                    3036
 #define IDC_SF_FICON                    3037
 #define IDC_SF_FNAME                    3038
+#define IDC_FSTATIC_SESSION_RATIO       3039
+#define IDC_SSESSIONRATIO               3040
+#define IDC_FSTATIC_ALLTIME_RATIO       3041
+#define IDC_SALLTIMERATIO               3042
 #define IDS_HIDDENRUNTIME_STARTUP       1639
 #define IDS_HIDDENRUNTIME_FILE          1640
 #define IDS_HIDDENRUNTIME_DISPLAY       1641
@@ -2371,6 +2375,25 @@
 #define IDS_REARRANGEKADSEARCHKEYWORDS  1661
 #define IDS_MESSAGEFROMVALIDSOURCESONLY 1662
 #define IDS_DOWNLOADTIMEOUT            1663
+#define IDS_SESSION_RATIO               1664
+#define IDS_ALL_TIME_RATIO              1665
+#define IDS_COOLDOWN                    1666
+#define IDS_BROADBAND                   1667
+#define IDS_BB_MAX_UPLOAD_CLIENTS       1668
+#define IDS_BB_SLOW_THRESHOLD_FACTOR    1669
+#define IDS_BB_SLOW_GRACE_SECONDS       1670
+#define IDS_BB_ZERO_RATE_GRACE_SECONDS  1671
+#define IDS_BB_COOLDOWN_SECONDS         1672
+#define IDS_BB_LOW_RATIO_BOOST          1673
+#define IDS_BB_RATIO_THRESHOLD          1674
+#define IDS_BB_SCORE_BONUS              1675
+#define IDS_BB_LOWID_DIVISOR            1676
+#define IDS_BB_SESSION_TRANSFER_LIMIT   1677
+#define IDS_BB_PERCENT_OF_FILE_SIZE     1678
+#define IDS_BB_ABSOLUTE_MIB             1679
+#define IDS_BB_SESSION_TIME_LIMIT       1680
+#define IDS_BB_SESSION_TRANSFER_PERCENT_VALUE 1681
+#define IDS_BB_SESSION_TRANSFER_MIB_VALUE 1682
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2379,7 +2402,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3037
-#define _APS_NEXT_SYMED_VALUE           1663
+#define _APS_NEXT_CONTROL_VALUE         3043
+#define _APS_NEXT_SYMED_VALUE           1683
 #endif
 #endif

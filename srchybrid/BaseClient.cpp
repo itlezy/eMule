@@ -206,6 +206,10 @@ void CUpDownClient::Init()
 	m_addedPayloadQueueSession = 0;
 	m_nUpPartCount = 0;
 	m_nUpCompleteSourcesCount = 0;
+	m_ullSlowUploadAccumulatedMs = 0;
+	m_ullZeroUploadAccumulatedMs = 0;
+	m_ullLastSlowUploadSampleTick = 0;
+	m_ullSlowUploadCooldownUntil = 0;
 	md4clr(requpfileid);
 	m_slotNumber = 0;
 	m_bCollectionUploadSlot = false;

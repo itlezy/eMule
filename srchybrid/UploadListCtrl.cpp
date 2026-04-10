@@ -37,6 +37,34 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	CString FormatUploadRatio(float fRatio)
+	{
+		CString str;
+		str.Format(_T("%.1f"), fRatio);
+		return str;
+	}
+
+	CString FormatCooldown(ULONGLONG ullRemainingMs)
+	{
+		if (ullRemainingMs == 0)
+			return _T("-");
+		CString str;
+		str.Format(_T("%us"), static_cast<UINT>((ullRemainingMs + 999) / 1000));
+		return str;
+	}
+
+	int CompareRatio(float fLeft, float fRight)
+	{
+		if (fLeft < fRight)
+			return -1;
+		if (fLeft > fRight)
+			return 1;
+		return 0;
+	}
+}
+
 
 IMPLEMENT_DYNAMIC(CUploadListCtrl, CMuleListCtrl)
 
@@ -76,7 +104,10 @@ void CUploadListCtrl::Init()
 	InsertColumn(4,	_T(""),	LVCFMT_LEFT, 60);							//IDS_WAITED
 	InsertColumn(5,	_T(""),	LVCFMT_LEFT, 80);							//IDS_UPLOADTIME
 	InsertColumn(6,	_T(""),	LVCFMT_LEFT, 100);							//IDS_STATUS
-	InsertColumn(7,	_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
+	InsertColumn(7,	_T(""),	LVCFMT_RIGHT,85);							//IDS_ALL_TIME_RATIO
+	InsertColumn(8,	_T(""),	LVCFMT_RIGHT,85);							//IDS_SESSION_RATIO
+	InsertColumn(9,	_T(""),	LVCFMT_RIGHT,70);							//IDS_COOLDOWN
+	InsertColumn(10,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
 
 	SetAllIcons();
 	Localize();
@@ -87,10 +118,10 @@ void CUploadListCtrl::Init()
 
 void CUploadListCtrl::Localize()
 {
-	static const UINT uids[8] =
+	static const UINT uids[11] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_DL_SPEED, IDS_DL_TRANSF, IDS_WAITED
-		, IDS_UPLOADTIME, IDS_STATUS, IDS_UPSTATUS
+		, IDS_UPLOADTIME, IDS_STATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -159,7 +190,7 @@ void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				rcItem.right -= sm_iSubItemInset;
 				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
 				break;
-			case 7: //upload status bar
+			case 10: //upload status bar
 				++rcItem.top;
 				--rcItem.bottom;
 				client->DrawUpStatusBar(dc, &rcItem, false, thePrefs.UseFlatBar());
@@ -212,6 +243,21 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		sText = client->GetUploadStateDisplayString();
 		break;
 	case 7:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			sText = file ? FormatUploadRatio(file->GetAllTimeUploadRatio()) : _T("-");
+		}
+		break;
+	case 8:
+		{
+			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			sText = file ? FormatUploadRatio(file->GetSessionUploadRatio()) : _T("-");
+		}
+		break;
+	case 9:
+		sText = client->HasCollectionUploadSlot() || client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining());
+		break;
+	case 10:
 		sText = GetResString(IDS_UPSTATUS);
 	}
 	return sText;
@@ -284,7 +330,10 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 2: // Data rate
 		case 3: // Session Up
 		case 4: // Wait Time
-		case 7: // Part Count
+		case 7: // All-time ratio
+		case 8: // Session ratio
+		case 9: // Cooldown
+		case 10: // Part Count
 			sortAscending = false;
 			break;
 		default:
@@ -341,6 +390,29 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		iResult = item1->GetUploadState() - item2->GetUploadState();
 		break;
 	case 7:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareRatio(file1->GetAllTimeUploadRatio(), file2->GetAllTimeUploadRatio());
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
+		break;
+	case 8:
+		{
+			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
+			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareRatio(file1->GetSessionUploadRatio(), file2->GetSessionUploadRatio());
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
+		break;
+	case 9:
+		iResult = CompareUnsigned(item1->GetSlowUploadCooldownRemaining(), item2->GetSlowUploadCooldownRemaining());
+		break;
+	case 10:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
 	}
 

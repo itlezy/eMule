@@ -75,6 +75,8 @@ public:
 
 	void	AddUploadingClient(CUpDownClient *client);
 	void	RemoveUploadingClient(CUpDownClient *client);
+	float	GetSessionUploadRatio() const;
+	float	GetAllTimeUploadRatio() const;
 	virtual void	UpdatePartsInfo();
 	virtual	void	DrawShareStatusBar(CDC &dc, LPCRECT rect, bool onlygreyrect, bool bFlat) const;
 

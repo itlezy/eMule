@@ -49,6 +49,12 @@ LPCTSTR const strPreferencesDat = _T("preferences.dat");
 LPCTSTR const strDefaultToolbar = _T("0099010203040506070899091011");
 CPreferences thePrefs;
 
+namespace
+{
+constexpr uint32 kDefaultBroadbandUploadLimitKiB = 3052;
+constexpr uint32 kDefaultBroadbandDownloadLimitKiB = 12207;
+}
+
 CString CPreferences::m_astrDefaultDirs[13];
 CString	CPreferences::strNick;
 bool	CPreferences::m_abDefaultDirsCreated[13] = {};
@@ -437,6 +443,18 @@ int		CPreferences::m_byLogLevel;
 bool	CPreferences::m_bRememberCancelledFiles;
 bool	CPreferences::m_bRememberDownloadedFiles;
 bool	CPreferences::m_bPartiallyPurgeOldKnownFiles;
+UINT	CPreferences::m_uBBMaxUploadClientsAllowed;
+float	CPreferences::m_fBBSlowUploadThresholdFactor;
+UINT	CPreferences::m_uBBSlowUploadGraceSeconds;
+UINT	CPreferences::m_uBBZeroRateGraceSeconds;
+UINT	CPreferences::m_uBBSlowUploadCooldownSeconds;
+bool	CPreferences::m_bBBLowRatioBoostEnabled;
+float	CPreferences::m_fBBLowRatioThreshold;
+UINT	CPreferences::m_uBBLowRatioBonus;
+UINT	CPreferences::m_uBBLowIDDivisor;
+EBBSessionTransferMode CPreferences::m_eBBSessionTransferMode = BBSTM_DISABLED;
+UINT	CPreferences::m_uBBSessionTransferValue;
+UINT	CPreferences::m_uBBSessionTimeLimitSeconds;
 
 EmailSettings CPreferences::m_email;
 
@@ -725,26 +743,8 @@ uint32 CPreferences::GetMaxDownload()
 
 uint64 CPreferences::GetMaxDownloadInBytesPerSec(bool dynamic)
 {
-	//don't be a Lam3r :)
-	uint64 maxup;
-	if (dynamic && thePrefs.GetMaxUpload() == UNLIMITED && theApp.uploadqueue->GetWaitingUserCount() > 0 && theApp.uploadqueue->GetDatarate() > 0)
-		maxup = theApp.uploadqueue->GetDatarate();
-	else
-		maxup = GetMaxUpload() * 1024ull;
-
-	uint64 maxdown = m_maxdownload * 1024ull;
-	if (maxup >= 20 * 1024)
-		return maxdown;
-
-	uint32 coef;
-	if (maxup < 4 * 1024)
-		coef = 3;
-	else if (maxup < 10 * 1024)
-		coef = 4;
-	else
-		coef = 5;
-
-	return min(coef * maxup, maxdown);
+	(void)dynamic;
+	return m_maxdownload * 1024ull;
 }
 
 // -khaos--+++> A whole bunch of methods! Keep going until you reach the end tag.
@@ -1547,6 +1547,9 @@ void CPreferences::SavePreferences()
 
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
+	ini.DeleteKey(_T("DownloadCapacity"));
+	ini.DeleteKey(_T("UploadCapacityNew"));
+	ini.DeleteKey(_T("UploadCapacity"));
 	ini.WriteInt(_T("MaxConnections"), maxconnections);
 	ini.WriteInt(_T("MaxHalfConnections"), maxhalfconnections);
 	ini.WriteBool(_T("ConditionalTCPAccept"), m_bConditionalTCPAccept);
@@ -1560,8 +1563,6 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("StatGraphsInterval"), trafficOMeterInterval);
 	ini.WriteInt(_T("StatsInterval"), statsInterval);
 	ini.WriteBool(_T("StatsFillGraphs"), m_bFillGraphs);
-	ini.WriteInt(_T("DownloadCapacity"), (int)maxGraphDownloadRate);
-	ini.WriteInt(_T("UploadCapacityNew"), (int)maxGraphUploadRate);
 	ini.WriteInt(_T("DeadServerRetry"), m_uDeadServerRetries);
 	ini.WriteInt(_T("ServerKeepAliveTimeout"), m_dwServerKeepAliveTimeout);
 	ini.WriteInt(_T("ConnectionTimeout"), static_cast<int>(TimeoutMsToSeconds(m_dwConnectionTimeout)));
@@ -1758,6 +1759,18 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("AdjustNTFSDaylightFileTime"), m_bAdjustNTFSDaylightFileTime);
 	ini.WriteBool(_T("MessageFromValidSourcesOnly"), msgsecure);
 	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
+	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_uBBMaxUploadClientsAllowed);
+	ini.WriteFloat(_T("BBSlowThresholdFactor"), m_fBBSlowUploadThresholdFactor);
+	ini.WriteInt(_T("BBSlowGraceSeconds"), m_uBBSlowUploadGraceSeconds);
+	ini.WriteInt(_T("BBZeroRateGraceSeconds"), m_uBBZeroRateGraceSeconds);
+	ini.WriteInt(_T("BBSlowCooldownSeconds"), m_uBBSlowUploadCooldownSeconds);
+	ini.WriteBool(_T("BBLowRatioBoostEnabled"), m_bBBLowRatioBoostEnabled);
+	ini.WriteFloat(_T("BBLowRatioThreshold"), m_fBBLowRatioThreshold);
+	ini.WriteInt(_T("BBLowRatioBonus"), m_uBBLowRatioBonus);
+	ini.WriteInt(_T("BBLowIDDivisor"), m_uBBLowIDDivisor);
+	ini.WriteInt(_T("BBSessionTransferMode"), (int)m_eBBSessionTransferMode);
+	ini.WriteInt(_T("BBSessionTransferValue"), m_uBBSessionTransferValue);
+	ini.WriteInt(_T("BBSessionTimeLimitSeconds"), m_uBBSessionTimeLimitSeconds);
 	ini.DeleteKey(_T("AICHTrustEveryHash"));
 
 	// Toolbar
@@ -1954,27 +1967,19 @@ void CPreferences::LoadPreferences()
 			tempdir.Add(sTmp);
 	}
 
-	SetMaxGraphDownloadRate((uint32)ini.GetInt(_T("DownloadCapacity"), 100));
-
-	SetMaxGraphUploadRate((uint32)ini.GetInt(_T("UploadCapacityNew"), 0));
-	if (maxGraphUploadRate == UNLIMITED) {
-		// converting value from prior versions
-		int nOldUploadCapacity = ini.GetInt(_T("UploadCapacity"), 100);
-		if (nOldUploadCapacity == 16 && ini.GetInt(_T("MaxUpload"), 12) == 12) {
-			// either this is a complete new install, or the prior version used the default value
-			// in both cases, set the new default values
-			ini.WriteInt(_T("MaxUpload"), 100, _T("eMule"));
-		} else
-			maxGraphUploadRate = nOldUploadCapacity; // use old custom value
+	const bool bHasLegacyBandwidthKeys =
+		ini.GetInt(_T("DownloadCapacity"), -1) >= 0 ||
+		ini.GetInt(_T("UploadCapacityNew"), -1) >= 0 ||
+		ini.GetInt(_T("UploadCapacity"), -1) >= 0;
+	if (bHasLegacyBandwidthKeys) {
+		SetMaxUpload(kDefaultBroadbandUploadLimitKiB);
+		SetMaxDownload(kDefaultBroadbandDownloadLimitKiB);
+	} else {
+		SetMaxUpload((uint32)ini.GetInt(_T("MaxUpload"), kDefaultBroadbandUploadLimitKiB));
+		SetMaxDownload((uint32)ini.GetInt(_T("MaxDownload"), kDefaultBroadbandDownloadLimitKiB));
 	}
-
-	m_maxupload = (uint32)ini.GetInt(_T("MaxUpload"), 80);
-	if (m_maxupload > maxGraphUploadRate && m_maxupload != UNLIMITED)
-		m_maxupload = maxGraphUploadRate * 4 / 5;
-
-	m_maxdownload = (uint32)ini.GetInt(_T("MaxDownload"), 90);
-	if (m_maxdownload > maxGraphDownloadRate && m_maxdownload != UNLIMITED)
-		m_maxdownload = maxGraphDownloadRate * 9 / 10;
+	SetMaxGraphDownloadRate(m_maxdownload);
+	SetMaxGraphUploadRate(m_maxupload);
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
 	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), GetDefaultMaxHalfConnections());
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
@@ -2075,6 +2080,20 @@ void CPreferences::LoadPreferences()
 	filterserverbyip = ini.GetBool(_T("FilterServersByIP"), false);
 	filterlevel = ini.GetInt(_T("FilterLevel"), 127);
 	checkDiskspace = true;
+	m_uBBMaxUploadClientsAllowed = max(1, ini.GetInt(_T("BBMaxUpClientsAllowed"), 8));
+	m_fBBSlowUploadThresholdFactor = max(0.05f, ini.GetFloat(_T("BBSlowThresholdFactor"), 0.33f));
+	m_uBBSlowUploadGraceSeconds = max(1, ini.GetInt(_T("BBSlowGraceSeconds"), 15));
+	m_uBBZeroRateGraceSeconds = max(1, ini.GetInt(_T("BBZeroRateGraceSeconds"), 5));
+	m_uBBSlowUploadCooldownSeconds = max(1, ini.GetInt(_T("BBSlowCooldownSeconds"), 30));
+	m_bBBLowRatioBoostEnabled = ini.GetBool(_T("BBLowRatioBoostEnabled"), true);
+	m_fBBLowRatioThreshold = max(0.0f, ini.GetFloat(_T("BBLowRatioThreshold"), 0.5f));
+	m_uBBLowRatioBonus = max(0, ini.GetInt(_T("BBLowRatioBonus"), 50));
+	m_uBBLowIDDivisor = max(1, ini.GetInt(_T("BBLowIDDivisor"), 2));
+	m_eBBSessionTransferMode = (EBBSessionTransferMode)ini.GetInt(_T("BBSessionTransferMode"), BBSTM_PERCENT_OF_FILE);
+	if (m_eBBSessionTransferMode != BBSTM_DISABLED && m_eBBSessionTransferMode != BBSTM_PERCENT_OF_FILE && m_eBBSessionTransferMode != BBSTM_ABSOLUTE_MIB)
+		m_eBBSessionTransferMode = BBSTM_PERCENT_OF_FILE;
+	m_uBBSessionTransferValue = max(0, ini.GetInt(_T("BBSessionTransferValue"), 50));
+	m_uBBSessionTimeLimitSeconds = max(0, ini.GetInt(_T("BBSessionTimeLimitSeconds"), 3600));
 	m_uMinFreeDiskSpace = NormalizeMinFreeDiskSpace(ini.GetUInt64(_T("MinFreeDiskSpace"), GetMinFreeDiskSpaceFloor()));
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
 	m_bResolveSharedShellLinks = ini.GetBool(_T("ResolveSharedShellLinks"), false);
@@ -2630,12 +2649,14 @@ void CPreferences::SetWSLowPass(const CString &strNewPass)
 
 void CPreferences::SetMaxUpload(uint32 val)
 {
-	m_maxupload = val ? val : UNLIMITED;
+	m_maxupload = val ? val : 1u;
+	maxGraphUploadRate = m_maxupload;
 }
 
 void CPreferences::SetMaxDownload(uint32 val)
 {
-	m_maxdownload = val ? val : UNLIMITED;
+	m_maxdownload = val ? val : 1u;
+	maxGraphDownloadRate = m_maxdownload;
 }
 
 CString CPreferences::GetHomepageBaseURLForLevel(int nLevel)
@@ -2727,23 +2748,25 @@ bool CPreferences::GetUseReBarToolbar()
 
 uint32 CPreferences::GetMaxGraphUploadRate(bool bEstimateIfUnlimited)
 {
-	if (maxGraphUploadRate != UNLIMITED || !bEstimateIfUnlimited)
-		return maxGraphUploadRate;
-	return (maxGraphUploadRateEstimated != 0) ? maxGraphUploadRateEstimated + 4 : 16u;
+	(void)bEstimateIfUnlimited;
+	return maxGraphUploadRate;
 }
 
 void CPreferences::EstimateMaxUploadCap(uint32 nCurrentUpload)
 {
-	if (maxGraphUploadRateEstimated + 1 < nCurrentUpload) {
-		maxGraphUploadRateEstimated = nCurrentUpload;
-		if (maxGraphUploadRate == UNLIMITED && theApp.emuledlg->statisticswnd)
-			theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxGraphUploadRate(true));
-	}
+	maxGraphUploadRateEstimated = nCurrentUpload;
 }
 
 void CPreferences::SetMaxGraphUploadRate(uint32 in)
 {
-	maxGraphUploadRate = in ? in : UNLIMITED;
+	maxGraphUploadRate = in ? in : 1u;
+	m_maxupload = maxGraphUploadRate;
+}
+
+void CPreferences::SetMaxGraphDownloadRate(uint32 in)
+{
+	maxGraphDownloadRate = in ? in : 1u;
+	m_maxdownload = maxGraphDownloadRate;
 }
 
 bool CPreferences::CanFSHandleLargeFiles(int nForCat)

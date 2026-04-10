@@ -343,9 +343,9 @@ FONT 8, "MS Shell Dlg", 0, 0, 0x0
 BEGIN
     EDITTEXT        IDC_DOWNLOAD_CAP,11,23,32,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
     EDITTEXT        IDC_UPLOAD_CAP,11,52,32,12,ES_RIGHT | ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "Download limit",IDC_DLIMIT_LBL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,83,13,89,10
+    LTEXT           "Download",IDC_DLIMIT_LBL,83,13,89,10
     CONTROL         "",IDC_MAXDOWN_SLIDER,"msctls_trackbar32",WS_TABSTOP,81,25,142,11
-    CONTROL         "Upload limit",IDC_ULIMIT_LBL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,83,43,89,10
+    LTEXT           "Upload",IDC_ULIMIT_LBL,83,43,89,10
     CONTROL         "",IDC_MAXUP_SLIDER,"msctls_trackbar32",WS_TABSTOP,81,55,142,11
     EDITTEXT        IDC_PORT,29,84,38,12,ES_AUTOHSCROLL | ES_NUMBER
     EDITTEXT        IDC_UDPPORT,29,100,38,12,ES_AUTOHSCROLL | ES_NUMBER
@@ -362,12 +362,12 @@ BEGIN
     GROUPBOX        "Client Port:",IDC_CLIENTPORT_FRM,4,74,223,57
     GROUPBOX        "Max. Sources/File",IDC_MAXSRC_FRM,4,132,100,40
     GROUPBOX        "Max. connections:",IDC_MAXCONN_FRM,110,132,117,40
-    GROUPBOX        "Capacities:",IDC_CAPACITIES_FRM,4,2,67,70
+    GROUPBOX        "Speed Limits:",IDC_CAPACITIES_FRM,4,2,67,70
     CONTROL         "Download",IDC_DCAP_LBL,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,11,13,58,8
     LTEXT           "KB/s",IDC_KBS2,45,25,22,8
     LTEXT           "KB/s",IDC_KBS3,45,54,22,8
     CONTROL         "Upload",IDC_UCAP_LBL,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,11,42,58,8
-    GROUPBOX        "Limits:",IDC_LIMITS_FRM,77,2,149,70
+    GROUPBOX        "Speed Limits:",IDC_LIMITS_FRM,77,2,149,70
     RTEXT           "KB/s",IDC_KBS1,176,13,44,8
     RTEXT           "KB/s",IDC_KBS4,176,43,44,8
     LTEXT           "Hard limit",IDC_MAXSRCHARD_LBL,11,143,82,8
@@ -1290,7 +1290,7 @@ BEGIN
     CONTROL         "Wnd1Toolbar",IDC_DTOOLBAR,"ToolbarWindow32",0x8b4e,5,1,14,12,WS_EX_TOPMOST
 END
 
-IDD_FILESTATISTICS DIALOGEX 0, 0, 401, 95
+IDD_FILESTATISTICS DIALOGEX 0, 0, 401, 115
 STYLE DS_SETFONT | DS_FIXEDSYS | WS_CHILD | WS_DISABLED | WS_CAPTION
 CAPTION "File Statistics"
 FONT 8, "MS Shell Dlg", 401, 0, 0x1
@@ -1298,31 +1298,35 @@ BEGIN
     CONTROL         "Requested:",IDC_FSTATIC4,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,12,70,8
     CONTROL         "Accepted Uploads:",IDC_FSTATIC5,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,22,70,8
     CONTROL         "Transferred:",IDC_FSTATIC6,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,33,70,8
+    CONTROL         "Session Ratio:",IDC_FSTATIC_SESSION_RATIO,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,44,70,8
     CONTROL         "-",IDC_SREQUESTED,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,12,40,8
     CONTROL         "-",IDC_SACCEPTED,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,22,40,8
     CONTROL         "-",IDC_STRANSFERRED,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,33,40,8
+    CONTROL         "-",IDC_SSESSIONRATIO,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,44,40,8
     CONTROL         "",IDC_POPBAR,"msctls_progress32",PBS_SMOOTH,127,11,121,9,WS_EX_TRANSPARENT
     CONTROL         "",IDC_POPBAR2,"msctls_progress32",PBS_SMOOTH,127,22,121,9,WS_EX_TRANSPARENT
     CONTROL         "",IDC_POPBAR3,"msctls_progress32",PBS_SMOOTH,127,33,121,9,WS_EX_TRANSPARENT
-    CONTROL         "Requested:",IDC_FSTATIC7,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,60,70,8
-    CONTROL         "Accepted Uploads:",IDC_FSTATIC8,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,71,70,8
-    CONTROL         "Transferred:",IDC_FSTATIC9,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,82,70,8
-    CONTROL         "-",IDC_SREQUESTED2,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,60,40,8
-    CONTROL         "-",IDC_SACCEPTED2,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,71,40,8
-    CONTROL         "-",IDC_STRANSFERRED2,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,85,82,40,8
-    GROUPBOX        "Session",IDC_STATISTICS_GB_SESSION,4,1,393,45,BS_FLAT
-    GROUPBOX        "Total",IDC_STATISTICS_GB_TOTAL,4,50,393,45,BS_FLAT
+    CONTROL         "Requested:",IDC_FSTATIC7,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,67,70,8
+    CONTROL         "Accepted Uploads:",IDC_FSTATIC8,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,78,70,8
+    CONTROL         "Transferred:",IDC_FSTATIC9,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,89,70,8
+    CONTROL         "All-Time Ratio:",IDC_FSTATIC_ALLTIME_RATIO,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,13,100,70,8
+    CONTROL         "-",IDC_SREQUESTED2,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,67,40,8
+    CONTROL         "-",IDC_SACCEPTED2,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,85,78,40,8
+    CONTROL         "-",IDC_STRANSFERRED2,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,85,89,40,8
+    CONTROL         "-",IDC_SALLTIMERATIO,"Static",SS_LEFTNOWORDWRAP | WS_GROUP,85,100,40,8
+    GROUPBOX        "Session",IDC_STATISTICS_GB_SESSION,4,1,393,57,BS_FLAT
+    GROUPBOX        "Total",IDC_STATISTICS_GB_TOTAL,4,58,393,57,BS_FLAT
     LTEXT           "Popularity Rank:",IDC_FS_POPULARITY_LBL,259,11,90,8
     LTEXT           "-",IDC_FS_POPULARITY_VAL,356,11,34,8
     LTEXT           "On Queue:",IDC_FS_ONQUEUE_LBL,259,22,90,8
     LTEXT           "-",IDC_FS_ONQUEUE_VAL,356,22,34,8
     LTEXT           "Uploading:",IDC_FS_UPLOADING_LBL,259,33,35,8
     LTEXT           "-",IDC_FS_UPLOADING_VAL,356,33,40,8
-    CONTROL         "",IDC_POPBAR4,"msctls_progress32",PBS_SMOOTH,127,60,121,9,WS_EX_TRANSPARENT
-    CONTROL         "",IDC_POPBAR5,"msctls_progress32",PBS_SMOOTH,127,71,121,9,WS_EX_TRANSPARENT
-    CONTROL         "",IDC_POPBAR6,"msctls_progress32",PBS_SMOOTH,127,82,121,9,WS_EX_TRANSPARENT
-    LTEXT           "Popularity Rank:",IDC_FS_POPULARITY2_LBL,259,60,90,8
-    LTEXT           "-",IDC_FS_POPULARITY2_VAL,356,60,34,8
+    CONTROL         "",IDC_POPBAR4,"msctls_progress32",PBS_SMOOTH,127,67,121,9,WS_EX_TRANSPARENT
+    CONTROL         "",IDC_POPBAR5,"msctls_progress32",PBS_SMOOTH,127,78,121,9,WS_EX_TRANSPARENT
+    CONTROL         "",IDC_POPBAR6,"msctls_progress32",PBS_SMOOTH,127,89,121,9,WS_EX_TRANSPARENT
+    LTEXT           "Popularity Rank:",IDC_FS_POPULARITY2_LBL,259,67,90,8
+    LTEXT           "-",IDC_FS_POPULARITY2_VAL,356,67,34,8
 END
 
 
@@ -2822,10 +2826,10 @@ BEGIN
     IDS_PW_PA               "Throttle Up/Down-Speed"
     IDS_IRC_IGNOREINFOMESSAGE "Ignore info messages"
     IDS_CONNECTIONLOST      "Connection lost"
-    IDS_WIZ_OS_FRAME        "Operating System"
+    IDS_WIZ_OS_FRAME        "Broadband Defaults"
     IDS_HASHINGFILE         "Hashing file:"
-    IDS_WIZ_TRUEUPLOAD_TEXT "True Upload Bandwidth"
-    IDS_WIZ_TRUEDOWNLOAD_TEXT "True Download Bandwidth"
+    IDS_WIZ_TRUEUPLOAD_TEXT "Upload limit (KB/s)"
+    IDS_WIZ_TRUEDOWNLOAD_TEXT "Download limit (KB/s)"
     IDS_FRIENDLIST          "Friends"
     IDS_CHATDISCONNECTED    "*** Disconnected"
     IDS_WIZARD              "Wizard"
@@ -2857,10 +2861,10 @@ END
 STRINGTABLE
 BEGIN
     IDS_UDPDISABLED         "Disable"
-    IDS_WIZ_CTFRAME         "Connection Type"
+    IDS_WIZ_CTFRAME         "Broadband Profiles"
     IDS_CONCURDWL           "Concurrent Downloads"
     IDS_WIZARD_CUSTOM       "Custom"
-    IDS_WIZARD_ENTERBELOW   "(enter below)"
+    IDS_WIZARD_ENTERBELOW   "(current)"
     IDS_STATS_MAXAVGDL      "Max Downloadrate Average: %s"
     IDS_STATS_MAXDL         "max. Downloadrate: %s"
     IDS_IRC_EMULEPROTO_IGNOREADDFRIEND
@@ -2873,12 +2877,12 @@ BEGIN
                             "The file 'emfriends.met' is invalid or corrupted!"
     IDS_ERR_READEMFRIENDS   "Unknown error while reading emfriends.met: %s"
     IDS_ERR_KNOWNSERVERINFOREC "Unknown server info received!"
-    IDS_WIZ_DOWN            "Down (Kbit/s)"
+    IDS_WIZ_DOWN            "Down (Mbit/s)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_WIZ_UP              "Up (Kbit/s)"
+    IDS_WIZ_UP              "Up (Mbit/s)"
     IDS_SELECT_INCOMINGDIR  "Choose a folder for incoming files"
     IDS_SELECT_TEMPDIR      "Choose a folder for temporary files"
     IDS_PRIOAUTO            "Auto"
@@ -3702,6 +3706,25 @@ BEGIN
     IDS_REARRANGEKADSEARCHKEYWORDS "Rearrange Kad search keywords"
     IDS_MESSAGEFROMVALIDSOURCESONLY "Allow messages only from valid sources"
     IDS_DOWNLOADTIMEOUT    "Download timeout [sec.]"
+    IDS_SESSION_RATIO      "Session Ratio"
+    IDS_ALL_TIME_RATIO     "All-Time Ratio"
+    IDS_COOLDOWN           "Cooldown"
+    IDS_BROADBAND          "Broadband"
+    IDS_BB_MAX_UPLOAD_CLIENTS "Max upload clients"
+    IDS_BB_SLOW_THRESHOLD_FACTOR "Slow threshold factor"
+    IDS_BB_SLOW_GRACE_SECONDS "Slow grace [sec.]"
+    IDS_BB_ZERO_RATE_GRACE_SECONDS "Zero-rate grace [sec.]"
+    IDS_BB_COOLDOWN_SECONDS "Cooldown [sec.]"
+    IDS_BB_LOW_RATIO_BOOST "Enable low-ratio boost"
+    IDS_BB_RATIO_THRESHOLD "Ratio threshold"
+    IDS_BB_SCORE_BONUS     "Score bonus"
+    IDS_BB_LOWID_DIVISOR   "LowID divisor"
+    IDS_BB_SESSION_TRANSFER_LIMIT "Session transfer limit"
+    IDS_BB_PERCENT_OF_FILE_SIZE "Percent of file size"
+    IDS_BB_ABSOLUTE_MIB    "Absolute MiB"
+    IDS_BB_SESSION_TIME_LIMIT "Session time limit [sec.]"
+    IDS_BB_SESSION_TRANSFER_PERCENT_VALUE "Percent value"
+    IDS_BB_SESSION_TRANSFER_MIB_VALUE "MiB value"
     IDS_SPAM                "Spam"
     IDS_MARKSPAM            "Mark as Spam"
     IDS_MARKNOTSPAM         "Mark as not Spam"

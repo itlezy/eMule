@@ -72,7 +72,7 @@ public:
 	uint32	GetDatarate() const								{ return datarate; }
 	uint32  GetToNetworkDatarate() const;
 
-	bool	CheckForTimeOver(const CUpDownClient *client);
+	bool	CheckForTimeOver(CUpDownClient *client, CString *pstrReason = NULL, bool *pbRequeue = NULL);
 	INT_PTR	GetWaitingUserCount() const						{ return waitinglist.GetCount(); }
 	INT_PTR	GetUploadQueueLength() const					{ return uploadinglist.GetCount(); }
 	INT_PTR	GetActiveUploadsCount()	const					{ return m_MaxActiveClientsShortTime; }
@@ -117,6 +117,11 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	uint32	GetEffectiveUploadBudgetBytesPerSec() const;
+	INT_PTR	GetSoftMaxUploadSlots() const;
+	uint32	GetTargetClientDataRateBroadband() const;
+	uint32	GetSlowUploadRateThreshold() const;
+	bool	ShouldTrackSlowUploadSlots() const;
 	void	UpdateMaxClientScore();
 	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
