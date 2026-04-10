@@ -38,7 +38,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 #define SLOT_COMPRESSION_DATARATE		(1000 * 1024)	// Data rate for a single client from which we start to check if we need to disable compression
-#define BIGBUFFER_MINDATARATE			(75 * 1024)
+#define BIGBUFFER_MINDATARATE			(512 * 1024)
 
 #define RUN_STOP	0
 #define RUN_IDLE	1

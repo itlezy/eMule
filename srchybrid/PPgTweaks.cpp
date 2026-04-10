@@ -19,6 +19,7 @@
 #include "opcodes.h"
 #include "OtherFunctions.h"
 #include "SearchDlg.h"
+#include "FileBufferSlider.h"
 #include "PPgTweaks.h"
 #include "Scheduler.h"
 #include "DownloadQueue.h"
@@ -37,9 +38,17 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	static void FailTreeValidation(CDataExchange *pDX, UINT uMessageId, HTREEITEM hItem)
+	{
+		AfxMessageBox(uMessageId);
+		pDX->PrepareEditCtrl(IDC_EXT_OPTS);
+		pDX->Fail();
+		UNREFERENCED_PARAMETER(hItem);
+	}
+}
 
-#define	DFLT_MAXCONPERFIVE	20
-#define DFLT_MAXHALFOPEN	9
 
 ///////////////////////////////////////////////////////////////////////////////
 // CPPgTweaks dialog
@@ -102,6 +111,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiLogRatingDescReceived()
 	, m_htiLogSecureIdent()
 	, m_htiLogUlDlEvents()
+	, m_htiConnectionTimeout()
 	, m_htiMaxCon5Sec()
 	, m_htiMaxHalfOpen()
 	, m_htiDateTimeFormat4Lists()
@@ -120,6 +130,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiRearrangeKadSearchKeywords()
 	, m_htiMessageFromValidSourcesOnly()
 	, m_htiFileBufferTimeLimit()
+	, m_htiDownloadTimeout()
 	, m_htiRestoreLastLogPane()
 	, m_htiRestoreLastMainWndDlg()
 	, m_htiMinFreeDiskSpace()
@@ -140,6 +151,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_iMinFreeDiskSpaceGB()
 	, m_iQueueSize()
 	, m_uFileBufferSize()
+	, m_uConnectionTimeoutSeconds()
+	, m_uDownloadTimeoutSeconds()
 	, m_uServerKeepAliveTimeout()
 	, m_iCommitFiles()
 	, m_iDynUpGoingDownDivider()
@@ -240,6 +253,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiMaxCon5Sec, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiMaxHalfOpen = m_ctrlTreeOptions.InsertItem(GetResString(IDS_MAXHALFOPENCONS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiMaxHalfOpen, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiConnectionTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_CONNECTIONTIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiConnectionTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiDownloadTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DOWNLOADTIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiDownloadTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiConditionalTCPAccept = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_CONDTCPACCEPT), m_htiTCPGroup, m_bConditionalTCPAccept);
 		m_htiServerKeepAliveTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_SERVERKEEPALIVETIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiServerKeepAliveTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
@@ -388,8 +405,16 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDV_MinMaxInt(pDX, m_iMaxConnPerFive, 1, INT_MAX);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiMaxHalfOpen, m_iMaxHalfOpen);
 	DDV_MinMaxInt(pDX, m_iMaxHalfOpen, 1, INT_MAX);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiConnectionTimeout, m_uConnectionTimeoutSeconds);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiDownloadTimeout, m_uDownloadTimeoutSeconds);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiConditionalTCPAccept, m_bConditionalTCPAccept);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiServerKeepAliveTimeout, m_uServerKeepAliveTimeout);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_uConnectionTimeoutSeconds < thePrefs.GetMinTimeoutSeconds())
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiConnectionTimeout);
+		if (m_uDownloadTimeoutSeconds < thePrefs.GetMinTimeoutSeconds())
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiDownloadTimeout);
+	}
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Miscellaneous group
@@ -568,6 +593,8 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bA4AFSaveCpu = thePrefs.GetA4AFSaveCpu();
 	m_bRestoreLastMainWndDlg = thePrefs.GetRestoreLastMainWndDlg();
 	m_bRestoreLastLogPane = thePrefs.GetRestoreLastLogPane();
+	m_uConnectionTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetConnectionTimeout()));
+	m_uDownloadTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetDownloadTimeout()));
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
 	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
@@ -592,14 +619,21 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
 
 	m_uFileBufferSize = thePrefs.m_uFileBufferSize;
-	m_ctlFileBuffSize.SetRange(16, 1024 + 512, TRUE);
-	int iMin, iMax;
-	m_ctlFileBuffSize.GetRange(iMin, iMax);
-	m_ctlFileBuffSize.SetPos(m_uFileBufferSize / 1024);
-	int iPage = 128;
-	for (int i = ((iMin + iPage - 1) / iPage) * iPage; i < iMax; i += iPage)
-		m_ctlFileBuffSize.SetTic(i);
-	m_ctlFileBuffSize.SetPageSize(iPage);
+	m_ctlFileBuffSize.SetRange(FileBufferSlider::kMinPosition, FileBufferSlider::kMaxPosition, TRUE);
+	m_ctlFileBuffSize.SetPos(FileBufferSlider::BytesToPosition(m_uFileBufferSize));
+	m_uFileBufferSize = FileBufferSlider::PositionToBytes(m_ctlFileBuffSize.GetPos());
+	static const int aiFileBufferTics[] = {
+		16, 64, 256, 1024,
+		FileBufferSlider::BytesToPosition(8u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(32u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(64u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(128u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(256u * 1024u * 1024u),
+		FileBufferSlider::BytesToPosition(FileBufferSlider::kMaxFileBufferSizeBytes)
+	};
+	for (size_t i = 0; i < _countof(aiFileBufferTics); ++i)
+		m_ctlFileBuffSize.SetTic(aiFileBufferTics[i]);
+	m_ctlFileBuffSize.SetPageSize(32);
 
 	m_iQueueSize = thePrefs.m_iQueueSize;
 	m_ctlQueueSize.SetRange(20, 100, TRUE);
@@ -630,9 +664,11 @@ BOOL CPPgTweaks::OnApply()
 	if (!UpdateData())
 		return FALSE;
 
-	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : DFLT_MAXCONPERFIVE);
+	thePrefs.SetMaxConsPerFive(m_iMaxConnPerFive ? m_iMaxConnPerFive : thePrefs.GetDefaultMaxConperFive());
 	theApp.scheduler->original_cons5s = thePrefs.GetMaxConperFive();
-	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : DFLT_MAXHALFOPEN);
+	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : thePrefs.GetDefaultMaxHalfConnections());
+	thePrefs.SetConnectionTimeout(thePrefs.NormalizeTimeoutSeconds(m_uConnectionTimeoutSeconds, thePrefs.GetDefaultConnectionTimeoutSeconds()));
+	thePrefs.SetDownloadTimeout(thePrefs.NormalizeTimeoutSeconds(m_uDownloadTimeoutSeconds, thePrefs.GetDefaultDownloadTimeoutSeconds()));
 	thePrefs.m_bConditionalTCPAccept = m_bConditionalTCPAccept;
 
 	if (thePrefs.AutoTakeED2KLinks() != m_bAutoTakeEd2kLinks) {
@@ -747,7 +783,7 @@ BOOL CPPgTweaks::OnApply()
 void CPPgTweaks::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar *pScrollBar)
 {
 	if (pScrollBar->GetSafeHwnd() == m_ctlFileBuffSize.m_hWnd) {
-		m_uFileBufferSize = m_ctlFileBuffSize.GetPos() * 1024;
+		m_uFileBufferSize = FileBufferSlider::PositionToBytes(m_ctlFileBuffSize.GetPos());
 		CString temp(GetResString(IDS_FILEBUFFERSIZE));
 		temp.AppendFormat(_T(": %s"), (LPCTSTR)CastItoXBytes(m_uFileBufferSize));
 		SetDlgItemText(IDC_FILEBUFFERSIZE_STATIC, temp);
@@ -787,6 +823,8 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiDynUpNumberOfPings, IDS_DYNUP_NUMBEROFPINGS);
 		LocalizeEditLabel(m_htiDynUpPingTolerance, IDS_DYNUP_PINGTOLERANCE);
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
+		LocalizeEditLabel(m_htiConnectionTimeout, IDS_CONNECTIONTIMEOUT);
+		LocalizeEditLabel(m_htiDownloadTimeout, IDS_DOWNLOADTIMEOUT);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
 		LocalizeEditLabel(m_htiMinFreeDiskSpace, IDS_MINFREEDISKSPACE);
@@ -892,6 +930,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiLogA4AF = NULL;
 	m_htiLogLevel = NULL;
 	m_htiLogUlDlEvents = NULL;
+	m_htiConnectionTimeout = NULL;
 	m_htiCreditSystem = NULL;
 	m_htiDateTimeFormat4Lists = NULL;
 	m_htiPreviewCopiedArchives = NULL;
@@ -909,6 +948,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiRearrangeKadSearchKeywords = NULL;
 	m_htiMessageFromValidSourcesOnly = NULL;
 	m_htiFileBufferTimeLimit = NULL;
+	m_htiDownloadTimeout = NULL;
 	m_htiRestoreLastLogPane = NULL;
 	m_htiRestoreLastMainWndDlg = NULL;
 	m_htiInspectAllFileTypes = NULL;

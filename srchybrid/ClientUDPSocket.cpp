@@ -535,7 +535,7 @@ bool CClientUDPSocket::Create()
 		m_port = thePrefs.GetUDPPort();
 		// the default socket size seems to be insufficient for this UDP socket
 		// because we tend to drop packets if several arrived at the same time
-		int val = 64 * 1024;
+		int val = 512 * 1024;
 		if (!SetSockOpt(SO_RCVBUF, &val, sizeof val))
 			DebugLogError(_T("Failed to increase socket size on UDP socket"));
 	} else

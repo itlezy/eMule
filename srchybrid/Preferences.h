@@ -378,6 +378,8 @@ public:
 	//MORPH END - Added by SiRoB, Splitting Bar [O²]
 	static UINT		m_uDeadServerRetries;
 	static DWORD	m_dwServerKeepAliveTimeout;
+	static DWORD	m_dwConnectionTimeout;
+	static DWORD	m_dwDownloadTimeout;
 	// -khaos--+++> Changed data type to avoid overflows
 	static UINT		statsMax;
 	// <-----khaos-
@@ -964,9 +966,12 @@ public:
 	static uint64	GetMaxDownloadInBytesPerSec(bool dynamic = false);
 	static UINT		GetMaxConnections()					{ return maxconnections; }
 	static UINT		GetMaxHalfConnections()				{ return maxhalfconnections; }
+	static UINT		GetDefaultMaxHalfConnections()		{ return 50; }
 	static UINT		GetMaxSourcePerFileDefault()		{ return maxsourceperfile; }
 	static UINT		GetDeadServerRetries()				{ return m_uDeadServerRetries; }
 	static DWORD	GetServerKeepAliveTimeout()			{ return m_dwServerKeepAliveTimeout; }
+	static DWORD	GetConnectionTimeout()				{ return m_dwConnectionTimeout; }
+	static DWORD	GetDownloadTimeout()				{ return m_dwDownloadTimeout; }
 	static bool		GetConditionalTCPAccept()			{ return m_bConditionalTCPAccept; }
 
 	static LANGID	GetLanguageID()						{ return m_wLanguageID; }
@@ -1134,6 +1139,11 @@ public:
 
 	static UINT		GetMaxConperFive()					{ return MaxConperFive; }
 	static UINT		GetDefaultMaxConperFive();
+	static UINT		GetMinTimeoutSeconds()				{ return 5; }
+	static UINT		GetDefaultConnectionTimeoutSeconds()	{ return 30; }
+	static UINT		GetDefaultDownloadTimeoutSeconds()	{ return 75; }
+	static DWORD	NormalizeTimeoutSeconds(UINT seconds, UINT defaultSeconds);
+	static UINT		TimeoutMsToSeconds(DWORD milliseconds) { return milliseconds / SEC2MS(1); }
 
 	static bool		IsSafeServerConnectEnabled()		{ return m_bSafeServerConnect; }
 	static void		SetSafeServerConnectEnabled(bool in) { m_bSafeServerConnect = in; }
@@ -1238,6 +1248,8 @@ public:
 	static void		SetMaxSourcesPerFile(UINT in)		{ maxsourceperfile = in; }
 	static void		SetMaxConnections(UINT in)			{ maxconnections = in; }
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
+	static void		SetConnectionTimeout(DWORD in)		{ m_dwConnectionTimeout = in; }
+	static void		SetDownloadTimeout(DWORD in)		{ m_dwDownloadTimeout = in; }
 	static bool		IsSchedulerEnabled()				{ return scheduler; }
 	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
 	static bool		GetDontCompressAvi()				{ return dontcompressavi; }

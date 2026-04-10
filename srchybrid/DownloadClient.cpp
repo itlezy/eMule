@@ -646,11 +646,11 @@ void CUpDownClient::SetDownloadState(EDownloadState nNewState, LPCTSTR pszReason
 		}
 
 		if (nNewState == DS_DOWNLOADING && socket)
-			socket->SetTimeOut(CONNECTION_TIMEOUT * 4);
+			socket->SetTimeOut(thePrefs.GetConnectionTimeout() * 4);
 
 		if (m_eDownloadState == DS_DOWNLOADING) {
 			if (socket)
-				socket->SetTimeOut(CONNECTION_TIMEOUT);
+				socket->SetTimeOut(thePrefs.GetConnectionTimeout());
 
 			if (thePrefs.GetLogUlDlEvents()) {
 				if (nNewState == DS_NONEEDEDPARTS)
@@ -1275,12 +1275,14 @@ uint32 CUpDownClient::CalculateDownloadRate()
 
 void CUpDownClient::CheckDownloadTimeout()
 {
-	if (::GetTickCount64() >= m_dwLastBlockReceived + DOWNLOADTIMEOUT) {
+	if (::GetTickCount64() >= m_dwLastBlockReceived + thePrefs.GetDownloadTimeout()) {
 		if (socket != NULL && !socket->IsRawDataMode())
 			SendCancelTransfer();
 		else
 			ASSERT(0);
-		SetDownloadState(DS_ONQUEUE, _T("Timeout. More than 100 seconds since last complete block was received."));
+		CString strReason;
+		strReason.Format(_T("Timeout. More than %u seconds since last complete block was received."), thePrefs.TimeoutMsToSeconds(thePrefs.GetDownloadTimeout()));
+		SetDownloadState(DS_ONQUEUE, strReason);
 	}
 }
 

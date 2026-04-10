@@ -353,6 +353,8 @@ UINT	CPreferences::m_uFileBufferSize;
 DWORD	CPreferences::m_uFileBufferTimeLimit;
 INT_PTR	CPreferences::m_iQueueSize;
 int		CPreferences::m_iCommitFiles;
+DWORD	CPreferences::m_dwConnectionTimeout;
+DWORD	CPreferences::m_dwDownloadTimeout;
 UINT	CPreferences::maxmsgsessions;
 time_t	CPreferences::versioncheckLastAutomatic;
 CString	CPreferences::messageFilter;
@@ -1571,6 +1573,8 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("UploadCapacityNew"), (int)maxGraphUploadRate);
 	ini.WriteInt(_T("DeadServerRetry"), m_uDeadServerRetries);
 	ini.WriteInt(_T("ServerKeepAliveTimeout"), m_dwServerKeepAliveTimeout);
+	ini.WriteInt(_T("ConnectionTimeout"), static_cast<int>(TimeoutMsToSeconds(m_dwConnectionTimeout)));
+	ini.WriteInt(_T("DownloadTimeout"), static_cast<int>(TimeoutMsToSeconds(m_dwDownloadTimeout)));
 	ini.WriteInt(_T("SplitterbarPosition"), splitterbarPosition);
 	ini.WriteInt(_T("SplitterbarPositionServer"), splitterbarPositionSvr);
 	ini.WriteInt(_T("SplitterbarPositionStat"), splitterbarPositionStat + 1);
@@ -1994,7 +1998,7 @@ void CPreferences::LoadPreferences()
 	if (m_maxdownload > maxGraphDownloadRate && m_maxdownload != UNLIMITED)
 		m_maxdownload = maxGraphDownloadRate * 9 / 10;
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
-	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), 9);
+	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), GetDefaultMaxHalfConnections());
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
 
 	m_strBindAddrW = ini.GetString(_T("BindAddr")).Trim();
@@ -2011,7 +2015,7 @@ void CPreferences::LoadPreferences()
 	udpport = (iPort == INT_MAX) ? thePrefs.GetRandomUDPPort() : (uint16)iPort;
 
 	nServerUDPPort = (uint16)ini.GetInt(_T("ServerUDPPort"), -1); // 0 = Don't use UDP port for servers, -1 = use a random port (for backward compatibility)
-	maxsourceperfile = ini.GetInt(_T("MaxSourcesPerFile"), 400);
+	maxsourceperfile = ini.GetInt(_T("MaxSourcesPerFile"), 600);
 	m_wLanguageID = ini.GetWORD(_T("Language"), 0);
 	m_iSeeShares = (EViewSharedFilesAccess)ini.GetInt(_T("SeeShare"), vsfaNobody);
 	m_iToolDelayTime = ini.GetInt(_T("ToolTipDelay"), 1);
@@ -2024,6 +2028,8 @@ void CPreferences::LoadPreferences()
 	if (m_uDeadServerRetries > MAX_SERVERFAILCOUNT)
 		m_uDeadServerRetries = MAX_SERVERFAILCOUNT;
 	m_dwServerKeepAliveTimeout = ini.GetInt(_T("ServerKeepAliveTimeout"), 0);
+	m_dwConnectionTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("ConnectionTimeout"), GetDefaultConnectionTimeoutSeconds()), GetDefaultConnectionTimeoutSeconds());
+	m_dwDownloadTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("DownloadTimeout"), GetDefaultDownloadTimeoutSeconds()), GetDefaultDownloadTimeoutSeconds());
 	splitterbarPosition = ini.GetInt(_T("SplitterbarPosition"), 75);
 	if (splitterbarPosition < 9)
 		splitterbarPosition = 9;
@@ -2215,14 +2221,14 @@ void CPreferences::LoadPreferences()
 	// Get file buffer size (with backward compatibility)
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSizePref"), 0); // old setting
 	if (m_uFileBufferSize == 0)
-		m_uFileBufferSize = 256 * 1024;
+		m_uFileBufferSize = 64u * 1024u * 1024u;
 	else
 		m_uFileBufferSize = ((m_uFileBufferSize * 15000 + 512) / 1024) * 1024;
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
-	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 60));
+	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
 
 	// Get queue size (with backward compatibility)
-	m_iQueueSize = (INT_PTR)ini.GetInt(_T("QueueSizePref"), 50) * 100; // old setting
+	m_iQueueSize = (INT_PTR)ini.GetInt(_T("QueueSizePref"), 100) * 100; // old setting
 	m_iQueueSize = ini.GetInt(_T("QueueSize"), (int)m_iQueueSize);
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving
@@ -2462,7 +2468,16 @@ WORD CPreferences::GetWindowsVersion()
 
 UINT CPreferences::GetDefaultMaxConperFive()
 {
-	return MAXCONPER5SEC;
+	return 50;
+}
+
+DWORD CPreferences::NormalizeTimeoutSeconds(UINT seconds, UINT defaultSeconds)
+{
+	if (seconds == 0)
+		seconds = defaultSeconds;
+	if (seconds < GetMinTimeoutSeconds())
+		seconds = GetMinTimeoutSeconds();
+	return SEC2MS(seconds);
 }
 
 //////////////////////////////////////////////////////////

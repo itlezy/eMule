@@ -315,7 +315,7 @@ void CUploadQueue::Process()
 			// Increase the sockets buffer for fast uploads (was in UpdateUploadingStatisticsData()).
 			// This should be done in the throttling thread, but the throttler
 			// does not have access to the client's download rate
-			if (cur_client->GetUploadDatarate() > 100 * 1024) {
+			if (cur_client->GetUploadDatarate() > 512 * 1024) {
 				CEMSocket *sock = cur_client->GetFileUploadSocket();
 				if (sock)
 					sock->UseBigSendBuffer();

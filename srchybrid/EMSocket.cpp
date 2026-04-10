@@ -86,7 +86,7 @@ IMPLEMENT_DYNAMIC(CEMSocket, CEncryptedStreamSocket)
 
 CEMSocket::CEMSocket()
 	: m_pProxyLayer()
-	, m_uTimeOut(CONNECTION_TIMEOUT) // default timeout for ed2k sockets
+	, m_uTimeOut(thePrefs.GetConnectionTimeout()) // default timeout for ed2k sockets
 	, byConnected(EMS_NOTCONNECTED)
 	, m_bProxyConnectFailed()
 	, downloadLimitEnable()
@@ -1092,7 +1092,7 @@ CString CEMSocket::GetFullErrorMessage(DWORD dwError) const
 // increases the send buffer to a bigger size
 bool CEMSocket::UseBigSendBuffer()
 {
-#define BIGSIZE (128 * 1024)
+#define BIGSIZE (512 * 1024)
 
 	if (!m_bUseBigSendBuffers) {
 		int val = BIGSIZE;

@@ -69,6 +69,7 @@ protected:
 	HTREEITEM m_htiLogRatingDescReceived;
 	HTREEITEM m_htiLogSecureIdent;
 	HTREEITEM m_htiLogUlDlEvents;
+	HTREEITEM m_htiConnectionTimeout;
 	HTREEITEM m_htiMaxCon5Sec;
 	HTREEITEM m_htiMaxHalfOpen;
 	HTREEITEM m_htiDateTimeFormat4Lists;
@@ -87,6 +88,7 @@ protected:
 	HTREEITEM m_htiRearrangeKadSearchKeywords;
 	HTREEITEM m_htiMessageFromValidSourcesOnly;
 	HTREEITEM m_htiFileBufferTimeLimit;
+	HTREEITEM m_htiDownloadTimeout;
 	HTREEITEM m_htiRestoreLastLogPane;
 	HTREEITEM m_htiRestoreLastMainWndDlg;
 	HTREEITEM m_htiMinFreeDiskSpace;
@@ -108,6 +110,8 @@ protected:
 	int m_iMinFreeDiskSpaceGB;
 	INT_PTR m_iQueueSize;
 	UINT m_uFileBufferSize;
+	UINT m_uConnectionTimeoutSeconds;
+	UINT m_uDownloadTimeoutSeconds;
 	UINT m_uServerKeepAliveTimeout;
 	int m_iCommitFiles;
 	int m_iDynUpGoingDownDivider;

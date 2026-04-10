@@ -137,12 +137,12 @@ bool CClientReqSocket::CheckTimeOut()
 	if (client)
 		if (client->GetKadState() == KS_CONNECTED_BUDDY)
 			uTimeout += MIN2MS(15);
-		else if (client->IsDownloading() && curTick < client->GetUpStartTime() + 4 * CONNECTION_TIMEOUT)
+		else if (client->IsDownloading() && curTick < client->GetUpStartTime() + 4 * thePrefs.GetConnectionTimeout())
 			//TCP flow control might need more time to begin throttling for slow peers
-			uTimeout += 4 * CONNECTION_TIMEOUT; //2'30" or slightly more
+			uTimeout += 4 * thePrefs.GetConnectionTimeout();
 		else if (client->GetChatState() != MS_NONE)
 			//We extend the timeout time here to avoid chatting people from disconnecting too fast.
-			uTimeout += CONNECTION_TIMEOUT;
+			uTimeout += thePrefs.GetConnectionTimeout();
 
 	if (curTick < timeout_timer + uTimeout)
 		return false;
