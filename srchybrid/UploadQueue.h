@@ -275,7 +275,7 @@ private:
 	bool	TryAcceptActiveUploadRequest(CUpDownClient *client) const;
 	bool	AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediateActivationReason);
 	bool	RequeueClientAfterUploadSession(CUpDownClient *client);
-	INT_PTR	GetWaitingMemberCount() const					{ return static_cast<INT_PTR>(m_waitingClients.size()); }
+	INT_PTR	GetWaitingMemberCount() const;
 	bool	HasWaitingMember(const CUpDownClient *client) const;
 	bool	FindWaitingClientIndex(const CUpDownClient *client, size_t &index) const;
 	UploadSessionPtr GetUploadSession(const CUpDownClient *client) const;

@@ -806,8 +806,15 @@ bool CUploadQueue::HasWaitingMember(const CUpDownClient *client) const
 		&& m_waitingClientIndexes.find(client) != m_waitingClientIndexes.cend();
 }
 
+INT_PTR CUploadQueue::GetWaitingMemberCount() const
+{
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csQueueState), TRUE);
+	return static_cast<INT_PTR>(m_waitingClients.size());
+}
+
 bool CUploadQueue::FindWaitingClientIndex(const CUpDownClient *client, size_t &index) const
 {
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csQueueState), TRUE);
 	const auto it = m_waitingClientIndexes.find(client);
 	if (it == m_waitingClientIndexes.cend())
 		return false;
