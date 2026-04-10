@@ -261,7 +261,7 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		{
 			UINT uScore = client->GetScore(false);
 			if (client->HasLowID()) {
-				if (client->m_bAddNextConnect)
+				if (theApp.uploadqueue->IsReconnectReserved(client))
 					sText.Format(_T("%u ****"), uScore);
 				else
 					sText.Format(_T("%u (%s)"), uScore, (LPCTSTR)GetResString(IDS_IDLOW));

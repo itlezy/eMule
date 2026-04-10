@@ -1573,6 +1573,7 @@ void CUpDownClient::ConnectionEstablished()
 
 	if (GetUploadState() == US_CONNECTING && theApp.uploadqueue->IsDownloading(this)) {
 		SetUploadState(US_UPLOADING);
+		theApp.uploadqueue->OnUploadSlotReady(this);
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugSend("OP_AcceptUploadReq", this);
 		Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);

@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "ring.h"
+#include <unordered_map>
 
 struct Requested_Block_Struct;
 class CUpDownClient;
@@ -97,6 +98,8 @@ public:
 
 	void	DeleteAll();
 	UINT	GetWaitingPosition(CUpDownClient *client);
+	bool	IsReconnectReserved(const CUpDownClient *client) const;
+	void	OnUploadSlotReady(CUpDownClient *client);
 
 	uint32	GetSuccessfullUpCount() const					{ return successfullupcount; }
 	uint32	GetFailedUpCount() const						{ return failedupcount; }
@@ -126,6 +129,22 @@ private:
 		bool	throttlerWantsMoreSlots = false;
 	};
 
+	/** Queue-owned phases for one client's upload slot lifecycle. */
+	enum class EUploadSlotPhase : uint8
+	{
+		None,
+		Waiting,
+		ReservedForReconnect,
+		Activating,
+		Active,
+		Retiring
+	};
+
+	struct UploadSlotPhaseState
+	{
+		EUploadSlotPhase phase = EUploadSlotPhase::None;
+	};
+
 	/** Reasons for ending an active upload slot. */
 	enum class EUploadSlotEndReason : uint8
 	{
@@ -146,10 +165,14 @@ private:
 
 	/** Returns true if the client can immediately take an upload slot. */
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
+	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
+	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
+	void	ClearUploadSlotPhase(CUpDownClient *client);
+	void	UpdateReconnectReservation(CUpDownClient *reservedClient);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
-	bool	ActivateUploadClient(CUpDownClient *client, LPCTSTR pszReason);
+	bool	ActivateUploadClient(CUpDownClient *client, LPCTSTR pszReason, bool bRemoveFromWaitingQueue);
 	/** Captures the scheduler inputs used for one admission or retention decision. */
 	UploadSchedulingSnapshot CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const;
 	/** Removes an active upload slot and requeues the client when requested. */
@@ -166,6 +189,7 @@ private:
 	uint32	GetSlowUploadRateThreshold() const;
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
+	void	RemoveFromWaitingQueueInternal(POSITION pos, bool updatewindow, bool preserveSlotPhase);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
@@ -204,4 +228,5 @@ private:
 	ULONGLONG m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
+	std::unordered_map<const CUpDownClient*, UploadSlotPhaseState> m_uploadSlotPhaseStates;
 };
