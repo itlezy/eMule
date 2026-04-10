@@ -75,10 +75,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiBBSlowGrace()
 	, m_htiBBZeroRateGrace()
 	, m_htiBBCooldown()
-	, m_htiBBLowRatioBoost()
-	, m_htiBBLowRatioThreshold()
-	, m_htiBBLowRatioBonus()
-	, m_htiBBLowIdDivisor()
 	, m_htiBBSessionTransfer()
 	, m_htiBBSessionTransferDisabled()
 	, m_htiBBSessionTransferPercent()
@@ -170,11 +166,9 @@ CPPgTweaks::CPPgTweaks()
 	, m_iBBSessionTransferMode()
 	, m_sDateTimeFormat4Lists()
 	, m_sBBSlowThresholdFactor()
-	, m_sBBLowRatioThreshold()
 	, m_bA4AFSaveCpu()
 	, m_bAutoArchDisable(true)
 	, m_bAutoTakeEd2kLinks()
-	, m_bBBLowRatioBoost()
 	, m_bAdjustNTFSDaylightFileTime()
 	, m_bCheckDiskspace()
 	, m_bCloseUPnPOnExit(true)
@@ -221,8 +215,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_iBBSlowGraceSeconds()
 	, m_iBBZeroRateGraceSeconds()
 	, m_iBBCooldownSeconds()
-	, m_iBBLowRatioBonus()
-	, m_iBBLowIdDivisor()
 	, m_iBBSessionTransferPercent()
 	, m_iBBSessionTransferMiB()
 	, m_iBBSessionTimeLimitSeconds()
@@ -286,13 +278,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiBBZeroRateGrace, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiBBCooldown = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_COOLDOWN_SECONDS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBroadband);
 		m_ctrlTreeOptions.AddEditBox(m_htiBBCooldown, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiBBLowRatioBoost = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_BB_LOW_RATIO_BOOST), m_htiBroadband, m_bBBLowRatioBoost);
-		m_htiBBLowRatioThreshold = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_RATIO_THRESHOLD), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBLowRatioBoost);
-		m_ctrlTreeOptions.AddEditBox(m_htiBBLowRatioThreshold, RUNTIME_CLASS(CTreeOptionsEditEx));
-		m_htiBBLowRatioBonus = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_SCORE_BONUS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBBLowRatioBoost);
-		m_ctrlTreeOptions.AddEditBox(m_htiBBLowRatioBonus, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiBBLowIdDivisor = m_ctrlTreeOptions.InsertItem(GetResString(IDS_BB_LOWID_DIVISOR), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiBroadband);
-		m_ctrlTreeOptions.AddEditBox(m_htiBBLowIdDivisor, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiBBSessionTransfer = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_BB_SESSION_TRANSFER_LIMIT), iImgDynyp, m_htiBroadband);
 		m_htiBBSessionTransferDisabled = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DISABLED), m_htiBBSessionTransfer, m_iBBSessionTransferMode == BBSTM_DISABLED);
 		m_htiBBSessionTransferPercent = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_BB_PERCENT_OF_FILE_SIZE), m_htiBBSessionTransfer, m_iBBSessionTransferMode == BBSTM_PERCENT_OF_FILE);
@@ -404,7 +389,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 
 		m_ctrlTreeOptions.Expand(m_htiTCPGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBroadband, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiBBLowRatioBoost, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBBSessionTransfer, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiHiddenStartup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiHiddenFile, TVE_EXPAND);
@@ -443,10 +427,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSlowGrace, m_iBBSlowGraceSeconds);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBZeroRateGrace, m_iBBZeroRateGraceSeconds);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBCooldown, m_iBBCooldownSeconds);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBoost, m_bBBLowRatioBoost);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowRatioThreshold, m_sBBLowRatioThreshold);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBonus, m_iBBLowRatioBonus);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowIdDivisor, m_iBBLowIdDivisor);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiBBSessionTransfer, m_iBBSessionTransferMode);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferPercentValue, m_iBBSessionTransferPercent);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferMiBValue, m_iBBSessionTransferMiB);
@@ -609,10 +589,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iBBSlowGraceSeconds = static_cast<int>(thePrefs.GetBBSlowUploadGraceSeconds());
 	m_iBBZeroRateGraceSeconds = static_cast<int>(thePrefs.GetBBZeroRateGraceSeconds());
 	m_iBBCooldownSeconds = static_cast<int>(thePrefs.GetBBSlowUploadCooldownSeconds());
-	m_bBBLowRatioBoost = thePrefs.IsBBLowRatioBoostEnabled();
-	m_sBBLowRatioThreshold.Format(_T("%.2f"), thePrefs.GetBBLowRatioThreshold());
-	m_iBBLowRatioBonus = static_cast<int>(thePrefs.GetBBLowRatioBonus());
-	m_iBBLowIdDivisor = static_cast<int>(thePrefs.GetBBLowIDDivisor());
 	m_iBBSessionTransferMode = thePrefs.GetBBSessionTransferMode();
 	m_iBBSessionTransferPercent = static_cast<int>(thePrefs.GetBBSessionTransferMode() == BBSTM_PERCENT_OF_FILE ? thePrefs.GetBBSessionTransferValue() : 50);
 	m_iBBSessionTransferMiB = static_cast<int>(thePrefs.GetBBSessionTransferMode() == BBSTM_ABSOLUTE_MIB ? thePrefs.GetBBSessionTransferValue() : 0);
@@ -697,10 +673,6 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.SetBBSlowUploadGraceSeconds(static_cast<UINT>(max(0, m_iBBSlowGraceSeconds)));
 	thePrefs.SetBBZeroRateGraceSeconds(static_cast<UINT>(max(0, m_iBBZeroRateGraceSeconds)));
 	thePrefs.SetBBSlowUploadCooldownSeconds(static_cast<UINT>(max(0, m_iBBCooldownSeconds)));
-	thePrefs.SetBBLowRatioBoostEnabled(m_bBBLowRatioBoost);
-	thePrefs.SetBBLowRatioThreshold(static_cast<float>(_tstof(m_sBBLowRatioThreshold)));
-	thePrefs.SetBBLowRatioBonus(static_cast<UINT>(max(0, m_iBBLowRatioBonus)));
-	thePrefs.SetBBLowIDDivisor(static_cast<UINT>(max(0, m_iBBLowIdDivisor)));
 	thePrefs.SetBBSessionTransferMode((EBBSessionTransferMode)m_iBBSessionTransferMode);
 	thePrefs.SetBBSessionTransferValue(static_cast<UINT>(max(0, m_iBBSessionTransferMode == BBSTM_ABSOLUTE_MIB ? m_iBBSessionTransferMiB : m_iBBSessionTransferPercent)));
 	thePrefs.SetBBSessionTimeLimitSeconds(static_cast<UINT>(max(0, m_iBBSessionTimeLimitSeconds)));
@@ -856,10 +828,6 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiBBSlowGrace, IDS_BB_SLOW_GRACE_SECONDS);
 		LocalizeEditLabel(m_htiBBZeroRateGrace, IDS_BB_ZERO_RATE_GRACE_SECONDS);
 		LocalizeEditLabel(m_htiBBCooldown, IDS_BB_COOLDOWN_SECONDS);
-		LocalizeItemText(m_htiBBLowRatioBoost, IDS_BB_LOW_RATIO_BOOST);
-		LocalizeEditLabel(m_htiBBLowRatioThreshold, IDS_BB_RATIO_THRESHOLD);
-		LocalizeEditLabel(m_htiBBLowRatioBonus, IDS_BB_SCORE_BONUS);
-		LocalizeEditLabel(m_htiBBLowIdDivisor, IDS_BB_LOWID_DIVISOR);
 		LocalizeItemText(m_htiBBSessionTransfer, IDS_BB_SESSION_TRANSFER_LIMIT);
 		LocalizeItemText(m_htiBBSessionTransferDisabled, IDS_DISABLED);
 		LocalizeItemText(m_htiBBSessionTransferPercent, IDS_BB_PERCENT_OF_FILE_SIZE);
@@ -953,10 +921,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiBBSlowGrace = NULL;
 	m_htiBBZeroRateGrace = NULL;
 	m_htiBBCooldown = NULL;
-	m_htiBBLowRatioBoost = NULL;
-	m_htiBBLowRatioThreshold = NULL;
-	m_htiBBLowRatioBonus = NULL;
-	m_htiBBLowIdDivisor = NULL;
 	m_htiBBSessionTransfer = NULL;
 	m_htiBBSessionTransferDisabled = NULL;
 	m_htiBBSessionTransferPercent = NULL;

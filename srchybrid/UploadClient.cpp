@@ -131,20 +131,6 @@ void CUpDownClient::SetUploadState(EUploadState eNewState)
 }
 
 /*
- * Gets the queue score multiplier for this client, taking into consideration client's credits
- * and the requested file's priority.
- */
-float CUpDownClient::GetCombinedFilePrioAndCredit()
-{
-	if (!credits) {
-		ASSERT(IsKindOf(RUNTIME_CLASS(CUrlClient)));
-		return 0.0F;
-	}
-
-	return 10.0f * credits->GetScoreRatio(GetIP()) * GetFilePrioAsNumber();
-}
-
-/*
  * Gets the file multiplier for the file this client has requested.
  */
 int CUpDownClient::GetFilePrioAsNumber() const
@@ -196,10 +182,6 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	// bad clients (see note in function)
 	if (credits->GetCurrentIdentState(GetIP()) == IS_IDBADGUY)
 		return 0;
-	// friend slot
-	if (IsFriend() && GetFriendSlot() && !HasLowID())
-		return 0x0FFFFFFFu;
-
 	if (IsBanned() || m_bGPLEvildoer)
 		return 0;
 
@@ -230,20 +212,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;
 
-	if (!onlybasevalue && HasLowID()) {
-		const UINT uLowIdDivisor = max(1u, thePrefs.GetBBLowIDDivisor());
-		if (uLowIdDivisor > 1)
-			fBaseValue /= uLowIdDivisor;
-	}
-
-	uint32 uScore = (uint32)fBaseValue;
-	if (!onlybasevalue && thePrefs.IsBBLowRatioBoostEnabled()) {
-		const CKnownFile *pRequestedFile = theApp.sharedfiles->GetFileByID(requpfileid);
-		if (pRequestedFile != NULL && pRequestedFile->GetAllTimeUploadRatio() < thePrefs.GetBBLowRatioThreshold())
-			uScore += thePrefs.GetBBLowRatioBonus();
-	}
-
-	return uScore;
+	return (uint32)fBaseValue;
 }
 
 bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqfile)
@@ -344,18 +313,6 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 				AddDebugLogLine(DLP_LOW, false, _T("UploadClient: Client tried to add req block when not in upload slot! Prevented req blocks from being added. %s"), (LPCTSTR)DbgGetClientInfo());
 			delete reqblock;
 			return;
-		}
-
-		if (theApp.uploadqueue->HasCollectionUploadSlot(this)) {
-			CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(reqblock->FileID);
-			if (pDownloadingFile != NULL) {
-				if (!CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) || pDownloadingFile->GetFileSize() > (uint64)MAXPRIORITYCOLL_SIZE) {
-					AddDebugLogLine(DLP_HIGH, false, _T("UploadClient: Client tried to add req block for non-collection while having a collection slot! Prevented req blocks from being added. %s"), (LPCTSTR)DbgGetClientInfo());
-					delete reqblock;
-					return;
-				}
-			} else
-				ASSERT(0);
 		}
 
 		CKnownFile *srcfile = theApp.sharedfiles->GetFileByID(reqblock->FileID);

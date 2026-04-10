@@ -255,7 +255,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		}
 		break;
 	case 9:
-		sText = theApp.uploadqueue->HasCollectionUploadSlot(client) || client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining());
+		sText = FormatCooldown(client->GetSlowUploadCooldownRemaining());
 		break;
 	case 10:
 		sText = GetResString(IDS_UPSTATUS);

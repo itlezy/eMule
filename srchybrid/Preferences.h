@@ -614,10 +614,6 @@ public:
 	static UINT		m_uBBSlowUploadGraceSeconds;
 	static UINT		m_uBBZeroRateGraceSeconds;
 	static UINT		m_uBBSlowUploadCooldownSeconds;
-	static bool		m_bBBLowRatioBoostEnabled;
-	static float	m_fBBLowRatioThreshold;
-	static UINT		m_uBBLowRatioBonus;
-	static UINT		m_uBBLowIDDivisor;
 	static EBBSessionTransferMode m_eBBSessionTransferMode;
 	static UINT		m_uBBSessionTransferValue;
 	static UINT		m_uBBSessionTimeLimitSeconds;
@@ -1227,14 +1223,6 @@ public:
 	static void		SetBBZeroRateGraceSeconds(UINT uVal) { m_uBBZeroRateGraceSeconds = max(1u, uVal); }
 	static UINT		GetBBSlowUploadCooldownSeconds()	{ return m_uBBSlowUploadCooldownSeconds; }
 	static void		SetBBSlowUploadCooldownSeconds(UINT uVal) { m_uBBSlowUploadCooldownSeconds = max(1u, uVal); }
-	static bool		IsBBLowRatioBoostEnabled()			{ return m_bBBLowRatioBoostEnabled; }
-	static void		SetBBLowRatioBoostEnabled(bool bVal) { m_bBBLowRatioBoostEnabled = bVal; }
-	static float	GetBBLowRatioThreshold()			{ return m_fBBLowRatioThreshold; }
-	static void		SetBBLowRatioThreshold(float fVal) { m_fBBLowRatioThreshold = max(0.0f, fVal); }
-	static UINT		GetBBLowRatioBonus()				{ return m_uBBLowRatioBonus; }
-	static void		SetBBLowRatioBonus(UINT uVal)		{ m_uBBLowRatioBonus = uVal; }
-	static UINT		GetBBLowIDDivisor()					{ return m_uBBLowIDDivisor; }
-	static void		SetBBLowIDDivisor(UINT uVal)		{ m_uBBLowIDDivisor = max(1u, uVal); }
 	static EBBSessionTransferMode GetBBSessionTransferMode() { return m_eBBSessionTransferMode; }
 	static void		SetBBSessionTransferMode(EBBSessionTransferMode eMode) { m_eBBSessionTransferMode = eMode; }
 	static UINT		GetBBSessionTransferValue()			{ return m_uBBSessionTransferValue; }

@@ -32,10 +32,6 @@ protected:
 	HTREEITEM m_htiBBSlowGrace;
 	HTREEITEM m_htiBBZeroRateGrace;
 	HTREEITEM m_htiBBCooldown;
-	HTREEITEM m_htiBBLowRatioBoost;
-	HTREEITEM m_htiBBLowRatioThreshold;
-	HTREEITEM m_htiBBLowRatioBonus;
-	HTREEITEM m_htiBBLowIdDivisor;
 	HTREEITEM m_htiBBSessionTransfer;
 	HTREEITEM m_htiBBSessionTransferDisabled;
 	HTREEITEM m_htiBBSessionTransferPercent;
@@ -130,12 +126,10 @@ protected:
 
 	CString m_sDateTimeFormat4Lists;
 	CString m_sBBSlowThresholdFactor;
-	CString m_sBBLowRatioThreshold;
 
 	bool m_bA4AFSaveCpu;
 	bool m_bAutoArchDisable;
 	bool m_bAutoTakeEd2kLinks;
-	bool m_bBBLowRatioBoost;
 	bool m_bAdjustNTFSDaylightFileTime;
 	bool m_bCheckDiskspace;
 	bool m_bCloseUPnPOnExit;
@@ -183,8 +177,6 @@ protected:
 	int m_iBBSlowGraceSeconds;
 	int m_iBBZeroRateGraceSeconds;
 	int m_iBBCooldownSeconds;
-	int m_iBBLowRatioBonus;
-	int m_iBBLowIdDivisor;
 	int m_iBBSessionTransferPercent;
 	int m_iBBSessionTransferMiB;
 	int m_iBBSessionTimeLimitSeconds;

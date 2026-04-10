@@ -260,12 +260,9 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 	case 4:
 		{
 			UINT uScore = client->GetScore(false);
-			if (client->HasLowID()) {
-				if (theApp.uploadqueue->IsReconnectReserved(client))
-					sText.Format(_T("%u ****"), uScore);
-				else
-					sText.Format(_T("%u (%s)"), uScore, (LPCTSTR)GetResString(IDS_IDLOW));
-			} else
+			if (client->HasLowID())
+				sText.Format(_T("%u (%s)"), uScore, (LPCTSTR)GetResString(IDS_IDLOW));
+			else
 				sText.Format(_T("%u"), uScore);
 		}
 		break;
@@ -294,7 +291,7 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		}
 		break;
 	case 11:
-		sText = theApp.uploadqueue->HasCollectionUploadSlot(client) || client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining());
+		sText = FormatCooldown(client->GetSlowUploadCooldownRemaining());
 		break;
 	case 12:
 		sText = GetResString(IDS_UPSTATUS);

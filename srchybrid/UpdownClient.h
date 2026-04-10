@@ -283,7 +283,6 @@ public:
 	void			DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect, bool  bFlat) const;
 	bool			IsUpPartAvailable(UINT uPart) const				{ return m_abyUpPartStatus && uPart < m_nUpPartCount && m_abyUpPartStatus[uPart];	}
 	uint8*			GetUpPartStatus() const							{ return m_abyUpPartStatus; }
-	float			GetCombinedFilePrioAndCredit();
 	uint8			GetDataCompressionVersion() const				{ return m_byDataCompVer; }
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////

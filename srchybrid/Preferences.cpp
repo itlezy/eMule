@@ -448,10 +448,6 @@ float	CPreferences::m_fBBSlowUploadThresholdFactor;
 UINT	CPreferences::m_uBBSlowUploadGraceSeconds;
 UINT	CPreferences::m_uBBZeroRateGraceSeconds;
 UINT	CPreferences::m_uBBSlowUploadCooldownSeconds;
-bool	CPreferences::m_bBBLowRatioBoostEnabled;
-float	CPreferences::m_fBBLowRatioThreshold;
-UINT	CPreferences::m_uBBLowRatioBonus;
-UINT	CPreferences::m_uBBLowIDDivisor;
 EBBSessionTransferMode CPreferences::m_eBBSessionTransferMode = BBSTM_DISABLED;
 UINT	CPreferences::m_uBBSessionTransferValue;
 UINT	CPreferences::m_uBBSessionTimeLimitSeconds;
@@ -1764,10 +1760,6 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("BBSlowGraceSeconds"), m_uBBSlowUploadGraceSeconds);
 	ini.WriteInt(_T("BBZeroRateGraceSeconds"), m_uBBZeroRateGraceSeconds);
 	ini.WriteInt(_T("BBSlowCooldownSeconds"), m_uBBSlowUploadCooldownSeconds);
-	ini.WriteBool(_T("BBLowRatioBoostEnabled"), m_bBBLowRatioBoostEnabled);
-	ini.WriteFloat(_T("BBLowRatioThreshold"), m_fBBLowRatioThreshold);
-	ini.WriteInt(_T("BBLowRatioBonus"), m_uBBLowRatioBonus);
-	ini.WriteInt(_T("BBLowIDDivisor"), m_uBBLowIDDivisor);
 	ini.WriteInt(_T("BBSessionTransferMode"), (int)m_eBBSessionTransferMode);
 	ini.WriteInt(_T("BBSessionTransferValue"), m_uBBSessionTransferValue);
 	ini.WriteInt(_T("BBSessionTimeLimitSeconds"), m_uBBSessionTimeLimitSeconds);
@@ -2085,10 +2077,6 @@ void CPreferences::LoadPreferences()
 	m_uBBSlowUploadGraceSeconds = max(1, ini.GetInt(_T("BBSlowGraceSeconds"), 15));
 	m_uBBZeroRateGraceSeconds = max(1, ini.GetInt(_T("BBZeroRateGraceSeconds"), 5));
 	m_uBBSlowUploadCooldownSeconds = max(1, ini.GetInt(_T("BBSlowCooldownSeconds"), 30));
-	m_bBBLowRatioBoostEnabled = ini.GetBool(_T("BBLowRatioBoostEnabled"), true);
-	m_fBBLowRatioThreshold = max(0.0f, ini.GetFloat(_T("BBLowRatioThreshold"), 0.5f));
-	m_uBBLowRatioBonus = max(0, ini.GetInt(_T("BBLowRatioBonus"), 50));
-	m_uBBLowIDDivisor = max(1, ini.GetInt(_T("BBLowIDDivisor"), 2));
 	m_eBBSessionTransferMode = (EBBSessionTransferMode)ini.GetInt(_T("BBSessionTransferMode"), BBSTM_PERCENT_OF_FILE);
 	if (m_eBBSessionTransferMode != BBSTM_DISABLED && m_eBBSessionTransferMode != BBSTM_PERCENT_OF_FILE && m_eBBSessionTransferMode != BBSTM_ABSOLUTE_MIB)
 		m_eBBSessionTransferMode = BBSTM_PERCENT_OF_FILE;

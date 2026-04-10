@@ -20,6 +20,7 @@
 
 struct Requested_Block_Struct;
 class CUpDownClient;
+class CKnownFile;
 typedef CTypedPtrList<CPtrList, CUpDownClient*> CUpDownClientPtrList;
 
 struct UploadingToClient_Struct
@@ -99,18 +100,14 @@ public:
 	UINT	GetWaitingPosition(CUpDownClient *client);
 	bool	IsClientManagedByUploadQueue(const CUpDownClient *client) const;
 	bool	IsClientWaitingForUpload(const CUpDownClient *client) const;
-	bool	IsReconnectReserved(const CUpDownClient *client) const;
 	bool	IsClientUploadActivating(const CUpDownClient *client) const;
 	bool	IsClientUploadActive(const CUpDownClient *client) const;
 	bool	HasUploadSlot(const CUpDownClient *client) const;
-	bool	HasCollectionUploadSlot(const CUpDownClient *client) const;
 	bool	CompleteUploadActivation(CUpDownClient *client);
 
 	uint32	GetSuccessfullUpCount() const					{ return successfullupcount; }
 	uint32	GetFailedUpCount() const						{ return failedupcount; }
 	uint32	GetAverageUpTime() const;
-
-	CUpDownClient* FindBestClientInQueue();
 
 	CUpDownClientPtrList waitinglist;
 
@@ -138,23 +135,15 @@ private:
 	{
 		None,
 		Waiting,
-		ReservedForReconnect,
 		Activating,
 		Active,
 		Retiring
-	};
-
-	struct UploadSlotState
-	{
-		EUploadSlotPhase phase = EUploadSlotPhase::None;
-		bool collectionSlot = false;
 	};
 
 	/** Reasons for ending an active upload slot. */
 	enum class EUploadSlotEndReason : uint8
 	{
 		None,
-		CollectionSlotFileSwitched,
 		BroadbandSlowSlotRecycle,
 		BroadbandSessionTransferLimit,
 		BroadbandSessionTimeLimit
@@ -170,12 +159,18 @@ private:
 
 	/** Returns true if the client can immediately take an upload slot. */
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
-	UploadSlotState GetUploadSlotState(const CUpDownClient *client) const;
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
-	void	SetUploadSlotState(CUpDownClient *client, const UploadSlotState &state);
+	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
 	void	SyncLegacyUploadState(CUpDownClient *client);
-	void	ClearUploadSlotState(CUpDownClient *client);
-	void	UpdateReconnectReservation(CUpDownClient *reservedClient);
+	void	ClearUploadSlotPhase(CUpDownClient *client);
+	const CKnownFile* GetRequestedUploadFile(const CUpDownClient *client) const;
+	bool	ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLONG curTick) const;
+	bool	IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const;
+	CUpDownClient* SelectNextWaitingClient();
+	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL) const;
+	bool	PassesQueueAdmissionLimit(const CUpDownClient *client) const;
+	bool	HandleExistingQueueRequest(CUpDownClient *client);
+	bool	ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &cSameIP);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
@@ -188,7 +183,7 @@ private:
 	/** Removes an active upload slot and requeues the client when requested. */
 	bool	EndUploadSession(CUpDownClient *client, const UploadSlotEndDecision &decision);
 	/** Returns true when the scheduler should start another upload slot now. */
-	bool	ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue, bool addOnNextConnect) const;
+	bool	ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue) const;
 	/** Evaluates whether the active upload slot should be ended. */
 	UploadSlotEndDecision EvaluateUploadSlotEnd(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot);
 	/** Converts an upload-slot end reason into the removal log text. */
@@ -203,7 +198,6 @@ private:
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
-	float GetAverageCombinedFilePrioAndCredit();
 
 	CUploadingPtrList	uploadinglist;
 	// This lock ensures that only the main thread writes the uploading list,
@@ -238,5 +232,5 @@ private:
 	ULONGLONG m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
-	std::unordered_map<const CUpDownClient*, UploadSlotState> m_uploadSlotStates;
+	std::unordered_map<const CUpDownClient*, EUploadSlotPhase> m_uploadSlotPhases;
 };
