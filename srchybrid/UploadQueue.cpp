@@ -303,6 +303,7 @@ void CUploadQueue::CollectDuplicateWaitingCandidates(const CUpDownClient *client
 	if (client == NULL)
 		return;
 
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csQueueState), TRUE);
 	std::unordered_set<CUpDownClient*> seen;
 	seen.reserve(m_waitingClients.size());
 
@@ -527,7 +528,7 @@ void CUploadQueue::TrackExternalQueueRequest(CUpDownClient *client, bool bIgnore
 
 void CUploadQueue::RecordExternalQueueRequestStat(CUpDownClient *client) const
 {
-	// TODO: Maybe we should change this to count each request for a file only once and ignore re-asks
+	// Preserve current request statistics semantics by counting each external request, including re-asks.
 	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)client->GetUploadFileID());
 	if (reqfile != NULL)
 		reqfile->statistic.AddRequest();
@@ -538,6 +539,7 @@ uint16 CUploadQueue::GetQueuedSameIPCount(const CUpDownClient *client) const
 	if (client == NULL || client->GetIP() == 0)
 		return 0;
 
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csQueueState), TRUE);
 	const auto ipIt = m_waitingClientsByIP.find(client->GetIP());
 	return (ipIt != m_waitingClientsByIP.cend()) ? static_cast<uint16>(ipIt->second.size()) : 0;
 }
