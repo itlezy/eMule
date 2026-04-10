@@ -89,6 +89,7 @@ public:
 	CUploadQueue& operator=(const CUploadQueue&) = delete;
 
 	void	Process();
+	void	NoteUploadRequestSeen(CUpDownClient *client) const;
 	void	AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit = false);
 	bool	HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason = NULL, bool removeWaiting = false, bool updatewindow = true, bool earlyabort = false);
 	bool	IsOnUploadQueue(CUpDownClient *client)	const	{ return IsClientWaitingForUpload(client); }
@@ -242,13 +243,14 @@ private:
 	CUpDownClient* SelectNextWaitingClient();
 	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL);
 	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);
-	void	TrackQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const;
-	void	RecordQueueRequestStat(CUpDownClient *client) const;
+	void	TrackExternalQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const;
+	void	RecordExternalQueueRequestStat(CUpDownClient *client) const;
 	bool	HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client, uint16 cSameIP) const;
-	bool	HandleExistingQueueRequest(CUpDownClient *client);
-	bool	ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &cSameIP);
+	bool	RefreshQueuedClient(CUpDownClient *client);
+	bool	ResolveExternalQueueConflicts(CUpDownClient *client, uint16 &cSameIP);
 	bool	TryAcceptActiveUploadRequest(CUpDownClient *client) const;
-	bool	TryActivateQueueCandidateImmediately(CUpDownClient *client);
+	bool	AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediateActivationReason);
+	bool	RequeueClientAfterUploadSession(CUpDownClient *client);
 	INT_PTR	GetWaitingMemberCount() const					{ return static_cast<INT_PTR>(m_waitingClients.size()); }
 	bool	HasWaitingMember(const CUpDownClient *client) const;
 	bool	FindWaitingClientIndex(const CUpDownClient *client, size_t &index) const;

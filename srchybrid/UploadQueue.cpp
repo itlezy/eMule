@@ -434,15 +434,22 @@ bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client)
 	return worstClient == NULL || IsHigherPriorityWaitingClient(client, worstClient);
 }
 
-void CUploadQueue::TrackQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const
+void CUploadQueue::NoteUploadRequestSeen(CUpDownClient *client) const
 {
+	if (client != NULL && !client->GetWaitStartTime())
+		client->SetWaitStartTime();
+}
+
+void CUploadQueue::TrackExternalQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const
+{
+	NoteUploadRequestSeen(client);
 	client->IncrementAskedCount();
 	client->SetLastUpRequest();
 	if (!bIgnoreTimelimit)
 		client->AddRequestCount(client->GetUploadFileID());
 }
 
-void CUploadQueue::RecordQueueRequestStat(CUpDownClient *client) const
+void CUploadQueue::RecordExternalQueueRequestStat(CUpDownClient *client) const
 {
 	// TODO: Maybe we should change this to count each request for a file only once and ignore re-asks
 	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)client->GetUploadFileID());
@@ -467,7 +474,7 @@ bool CUploadQueue::HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client
 	return false;
 }
 
-bool CUploadQueue::HandleExistingQueueRequest(CUpDownClient *client)
+bool CUploadQueue::RefreshQueuedClient(CUpDownClient *client)
 {
 	RebuildWaitingIndexes();
 	PublishWaitingSnapshot();
@@ -476,10 +483,10 @@ bool CUploadQueue::HandleExistingQueueRequest(CUpDownClient *client)
 	return true;
 }
 
-bool CUploadQueue::ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &cSameIP)
+bool CUploadQueue::ResolveExternalQueueConflicts(CUpDownClient *client, uint16 &cSameIP)
 {
 	if (HasWaitingMember(client))
-		return HandleExistingQueueRequest(client);
+		return RefreshQueuedClient(client);
 
 	std::vector<CUpDownClient*> candidates;
 	CollectDuplicateWaitingCandidates(client, candidates);
@@ -487,7 +494,7 @@ bool CUploadQueue::ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &c
 		if (!HasWaitingMember(cur_client))
 			continue;
 		if (cur_client == client)
-			return HandleExistingQueueRequest(client);
+			return RefreshQueuedClient(client);
 
 		if (client->Compare(cur_client)) {
 			theApp.clientlist->AddTrackClient(client);
@@ -533,14 +540,43 @@ bool CUploadQueue::TryAcceptActiveUploadRequest(CUpDownClient *client) const
 	return true;
 }
 
-bool CUploadQueue::TryActivateQueueCandidateImmediately(CUpDownClient *client)
+bool CUploadQueue::AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediateActivationReason)
 {
+	PurgeStaleWaitingClients(::GetTickCount64());
+
+	if (TryAcceptActiveUploadRequest(client))
+		return true;
+
+	ClearClientQueueEntry(client);
+
+	if (!PassesQueueAdmissionLimit(client))
+		return false;
+	if (client->IsInSlowUploadCooldown()) {
+		AddClientToWaitingList(client);
+		return true;
+	}
+
 	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
-	if (GetWaitingMemberCount() > 0 || !ShouldOpenUploadSlot(snapshot, true))
+	if (GetWaitingMemberCount() == 0 && ShouldOpenUploadSlot(snapshot, true))
+		return ActivateUploadClient(client, pszImmediateActivationReason, false);
+
+	AddClientToWaitingList(client);
+	return true;
+}
+
+bool CUploadQueue::RequeueClientAfterUploadSession(CUpDownClient *client)
+{
+	if (client == NULL)
 		return false;
 
+	if (thePrefs.GetDebugClientTCPLevel() > 0)
+		DebugSend("OP_OutOfPartReqs", client);
+	Packet *pPacket = new Packet(OP_OUTOFPARTREQS, 0);
+	theStats.AddUpDataOverheadFileRequest(pPacket->size);
+	client->SendPacket(pPacket);
+	client->m_fSentOutOfPartReqs = 1;
 	client->SetWaitStartTime();
-	return ActivateUploadClient(client, _T("Direct add with empty queue."), false);
+	return AdmitClientToQueue(client, _T("Requeued after upload slot rotation."));
 }
 
 const CUploadQueue::ClientQueueEntry* CUploadQueue::FindClientQueueEntry(const CUpDownClient *client) const
@@ -1165,33 +1201,18 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 	if (ShouldRejectLowIdQueueRequest(client))
 		return;
 
-	TrackQueueRequest(client, bIgnoreTimelimit);
+	TrackExternalQueueRequest(client, bIgnoreTimelimit);
 	if (client->IsBanned())
 		return;
 	uint16 cSameIP = 0;
-	if (ResolveDuplicateQueueEntries(client, cSameIP))
+	if (ResolveExternalQueueConflicts(client, cSameIP))
 		return;
 
 	if (HasTooManyQueuedClientsFromSameIP(client, cSameIP))
 		return;
 
-	RecordQueueRequestStat(client);
-	PurgeStaleWaitingClients(::GetTickCount64());
-
-	if (TryAcceptActiveUploadRequest(client))
-		return;
-
-	ClearClientQueueEntry(client);
-
-	if (!PassesQueueAdmissionLimit(client))
-		return;
-	if (client->IsInSlowUploadCooldown()) {
-		AddClientToWaitingList(client);
-		return;
-	}
-
-	if (!TryActivateQueueCandidateImmediately(client))
-		AddClientToWaitingList(client);
+	RecordExternalQueueRequestStat(client);
+	(void)AdmitClientToQueue(client, _T("Direct add with empty queue."));
 }
 
 void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
@@ -1320,7 +1341,7 @@ bool CUploadQueue::EndUploadSession(CUpDownClient *client, const UploadSlotEndDe
 		return false;
 
 	if (decision.requeue)
-		client->SendOutOfPartReqsAndAddToWaitingQueue();
+		return RequeueClientAfterUploadSession(client);
 
 	return true;
 }

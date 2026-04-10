@@ -463,23 +463,6 @@ ULONGLONG CUpDownClient::GetSlowUploadCooldownRemaining() const
 	return (m_ullSlowUploadCooldownUntil > curTick) ? m_ullSlowUploadCooldownUntil - curTick : 0;
 }
 
-void CUpDownClient::SendOutOfPartReqsAndAddToWaitingQueue()
-{
-	//OP_OUTOFPARTREQS will tell the downloading client to go back to OnQueue.
-	//The main reason for this is that if we put the client back on queue and it goes
-	//back to the upload before the socket times out... We get a situation where the
-	//downloader thinks it already sent the requested blocks and the uploader thinks
-	//the downloader didn't send any block requests. Then the connection times out.
-	//I did some tests with eDonkey also and it seems to work well with them also.
-	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		DebugSend("OP_OutOfPartReqs", this);
-	Packet *pPacket = new Packet(OP_OUTOFPARTREQS, 0);
-	theStats.AddUpDataOverheadFileRequest(pPacket->size);
-	SendPacket(pPacket);
-	m_fSentOutOfPartReqs = 1;
-	theApp.uploadqueue->AddClientToQueue(this, true);
-}
-
 /*
  * See description for CEMSocket::TruncateQueues().
  */

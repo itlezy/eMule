@@ -298,8 +298,7 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			if (size < 16)
 				throw GetResString(IDS_ERR_WRONGPACKETSIZE);
 
-			if (!client->GetWaitStartTime())
-				client->SetWaitStartTime();
+			theApp.uploadqueue->NoteUploadRequestSeen(client);
 
 			CSafeMemFile data_in(packet, size);
 			uchar reqfilehash[MDX_DIGEST_SIZE];
@@ -366,8 +365,7 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			if (size != 16)
 				throw GetResString(IDS_ERR_WRONGPACKETSIZE);
 
-			if (!client->GetWaitStartTime())
-				client->SetWaitStartTime();
+			theApp.uploadqueue->NoteUploadRequestSeen(client);
 
 			CKnownFile *reqfile = theApp.sharedfiles->GetFileByID(packet);
 			if (!reqfile) {
@@ -904,8 +902,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 				return;
 			}
 
-			if (!client->GetWaitStartTime())
-				client->SetWaitStartTime();
+			theApp.uploadqueue->NoteUploadRequestSeen(client);
 
 			// if we are downloading this file, this could be a new source
 			// no passive adding of files with only one part

@@ -321,7 +321,6 @@ public:
 	virtual void	ProcessHttpBlockPacket(const BYTE *pucData, UINT uSize);
 	void			ClearPendingBlockRequest(const Pending_Block_Struct *pending);
 	void			ClearDownloadBlockRequests();
-	void			SendOutOfPartReqsAndAddToWaitingQueue();
 	UINT			CalculateDownloadRate();
 	uint16			GetAvailablePartCount() const;
 	bool			SwapToAnotherFile(LPCTSTR reason, bool bIgnoreNoNeeded, bool ignoreSuspensions, bool bRemoveCompletely, CPartFile *toFile = NULL, bool allowSame = true, bool isAboutToAsk = false, bool debug = false); // ZZ:DownloadManager
