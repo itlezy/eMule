@@ -130,14 +130,27 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 	for (INT_PTR i = 0; !bError && i < astrParams.GetCount(); ++i) {
 		const CString &strParam(astrParams[i]);
 		ASSERT(!strParam.IsEmpty());
+		if (strParam.IsEmpty())
+			continue;
 
 		CString strTok;
 		int iPos = strParam.Find(_T('='));
-		if (iPos >= 0)
-			strTok = strParam.Left(iPos);
+		if (iPos < 0) {
+			TRACE(_T("Ignoring malformed ED2K file parameter without '=': %s\n"), (LPCTSTR)strParam);
+			continue;
+		}
+		strTok = strParam.Left(iPos);
+		if (strTok.IsEmpty()) {
+			TRACE(_T("Ignoring malformed ED2K file parameter with empty key: %s\n"), (LPCTSTR)strParam);
+			continue;
+		}
 		switch (strTok[0]) {
 		case _T('s'):
 			{
+				if (strTok != _T("s")) {
+					TRACE(_T("Ignoring unsupported ED2K file parameter: %s\n"), (LPCTSTR)strParam);
+					break;
+				}
 				const CString &strURL(strParam.Mid(iPos + 1));
 				if (!strURL.IsEmpty()) {
 					TCHAR szScheme[INTERNET_MAX_SCHEME_LENGTH];
@@ -172,6 +185,10 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 			break;
 		case _T('p'):
 			{
+				if (strTok != _T("p")) {
+					TRACE(_T("Ignoring unsupported ED2K file parameter: %s\n"), (LPCTSTR)strParam);
+					break;
+				}
 				const CString &strPartHashes(strParam.Tokenize(_T("="), iPos));
 
 				if (m_hashset != NULL) {
@@ -205,6 +222,10 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 			}
 			break;
 		case _T('h'):
+			if (strTok != _T("h")) {
+				TRACE(_T("Ignoring unsupported ED2K file parameter: %s\n"), (LPCTSTR)strParam);
+				break;
+			}
 			if (strParam[iPos + 1]) { //not empty
 				if (DecodeBase32(CPTR(strParam, iPos + 1), m_AICHHash.GetRawHash(), CAICHHash::GetHashSize()) == CAICHHash::GetHashSize()) {
 					m_bAICHHashValid = true;
@@ -213,7 +234,8 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 				}
 			}
 		default:
-			ASSERT(0);
+			TRACE(_T("Ignoring unsupported ED2K file parameter: %s\n"), (LPCTSTR)strParam);
+			break;
 		}
 	}
 
@@ -373,7 +395,12 @@ CED2KLink* CED2KLink::CreateLinkFromUrl(LPCTSTR uri)
 									break;
 								bEmuleExt = true;
 							} else {
-								if (bEmuleExt) {
+								// Accept source hints even when a caller places them before the eMule extension separator.
+								if (!bEmuleExt && strTok.Left(8).CompareNoCase(_T("sources,")) == 0) {
+									if (!strEmuleExt.IsEmpty())
+										strEmuleExt += _T('|');
+									strEmuleExt += strTok;
+								} else if (bEmuleExt) {
 									if (!strEmuleExt.IsEmpty())
 										strEmuleExt += _T('|');
 									strEmuleExt += strTok;
