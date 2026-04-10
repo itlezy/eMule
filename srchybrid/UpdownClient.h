@@ -447,8 +447,6 @@ public:
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherNoNeeded_list;
 	uint16			m_lastPartAsked;
 
-	void			SetSlotNumber(UINT newValue)					{ m_slotNumber = newValue; }
-	UINT			GetSlotNumber() const							{ return m_slotNumber; }
 	CEMSocket*		GetFileUploadSocket(bool bLog = false);
 
 	virtual bool ProcessHttpDownResponse(const CStringAArray &astrHeaders);
@@ -564,7 +562,6 @@ protected:
 	ULONGLONG	m_ullLastSlowUploadSampleTick;
 	ULONGLONG	m_ullSlowUploadCooldownUntil;
 	UINT		m_cAsked;
-	UINT		m_slotNumber;
 	uchar		requpfileid[MDX_DIGEST_SIZE];
 
 	CTypedPtrList<CPtrList, Requested_File_Struct*>	 m_RequestedFiles_list;

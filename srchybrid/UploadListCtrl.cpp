@@ -155,7 +155,7 @@ void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	RECT rcClient;
 	GetClientRect(&rcClient);
 	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(lpDrawItemStruct->itemData);
-	if (client->GetSlotNumber() > (UINT)theApp.uploadqueue->GetActiveUploadsCount())
+	if (theApp.uploadqueue->GetActiveUploadSlotNumber(client) > (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 		dc.SetTextColor(::GetSysColor(COLOR_GRAYTEXT));
 
 	const CHeaderCtrl *pHeaderCtrl = GetHeaderCtrl();

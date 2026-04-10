@@ -759,6 +759,14 @@ bool CUploadQueue::IsCurrentUploadSession(const UploadSessionPtr &session) const
 	return GetUploadSession(session->client) == session;
 }
 
+bool CUploadQueue::HasUploadSessionIoError(const UploadSessionPtr &session) const
+{
+	if (session == NULL)
+		return true;
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	return session->ioError;
+}
+
 bool CUploadQueue::IsDownloading(const CUpDownClient *client) const
 {
 	return GetUploadSession(client) != NULL;
@@ -776,18 +784,24 @@ void CUploadQueue::GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*>
 	clients = (snapshot != NULL) ? snapshot->activeClients : std::vector<CUpDownClient*>();
 }
 
+UINT CUploadQueue::GetActiveUploadSlotNumber(const CUpDownClient *client) const
+{
+	if (client == NULL)
+		return 0;
+	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
+	if (snapshot == NULL)
+		return 0;
+	const auto it = snapshot->slotNumberByClient.find(client);
+	return (it != snapshot->slotNumberByClient.cend()) ? it->second : 0;
+}
+
 bool CUploadQueue::TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const
 {
 	state = ActiveUploadVisualState();
 	if (client == NULL)
 		return false;
 
-	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
-	if (snapshot != NULL) {
-		const auto slotIt = snapshot->slotNumberByClient.find(client);
-		if (slotIt != snapshot->slotNumberByClient.cend())
-			state.slotNumber = slotIt->second;
-	}
+	state.slotNumber = GetActiveUploadSlotNumber(client);
 
 	state.isActivating = IsClientUploadActivating(client);
 	state.isActive = IsClientUploadActive(client);
@@ -819,6 +833,115 @@ bool CUploadQueue::TryGetActiveUploadVisualState(const CUpDownClient *client, Ac
 	return true;
 }
 
+bool CUploadQueue::EnqueueUploadRequestBlock(CUpDownClient *client, Requested_Block_Struct *reqblock, INT_PTR *pQueueCount)
+{
+	if (pQueueCount != NULL)
+		*pQueueCount = 0;
+	if (client == NULL || reqblock == NULL)
+		return false;
+
+	CKnownFile *srcfile = theApp.sharedfiles->GetFileByID(reqblock->FileID);
+	const UploadSessionPtr session = GetUploadSession(client);
+	if (session == NULL) {
+		if (srcfile != NULL)
+			DebugLogError(_T("AddReqBlock: Uploading client not found in Uploadlist, %s, %s"), (LPCTSTR)client->DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
+		delete reqblock;
+		return false;
+	}
+
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	if (!lockBlockLists.IsLocked()) {
+		ASSERT(0);
+		delete reqblock;
+		return false;
+	}
+
+	if (session->ioError) {
+		if (srcfile != NULL)
+			DebugLogWarning(_T("AddReqBlock: Uploading client has pending IO Error, %s, %s"), (LPCTSTR)client->DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
+		delete reqblock;
+		return false;
+	}
+
+	for (POSITION pos = session->completedBlocks.GetHeadPosition(); pos != NULL;) {
+		const Requested_Block_Struct *cur_reqblock = session->completedBlocks.GetNext(pos);
+		if (reqblock->StartOffset == cur_reqblock->StartOffset
+			&& reqblock->EndOffset == cur_reqblock->EndOffset
+			&& md4equ(reqblock->FileID, cur_reqblock->FileID))
+		{
+			delete reqblock;
+			return false;
+		}
+	}
+	for (POSITION pos = session->blockRequests.GetHeadPosition(); pos != NULL;) {
+		const Requested_Block_Struct *cur_reqblock = session->blockRequests.GetNext(pos);
+		if (reqblock->StartOffset == cur_reqblock->StartOffset
+			&& reqblock->EndOffset == cur_reqblock->EndOffset
+			&& md4equ(reqblock->FileID, cur_reqblock->FileID))
+		{
+			delete reqblock;
+			return false;
+		}
+	}
+
+	session->blockRequests.AddTail(reqblock);
+	if (pQueueCount != NULL)
+		*pQueueCount = session->blockRequests.GetCount();
+	return true;
+}
+
+bool CUploadQueue::TryPeekNextUploadBlockRead(const UploadSessionPtr &session, uint64 currentPayload, uint32 bufferLimit, Requested_Block_Struct &block, uint64 &addedPayloadQueueSession) const
+{
+	if (session == NULL || session->client == NULL)
+		return false;
+
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	if (!lockBlockLists.IsLocked() || session->ioError || session->blockRequests.IsEmpty())
+		return false;
+
+	addedPayloadQueueSession = session->client->GetQueueSessionUploadAdded();
+	if (addedPayloadQueueSession > currentPayload && addedPayloadQueueSession - currentPayload >= bufferLimit)
+		return false;
+
+	const Requested_Block_Struct *currentblock = session->blockRequests.GetHead();
+	if (currentblock == NULL)
+		return false;
+
+	block = *currentblock;
+	return true;
+}
+
+bool CUploadQueue::PromotePendingUploadBlockRead(const UploadSessionPtr &session, const Requested_Block_Struct &expectedBlock, uint64 addedPayloadQueueSession)
+{
+	if (session == NULL || session->client == NULL)
+		return false;
+
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	if (!lockBlockLists.IsLocked() || session->ioError || session->blockRequests.IsEmpty())
+		return false;
+
+	Requested_Block_Struct *currentblock = session->blockRequests.GetHead();
+	if (currentblock == NULL
+		|| currentblock->StartOffset != expectedBlock.StartOffset
+		|| currentblock->EndOffset != expectedBlock.EndOffset
+		|| !md4equ(currentblock->FileID, expectedBlock.FileID))
+	{
+		return false;
+	}
+
+	session->client->SetQueueSessionUploadAdded(addedPayloadQueueSession);
+	session->completedBlocks.AddHead(session->blockRequests.RemoveHead());
+	return true;
+}
+
+void CUploadQueue::MarkUploadSessionIoError(const UploadSessionPtr &session)
+{
+	if (session == NULL)
+		return;
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	session->ioError = true;
+}
+
 bool CUploadQueue::AddActiveUploadSession(CUpDownClient *client)
 {
 	if (client == NULL)
@@ -833,8 +956,6 @@ bool CUploadQueue::AddActiveUploadSession(CUpDownClient *client)
 			return false;
 		const UploadSessionPtr session = std::make_shared<UploadSession>(client);
 		m_activeUploadClients.push_back(client);
-		session->slotNumber = static_cast<UINT>(m_activeUploadClients.size());
-		client->SetSlotNumber(session->slotNumber);
 		entry.session = session;
 	}
 	PublishActiveUploadSnapshot();
@@ -860,7 +981,6 @@ void CUploadQueue::ResetUploadSessionState(const UploadSessionPtr &session)
 bool CUploadQueue::RemoveActiveUploadSession(CUpDownClient *client)
 {
 	UploadSessionPtr session;
-	UINT slotCounter = 1;
 	{
 		CSingleLock lock(&m_csActiveUploadState, TRUE);
 		ClientQueueEntry *entry = FindClientQueueEntry(client);
@@ -873,14 +993,6 @@ bool CUploadQueue::RemoveActiveUploadSession(CUpDownClient *client)
 		const auto activeIt = std::find(m_activeUploadClients.begin(), m_activeUploadClients.end(), client);
 		if (activeIt != m_activeUploadClients.end())
 			m_activeUploadClients.erase(activeIt);
-
-		for (CUpDownClient *activeClient : m_activeUploadClients) {
-			ClientQueueEntry *activeEntry = FindClientQueueEntry(activeClient);
-			if (activeEntry != NULL && activeEntry->session != NULL)
-				activeEntry->session->slotNumber = slotCounter;
-			activeClient->SetSlotNumber(slotCounter);
-			++slotCounter;
-		}
 	}
 
 	PublishActiveUploadSnapshot();
@@ -1049,7 +1161,7 @@ void CUploadQueue::Process()
 				delete cur_client;
 		} else {
 			cur_client->UpdateUploadingStatisticsData();
-			if (session->ioError) {
+			if (HasUploadSessionIoError(session)) {
 				HandleUploadSlotTeardown(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), false, true);
 				continue;
 			}

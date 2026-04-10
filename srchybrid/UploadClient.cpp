@@ -53,7 +53,9 @@ void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrec
 	COLORREF crNeither, crNextSending, crBoth, crSending;
 	CUploadQueue::ActiveUploadVisualState visualState;
 	const bool bHasVisualState = theApp.uploadqueue->TryGetActiveUploadVisualState(this, visualState);
-	const UINT uVisualSlotNumber = (bHasVisualState && visualState.slotNumber != 0) ? visualState.slotNumber : GetSlotNumber();
+	const UINT uVisualSlotNumber = (bHasVisualState && visualState.slotNumber != 0)
+		? visualState.slotNumber
+		: theApp.uploadqueue->GetActiveUploadSlotNumber(this);
 	const bool bVisualActivating = bHasVisualState ? visualState.isActivating : theApp.uploadqueue->IsClientUploadActivating(this);
 	const bool bVisualActive = bHasVisualState ? visualState.isActive : theApp.uploadqueue->IsClientUploadActive(this);
 
@@ -249,19 +251,6 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			return;
 		}
 
-		const UploadSessionPtr pUploadingClientStruct = theApp.uploadqueue->GetUploadSession(this);
-		if (pUploadingClientStruct == NULL) {
-			DebugLogError(_T("AddReqBlock: Uploading client not found in Uploadlist, %s, %s"), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
-			delete reqblock;
-			return;
-		}
-
-		if (pUploadingClientStruct->ioError) {
-			DebugLogWarning(_T("AddReqBlock: Uploading client has pending IO Error, %s, %s"), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
-			delete reqblock;
-			return;
-		}
-
 		if (srcfile->IsPartFile() && !static_cast<CPartFile*>(srcfile)->IsCompleteBDSafe(reqblock->StartOffset, reqblock->EndOffset - 1)) {
 			DebugLogWarning(_T("AddReqBlock: %s, %s"), (LPCTSTR)GetResString(IDS_ERR_INCOMPLETEBLOCK), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
 			delete reqblock;
@@ -280,36 +269,8 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			return;
 		}
 
-		CSingleLock lockBlockLists(&pUploadingClientStruct->blockListsLock, TRUE);
-		if (!lockBlockLists.IsLocked()) {
-			ASSERT(0);
-			delete reqblock;
+		if (!theApp.uploadqueue->EnqueueUploadRequestBlock(this, reqblock, &dbgLastQueueCount))
 			return;
-		}
-
-		for (POSITION pos = pUploadingClientStruct->completedBlocks.GetHeadPosition(); pos != NULL;) {
-			const Requested_Block_Struct *cur_reqblock = pUploadingClientStruct->completedBlocks.GetNext(pos);
-			if (reqblock->StartOffset == cur_reqblock->StartOffset
-				&& reqblock->EndOffset == cur_reqblock->EndOffset
-				&& md4equ(reqblock->FileID, cur_reqblock->FileID))
-			{
-				delete reqblock;
-				return;
-			}
-		}
-		for (POSITION pos = pUploadingClientStruct->blockRequests.GetHeadPosition(); pos != NULL;) {
-			const Requested_Block_Struct *cur_reqblock = pUploadingClientStruct->blockRequests.GetNext(pos);
-			if (reqblock->StartOffset == cur_reqblock->StartOffset
-				&& reqblock->EndOffset == cur_reqblock->EndOffset
-				&& md4equ(reqblock->FileID, cur_reqblock->FileID))
-			{
-				delete reqblock;
-				return;
-			}
-		}
-		pUploadingClientStruct->blockRequests.AddTail(reqblock);
-		dbgLastQueueCount = pUploadingClientStruct->blockRequests.GetCount();
-		lockBlockLists.Unlock(); // not needed, just to make it visible
 	}
 	if (bSignalIOThread && theApp.m_pUploadDiskIOThread != NULL) {
 		/*DebugLog(_T("BlockRequest Packet received, we have currently %u waiting requests and %s data in buffer (%u in ready packets, %s in pending IO Disk read), socket busy: %s")

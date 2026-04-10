@@ -210,7 +210,6 @@ void CUpDownClient::Init()
 	m_ullLastSlowUploadSampleTick = 0;
 	m_ullSlowUploadCooldownUntil = 0;
 	md4clr(requpfileid);
-	m_slotNumber = 0;
 
 	m_pReqFileAICHHash = NULL;
 	m_cDownAsked = 0;
@@ -2526,7 +2525,7 @@ CString CUpDownClient::GetUploadStateDisplayString() const
 			uid = IDS_US_STALLEDREADINGFDISK; */
 		if (thePrefs.IsExtControlsEnabled() && GetPayloadInBuffer() == 0)
 			uid = IDS_US_STALLEDW4BR;
-		else if (GetSlotNumber() <= (UINT)theApp.uploadqueue->GetActiveUploadsCount())
+		else if (theApp.uploadqueue->GetActiveUploadSlotNumber(this) <= (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 			uid = IDS_TRANSFERRING;
 		else
 			uid = IDS_TRICKLING;

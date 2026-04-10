@@ -32,7 +32,6 @@ struct UploadSession
 		: client(client)
 		, ioError()
 		, disableCompression()
-		, slotNumber()
 	{
 	}
 	~UploadSession();
@@ -43,7 +42,6 @@ struct UploadSession
 	CCriticalSection									blockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
 	bool												ioError;
 	bool												disableCompression;
-	UINT												slotNumber;
 };
 typedef std::shared_ptr<UploadSession> UploadSessionPtr;
 
@@ -125,7 +123,9 @@ public:
 	CUpDownClient* GetWaitingClientByIP(uint32 dwIP) const;
 	void	GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients);
 	void	GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const;
+	UINT	GetActiveUploadSlotNumber(const CUpDownClient *client) const;
 	bool	TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const;
+	bool	EnqueueUploadRequestBlock(CUpDownClient *client, Requested_Block_Struct *reqblock, INT_PTR *pQueueCount = NULL);
 	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;
 	float	GetWaitingClientCreditFactor(const CUpDownClient *client) const;
 
@@ -294,6 +294,10 @@ private:
 	UploadSessionPtr GetUploadSession(const CUpDownClient *client) const;
 	std::vector<UploadSessionPtr> GetActiveUploadSessions() const;
 	bool	IsCurrentUploadSession(const UploadSessionPtr &session) const;
+	bool	HasUploadSessionIoError(const UploadSessionPtr &session) const;
+	bool	TryPeekNextUploadBlockRead(const UploadSessionPtr &session, uint64 currentPayload, uint32 bufferLimit, Requested_Block_Struct &block, uint64 &addedPayloadQueueSession) const;
+	bool	PromotePendingUploadBlockRead(const UploadSessionPtr &session, const Requested_Block_Struct &expectedBlock, uint64 addedPayloadQueueSession);
+	void	MarkUploadSessionIoError(const UploadSessionPtr &session);
 	bool	AddActiveUploadSession(CUpDownClient *client);
 	void	ResetUploadSessionState(const UploadSessionPtr &session);
 	bool	RemoveActiveUploadSession(CUpDownClient *client);

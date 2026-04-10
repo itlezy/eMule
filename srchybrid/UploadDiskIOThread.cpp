@@ -167,35 +167,29 @@ void CUploadDiskIOThread::DissociateFile(CKnownFile *pFile)
 
 void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &session)
 {
-	if (session == NULL || session->ioError || session->blockRequests.IsEmpty())
+	if (session == NULL || theApp.uploadqueue->HasUploadSessionIoError(session))
 		return;
 	CUpDownClient *pClient = session->client;
 	CClientReqSocket *pSock = pClient->socket;
 	if (pSock == NULL || !pSock->IsConnected())
 		return;
 
-	// now also get a lock on the Block lists
-	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
-	// See if we can do an early return.
-	// There may be no new blocks to load from disk and add to buffer, or buffer may be large enough already.
-
 	uint64 nCurQueueSessionPayloadUp = pClient->GetQueueSessionPayloadUp();
 	// GetQueueSessionPayloadUp is probably outdated so also add the value reported by the sockets as sent
 	nCurQueueSessionPayloadUp += pSock->GetSentPayloadSinceLastCall(false);
-	uint64 addedPayloadQueueSession = pClient->GetQueueSessionUploadAdded();
 	// buffer at least 1 block (180KB) for normal uploads, and 5 blocks (~900KB) for fast uploads
 	const uint32 nBufferLimit = (pClient->GetUploadDatarate() > BIGBUFFER_MINDATARATE) ? (5 * EMBLOCKSIZE + 1) : (EMBLOCKSIZE + 1);
 
-	if (addedPayloadQueueSession > nCurQueueSessionPayloadUp && addedPayloadQueueSession - nCurQueueSessionPayloadUp >= nBufferLimit)
-		return; // the buffered data is large enough already
-
 	try {
 		// Get more data if currently buffered was less than nBufferLimit Bytes
-		while (!session->blockRequests.IsEmpty()
-			&& (addedPayloadQueueSession <= nCurQueueSessionPayloadUp || addedPayloadQueueSession - nCurQueueSessionPayloadUp < nBufferLimit))
+		for (;;)
 		{
-			Requested_Block_Struct *currentblock = session->blockRequests.GetHead();
-			if (!md4equ(currentblock->FileID, pClient->GetUploadFileID())) {
+			Requested_Block_Struct currentblock{};
+			uint64 addedPayloadQueueSession = 0;
+			if (!theApp.uploadqueue->TryPeekNextUploadBlockRead(session, nCurQueueSessionPayloadUp, nBufferLimit, currentblock, addedPayloadQueueSession))
+				break;
+
+			if (!md4equ(currentblock.FileID, pClient->GetUploadFileID())) {
 				// the UploadFileID differs. That's normally not a problem, we just switch it, but
 				// we don't want to do so in this thread for synchronization issues. So return and wait
 				// until the main thread which checks the block request periodically does so.
@@ -204,16 +198,16 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &se
 				return;
 			}
 
-			CKnownFile *pFile = theApp.sharedfiles->GetFileByID(currentblock->FileID);
+			CKnownFile *pFile = theApp.sharedfiles->GetFileByID(currentblock.FileID);
 			if (pFile == NULL)
 				throwCStr(_T("CUploadDiskIOThread::StartCreateNextBlockPackage: shared file not found"));
 			if (pFile->bNoNewReads) //should be moving to incoming
 				return;
 
 			// we already have done all important sanity checks for the block request in the main thread when adding it; just redo some quick important ones
-			if (currentblock->StartOffset >= currentblock->EndOffset || currentblock->EndOffset > pFile->GetFileSize())
+			if (currentblock.StartOffset >= currentblock.EndOffset || currentblock.EndOffset > pFile->GetFileSize())
 				throwCStr(_T("Invalid Block Offsets"));
-			uint64 uTogo = currentblock->EndOffset - currentblock->StartOffset;
+			uint64 uTogo = currentblock.EndOffset - currentblock.StartOffset;
 			if (uTogo > EMBLOCKSIZE * 3)
 				throw GetResString(IDS_ERR_LARGEREQBLOCK);
 
@@ -224,14 +218,14 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &se
 			OverlappedRead_Struct *pOverlappedRead = new OverlappedRead_Struct;
 			pOverlappedRead->oOverlap.Internal = 0;
 			pOverlappedRead->oOverlap.InternalHigh = 0;
-			//pOverlappedRead->oOverlap.Offset = LODWORD(currentblock->StartOffset);
-			//pOverlappedRead->oOverlap.OffsetHigh = HIDWORD(currentblock->StartOffset);
-			*(uint64*)&pOverlappedRead->oOverlap.Offset = currentblock->StartOffset;
+			//pOverlappedRead->oOverlap.Offset = LODWORD(currentblock.StartOffset);
+			//pOverlappedRead->oOverlap.OffsetHigh = HIDWORD(currentblock.StartOffset);
+			*(uint64*)&pOverlappedRead->oOverlap.Offset = currentblock.StartOffset;
 			pOverlappedRead->oOverlap.hEvent = 0;
 			pOverlappedRead->pFile = pFile;
 			pOverlappedRead->pUploadSession = session;
-			pOverlappedRead->uStartOffset = currentblock->StartOffset;
-			pOverlappedRead->uEndOffset = currentblock->EndOffset;
+			pOverlappedRead->uStartOffset = currentblock.StartOffset;
+			pOverlappedRead->uEndOffset = currentblock.EndOffset;
 			pOverlappedRead->pBuffer = new byte[(size_t)uTogo];
 
 			if (!::ReadFile(pFile->m_hRead, pOverlappedRead->pBuffer, (DWORD)uTogo, NULL, (LPOVERLAPPED)pOverlappedRead)) {
@@ -252,8 +246,8 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &se
 			DEBUG_ONLY(dbgDataReadPending += uTogo);
 
 			addedPayloadQueueSession += uTogo;
-			pClient->SetQueueSessionUploadAdded(addedPayloadQueueSession);
-			session->completedBlocks.AddHead(session->blockRequests.RemoveHead());
+			if (!theApp.uploadqueue->PromotePendingUploadBlockRead(session, currentblock, addedPayloadQueueSession))
+				return;
 		}
 		return; //no errors
 	} catch (const CString &ex) {
@@ -262,7 +256,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &se
 		theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to create upload package for %s%s"), pClient->GetUserName(), (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
 	}
-	session->ioError = true; // will let remove this client from the list in the main thread
+	theApp.uploadqueue->MarkUploadSessionIoError(session); // will let remove this client from the list in the main thread
 }
 
 void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRead_Struct *pOvRead)
@@ -317,7 +311,7 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				}
 			} else { // bReadError is true
 				if (bFound)
-					session->ioError = true;
+					theApp.uploadqueue->MarkUploadSessionIoError(session);
 				else
 					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Client not found in uploadlist when reading finished; discarding block"));
 			}
