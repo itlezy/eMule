@@ -113,6 +113,19 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	/** Stable scheduler inputs used for one admission or retention decision. */
+	struct UploadSchedulingSnapshot
+	{
+		INT_PTR	uploadSlots = 0;
+		INT_PTR	softMaxUploadSlots = 0;
+		INT_PTR	highestFullyActivatedSlots = 0;
+		uint32	budgetBytesPerSec = 0;
+		uint32	toNetworkDatarate = 0;
+		uint32	targetPerSlot = 0;
+		bool	hasWaitingClients = false;
+		bool	throttlerWantsMoreSlots = false;
+	};
+
 	/** Reasons for ending an active upload slot. */
 	enum class EUploadSlotEndReason : uint8
 	{
@@ -137,23 +150,21 @@ private:
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
 	bool	ActivateUploadClient(CUpDownClient *client, LPCTSTR pszReason);
+	/** Captures the scheduler inputs used for one admission or retention decision. */
+	UploadSchedulingSnapshot CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const;
 	/** Removes an active upload slot and requeues the client when requested. */
 	bool	EndUploadSession(CUpDownClient *client, const UploadSlotEndDecision &decision);
-	/** Returns true when the queue may open another upload slot. */
-	bool	CanOpenUploadSlot(bool addOnNextConnect, bool bThrottlerWantsMoreSlots) const;
-	/** Returns true when the queue may open another upload slot. */
-	bool	CanOpenUploadSlot(INT_PTR curUploadSlots, bool bThrottlerWantsMoreSlots) const;
 	/** Returns true when the scheduler should start another upload slot now. */
-	bool	ShouldOpenUploadSlot(bool allowEmptyWaitingQueue, bool bThrottlerWantsMoreSlots) const;
+	bool	ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue, bool addOnNextConnect) const;
 	/** Evaluates whether the active upload slot should be ended. */
-	UploadSlotEndDecision EvaluateUploadSlotEnd(CUpDownClient *client, bool bThrottlerWantsMoreSlots);
+	UploadSlotEndDecision EvaluateUploadSlotEnd(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot);
 	/** Converts an upload-slot end reason into the removal log text. */
 	static LPCTSTR GetUploadSlotEndReasonText(EUploadSlotEndReason eReason);
 	uint32	GetEffectiveUploadBudgetBytesPerSec() const;
 	INT_PTR	GetSoftMaxUploadSlots() const;
 	uint32	GetTargetClientDataRateBroadband() const;
 	uint32	GetSlowUploadRateThreshold() const;
-	bool	ShouldTrackSlowUploadSlots() const;
+	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
@@ -192,4 +203,5 @@ private:
 
 	ULONGLONG m_dwLastResortedUploadSlots;
 	bool	m_bStatisticsWaitingListDirty;
+	bool	m_bThrottlerWantsMoreSlotsHint;
 };

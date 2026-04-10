@@ -95,6 +95,7 @@ CUploadQueue::CUploadQueue()
 	, m_lastCalculatedDataRateTick()
 	, m_dwLastResortedUploadSlots()
 	, m_bStatisticsWaitingListDirty(true)
+	, m_bThrottlerWantsMoreSlotsHint()
 {
 	i1sec = i2sec = i5sec = i60sec = 0;
 	VERIFY((h_timer = ::SetTimer(NULL, 0, SEC2MS(1)/10, UploadTimer)) != 0);
@@ -288,6 +289,20 @@ void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 	}
 }
 
+CUploadQueue::UploadSchedulingSnapshot CUploadQueue::CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const
+{
+	UploadSchedulingSnapshot snapshot;
+	snapshot.uploadSlots = uploadinglist.GetCount();
+	snapshot.softMaxUploadSlots = GetSoftMaxUploadSlots();
+	snapshot.highestFullyActivatedSlots = m_iHighestNumberOfFullyActivatedSlotsSinceLastCall;
+	snapshot.budgetBytesPerSec = GetEffectiveUploadBudgetBytesPerSec();
+	snapshot.toNetworkDatarate = GetToNetworkDatarate();
+	snapshot.targetPerSlot = GetTargetClientDataRateBroadband();
+	snapshot.hasWaitingClients = !waitinglist.IsEmpty();
+	snapshot.throttlerWantsMoreSlots = throttlerWantsMoreSlots;
+	return snapshot;
+}
+
 /**
  * Maintenance method for the uploading slots. It adds and removes clients to the
  * uploading list. It also makes sure that all the uploading slots' Sockets
@@ -298,12 +313,15 @@ void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 void CUploadQueue::Process()
 {
 	const ULONGLONG curTick = ::GetTickCount64();
-	const bool bThrottlerWantsMoreSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
+	m_bThrottlerWantsMoreSlotsHint = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
 	UpdateActiveClientsInfo(curTick);
 
-	if (ShouldOpenUploadSlot(false, bThrottlerWantsMoreSlots))
+	const UploadSchedulingSnapshot admissionSnapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
+	if (ShouldOpenUploadSlot(admissionSnapshot, false, false))
 		// There's not enough open uploads. Open another one.
 		StartNextUpload(_T("Not enough open upload slots for the current speed"));
+
+	const UploadSchedulingSnapshot retentionSnapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
 
 	// The loop that feeds the upload slots with data.
 	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
@@ -323,7 +341,7 @@ void CUploadQueue::Process()
 				RemoveFromUploadQueue(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), true);
 				continue;
 			}
-			const UploadSlotEndDecision endDecision = EvaluateUploadSlotEnd(cur_client, bThrottlerWantsMoreSlots);
+			const UploadSlotEndDecision endDecision = EvaluateUploadSlotEnd(cur_client, retentionSnapshot);
 			if (endDecision.shouldEnd) {
 				EndUploadSession(cur_client, endDecision);
 				continue;
@@ -375,42 +393,6 @@ void CUploadQueue::Process()
 	}
 };
 
-bool CUploadQueue::CanOpenUploadSlot(bool addOnNextConnect, bool bThrottlerWantsMoreSlots) const
-{
-	INT_PTR curUploadSlots = uploadinglist.GetCount();
-
-	//We allow ONE extra slot to be created to accommodate lowID users.
-	//This is because we skip these users when it was actually their turn
-	//to get an upload slot.
-	curUploadSlots -= static_cast<INT_PTR>(addOnNextConnect && curUploadSlots > 0);
-
-	return CanOpenUploadSlot(curUploadSlots, bThrottlerWantsMoreSlots);
-}
-
-bool CUploadQueue::CanOpenUploadSlot(INT_PTR curUploadSlots, bool bThrottlerWantsMoreSlots) const
-{
-	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
-		return true;
-	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
-		return false;
-
-	const INT_PTR iSoftMaxSlots = GetSoftMaxUploadSlots();
-	if (curUploadSlots < iSoftMaxSlots)
-		return true;
-	if (curUploadSlots > iSoftMaxSlots)
-		return false;
-
-	const uint32 uBudgetBytesPerSec = GetEffectiveUploadBudgetBytesPerSec();
-	if (uBudgetBytesPerSec == 0)
-		return false;
-
-	const uint32 uTargetPerSlot = GetTargetClientDataRateBroadband();
-	if (GetToNetworkDatarate() + (std::max<uint32>)(uTargetPerSlot / 3, 1024u) >= uBudgetBytesPerSec)
-		return false;
-
-	return bThrottlerWantsMoreSlots;
-}
-
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
 	const uint32 uBroadbandTarget = GetTargetClientDataRateBroadband();
@@ -429,24 +411,38 @@ uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
 
-bool CUploadQueue::ShouldOpenUploadSlot(bool allowEmptyWaitingQueue, bool bThrottlerWantsMoreSlots) const
+bool CUploadQueue::ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue, bool addOnNextConnect) const
 {
-	if (!allowEmptyWaitingQueue && waitinglist.IsEmpty())
+	if (!allowEmptyWaitingQueue && !snapshot.hasWaitingClients)
 		return false;
 
-	INT_PTR curUploadSlots = uploadinglist.GetCount();
+	INT_PTR curUploadSlots = snapshot.uploadSlots;
+	// We allow ONE extra slot to be created to accommodate lowID users.
+	// This is because we skip these users when it was actually their turn
+	// to get an upload slot.
+	curUploadSlots -= static_cast<INT_PTR>(addOnNextConnect && curUploadSlots > 0);
+
 	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
 		return true;
 
 	if (::GetTickCount64() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
-	if (!CanOpenUploadSlot(curUploadSlots, bThrottlerWantsMoreSlots))
-		return false;
-
-	if (curUploadSlots < GetSoftMaxUploadSlots())
+	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
 		return true;
-	return m_iHighestNumberOfFullyActivatedSlotsSinceLastCall > uploadinglist.GetCount();
+	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return false;
+	if (curUploadSlots < snapshot.softMaxUploadSlots)
+		return true;
+	if (curUploadSlots > snapshot.softMaxUploadSlots)
+		return false;
+	if (snapshot.budgetBytesPerSec == 0)
+		return false;
+	if (snapshot.toNetworkDatarate + (std::max<uint32>)(snapshot.targetPerSlot / 3, 1024u) >= snapshot.budgetBytesPerSec)
+		return false;
+	if (!snapshot.throttlerWantsMoreSlots)
+		return false;
+	return snapshot.highestFullyActivatedSlots > snapshot.uploadSlots;
 }
 
 uint32 CUploadQueue::GetEffectiveUploadBudgetBytesPerSec() const
@@ -485,18 +481,15 @@ uint32 CUploadQueue::GetSlowUploadRateThreshold() const
 	return (std::max<uint32>)(1024u, static_cast<uint32>(uTargetPerSlot * fFactor));
 }
 
-bool CUploadQueue::ShouldTrackSlowUploadSlots() const
+bool CUploadQueue::ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const
 {
-	if (waitinglist.IsEmpty())
+	if (!snapshot.hasWaitingClients)
 		return false;
-	if (uploadinglist.GetCount() < GetSoftMaxUploadSlots())
+	if (snapshot.uploadSlots < snapshot.softMaxUploadSlots)
 		return false;
-
-	const uint32 uBudgetBytesPerSec = GetEffectiveUploadBudgetBytesPerSec();
-	if (uBudgetBytesPerSec == 0)
+	if (snapshot.budgetBytesPerSec == 0)
 		return false;
-
-	return GetToNetworkDatarate() + (std::max<uint32>)(GetTargetClientDataRateBroadband() / 3, 1024u) < uBudgetBytesPerSec;
+	return snapshot.toNetworkDatarate + (std::max<uint32>)(snapshot.targetPerSlot / 3, 1024u) < snapshot.budgetBytesPerSec;
 }
 
 CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
@@ -573,8 +566,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		POSITION pos2 = pos;
 		CUpDownClient *cur_client = waitinglist.GetNext(pos);
 		if (cur_client == client) {
-			const bool bThrottlerWantsMoreSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
-			if (client->m_bAddNextConnect && CanOpenUploadSlot(client->m_bAddNextConnect, bThrottlerWantsMoreSlots)) {
+			const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
+			if (client->m_bAddNextConnect && ShouldOpenUploadSlot(snapshot, false, client->m_bAddNextConnect)) {
 				//Special care is given to lowID clients that missed their upload slot
 				//due to the saving bandwidth on callbacks.
 				if (thePrefs.GetLogUlDlEvents())
@@ -683,8 +676,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		AddClientToWaitingList(client);
 		return;
 	}
-	const bool bThrottlerWantsMoreSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
-	if (waitinglist.IsEmpty() && ShouldOpenUploadSlot(true, bThrottlerWantsMoreSlots)) {
+	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
+	if (waitinglist.IsEmpty() && ShouldOpenUploadSlot(snapshot, true, false)) {
 		client->SetWaitStartTime();
 		ActivateUploadClient(client, _T("Direct add with empty queue."));
 	} else {
@@ -835,16 +828,16 @@ bool CUploadQueue::EndUploadSession(CUpDownClient *client, const UploadSlotEndDe
 	return true;
 }
 
-CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownClient *client, bool bThrottlerWantsMoreSlots)
+CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot)
 {
 	UploadSlotEndDecision decision;
 
 	//If we have nobody in the queue, do NOT remove the current uploads.
 	//This will save some bandwidth and some unneeded swapping from upload/queue/upload.
-	if (waitinglist.IsEmpty() || client->GetFriendSlot())
+	if (!snapshot.hasWaitingClients || client->GetFriendSlot())
 		return decision;
 
-	const bool bShouldOpenReplacementSlot = ShouldOpenUploadSlot(false, bThrottlerWantsMoreSlots);
+	const bool bShouldOpenReplacementSlot = ShouldOpenUploadSlot(snapshot, false, false);
 
 	if (client->HasCollectionUploadSlot()) {
 		const CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
@@ -862,7 +855,7 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 		return decision;
 	}
 
-	if (ShouldTrackSlowUploadSlots()) {
+	if (ShouldTrackSlowUploadSlots(snapshot)) {
 		client->UpdateSlowUploadTracking(::GetTickCount64(), GetSlowUploadRateThreshold());
 		if (client->ShouldRecycleSlowUpload(SEC2MS(thePrefs.GetBBSlowUploadGraceSeconds()), SEC2MS(thePrefs.GetBBZeroRateGraceSeconds()))) {
 			client->SetSlowUploadCooldownUntil(::GetTickCount64() + SEC2MS(thePrefs.GetBBSlowUploadCooldownSeconds()));
@@ -885,8 +878,8 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 	const CKnownFile *pUploadingFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 	const uint64 uSessionTransferLimit = ResolveBBSessionTransferLimitBytes(pUploadingFile);
 	if (uSessionTransferLimit > 0) {
-		// Allow the client to download a specified amount per session; but keep going if no one needs this slot
-		if (client->GetQueueSessionPayloadUp() > uSessionTransferLimit && !bShouldOpenReplacementSlot) {
+		// Allow the client to download a specified amount per session; but keep going if no one needs this slot.
+		if (client->GetQueueSessionPayloadUp() > uSessionTransferLimit && bShouldOpenReplacementSlot) {
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to broadband transfer limit (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(uSessionTransferLimit));
 			decision.shouldEnd = true;
@@ -897,7 +890,7 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 	}
 
 	const UINT uSessionTimeLimitSeconds = thePrefs.GetBBSessionTimeLimitSeconds();
-	if (uSessionTimeLimitSeconds > 0 && client->GetUpStartTimeDelay() > SEC2MS(uSessionTimeLimitSeconds) && !bShouldOpenReplacementSlot) {
+	if (uSessionTimeLimitSeconds > 0 && client->GetUpStartTimeDelay() > SEC2MS(uSessionTimeLimitSeconds) && bShouldOpenReplacementSlot) {
 		if (thePrefs.GetLogUlDlEvents())
 			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to broadband time limit %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(uSessionTimeLimitSeconds));
 		decision.shouldEnd = true;
