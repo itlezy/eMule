@@ -249,11 +249,11 @@ private:
 	ClientQueueEntry& EnsureClientQueueEntry(CUpDownClient *client);
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
 	void	SyncLegacyUploadState(CUpDownClient *client, EUploadSlotPhase phase);
-	void	EnterWaitingState(CUpDownClient *client);
-	void	BeginActivationState(CUpDownClient *client);
-	void	MarkActiveState(CUpDownClient *client);
-	void	BeginRetiringState(CUpDownClient *client);
-	void	ClearClientQueueEntry(CUpDownClient *client);
+	bool	QueueWaitingClientState(CUpDownClient *client);
+	bool	BeginClientActivationState(CUpDownClient *client, bool removeFromWaitingQueue);
+	bool	MarkClientUploadActiveState(CUpDownClient *client);
+	bool	BeginClientRetiringState(CUpDownClient *client);
+	void	ClearClientQueueState(CUpDownClient *client);
 	const CKnownFile* GetRequestedUploadFile(const CUpDownClient *client) const;
 	bool	ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLONG curTick) const;
 	bool	ShouldRejectLowIdQueueRequest(const CUpDownClient *client) const;
@@ -285,9 +285,9 @@ private:
 	bool	TryPeekNextUploadBlockRead(const UploadSessionPtr &session, uint64 currentPayload, uint32 bufferLimit, Requested_Block_Struct &block, uint64 &addedPayloadQueueSession) const;
 	bool	PromotePendingUploadBlockRead(const UploadSessionPtr &session, const Requested_Block_Struct &expectedBlock, uint64 addedPayloadQueueSession);
 	void	MarkUploadSessionIoError(const UploadSessionPtr &session);
-	bool	AddActiveUploadSession(CUpDownClient *client);
+	bool	AttachActiveUploadSession(CUpDownClient *client);
 	void	ResetUploadSessionState(const UploadSessionPtr &session);
-	bool	RemoveActiveUploadSession(CUpDownClient *client);
+	bool	DetachActiveUploadSession(CUpDownClient *client, UploadSessionPtr &session);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
@@ -311,9 +311,12 @@ private:
 	uint32	GetSlowUploadRateThreshold() const;
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
-	bool	RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshot = true);
+	bool	RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshots = true);
+	void	MarkWaitingSnapshotDirty()						{ m_waitingSnapshotDirty = true; }
+	void	MarkActiveSnapshotDirty()						{ m_activeUploadSnapshotDirty = true; }
+	void	FlushDirtySnapshots();
 	CCriticalSection	m_csWaitingSnapshotRead;
-	CCriticalSection	m_csActiveUploadState;
+	CCriticalSection	m_csActiveUploadState; // Queue-state lock. Protects queue-owned membership, entries, and active-session ownership.
 
 	// By BadWolf - Accurate Speed Measurement
 	CRing<AverageUploadRate> average_ur_hist;
@@ -347,8 +350,10 @@ private:
 	std::unordered_map<uint32, std::vector<CUpDownClient*>> m_waitingClientsByHybridId;
 	std::unordered_map<WaitingUserHashKey, std::vector<CUpDownClient*>, WaitingUserHashKeyHasher> m_waitingClientsByHash;
 	std::shared_ptr<const WaitingQueueSnapshot> m_waitingSnapshot;
+	bool	m_waitingSnapshotDirty;
 	std::vector<CUpDownClient*> m_activeUploadClients;
 	std::shared_ptr<const ActiveUploadSnapshot> m_activeUploadSnapshot;
+	bool	m_activeUploadSnapshotDirty;
 
 	friend class CUpDownClient;
 	friend class CUploadDiskIOThread;

@@ -97,8 +97,10 @@ CUploadQueue::CUploadQueue()
 	, m_clientEntries()
 	, m_waitingClients()
 	, m_waitingSnapshot(std::make_shared<WaitingQueueSnapshot>())
+	, m_waitingSnapshotDirty()
 	, m_activeUploadClients()
 	, m_activeUploadSnapshot(std::make_shared<ActiveUploadSnapshot>())
+	, m_activeUploadSnapshotDirty()
 {
 	i1sec = i2sec = i5sec = i60sec = 0;
 	VERIFY((h_timer = ::SetTimer(NULL, 0, SEC2MS(1)/10, UploadTimer)) != 0);
@@ -216,9 +218,15 @@ bool CUploadQueue::IsHigherPriorityWaitingClient(const CUpDownClient *candidate,
 
 void CUploadQueue::PublishWaitingSnapshot()
 {
+	std::vector<CUpDownClient*> memberClients;
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		memberClients = m_waitingClients;
+	}
+
 	std::shared_ptr<WaitingQueueSnapshot> snapshot = std::make_shared<WaitingQueueSnapshot>();
-	snapshot->memberClients = m_waitingClients;
-	snapshot->rankedClients = m_waitingClients;
+	snapshot->memberClients = memberClients;
+	snapshot->rankedClients = memberClients;
 	std::sort(snapshot->rankedClients.begin(), snapshot->rankedClients.end(),
 		[this](const CUpDownClient *left, const CUpDownClient *right) {
 			return CompareWaitingClientsByRank(left, right) < 0;
@@ -239,6 +247,24 @@ void CUploadQueue::PublishWaitingSnapshot()
 
 	CSingleLock lock(&m_csWaitingSnapshotRead, TRUE);
 	m_waitingSnapshot = snapshot;
+}
+
+void CUploadQueue::FlushDirtySnapshots()
+{
+	bool publishWaiting = false;
+	bool publishActive = false;
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		publishWaiting = m_waitingSnapshotDirty;
+		publishActive = m_activeUploadSnapshotDirty;
+		m_waitingSnapshotDirty = false;
+		m_activeUploadSnapshotDirty = false;
+	}
+
+	if (publishWaiting)
+		PublishWaitingSnapshot();
+	if (publishActive)
+		PublishActiveUploadSnapshot();
 }
 
 void CUploadQueue::RebuildWaitingIndexes()
@@ -444,7 +470,7 @@ void CUploadQueue::PurgeStaleWaitingClients(ULONGLONG curTick)
 	}
 
 	if (removedAny)
-		PublishWaitingSnapshot();
+		FlushDirtySnapshots();
 }
 
 CUpDownClient* CUploadQueue::SelectNextWaitingClient()
@@ -526,8 +552,11 @@ bool CUploadQueue::HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client
 
 bool CUploadQueue::RefreshQueuedClient(CUpDownClient *client)
 {
-	RebuildWaitingIndexes();
-	PublishWaitingSnapshot();
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		MarkWaitingSnapshotDirty();
+	}
+	FlushDirtySnapshots();
 	client->SendRankingInfo();
 	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
 	return true;
@@ -597,7 +626,7 @@ bool CUploadQueue::AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediat
 	if (TryAcceptActiveUploadRequest(client))
 		return true;
 
-	ClearClientQueueEntry(client);
+	ClearClientQueueState(client);
 
 	if (!PassesQueueAdmissionLimit(client))
 		return false;
@@ -702,52 +731,72 @@ void CUploadQueue::SyncLegacyUploadState(CUpDownClient *client, EUploadSlotPhase
 	}
 }
 
-void CUploadQueue::EnterWaitingState(CUpDownClient *client)
+bool CUploadQueue::QueueWaitingClientState(CUpDownClient *client)
 {
 	if (client == NULL)
-		return;
+		return false;
 
 	CSingleLock lock(&m_csActiveUploadState, TRUE);
 	ClientQueueEntry &entry = EnsureClientQueueEntry(client);
 	entry.phase = EUploadSlotPhase::Waiting;
 	entry.session.reset();
 	SyncLegacyUploadState(client, entry.phase);
+	MarkWaitingSnapshotDirty();
+	return true;
 }
 
-void CUploadQueue::BeginActivationState(CUpDownClient *client)
+bool CUploadQueue::BeginClientActivationState(CUpDownClient *client, bool removeFromWaitingQueue)
 {
 	if (client == NULL)
-		return;
+		return false;
 
 	CSingleLock lock(&m_csActiveUploadState, TRUE);
+	if (removeFromWaitingQueue) {
+		const auto waitingIt = m_waitingClientIndexes.find(client);
+		if (waitingIt == m_waitingClientIndexes.cend())
+			return false;
+		m_waitingClients.erase(m_waitingClients.begin() + static_cast<std::ptrdiff_t>(waitingIt->second));
+		RebuildWaitingIndexes();
+		m_bStatisticsWaitingListDirty = true;
+		MarkWaitingSnapshotDirty();
+	}
 	ClientQueueEntry &entry = EnsureClientQueueEntry(client);
 	entry.phase = EUploadSlotPhase::Activating;
 	SyncLegacyUploadState(client, entry.phase);
+	return true;
 }
 
-void CUploadQueue::MarkActiveState(CUpDownClient *client)
+bool CUploadQueue::MarkClientUploadActiveState(CUpDownClient *client)
 {
 	if (client == NULL)
-		return;
+		return false;
 
 	CSingleLock lock(&m_csActiveUploadState, TRUE);
-	ClientQueueEntry &entry = EnsureClientQueueEntry(client);
-	entry.phase = EUploadSlotPhase::Active;
-	SyncLegacyUploadState(client, entry.phase);
+	ClientQueueEntry *entry = FindClientQueueEntry(client);
+	if (entry == NULL)
+		return false;
+	entry->phase = EUploadSlotPhase::Active;
+	SyncLegacyUploadState(client, entry->phase);
+	if (entry->session != NULL)
+		MarkActiveSnapshotDirty();
+	return true;
 }
 
-void CUploadQueue::BeginRetiringState(CUpDownClient *client)
+bool CUploadQueue::BeginClientRetiringState(CUpDownClient *client)
 {
 	if (client == NULL)
-		return;
+		return false;
 
 	CSingleLock lock(&m_csActiveUploadState, TRUE);
-	ClientQueueEntry &entry = EnsureClientQueueEntry(client);
-	entry.phase = EUploadSlotPhase::Retiring;
-	SyncLegacyUploadState(client, entry.phase);
+	ClientQueueEntry *entry = FindClientQueueEntry(client);
+	if (entry == NULL)
+		return false;
+	entry->phase = EUploadSlotPhase::Retiring;
+	SyncLegacyUploadState(client, entry->phase);
+	return true;
 }
 
-void CUploadQueue::ClearClientQueueEntry(CUpDownClient *client)
+void CUploadQueue::ClearClientQueueState(CUpDownClient *client)
 {
 	if (client == NULL)
 		return;
@@ -930,13 +979,12 @@ void CUploadQueue::MarkUploadSessionIoError(const UploadSessionPtr &session)
 	session->ioError = true;
 }
 
-bool CUploadQueue::AddActiveUploadSession(CUpDownClient *client)
+bool CUploadQueue::AttachActiveUploadSession(CUpDownClient *client)
 {
 	if (client == NULL)
 		return false;
 
-	theApp.uploadBandwidthThrottler->AddToStandardList(GetUploadQueueLength(), client->GetFileUploadSocket());
-
+	INT_PTR activeSlotCount = 0;
 	{
 		CSingleLock lock(&m_csActiveUploadState, TRUE);
 		ClientQueueEntry &entry = EnsureClientQueueEntry(client);
@@ -945,8 +993,13 @@ bool CUploadQueue::AddActiveUploadSession(CUpDownClient *client)
 		const UploadSessionPtr session = std::make_shared<UploadSession>(client);
 		m_activeUploadClients.push_back(client);
 		entry.session = session;
+		activeSlotCount = static_cast<INT_PTR>(m_activeUploadClients.size());
+		MarkActiveSnapshotDirty();
 	}
-	PublishActiveUploadSnapshot();
+
+	CEMSocket *fileUploadSocket = client->GetFileUploadSocket();
+	if (fileUploadSocket != NULL)
+		theApp.uploadBandwidthThrottler->AddToStandardList(activeSlotCount, fileUploadSocket);
 	return true;
 }
 
@@ -966,9 +1019,9 @@ void CUploadQueue::ResetUploadSessionState(const UploadSessionPtr &session)
 	session->ioError = false;
 }
 
-bool CUploadQueue::RemoveActiveUploadSession(CUpDownClient *client)
+bool CUploadQueue::DetachActiveUploadSession(CUpDownClient *client, UploadSessionPtr &session)
 {
-	UploadSessionPtr session;
+	session.reset();
 	{
 		CSingleLock lock(&m_csActiveUploadState, TRUE);
 		ClientQueueEntry *entry = FindClientQueueEntry(client);
@@ -981,11 +1034,8 @@ bool CUploadQueue::RemoveActiveUploadSession(CUpDownClient *client)
 		const auto activeIt = std::find(m_activeUploadClients.begin(), m_activeUploadClients.end(), client);
 		if (activeIt != m_activeUploadClients.end())
 			m_activeUploadClients.erase(activeIt);
+		MarkActiveSnapshotDirty();
 	}
-
-	PublishActiveUploadSnapshot();
-	ResetUploadSessionState(session);
-	theApp.uploadBandwidthThrottler->RemoveFromStandardList(client->socket);
 	return true;
 }
 
@@ -994,12 +1044,13 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 	if (IsDownloading(newclient))
 		return false;
 
+	if (!BeginClientActivationState(newclient, bRemoveFromWaitingQueue))
+		return false;
+
 	if (bRemoveFromWaitingQueue) {
-		size_t index = 0;
-		if (!FindWaitingClientIndex(newclient, index))
-			return false;
-		if (!RemoveWaitingClientAt(index, true))
-			return false;
+		FlushDirtySnapshots();
+		theApp.emuledlg->transferwnd->GetQueueList()->RemoveClient(newclient);
+		theApp.emuledlg->transferwnd->ShowQueueCount(GetWaitingUserCount());
 	}
 
 	if (pszReason && thePrefs.GetLogUlDlEvents())
@@ -1007,14 +1058,15 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 
 	// tell the client that we are now ready to upload
 	if (!newclient->socket || !newclient->socket->IsConnected() || !newclient->CheckHandshakeFinished()) {
-		BeginActivationState(newclient);
 		if (!newclient->TryToConnect(true)) {
-			ClearClientQueueEntry(newclient);
+			ClearClientQueueState(newclient);
+			FlushDirtySnapshots();
 			return false;
 		}
 	} else {
 		if (!CompleteUploadActivation(newclient)) {
-			ClearClientQueueEntry(newclient);
+			ClearClientQueueState(newclient);
+			FlushDirtySnapshots();
 			return false;
 		}
 	}
@@ -1023,10 +1075,12 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 	newclient->ClearSlowUploadCooldown();
 	newclient->ResetSlowUploadTracking();
 
-	if (!AddActiveUploadSession(newclient)) {
-		ClearClientQueueEntry(newclient);
+	if (!AttachActiveUploadSession(newclient)) {
+		ClearClientQueueState(newclient);
+		FlushDirtySnapshots();
 		return false;
 	}
+	FlushDirtySnapshots();
 
 	m_nLastStartUpload = ::GetTickCount64();
 
@@ -1054,7 +1108,9 @@ bool CUploadQueue::CompleteUploadActivation(CUpDownClient *client)
 	if (client == NULL || client->socket == NULL || !client->socket->IsConnected() || !client->CheckHandshakeFinished())
 		return false;
 
-	MarkActiveState(client);
+	if (!MarkClientUploadActiveState(client))
+		return false;
+	FlushDirtySnapshots();
 
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_AcceptUploadReq", client);
@@ -1068,10 +1124,6 @@ void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 {
 	// Save number of active clients for statistics
 	INT_PTR tempHighest = theApp.uploadBandwidthThrottler->GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset();
-
-	//if(thePrefs.GetLogUlDlEvents() && theApp.uploadBandwidthThrottler->GetStandardListSize() > GetUploadQueueLength())
-		// debug info, will remove this when I'm done.
-	//	AddDebugLogLine(false, _T("UploadQueue: Error! Throttler has more slots than UploadQueue! Throttler: %i UploadQueue: %i Tick: %i"), theApp.uploadBandwidthThrottler->GetStandardListSize(), GetUploadQueueLength(), ::GetTickCount64());
 
 	tempHighest = min(tempHighest, GetUploadQueueLength() + 1);
 	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = tempHighest;
@@ -1330,11 +1382,15 @@ void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 {
 	client->SetWaitStartTime();
 	client->SetAskedCount(1);
-	EnterWaitingState(client);
-	m_bStatisticsWaitingListDirty = true;
-	m_waitingClients.push_back(client);
-	RebuildWaitingIndexes();
-	PublishWaitingSnapshot();
+	VERIFY(QueueWaitingClientState(client));
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		m_bStatisticsWaitingListDirty = true;
+		m_waitingClients.push_back(client);
+		RebuildWaitingIndexes();
+		MarkWaitingSnapshotDirty();
+	}
+	FlushDirtySnapshots();
 	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client);
 	theApp.emuledlg->transferwnd->ShowQueueCount(GetWaitingUserCount());
 	client->SendRankingInfo();
@@ -1345,16 +1401,17 @@ bool CUploadQueue::HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszRe
 	const bool removedUpload = RemoveActiveUploadSlot(client, pszReason, updatewindow, earlyabort);
 	const bool removedWaiting = removeWaiting ? RemoveWaitingClient(client, updatewindow) : false;
 	if (!removedUpload && !removedWaiting && removeWaiting)
-		ClearClientQueueEntry(client);
+		ClearClientQueueState(client);
 	return removedUpload || removedWaiting;
 }
 
 bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReason, bool updatewindow, bool earlyabort)
 {
-	BeginRetiringState(client);
+	(void)BeginClientRetiringState(client);
 	const UploadSessionPtr session = GetUploadSession(client);
 	if (session == NULL) {
-		ClearClientQueueEntry(client);
+		ClearClientQueueState(client);
+		FlushDirtySnapshots();
 		return false;
 	}
 
@@ -1380,10 +1437,16 @@ bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReas
 			, theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) ? (LPCTSTR)theApp.sharedfiles->GetFileByID(client->GetUploadFileID())->GetFileName() : _T(""));
 	}
 
-	if (!RemoveActiveUploadSession(client)) {
-		ClearClientQueueEntry(client);
+	UploadSessionPtr detachedSession;
+	if (!DetachActiveUploadSession(client, detachedSession)) {
+		ClearClientQueueState(client);
+		FlushDirtySnapshots();
 		return false;
 	}
+	ResetUploadSessionState(detachedSession);
+	CEMSocket *fileUploadSocket = client->GetFileUploadSocket();
+	if (fileUploadSocket != NULL)
+		theApp.uploadBandwidthThrottler->RemoveFromAllQueues(fileUploadSocket);
 
 	if (client->GetSessionUp() > 0) {
 		++successfullupcount;
@@ -1396,7 +1459,8 @@ bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReas
 		requestedFile->UpdatePartsInfo();
 
 	theApp.clientlist->AddTrackClient(client); // Keep track of this client
-	ClearClientQueueEntry(client);
+	ClearClientQueueState(client);
+	FlushDirtySnapshots();
 	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;
 	return true;
 }
@@ -1412,22 +1476,28 @@ bool CUploadQueue::RemoveWaitingClient(CUpDownClient *client, bool updatewindow)
 	return FindWaitingClientIndex(client, index) ? RemoveWaitingClientAt(index, updatewindow) : false;
 }
 
-bool CUploadQueue::RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshot)
+bool CUploadQueue::RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshots)
 {
-	if (index >= m_waitingClients.size())
-		return false;
+	CUpDownClient *todelete = NULL;
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		if (index >= m_waitingClients.size())
+			return false;
 
-	m_bStatisticsWaitingListDirty = true;
-	CUpDownClient *todelete = m_waitingClients[index];
-	m_waitingClients.erase(m_waitingClients.begin() + static_cast<std::ptrdiff_t>(index));
-	RebuildWaitingIndexes();
-	if (publishSnapshot)
-		PublishWaitingSnapshot();
+		m_bStatisticsWaitingListDirty = true;
+		todelete = m_waitingClients[index];
+		m_waitingClients.erase(m_waitingClients.begin() + static_cast<std::ptrdiff_t>(index));
+		RebuildWaitingIndexes();
+		m_clientEntries.erase(todelete);
+		SyncLegacyUploadState(todelete, EUploadSlotPhase::None);
+		MarkWaitingSnapshotDirty();
+	}
+	if (publishSnapshots)
+		FlushDirtySnapshots();
 	if (updatewindow) {
 		theApp.emuledlg->transferwnd->GetQueueList()->RemoveClient(todelete);
 		theApp.emuledlg->transferwnd->ShowQueueCount(GetWaitingUserCount());
 	}
-	ClearClientQueueEntry(todelete);
 	return true;
 }
 
@@ -1519,24 +1589,36 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 
 void CUploadQueue::DeleteAll()
 {
-	for (CUpDownClient *client : m_waitingClients) {
-		ClearClientQueueEntry(client);
-	}
-	m_waitingClients.clear();
-	RebuildWaitingIndexes();
-	PublishWaitingSnapshot();
-
+	std::vector<CUpDownClient*> managedClients;
+	std::vector<UploadSessionPtr> sessions;
 	{
 		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		managedClients.reserve(m_clientEntries.size());
 		for (const auto &entry : m_clientEntries) {
+			managedClients.push_back(const_cast<CUpDownClient*>(entry.first));
 			if (entry.second.session != NULL)
-				ResetUploadSessionState(entry.second.session);
+				sessions.push_back(entry.second.session);
 		}
+		m_bStatisticsWaitingListDirty = true;
+		m_waitingClients.clear();
+		RebuildWaitingIndexes();
 		m_activeUploadClients.clear();
 		m_clientEntries.clear();
+		MarkWaitingSnapshotDirty();
+		MarkActiveSnapshotDirty();
 	}
-	PublishActiveUploadSnapshot();
-	// PENDING: Remove from UploadBandwidthThrottler as well!
+
+	for (CUpDownClient *client : managedClients)
+		SyncLegacyUploadState(client, EUploadSlotPhase::None);
+
+	for (const UploadSessionPtr &session : sessions) {
+		ResetUploadSessionState(session);
+		CEMSocket *fileUploadSocket = session->client ? session->client->GetFileUploadSocket() : NULL;
+		if (fileUploadSocket != NULL)
+			theApp.uploadBandwidthThrottler->RemoveFromAllQueues(fileUploadSocket);
+	}
+
+	FlushDirtySnapshots();
 }
 
 UINT CUploadQueue::GetWaitingPosition(const CUpDownClient *client)
