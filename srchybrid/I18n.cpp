@@ -237,7 +237,8 @@ void CPreferences::SetLanguage()
 		if (!bFoundLang) {
 			LoadLangLib(GetMuleDirectory(EMULE_INSTLANGDIR), GetMuleDirectory(EMULE_ADDLANGDIR, false), LANGID_EN_US);
 			m_wLanguageID = LANGID_EN_US;
-			LocMessageBox(IDS_MB_LANGUAGEINFO, MB_ICONASTERISK);
+			if (!theApp.IsParityHarnessMode())
+				LocMessageBox(IDS_MB_LANGUAGEINFO, MB_ICONASTERISK);
 		} else
 			m_wLanguageID = lidLocale;
 	}

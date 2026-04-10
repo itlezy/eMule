@@ -744,6 +744,7 @@ void CALLBACK CemuleDlg::StartupTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UINT_PTR /*
 				theApp.searchlist->LoadSearches();
 			break;
 		default:
+			theApp.ApplyPendingParityHarnessActions();
 			if (!theApp.ProcessPendingParityHarnessScenario())
 				break;
 			theApp.emuledlg->StopTimer();
