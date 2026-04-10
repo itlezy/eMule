@@ -27,6 +27,7 @@
 #include "SharedFileList.h"
 #include "UpDownClient.h"
 #include "ClientList.h"
+#include "UploadQueue.h"
 #include "opcodes.h"
 #include "ini2.h"
 #include "FrameGrabThread.h"
@@ -1076,7 +1077,8 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 by
 			return NULL;
 		}
 */
-		if (cur_src->HasLowID() || cur_src == forClient || !(cur_src->GetUploadState() == US_UPLOADING || cur_src->GetUploadState() == US_ONUPLOADQUEUE))
+		if (cur_src->HasLowID() || cur_src == forClient
+			|| !(theApp.uploadqueue->IsClientUploadActive(cur_src) || theApp.uploadqueue->IsClientWaitingForUpload(cur_src)))
 			continue;
 		if (!cur_src->IsEd2kClient())
 			continue;

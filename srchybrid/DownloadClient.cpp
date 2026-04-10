@@ -25,6 +25,7 @@
 #include "Statistics.h"
 #include "ClientCredits.h"
 #include "DownloadQueue.h"
+#include "UploadQueue.h"
 #include "ClientUDPSocket.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
@@ -190,7 +191,7 @@ bool CUpDownClient::AskForDownload()
 		if (HasLowID() && GetLastAskedTime() > 0) {
 			// if it's a lowid client which is on our queue we may delay the re-ask up to 20 min
 			// to give the lowid a chance to connect to us with its own re-ask
-			if (GetUploadState() == US_ONUPLOADQUEUE && !m_bReaskPending) {
+			if (theApp.uploadqueue->IsClientWaitingForUpload(this) && !m_bReaskPending) {
 				SetDownloadState(DS_ONQUEUE);
 				m_bReaskPending = true;
 				return true;

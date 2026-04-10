@@ -801,7 +801,7 @@ void CClientList::CleanUpClientList()
 		uint32 cDeleted = 0;
 		for (POSITION pos = list.GetHeadPosition(); pos != NULL;) {
 			const CUpDownClient *pCurClient = list.GetNext(pos);
-			if ((pCurClient->GetUploadState() == US_NONE || (pCurClient->GetUploadState() == US_BANNED && !pCurClient->IsBanned()))
+			if ((!theApp.uploadqueue->IsClientManagedByUploadQueue(pCurClient) || (pCurClient->GetUploadState() == US_BANNED && !pCurClient->IsBanned()))
 				&& pCurClient->GetDownloadState() == DS_NONE
 				&& pCurClient->GetChatState() == MS_NONE
 				&& pCurClient->GetKadState() == KS_NONE

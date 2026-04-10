@@ -181,9 +181,34 @@ CUploadQueue::EUploadSlotPhase CUploadQueue::GetUploadSlotPhase(const CUpDownCli
 	return (it != m_uploadSlotPhaseStates.cend()) ? it->second.phase : EUploadSlotPhase::None;
 }
 
+bool CUploadQueue::IsClientManagedByUploadQueue(const CUpDownClient *client) const
+{
+	return m_uploadSlotPhaseStates.find(client) != m_uploadSlotPhaseStates.cend();
+}
+
+bool CUploadQueue::IsClientWaitingForUpload(const CUpDownClient *client) const
+{
+	return inSet(GetUploadSlotPhase(client), EUploadSlotPhase::Waiting, EUploadSlotPhase::ReservedForReconnect);
+}
+
 bool CUploadQueue::IsReconnectReserved(const CUpDownClient *client) const
 {
 	return GetUploadSlotPhase(client) == EUploadSlotPhase::ReservedForReconnect;
+}
+
+bool CUploadQueue::IsClientUploadActivating(const CUpDownClient *client) const
+{
+	return GetUploadSlotPhase(client) == EUploadSlotPhase::Activating;
+}
+
+bool CUploadQueue::IsClientUploadActive(const CUpDownClient *client) const
+{
+	return GetUploadSlotPhase(client) == EUploadSlotPhase::Active;
+}
+
+bool CUploadQueue::HasUploadSlot(const CUpDownClient *client) const
+{
+	return inSet(GetUploadSlotPhase(client), EUploadSlotPhase::Activating, EUploadSlotPhase::Active, EUploadSlotPhase::Retiring);
 }
 
 bool CUploadQueue::HasCollectionUploadSlot(const CUpDownClient *client) const
@@ -206,6 +231,7 @@ void CUploadQueue::SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase ph
 	}
 
 	m_uploadSlotPhaseStates[client].phase = phase;
+	SyncLegacyUploadState(client);
 }
 
 void CUploadQueue::SetCollectionUploadSlot(CUpDownClient *client, bool bValue)
@@ -224,9 +250,34 @@ void CUploadQueue::SetCollectionUploadSlot(CUpDownClient *client, bool bValue)
 		it->second.collectionSlot = false;
 }
 
+void CUploadQueue::SyncLegacyUploadState(CUpDownClient *client)
+{
+	if (client == NULL || client->GetUploadState() == US_BANNED)
+		return;
+
+	switch (GetUploadSlotPhase(client)) {
+	case EUploadSlotPhase::Waiting:
+	case EUploadSlotPhase::ReservedForReconnect:
+		client->SetUploadState(US_ONUPLOADQUEUE);
+		break;
+	case EUploadSlotPhase::Activating:
+		client->SetUploadState(US_CONNECTING);
+		break;
+	case EUploadSlotPhase::Active:
+	case EUploadSlotPhase::Retiring:
+		client->SetUploadState(US_UPLOADING);
+		break;
+	case EUploadSlotPhase::None:
+	default:
+		client->SetUploadState(US_NONE);
+		break;
+	}
+}
+
 void CUploadQueue::ClearUploadSlotPhase(CUpDownClient *client)
 {
 	m_uploadSlotPhaseStates.erase(client);
+	SyncLegacyUploadState(client);
 }
 
 void CUploadQueue::UpdateReconnectReservation(CUpDownClient *reservedClient)
@@ -282,16 +333,13 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 	// tell the client that we are now ready to upload
 	if (!newclient->socket || !newclient->socket->IsConnected() || !newclient->CheckHandshakeFinished()) {
 		SetUploadSlotPhase(newclient, EUploadSlotPhase::Activating);
-		newclient->SetUploadState(US_CONNECTING);
 		if (!newclient->TryToConnect(true)) {
 			ClearUploadSlotPhase(newclient);
-			newclient->SetUploadState(US_NONE);
 			return false;
 		}
 	} else {
 		if (!CompleteUploadActivation(newclient)) {
 			ClearUploadSlotPhase(newclient);
-			newclient->SetUploadState(US_NONE);
 			return false;
 		}
 	}
@@ -329,7 +377,6 @@ bool CUploadQueue::CompleteUploadActivation(CUpDownClient *client)
 		return false;
 
 	SetUploadSlotPhase(client, EUploadSlotPhase::Active);
-	client->SetUploadState(US_UPLOADING);
 
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		DebugSend("OP_AcceptUploadReq", client);
@@ -781,7 +828,6 @@ void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 	SetUploadSlotPhase(client, EUploadSlotPhase::Waiting);
 	m_bStatisticsWaitingListDirty = true;
 	waitinglist.AddTail(client);
-	client->SetUploadState(US_ONUPLOADQUEUE);
 	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client, true);
 	theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
 	client->SendRankingInfo();
@@ -856,7 +902,6 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReaso
 				requestedFile->UpdatePartsInfo();
 
 			theApp.clientlist->AddTrackClient(client); // Keep track of this client
-			client->SetUploadState(US_NONE);
 			ClearUploadSlotPhase(client);
 
 			m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;
@@ -903,7 +948,6 @@ void CUploadQueue::RemoveFromWaitingQueueInternal(POSITION pos, bool updatewindo
 	}
 	if (!preserveSlotPhase) {
 		ClearUploadSlotPhase(todelete);
-		todelete->SetUploadState(US_NONE);
 	}
 }
 
@@ -1016,14 +1060,12 @@ void CUploadQueue::DeleteAll()
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
 		CUpDownClient *client = waitinglist.GetNext(pos);
 		ClearUploadSlotPhase(client);
-		client->SetUploadState(US_NONE);
 	}
 	waitinglist.RemoveAll();
 	m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
 	while (!uploadinglist.IsEmpty()) {
 		UploadingToClient_Struct *uploading = uploadinglist.RemoveHead();
 		ClearUploadSlotPhase(uploading->m_pClient);
-		uploading->m_pClient->SetUploadState(US_NONE);
 		delete uploading;
 	}
 	m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();

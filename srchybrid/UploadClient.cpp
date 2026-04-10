@@ -53,7 +53,7 @@ void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrec
 	COLORREF crNeither, crNextSending, crBoth, crSending;
 
 	if (GetSlotNumber() <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
-		|| (GetUploadState() != US_UPLOADING && GetUploadState() != US_CONNECTING))
+		|| (!theApp.uploadqueue->IsClientUploadActive(this) && !theApp.uploadqueue->IsClientUploadActivating(this)))
 	{
 		crNeither = RGB(224, 224, 224); //light grey
 		crNextSending = RGB(255, 208, 0); //dark yellow
@@ -339,7 +339,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	// UploadDiskIOThread will handle those later on
 
 	if (reqblock != NULL) {
-		if (GetUploadState() != US_UPLOADING) {
+		if (!theApp.uploadqueue->IsClientUploadActive(this)) {
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_LOW, false, _T("UploadClient: Client tried to add req block when not in upload slot! Prevented req blocks from being added. %s"), (LPCTSTR)DbgGetClientInfo());
 			delete reqblock;
@@ -515,7 +515,7 @@ void CUpDownClient::UpdateSlowUploadTracking(ULONGLONG curTick, uint32 slowThres
 	const ULONGLONG ullDelta = curTick - m_ullLastSlowUploadSampleTick;
 	m_ullLastSlowUploadSampleTick = curTick;
 
-	if (GetUploadState() != US_UPLOADING || GetUpStartTimeDelay() < SEC2MS(2))
+	if (!theApp.uploadqueue->IsClientUploadActive(this) || GetUpStartTimeDelay() < SEC2MS(2))
 		return;
 
 	const uint32 uRate = GetUploadDatarate();

@@ -98,7 +98,12 @@ public:
 
 	void	DeleteAll();
 	UINT	GetWaitingPosition(CUpDownClient *client);
+	bool	IsClientManagedByUploadQueue(const CUpDownClient *client) const;
+	bool	IsClientWaitingForUpload(const CUpDownClient *client) const;
 	bool	IsReconnectReserved(const CUpDownClient *client) const;
+	bool	IsClientUploadActivating(const CUpDownClient *client) const;
+	bool	IsClientUploadActive(const CUpDownClient *client) const;
+	bool	HasUploadSlot(const CUpDownClient *client) const;
 	bool	HasCollectionUploadSlot(const CUpDownClient *client) const;
 	bool	CompleteUploadActivation(CUpDownClient *client);
 
@@ -170,6 +175,7 @@ private:
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
 	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
 	void	SetCollectionUploadSlot(CUpDownClient *client, bool bValue);
+	void	SyncLegacyUploadState(CUpDownClient *client);
 	void	ClearUploadSlotPhase(CUpDownClient *client);
 	void	UpdateReconnectReservation(CUpDownClient *reservedClient);
 	/** Adds a client to the waiting queue and performs the required side effects. */

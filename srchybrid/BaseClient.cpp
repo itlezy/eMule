@@ -1145,7 +1145,7 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 	//If this is a KAD client object, just delete it!
 	SetKadState(KS_NONE);
 
-	if (GetUploadState() == US_UPLOADING || GetUploadState() == US_CONNECTING)
+	if (theApp.uploadqueue->HasUploadSlot(this))
 		// sets US_NONE
 		theApp.uploadqueue->HandleUploadSlotTeardown(this, CString(_T("CUpDownClient::Disconnected: ")) + pszReason);
 
@@ -1199,7 +1199,7 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 		bDelete = false;
 		break;
 	default:
-		bDelete = (m_eUploadState != US_ONUPLOADQUEUE);
+		bDelete = !theApp.uploadqueue->IsClientWaitingForUpload(this);
 	}
 
 	// Dead Source Handling
@@ -1433,9 +1433,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	if (GetDownloadState() == DS_CONNECTING)
 		SetDownloadState(DS_WAITCALLBACK);
 
-	if (GetUploadState() == US_CONNECTING) {
+	if (theApp.uploadqueue->IsClientUploadActivating(this)) {
 		ASSERT(0); // we should never try to connect in this case, but wait for the LowID to connect to us
-		DebugLogError(_T("LowID and US_CONNECTING (%s)"), (LPCTSTR)DbgGetClientInfo());
+		DebugLogError(_T("LowID and activating upload slot (%s)"), (LPCTSTR)DbgGetClientInfo());
 	}
 
 	if (theApp.serverconnect->IsLocalServer(m_dwServerIP, m_nServerPort)) {
@@ -1569,7 +1569,7 @@ void CUpDownClient::ConnectionEstablished()
 		}
 	}
 
-	if (GetUploadState() == US_CONNECTING && theApp.uploadqueue->IsDownloading(this)) {
+	if (theApp.uploadqueue->IsClientUploadActivating(this)) {
 		theApp.uploadqueue->CompleteUploadActivation(this);
 	}
 
