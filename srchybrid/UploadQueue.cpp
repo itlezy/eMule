@@ -79,8 +79,7 @@ namespace
 
 
 CUploadQueue::CUploadQueue()
-	: waitinglist(this)
-	, average_ur_hist(512, 512)
+	: average_ur_hist(512, 512)
 	, activeClients_hist(512, 512)
 	, datarate()
 	, friendDatarate()
@@ -230,7 +229,6 @@ void CUploadQueue::PublishWaitingSnapshot()
 		snapshot->positionByClient[snapshot->rankedClients[i]] = static_cast<UINT>(i + 1);
 
 	for (CUpDownClient *client : snapshot->memberClients) {
-		snapshot->compatibilityMembers.AddTail(client);
 		if (client == NULL)
 			continue;
 		if (client->GetIP() != 0)
@@ -322,14 +320,98 @@ std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> CUploadQueue::GetWaiti
 	return m_waitingSnapshot;
 }
 
+UINT CUploadQueue::WaitingQueueSnapshot::GetPosition(const CUpDownClient *client) const
+{
+	const auto it = positionByClient.find(client);
+	return (it != positionByClient.cend()) ? it->second : 0;
+}
+
+CUpDownClient* CUploadQueue::WaitingQueueSnapshot::FindByIP(uint32 ip) const
+{
+	const auto it = clientsByIP.find(ip);
+	return (it != clientsByIP.cend() && !it->second.empty()) ? it->second.front() : NULL;
+}
+
+CUpDownClient* CUploadQueue::WaitingQueueSnapshot::FindByUdpEndpoint(uint32 ip, uint16 udpPort, bool ignorePortOnUniqueIP, bool *multipleIPs) const
+{
+	if (multipleIPs != NULL)
+		*multipleIPs = false;
+
+	const auto ipIt = clientsByIP.find(ip);
+	const size_t ipCount = (ipIt != clientsByIP.cend()) ? ipIt->second.size() : 0;
+	if (multipleIPs != NULL)
+		*multipleIPs = ipCount > 1;
+
+	if (ignorePortOnUniqueIP && ipCount == 1)
+		return ipIt->second.front();
+
+	const auto endpointIt = clientsByUdpEndpoint.find(WaitingUdpEndpointKey{ip, udpPort});
+	return (endpointIt != clientsByUdpEndpoint.cend()) ? endpointIt->second : NULL;
+}
+
 void CUploadQueue::PublishActiveUploadSnapshot()
 {
 	std::shared_ptr<ActiveUploadSnapshot> snapshot = std::make_shared<ActiveUploadSnapshot>();
+	struct ActiveSnapshotSource
+	{
+		CUpDownClient *client = NULL;
+		UploadSessionPtr session;
+		EUploadSlotPhase phase = EUploadSlotPhase::None;
+	};
+
+	std::vector<ActiveSnapshotSource> sources;
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		snapshot->activeClients = m_activeUploadClients;
+		sources.reserve(snapshot->activeClients.size());
+		for (CUpDownClient *client : snapshot->activeClients) {
+			const ClientQueueEntry *entry = FindClientQueueEntry(client);
+			if (entry == NULL)
+				continue;
+			sources.push_back(ActiveSnapshotSource{client, entry->session, entry->phase});
+		}
+	}
+
+	for (size_t i = 0; i < snapshot->activeClients.size(); ++i) {
+		CUpDownClient *client = snapshot->activeClients[i];
+		ActiveUploadVisualState &state = snapshot->visualStateByClient[client];
+		state.slotNumber = static_cast<UINT>(i + 1);
+	}
+
+	for (const ActiveSnapshotSource &source : sources) {
+		ActiveUploadVisualState &state = snapshot->visualStateByClient[source.client];
+		state.isActivating = source.phase == EUploadSlotPhase::Activating;
+		state.isActive = source.phase == EUploadSlotPhase::Active;
+
+		if (source.session == NULL)
+			continue;
+
+		CSingleLock lockBlockLists(&source.session->blockListsLock, TRUE);
+		state.payloadInBuffer = (source.session->queuedPayloadBytes > source.client->GetQueueSessionPayloadUp())
+			? (source.session->queuedPayloadBytes - source.client->GetQueueSessionPayloadUp())
+			: 0;
+		if (!source.session->blockRequests.IsEmpty()) {
+			const Requested_Block_Struct *block = source.session->blockRequests.GetHead();
+			if (block != NULL) {
+				const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
+				state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
+			}
+		}
+		if (!source.session->completedBlocks.IsEmpty()) {
+			const Requested_Block_Struct *block = source.session->completedBlocks.GetHead();
+			if (block != NULL) {
+				const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
+				state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
+			}
+			for (POSITION pos = source.session->completedBlocks.GetHeadPosition(); pos != NULL;) {
+				block = source.session->completedBlocks.GetNext(pos);
+				if (block != NULL)
+					state.completedRanges.push_back(ActiveUploadRange{block->StartOffset, block->EndOffset + 1});
+			}
+		}
+	}
+
 	CSingleLock lock(&m_csActiveUploadState, TRUE);
-	snapshot->activeClients = m_activeUploadClients;
-	snapshot->slotNumberByClient.reserve(snapshot->activeClients.size());
-	for (size_t i = 0; i < snapshot->activeClients.size(); ++i)
-		snapshot->slotNumberByClient[snapshot->activeClients[i]] = static_cast<UINT>(i + 1);
 	m_activeUploadSnapshot = snapshot;
 }
 
@@ -339,43 +421,10 @@ std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> CUploadQueue::GetActiv
 	return m_activeUploadSnapshot;
 }
 
-POSITION CUploadQueue::CWaitingListCompatView::GetHeadPosition() const
+const CUploadQueue::ActiveUploadVisualState* CUploadQueue::ActiveUploadSnapshot::FindVisualState(const CUpDownClient *client) const
 {
-	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = (m_owner != NULL) ? m_owner->GetWaitingSnapshot() : std::shared_ptr<const WaitingQueueSnapshot>();
-	CSingleLock lock(&m_csThreadSnapshots, TRUE);
-	if (snapshot != NULL)
-		m_threadSnapshots[::GetCurrentThreadId()] = std::static_pointer_cast<const void>(snapshot);
-	else
-		m_threadSnapshots.erase(::GetCurrentThreadId());
-	return (snapshot != NULL) ? snapshot->compatibilityMembers.GetHeadPosition() : NULL;
-}
-
-CUpDownClient* CUploadQueue::CWaitingListCompatView::GetNext(POSITION &pos) const
-{
-	std::shared_ptr<const WaitingQueueSnapshot> snapshot;
-	{
-		CSingleLock lock(&m_csThreadSnapshots, TRUE);
-		const auto it = m_threadSnapshots.find(::GetCurrentThreadId());
-		if (it != m_threadSnapshots.cend())
-			snapshot = std::static_pointer_cast<const WaitingQueueSnapshot>(it->second);
-	}
-	if (snapshot == NULL)
-		snapshot = (m_owner != NULL) ? m_owner->GetWaitingSnapshot() : std::shared_ptr<const WaitingQueueSnapshot>();
-	if (snapshot == NULL)
-		return NULL;
-
-	CUpDownClient *client = snapshot->compatibilityMembers.GetNext(pos);
-	if (pos == NULL) {
-		CSingleLock lock(&m_csThreadSnapshots, TRUE);
-		m_threadSnapshots.erase(::GetCurrentThreadId());
-	}
-	return client;
-}
-
-INT_PTR CUploadQueue::CWaitingListCompatView::GetCount() const
-{
-	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = (m_owner != NULL) ? m_owner->GetWaitingSnapshot() : std::shared_ptr<const WaitingQueueSnapshot>();
-	return (snapshot != NULL) ? static_cast<INT_PTR>(snapshot->memberClients.size()) : 0;
+	const auto it = visualStateByClient.find(client);
+	return (it != visualStateByClient.cend()) ? &it->second : NULL;
 }
 
 void CUploadQueue::PurgeStaleWaitingClients(ULONGLONG curTick)
@@ -396,12 +445,6 @@ void CUploadQueue::PurgeStaleWaitingClients(ULONGLONG curTick)
 
 	if (removedAny)
 		PublishWaitingSnapshot();
-}
-
-void CUploadQueue::GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients)
-{
-	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
-	clients = (snapshot != NULL) ? snapshot->rankedClients : std::vector<CUpDownClient*>();
 }
 
 CUpDownClient* CUploadQueue::SelectNextWaitingClient()
@@ -775,80 +818,7 @@ bool CUploadQueue::IsDownloading(const CUpDownClient *client) const
 INT_PTR CUploadQueue::GetUploadQueueLength() const
 {
 	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
-	return (snapshot != NULL) ? static_cast<INT_PTR>(snapshot->activeClients.size()) : 0;
-}
-
-void CUploadQueue::GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const
-{
-	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
-	clients = (snapshot != NULL) ? snapshot->activeClients : std::vector<CUpDownClient*>();
-}
-
-UINT CUploadQueue::GetActiveUploadSlotNumber(const CUpDownClient *client) const
-{
-	if (client == NULL)
-		return 0;
-	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
-	if (snapshot == NULL)
-		return 0;
-	const auto it = snapshot->slotNumberByClient.find(client);
-	return (it != snapshot->slotNumberByClient.cend()) ? it->second : 0;
-}
-
-uint64 CUploadQueue::GetActiveUploadPayloadInBuffer(const CUpDownClient *client) const
-{
-	if (client == NULL)
-		return 0;
-
-	const UploadSessionPtr session = GetUploadSession(client);
-	if (session == NULL)
-		return 0;
-
-	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
-	if (!lockBlockLists.IsLocked())
-		return 0;
-
-	const uint64 queuedPayloadBytes = session->queuedPayloadBytes;
-	const uint64 sentPayloadBytes = client->GetQueueSessionPayloadUp();
-	return (queuedPayloadBytes > sentPayloadBytes) ? (queuedPayloadBytes - sentPayloadBytes) : 0;
-}
-
-bool CUploadQueue::TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const
-{
-	state = ActiveUploadVisualState();
-	if (client == NULL)
-		return false;
-
-	state.slotNumber = GetActiveUploadSlotNumber(client);
-
-	state.isActivating = IsClientUploadActivating(client);
-	state.isActive = IsClientUploadActive(client);
-
-	const UploadSessionPtr session = GetUploadSession(client);
-	if (session == NULL)
-		return state.slotNumber != 0 || state.isActivating || state.isActive;
-
-	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
-	if (!session->blockRequests.IsEmpty()) {
-		const Requested_Block_Struct *block = session->blockRequests.GetHead();
-		if (block != NULL) {
-			const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
-			state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
-		}
-	}
-	if (!session->completedBlocks.IsEmpty()) {
-		const Requested_Block_Struct *block = session->completedBlocks.GetHead();
-		if (block != NULL) {
-			const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
-			state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
-		}
-		for (POSITION pos = session->completedBlocks.GetHeadPosition(); pos != NULL;) {
-			block = session->completedBlocks.GetNext(pos);
-			if (block != NULL)
-				state.completedRanges.push_back(ActiveUploadRange{block->StartOffset, block->EndOffset + 1});
-		}
-	}
-	return true;
+	return (snapshot != NULL) ? static_cast<INT_PTR>(snapshot->GetActiveClients().size()) : 0;
 }
 
 bool CUploadQueue::EnqueueUploadRequestBlock(CUpDownClient *client, Requested_Block_Struct *reqblock, INT_PTR *pQueueCount)
@@ -1330,38 +1300,6 @@ bool CUploadQueue::ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &sn
 	return snapshot.toNetworkDatarate + (std::max<uint32>)(snapshot.targetPerSlot / 3, 1024u) < snapshot.budgetBytesPerSec;
 }
 
-CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
-{
-	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
-	if (snapshot == NULL) {
-		if (pbMultipleIPs != NULL)
-			*pbMultipleIPs = false;
-		return NULL;
-	}
-
-	const auto endpointIt = snapshot->clientsByUdpEndpoint.find(WaitingUdpEndpointKey{dwIP, nUDPPort});
-	if (endpointIt != snapshot->clientsByUdpEndpoint.cend())
-		return endpointIt->second;
-
-	const auto ipIt = snapshot->clientsByIP.find(dwIP);
-	const uint32 cMatches = (ipIt != snapshot->clientsByIP.cend()) ? static_cast<uint32>(ipIt->second.size()) : 0;
-	if (pbMultipleIPs != NULL)
-		*pbMultipleIPs = cMatches > 1;
-
-	if (bIgnorePortOnUniqueIP && ipIt != snapshot->clientsByIP.cend() && cMatches == 1)
-		return ipIt->second.front();
-	return NULL;
-}
-
-CUpDownClient* CUploadQueue::GetWaitingClientByIP(uint32 dwIP) const
-{
-	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
-	if (snapshot == NULL)
-		return NULL;
-	const auto it = snapshot->clientsByIP.find(dwIP);
-	return (it != snapshot->clientsByIP.cend() && !it->second.empty()) ? it->second.front() : NULL;
-}
-
 /**
  * Add a client to the waiting queue for uploads.
  *
@@ -1430,13 +1368,15 @@ bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReas
 	}
 
 	if (thePrefs.GetLogUlDlEvents()) {
+		const std::shared_ptr<const ActiveUploadSnapshot> activeSnapshot = GetActiveUploadSnapshot();
+		const ActiveUploadVisualState *visualState = (activeSnapshot != NULL) ? activeSnapshot->FindVisualState(client) : NULL;
 		AddDebugLogLine(DLP_DEFAULT, true, _T("Removing client from upload list: %s Client: %s Transferred: %s SessionUp: %s QueueSessionPayload: %s In buffer: %s Req blocks: %i File: %s")
 			, pszReason == NULL ? _T("") : pszReason
 			, (LPCTSTR)client->DbgGetClientInfo()
 			, (LPCTSTR)CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1))
 			, (LPCTSTR)CastItoXBytes(client->GetSessionUp())
 			, (LPCTSTR)CastItoXBytes(client->GetQueueSessionPayloadUp())
-			, (LPCTSTR)CastItoXBytes(GetActiveUploadPayloadInBuffer(client)), pendingBlocks
+			, (LPCTSTR)CastItoXBytes((visualState != NULL) ? visualState->payloadInBuffer : 0), pendingBlocks
 			, theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) ? (LPCTSTR)theApp.sharedfiles->GetFileByID(client->GetUploadFileID())->GetFileName() : _T(""));
 	}
 
@@ -1604,10 +1544,7 @@ UINT CUploadQueue::GetWaitingPosition(const CUpDownClient *client)
 	if (!IsClientWaitingForUpload(client))
 		return 0;
 	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
-	if (snapshot == NULL)
-		return 0;
-	const auto it = snapshot->positionByClient.find(client);
-	return (it != snapshot->positionByClient.cend()) ? it->second : 0;
+	return (snapshot != NULL) ? snapshot->GetPosition(client) : 0;
 }
 
 VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /*idEvent*/, DWORD /*dwTime*/) noexcept
@@ -1770,7 +1707,7 @@ uint32 CUploadQueue::GetToNetworkDatarate() const
 INT_PTR CUploadQueue::GetWaitingUserCount() const
 {
 	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
-	return (snapshot != NULL) ? static_cast<INT_PTR>(snapshot->memberClients.size()) : 0;
+	return (snapshot != NULL) ? snapshot->GetCount() : 0;
 }
 
 uint32 CUploadQueue::GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged)

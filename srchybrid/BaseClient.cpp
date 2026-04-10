@@ -2516,12 +2516,18 @@ CString CUpDownClient::GetUploadStateDisplayString() const
 	case US_UPLOADING:
 		/* The old stalled-vs-reading distinction is intentionally gone here.
 		   Reconstructing it now would require extra queue/session inspection for little value. */
-		if (thePrefs.IsExtControlsEnabled() && theApp.uploadqueue->GetActiveUploadPayloadInBuffer(this) == 0)
+		{
+			const std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> activeSnapshot = theApp.uploadqueue->GetActiveUploadSnapshot();
+			const CUploadQueue::ActiveUploadVisualState *visualState = (activeSnapshot != NULL) ? activeSnapshot->FindVisualState(this) : NULL;
+			const uint64 payloadInBuffer = (visualState != NULL) ? visualState->payloadInBuffer : 0;
+			const UINT slotNumber = (visualState != NULL) ? visualState->slotNumber : 0;
+			if (thePrefs.IsExtControlsEnabled() && payloadInBuffer == 0)
 			uid = IDS_US_STALLEDW4BR;
-		else if (theApp.uploadqueue->GetActiveUploadSlotNumber(this) <= (UINT)theApp.uploadqueue->GetActiveUploadsCount())
+		else if (slotNumber <= (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 			uid = IDS_TRANSFERRING;
 		else
 			uid = IDS_TRICKLING;
+		}
 		break;
 	default:
 		return CString();

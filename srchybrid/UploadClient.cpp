@@ -51,13 +51,13 @@ CBarShader CUpDownClient::s_UpStatusBar(16);
 void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect, bool  bFlat) const
 {
 	COLORREF crNeither, crNextSending, crBoth, crSending;
-	CUploadQueue::ActiveUploadVisualState visualState;
-	const bool bHasVisualState = theApp.uploadqueue->TryGetActiveUploadVisualState(this, visualState);
-	const UINT uVisualSlotNumber = (bHasVisualState && visualState.slotNumber != 0)
-		? visualState.slotNumber
-		: theApp.uploadqueue->GetActiveUploadSlotNumber(this);
-	const bool bVisualActivating = bHasVisualState ? visualState.isActivating : theApp.uploadqueue->IsClientUploadActivating(this);
-	const bool bVisualActive = bHasVisualState ? visualState.isActive : theApp.uploadqueue->IsClientUploadActive(this);
+	const std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> activeSnapshot = theApp.uploadqueue->GetActiveUploadSnapshot();
+	const CUploadQueue::ActiveUploadVisualState emptyVisualState;
+	const CUploadQueue::ActiveUploadVisualState *visualStatePtr = (activeSnapshot != NULL) ? activeSnapshot->FindVisualState(this) : NULL;
+	const CUploadQueue::ActiveUploadVisualState &visualState = (visualStatePtr != NULL) ? *visualStatePtr : emptyVisualState;
+	const UINT uVisualSlotNumber = visualState.slotNumber;
+	const bool bVisualActivating = visualStatePtr != NULL ? visualState.isActivating : theApp.uploadqueue->IsClientUploadActivating(this);
+	const bool bVisualActive = visualStatePtr != NULL ? visualState.isActive : theApp.uploadqueue->IsClientUploadActive(this);
 
 	if (uVisualSlotNumber <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
 		|| (!bVisualActive && !bVisualActivating))
@@ -275,7 +275,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	if (bSignalIOThread && theApp.m_pUploadDiskIOThread != NULL) {
 		/*DebugLog(_T("BlockRequest Packet received, we have currently %u waiting requests and %s data in buffer (%u in ready packets, %s in pending IO Disk read), socket busy: %s")
 			, dbgLastQueueCount
-			, (LPCTSTR)CastItoXBytes(theApp.uploadqueue->GetActiveUploadPayloadInBuffer(this) - socket->GetSentPayloadSinceLastCall(false), false, false, 2)
+			, (LPCTSTR)CastItoXBytes(max(0ui64, ((activeSnapshot != NULL && activeSnapshot->FindVisualState(this) != NULL) ? activeSnapshot->FindVisualState(this)->payloadInBuffer : 0ui64) - socket->GetSentPayloadSinceLastCall(false)), false, false, 2)
 			, socket->DbgGetStdQueueCount()
 			, (LPCTSTR)CastItoXBytes((uint32)theApp.m_pUploadDiskIOThread->dbgDataReadPending, false, false, 2)
 			,_T('?')); */

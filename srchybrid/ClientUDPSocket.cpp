@@ -234,7 +234,10 @@ bool CClientUDPSocket::ProcessPacket(const BYTE *packet, UINT size, uint8 opcode
 			CKnownFile *reqfile = theApp.sharedfiles->GetFileByID(reqfilehash);
 
 			bool bSenderMultipleIpUnknown = false;
-			CUpDownClient *sender = theApp.uploadqueue->GetWaitingClientByIP_UDP(ip, port, true, &bSenderMultipleIpUnknown);
+			const std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> waitingSnapshot = theApp.uploadqueue->GetWaitingSnapshot();
+			CUpDownClient *sender = (waitingSnapshot != NULL)
+				? waitingSnapshot->FindByUdpEndpoint(ip, port, true, &bSenderMultipleIpUnknown)
+				: NULL;
 			if (!reqfile) {
 				if (thePrefs.GetDebugClientUDPLevel() > 0) {
 					DebugRecv("OP_ReaskFilePing", NULL, reqfilehash, ip);

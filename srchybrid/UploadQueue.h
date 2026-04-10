@@ -72,28 +72,58 @@ public:
 	struct ActiveUploadVisualState
 	{
 		UINT slotNumber = 0;
+		uint64 payloadInBuffer = 0;
 		bool isActivating = false;
 		bool isActive = false;
 		std::vector<ActiveUploadRange> pendingRanges;
 		std::vector<ActiveUploadRange> completedRanges;
 	};
 
-	class CWaitingListCompatView
+	struct WaitingUdpEndpointKey
 	{
-public:
-		explicit CWaitingListCompatView(const CUploadQueue *owner = NULL) noexcept
-			: m_owner(owner)
-		{
-		}
+		uint32 ip = 0;
+		uint16 udpPort = 0;
 
-		POSITION GetHeadPosition() const;
-		CUpDownClient* GetNext(POSITION &pos) const;
-		INT_PTR GetCount() const;
+		bool operator==(const WaitingUdpEndpointKey &other) const noexcept
+		{
+			return ip == other.ip && udpPort == other.udpPort;
+		}
+	};
+
+	struct WaitingUdpEndpointKeyHasher
+	{
+		size_t operator()(const WaitingUdpEndpointKey &key) const noexcept
+		{
+			return (static_cast<size_t>(key.ip) << 16) ^ static_cast<size_t>(key.udpPort);
+		}
+	};
+
+	struct WaitingQueueSnapshot
+	{
+		INT_PTR GetCount() const								{ return static_cast<INT_PTR>(memberClients.size()); }
+		const std::vector<CUpDownClient*>& GetRankedClients() const	{ return rankedClients; }
+		UINT GetPosition(const CUpDownClient *client) const;
+		CUpDownClient* FindByIP(uint32 ip) const;
+		CUpDownClient* FindByUdpEndpoint(uint32 ip, uint16 udpPort, bool ignorePortOnUniqueIP, bool *multipleIPs = NULL) const;
 
 	private:
-		const CUploadQueue *m_owner;
-		mutable CCriticalSection m_csThreadSnapshots;
-		mutable std::unordered_map<DWORD, std::shared_ptr<const void>> m_threadSnapshots;
+		friend class CUploadQueue;
+		std::vector<CUpDownClient*> memberClients;
+		std::vector<CUpDownClient*> rankedClients;
+		std::unordered_map<const CUpDownClient*, UINT> positionByClient;
+		std::unordered_map<uint32, std::vector<CUpDownClient*>> clientsByIP;
+		std::unordered_map<WaitingUdpEndpointKey, CUpDownClient*, WaitingUdpEndpointKeyHasher> clientsByUdpEndpoint;
+	};
+
+	struct ActiveUploadSnapshot
+	{
+		const std::vector<CUpDownClient*>& GetActiveClients() const	{ return activeClients; }
+		const ActiveUploadVisualState* FindVisualState(const CUpDownClient *client) const;
+
+	private:
+		friend class CUploadQueue;
+		std::vector<CUpDownClient*> activeClients;
+		std::unordered_map<const CUpDownClient*, ActiveUploadVisualState> visualStateByClient;
 	};
 
 	CUploadQueue();
@@ -119,13 +149,8 @@ public:
 	uint32	GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const;
 	uint32	GetTargetClientDataRate(bool bMinDatarate) const;
 
-	CUpDownClient* GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs = NULL);
-	CUpDownClient* GetWaitingClientByIP(uint32 dwIP) const;
-	void	GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients);
-	void	GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const;
-	UINT	GetActiveUploadSlotNumber(const CUpDownClient *client) const;
-	uint64	GetActiveUploadPayloadInBuffer(const CUpDownClient *client) const;
-	bool	TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const;
+	std::shared_ptr<const WaitingQueueSnapshot> GetWaitingSnapshot() const;
+	std::shared_ptr<const ActiveUploadSnapshot> GetActiveUploadSnapshot() const;
 	bool	EnqueueUploadRequestBlock(CUpDownClient *client, Requested_Block_Struct *reqblock, INT_PTR *pQueueCount = NULL);
 	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;
 	float	GetWaitingClientCreditFactor(const CUpDownClient *client) const;
@@ -142,8 +167,6 @@ public:
 	uint32	GetSuccessfullUpCount() const					{ return successfullupcount; }
 	uint32	GetFailedUpCount() const						{ return failedupcount; }
 	uint32	GetAverageUpTime() const;
-
-	CWaitingListCompatView waitinglist;
 
 protected:
 	bool		StartNextUpload(LPCTSTR pszReason);
@@ -208,25 +231,6 @@ private:
 		}
 	};
 
-	struct WaitingUdpEndpointKey
-	{
-		uint32 ip = 0;
-		uint16 udpPort = 0;
-
-		bool operator==(const WaitingUdpEndpointKey &other) const noexcept
-		{
-			return ip == other.ip && udpPort == other.udpPort;
-		}
-	};
-
-	struct WaitingUdpEndpointKeyHasher
-	{
-		size_t operator()(const WaitingUdpEndpointKey &key) const noexcept
-		{
-			return (static_cast<size_t>(key.ip) << 16) ^ static_cast<size_t>(key.udpPort);
-		}
-	};
-
 	struct WaitingUserHashKeyHasher
 	{
 		size_t operator()(const WaitingUserHashKey &key) const noexcept
@@ -236,22 +240,6 @@ private:
 				hash = (hash ^ byte) * 1099511628211ull;
 			return hash;
 		}
-	};
-
-	struct WaitingQueueSnapshot
-	{
-		CUpDownClientPtrList compatibilityMembers;
-		std::vector<CUpDownClient*> memberClients;
-		std::vector<CUpDownClient*> rankedClients;
-		std::unordered_map<const CUpDownClient*, UINT> positionByClient;
-		std::unordered_map<uint32, std::vector<CUpDownClient*>> clientsByIP;
-		std::unordered_map<WaitingUdpEndpointKey, CUpDownClient*, WaitingUdpEndpointKeyHasher> clientsByUdpEndpoint;
-	};
-
-	struct ActiveUploadSnapshot
-	{
-		std::vector<CUpDownClient*> activeClients;
-		std::unordered_map<const CUpDownClient*, UINT> slotNumberByClient;
 	};
 
 	/** Returns true if the client can immediately take an upload slot. */
@@ -275,9 +263,7 @@ private:
 	void	RebuildWaitingIndexes();
 	void	CollectDuplicateWaitingCandidates(const CUpDownClient *client, std::vector<CUpDownClient*> &candidates) const;
 	void	PublishWaitingSnapshot();
-	std::shared_ptr<const WaitingQueueSnapshot> GetWaitingSnapshot() const;
 	void	PublishActiveUploadSnapshot();
-	std::shared_ptr<const ActiveUploadSnapshot> GetActiveUploadSnapshot() const;
 	CUpDownClient* SelectNextWaitingClient();
 	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL);
 	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);

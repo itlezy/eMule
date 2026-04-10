@@ -1953,25 +1953,8 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 	int nCountQueueFriendSecure = 0;
 
 	CQArray<QueueUsers, QueueUsers> QueueArray;
-	std::vector<CUpDownClient*> rankedWaitingClients;
-	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedWaitingClients);
-	for (CUpDownClient *queuedClient : rankedWaitingClients) {
-		const CUpDownClient &cur_client(*queuedClient);
-		int iSecure = static_cast<int>(cur_client.Credits()->GetCurrentIdentState(cur_client.GetIP()) == IS_IDENTIFIED);
-		if (cur_client.IsBanned()) {
-			++nCountQueueBanned;
-			nCountQueueBannedSecure += iSecure;
-		} else if (cur_client.IsFriend()) {
-			++nCountQueueFriend;
-			nCountQueueFriendSecure += iSecure;
-		} else {
-			++nCountQueue;
-			nCountQueueSecure += iSecure;
-		}
-	}
-
-	// Legacy Web queue details are intentionally stubbed. Keep only summary counts
-	// so the Web path compiles without shaping the native queue read model.
+	// Legacy Web queue details are intentionally inert. Keep this path compiling
+	// without preserving any queue ordering or upload-rendering semantics.
 
 	CString HTTPProcessData;
 	CString sDownList, HTTPTemp;

@@ -596,10 +596,11 @@ void CQueueListCtrl::ShowSelectedUserDetails()
 void CQueueListCtrl::ShowQueueClients()
 {
 	DeleteAllItems();
-	std::vector<CUpDownClient*> rankedClients;
-	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedClients);
-	for (CUpDownClient *client : rankedClients)
-		AddClient(client);
+	const std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> waitingSnapshot = theApp.uploadqueue->GetWaitingSnapshot();
+	if (waitingSnapshot != NULL) {
+		for (CUpDownClient *client : waitingSnapshot->GetRankedClients())
+			AddClient(client);
+	}
 	Resort();
 }
 
@@ -613,10 +614,11 @@ void CALLBACK CQueueListCtrl::QueueUpdateTimer(HWND /*hwnd*/, UINT /*uiMsg*/, UI
 			&& theApp.emuledlg->transferwnd->GetQueueList()->IsWindowVisible()
 			&& !theApp.IsClosing()) // Don't do anything if the app is shutting down - can cause unhandled exceptions
 		{
-			std::vector<CUpDownClient*> rankedClients;
-			theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedClients);
-			for (const CUpDownClient *client : rankedClients)
-				theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
+			const std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> waitingSnapshot = theApp.uploadqueue->GetWaitingSnapshot();
+			if (waitingSnapshot != NULL) {
+				for (const CUpDownClient *client : waitingSnapshot->GetRankedClients())
+					theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
+			}
 			theApp.emuledlg->transferwnd->GetQueueList()->Resort();
 		}
 	}

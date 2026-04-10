@@ -1406,7 +1406,10 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 			CKnownFile *reqfile = theApp.sharedfiles->GetFileByID(reqfilehash);
 
 			bool bSenderMultipleIpUnknown = false;
-			CUpDownClient *sender = theApp.uploadqueue->GetWaitingClientByIP_UDP(destip, destport, true, &bSenderMultipleIpUnknown);
+			const std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> waitingSnapshot = theApp.uploadqueue->GetWaitingSnapshot();
+			CUpDownClient *sender = (waitingSnapshot != NULL)
+				? waitingSnapshot->FindByUdpEndpoint(destip, destport, true, &bSenderMultipleIpUnknown)
+				: NULL;
 			if (!reqfile) {
 				if (thePrefs.GetDebugClientUDPLevel() > 0)
 					DebugSend("OP_FileNotFound", NULL);

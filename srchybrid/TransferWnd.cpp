@@ -648,10 +648,11 @@ void CTransferWnd::LocalizeToolbars()
 
 void CTransferWnd::OnBnClickedQueueRefreshButton()
 {
-	std::vector<CUpDownClient*> rankedClients;
-	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedClients);
-	for (const CUpDownClient *client : rankedClients)
-		queuelistctrl.RefreshClient(client);
+	const std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> waitingSnapshot = theApp.uploadqueue->GetWaitingSnapshot();
+	if (waitingSnapshot != NULL) {
+		for (const CUpDownClient *client : waitingSnapshot->GetRankedClients())
+			queuelistctrl.RefreshClient(client);
+	}
 	queuelistctrl.Resort();
 }
 

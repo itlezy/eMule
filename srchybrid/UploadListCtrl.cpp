@@ -155,7 +155,9 @@ void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	RECT rcClient;
 	GetClientRect(&rcClient);
 	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(lpDrawItemStruct->itemData);
-	if (theApp.uploadqueue->GetActiveUploadSlotNumber(client) > (UINT)theApp.uploadqueue->GetActiveUploadsCount())
+	const std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> activeSnapshot = theApp.uploadqueue->GetActiveUploadSnapshot();
+	const CUploadQueue::ActiveUploadVisualState *visualState = (activeSnapshot != NULL) ? activeSnapshot->FindVisualState(client) : NULL;
+	if (visualState != NULL && visualState->slotNumber > (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 		dc.SetTextColor(::GetSysColor(COLOR_GRAYTEXT));
 
 	const CHeaderCtrl *pHeaderCtrl = GetHeaderCtrl();
