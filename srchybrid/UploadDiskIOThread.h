@@ -15,18 +15,18 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <memory>
 
 class Packet;
 class CUpDownClient;
+struct UploadSession;
 typedef CTypedPtrList<CPtrList, Packet*> CPacketList;
-
-struct UploadingToClient_Struct;
 
 struct OverlappedRead_Struct
 {
 	OVERLAPPED				oOverlap; // must be the first member
 	CKnownFile				*pFile;
-	UploadingToClient_Struct *pUploadClientStruct;
+	std::shared_ptr<UploadSession> pUploadSession;
 	uint64					uStartOffset;
 	uint64					uEndOffset;
 	BYTE					*pBuffer;
@@ -52,7 +52,7 @@ private:
 
 	bool		AssociateFile(CKnownFile *pFile);
 	static bool ShouldCompressBasedOnFilename(const CString &strFileName);
-	void		StartCreateNextBlockPackage(UploadingToClient_Struct *pUploadClientStruct);
+	void		StartCreateNextBlockPackage(const std::shared_ptr<UploadSession> &session);
 	void		ReadCompletionRoutine(DWORD dwRead, const OverlappedRead_Struct *pOvRead);
 
 	static void CreatePackedPackets(const OverlappedRead_Struct &OverlappedRead, CPacketList &rOutPacketList);

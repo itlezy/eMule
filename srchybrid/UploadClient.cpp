@@ -82,27 +82,27 @@ void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrec
 				if (m_abyUpPartStatus[i])
 					s_UpStatusBar.FillRange(i * PARTSIZE, i * PARTSIZE + PARTSIZE, crBoth);
 
-		UploadingToClient_Struct *pUpClientStruct = theApp.uploadqueue->GetUploadingClientStructByClient(this);
+		const UploadSessionPtr pUpClientStruct = theApp.uploadqueue->GetUploadSession(this);
 		//ASSERT(pUpClientStruct != NULL || theApp.uploadqueue->IsOnUploadQueue((CUpDownClient*)this) != NULL);
 		if (pUpClientStruct != NULL) {
-			CSingleLock lockBlockLists(&pUpClientStruct->m_csBlockListsLock, TRUE);
+			CSingleLock lockBlockLists(&pUpClientStruct->blockListsLock, TRUE);
 			ASSERT(lockBlockLists.IsLocked());
 			const Requested_Block_Struct *block;
-			if (!pUpClientStruct->m_BlockRequests_queue.IsEmpty()) {
-				block = pUpClientStruct->m_BlockRequests_queue.GetHead();
+			if (!pUpClientStruct->blockRequests.IsEmpty()) {
+				block = pUpClientStruct->blockRequests.GetHead();
 				if (block) {
 					uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
 					s_UpStatusBar.FillRange(start, start + PARTSIZE, crNextSending);
 				}
 			}
-			if (!pUpClientStruct->m_DoneBlocks_list.IsEmpty()) {
-				block = pUpClientStruct->m_DoneBlocks_list.GetHead();
+			if (!pUpClientStruct->completedBlocks.IsEmpty()) {
+				block = pUpClientStruct->completedBlocks.GetHead();
 				if (block) {
 					uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
 					s_UpStatusBar.FillRange(start, start + PARTSIZE, crNextSending);
 				}
-				for (POSITION pos = pUpClientStruct->m_DoneBlocks_list.GetHeadPosition();pos != 0;) {
-					block = pUpClientStruct->m_DoneBlocks_list.GetNext(pos);
+				for (POSITION pos = pUpClientStruct->completedBlocks.GetHeadPosition();pos != 0;) {
+					block = pUpClientStruct->completedBlocks.GetNext(pos);
 					s_UpStatusBar.FillRange(block->StartOffset, block->EndOffset + 1, crSending);
 				}
 			}
@@ -266,14 +266,14 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			return;
 		}
 
-		UploadingToClient_Struct *pUploadingClientStruct = theApp.uploadqueue->GetUploadingClientStructByClient(this);
+		const UploadSessionPtr pUploadingClientStruct = theApp.uploadqueue->GetUploadSession(this);
 		if (pUploadingClientStruct == NULL) {
 			DebugLogError(_T("AddReqBlock: Uploading client not found in Uploadlist, %s, %s"), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
 			delete reqblock;
 			return;
 		}
 
-		if (pUploadingClientStruct->m_bIOError) {
+		if (pUploadingClientStruct->ioError) {
 			DebugLogWarning(_T("AddReqBlock: Uploading client has pending IO Error, %s, %s"), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)srcfile->GetFileName());
 			delete reqblock;
 			return;
@@ -297,15 +297,15 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 			return;
 		}
 
-		CSingleLock lockBlockLists(&pUploadingClientStruct->m_csBlockListsLock, TRUE);
+		CSingleLock lockBlockLists(&pUploadingClientStruct->blockListsLock, TRUE);
 		if (!lockBlockLists.IsLocked()) {
 			ASSERT(0);
 			delete reqblock;
 			return;
 		}
 
-		for (POSITION pos = pUploadingClientStruct->m_DoneBlocks_list.GetHeadPosition(); pos != NULL;) {
-			const Requested_Block_Struct *cur_reqblock = pUploadingClientStruct->m_DoneBlocks_list.GetNext(pos);
+		for (POSITION pos = pUploadingClientStruct->completedBlocks.GetHeadPosition(); pos != NULL;) {
+			const Requested_Block_Struct *cur_reqblock = pUploadingClientStruct->completedBlocks.GetNext(pos);
 			if (reqblock->StartOffset == cur_reqblock->StartOffset
 				&& reqblock->EndOffset == cur_reqblock->EndOffset
 				&& md4equ(reqblock->FileID, cur_reqblock->FileID))
@@ -314,8 +314,8 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 				return;
 			}
 		}
-		for (POSITION pos = pUploadingClientStruct->m_BlockRequests_queue.GetHeadPosition(); pos != NULL;) {
-			const Requested_Block_Struct *cur_reqblock = pUploadingClientStruct->m_BlockRequests_queue.GetNext(pos);
+		for (POSITION pos = pUploadingClientStruct->blockRequests.GetHeadPosition(); pos != NULL;) {
+			const Requested_Block_Struct *cur_reqblock = pUploadingClientStruct->blockRequests.GetNext(pos);
 			if (reqblock->StartOffset == cur_reqblock->StartOffset
 				&& reqblock->EndOffset == cur_reqblock->EndOffset
 				&& md4equ(reqblock->FileID, cur_reqblock->FileID))
@@ -324,8 +324,8 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 				return;
 			}
 		}
-		pUploadingClientStruct->m_BlockRequests_queue.AddTail(reqblock);
-		dbgLastQueueCount = pUploadingClientStruct->m_BlockRequests_queue.GetCount();
+		pUploadingClientStruct->blockRequests.AddTail(reqblock);
+		dbgLastQueueCount = pUploadingClientStruct->blockRequests.GetCount();
 		lockBlockLists.Unlock(); // not needed, just to make it visible
 	}
 	if (bSignalIOThread && theApp.m_pUploadDiskIOThread != NULL) {

@@ -1925,10 +1925,11 @@ CString CWebServer::_GetTransferList(const ThreadData &Data)
 	qsort_s(FilesArray.GetData(), FilesArray.GetCount(), sizeof(DownloadFiles), &_DownloadCmp, &dprm);
 
 	CArray<UploadUsers> UploadArray;
-
-	for (POSITION pos = theApp.uploadqueue->GetFirstFromUploadList(); pos != NULL;) {
+	std::vector<CUpDownClient*> activeUploadClients;
+	theApp.uploadqueue->GetActiveUploadClientsInSlotOrder(activeUploadClients);
+	for (CUpDownClient *pActiveClient : activeUploadClients) {
 		UploadUsers dUser;
-		const CUpDownClient &cur_client(*theApp.uploadqueue->GetNextFromUploadList(pos));
+		const CUpDownClient &cur_client(*pActiveClient);
 		dUser.sUserHash = md4str(cur_client.GetUserHash());
 		if (cur_client.GetUploadDatarate() > 0) {
 			dUser.sActive = _T("downloading");

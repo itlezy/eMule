@@ -96,13 +96,10 @@ UINT CUploadDiskIOThread::RunInternal()
 	{
 		m_Run = RUN_WORK;
 		//start new I/O
-		CCriticalSection *pcsUploadListRead = NULL;
-		const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
-		pcsUploadListRead->Lock();
-		for (POSITION pos = rUploadList.GetHeadPosition(); pos != NULL;)
-			StartCreateNextBlockPackage(rUploadList.GetNext(pos));
+		const std::vector<UploadSessionPtr> activeSessions = theApp.uploadqueue->GetActiveUploadSessions();
+		for (const UploadSessionPtr &session : activeSessions)
+			StartCreateNextBlockPackage(session);
 		InterlockedExchange8(&m_bNewData, 0);
-		pcsUploadListRead->Unlock();
 
 		//completed I/O
 		do {
@@ -168,19 +165,17 @@ void CUploadDiskIOThread::DissociateFile(CKnownFile *pFile)
 	}
 }
 
-void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *pUploadClientStruct)
+void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &session)
 {
-	if (pUploadClientStruct->m_bIOError || pUploadClientStruct->m_BlockRequests_queue.IsEmpty())
+	if (session == NULL || session->ioError || session->blockRequests.IsEmpty())
 		return;
-	// when calling this function we already have a lock on the uploadlist
-	// (so pUploadClientStruct and its members are safe in terms of not getting deleted/changed)
-	CUpDownClient *pClient = pUploadClientStruct->m_pClient;
+	CUpDownClient *pClient = session->client;
 	CClientReqSocket *pSock = pClient->socket;
 	if (pSock == NULL || !pSock->IsConnected())
 		return;
 
 	// now also get a lock on the Block lists
-	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
 	// See if we can do an early return.
 	// There may be no new blocks to load from disk and add to buffer, or buffer may be large enough already.
 
@@ -196,10 +191,10 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 
 	try {
 		// Get more data if currently buffered was less than nBufferLimit Bytes
-		while (!pUploadClientStruct->m_BlockRequests_queue.IsEmpty()
+		while (!session->blockRequests.IsEmpty()
 			&& (addedPayloadQueueSession <= nCurQueueSessionPayloadUp || addedPayloadQueueSession - nCurQueueSessionPayloadUp < nBufferLimit))
 		{
-			Requested_Block_Struct *currentblock = pUploadClientStruct->m_BlockRequests_queue.GetHead();
+			Requested_Block_Struct *currentblock = session->blockRequests.GetHead();
 			if (!md4equ(currentblock->FileID, pClient->GetUploadFileID())) {
 				// the UploadFileID differs. That's normally not a problem, we just switch it, but
 				// we don't want to do so in this thread for synchronization issues. So return and wait
@@ -234,7 +229,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 			*(uint64*)&pOverlappedRead->oOverlap.Offset = currentblock->StartOffset;
 			pOverlappedRead->oOverlap.hEvent = 0;
 			pOverlappedRead->pFile = pFile;
-			pOverlappedRead->pUploadClientStruct = pUploadClientStruct;
+			pOverlappedRead->pUploadSession = session;
 			pOverlappedRead->uStartOffset = currentblock->StartOffset;
 			pOverlappedRead->uEndOffset = currentblock->EndOffset;
 			pOverlappedRead->pBuffer = new byte[(size_t)uTogo];
@@ -258,7 +253,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 
 			addedPayloadQueueSession += uTogo;
 			pClient->SetQueueSessionUploadAdded(addedPayloadQueueSession);
-			pUploadClientStruct->m_DoneBlocks_list.AddHead(pUploadClientStruct->m_BlockRequests_queue.RemoveHead());
+			session->completedBlocks.AddHead(session->blockRequests.RemoveHead());
 		}
 		return; //no errors
 	} catch (const CString &ex) {
@@ -267,7 +262,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 		theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to create upload package for %s%s"), pClient->GetUserName(), (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
 	}
-	pUploadClientStruct->m_bIOError = true; // will let remove this client from the list in the main thread
+	session->ioError = true; // will let remove this client from the list in the main thread
 }
 
 void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRead_Struct *pOvRead)
@@ -292,23 +287,14 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 			bReadError = true;
 		}
 		if (pKnownFile->m_hRead != INVALID_HANDLE_VALUE) { //discard data from closed files
-			UploadingToClient_Struct *pStruct = pOvRead->pUploadClientStruct;
+			const UploadSessionPtr session = pOvRead->pUploadSession;
 			DEBUG_ONLY(dbgDataReadPending -= pOvRead->uEndOffset - pOvRead->uStartOffset);
-			// check if the client struct is still in the upload list (otherwise it is a deleted pointer)
-			CCriticalSection *pcsUploadListRead = NULL;
-			const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
-			CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
-			ASSERT(lockUploadListRead.IsLocked());
-			bool bFound = (rUploadList.Find(pStruct) != NULL);
+			const bool bFound = theApp.uploadqueue->IsCurrentUploadSession(session);
 
 			// all important prechecks done, create the packets
 			if (bFound && !bReadError) {
-				// Keep the uploadlist locked while working with the client object.
-				// Instead of sending the packets immediately, we store them
-				// and send after we have released the uploadlist lock -
-				// just to be sure there is no chance of a deadlock (now or in future version, also it doesn't cost us much)
 				CPacketList packetsList;
-				CUpDownClient *pClient = pStruct->m_pClient;
+				CUpDownClient *pClient = session->client;
 				CClientReqSocket *pSocket = pClient->socket;
 				if (pSocket && pSocket->IsConnected()) {
 					// Try to use compression whenever possible (see CreatePackedPackets notes)
@@ -321,8 +307,6 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				} else
 					theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pClient->DbgGetClientInfo(true));
 
-				lockUploadListRead.Unlock();
-
 				// Send out all packets we have made. By default, our socket object is not safe
 				// to use now either, because we have no lock on itself (to make sure it is not deleted).
 				// However the way we handle sockets, they cannot get deleted directly (takes 10s),
@@ -333,10 +317,9 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 				}
 			} else { // bReadError is true
 				if (bFound)
-					pStruct->m_bIOError = true;
+					session->ioError = true;
 				else
 					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Client not found in uploadlist when reading finished; discarding block"));
-				lockUploadListRead.Unlock();
 			}
 		}
 	} else if (pKnownFile)
@@ -370,7 +353,7 @@ void CUploadDiskIOThread::CreateStandardPackets(const OverlappedRead_Struct &Ove
 	bool bIsPartFile = OverlappedRead.pFile->IsPartFile();
 	CString sDbgClientInfo;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		sDbgClientInfo = OverlappedRead.pUploadClientStruct->m_pClient->DbgGetClientInfo(true);
+		sDbgClientInfo = OverlappedRead.pUploadSession->client->DbgGetClientInfo(true);
 
 	uint32 togo = (uint32)(OverlappedRead.uEndOffset - OverlappedRead.uStartOffset);
 	CMemFile memfile((BYTE*)OverlappedRead.pBuffer, togo);
@@ -432,7 +415,7 @@ void CUploadDiskIOThread::CreatePackedPackets(const OverlappedRead_Struct &Overl
 	}
 	CString sDbgClientInfo;
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		sDbgClientInfo = OverlappedRead.pUploadClientStruct->m_pClient->DbgGetClientInfo(true);
+		sDbgClientInfo = OverlappedRead.pUploadSession->client->DbgGetClientInfo(true);
 
 	CMemFile memfile(output, newsize);
 	uint32 oldSize = togo;

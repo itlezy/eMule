@@ -97,6 +97,9 @@ CUploadQueue::CUploadQueue()
 	, m_clientStates()
 	, m_waitingClients()
 	, m_waitingSnapshot(std::make_shared<WaitingQueueSnapshot>())
+	, m_uploadSessions()
+	, m_activeUploadClients()
+	, m_activeUploadSnapshot(std::make_shared<ActiveUploadSnapshot>())
 {
 	i1sec = i2sec = i5sec = i60sec = 0;
 	VERIFY((h_timer = ::SetTimer(NULL, 0, SEC2MS(1)/10, UploadTimer)) != 0);
@@ -229,6 +232,23 @@ std::shared_ptr<const CUploadQueue::WaitingQueueSnapshot> CUploadQueue::GetWaiti
 {
 	CSingleLock lock(const_cast<CCriticalSection*>(&m_csWaitingSnapshotRead), TRUE);
 	return m_waitingSnapshot;
+}
+
+void CUploadQueue::PublishActiveUploadSnapshot()
+{
+	std::shared_ptr<ActiveUploadSnapshot> snapshot = std::make_shared<ActiveUploadSnapshot>();
+	CSingleLock lock(&m_csActiveUploadState, TRUE);
+	snapshot->activeClients = m_activeUploadClients;
+	snapshot->slotNumberByClient.reserve(snapshot->activeClients.size());
+	for (size_t i = 0; i < snapshot->activeClients.size(); ++i)
+		snapshot->slotNumberByClient[snapshot->activeClients[i]] = static_cast<UINT>(i + 1);
+	m_activeUploadSnapshot = snapshot;
+}
+
+std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> CUploadQueue::GetActiveUploadSnapshot() const
+{
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csActiveUploadState), TRUE);
+	return m_activeUploadSnapshot;
 }
 
 POSITION CUploadQueue::CWaitingListCompatView::GetHeadPosition() const
@@ -511,25 +531,117 @@ bool CUploadQueue::HasWaitingMember(const CUpDownClient *client) const
 	return std::find(m_waitingClients.cbegin(), m_waitingClients.cend(), client) != m_waitingClients.cend();
 }
 
-void CUploadQueue::InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking)
+UploadSessionPtr CUploadQueue::GetUploadSession(const CUpDownClient *client) const
 {
-	UploadingToClient_Struct *pNewClientUploadStruct = new UploadingToClient_Struct;
-	pNewClientUploadStruct->m_pClient = newclient;
-	InsertInUploadingList(pNewClientUploadStruct, bNoLocking);
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csActiveUploadState), TRUE);
+	const auto it = m_uploadSessions.find(client);
+	return (it != m_uploadSessions.cend()) ? it->second : UploadSessionPtr();
 }
 
-void CUploadQueue::InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking)
+std::vector<UploadSessionPtr> CUploadQueue::GetActiveUploadSessions() const
 {
-	// Add it last
-	theApp.uploadBandwidthThrottler->AddToStandardList(uploadinglist.GetCount(), pNewClientUploadStruct->m_pClient->GetFileUploadSocket());
+	std::vector<UploadSessionPtr> sessions;
+	CSingleLock lock(const_cast<CCriticalSection*>(&m_csActiveUploadState), TRUE);
+	sessions.reserve(m_activeUploadClients.size());
+	for (CUpDownClient *client : m_activeUploadClients) {
+		const auto it = m_uploadSessions.find(client);
+		if (it != m_uploadSessions.cend())
+			sessions.push_back(it->second);
+	}
+	return sessions;
+}
 
-	if (!bNoLocking)
-		m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
-	uploadinglist.AddTail(pNewClientUploadStruct);
-	if (!bNoLocking)
-		m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();
+bool CUploadQueue::IsCurrentUploadSession(const UploadSessionPtr &session) const
+{
+	if (session == NULL || session->client == NULL)
+		return false;
+	return GetUploadSession(session->client) == session;
+}
 
-	pNewClientUploadStruct->m_pClient->SetSlotNumber((UINT)uploadinglist.GetCount());
+bool CUploadQueue::IsDownloading(const CUpDownClient *client) const
+{
+	return GetUploadSession(client) != NULL;
+}
+
+INT_PTR CUploadQueue::GetUploadQueueLength() const
+{
+	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
+	return (snapshot != NULL) ? static_cast<INT_PTR>(snapshot->activeClients.size()) : 0;
+}
+
+void CUploadQueue::GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const
+{
+	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
+	clients = (snapshot != NULL) ? snapshot->activeClients : std::vector<CUpDownClient*>();
+}
+
+bool CUploadQueue::AddActiveUploadSession(CUpDownClient *client)
+{
+	if (client == NULL)
+		return false;
+	if (GetUploadSession(client) != NULL)
+		return false;
+
+	theApp.uploadBandwidthThrottler->AddToStandardList(GetUploadQueueLength(), client->GetFileUploadSocket());
+
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		const UploadSessionPtr session = std::make_shared<UploadSession>(client);
+		m_activeUploadClients.push_back(client);
+		session->slotNumber = static_cast<UINT>(m_activeUploadClients.size());
+		client->SetSlotNumber(session->slotNumber);
+		m_uploadSessions[client] = session;
+	}
+	PublishActiveUploadSnapshot();
+	return true;
+}
+
+void CUploadQueue::ResetUploadSessionState(const UploadSessionPtr &session)
+{
+	if (session == NULL)
+		return;
+
+	session->client->FlushSendBlocks();
+
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	while (!session->blockRequests.IsEmpty())
+		delete session->blockRequests.RemoveHead();
+	while (!session->completedBlocks.IsEmpty())
+		delete session->completedBlocks.RemoveHead();
+	session->ioError = false;
+	session->disableCompression = false;
+}
+
+bool CUploadQueue::RemoveActiveUploadSession(CUpDownClient *client)
+{
+	UploadSessionPtr session;
+	UINT slotCounter = 1;
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		const auto sessionIt = m_uploadSessions.find(client);
+		if (sessionIt == m_uploadSessions.cend())
+			return false;
+
+		session = sessionIt->second;
+		m_uploadSessions.erase(sessionIt);
+
+		const auto activeIt = std::find(m_activeUploadClients.begin(), m_activeUploadClients.end(), client);
+		if (activeIt != m_activeUploadClients.end())
+			m_activeUploadClients.erase(activeIt);
+
+		for (CUpDownClient *activeClient : m_activeUploadClients) {
+			const auto it = m_uploadSessions.find(activeClient);
+			if (it != m_uploadSessions.cend())
+				it->second->slotNumber = slotCounter;
+			activeClient->SetSlotNumber(slotCounter);
+			++slotCounter;
+		}
+	}
+
+	PublishActiveUploadSnapshot();
+	ResetUploadSessionState(session);
+	theApp.uploadBandwidthThrottler->RemoveFromStandardList(client->socket);
+	return true;
 }
 
 bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszReason, bool bRemoveFromWaitingQueue)
@@ -567,7 +679,10 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 	newclient->ClearSlowUploadCooldown();
 	newclient->ResetSlowUploadTracking();
 
-	InsertInUploadingList(newclient, false);
+	if (!AddActiveUploadSession(newclient)) {
+		ClearUploadSlotPhase(newclient);
+		return false;
+	}
 
 	m_nLastStartUpload = ::GetTickCount64();
 
@@ -610,11 +725,11 @@ void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 	// Save number of active clients for statistics
 	INT_PTR tempHighest = theApp.uploadBandwidthThrottler->GetHighestNumberOfFullyActivatedSlotsSinceLastCallAndReset();
 
-	//if(thePrefs.GetLogUlDlEvents() && theApp.uploadBandwidthThrottler->GetStandardListSize() > uploadinglist.GetCount())
+	//if(thePrefs.GetLogUlDlEvents() && theApp.uploadBandwidthThrottler->GetStandardListSize() > GetUploadQueueLength())
 		// debug info, will remove this when I'm done.
-	//	AddDebugLogLine(false, _T("UploadQueue: Error! Throttler has more slots than UploadQueue! Throttler: %i UploadQueue: %i Tick: %i"), theApp.uploadBandwidthThrottler->GetStandardListSize(), uploadinglist.GetCount(), ::GetTickCount64());
+	//	AddDebugLogLine(false, _T("UploadQueue: Error! Throttler has more slots than UploadQueue! Throttler: %i UploadQueue: %i Tick: %i"), theApp.uploadBandwidthThrottler->GetStandardListSize(), GetUploadQueueLength(), ::GetTickCount64());
 
-	tempHighest = min(tempHighest, uploadinglist.GetCount() + 1);
+	tempHighest = min(tempHighest, GetUploadQueueLength() + 1);
 	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = tempHighest;
 
 	// save some data about the number of fully active clients
@@ -649,7 +764,7 @@ void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 CUploadQueue::UploadSchedulingSnapshot CUploadQueue::CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const
 {
 	UploadSchedulingSnapshot snapshot;
-	snapshot.uploadSlots = uploadinglist.GetCount();
+	snapshot.uploadSlots = GetUploadQueueLength();
 	snapshot.softMaxUploadSlots = GetSoftMaxUploadSlots();
 	snapshot.highestFullyActivatedSlots = m_iHighestNumberOfFullyActivatedSlotsSinceLastCall;
 	snapshot.budgetBytesPerSec = GetEffectiveUploadBudgetBytesPerSec();
@@ -679,10 +794,8 @@ void CUploadQueue::Process()
 		StartNextUpload(_T("Not enough open upload slots for the current speed"));
 
 	// The loop that feeds the upload slots with data.
-	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
-		// Get the client. Note! Also updates pos as a side effect.
-		UploadingToClient_Struct *pCurClientStruct = uploadinglist.GetNext(pos);
-		CUpDownClient *cur_client = pCurClientStruct->m_pClient;
+	for (const UploadSessionPtr &session : GetActiveUploadSessions()) {
+		CUpDownClient *cur_client = session->client;
 		if (thePrefs.m_iDbgHeap >= 2)
 			ASSERT_VALID(cur_client);
 		//It seems chatting or friend slots can get stuck at times in upload. This needs to be looked into.
@@ -692,7 +805,7 @@ void CUploadQueue::Process()
 				delete cur_client;
 		} else {
 			cur_client->UpdateUploadingStatisticsData();
-			if (pCurClientStruct->m_bIOError) {
+			if (session->ioError) {
 				HandleUploadSlotTeardown(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), false, true);
 				continue;
 			}
@@ -712,13 +825,13 @@ void CUploadQueue::Process()
 
 			// check if the file id of the topmost block request matches the current upload file, otherwise
 			// the IO thread will wait for us (only for this client of course) to fix it for cross-thread sync reasons
-			CSingleLock lockBlockLists(&pCurClientStruct->m_csBlockListsLock, TRUE);
+			CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
 			ASSERT(lockBlockLists.IsLocked());
 			// be careful what functions to call while having locks, RemoveFromUploadQueue could,
-			// for example, lead to a deadlock here because it tries to get the uploadlist lock,
-			// while the IO thread tries to fetch the uploadlist lock and then the blocklist lock
-			if (!pCurClientStruct->m_BlockRequests_queue.IsEmpty()) {
-				const Requested_Block_Struct *pHeadBlock = pCurClientStruct->m_BlockRequests_queue.GetHead();
+			// for example, lead to a deadlock here because it can remove the upload session,
+			// while the IO thread is enumerating sessions and then taking the blocklist lock
+			if (!session->blockRequests.IsEmpty()) {
+				const Requested_Block_Struct *pHeadBlock = session->blockRequests.GetHead();
 				if (!md4equ(pHeadBlock->FileID, cur_client->GetUploadFileID())) {
 					uchar aucNewID[MDX_DIGEST_SIZE];
 					md4cpy(aucNewID, pHeadBlock->FileID);
@@ -948,58 +1061,51 @@ bool CUploadQueue::HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszRe
 bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReason, bool updatewindow, bool earlyabort)
 {
 	SetUploadSlotPhase(client, EUploadSlotPhase::Retiring);
-	bool result = false;
-	uint32 slotCounter = 1;
-	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
-		POSITION curPos = pos;
-		UploadingToClient_Struct *curClientStruct = uploadinglist.GetNext(pos);
-		if (client == curClientStruct->m_pClient) {
-			if (updatewindow)
-				theApp.emuledlg->transferwnd->GetUploadList()->RemoveClient(client);
-
-			if (thePrefs.GetLogUlDlEvents()) {
-				AddDebugLogLine(DLP_DEFAULT, true, _T("Removing client from upload list: %s Client: %s Transferred: %s SessionUp: %s QueueSessionPayload: %s In buffer: %s Req blocks: %i File: %s")
-					, pszReason == NULL ? _T("") : pszReason
-					, (LPCTSTR)client->DbgGetClientInfo()
-					, (LPCTSTR)CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1))
-					, (LPCTSTR)CastItoXBytes(client->GetSessionUp())
-					, (LPCTSTR)CastItoXBytes(client->GetQueueSessionPayloadUp())
-					, (LPCTSTR)CastItoXBytes(client->GetPayloadInBuffer()), curClientStruct->m_BlockRequests_queue.GetCount()
-					, theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) ? (LPCTSTR)theApp.sharedfiles->GetFileByID(client->GetUploadFileID())->GetFileName() : _T(""));
-			}
-			m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
-			uploadinglist.RemoveAt(curPos);
-			m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();
-			delete curClientStruct; // m_csBlockListsLock.Lock();
-
-			//if (thePrefs.GetLogUlDlEvents() && !theApp.uploadBandwidthThrottler->RemoveFromStandardList(client->socket))
-			//	AddDebugLogLine(false, _T("UploadQueue: Didn't find socket to delete. Address: 0x%x"), client->socket);
-			theApp.uploadBandwidthThrottler->RemoveFromStandardList(client->socket);
-
-			if (client->GetSessionUp() > 0) {
-				++successfullupcount;
-				totaluploadtime += client->GetUpStartTimeDelay() / SEC2MS(1);
-			} else
-				failedupcount += static_cast<uint32>(!earlyabort);
-
-			CKnownFile *requestedFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-			if (requestedFile != NULL)
-				requestedFile->UpdatePartsInfo();
-
-			theApp.clientlist->AddTrackClient(client); // Keep track of this client
-			ClearUploadSlotPhase(client);
-
-			m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;
-
-			result = true;
-		} else {
-			curClientStruct->m_pClient->SetSlotNumber(slotCounter);
-			++slotCounter;
-		}
-	}
-	if (!result)
+	const UploadSessionPtr session = GetUploadSession(client);
+	if (session == NULL) {
 		ClearUploadSlotPhase(client);
-	return result;
+		return false;
+	}
+
+	if (updatewindow)
+		theApp.emuledlg->transferwnd->GetUploadList()->RemoveClient(client);
+
+	int pendingBlocks = 0;
+	{
+		CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+		pendingBlocks = static_cast<int>(session->blockRequests.GetCount());
+	}
+
+	if (thePrefs.GetLogUlDlEvents()) {
+		AddDebugLogLine(DLP_DEFAULT, true, _T("Removing client from upload list: %s Client: %s Transferred: %s SessionUp: %s QueueSessionPayload: %s In buffer: %s Req blocks: %i File: %s")
+			, pszReason == NULL ? _T("") : pszReason
+			, (LPCTSTR)client->DbgGetClientInfo()
+			, (LPCTSTR)CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1))
+			, (LPCTSTR)CastItoXBytes(client->GetSessionUp())
+			, (LPCTSTR)CastItoXBytes(client->GetQueueSessionPayloadUp())
+			, (LPCTSTR)CastItoXBytes(client->GetPayloadInBuffer()), pendingBlocks
+			, theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) ? (LPCTSTR)theApp.sharedfiles->GetFileByID(client->GetUploadFileID())->GetFileName() : _T(""));
+	}
+
+	if (!RemoveActiveUploadSession(client)) {
+		ClearUploadSlotPhase(client);
+		return false;
+	}
+
+	if (client->GetSessionUp() > 0) {
+		++successfullupcount;
+		totaluploadtime += client->GetUpStartTimeDelay() / SEC2MS(1);
+	} else
+		failedupcount += static_cast<uint32>(!earlyabort);
+
+	CKnownFile *requestedFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+	if (requestedFile != NULL)
+		requestedFile->UpdatePartsInfo();
+
+	theApp.clientlist->AddTrackClient(client); // Keep track of this client
+	ClearUploadSlotPhase(client);
+	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;
+	return true;
 }
 
 uint32 CUploadQueue::GetAverageUpTime() const
@@ -1125,13 +1231,17 @@ void CUploadQueue::DeleteAll()
 	}
 	m_waitingClients.clear();
 	PublishWaitingSnapshot();
-	m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
-	while (!uploadinglist.IsEmpty()) {
-		UploadingToClient_Struct *uploading = uploadinglist.RemoveHead();
-		ClearUploadSlotPhase(uploading->m_pClient);
-		delete uploading;
+
+	{
+		CSingleLock lock(&m_csActiveUploadState, TRUE);
+		for (const auto &entry : m_uploadSessions) {
+			ClearUploadSlotPhase(const_cast<CUpDownClient*>(entry.first));
+			ResetUploadSessionState(entry.second);
+		}
+		m_uploadSessions.clear();
+		m_activeUploadClients.clear();
 	}
-	m_csUploadListMainThrdWriteOtherThrdsRead.Unlock();
+	PublishActiveUploadSnapshot();
 	m_clientStates.clear();
 	// PENDING: Remove from UploadBandwidthThrottler as well!
 }
@@ -1330,8 +1440,10 @@ uint32 CUploadQueue::GetWaitingUserForFileCount(const CSimpleArray<CObject*> &ra
 uint32 CUploadQueue::GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const
 {
 	uint32 nResult = 0;
-	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
-		const CUpDownClient *cur_client = uploadinglist.GetNext(pos)->m_pClient;
+	const std::shared_ptr<const ActiveUploadSnapshot> snapshot = GetActiveUploadSnapshot();
+	if (snapshot == NULL)
+		return 0;
+	for (const CUpDownClient *cur_client : snapshot->activeClients) {
 		for (int i = raFiles.GetSize(); --i >= 0;)
 			if (md4equ(static_cast<CKnownFile*>(raFiles[i])->GetFileHash(), cur_client->GetUploadFileID()))
 				nResult += cur_client->GetUploadDatarate();
@@ -1339,34 +1451,13 @@ uint32 CUploadQueue::GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) c
 	return nResult;
 }
 
-const CUploadingPtrList& CUploadQueue::GetUploadListTS(CCriticalSection **outUploadListReadLock)
+UploadSession::~UploadSession()
 {
-	ASSERT(*outUploadListReadLock == NULL);
-	*outUploadListReadLock = &m_csUploadListMainThrdWriteOtherThrdsRead;
-	return uploadinglist;
-}
+	blockListsLock.Lock();
+	while (!blockRequests.IsEmpty())
+		delete blockRequests.RemoveHead();
 
-UploadingToClient_Struct* CUploadQueue::GetUploadingClientStructByClient(const CUpDownClient *pClient) const
-{
-	//TODO: Check if this function is too slow for its usage (esp. when rendering the GUI bars)
-	//		if necessary we will have to speed it up with an additional map
-	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
-		UploadingToClient_Struct *pCurClientStruct = uploadinglist.GetNext(pos);
-		if (pCurClientStruct->m_pClient == pClient)
-			return pCurClientStruct;
-	}
-	return NULL;
-}
-
-UploadingToClient_Struct::~UploadingToClient_Struct()
-{
-	m_pClient->FlushSendBlocks();
-
-	m_csBlockListsLock.Lock();
-	while (!m_BlockRequests_queue.IsEmpty())
-		delete m_BlockRequests_queue.RemoveHead();
-
-	while (!m_DoneBlocks_list.IsEmpty())
-		delete m_DoneBlocks_list.RemoveHead();
-	m_csBlockListsLock.Unlock();
+	while (!completedBlocks.IsEmpty())
+		delete completedBlocks.RemoveHead();
+	blockListsLock.Unlock();
 }

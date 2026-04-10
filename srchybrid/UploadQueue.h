@@ -25,24 +25,26 @@ class CUpDownClient;
 class CKnownFile;
 typedef CTypedPtrList<CPtrList, CUpDownClient*> CUpDownClientPtrList;
 
-struct UploadingToClient_Struct
+struct UploadSession
 {
-	UploadingToClient_Struct()
-		: m_pClient()
-		, m_bIOError()
-		, m_bDisableCompression()
+	explicit UploadSession(CUpDownClient *client = NULL)
+		: client(client)
+		, ioError()
+		, disableCompression()
+		, slotNumber()
 	{
 	}
-	~UploadingToClient_Struct();
+	~UploadSession();
 
-	CUpDownClient										*m_pClient;
-	CTypedPtrList<CPtrList, Requested_Block_Struct*>	m_BlockRequests_queue;
-	CTypedPtrList<CPtrList, Requested_Block_Struct*>	m_DoneBlocks_list;
-	CCriticalSection									m_csBlockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
-	bool												m_bIOError;
-	bool												m_bDisableCompression;
+	CUpDownClient										*client;
+	CTypedPtrList<CPtrList, Requested_Block_Struct*>	blockRequests;
+	CTypedPtrList<CPtrList, Requested_Block_Struct*>	completedBlocks;
+	CCriticalSection									blockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
+	bool												ioError;
+	bool												disableCompression;
+	UINT												slotNumber;
 };
-typedef CTypedPtrList<CPtrList, UploadingToClient_Struct*> CUploadingPtrList;
+typedef std::shared_ptr<UploadSession> UploadSessionPtr;
 
 typedef struct
 {
@@ -82,37 +84,32 @@ public:
 
 	CUploadQueue();
 	~CUploadQueue();
+	CUploadQueue(const CUploadQueue&) = delete;
+	CUploadQueue& operator=(const CUploadQueue&) = delete;
 
 	void	Process();
 	void	AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit = false);
 	bool	HandleUploadSlotTeardown(CUpDownClient *client, LPCTSTR pszReason = NULL, bool removeWaiting = false, bool updatewindow = true, bool earlyabort = false);
 	bool	IsOnUploadQueue(CUpDownClient *client)	const	{ return IsClientWaitingForUpload(client); }
-	bool	IsDownloading(const CUpDownClient *client)	const { return (GetUploadingClientStructByClient(client) != NULL); }
+	bool	IsDownloading(const CUpDownClient *client)	const;
 
 	void	UpdateDatarates();
 	uint32	GetDatarate() const								{ return datarate; }
 	uint32  GetToNetworkDatarate() const;
 
 	INT_PTR	GetWaitingUserCount() const;
-	INT_PTR	GetUploadQueueLength() const					{ return uploadinglist.GetCount(); }
+	INT_PTR	GetUploadQueueLength() const;
 	INT_PTR	GetActiveUploadsCount()	const					{ return m_MaxActiveClientsShortTime; }
 	uint32	GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged);
 	uint32	GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const;
 	uint32	GetTargetClientDataRate(bool bMinDatarate) const;
 
-	POSITION GetFirstFromUploadList() const					{ return uploadinglist.GetHeadPosition(); }
-	CUpDownClient* GetNextFromUploadList(POSITION &curpos) const { return static_cast<UploadingToClient_Struct*>(uploadinglist.GetNext(curpos))->m_pClient; }
-	CUpDownClient* GetQueueClientAt(POSITION &curpos) const	{ return static_cast<UploadingToClient_Struct*>(uploadinglist.GetAt(curpos))->m_pClient; }
-
 	CUpDownClient* GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs = NULL);
 	CUpDownClient* GetWaitingClientByIP(uint32 dwIP) const;
 	void	GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients);
+	void	GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const;
 	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;
 	float	GetWaitingClientCreditFactor(const CUpDownClient *client) const;
-
-	UploadingToClient_Struct* GetUploadingClientStructByClient(const CUpDownClient *pClient) const;
-
-	const CUploadingPtrList& GetUploadListTS(CCriticalSection **outUploadListReadLock);
 
 	void	DeleteAll();
 	UINT	GetWaitingPosition(const CUpDownClient *client);
@@ -188,6 +185,12 @@ private:
 		std::unordered_map<const CUpDownClient*, UINT> positionByClient;
 	};
 
+	struct ActiveUploadSnapshot
+	{
+		std::vector<CUpDownClient*> activeClients;
+		std::unordered_map<const CUpDownClient*, UINT> slotNumberByClient;
+	};
+
 	/** Returns true if the client can immediately take an upload slot. */
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
@@ -201,6 +204,8 @@ private:
 	void	PurgeStaleWaitingClients(ULONGLONG curTick);
 	void	PublishWaitingSnapshot();
 	std::shared_ptr<const WaitingQueueSnapshot> GetWaitingSnapshot() const;
+	void	PublishActiveUploadSnapshot();
+	std::shared_ptr<const ActiveUploadSnapshot> GetActiveUploadSnapshot() const;
 	CUpDownClient* SelectNextWaitingClient();
 	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL);
 	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);
@@ -213,6 +218,12 @@ private:
 	bool	TryActivateQueueCandidateImmediately(CUpDownClient *client);
 	INT_PTR	GetWaitingMemberCount() const					{ return static_cast<INT_PTR>(m_waitingClients.size()); }
 	bool	HasWaitingMember(const CUpDownClient *client) const;
+	UploadSessionPtr GetUploadSession(const CUpDownClient *client) const;
+	std::vector<UploadSessionPtr> GetActiveUploadSessions() const;
+	bool	IsCurrentUploadSession(const UploadSessionPtr &session) const;
+	bool	AddActiveUploadSession(CUpDownClient *client);
+	void	ResetUploadSessionState(const UploadSessionPtr &session);
+	bool	RemoveActiveUploadSession(CUpDownClient *client);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
@@ -237,17 +248,8 @@ private:
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
 	bool	RemoveWaitingClientAt(size_t index, bool updatewindow);
-
-	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
-	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
-
-	CUploadingPtrList	uploadinglist;
-	// This lock ensures that only the main thread writes the uploading list,
-	// other threads need to fetch the lock if they want to read (but are not allowed to write).
-	// Don't acquire other locks while having this one in any thread
-	// other than UploadDiskIOThread or make sure deadlocks are impossible
-	CCriticalSection	m_csUploadListMainThrdWriteOtherThrdsRead;
 	CCriticalSection	m_csWaitingSnapshotRead;
+	CCriticalSection	m_csActiveUploadState;
 
 	// By BadWolf - Accurate Speed Measurement
 	CRing<AverageUploadRate> average_ur_hist;
@@ -275,4 +277,10 @@ private:
 	std::unordered_map<const CUpDownClient*, UploadQueueClientState> m_clientStates;
 	std::vector<CUpDownClient*> m_waitingClients;
 	std::shared_ptr<const WaitingQueueSnapshot> m_waitingSnapshot;
+	std::unordered_map<const CUpDownClient*, UploadSessionPtr> m_uploadSessions;
+	std::vector<CUpDownClient*> m_activeUploadClients;
+	std::shared_ptr<const ActiveUploadSnapshot> m_activeUploadSnapshot;
+
+	friend class CUpDownClient;
+	friend class CUploadDiskIOThread;
 };
