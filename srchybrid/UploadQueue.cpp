@@ -611,11 +611,7 @@ bool CUploadQueue::TryAcceptActiveUploadRequest(CUpDownClient *client) const
 	if (!IsDownloading(client))
 		return false;
 
-	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		DebugSend("OP_AcceptUploadReq", client);
-	Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
-	theStats.AddUpDataOverheadFileRequest(packet->size);
-	client->SendPacket(packet);
+	SendAcceptUploadRequestPacket(client);
 	return true;
 }
 
@@ -648,12 +644,7 @@ bool CUploadQueue::RequeueClientAfterUploadSession(CUpDownClient *client)
 	if (client == NULL)
 		return false;
 
-	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		DebugSend("OP_OutOfPartReqs", client);
-	Packet *pPacket = new Packet(OP_OUTOFPARTREQS, 0);
-	theStats.AddUpDataOverheadFileRequest(pPacket->size);
-	client->SendPacket(pPacket);
-	client->m_fSentOutOfPartReqs = 1;
+	SendOutOfPartReqsPacket(client);
 	client->SetWaitStartTime();
 	return AdmitClientToQueue(client, _T("Requeued after upload slot rotation."));
 }
@@ -1051,6 +1042,78 @@ void CUploadQueue::NotifyActiveUploadRemoved(CUpDownClient *client) const
 	theApp.emuledlg->transferwnd->GetUploadList()->RemoveClient(client);
 }
 
+void CUploadQueue::SendAcceptUploadRequestPacket(CUpDownClient *client) const
+{
+	if (thePrefs.GetDebugClientTCPLevel() > 0)
+		DebugSend("OP_AcceptUploadReq", client);
+	Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
+	theStats.AddUpDataOverheadFileRequest(packet->size);
+	client->SendPacket(packet);
+}
+
+void CUploadQueue::SendOutOfPartReqsPacket(CUpDownClient *client) const
+{
+	if (thePrefs.GetDebugClientTCPLevel() > 0)
+		DebugSend("OP_OutOfPartReqs", client);
+	Packet *packet = new Packet(OP_OUTOFPARTREQS, 0);
+	theStats.AddUpDataOverheadFileRequest(packet->size);
+	client->SendPacket(packet);
+	client->m_fSentOutOfPartReqs = 1;
+}
+
+void CUploadQueue::BeginUploadSessionBookkeeping(CUpDownClient *client) const
+{
+	client->SetUpStartTime();
+	client->ResetSessionUp();
+	client->ClearSlowUploadCooldown();
+	client->ResetSlowUploadTracking();
+
+	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)client->GetUploadFileID());
+	if (reqfile != NULL)
+		reqfile->statistic.AddAccepted();
+}
+
+void CUploadQueue::FinalizeUploadSessionBookkeeping(CUpDownClient *client, bool earlyabort)
+{
+	if (client->GetSessionUp() > 0) {
+		++successfullupcount;
+		totaluploadtime += client->GetUpStartTimeDelay() / SEC2MS(1);
+	} else {
+		failedupcount += static_cast<uint32>(!earlyabort);
+	}
+
+	CKnownFile *requestedFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+	if (requestedFile != NULL)
+		requestedFile->UpdatePartsInfo();
+
+	theApp.clientlist->AddTrackClient(client);
+}
+
+bool CUploadQueue::ValidateActiveUploadHeadBlock(CUpDownClient *client, const UploadSessionPtr &session)
+{
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	ASSERT(lockBlockLists.IsLocked());
+	if (session->blockRequests.IsEmpty())
+		return true;
+
+	const Requested_Block_Struct *headBlock = session->blockRequests.GetHead();
+	if (headBlock == NULL || md4equ(headBlock->FileID, client->GetUploadFileID()))
+		return true;
+
+	uchar requestedFileId[MDX_DIGEST_SIZE];
+	md4cpy(requestedFileId, headBlock->FileID);
+	lockBlockLists.Unlock();
+
+	CKnownFile *currentUploadFile = theApp.sharedfiles->GetFileByID(requestedFileId);
+	if (currentUploadFile != NULL) {
+		client->SetUploadFileID(currentUploadFile);
+		return true;
+	}
+
+	HandleUploadSlotTeardown(client, _T("Requested FileID in block request not found in shared files"), false, true);
+	return false;
+}
+
 bool CUploadQueue::DetachActiveUploadSession(CUpDownClient *client, UploadSessionPtr &session)
 {
 	session.reset();
@@ -1101,10 +1164,7 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 			return false;
 		}
 	}
-	newclient->SetUpStartTime();
-	newclient->ResetSessionUp();
-	newclient->ClearSlowUploadCooldown();
-	newclient->ResetSlowUploadTracking();
+	BeginUploadSessionBookkeeping(newclient);
 
 	if (!AttachActiveUploadSession(newclient)) {
 		ClearClientQueueState(newclient);
@@ -1114,12 +1174,6 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 	FlushDirtySnapshots();
 
 	m_nLastStartUpload = ::GetTickCount64();
-
-	// statistic
-	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)newclient->GetUploadFileID());
-	if (reqfile)
-		reqfile->statistic.AddAccepted();
-
 	NotifyActiveUploadAdded(newclient);
 
 	return true;
@@ -1143,11 +1197,7 @@ bool CUploadQueue::CompleteUploadActivation(CUpDownClient *client)
 		return false;
 	FlushDirtySnapshots();
 
-	if (thePrefs.GetDebugClientTCPLevel() > 0)
-		DebugSend("OP_AcceptUploadReq", client);
-	Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
-	theStats.AddUpDataOverheadFileRequest(packet->size);
-	client->SendPacket(packet);
+	SendAcceptUploadRequestPacket(client);
 	return true;
 }
 
@@ -1250,28 +1300,7 @@ void CUploadQueue::Process()
 					sock->UseBigSendBuffer();
 			}
 
-			// check if the file id of the topmost block request matches the current upload file, otherwise
-			// the IO thread will wait for us (only for this client of course) to fix it for cross-thread sync reasons
-			CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
-			ASSERT(lockBlockLists.IsLocked());
-			// be careful what functions to call while having locks, RemoveFromUploadQueue could,
-			// for example, lead to a deadlock here because it can remove the upload session,
-			// while the IO thread is enumerating sessions and then taking the blocklist lock
-			if (!session->blockRequests.IsEmpty()) {
-				const Requested_Block_Struct *pHeadBlock = session->blockRequests.GetHead();
-				if (!md4equ(pHeadBlock->FileID, cur_client->GetUploadFileID())) {
-					uchar aucNewID[MDX_DIGEST_SIZE];
-					md4cpy(aucNewID, pHeadBlock->FileID);
-
-					lockBlockLists.Unlock();
-
-					CKnownFile *pCurrentUploadFile = theApp.sharedfiles->GetFileByID(aucNewID);
-					if (pCurrentUploadFile != NULL)
-						cur_client->SetUploadFileID(pCurrentUploadFile);
-					else
-						HandleUploadSlotTeardown(cur_client, _T("Requested FileID in block request not found in shared files"), false, true);
-				}
-			}
+			ValidateActiveUploadHeadBlock(cur_client, session);
 		}
 	}
 
@@ -1478,17 +1507,7 @@ bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReas
 	if (fileUploadSocket != NULL)
 		theApp.uploadBandwidthThrottler->RemoveFromAllQueues(fileUploadSocket);
 
-	if (client->GetSessionUp() > 0) {
-		++successfullupcount;
-		totaluploadtime += client->GetUpStartTimeDelay() / SEC2MS(1);
-	} else
-		failedupcount += static_cast<uint32>(!earlyabort);
-
-	CKnownFile *requestedFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
-	if (requestedFile != NULL)
-		requestedFile->UpdatePartsInfo();
-
-	theApp.clientlist->AddTrackClient(client); // Keep track of this client
+	FinalizeUploadSessionBookkeeping(client, earlyabort);
 	ClearClientQueueState(client);
 	FlushDirtySnapshots();
 	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall = 0;

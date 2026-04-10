@@ -294,6 +294,11 @@ private:
 	void	NotifyWaitingClientRemoved(CUpDownClient *client) const;
 	void	NotifyActiveUploadAdded(CUpDownClient *client) const;
 	void	NotifyActiveUploadRemoved(CUpDownClient *client) const;
+	void	SendAcceptUploadRequestPacket(CUpDownClient *client) const;
+	void	SendOutOfPartReqsPacket(CUpDownClient *client) const;
+	void	BeginUploadSessionBookkeeping(CUpDownClient *client) const;
+	void	FinalizeUploadSessionBookkeeping(CUpDownClient *client, bool earlyabort);
+	bool	ValidateActiveUploadHeadBlock(CUpDownClient *client, const UploadSessionPtr &session);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
