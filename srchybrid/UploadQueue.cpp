@@ -1114,6 +1114,45 @@ bool CUploadQueue::ValidateActiveUploadHeadBlock(CUpDownClient *client, const Up
 	return false;
 }
 
+void CUploadQueue::MaybeUseBigSendBuffer(CUpDownClient *client) const
+{
+	if (client->GetUploadDatarate() <= 512 * 1024)
+		return;
+
+	CEMSocket *socket = client->GetFileUploadSocket();
+	if (socket != NULL)
+		socket->UseBigSendBuffer();
+}
+
+void CUploadQueue::ProcessActiveUploadSession(const UploadSessionPtr &session, const UploadSchedulingSnapshot &snapshot)
+{
+	CUpDownClient *client = session->client;
+	if (thePrefs.m_iDbgHeap >= 2)
+		ASSERT_VALID(client);
+
+	if (client->socket == NULL) {
+		HandleUploadSlotTeardown(client, _T("Uploading to client without socket? (CUploadQueue::Process)"));
+		if (client->Disconnected(_T("CUploadQueue::Process")))
+			delete client;
+		return;
+	}
+
+	client->UpdateUploadingStatisticsData();
+	if (HasUploadSessionIoError(session)) {
+		HandleUploadSlotTeardown(client, _T("IO/Other Error while creating data packet (see earlier log entries)"), false, true);
+		return;
+	}
+
+	const UploadSlotEndDecision endDecision = EvaluateUploadSlotEnd(client, snapshot);
+	if (endDecision.shouldEnd) {
+		EndUploadSession(client, endDecision);
+		return;
+	}
+
+	MaybeUseBigSendBuffer(client);
+	(void)ValidateActiveUploadHeadBlock(client, session);
+}
+
 bool CUploadQueue::DetachActiveUploadSession(CUpDownClient *client, UploadSessionPtr &session)
 {
 	session.reset();
@@ -1271,38 +1310,8 @@ void CUploadQueue::Process()
 		StartNextUpload(_T("Not enough open upload slots for the current speed"));
 
 	// The loop that feeds the upload slots with data.
-	for (const UploadSessionPtr &session : GetActiveUploadSessions()) {
-		CUpDownClient *cur_client = session->client;
-		if (thePrefs.m_iDbgHeap >= 2)
-			ASSERT_VALID(cur_client);
-		//It seems chatting or friend slots can get stuck at times in upload. This needs to be looked into.
-		if (cur_client->socket == NULL) {
-			HandleUploadSlotTeardown(cur_client, _T("Uploading to client without socket? (CUploadQueue::Process)"));
-			if (cur_client->Disconnected(_T("CUploadQueue::Process")))
-				delete cur_client;
-		} else {
-			cur_client->UpdateUploadingStatisticsData();
-			if (HasUploadSessionIoError(session)) {
-				HandleUploadSlotTeardown(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), false, true);
-				continue;
-			}
-			const UploadSlotEndDecision endDecision = EvaluateUploadSlotEnd(cur_client, snapshot);
-			if (endDecision.shouldEnd) {
-				EndUploadSession(cur_client, endDecision);
-				continue;
-			}
-			// Increase the sockets buffer for fast uploads (was in UpdateUploadingStatisticsData()).
-			// This should be done in the throttling thread, but the throttler
-			// does not have access to the client's download rate
-			if (cur_client->GetUploadDatarate() > 512 * 1024) {
-				CEMSocket *sock = cur_client->GetFileUploadSocket();
-				if (sock)
-					sock->UseBigSendBuffer();
-			}
-
-			ValidateActiveUploadHeadBlock(cur_client, session);
-		}
-	}
+	for (const UploadSessionPtr &session : GetActiveUploadSessions())
+		ProcessActiveUploadSession(session, snapshot);
 
 	// Save used bandwidth for speed calculations
 	(void)theApp.uploadBandwidthThrottler->GetNumberOfSentBytesOverheadSinceLastCallAndReset(); //reset only

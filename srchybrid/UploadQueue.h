@@ -299,6 +299,8 @@ private:
 	void	BeginUploadSessionBookkeeping(CUpDownClient *client) const;
 	void	FinalizeUploadSessionBookkeeping(CUpDownClient *client, bool earlyabort);
 	bool	ValidateActiveUploadHeadBlock(CUpDownClient *client, const UploadSessionPtr &session);
+	void	MaybeUseBigSendBuffer(CUpDownClient *client) const;
+	void	ProcessActiveUploadSession(const UploadSessionPtr &session, const UploadSchedulingSnapshot &snapshot);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
