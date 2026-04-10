@@ -43,6 +43,7 @@
 #include "Kademlia/Kademlia/Prefs.h"
 #include "Log.h"
 #include "collection.h"
+#include <algorithm>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -85,8 +86,6 @@ CUploadQueue::CUploadQueue()
 	, failedupcount()
 	, totaluploadtime()
 	, m_nLastStartUpload()
-	, m_dwRemovedClientByScore(::GetTickCount64())
-	, m_imaxscore()
 	, m_dwLastCalculatedAverageCombinedFilePrioAndCredit()
 	, m_fAverageCombinedFilePrioAndCredit()
 	, m_iHighestNumberOfFullyActivatedSlotsSinceLastCall()
@@ -141,13 +140,13 @@ CUpDownClient* CUploadQueue::FindBestClientInQueue()
 			uint32 cur_score = cur_client->GetScore(false);
 
 			if (cur_score > bestscore) {
-				// cur_client is more worthy than current best client that is ready to go (connected).
-				if (!cur_client->HasLowID() || (cur_client->socket && cur_client->socket->IsConnected())) {
+				// cur_client is more worthy than current best client that can take a slot immediately.
+				if (IsClientEligibleForImmediateUpload(cur_client)) {
 					// this client is a HighID or a lowID client that is ready to go (connected)
 					// and it is more worthy
 					bestscore = cur_score;
 					newclient = cur_client;
-				} else if (!cur_client->m_bAddNextConnect) {
+				} else if (cur_client->HasLowID() && !cur_client->m_bAddNextConnect && !cur_client->IsInSlowUploadCooldown()) {
 					// this client is a lowID client that is not ready to go (not connected)
 
 					// now that we know this client is not ready to go, compare it to the best not ready client
@@ -167,6 +166,12 @@ CUpDownClient* CUploadQueue::FindBestClientInQueue()
 		lowclient->m_bAddNextConnect = true;
 
 	return newclient;
+}
+
+bool CUploadQueue::IsClientEligibleForImmediateUpload(const CUpDownClient *client) const
+{
+	return !client->IsInSlowUploadCooldown()
+		&& (!client->HasLowID() || (client->socket && client->socket->IsConnected()));
 }
 
 void CUploadQueue::InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking)
@@ -192,31 +197,13 @@ void CUploadQueue::InsertInUploadingList(UploadingToClient_Struct *pNewClientUpl
 	pNewClientUploadStruct->m_pClient->SetSlotNumber((UINT)uploadinglist.GetCount());
 }
 
-bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
+bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszReason)
 {
-	CUpDownClient *newclient = directadd;
-	// select next client or use given client
-	if (newclient == NULL) {
-		newclient = FindBestClientInQueue();
-		if (newclient == NULL)
-			return false;
-	}
-	RemoveFromWaitingQueue(newclient, true);
-	theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
-
-	if (!thePrefs.TransferFullChunks())
-		UpdateMaxClientScore(); // refresh score caching, now that the highest score is removed
-
 	if (IsDownloading(newclient))
 		return false;
 
 	if (pszReason && thePrefs.GetLogUlDlEvents())
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
-
-	if (newclient->HasCollectionUploadSlot() && directadd == NULL) {
-		ASSERT(0);
-		newclient->SetCollectionUploadSlot(false);
-	}
 
 	// tell the client that we are now ready to upload
 	if (!newclient->socket || !newclient->socket->IsConnected() || !newclient->CheckHandshakeFinished()) {
@@ -248,6 +235,16 @@ bool CUploadQueue::AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd)
 	theApp.emuledlg->transferwnd->GetUploadList()->AddClient(newclient);
 
 	return true;
+}
+
+bool CUploadQueue::StartNextUpload(LPCTSTR pszReason)
+{
+	CUpDownClient *newclient = FindBestClientInQueue();
+	if (newclient == NULL)
+		return false;
+
+	RemoveFromWaitingQueue(newclient, true);
+	return ActivateUploadClient(newclient, pszReason);
 }
 
 void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
@@ -301,11 +298,12 @@ void CUploadQueue::UpdateActiveClientsInfo(ULONGLONG curTick)
 void CUploadQueue::Process()
 {
 	const ULONGLONG curTick = ::GetTickCount64();
+	const bool bThrottlerWantsMoreSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
 	UpdateActiveClientsInfo(curTick);
 
-	if (ForceNewClient())
+	if (ShouldOpenUploadSlot(false, bThrottlerWantsMoreSlots))
 		// There's not enough open uploads. Open another one.
-		AddUpNextClient(_T("Not enough open upload slots for the current speed"));
+		StartNextUpload(_T("Not enough open upload slots for the current speed"));
 
 	// The loop that feeds the upload slots with data.
 	for (POSITION pos = uploadinglist.GetHeadPosition(); pos != NULL;) {
@@ -325,12 +323,9 @@ void CUploadQueue::Process()
 				RemoveFromUploadQueue(cur_client, _T("IO/Other Error while creating data packet (see earlier log entries)"), true);
 				continue;
 			}
-			CString strRemovalReason;
-			bool bRequeue = true;
-			if (CheckForTimeOver(cur_client, &strRemovalReason, &bRequeue)) {
-				RemoveFromUploadQueue(cur_client, strRemovalReason.IsEmpty() ? _T("Completed transfer") : (LPCTSTR)strRemovalReason, true);
-				if (bRequeue)
-					cur_client->SendOutOfPartReqsAndAddToWaitingQueue();
+			const UploadSlotEndDecision endDecision = EvaluateUploadSlotEnd(cur_client, bThrottlerWantsMoreSlots);
+			if (endDecision.shouldEnd) {
+				EndUploadSession(cur_client, endDecision);
 				continue;
 			}
 			// Increase the sockets buffer for fast uploads (was in UpdateUploadingStatisticsData()).
@@ -380,7 +375,7 @@ void CUploadQueue::Process()
 	}
 };
 
-bool CUploadQueue::AcceptNewClient(bool addOnNextConnect) const
+bool CUploadQueue::CanOpenUploadSlot(bool addOnNextConnect, bool bThrottlerWantsMoreSlots) const
 {
 	INT_PTR curUploadSlots = uploadinglist.GetCount();
 
@@ -389,11 +384,10 @@ bool CUploadQueue::AcceptNewClient(bool addOnNextConnect) const
 	//to get an upload slot.
 	curUploadSlots -= static_cast<INT_PTR>(addOnNextConnect && curUploadSlots > 0);
 
-	return AcceptNewClient(curUploadSlots);
+	return CanOpenUploadSlot(curUploadSlots, bThrottlerWantsMoreSlots);
 }
 
-// check if we can allow a new client to start downloading from us
-bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
+bool CUploadQueue::CanOpenUploadSlot(INT_PTR curUploadSlots, bool bThrottlerWantsMoreSlots) const
 {
 	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
 		return true;
@@ -411,17 +405,17 @@ bool CUploadQueue::AcceptNewClient(INT_PTR curUploadSlots) const
 		return false;
 
 	const uint32 uTargetPerSlot = GetTargetClientDataRateBroadband();
-	if (GetToNetworkDatarate() + max<uint32>(uTargetPerSlot / 3, 1024u) >= uBudgetBytesPerSec)
+	if (GetToNetworkDatarate() + (std::max<uint32>)(uTargetPerSlot / 3, 1024u) >= uBudgetBytesPerSec)
 		return false;
 
-	return theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
+	return bThrottlerWantsMoreSlots;
 }
 
 uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 {
 	const uint32 uBroadbandTarget = GetTargetClientDataRateBroadband();
 	if (uBroadbandTarget > 0)
-		return bMinDatarate ? max<uint32>(3 * 1024, uBroadbandTarget * 3 / 4) : uBroadbandTarget;
+		return bMinDatarate ? (std::max<uint32>)(3 * 1024, uBroadbandTarget * 3 / 4) : uBroadbandTarget;
 
 	uint32 nOpenSlots = (uint32)GetUploadQueueLength();
 	// 3 slots or less - 3KiB/s
@@ -435,7 +429,7 @@ uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
 
-bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
+bool CUploadQueue::ShouldOpenUploadSlot(bool allowEmptyWaitingQueue, bool bThrottlerWantsMoreSlots) const
 {
 	if (!allowEmptyWaitingQueue && waitinglist.IsEmpty())
 		return false;
@@ -447,7 +441,7 @@ bool CUploadQueue::ForceNewClient(bool allowEmptyWaitingQueue)
 	if (::GetTickCount64() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
 		return false;
 
-	if (!AcceptNewClient(curUploadSlots))
+	if (!CanOpenUploadSlot(curUploadSlots, bThrottlerWantsMoreSlots))
 		return false;
 
 	if (curUploadSlots < GetSoftMaxUploadSlots())
@@ -465,7 +459,7 @@ uint32 CUploadQueue::GetEffectiveUploadBudgetBytesPerSec() const
 
 INT_PTR CUploadQueue::GetSoftMaxUploadSlots() const
 {
-	return max<INT_PTR>(MIN_UP_CLIENTS_ALLOWED, thePrefs.GetBBMaxUploadClientsAllowed());
+	return (std::max<INT_PTR>)(MIN_UP_CLIENTS_ALLOWED, thePrefs.GetBBMaxUploadClientsAllowed());
 }
 
 uint32 CUploadQueue::GetTargetClientDataRateBroadband() const
@@ -478,7 +472,7 @@ uint32 CUploadQueue::GetTargetClientDataRateBroadband() const
 	if (uBudgetBytesPerSec == 0)
 		return 0;
 
-	return max<uint32>(3 * 1024, uBudgetBytesPerSec / static_cast<uint32>(iSoftMaxSlots));
+	return (std::max<uint32>)(3 * 1024, uBudgetBytesPerSec / static_cast<uint32>(iSoftMaxSlots));
 }
 
 uint32 CUploadQueue::GetSlowUploadRateThreshold() const
@@ -487,8 +481,8 @@ uint32 CUploadQueue::GetSlowUploadRateThreshold() const
 	if (uTargetPerSlot == 0)
 		return 3 * 1024;
 
-	const float fFactor = max(0.05f, thePrefs.GetBBSlowUploadThresholdFactor());
-	return max<uint32>(1024u, static_cast<uint32>(uTargetPerSlot * fFactor));
+	const float fFactor = (std::max)(0.05f, thePrefs.GetBBSlowUploadThresholdFactor());
+	return (std::max<uint32>)(1024u, static_cast<uint32>(uTargetPerSlot * fFactor));
 }
 
 bool CUploadQueue::ShouldTrackSlowUploadSlots() const
@@ -502,7 +496,7 @@ bool CUploadQueue::ShouldTrackSlowUploadSlots() const
 	if (uBudgetBytesPerSec == 0)
 		return false;
 
-	return GetToNetworkDatarate() + max<uint32>(GetTargetClientDataRateBroadband() / 3, 1024u) < uBudgetBytesPerSec;
+	return GetToNetworkDatarate() + (std::max<uint32>)(GetTargetClientDataRateBroadband() / 3, 1024u) < uBudgetBytesPerSec;
 }
 
 CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPort, bool bIgnorePortOnUniqueIP, bool *pbMultipleIPs)
@@ -579,7 +573,8 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		POSITION pos2 = pos;
 		CUpDownClient *cur_client = waitinglist.GetNext(pos);
 		if (cur_client == client) {
-			if (client->m_bAddNextConnect && AcceptNewClient(client->m_bAddNextConnect)) {
+			const bool bThrottlerWantsMoreSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
+			if (client->m_bAddNextConnect && CanOpenUploadSlot(client->m_bAddNextConnect, bThrottlerWantsMoreSlots)) {
 				//Special care is given to lowID clients that missed their upload slot
 				//due to the saving bandwidth on callbacks.
 				if (thePrefs.GetLogUlDlEvents())
@@ -590,7 +585,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 				CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)client->GetUploadFileID());
 				if (reqfile)
 					reqfile->statistic.AddRequest();
-				AddUpNextClient(_T("Adding ****lowid when reconnecting."), client);
+				ActivateUploadClient(client, _T("Adding ****lowid when reconnecting."));
 			} else {
 				client->SendRankingInfo();
 				theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
@@ -652,8 +647,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		&& !client->IsDownloading() && client->socket != NULL && client->socket->IsConnected())
 	{
 		client->SetCollectionUploadSlot(true);
-		RemoveFromWaitingQueue(client, true);
-		AddUpNextClient(_T("Collection Priority Slot"), client);
+		ActivateUploadClient(client, _T("Collection Priority Slot"));
 		return;
 	}
 
@@ -686,25 +680,26 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		return;
 	}
 	if (client->IsInSlowUploadCooldown()) {
-		m_bStatisticsWaitingListDirty = true;
-		waitinglist.AddTail(client);
-		client->SetUploadState(US_ONUPLOADQUEUE);
-		theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client, true);
-		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
-		client->SendRankingInfo();
+		AddClientToWaitingList(client);
 		return;
 	}
-	if (waitinglist.IsEmpty() && ForceNewClient(true)) {
+	const bool bThrottlerWantsMoreSlots = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
+	if (waitinglist.IsEmpty() && ShouldOpenUploadSlot(true, bThrottlerWantsMoreSlots)) {
 		client->SetWaitStartTime();
-		AddUpNextClient(_T("Direct add with empty queue."), client);
+		ActivateUploadClient(client, _T("Direct add with empty queue."));
 	} else {
-		m_bStatisticsWaitingListDirty = true;
-		waitinglist.AddTail(client);
-		client->SetUploadState(US_ONUPLOADQUEUE);
-		theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client, true);
-		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
-		client->SendRankingInfo();
+		AddClientToWaitingList(client);
 	}
+}
+
+void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
+{
+	m_bStatisticsWaitingListDirty = true;
+	waitinglist.AddTail(client);
+	client->SetUploadState(US_ONUPLOADQUEUE);
+	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client, true);
+	theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
+	client->SendRankingInfo();
 }
 
 float CUploadQueue::GetAverageCombinedFilePrioAndCredit()
@@ -810,42 +805,64 @@ void CUploadQueue::RemoveFromWaitingQueue(POSITION pos, bool updatewindow)
 	todelete->SetUploadState(US_NONE);
 }
 
-void CUploadQueue::UpdateMaxClientScore()
+LPCTSTR CUploadQueue::GetUploadSlotEndReasonText(EUploadSlotEndReason eReason)
 {
-	m_imaxscore = 0;
-	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
-		uint32 score = waitinglist.GetNext(pos)->GetScore(true, false);
-		if (score > m_imaxscore)
-			m_imaxscore = score;
+	switch (eReason) {
+	case EUploadSlotEndReason::CollectionSlotFileSwitched:
+		return _T("Collection slot file switched");
+	case EUploadSlotEndReason::BroadbandSlowSlotRecycle:
+		return _T("Broadband slow slot recycle");
+	case EUploadSlotEndReason::BroadbandSessionTransferLimit:
+		return _T("Broadband session transfer limit");
+	case EUploadSlotEndReason::BroadbandSessionTimeLimit:
+		return _T("Broadband session time limit");
+	default:
+		return _T("Completed transfer");
 	}
 }
 
-bool CUploadQueue::CheckForTimeOver(CUpDownClient *client, CString *pstrReason, bool *pbRequeue)
+bool CUploadQueue::EndUploadSession(CUpDownClient *client, const UploadSlotEndDecision &decision)
 {
-	if (pstrReason != NULL)
-		pstrReason->Empty();
-	if (pbRequeue != NULL)
-		*pbRequeue = true;
+	if (!decision.shouldEnd)
+		return false;
+
+	if (!RemoveFromUploadQueue(client, GetUploadSlotEndReasonText(decision.reason), true))
+		return false;
+
+	if (decision.requeue)
+		client->SendOutOfPartReqsAndAddToWaitingQueue();
+
+	return true;
+}
+
+CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownClient *client, bool bThrottlerWantsMoreSlots)
+{
+	UploadSlotEndDecision decision;
 
 	//If we have nobody in the queue, do NOT remove the current uploads.
 	//This will save some bandwidth and some unneeded swapping from upload/queue/upload.
 	if (waitinglist.IsEmpty() || client->GetFriendSlot())
-		return false;
+		return decision;
+
+	const bool bShouldOpenReplacementSlot = ShouldOpenUploadSlot(false, bThrottlerWantsMoreSlots);
 
 	if (client->HasCollectionUploadSlot()) {
 		const CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(client->requpfileid);
 		if (pDownloadingFile == NULL)
-			return true;
-		if (CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) && pDownloadingFile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE)
-			return false;
-		if (thePrefs.GetLogUlDlEvents())
-			AddDebugLogLine(DLP_HIGH, false, _T("%s: Upload session ended - client with Collection Slot tried to request blocks from another file"), client->GetUserName());
-		if (pstrReason != NULL)
-			*pstrReason = _T("Collection slot file switched");
-		return true;
+			decision.shouldEnd = true;
+		else if (CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) && pDownloadingFile->GetFileSize() < (uint64)MAXPRIORITYCOLL_SIZE)
+			return decision;
+		else {
+			if (thePrefs.GetLogUlDlEvents())
+				AddDebugLogLine(DLP_HIGH, false, _T("%s: Upload session ended - client with Collection Slot tried to request blocks from another file"), client->GetUserName());
+			decision.shouldEnd = true;
+		}
+		decision.requeue = true;
+		decision.reason = EUploadSlotEndReason::CollectionSlotFileSwitched;
+		return decision;
 	}
 
-	if (!client->HasCollectionUploadSlot() && ShouldTrackSlowUploadSlots()) {
+	if (ShouldTrackSlowUploadSlots()) {
 		client->UpdateSlowUploadTracking(::GetTickCount64(), GetSlowUploadRateThreshold());
 		if (client->ShouldRecycleSlowUpload(SEC2MS(thePrefs.GetBBSlowUploadGraceSeconds()), SEC2MS(thePrefs.GetBBZeroRateGraceSeconds()))) {
 			client->SetSlowUploadCooldownUntil(::GetTickCount64() + SEC2MS(thePrefs.GetBBSlowUploadCooldownSeconds()));
@@ -855,10 +872,11 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client, CString *pstrReason, 
 				else
 					AddDebugLogLine(DLP_LOW, false, _T("%s: Upload slot recycled due to slow upload during broadband underfill."), client->GetUserName());
 			}
-			if (pstrReason != NULL)
-				*pstrReason = _T("Broadband slow slot recycle");
 			client->ResetSlowUploadTracking();
-			return true;
+			decision.shouldEnd = true;
+			decision.requeue = true;
+			decision.reason = EUploadSlotEndReason::BroadbandSlowSlotRecycle;
+			return decision;
 		}
 	} else {
 		client->ResetSlowUploadTracking();
@@ -868,25 +886,27 @@ bool CUploadQueue::CheckForTimeOver(CUpDownClient *client, CString *pstrReason, 
 	const uint64 uSessionTransferLimit = ResolveBBSessionTransferLimitBytes(pUploadingFile);
 	if (uSessionTransferLimit > 0) {
 		// Allow the client to download a specified amount per session; but keep going if no one needs this slot
-		if (client->GetQueueSessionPayloadUp() > uSessionTransferLimit && !ForceNewClient()) {
+		if (client->GetQueueSessionPayloadUp() > uSessionTransferLimit && !bShouldOpenReplacementSlot) {
 			if (thePrefs.GetLogUlDlEvents())
 				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to broadband transfer limit (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(uSessionTransferLimit));
-			if (pstrReason != NULL)
-				*pstrReason = _T("Broadband session transfer limit");
-			return true;
+			decision.shouldEnd = true;
+			decision.requeue = true;
+			decision.reason = EUploadSlotEndReason::BroadbandSessionTransferLimit;
+			return decision;
 		}
 	}
 
 	const UINT uSessionTimeLimitSeconds = thePrefs.GetBBSessionTimeLimitSeconds();
-	if (uSessionTimeLimitSeconds > 0 && client->GetUpStartTimeDelay() > SEC2MS(uSessionTimeLimitSeconds) && !ForceNewClient()) {
+	if (uSessionTimeLimitSeconds > 0 && client->GetUpStartTimeDelay() > SEC2MS(uSessionTimeLimitSeconds) && !bShouldOpenReplacementSlot) {
 		if (thePrefs.GetLogUlDlEvents())
 			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to broadband time limit %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(uSessionTimeLimitSeconds));
-		if (pstrReason != NULL)
-			*pstrReason = _T("Broadband session time limit");
-		return true;
+		decision.shouldEnd = true;
+		decision.requeue = true;
+		decision.reason = EUploadSlotEndReason::BroadbandSessionTimeLimit;
+		return decision;
 	}
 
-	return false;
+	return decision;
 }
 
 void CUploadQueue::DeleteAll()
@@ -1009,9 +1029,6 @@ VOID CALLBACK CUploadQueue::UploadTimer(HWND /*hwnd*/, UINT /*uMsg*/, UINT_PTR /
 				theApp.OnlineSig(); // Added By Bouc7
 				if (!theApp.emuledlg->IsTrayIconToFlash())
 					theApp.emuledlg->ShowTransferRate();
-
-				if (!thePrefs.TransferFullChunks())
-					theApp.uploadqueue->UpdateMaxClientScore();
 
 				// update cat-titles with downloads info only when needed
 				if (thePrefs.ShowCatTabInfos()

@@ -72,7 +72,6 @@ public:
 	uint32	GetDatarate() const								{ return datarate; }
 	uint32  GetToNetworkDatarate() const;
 
-	bool	CheckForTimeOver(CUpDownClient *client, CString *pstrReason = NULL, bool *pbRequeue = NULL);
 	INT_PTR	GetWaitingUserCount() const						{ return waitinglist.GetCount(); }
 	INT_PTR	GetUploadQueueLength() const					{ return uploadinglist.GetCount(); }
 	INT_PTR	GetActiveUploadsCount()	const					{ return m_MaxActiveClientsShortTime; }
@@ -109,21 +108,52 @@ public:
 
 protected:
 	void		RemoveFromWaitingQueue(POSITION pos, bool updatewindow);
-	bool		AcceptNewClient(bool addOnNextConnect = false) const;
-	bool		AcceptNewClient(INT_PTR curUploadSlots) const;
-	bool		ForceNewClient(bool allowEmptyWaitingQueue = false);
-	bool		AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd = NULL);
+	bool		StartNextUpload(LPCTSTR pszReason);
 
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	/** Reasons for ending an active upload slot. */
+	enum class EUploadSlotEndReason : uint8
+	{
+		None,
+		CollectionSlotFileSwitched,
+		BroadbandSlowSlotRecycle,
+		BroadbandSessionTransferLimit,
+		BroadbandSessionTimeLimit
+	};
+
+	/** Result of evaluating whether an active upload slot should end. */
+	struct UploadSlotEndDecision
+	{
+		bool					shouldEnd = false;
+		bool					requeue = false;
+		EUploadSlotEndReason	reason = EUploadSlotEndReason::None;
+	};
+
+	/** Returns true if the client can immediately take an upload slot. */
+	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
+	/** Adds a client to the waiting queue and performs the required side effects. */
+	void	AddClientToWaitingList(CUpDownClient *client);
+	/** Activates the specified client into an upload slot. */
+	bool	ActivateUploadClient(CUpDownClient *client, LPCTSTR pszReason);
+	/** Removes an active upload slot and requeues the client when requested. */
+	bool	EndUploadSession(CUpDownClient *client, const UploadSlotEndDecision &decision);
+	/** Returns true when the queue may open another upload slot. */
+	bool	CanOpenUploadSlot(bool addOnNextConnect, bool bThrottlerWantsMoreSlots) const;
+	/** Returns true when the queue may open another upload slot. */
+	bool	CanOpenUploadSlot(INT_PTR curUploadSlots, bool bThrottlerWantsMoreSlots) const;
+	/** Returns true when the scheduler should start another upload slot now. */
+	bool	ShouldOpenUploadSlot(bool allowEmptyWaitingQueue, bool bThrottlerWantsMoreSlots) const;
+	/** Evaluates whether the active upload slot should be ended. */
+	UploadSlotEndDecision EvaluateUploadSlotEnd(CUpDownClient *client, bool bThrottlerWantsMoreSlots);
+	/** Converts an upload-slot end reason into the removal log text. */
+	static LPCTSTR GetUploadSlotEndReasonText(EUploadSlotEndReason eReason);
 	uint32	GetEffectiveUploadBudgetBytesPerSec() const;
 	INT_PTR	GetSoftMaxUploadSlots() const;
 	uint32	GetTargetClientDataRateBroadband() const;
 	uint32	GetSlowUploadRateThreshold() const;
 	bool	ShouldTrackSlowUploadSlots() const;
-	void	UpdateMaxClientScore();
-	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
@@ -149,8 +179,6 @@ private:
 	uint32	failedupcount;
 	uint32	totaluploadtime;
 	ULONGLONG m_nLastStartUpload;
-	uint32	m_dwRemovedClientByScore;
-	uint32	m_imaxscore;
 
 	ULONGLONG m_dwLastCalculatedAverageCombinedFilePrioAndCredit;
 	float	m_fAverageCombinedFilePrioAndCredit;

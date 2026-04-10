@@ -174,8 +174,11 @@ int CUpDownClient::GetFilePrioAsNumber() const
 }
 
 /*
- * Gets the current waiting score for this client, taking into consideration
- * waiting time, priority of requested file, and the client's credits.
+ * Gets the ranking score for this client, taking into consideration waiting
+ * time, priority of requested file, and the client's credits.
+ *
+ * Slot eligibility such as cooldown or LowID readiness is handled by
+ * CUploadQueue and is intentionally not part of this score.
  */
 uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasevalue) const
 {
@@ -200,11 +203,7 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (IsBanned() || m_bGPLEvildoer)
 		return 0;
 
-	if (IsInSlowUploadCooldown())
-		return 0;
-
-	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
-		return 0;
+	(void)sysvalue;
 
 	// calculate score, based on waiting time and other factors
 	DWORD dwBaseValue;

@@ -179,15 +179,15 @@ protected:
 	bool m_bForceSpeedsToKB;
 
 	UINT m_uFileBufferTimeLimitSeconds;
-	UINT m_uBBMaxUploadClients;
-	UINT m_uBBSlowGraceSeconds;
-	UINT m_uBBZeroRateGraceSeconds;
-	UINT m_uBBCooldownSeconds;
-	UINT m_uBBLowRatioBonus;
-	UINT m_uBBLowIdDivisor;
-	UINT m_uBBSessionTransferPercent;
-	UINT m_uBBSessionTransferMiB;
-	UINT m_uBBSessionTimeLimitSeconds;
+	int m_iBBMaxUploadClients;
+	int m_iBBSlowGraceSeconds;
+	int m_iBBZeroRateGraceSeconds;
+	int m_iBBCooldownSeconds;
+	int m_iBBLowRatioBonus;
+	int m_iBBLowIdDivisor;
+	int m_iBBSessionTransferPercent;
+	int m_iBBSessionTransferMiB;
+	int m_iBBSessionTimeLimitSeconds;
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();

@@ -217,15 +217,15 @@ CPPgTweaks::CPPgTweaks()
 	, m_bUseSystemFontForMainControls()
 	, m_bForceSpeedsToKB()
 	, m_uFileBufferTimeLimitSeconds()
-	, m_uBBMaxUploadClients()
-	, m_uBBSlowGraceSeconds()
-	, m_uBBZeroRateGraceSeconds()
-	, m_uBBCooldownSeconds()
-	, m_uBBLowRatioBonus()
-	, m_uBBLowIdDivisor()
-	, m_uBBSessionTransferPercent()
-	, m_uBBSessionTransferMiB()
-	, m_uBBSessionTimeLimitSeconds()
+	, m_iBBMaxUploadClients()
+	, m_iBBSlowGraceSeconds()
+	, m_iBBZeroRateGraceSeconds()
+	, m_iBBCooldownSeconds()
+	, m_iBBLowRatioBonus()
+	, m_iBBLowIdDivisor()
+	, m_iBBSessionTransferPercent()
+	, m_iBBSessionTransferMiB()
+	, m_iBBSessionTimeLimitSeconds()
 {
 }
 
@@ -438,19 +438,19 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		if (m_uDownloadTimeoutSeconds < thePrefs.GetMinTimeoutSeconds())
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiDownloadTimeout);
 	}
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBMaxUploadClients, m_uBBMaxUploadClients);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBMaxUploadClients, m_iBBMaxUploadClients);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSlowThreshold, m_sBBSlowThresholdFactor);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSlowGrace, m_uBBSlowGraceSeconds);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBZeroRateGrace, m_uBBZeroRateGraceSeconds);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBCooldown, m_uBBCooldownSeconds);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSlowGrace, m_iBBSlowGraceSeconds);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBZeroRateGrace, m_iBBZeroRateGraceSeconds);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBCooldown, m_iBBCooldownSeconds);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBoost, m_bBBLowRatioBoost);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowRatioThreshold, m_sBBLowRatioThreshold);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBonus, m_uBBLowRatioBonus);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowIdDivisor, m_uBBLowIdDivisor);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowRatioBonus, m_iBBLowRatioBonus);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBLowIdDivisor, m_iBBLowIdDivisor);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiBBSessionTransfer, m_iBBSessionTransferMode);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferPercentValue, m_uBBSessionTransferPercent);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferMiBValue, m_uBBSessionTransferMiB);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTimeLimit, m_uBBSessionTimeLimitSeconds);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferPercentValue, m_iBBSessionTransferPercent);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTransferMiBValue, m_iBBSessionTransferMiB);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSessionTimeLimit, m_iBBSessionTimeLimitSeconds);
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Miscellaneous group
@@ -604,19 +604,19 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bRestoreLastLogPane = thePrefs.GetRestoreLastLogPane();
 	m_uConnectionTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetConnectionTimeout()));
 	m_uDownloadTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetDownloadTimeout()));
-	m_uBBMaxUploadClients = thePrefs.GetBBMaxUploadClientsAllowed();
+	m_iBBMaxUploadClients = static_cast<int>(thePrefs.GetBBMaxUploadClientsAllowed());
 	m_sBBSlowThresholdFactor.Format(_T("%.2f"), thePrefs.GetBBSlowUploadThresholdFactor());
-	m_uBBSlowGraceSeconds = thePrefs.GetBBSlowUploadGraceSeconds();
-	m_uBBZeroRateGraceSeconds = thePrefs.GetBBZeroRateGraceSeconds();
-	m_uBBCooldownSeconds = thePrefs.GetBBSlowUploadCooldownSeconds();
+	m_iBBSlowGraceSeconds = static_cast<int>(thePrefs.GetBBSlowUploadGraceSeconds());
+	m_iBBZeroRateGraceSeconds = static_cast<int>(thePrefs.GetBBZeroRateGraceSeconds());
+	m_iBBCooldownSeconds = static_cast<int>(thePrefs.GetBBSlowUploadCooldownSeconds());
 	m_bBBLowRatioBoost = thePrefs.IsBBLowRatioBoostEnabled();
 	m_sBBLowRatioThreshold.Format(_T("%.2f"), thePrefs.GetBBLowRatioThreshold());
-	m_uBBLowRatioBonus = thePrefs.GetBBLowRatioBonus();
-	m_uBBLowIdDivisor = thePrefs.GetBBLowIDDivisor();
+	m_iBBLowRatioBonus = static_cast<int>(thePrefs.GetBBLowRatioBonus());
+	m_iBBLowIdDivisor = static_cast<int>(thePrefs.GetBBLowIDDivisor());
 	m_iBBSessionTransferMode = thePrefs.GetBBSessionTransferMode();
-	m_uBBSessionTransferPercent = thePrefs.GetBBSessionTransferMode() == BBSTM_PERCENT_OF_FILE ? thePrefs.GetBBSessionTransferValue() : 50;
-	m_uBBSessionTransferMiB = thePrefs.GetBBSessionTransferMode() == BBSTM_ABSOLUTE_MIB ? thePrefs.GetBBSessionTransferValue() : 0;
-	m_uBBSessionTimeLimitSeconds = thePrefs.GetBBSessionTimeLimitSeconds();
+	m_iBBSessionTransferPercent = static_cast<int>(thePrefs.GetBBSessionTransferMode() == BBSTM_PERCENT_OF_FILE ? thePrefs.GetBBSessionTransferValue() : 50);
+	m_iBBSessionTransferMiB = static_cast<int>(thePrefs.GetBBSessionTransferMode() == BBSTM_ABSOLUTE_MIB ? thePrefs.GetBBSessionTransferValue() : 0);
+	m_iBBSessionTimeLimitSeconds = static_cast<int>(thePrefs.GetBBSessionTimeLimitSeconds());
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
 	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
@@ -692,18 +692,18 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.SetConnectionTimeout(thePrefs.NormalizeTimeoutSeconds(m_uConnectionTimeoutSeconds, thePrefs.GetDefaultConnectionTimeoutSeconds()));
 	thePrefs.SetDownloadTimeout(thePrefs.NormalizeTimeoutSeconds(m_uDownloadTimeoutSeconds, thePrefs.GetDefaultDownloadTimeoutSeconds()));
 	thePrefs.m_bConditionalTCPAccept = m_bConditionalTCPAccept;
-	thePrefs.SetBBMaxUploadClientsAllowed(m_uBBMaxUploadClients);
+	thePrefs.SetBBMaxUploadClientsAllowed(static_cast<UINT>(max(0, m_iBBMaxUploadClients)));
 	thePrefs.SetBBSlowUploadThresholdFactor(static_cast<float>(_tstof(m_sBBSlowThresholdFactor)));
-	thePrefs.SetBBSlowUploadGraceSeconds(m_uBBSlowGraceSeconds);
-	thePrefs.SetBBZeroRateGraceSeconds(m_uBBZeroRateGraceSeconds);
-	thePrefs.SetBBSlowUploadCooldownSeconds(m_uBBCooldownSeconds);
+	thePrefs.SetBBSlowUploadGraceSeconds(static_cast<UINT>(max(0, m_iBBSlowGraceSeconds)));
+	thePrefs.SetBBZeroRateGraceSeconds(static_cast<UINT>(max(0, m_iBBZeroRateGraceSeconds)));
+	thePrefs.SetBBSlowUploadCooldownSeconds(static_cast<UINT>(max(0, m_iBBCooldownSeconds)));
 	thePrefs.SetBBLowRatioBoostEnabled(m_bBBLowRatioBoost);
 	thePrefs.SetBBLowRatioThreshold(static_cast<float>(_tstof(m_sBBLowRatioThreshold)));
-	thePrefs.SetBBLowRatioBonus(m_uBBLowRatioBonus);
-	thePrefs.SetBBLowIDDivisor(m_uBBLowIdDivisor);
+	thePrefs.SetBBLowRatioBonus(static_cast<UINT>(max(0, m_iBBLowRatioBonus)));
+	thePrefs.SetBBLowIDDivisor(static_cast<UINT>(max(0, m_iBBLowIdDivisor)));
 	thePrefs.SetBBSessionTransferMode((EBBSessionTransferMode)m_iBBSessionTransferMode);
-	thePrefs.SetBBSessionTransferValue(m_iBBSessionTransferMode == BBSTM_ABSOLUTE_MIB ? m_uBBSessionTransferMiB : m_uBBSessionTransferPercent);
-	thePrefs.SetBBSessionTimeLimitSeconds(m_uBBSessionTimeLimitSeconds);
+	thePrefs.SetBBSessionTransferValue(static_cast<UINT>(max(0, m_iBBSessionTransferMode == BBSTM_ABSOLUTE_MIB ? m_iBBSessionTransferMiB : m_iBBSessionTransferPercent)));
+	thePrefs.SetBBSessionTimeLimitSeconds(static_cast<UINT>(max(0, m_iBBSessionTimeLimitSeconds)));
 
 	if (thePrefs.AutoTakeED2KLinks() != m_bAutoTakeEd2kLinks) {
 		thePrefs.autotakeed2klinks = m_bAutoTakeEd2kLinks;
