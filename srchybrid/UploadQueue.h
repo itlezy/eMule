@@ -187,6 +187,25 @@ private:
 		bool	throttlerWantsMoreSlots = false;
 	};
 
+	/** Decision for a new queue admission after conflict checks have completed. */
+	enum class EUploadAdmissionAction : uint8
+	{
+		Reject,
+		QueueWaiting,
+		ActivateImmediately
+	};
+
+	struct UploadAdmissionDecision
+	{
+		EUploadAdmissionAction action = EUploadAdmissionAction::Reject;
+	};
+
+	struct UploadSlotOpenDecision
+	{
+		bool	shouldOpen = false;
+		LPCTSTR reason = NULL;
+	};
+
 	/** Queue-owned phases for one client's upload slot lifecycle. */
 	enum class EUploadSlotPhase : uint8
 	{
@@ -265,8 +284,8 @@ private:
 	void	PublishWaitingSnapshot();
 	void	PublishActiveUploadSnapshot();
 	CUpDownClient* SelectNextWaitingClient();
-	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL);
-	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);
+	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL) const;
+	bool	PassesQueueAdmissionLimit(const CUpDownClient *client) const;
 	void	TrackExternalQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const;
 	void	RecordExternalQueueRequestStat(CUpDownClient *client) const;
 	uint16	GetQueuedSameIPCount(const CUpDownClient *client) const;
@@ -275,6 +294,8 @@ private:
 	void	DropQueuedDuplicateClient(CUpDownClient *client, LPCTSTR disconnectReason);
 	bool	ResolveExternalQueueConflicts(CUpDownClient *client);
 	bool	TryAcceptActiveUploadRequest(CUpDownClient *client) const;
+	UploadAdmissionDecision EvaluateQueueAdmission(const CUpDownClient *client, const UploadSchedulingSnapshot &snapshot) const;
+	bool	ExecuteQueueAdmission(CUpDownClient *client, const UploadAdmissionDecision &decision, LPCTSTR pszImmediateActivationReason);
 	bool	AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediateActivationReason);
 	bool	RequeueClientAfterUploadSession(CUpDownClient *client);
 	INT_PTR	GetWaitingMemberCount() const;
@@ -314,10 +335,19 @@ private:
 	UploadSchedulingSnapshot CaptureSchedulingSnapshot(bool throttlerWantsMoreSlots) const;
 	/** Removes an active upload slot and requeues the client when requested. */
 	bool	EndUploadSession(CUpDownClient *client, const UploadSlotEndDecision &decision);
+	/** Returns a slot-opening decision for one scheduling tick. */
+	UploadSlotOpenDecision EvaluateUploadSlotOpening(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue) const;
 	/** Returns true when the scheduler should start another upload slot now. */
 	bool	ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue) const;
 	/** Evaluates whether the active upload slot should be ended. */
 	UploadSlotEndDecision EvaluateUploadSlotEnd(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot);
+	/** Computes active-slot retention policy without mutating queue state. */
+	UploadSlotEndDecision EvaluateUploadSlotEndPolicy(const CUpDownClient *client, const UploadSchedulingSnapshot &snapshot) const;
+	void	UpdateUploadSlotEndTracking(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot);
+	void	ApplyUploadSlotEndDecisionEffects(CUpDownClient *client, const UploadSlotEndDecision &decision);
+	void	ApplySlowUploadRecycleEffects(CUpDownClient *client);
+	void	LogUploadSlotTransferLimitEnd(CUpDownClient *client) const;
+	void	LogUploadSlotTimeLimitEnd(CUpDownClient *client) const;
 	/** Converts an upload-slot end reason into the removal log text. */
 	static LPCTSTR GetUploadSlotEndReasonText(EUploadSlotEndReason eReason);
 	uint32	GetEffectiveUploadBudgetBytesPerSec() const;

@@ -486,7 +486,7 @@ CUpDownClient* CUploadQueue::SelectNextWaitingClient()
 	return NULL;
 }
 
-CUpDownClient* CUploadQueue::FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient)
+CUpDownClient* CUploadQueue::FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient) const
 {
 	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
 	if (snapshot == NULL)
@@ -498,7 +498,7 @@ CUpDownClient* CUploadQueue::FindLowestPriorityWaitingClient(const CUpDownClient
 	return NULL;
 }
 
-bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client)
+bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client) const
 {
 	const INT_PTR softQueueLimit = thePrefs.GetQueueSize();
 	const INT_PTR hardQueueLimit = softQueueLimit + max(softQueueLimit, 800) / 4;
@@ -624,6 +624,40 @@ bool CUploadQueue::TryAcceptActiveUploadRequest(CUpDownClient *client) const
 	return true;
 }
 
+CUploadQueue::UploadAdmissionDecision CUploadQueue::EvaluateQueueAdmission(const CUpDownClient *client, const UploadSchedulingSnapshot &snapshot) const
+{
+	UploadAdmissionDecision decision;
+	if (!PassesQueueAdmissionLimit(client))
+		return decision;
+	if (client->IsInSlowUploadCooldown()) {
+		decision.action = EUploadAdmissionAction::QueueWaiting;
+		return decision;
+	}
+
+	const UploadSlotOpenDecision slotOpenDecision = EvaluateUploadSlotOpening(snapshot, true);
+	if (!snapshot.hasWaitingClients && slotOpenDecision.shouldOpen) {
+		decision.action = EUploadAdmissionAction::ActivateImmediately;
+		return decision;
+	}
+
+	decision.action = EUploadAdmissionAction::QueueWaiting;
+	return decision;
+}
+
+bool CUploadQueue::ExecuteQueueAdmission(CUpDownClient *client, const UploadAdmissionDecision &decision, LPCTSTR pszImmediateActivationReason)
+{
+	switch (decision.action) {
+	case EUploadAdmissionAction::ActivateImmediately:
+		return ActivateUploadClient(client, pszImmediateActivationReason, false);
+	case EUploadAdmissionAction::QueueWaiting:
+		AddClientToWaitingList(client);
+		return true;
+	case EUploadAdmissionAction::Reject:
+	default:
+		return false;
+	}
+}
+
 bool CUploadQueue::AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediateActivationReason)
 {
 	PurgeStaleWaitingClients(::GetTickCount64());
@@ -633,19 +667,9 @@ bool CUploadQueue::AdmitClientToQueue(CUpDownClient *client, LPCTSTR pszImmediat
 
 	ClearClientQueueState(client);
 
-	if (!PassesQueueAdmissionLimit(client))
-		return false;
-	if (client->IsInSlowUploadCooldown()) {
-		AddClientToWaitingList(client);
-		return true;
-	}
-
 	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
-	if (GetWaitingMemberCount() == 0 && ShouldOpenUploadSlot(snapshot, true))
-		return ActivateUploadClient(client, pszImmediateActivationReason, false);
-
-	AddClientToWaitingList(client);
-	return true;
+	const UploadAdmissionDecision decision = EvaluateQueueAdmission(client, snapshot);
+	return ExecuteQueueAdmission(client, decision, pszImmediateActivationReason);
 }
 
 bool CUploadQueue::RequeueClientAfterUploadSession(CUpDownClient *client)
@@ -1321,9 +1345,10 @@ void CUploadQueue::Process()
 	UpdateActiveClientsInfo(curTick);
 
 	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
-	if (ShouldOpenUploadSlot(snapshot, false))
+	const UploadSlotOpenDecision slotOpenDecision = EvaluateUploadSlotOpening(snapshot, false);
+	if (slotOpenDecision.shouldOpen)
 		// There's not enough open uploads. Open another one.
-		StartNextUpload(_T("Not enough open upload slots for the current speed"));
+		StartNextUpload(slotOpenDecision.reason);
 
 	// The loop that feeds the upload slots with data.
 	for (const UploadSessionPtr &session : GetActiveUploadSessions())
@@ -1360,34 +1385,43 @@ uint32 CUploadQueue::GetTargetClientDataRate(bool bMinDatarate) const
 	return bMinDatarate ? nResult * 3 / 4 : nResult;
 }
 
-bool CUploadQueue::ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue) const
+CUploadQueue::UploadSlotOpenDecision CUploadQueue::EvaluateUploadSlotOpening(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue) const
 {
+	UploadSlotOpenDecision decision;
 	if (!allowEmptyWaitingQueue && !snapshot.hasWaitingClients)
-		return false;
+		return decision;
 
 	INT_PTR curUploadSlots = snapshot.uploadSlots;
 
 	if (curUploadSlots < MIN_UP_CLIENTS_ALLOWED)
-		return true;
+		decision.shouldOpen = true;
+	else if (::GetTickCount64() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
+		return decision;
+	else if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
+		decision.shouldOpen = true;
+	else if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
+		return decision;
+	else if (curUploadSlots < snapshot.softMaxUploadSlots)
+		decision.shouldOpen = true;
+	else if (curUploadSlots > snapshot.softMaxUploadSlots)
+		return decision;
+	else if (snapshot.budgetBytesPerSec == 0)
+		return decision;
+	else if (snapshot.toNetworkDatarate + (std::max<uint32>)(snapshot.targetPerSlot / 3, 1024u) >= snapshot.budgetBytesPerSec)
+		return decision;
+	else if (!snapshot.throttlerWantsMoreSlots)
+		return decision;
+	else
+		decision.shouldOpen = snapshot.highestFullyActivatedSlots > snapshot.uploadSlots;
 
-	if (::GetTickCount64() < m_nLastStartUpload + SEC2MS(1) && datarate < 102400)
-		return false;
+	if (decision.shouldOpen)
+		decision.reason = _T("Not enough open upload slots for the current speed");
+	return decision;
+}
 
-	if (curUploadSlots < max(MIN_UP_CLIENTS_ALLOWED, 4))
-		return true;
-	if (curUploadSlots >= MAX_UP_CLIENTS_ALLOWED)
-		return false;
-	if (curUploadSlots < snapshot.softMaxUploadSlots)
-		return true;
-	if (curUploadSlots > snapshot.softMaxUploadSlots)
-		return false;
-	if (snapshot.budgetBytesPerSec == 0)
-		return false;
-	if (snapshot.toNetworkDatarate + (std::max<uint32>)(snapshot.targetPerSlot / 3, 1024u) >= snapshot.budgetBytesPerSec)
-		return false;
-	if (!snapshot.throttlerWantsMoreSlots)
-		return false;
-	return snapshot.highestFullyActivatedSlots > snapshot.uploadSlots;
+bool CUploadQueue::ShouldOpenUploadSlot(const UploadSchedulingSnapshot &snapshot, bool allowEmptyWaitingQueue) const
+{
+	return EvaluateUploadSlotOpening(snapshot, allowEmptyWaitingQueue).shouldOpen;
 }
 
 uint32 CUploadQueue::GetEffectiveUploadBudgetBytesPerSec() const
@@ -1600,7 +1634,7 @@ bool CUploadQueue::EndUploadSession(CUpDownClient *client, const UploadSlotEndDe
 	return true;
 }
 
-CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot)
+CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEndPolicy(const CUpDownClient *client, const UploadSchedulingSnapshot &snapshot) const
 {
 	UploadSlotEndDecision decision;
 
@@ -1609,35 +1643,20 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 	if (!snapshot.hasWaitingClients)
 		return decision;
 
-	const bool bShouldOpenReplacementSlot = ShouldOpenUploadSlot(snapshot, false);
-
 	if (ShouldTrackSlowUploadSlots(snapshot)) {
-		client->UpdateSlowUploadTracking(::GetTickCount64(), GetSlowUploadRateThreshold());
 		if (client->ShouldRecycleSlowUpload(SEC2MS(thePrefs.GetBBSlowUploadGraceSeconds()), SEC2MS(thePrefs.GetBBZeroRateGraceSeconds()))) {
-			client->SetSlowUploadCooldownUntil(::GetTickCount64() + SEC2MS(thePrefs.GetBBSlowUploadCooldownSeconds()));
-			if (thePrefs.GetLogUlDlEvents()) {
-				if (client->GetAccumulatedZeroUploadMs() >= SEC2MS(thePrefs.GetBBZeroRateGraceSeconds()))
-					AddDebugLogLine(DLP_LOW, false, _T("%s: Upload slot recycled due to zero upload during broadband underfill."), client->GetUserName());
-				else
-					AddDebugLogLine(DLP_LOW, false, _T("%s: Upload slot recycled due to slow upload during broadband underfill."), client->GetUserName());
-			}
-			client->ResetSlowUploadTracking();
 			decision.shouldEnd = true;
 			decision.requeue = true;
 			decision.reason = EUploadSlotEndReason::BroadbandSlowSlotRecycle;
 			return decision;
 		}
-	} else {
-		client->ResetSlowUploadTracking();
 	}
 
+	const bool bShouldOpenReplacementSlot = EvaluateUploadSlotOpening(snapshot, false).shouldOpen;
 	const CKnownFile *pUploadingFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 	const uint64 uSessionTransferLimit = ResolveBBSessionTransferLimitBytes(pUploadingFile);
 	if (uSessionTransferLimit > 0) {
-		// Allow the client to download a specified amount per session; but keep going if no one needs this slot.
 		if (client->GetQueueSessionPayloadUp() > uSessionTransferLimit && bShouldOpenReplacementSlot) {
-			if (thePrefs.GetLogUlDlEvents())
-				AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to broadband transfer limit (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(uSessionTransferLimit));
 			decision.shouldEnd = true;
 			decision.requeue = true;
 			decision.reason = EUploadSlotEndReason::BroadbandSessionTransferLimit;
@@ -1647,14 +1666,86 @@ CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownC
 
 	const UINT uSessionTimeLimitSeconds = thePrefs.GetBBSessionTimeLimitSeconds();
 	if (uSessionTimeLimitSeconds > 0 && client->GetUpStartTimeDelay() > SEC2MS(uSessionTimeLimitSeconds) && bShouldOpenReplacementSlot) {
-		if (thePrefs.GetLogUlDlEvents())
-			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to broadband time limit %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(uSessionTimeLimitSeconds));
 		decision.shouldEnd = true;
 		decision.requeue = true;
 		decision.reason = EUploadSlotEndReason::BroadbandSessionTimeLimit;
 		return decision;
 	}
 
+	return decision;
+}
+
+void CUploadQueue::UpdateUploadSlotEndTracking(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot)
+{
+	if (ShouldTrackSlowUploadSlots(snapshot))
+		client->UpdateSlowUploadTracking(::GetTickCount64(), GetSlowUploadRateThreshold());
+	else
+		client->ResetSlowUploadTracking();
+}
+
+void CUploadQueue::ApplySlowUploadRecycleEffects(CUpDownClient *client)
+{
+	client->SetSlowUploadCooldownUntil(::GetTickCount64() + SEC2MS(thePrefs.GetBBSlowUploadCooldownSeconds()));
+	if (thePrefs.GetLogUlDlEvents()) {
+		if (client->GetAccumulatedZeroUploadMs() >= SEC2MS(thePrefs.GetBBZeroRateGraceSeconds()))
+			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload slot recycled due to zero upload during broadband underfill."), client->GetUserName());
+		else
+			AddDebugLogLine(DLP_LOW, false, _T("%s: Upload slot recycled due to slow upload during broadband underfill."), client->GetUserName());
+	}
+	client->ResetSlowUploadTracking();
+}
+
+void CUploadQueue::LogUploadSlotTransferLimitEnd(CUpDownClient *client) const
+{
+	if (!thePrefs.GetLogUlDlEvents())
+		return;
+
+	const CKnownFile *pUploadingFile = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+	const uint64 uSessionTransferLimit = ResolveBBSessionTransferLimitBytes(pUploadingFile);
+	AddDebugLogLine(DLP_DEFAULT, false, _T("%s: Upload session ended due to broadband transfer limit (%s)"), client->GetUserName(), (LPCTSTR)CastItoXBytes(uSessionTransferLimit));
+}
+
+void CUploadQueue::LogUploadSlotTimeLimitEnd(CUpDownClient *client) const
+{
+	if (!thePrefs.GetLogUlDlEvents())
+		return;
+
+	AddDebugLogLine(DLP_LOW, false, _T("%s: Upload session ended due to broadband time limit %s."), client->GetUserName(), (LPCTSTR)CastSecondsToHM(thePrefs.GetBBSessionTimeLimitSeconds()));
+}
+
+void CUploadQueue::ApplyUploadSlotEndDecisionEffects(CUpDownClient *client, const UploadSlotEndDecision &decision)
+{
+	if (!decision.shouldEnd)
+		return;
+
+	switch (decision.reason) {
+	case EUploadSlotEndReason::BroadbandSlowSlotRecycle:
+		ApplySlowUploadRecycleEffects(client);
+		break;
+	case EUploadSlotEndReason::BroadbandSessionTransferLimit:
+		LogUploadSlotTransferLimitEnd(client);
+		break;
+	case EUploadSlotEndReason::BroadbandSessionTimeLimit:
+		LogUploadSlotTimeLimitEnd(client);
+		break;
+	case EUploadSlotEndReason::None:
+	default:
+		break;
+	}
+}
+
+CUploadQueue::UploadSlotEndDecision CUploadQueue::EvaluateUploadSlotEnd(CUpDownClient *client, const UploadSchedulingSnapshot &snapshot)
+{
+	UploadSlotEndDecision decision;
+
+	//If we have nobody in the queue, do NOT remove the current uploads.
+	//This will save some bandwidth and some unneeded swapping from upload/queue/upload.
+	if (!snapshot.hasWaitingClients)
+		return decision;
+
+	UpdateUploadSlotEndTracking(client, snapshot);
+	decision = EvaluateUploadSlotEndPolicy(client, snapshot);
+	ApplyUploadSlotEndDecisionEffects(client, decision);
 	return decision;
 }
 
