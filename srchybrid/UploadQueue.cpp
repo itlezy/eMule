@@ -229,8 +229,15 @@ void CUploadQueue::PublishWaitingSnapshot()
 	for (size_t i = 0; i < snapshot->rankedClients.size(); ++i)
 		snapshot->positionByClient[snapshot->rankedClients[i]] = static_cast<UINT>(i + 1);
 
-	for (CUpDownClient *client : snapshot->memberClients)
+	for (CUpDownClient *client : snapshot->memberClients) {
 		snapshot->compatibilityMembers.AddTail(client);
+		if (client == NULL)
+			continue;
+		if (client->GetIP() != 0)
+			snapshot->clientsByIP[client->GetIP()].push_back(client);
+		if (client->GetIP() != 0 && client->GetUDPPort() != 0)
+			snapshot->clientsByUdpEndpoint[WaitingUdpEndpointKey{client->GetIP(), client->GetUDPPort()}] = client;
+	}
 
 	CSingleLock lock(&m_csWaitingSnapshotRead, TRUE);
 	m_waitingSnapshot = snapshot;
@@ -1159,21 +1166,17 @@ CUpDownClient* CUploadQueue::GetWaitingClientByIP_UDP(uint32 dwIP, uint16 nUDPPo
 		return NULL;
 	}
 
-	CUpDownClient *pMatchingIPClient = NULL;
-	uint32 cMatches = 0;
-	for (CUpDownClient *cur_client : snapshot->memberClients) {
-		if (dwIP == cur_client->GetIP() && nUDPPort == cur_client->GetUDPPort())
-			return cur_client;
-		if (bIgnorePortOnUniqueIP && dwIP == cur_client->GetIP()) {
-			pMatchingIPClient = cur_client;
-			++cMatches;
-		}
-	}
+	const auto endpointIt = snapshot->clientsByUdpEndpoint.find(WaitingUdpEndpointKey{dwIP, nUDPPort});
+	if (endpointIt != snapshot->clientsByUdpEndpoint.cend())
+		return endpointIt->second;
+
+	const auto ipIt = snapshot->clientsByIP.find(dwIP);
+	const uint32 cMatches = (ipIt != snapshot->clientsByIP.cend()) ? static_cast<uint32>(ipIt->second.size()) : 0;
 	if (pbMultipleIPs != NULL)
 		*pbMultipleIPs = cMatches > 1;
 
-	if (pMatchingIPClient != NULL && cMatches == 1)
-		return pMatchingIPClient;
+	if (bIgnorePortOnUniqueIP && ipIt != snapshot->clientsByIP.cend() && cMatches == 1)
+		return ipIt->second.front();
 	return NULL;
 }
 
@@ -1182,11 +1185,8 @@ CUpDownClient* CUploadQueue::GetWaitingClientByIP(uint32 dwIP) const
 	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
 	if (snapshot == NULL)
 		return NULL;
-	for (CUpDownClient *cur_client : snapshot->memberClients) {
-		if (dwIP == cur_client->GetIP())
-			return cur_client;
-	}
-	return NULL;
+	const auto it = snapshot->clientsByIP.find(dwIP);
+	return (it != snapshot->clientsByIP.cend() && !it->second.empty()) ? it->second.front() : NULL;
 }
 
 /**

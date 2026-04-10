@@ -191,6 +191,25 @@ private:
 		}
 	};
 
+	struct WaitingUdpEndpointKey
+	{
+		uint32 ip = 0;
+		uint16 udpPort = 0;
+
+		bool operator==(const WaitingUdpEndpointKey &other) const noexcept
+		{
+			return ip == other.ip && udpPort == other.udpPort;
+		}
+	};
+
+	struct WaitingUdpEndpointKeyHasher
+	{
+		size_t operator()(const WaitingUdpEndpointKey &key) const noexcept
+		{
+			return (static_cast<size_t>(key.ip) << 16) ^ static_cast<size_t>(key.udpPort);
+		}
+	};
+
 	struct WaitingUserHashKeyHasher
 	{
 		size_t operator()(const WaitingUserHashKey &key) const noexcept
@@ -208,6 +227,8 @@ private:
 		std::vector<CUpDownClient*> memberClients;
 		std::vector<CUpDownClient*> rankedClients;
 		std::unordered_map<const CUpDownClient*, UINT> positionByClient;
+		std::unordered_map<uint32, std::vector<CUpDownClient*>> clientsByIP;
+		std::unordered_map<WaitingUdpEndpointKey, CUpDownClient*, WaitingUdpEndpointKeyHasher> clientsByUdpEndpoint;
 	};
 
 	struct ActiveUploadSnapshot

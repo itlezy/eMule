@@ -1999,78 +1999,23 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 	CQArray<QueueUsers, QueueUsers> QueueArray;
 	std::vector<CUpDownClient*> rankedWaitingClients;
 	theApp.uploadqueue->GetWaitingClientsInRankOrder(rankedWaitingClients);
-	for (size_t iQueue = 0; iQueue < rankedWaitingClients.size(); ++iQueue) {
-		QueueUsers dUser;
-		const CUpDownClient &cur_client(*rankedWaitingClients[iQueue]);
+	for (CUpDownClient *queuedClient : rankedWaitingClients) {
+		const CUpDownClient &cur_client(*queuedClient);
 		int iSecure = static_cast<int>(cur_client.Credits()->GetCurrentIdentState(cur_client.GetIP()) == IS_IDENTIFIED);
 		if (cur_client.IsBanned()) {
-			dUser.sClientExtra = _T("banned");
 			++nCountQueueBanned;
 			nCountQueueBannedSecure += iSecure;
 		} else if (cur_client.IsFriend()) {
-			dUser.sClientExtra = _T("friend");
 			++nCountQueueFriend;
 			nCountQueueFriendSecure += iSecure;
 		} else {
-			dUser.sClientExtra = _T("none");
 			++nCountQueue;
 			nCountQueueSecure += iSecure;
 		}
-
-		CString usn(cur_client.GetUserName());
-		if (usn.GetLength() > SHORT_LENGTH_MIN) {
-			usn.Truncate(SHORT_LENGTH_MIN - 3);
-			usn += _T("...");
-		}
-		dUser.sUserName = _SpecialChars(usn);
-
-		dUser.sClientNameVersion = cur_client.GetClientSoftVer();
-		CKnownFile *file = theApp.sharedfiles->GetFileByID(cur_client.GetUploadFileID());
-		dUser.sFileName = file ? _SpecialChars(file->GetFileName()) : _GetPlainResString(IDS_REQ_UNKNOWNFILE);
-		dUser.sClientState = dUser.sClientExtra;
-		dUser.sClientStateSpecial = _T("queued");
-		dUser.nScore = static_cast<uint32>(rankedWaitingClients.size() - iQueue);
-
-		_GetClientversionImage(cur_client, dUser.sClientSoft);
-
-		dUser.sUserHash = md4str(cur_client.GetUserHash());
-		//SyruS CQArray-Sorting setting sIndex according to param
-		switch (pThis->m_Params.QueueSort) {
-		case QU_SORT_CLIENT:
-			dUser.sIndex = dUser.sClientSoft;
-			break;
-		case QU_SORT_USER:
-			dUser.sIndex = dUser.sUserName;
-			break;
-		case QU_SORT_VERSION:
-			dUser.sIndex = dUser.sClientNameVersion;
-			break;
-		case QU_SORT_FILENAME:
-			dUser.sIndex = dUser.sFileName;
-			break;
-		case QU_SORT_SCORE:
-			dUser.sIndex.Format(_T("%09u"), dUser.nScore);
-		}
-		QueueArray.Add(dUser);
 	}
 
-	if (QueueArray.GetCount() > 0) {
-		QueueArray[0].sClientState = _T("next");
-		QueueArray[0].sClientStateSpecial = QueueArray[0].sClientState;
-	}
-
-	if ((nCountQueue > 0 && pThis->m_Params.bShowUploadQueue)
-		|| (nCountQueueBanned > 0 && pThis->m_Params.bShowUploadQueueBanned)
-		|| (nCountQueueFriend > 0 && pThis->m_Params.bShowUploadQueueFriend))
-	{
-#ifdef _DEBUG
-		const ULONGLONG dwStart = ::GetTickCount64();
-#endif
-		QueueArray.QuickSort(pThis->m_Params.bQueueSortReverse);
-#ifdef _DEBUG
-		AddDebugLogLine(false, _T("WebServer: Waitingqueue with %u elements sorted in %I64u ms"), QueueArray.GetCount(), ::GetTickCount64() - dwStart);
-#endif
-	}
+	// Legacy Web queue details are intentionally stubbed. Keep only summary counts
+	// so the Web path compiles without shaping the native queue read model.
 
 	CString HTTPProcessData;
 	CString sDownList, HTTPTemp;
