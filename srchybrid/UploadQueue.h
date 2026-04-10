@@ -30,8 +30,8 @@ struct UploadSession
 {
 	explicit UploadSession(CUpDownClient *client = NULL)
 		: client(client)
+		, queuedPayloadBytes()
 		, ioError()
-		, disableCompression()
 	{
 	}
 	~UploadSession();
@@ -40,8 +40,8 @@ struct UploadSession
 	CTypedPtrList<CPtrList, Requested_Block_Struct*>	blockRequests;
 	CTypedPtrList<CPtrList, Requested_Block_Struct*>	completedBlocks;
 	CCriticalSection									blockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
+	uint64												queuedPayloadBytes;
 	bool												ioError;
-	bool												disableCompression;
 };
 typedef std::shared_ptr<UploadSession> UploadSessionPtr;
 
@@ -124,6 +124,7 @@ public:
 	void	GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients);
 	void	GetActiveUploadClientsInSlotOrder(std::vector<CUpDownClient*> &clients) const;
 	UINT	GetActiveUploadSlotNumber(const CUpDownClient *client) const;
+	uint64	GetActiveUploadPayloadInBuffer(const CUpDownClient *client) const;
 	bool	TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const;
 	bool	EnqueueUploadRequestBlock(CUpDownClient *client, Requested_Block_Struct *reqblock, INT_PTR *pQueueCount = NULL);
 	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;

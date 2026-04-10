@@ -275,7 +275,7 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 	if (bSignalIOThread && theApp.m_pUploadDiskIOThread != NULL) {
 		/*DebugLog(_T("BlockRequest Packet received, we have currently %u waiting requests and %s data in buffer (%u in ready packets, %s in pending IO Disk read), socket busy: %s")
 			, dbgLastQueueCount
-			, (LPCTSTR)CastItoXBytes(GetQueueSessionUploadAdded() - (GetQueueSessionPayloadUp() + socket->GetSentPayloadSinceLastCall(false)), false, false, 2)
+			, (LPCTSTR)CastItoXBytes(theApp.uploadqueue->GetActiveUploadPayloadInBuffer(this) - socket->GetSentPayloadSinceLastCall(false), false, false, 2)
 			, socket->DbgGetStdQueueCount()
 			, (LPCTSTR)CastItoXBytes((uint32)theApp.m_pUploadDiskIOThread->dbgDataReadPending, false, false, 2)
 			,_T('?')); */

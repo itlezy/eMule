@@ -202,7 +202,6 @@ void CUpDownClient::Init()
 	m_nCurSessionUp = 0;
 	m_nCurSessionDown = 0;
 	m_nCurQueueSessionPayloadUp = 0; // PENDING: Is this necessary? ResetSessionUp()...
-	m_addedPayloadQueueSession = 0;
 	m_nUpPartCount = 0;
 	m_nUpCompleteSourcesCount = 0;
 	m_ullSlowUploadAccumulatedMs = 0;
@@ -2278,7 +2277,6 @@ void CUpDownClient::AssertValid() const
 	(void)m_dwLastUpRequest;
 	(void)m_nCurSessionUp;
 	(void)m_nCurQueueSessionPayloadUp;
-	(void)m_addedPayloadQueueSession;
 	(void)m_nUpPartCount;
 	(void)m_nUpCompleteSourcesCount;
 	(void)s_UpStatusBar;
@@ -2516,14 +2514,9 @@ CString CUpDownClient::GetUploadStateDisplayString() const
 		uid = IDS_CONNECTING;
 		break;
 	case US_UPLOADING:
-		/* GetNumberOfRequestedBlocksInQueue is no longer available and retrieving it would cause quite some extra load
-		 (either due to thread syncing or due to adding redundant extra vars just for this function), so given that
-		 "stalled, waiting for disk" should happen like never, it is removed for now
-		if (GetPayloadInBuffer() == 0 && GetNumberOfRequestedBlocksInQueue() == 0 && thePrefs.IsExtControlsEnabled())
-			uid = IDS_US_STALLEDW4BR;
-		else if(GetPayloadInBuffer() == 0 && thePrefs.IsExtControlsEnabled())
-			uid = IDS_US_STALLEDREADINGFDISK; */
-		if (thePrefs.IsExtControlsEnabled() && GetPayloadInBuffer() == 0)
+		/* The old stalled-vs-reading distinction is intentionally gone here.
+		   Reconstructing it now would require extra queue/session inspection for little value. */
+		if (thePrefs.IsExtControlsEnabled() && theApp.uploadqueue->GetActiveUploadPayloadInBuffer(this) == 0)
 			uid = IDS_US_STALLEDW4BR;
 		else if (theApp.uploadqueue->GetActiveUploadSlotNumber(this) <= (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 			uid = IDS_TRANSFERRING;

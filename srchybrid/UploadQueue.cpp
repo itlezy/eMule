@@ -795,6 +795,24 @@ UINT CUploadQueue::GetActiveUploadSlotNumber(const CUpDownClient *client) const
 	return (it != snapshot->slotNumberByClient.cend()) ? it->second : 0;
 }
 
+uint64 CUploadQueue::GetActiveUploadPayloadInBuffer(const CUpDownClient *client) const
+{
+	if (client == NULL)
+		return 0;
+
+	const UploadSessionPtr session = GetUploadSession(client);
+	if (session == NULL)
+		return 0;
+
+	CSingleLock lockBlockLists(&session->blockListsLock, TRUE);
+	if (!lockBlockLists.IsLocked())
+		return 0;
+
+	const uint64 queuedPayloadBytes = session->queuedPayloadBytes;
+	const uint64 sentPayloadBytes = client->GetQueueSessionPayloadUp();
+	return (queuedPayloadBytes > sentPayloadBytes) ? (queuedPayloadBytes - sentPayloadBytes) : 0;
+}
+
 bool CUploadQueue::TryGetActiveUploadVisualState(const CUpDownClient *client, ActiveUploadVisualState &state) const
 {
 	state = ActiveUploadVisualState();
@@ -899,7 +917,7 @@ bool CUploadQueue::TryPeekNextUploadBlockRead(const UploadSessionPtr &session, u
 	if (!lockBlockLists.IsLocked() || session->ioError || session->blockRequests.IsEmpty())
 		return false;
 
-	addedPayloadQueueSession = session->client->GetQueueSessionUploadAdded();
+	addedPayloadQueueSession = session->queuedPayloadBytes;
 	if (addedPayloadQueueSession > currentPayload && addedPayloadQueueSession - currentPayload >= bufferLimit)
 		return false;
 
@@ -929,7 +947,7 @@ bool CUploadQueue::PromotePendingUploadBlockRead(const UploadSessionPtr &session
 		return false;
 	}
 
-	session->client->SetQueueSessionUploadAdded(addedPayloadQueueSession);
+	session->queuedPayloadBytes = addedPayloadQueueSession;
 	session->completedBlocks.AddHead(session->blockRequests.RemoveHead());
 	return true;
 }
@@ -974,8 +992,8 @@ void CUploadQueue::ResetUploadSessionState(const UploadSessionPtr &session)
 		delete session->blockRequests.RemoveHead();
 	while (!session->completedBlocks.IsEmpty())
 		delete session->completedBlocks.RemoveHead();
+	session->queuedPayloadBytes = 0;
 	session->ioError = false;
-	session->disableCompression = false;
 }
 
 bool CUploadQueue::RemoveActiveUploadSession(CUpDownClient *client)
@@ -1418,7 +1436,7 @@ bool CUploadQueue::RemoveActiveUploadSlot(CUpDownClient *client, LPCTSTR pszReas
 			, (LPCTSTR)CastSecondsToHM(client->GetUpStartTimeDelay() / SEC2MS(1))
 			, (LPCTSTR)CastItoXBytes(client->GetSessionUp())
 			, (LPCTSTR)CastItoXBytes(client->GetQueueSessionPayloadUp())
-			, (LPCTSTR)CastItoXBytes(client->GetPayloadInBuffer()), pendingBlocks
+			, (LPCTSTR)CastItoXBytes(GetActiveUploadPayloadInBuffer(client)), pendingBlocks
 			, theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) ? (LPCTSTR)theApp.sharedfiles->GetFileByID(client->GetUploadFileID())->GetFileName() : _T(""));
 	}
 
