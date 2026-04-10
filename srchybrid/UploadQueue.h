@@ -116,6 +116,8 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	static constexpr ULONGLONG WAITING_RANK_CACHE_MAX_AGE_MS = SEC2MS(1) / 4;
+
 	/** Stable scheduler inputs used for one admission or retention decision. */
 	struct UploadSchedulingSnapshot
 	{
@@ -162,16 +164,24 @@ private:
 	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
 	void	SyncLegacyUploadState(CUpDownClient *client);
 	void	ClearUploadSlotPhase(CUpDownClient *client);
+	void	InvalidateRankedWaitingClients();
 	const CKnownFile* GetRequestedUploadFile(const CUpDownClient *client) const;
 	bool	ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLONG curTick) const;
+	bool	ShouldRejectLowIdQueueRequest(const CUpDownClient *client) const;
 	bool	IsHigherPriorityWaitingClient(const CUpDownClient *candidate, const CUpDownClient *currentBest) const;
+	void	EnsureRankedWaitingClients(ULONGLONG curTick);
 	void	PurgeStaleWaitingClients(ULONGLONG curTick);
 	void	BuildRankedWaitingClients(std::vector<CUpDownClient*> &clients) const;
 	CUpDownClient* SelectNextWaitingClient();
-	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL) const;
-	bool	PassesQueueAdmissionLimit(const CUpDownClient *client) const;
+	CUpDownClient* FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient = NULL);
+	bool	PassesQueueAdmissionLimit(const CUpDownClient *client);
+	void	TrackQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const;
+	void	RecordQueueRequestStat(CUpDownClient *client) const;
+	bool	HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client, uint16 cSameIP) const;
 	bool	HandleExistingQueueRequest(CUpDownClient *client);
 	bool	ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &cSameIP);
+	bool	TryAcceptActiveUploadRequest(CUpDownClient *client) const;
+	bool	TryActivateQueueCandidateImmediately(CUpDownClient *client);
 	/** Adds a client to the waiting queue and performs the required side effects. */
 	void	AddClientToWaitingList(CUpDownClient *client);
 	/** Activates the specified client into an upload slot. */
@@ -230,5 +240,8 @@ private:
 
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
+	bool	m_bRankedWaitingClientsDirty;
+	ULONGLONG m_ullRankedWaitingClientsLastRefresh;
 	std::unordered_map<const CUpDownClient*, EUploadSlotPhase> m_uploadSlotPhases;
+	std::vector<CUpDownClient*> m_rankedWaitingClients;
 };

@@ -93,7 +93,10 @@ CUploadQueue::CUploadQueue()
 	, m_lastCalculatedDataRateTick()
 	, m_bStatisticsWaitingListDirty(true)
 	, m_bThrottlerWantsMoreSlotsHint()
+	, m_bRankedWaitingClientsDirty(true)
+	, m_ullRankedWaitingClientsLastRefresh()
 	, m_uploadSlotPhases()
+	, m_rankedWaitingClients()
 {
 	i1sec = i2sec = i5sec = i60sec = 0;
 	VERIFY((h_timer = ::SetTimer(NULL, 0, SEC2MS(1)/10, UploadTimer)) != 0);
@@ -129,6 +132,18 @@ bool CUploadQueue::ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLO
 	return client == NULL
 		|| curTick >= client->GetLastUpRequest() + MAX_PURGEQUEUETIME
 		|| GetRequestedUploadFile(client) == NULL;
+}
+
+bool CUploadQueue::ShouldRejectLowIdQueueRequest(const CUpDownClient *client) const
+{
+	return theApp.IsConnected()
+		&& theApp.IsFirewalled()
+		&& !client->GetKadPort()
+		&& client->GetDownloadState() == DS_NONE
+		&& !client->IsFriend()
+		&& theApp.serverconnect
+		&& !theApp.serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())
+		&& GetWaitingUserCount() > 50;
 }
 
 float CUploadQueue::GetWaitingClientCreditFactor(const CUpDownClient *client) const
@@ -189,6 +204,25 @@ bool CUploadQueue::IsHigherPriorityWaitingClient(const CUpDownClient *candidate,
 	return CompareWaitingClientsByRank(candidate, currentBest) < 0;
 }
 
+void CUploadQueue::InvalidateRankedWaitingClients()
+{
+	m_bRankedWaitingClientsDirty = true;
+}
+
+void CUploadQueue::EnsureRankedWaitingClients(ULONGLONG curTick)
+{
+	if (!m_bRankedWaitingClientsDirty
+		&& curTick < m_ullRankedWaitingClientsLastRefresh + WAITING_RANK_CACHE_MAX_AGE_MS)
+	{
+		return;
+	}
+
+	PurgeStaleWaitingClients(curTick);
+	BuildRankedWaitingClients(m_rankedWaitingClients);
+	m_bRankedWaitingClientsDirty = false;
+	m_ullRankedWaitingClientsLastRefresh = curTick;
+}
+
 void CUploadQueue::PurgeStaleWaitingClients(ULONGLONG curTick)
 {
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
@@ -219,35 +253,33 @@ void CUploadQueue::BuildRankedWaitingClients(std::vector<CUpDownClient*> &client
 
 void CUploadQueue::GetWaitingClientsInRankOrder(std::vector<CUpDownClient*> &clients)
 {
-	PurgeStaleWaitingClients(::GetTickCount64());
-	BuildRankedWaitingClients(clients);
+	EnsureRankedWaitingClients(::GetTickCount64());
+	clients = m_rankedWaitingClients;
 }
 
 CUpDownClient* CUploadQueue::SelectNextWaitingClient()
 {
-	PurgeStaleWaitingClients(::GetTickCount64());
-	std::vector<CUpDownClient*> rankedClients;
-	BuildRankedWaitingClients(rankedClients);
-	for (CUpDownClient *client : rankedClients) {
+	EnsureRankedWaitingClients(::GetTickCount64());
+	for (CUpDownClient *client : m_rankedWaitingClients) {
 		if (IsClientEligibleForImmediateUpload(client))
 			return client;
 	}
 	return NULL;
 }
 
-CUpDownClient* CUploadQueue::FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient) const
+CUpDownClient* CUploadQueue::FindLowestPriorityWaitingClient(const CUpDownClient *excludeClient)
 {
-	std::vector<CUpDownClient*> rankedClients;
-	BuildRankedWaitingClients(rankedClients);
-	for (auto it = rankedClients.rbegin(); it != rankedClients.rend(); ++it) {
+	EnsureRankedWaitingClients(::GetTickCount64());
+	for (auto it = m_rankedWaitingClients.rbegin(); it != m_rankedWaitingClients.rend(); ++it) {
 		if (*it != excludeClient)
 			return *it;
 	}
 	return NULL;
 }
 
-bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client) const
+bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client)
 {
+	EnsureRankedWaitingClients(::GetTickCount64());
 	const INT_PTR softQueueLimit = thePrefs.GetQueueSize();
 	const INT_PTR hardQueueLimit = softQueueLimit + max(softQueueLimit, 800) / 4;
 	if (waitinglist.GetCount() >= hardQueueLimit)
@@ -259,8 +291,42 @@ bool CUploadQueue::PassesQueueAdmissionLimit(const CUpDownClient *client) const
 	return worstClient == NULL || IsHigherPriorityWaitingClient(client, worstClient);
 }
 
+void CUploadQueue::TrackQueueRequest(CUpDownClient *client, bool bIgnoreTimelimit) const
+{
+	client->IncrementAskedCount();
+	client->SetLastUpRequest();
+	if (!bIgnoreTimelimit)
+		client->AddRequestCount(client->GetUploadFileID());
+}
+
+void CUploadQueue::RecordQueueRequestStat(CUpDownClient *client) const
+{
+	// TODO: Maybe we should change this to count each request for a file only once and ignore re-asks
+	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)client->GetUploadFileID());
+	if (reqfile != NULL)
+		reqfile->statistic.AddRequest();
+}
+
+bool CUploadQueue::HasTooManyQueuedClientsFromSameIP(const CUpDownClient *client, uint16 cSameIP) const
+{
+	if (cSameIP >= 3) {
+		if (thePrefs.GetVerbose())
+			DEBUG_ONLY(AddDebugLogLine(false, _T("%s's (%s) request to enter the queue was rejected, because of too many clients with the same IP"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP())));
+		return true;
+	}
+
+	if (theApp.clientlist->GetClientsFromIP(client->GetIP()) >= 3) {
+		if (thePrefs.GetVerbose())
+			DEBUG_ONLY(AddDebugLogLine(false, _T("%s's (%s) request to enter the queue was rejected, because of too many clients with the same IP (found in TrackedClientsList)"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP())));
+		return true;
+	}
+
+	return false;
+}
+
 bool CUploadQueue::HandleExistingQueueRequest(CUpDownClient *client)
 {
+	InvalidateRankedWaitingClients();
 	client->SendRankingInfo();
 	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
 	return true;
@@ -299,6 +365,29 @@ bool CUploadQueue::ResolveDuplicateQueueEntries(CUpDownClient *client, uint16 &c
 		}
 	}
 	return false;
+}
+
+bool CUploadQueue::TryAcceptActiveUploadRequest(CUpDownClient *client) const
+{
+	if (!IsDownloading(client))
+		return false;
+
+	if (thePrefs.GetDebugClientTCPLevel() > 0)
+		DebugSend("OP_AcceptUploadReq", client);
+	Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
+	theStats.AddUpDataOverheadFileRequest(packet->size);
+	client->SendPacket(packet);
+	return true;
+}
+
+bool CUploadQueue::TryActivateQueueCandidateImmediately(CUpDownClient *client)
+{
+	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
+	if (!waitinglist.IsEmpty() || !ShouldOpenUploadSlot(snapshot, true))
+		return false;
+
+	client->SetWaitStartTime();
+	return ActivateUploadClient(client, _T("Direct add with empty queue."), false);
 }
 
 CUploadQueue::EUploadSlotPhase CUploadQueue::GetUploadSlotPhase(const CUpDownClient *client) const
@@ -405,6 +494,7 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 		if (pos == NULL)
 			return false;
 		m_bStatisticsWaitingListDirty = true;
+		InvalidateRankedWaitingClients();
 		waitinglist.RemoveAt(pos);
 		theApp.emuledlg->transferwnd->GetQueueList()->RemoveClient(newclient);
 		theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
@@ -535,6 +625,7 @@ void CUploadQueue::Process()
 {
 	const ULONGLONG curTick = ::GetTickCount64();
 	m_bThrottlerWantsMoreSlotsHint = theApp.uploadBandwidthThrottler->GetNeedsMoreBandwidthSlotsSinceLastCallAndReset();
+	EnsureRankedWaitingClients(curTick);
 	UpdateActiveClientsInfo(curTick);
 
 	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
@@ -747,80 +838,36 @@ CUpDownClient* CUploadQueue::GetWaitingClientByIP(uint32 dwIP) const
  */
 void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit)
 {
-	//This is to keep users from abusing the limits we put on lowID callbacks.
-	//1)Check if we are connected to any network and that we are a lowID.
-	//  (Although this check shouldn't matter as they wouldn't have found us.
-	//  But, maybe I'm missing something, so it's best to check as a precaution.)
-	//2)Check if the user is connected to Kad. We do allow all Kad Callbacks.
-	//3)Check if the user is in our download list or a friend.
-	//  We give these users a special pass as they are helping us.
-	//4)Are we connected to a server? If we are, is the user on the same server?
-	//  TCP lowID callbacks are also allowed.
-	//5)If the queue is very short, allow anyone in as we want to make sure
-	//  our upload is always used.
-	if (   theApp.IsConnected()
-		&& theApp.IsFirewalled()
-		&& !client->GetKadPort()
-		&& client->GetDownloadState() == DS_NONE
-		&& !client->IsFriend()
-		&& theApp.serverconnect
-		&& !theApp.serverconnect->IsLocalServer(client->GetServerIP(), client->GetServerPort())
-		&& GetWaitingUserCount() > 50)
-	{
+	if (ShouldRejectLowIdQueueRequest(client))
 		return;
-	}
-	client->IncrementAskedCount();
-	client->SetLastUpRequest();
-	if (!bIgnoreTimelimit)
-		client->AddRequestCount(client->GetUploadFileID());
+
+	TrackQueueRequest(client, bIgnoreTimelimit);
 	if (client->IsBanned())
 		return;
 	uint16 cSameIP = 0;
 	if (ResolveDuplicateQueueEntries(client, cSameIP))
 		return;
-	if (cSameIP >= 3) {
-		// do not accept more than 3 clients from the same IP
-		if (thePrefs.GetVerbose())
-			DEBUG_ONLY(AddDebugLogLine(false, _T("%s's (%s) request to enter the queue was rejected, because of too many clients with the same IP"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP())));
-		return;
-	}
-	if (theApp.clientlist->GetClientsFromIP(client->GetIP()) >= 3) {
-		if (thePrefs.GetVerbose())
-			DEBUG_ONLY(AddDebugLogLine(false, _T("%s's (%s) request to enter the queue was rejected, because of too many clients with the same IP (found in TrackedClientsList)"), client->GetUserName(), (LPCTSTR)ipstr(client->GetConnectIP())));
-		return;
-	}
-	// done
 
-	// statistic values
-	// TODO: Maybe we should change this to count each request for a file only once and ignore re-asks
-	CKnownFile *reqfile = theApp.sharedfiles->GetFileByID((uchar*)client->GetUploadFileID());
-	if (reqfile)
-		reqfile->statistic.AddRequest();
+	if (HasTooManyQueuedClientsFromSameIP(client, cSameIP))
+		return;
+
+	RecordQueueRequestStat(client);
+	PurgeStaleWaitingClients(::GetTickCount64());
+
+	if (TryAcceptActiveUploadRequest(client))
+		return;
 
 	ClearUploadSlotPhase(client);
 
 	if (!PassesQueueAdmissionLimit(client))
 		return;
-	if (IsClientUploadActive(client)) {
-		// he's already downloading and probably only wants another file
-		if (thePrefs.GetDebugClientTCPLevel() > 0)
-			DebugSend("OP_AcceptUploadReq", client);
-		Packet *packet = new Packet(OP_ACCEPTUPLOADREQ, 0);
-		theStats.AddUpDataOverheadFileRequest(packet->size);
-		client->SendPacket(packet);
-		return;
-	}
 	if (client->IsInSlowUploadCooldown()) {
 		AddClientToWaitingList(client);
 		return;
 	}
-	const UploadSchedulingSnapshot snapshot = CaptureSchedulingSnapshot(m_bThrottlerWantsMoreSlotsHint);
-	if (waitinglist.IsEmpty() && ShouldOpenUploadSlot(snapshot, true)) {
-		client->SetWaitStartTime();
-		ActivateUploadClient(client, _T("Direct add with empty queue."), false);
-	} else {
+
+	if (!TryActivateQueueCandidateImmediately(client))
 		AddClientToWaitingList(client);
-	}
 }
 
 void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
@@ -829,6 +876,7 @@ void CUploadQueue::AddClientToWaitingList(CUpDownClient *client)
 	client->SetAskedCount(1);
 	SetUploadSlotPhase(client, EUploadSlotPhase::Waiting);
 	m_bStatisticsWaitingListDirty = true;
+	InvalidateRankedWaitingClients();
 	waitinglist.AddTail(client);
 	theApp.emuledlg->transferwnd->GetQueueList()->AddClient(client);
 	theApp.emuledlg->transferwnd->ShowQueueCount(waitinglist.GetCount());
@@ -919,6 +967,7 @@ bool CUploadQueue::RemoveWaitingClient(CUpDownClient *client, bool updatewindow)
 void CUploadQueue::RemoveWaitingClientAt(POSITION pos, bool updatewindow)
 {
 	m_bStatisticsWaitingListDirty = true;
+	InvalidateRankedWaitingClients();
 	CUpDownClient *todelete = waitinglist.GetAt(pos);
 	waitinglist.RemoveAt(pos);
 	if (updatewindow) {
@@ -1021,6 +1070,8 @@ void CUploadQueue::DeleteAll()
 		ClearUploadSlotPhase(client);
 	}
 	waitinglist.RemoveAll();
+	InvalidateRankedWaitingClients();
+	m_rankedWaitingClients.clear();
 	m_csUploadListMainThrdWriteOtherThrdsRead.Lock();
 	while (!uploadinglist.IsEmpty()) {
 		UploadingToClient_Struct *uploading = uploadinglist.RemoveHead();
@@ -1036,10 +1087,9 @@ UINT CUploadQueue::GetWaitingPosition(const CUpDownClient *client)
 {
 	if (!IsClientWaitingForUpload(client))
 		return 0;
-	std::vector<CUpDownClient*> rankedClients;
-	GetWaitingClientsInRankOrder(rankedClients);
-	for (size_t i = 0; i < rankedClients.size(); ++i) {
-		if (rankedClients[i] == client)
+	EnsureRankedWaitingClients(::GetTickCount64());
+	for (size_t i = 0; i < m_rankedWaitingClients.size(); ++i) {
+		if (m_rankedWaitingClients[i] == client)
 			return static_cast<UINT>(i + 1);
 	}
 	return 0;
