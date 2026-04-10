@@ -172,9 +172,10 @@ private:
 		EUploadSlotEndReason	reason = EUploadSlotEndReason::None;
 	};
 
-	struct UploadQueueClientState
+	struct ClientQueueEntry
 	{
 		EUploadSlotPhase phase = EUploadSlotPhase::None;
+		UploadSessionPtr session;
 	};
 
 	struct WaitingQueueSnapshot
@@ -193,10 +194,16 @@ private:
 
 	/** Returns true if the client can immediately take an upload slot. */
 	bool	IsClientEligibleForImmediateUpload(const CUpDownClient *client) const;
+	const ClientQueueEntry* FindClientQueueEntry(const CUpDownClient *client) const;
+	ClientQueueEntry* FindClientQueueEntry(const CUpDownClient *client);
+	ClientQueueEntry& EnsureClientQueueEntry(CUpDownClient *client);
 	EUploadSlotPhase GetUploadSlotPhase(const CUpDownClient *client) const;
-	void	SetUploadSlotPhase(CUpDownClient *client, EUploadSlotPhase phase);
-	void	SyncLegacyUploadState(CUpDownClient *client);
-	void	ClearUploadSlotPhase(CUpDownClient *client);
+	void	SyncLegacyUploadState(CUpDownClient *client, EUploadSlotPhase phase);
+	void	EnterWaitingState(CUpDownClient *client);
+	void	BeginActivationState(CUpDownClient *client);
+	void	MarkActiveState(CUpDownClient *client);
+	void	BeginRetiringState(CUpDownClient *client);
+	void	ClearClientQueueEntry(CUpDownClient *client);
 	const CKnownFile* GetRequestedUploadFile(const CUpDownClient *client) const;
 	bool	ShouldPurgeWaitingClient(const CUpDownClient *client, ULONGLONG curTick) const;
 	bool	ShouldRejectLowIdQueueRequest(const CUpDownClient *client) const;
@@ -274,10 +281,9 @@ private:
 
 	bool	m_bStatisticsWaitingListDirty;
 	bool	m_bThrottlerWantsMoreSlotsHint;
-	std::unordered_map<const CUpDownClient*, UploadQueueClientState> m_clientStates;
+	std::unordered_map<const CUpDownClient*, ClientQueueEntry> m_clientEntries;
 	std::vector<CUpDownClient*> m_waitingClients;
 	std::shared_ptr<const WaitingQueueSnapshot> m_waitingSnapshot;
-	std::unordered_map<const CUpDownClient*, UploadSessionPtr> m_uploadSessions;
 	std::vector<CUpDownClient*> m_activeUploadClients;
 	std::shared_ptr<const ActiveUploadSnapshot> m_activeUploadSnapshot;
 
