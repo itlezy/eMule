@@ -414,7 +414,7 @@ void CDownloadQueue::Process()
 
 	uint32 downspeed;
 	uint64 maxDownload = thePrefs.GetMaxDownloadInBytesPerSec(true);
-	if (maxDownload != UNLIMITED * 1024ull && m_datarate > 1500) {
+	if (m_datarate > 1500) {
 		downspeed = (uint32)(maxDownload * 100 / (m_datarate + 1));
 		if (downspeed < 50)
 			downspeed = 50;

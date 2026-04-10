@@ -56,8 +56,6 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_WIZARD, OnBnClickedWizard)
 	ON_BN_CLICKED(IDC_NETWORK_ED2K, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWOVERHEAD, OnSettingsChange)
-	ON_BN_CLICKED(IDC_ULIMIT_LBL, OnLimiterChange)
-	ON_BN_CLICKED(IDC_DLIMIT_LBL, OnLimiterChange)
 	ON_WM_HSCROLL()
 	ON_BN_CLICKED(IDC_NETWORK_KADEMLIA, OnSettingsChange)
 	ON_WM_HELPINFO()
@@ -150,34 +148,22 @@ BOOL CPPgConnection::OnInitDialog()
 void CPPgConnection::LoadSettings()
 {
 	if (m_hWnd) {
-		if (thePrefs.m_maxupload != 0)
-			thePrefs.m_maxdownload = thePrefs.GetMaxDownload();
 		m_lastudp = thePrefs.udpport;
 		CheckDlgButton(IDC_UDPDISABLE, !m_lastudp); //before the port number!
 		SetDlgItemInt(IDC_UDPPORT, m_lastudp, FALSE);
 
-		SetDlgItemInt(IDC_DOWNLOAD_CAP, thePrefs.maxGraphDownloadRate);
+		const uint32 downloadLimit = thePrefs.GetMaxDownload();
+		const uint32 uploadLimit = thePrefs.GetMaxUpload();
 
-		m_ctlMaxDown.SetRange(1, thePrefs.maxGraphDownloadRate);
+		SetDlgItemInt(IDC_DOWNLOAD_CAP, downloadLimit);
+		m_ctlMaxDown.SetRange(1, downloadLimit);
 		SetRateSliderTicks(m_ctlMaxDown);
+		m_ctlMaxDown.SetPos(downloadLimit);
 
-		SetDlgItemInt(IDC_UPLOAD_CAP, (thePrefs.maxGraphUploadRate != UNLIMITED ? thePrefs.maxGraphUploadRate : 0));
-
-		m_ctlMaxUp.SetRange(1, thePrefs.GetMaxGraphUploadRate(true));
+		SetDlgItemInt(IDC_UPLOAD_CAP, uploadLimit);
+		m_ctlMaxUp.SetRange(1, uploadLimit);
 		SetRateSliderTicks(m_ctlMaxUp);
-
-		uint32 up = thePrefs.m_maxupload;
-		uint32 dn = thePrefs.m_maxdownload;
-		CheckDlgButton(IDC_DLIMIT_LBL, (dn != UNLIMITED));
-		CheckDlgButton(IDC_ULIMIT_LBL, (up != UNLIMITED));
-		if (dn == UNLIMITED)
-			dn = thePrefs.maxGraphDownloadRate;
-		if (up == UNLIMITED)
-			up = thePrefs.GetMaxGraphUploadRate(true);
-		CheckUp(up, dn);
-		CheckDown(up, dn);
-		m_ctlMaxDown.SetPos(dn);
-		m_ctlMaxUp.SetPos(up);
+		m_ctlMaxUp.SetPos(uploadLimit);
 
 		SetDlgItemInt(IDC_PORT, thePrefs.port, FALSE);
 		SetDlgItemInt(IDC_MAXCON, thePrefs.maxconnections);
@@ -194,20 +180,19 @@ void CPPgConnection::LoadSettings()
 
 		CheckDlgButton(IDC_PREF_UPNPONSTART, static_cast<UINT>(thePrefs.IsUPnPEnabled()));
 
-		//ShowLimitValues(); - will be called in OnLimiterChange()
-		OnLimiterChange();
+		ShowLimitValues();
 	}
 }
 
 BOOL CPPgConnection::OnApply()
 {
 	UINT v = GetDlgItemInt(IDC_DOWNLOAD_CAP, NULL, FALSE);
-	if (v >= UNLIMITED) {
+	if (v == 0 || v >= UNLIMITED) {
 		GetDlgItem(IDC_DOWNLOAD_CAP)->SetFocus();
 		return FALSE;
 	}
 	UINT u = GetDlgItemInt(IDC_UPLOAD_CAP, NULL, FALSE);
-	if (u >= UNLIMITED) {
+	if (u == 0 || u >= UNLIMITED) {
 		GetDlgItem(IDC_UPLOAD_CAP)->SetFocus();
 		return FALSE;
 	}
@@ -215,35 +200,15 @@ BOOL CPPgConnection::OnApply()
 	uint32 lastmaxgu = thePrefs.maxGraphUploadRate; //save the values
 	uint32 lastmaxgd = thePrefs.maxGraphDownloadRate;
 
-	thePrefs.SetMaxGraphDownloadRate(v);
-	m_ctlMaxDown.SetRange(1, thePrefs.GetMaxGraphDownloadRate(), TRUE);
+	thePrefs.SetMaxDownload(v);
+	m_ctlMaxDown.SetRange(1, thePrefs.GetMaxDownload(), TRUE);
 	SetRateSliderTicks(m_ctlMaxDown);
-
-	thePrefs.SetMaxGraphUploadRate(u);
-	m_ctlMaxUp.SetRange(1, thePrefs.GetMaxGraphUploadRate(true), TRUE);
-	SetRateSliderTicks(m_ctlMaxUp);
-
-	if (IsDlgButtonChecked(IDC_ULIMIT_LBL)) {
-		u = (uint32)m_ctlMaxUp.GetPos();
-		v = (uint32)thePrefs.GetMaxGraphUploadRate(true);
-		if (u > v)
-			u = v * 4 / 5; //80%
-	} else
-		u = UNLIMITED;
+	m_ctlMaxDown.SetPos(thePrefs.GetMaxDownload());
 
 	thePrefs.SetMaxUpload(u);
-
-	if (thePrefs.GetMaxUpload() != UNLIMITED)
-		m_ctlMaxUp.SetPos(thePrefs.GetMaxUpload());
-
-	thePrefs.SetMaxDownload(IsDlgButtonChecked(IDC_DLIMIT_LBL) ? m_ctlMaxDown.GetPos() : UNLIMITED);
-
-	if (thePrefs.GetMaxDownload() != UNLIMITED) {
-		u = (uint32)thePrefs.GetMaxGraphDownloadRate();
-		if (thePrefs.GetMaxDownload() > u)
-			thePrefs.SetMaxDownload(u * 4 / 5); //80%
-		m_ctlMaxDown.SetPos(thePrefs.GetMaxDownload());
-	}
+	m_ctlMaxUp.SetRange(1, thePrefs.GetMaxUpload(), TRUE);
+	SetRateSliderTicks(m_ctlMaxUp);
+	m_ctlMaxUp.SetPos(thePrefs.GetMaxUpload());
 
 	u = GetDlgItemInt(IDC_MAXSOURCEPERFILE, NULL, FALSE);
 	thePrefs.maxsourceperfile = (u > INT_MAX ? 1 : u);
@@ -337,12 +302,12 @@ void CPPgConnection::Localize()
 {
 	if (m_hWnd) {
 		SetWindowText(GetResString(IDS_CONNECTION));
-		SetDlgItemText(IDC_CAPACITIES_FRM, GetResString(IDS_PW_CON_CAPFRM));
+		SetDlgItemText(IDC_CAPACITIES_FRM, GetResString(IDS_SPEED_LIMITS));
 		SetDlgItemText(IDC_DCAP_LBL, GetResString(IDS_PW_CON_DOWNLBL));
 		SetDlgItemText(IDC_UCAP_LBL, GetResString(IDS_PW_CON_UPLBL));
-		SetDlgItemText(IDC_LIMITS_FRM, GetResString(IDS_PW_CON_LIMITFRM));
-		SetDlgItemText(IDC_DLIMIT_LBL, GetResString(IDS_PW_DOWNL));
-		SetDlgItemText(IDC_ULIMIT_LBL, GetResString(IDS_PW_UPL));
+		SetDlgItemText(IDC_LIMITS_FRM, GetResString(IDS_SPEED_LIMITS));
+		SetDlgItemText(IDC_DLIMIT_LBL, GetResString(IDS_PW_CON_DOWNLBL));
+		SetDlgItemText(IDC_ULIMIT_LBL, GetResString(IDS_PW_CON_UPLBL));
 		SetDlgItemText(IDC_CONNECTION_NETWORK, GetResString(IDS_NETWORK));
 		SetDlgItemText(IDC_KBS2, GetResString(IDS_KBYTESPERSEC));
 		SetDlgItemText(IDC_KBS3, GetResString(IDS_KBYTESPERSEC));
@@ -370,60 +335,24 @@ void CPPgConnection::OnBnClickedWizard()
 
 bool CPPgConnection::CheckUp(uint32 mUp, uint32 &mDown)
 {
-	if (thePrefs.maxGraphDownloadRate == 0)
-		return false;
-	uint32 uDown = mDown;
-	if (mUp < 4 && mDown > mUp * 3)
-		mDown = mUp * 3;
-	else if (mUp < 10 && mDown > mUp * 4)
-		mDown = mUp * 4;
-	else if (mUp < 20 && mDown > mUp * 5)
-		mDown = mUp * 5;
-	if (mDown > thePrefs.maxGraphDownloadRate) {
-		mDown = thePrefs.maxGraphDownloadRate;
-		return true;
-	}
-	return uDown != mDown;
+	(void)mUp;
+	(void)mDown;
+	return false;
 }
 
 bool CPPgConnection::CheckDown(uint32 &mUp, uint32 mDown)
 {
-	if (thePrefs.maxGraphUploadRate == 0)
-		return false;
-	uint32 uUp = mUp;
-	if (mDown < 13 && mUp * 3 < mDown)
-		mUp = (mDown + 2) / 3;
-	else if (mDown < 41 && mUp * 4 < mDown)
-		mUp = (mDown + 3) / 4;
-	else if (mUp < 20 && mUp * 5 < mDown)
-		mUp = (mDown + 4) / 5;
-	if (mUp > thePrefs.maxGraphUploadRate) {
-		mUp = thePrefs.maxGraphUploadRate;
-		return true;
-	}
-	return uUp != mUp;
+	(void)mUp;
+	(void)mDown;
+	return false;
 }
 
 void CPPgConnection::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
 {
 	SetModified(TRUE);
 
-	uint32 maxup = m_ctlMaxUp.GetPos();
-	uint32 maxdown = m_ctlMaxDown.GetPos();
-
-	if (pScrollBar->GetSafeHwnd() == m_ctlMaxUp.m_hWnd) {
-		if (CheckUp(maxup, maxdown)) {
-			if (CheckDown(maxup, maxdown))
-				m_ctlMaxUp.SetPos(maxup);
-			m_ctlMaxDown.SetPos(maxdown);
-		}
-	} else { /*if (hWnd == m_ctlMaxDown.m_hWnd) { */
-		if (CheckDown(maxup, maxdown)) {
-			if (CheckUp(maxup, maxdown))
-				m_ctlMaxDown.SetPos(maxdown);
-			m_ctlMaxUp.SetPos(maxup);
-		}
-	}
+	SetDlgItemInt(IDC_UPLOAD_CAP, m_ctlMaxUp.GetPos(), FALSE);
+	SetDlgItemInt(IDC_DOWNLOAD_CAP, m_ctlMaxDown.GetPos(), FALSE);
 
 	ShowLimitValues();
 
@@ -436,24 +365,11 @@ void CPPgConnection::ShowLimitValues()
 	static LPCTSTR const pszFmt = _T("%i %s");
 	CString buffer;
 
-	if (IsDlgButtonChecked(IDC_ULIMIT_LBL))
-		buffer.Format(pszFmt, m_ctlMaxUp.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	buffer.Format(pszFmt, m_ctlMaxUp.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_KBS4, buffer);
 
-	if (!IsDlgButtonChecked(IDC_DLIMIT_LBL))
-		buffer.Empty();
-	else
-		buffer.Format(pszFmt, m_ctlMaxDown.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	buffer.Format(pszFmt, m_ctlMaxDown.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_KBS1, buffer);
-}
-
-void CPPgConnection::OnLimiterChange()
-{
-	m_ctlMaxDown.ShowWindow(IsDlgButtonChecked(IDC_DLIMIT_LBL) ? SW_SHOW : SW_HIDE);
-	m_ctlMaxUp.ShowWindow(IsDlgButtonChecked(IDC_ULIMIT_LBL) ? SW_SHOW : SW_HIDE);
-
-	ShowLimitValues();
-	SetModified(TRUE);
 }
 
 void CPPgConnection::OnHelp()
