@@ -207,7 +207,7 @@ void OracleEd2kTcpDumpImpl(LPCTSTR pszFlow, LPCTSTR pszPhase, LPCTSTR pszDirecti
 
 	CString strJson;
 	strJson.Format(
-		_T("{\"schema\":\"ed2k_tcp_helper_v1\",\"source\":\"oracle\",\"ts_utc\":\"%s\",\"event_seq\":%I64u,\"trace_key\":\"%s\",\"state_id\":\"%s\",\"state_label\":\"%s\",\"flow\":\"%s\",\"phase\":\"%s\",\"direction\":\"%s\",\"remote_addr\":\"%s\",\"transport_mode\":\"%s\""),
+		_T("{\"schema\":\"ed2k_tcp_helper_v1\",\"source\":\"emule_harness\",\"ts_utc\":\"%s\",\"event_seq\":%I64u,\"trace_key\":\"%s\",\"state_id\":\"%s\",\"state_label\":\"%s\",\"flow\":\"%s\",\"phase\":\"%s\",\"direction\":\"%s\",\"remote_addr\":\"%s\",\"transport_mode\":\"%s\""),
 		(LPCTSTR)strTimestamp,
 		ullEventSeq,
 		(LPCTSTR)strTraceKey,
@@ -289,7 +289,7 @@ void OracleUdpDumpImpl(LPCTSTR pszDirection, LPCTSTR pszFamily, LPCTSTR pszPeerL
 
 	CString strJson;
 	strJson.Format(
-		_T("{\"schema\":\"udp_packet_v1\",\"source\":\"oracle\",\"ts\":\"%s\",\"event_seq\":%I64u,\"trace_key\":\"%s\",\"state_id\":\"%s\",\"state_label\":\"%s\",\"direction\":\"%s\",\"family\":\"%s\",\"peer\":\"%s\",\"wire_len\":%u,\"wire_hex\":\"%s\""),
+		_T("{\"schema\":\"udp_packet_v1\",\"source\":\"emule_harness\",\"ts\":\"%s\",\"event_seq\":%I64u,\"trace_key\":\"%s\",\"state_id\":\"%s\",\"state_label\":\"%s\",\"direction\":\"%s\",\"family\":\"%s\",\"peer\":\"%s\",\"wire_len\":%u,\"wire_hex\":\"%s\""),
 		(LPCTSTR)strTimestamp,
 		ullEventSeq,
 		(LPCTSTR)strTraceKey,

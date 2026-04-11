@@ -36,6 +36,19 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+void OracleUpnpDumpWinServ(LPCTSTR pszPhase, LPCTSTR pszPeerLabel, LPCTSTR pszNote)
+{
+	OracleEd2kTcpDumpMeta(
+		_T("upnp"),
+		pszPhase,
+		(pszPeerLabel != NULL && pszPeerLabel[0] != _T('\0')) ? pszPeerLabel : _T("win_service"),
+		_T("control"),
+		pszNote);
+}
+}
+
 CUPnPImplWinServ::CUPnPImplWinServ()
 	: m_bUPnPDeviceConnected(TRIS_FALSE)
 	, m_pDevices()
@@ -520,6 +533,9 @@ HRESULT CUPnPImplWinServ::MapPort(const ServicePointer &service)
 	DebugLog(_T("Got status info from the service %s: %s"), (LPCTSTR)strServiceId, (LPCTSTR)strResult);
 
 	if (stristr(strResult, _T("|VT_BSTR=Connected|")) != NULL) {
+		CString strServiceConnectedNote;
+		strServiceConnectedNote.Format(_T("service_id=%s status=%s"), (LPCTSTR)strServiceId, (LPCTSTR)strResult);
+		OracleUpnpDumpWinServ(_T("service_connected"), strServiceId, strServiceConnectedNote);
 		// Add a callback to detect device status changes
 		// ??? How it will work if two devices are active ???
 		hr = service->AddCallback(m_pServiceCallback);
@@ -586,6 +602,7 @@ CString CUPnPImplWinServ::GetLocalRoutableIP(ServicePointer pService)
 
 	if (FAILED(hr) || strExternalIP.IsEmpty())
 		return strLocalIP;
+	m_sExternalIP = strExternalIP;
 
 	DWORD nInterfaceIndex = 0;
 	DWORD ip = inet_addr((CStringA)strExternalIP);
@@ -624,6 +641,11 @@ CString CUPnPImplWinServ::GetLocalRoutableIP(ServicePointer pService)
 
 	if (!strLocalIP.IsEmpty() && !strExternalIP.IsEmpty())
 		DebugLog(_T("UPnP route: %s->%s"), (LPCTSTR)strLocalIP, (LPCTSTR)strExternalIP);
+	if (!strLocalIP.IsEmpty() && !strExternalIP.IsEmpty()) {
+		CString strRouteNote;
+		strRouteNote.Format(_T("local_ip=%s external_ip=%s interface_index=%lu"), (LPCTSTR)strLocalIP, (LPCTSTR)strExternalIP, nInterfaceIndex);
+		OracleUpnpDumpWinServ(_T("route_selected"), _T("win_service"), strRouteNote);
+	}
 
 	return strLocalIP;
 }
@@ -751,14 +773,44 @@ void CUPnPImplWinServ::CreatePortMappings(ServicePointer pService)
 	if (m_nUDPPort != 0) {
 		strInArgs.Format(strFormatString, m_nUDPPort, _T("UDP"), m_nUDPPort, (LPCTSTR)m_sLocalIP, _T("UDP"));
 		hr = InvokeAction(pService, _T("AddPortMapping"), strInArgs, strResult);
-		if (FAILED(hr))
+		if (FAILED(hr)) {
+			CString strUdpFailedNote;
+			strUdpFailedNote.Format(
+				_T("protocol=UDP external_port=%u local_ip=%s external_ip=%s step=add_port_mapping"),
+				m_nUDPPort,
+				(LPCTSTR)m_sLocalIP,
+				(LPCTSTR)m_sExternalIP);
+			OracleUpnpDumpWinServ(_T("mapping_failed"), _T("win_service"), strUdpFailedNote);
 			return (void)UPnPMessage(hr);
+		}
+		CString strUdpMappingNote;
+		strUdpMappingNote.Format(
+			_T("protocol=UDP external_port=%u local_ip=%s external_ip=%s"),
+			m_nUDPPort,
+			(LPCTSTR)m_sLocalIP,
+			(LPCTSTR)m_sExternalIP);
+		OracleUpnpDumpWinServ(_T("mapping_added"), _T("win_service"), strUdpMappingNote);
 	}
 
 	strInArgs.Format(strFormatString, m_nTCPPort, _T("TCP"), m_nTCPPort, (LPCTSTR)m_sLocalIP, _T("TCP"));
 	hr = InvokeAction(pService, _T("AddPortMapping"), strInArgs, strResult);
-	if (FAILED(hr))
+	if (FAILED(hr)) {
+		CString strTcpFailedNote;
+		strTcpFailedNote.Format(
+			_T("protocol=TCP external_port=%u local_ip=%s external_ip=%s step=add_port_mapping"),
+			m_nTCPPort,
+			(LPCTSTR)m_sLocalIP,
+			(LPCTSTR)m_sExternalIP);
+		OracleUpnpDumpWinServ(_T("mapping_failed"), _T("win_service"), strTcpFailedNote);
 		return (void)UPnPMessage(hr);
+	}
+	CString strTcpMappingNote;
+	strTcpMappingNote.Format(
+		_T("protocol=TCP external_port=%u local_ip=%s external_ip=%s"),
+		m_nTCPPort,
+		(LPCTSTR)m_sLocalIP,
+		(LPCTSTR)m_sExternalIP);
+	OracleUpnpDumpWinServ(_T("mapping_added"), _T("win_service"), strTcpMappingNote);
 
 	if (m_nTCPWebPort != 0) {
 		strInArgs.Format(strFormatString, m_nTCPWebPort, _T("TCP"), m_nTCPWebPort, (LPCTSTR)m_sLocalIP, _T("TCP"));

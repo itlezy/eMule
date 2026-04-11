@@ -111,6 +111,23 @@ LPCTSTR GetOracleEd2kTransportMode(CClientReqSocket *pSocket, const CUpDownClien
 	return GetOracleEd2kTransportMode(pClient);
 }
 
+CString GetOracleEd2kPeerLabel(const SOCKADDR_IN &sockAddr)
+{
+	CString strPeer;
+	strPeer.Format(_T("%s:%u"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port));
+	return strPeer;
+}
+
+void OracleEd2kDumpInboundAccept(LPCTSTR pszPhase, const SOCKADDR_IN &sockAddr, LPCTSTR pszNote = NULL)
+{
+	OracleEd2kTcpDumpMeta(
+		_T("listener"),
+		pszPhase,
+		GetOracleEd2kPeerLabel(sockAddr),
+		_T("plaintext"),
+		pszNote);
+}
+
 LPCTSTR GetOracleEd2kRecvPhase(const CUpDownClient *pClient, uint8 byProtocol, uint8 byOpcode)
 {
 	// Preserve the dedicated firewall-helper labels; everything else falls back to the
@@ -2259,10 +2276,20 @@ void CListenSocket::OnAccept(int nErrorCode)
 				}
 
 				ASSERT(SockAddr.sin_addr.s_addr != INADDR_ANY && SockAddr.sin_addr.s_addr != INADDR_NONE);
+				CString strAcceptNote;
+				strAcceptNote.Format(
+					_T("conditional_accept=%u pending=%u open_sockets=%u"),
+					thePrefs.GetConditionalTCPAccept() && !thePrefs.GetProxySettings().bUseProxy ? 1 : 0,
+					m_nPendingConnections,
+					GetOpenSockets());
+				OracleEd2kDumpInboundAccept(_T("accept"), SockAddr, strAcceptNote);
 
 				if (theApp.ipfilter->IsFiltered(SockAddr.sin_addr.s_addr)) {
 					if (thePrefs.GetLogFilteredIPs())
 						AddDebugLogLine(false, _T("Rejecting connection attempt (IP=%s) - IP filter (%s)"), (LPCTSTR)ipstr(SockAddr.sin_addr.s_addr), (LPCTSTR)theApp.ipfilter->GetLastHit());
+					CString strRejectNote;
+					strRejectNote.Format(_T("reason=ip_filter filter=%s"), (LPCTSTR)theApp.ipfilter->GetLastHit());
+					OracleEd2kDumpInboundAccept(_T("accept_reject"), SockAddr, strRejectNote);
 					newclient->Safe_Delete();
 					++theStats.filteredclients;
 					continue;
@@ -2274,10 +2301,13 @@ void CListenSocket::OnAccept(int nErrorCode)
 						if (pClient)
 							AddDebugLogLine(false, _T("Rejecting connection attempt of banned client %s %s"), (LPCTSTR)ipstr(SockAddr.sin_addr.s_addr), (LPCTSTR)pClient->DbgGetClientInfo());
 					}
+					OracleEd2kDumpInboundAccept(_T("accept_reject"), SockAddr, _T("reason=banned_client"));
 					newclient->Safe_Delete();
 					continue;
 				}
 			}
+			if (SockAddr.sin_addr.s_addr != INADDR_ANY && SockAddr.sin_addr.s_addr != INADDR_NONE)
+				OracleEd2kDumpInboundAccept(_T("accept_ready"), SockAddr, _T("events=fd_write|fd_read|fd_close"));
 			newclient->AsyncSelect(FD_WRITE | FD_READ | FD_CLOSE);
 		}
 

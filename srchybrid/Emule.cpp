@@ -780,8 +780,8 @@ BOOL CemuleApp::InitInstance()
 #endif
 	VERIFY(theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")));
 	VERIFY(theVerboseLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Verbose.log")));
-	const CString strOracleUdpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("oracle-udp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
-	const CString strOracleEd2kTcpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("oracle-ed2k-tcp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
+	const CString strOracleUdpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("emule-harness-udp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
+	const CString strOracleEd2kTcpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("emule-harness-ed2k-tcp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
 	VERIFY(theOracleUdpDumpLog.SetFilePath(strOracleUdpDumpPath));
 	VERIFY(theOracleEd2kTcpDumpLog.SetFilePath(strOracleEd2kTcpDumpPath));
 	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
