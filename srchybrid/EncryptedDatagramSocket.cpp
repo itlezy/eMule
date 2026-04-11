@@ -299,6 +299,29 @@ uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen
 	}
 	*pTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
 
+	const bool bHasTargetHash = pachClientHashOrKadID != NULL && !isnulmd4(pachClientHashOrKadID);
+	const uint32 nCryptHeaderLen = EncryptOverheadSize(bKad);
+	if ((!bKad && theApp.GetPublicIP() == 0)
+	 || !thePrefs.IsCryptLayerEnabled()
+	 || (!bKad && !bHasTargetHash)
+	 || (bKad && !bHasTargetHash && nReceiverVerifyKey == 0)
+	 || ((nReceiverVerifyKey != 0 || nSenderVerifyKey != 0) && !bKad)) {
+		CString strReason;
+		if (!bKad && theApp.GetPublicIP() == 0)
+			strReason = _T("public IP is unknown");
+		else if (!thePrefs.IsCryptLayerEnabled())
+			strReason = _T("CryptLayer is disabled");
+		else if (!bKad && !bHasTargetHash)
+			strReason = _T("target user hash is unavailable");
+		else if (bKad && !bHasTargetHash && nReceiverVerifyKey == 0)
+			strReason = _T("Kad target key material is unavailable");
+		else
+			strReason = _T("Kad verify keys were supplied for a non-Kad packet");
+		DebugLogWarning(_T("Skipping outgoing UDP obfuscation for %s packet because %s"), bKad ? _T("Kad") : _T("ed2k"), (LPCTSTR)strReason);
+		memmove(pbyBuf, pbyBuf + nCryptHeaderLen, nBufLen);
+		return nBufLen;
+	}
+
 	ASSERT(theApp.GetPublicIP() != 0 || bKad);
 	ASSERT(thePrefs.IsCryptLayerEnabled());
 	ASSERT(pachClientHashOrKadID != NULL || nReceiverVerifyKey);
@@ -381,7 +404,6 @@ uint32 CEncryptedDatagramSocket::EncryptSendClient(uchar *pbyBuf, uint32 nBufLen
 		crypt.dwSenderKey = nSenderVerifyKey;
 	}
 
-	const uint32 nCryptHeaderLen = EncryptOverheadSize(bKad);
 	nBufLen += nCryptHeaderLen;
 	RC4Crypt((uchar*)&crypt.dwMagic, nBufLen - 3, &keySendKey);
 
@@ -449,6 +471,15 @@ uint32 CEncryptedDatagramSocket::EncryptSendServer(uchar *pbyBuf, uint32 nBufLen
 		ASSERT(0);
 		return nBufLen;
 	}
+	*pTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
+
+	const uint32 nCryptHeaderLen = EncryptOverheadSize(false);
+	if (!thePrefs.IsCryptLayerEnabled() || dwBaseKey == 0) {
+		DebugLogWarning(_T("Skipping outgoing server UDP obfuscation because %s"), !thePrefs.IsCryptLayerEnabled() ? _T("CryptLayer is disabled") : _T("the server base key is unavailable"));
+		memmove(pbyBuf, pbyBuf + nCryptHeaderLen, nBufLen);
+		return nBufLen;
+	}
+
 	*pTransportMode = ORACLE_UDP_TRANSPORT_SERVER_BASE_KEY;
 
 	ASSERT(thePrefs.IsCryptLayerEnabled());
@@ -487,7 +518,6 @@ uint32 CEncryptedDatagramSocket::EncryptSendServer(uchar *pbyBuf, uint32 nBufLen
 	RC4Crypt(&crypt.byPadding[1], CRYPT_HEADER_PADDING, &keySendKey);
 #endif
 
-	const uint32 nCryptHeaderLen = EncryptOverheadSize(false);
 	nBufLen += nCryptHeaderLen;
 	RC4Crypt((uchar*)&crypt.dwMagic, nBufLen - 3, &keySendKey);
 
