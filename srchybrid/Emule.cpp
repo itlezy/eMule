@@ -470,7 +470,7 @@ static bool AppendParityHarnessSearchJsonLine(const CString &strPath, const CStr
 	return bSuccess;
 }
 
-static void EmitParityHarnessSearchEvent(const CString &strPath, LPCSTR pszEvent, uint32 nSearchID, const CString &strTerm)
+static void EmitParityHarnessSearchEvent(const CString &strPath, LPCSTR pszEvent, uint32 nSearchID, const CString &strTerm, const CString *pstrRequestedHash = NULL)
 {
 	if (strPath.IsEmpty())
 		return;
@@ -478,12 +478,18 @@ static void EmitParityHarnessSearchEvent(const CString &strPath, LPCSTR pszEvent
 	const CString strTimestamp = CTime::GetCurrentTime().FormatGmt(_T("%Y-%m-%dT%H:%M:%SZ"));
 	CStringA strLine;
 	strLine.Format(
-		"{\"schema\":\"parity_harness_search_v1\",\"source\":\"emule_harness\",\"ts_utc\":\"%s\",\"event\":\"%s\",\"search_id\":%lu,\"term\":\"%s\"}",
+		"{\"schema\":\"parity_harness_search_v1\",\"source\":\"emule_harness\",\"ts_utc\":\"%s\",\"event\":\"%s\",\"search_id\":%lu,\"term\":\"%s\"",
 		(LPCSTR)CT2A(strTimestamp),
 		pszEvent,
 		(unsigned long)nSearchID,
 		(LPCSTR)EscapeJsonUtf8(strTerm)
 	);
+	if (pstrRequestedHash != NULL && !pstrRequestedHash->IsEmpty()) {
+		CStringA strHashField;
+		strHashField.Format(",\"requested_hash\":\"%s\"", (LPCSTR)EscapeJsonUtf8(*pstrRequestedHash));
+		strLine += strHashField;
+	}
+	strLine += "}";
 	AppendParityHarnessSearchJsonLine(strPath, strLine);
 }
 
@@ -731,8 +737,7 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 		}
 	}
 
-	if (!m_bParityHarnessSearchDownloadQueued
-		&& !m_strParityHarnessSearchDownloadHashFile.IsEmpty()
+	if (!m_strParityHarnessSearchDownloadHashFile.IsEmpty()
 		&& _taccess(m_strParityHarnessSearchDownloadHashFile, 0) == 0)
 	{
 		CStdioFile hashFile;
@@ -740,14 +745,23 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 			CString strRequestedHash;
 			if (hashFile.ReadString(strRequestedHash)) {
 				strRequestedHash.Trim();
-				byte aucFileHash[16];
-				if (strmd4(strRequestedHash, aucFileHash)
-					&& searchlist->GetSearchFileByHashForID(m_nParityHarnessSearchID, aucFileHash) != NULL)
+				if (!strRequestedHash.IsEmpty()
+					&& m_strParityHarnessLastSearchDownloadHash.CompareNoCase(strRequestedHash) != 0)
 				{
-					searchlist->AddFileToDownloadByHash(aucFileHash);
-					m_bParityHarnessSearchDownloadQueued = true;
-					EmitParityHarnessSearchEvent(m_strParityHarnessSearchResultsFile, "download_queued", m_nParityHarnessSearchID, m_strParityHarnessSearchTerm);
-					Log(_T("Parity harness queued search result download: %s"), (LPCTSTR)strRequestedHash);
+					byte aucFileHash[16];
+					if (!strmd4(strRequestedHash, aucFileHash)) {
+						EmitParityHarnessSearchEvent(m_strParityHarnessSearchResultsFile, "download_request_invalid_hash", m_nParityHarnessSearchID, m_strParityHarnessSearchTerm, &strRequestedHash);
+					}
+					else if (searchlist->GetSearchFileByHashForID(m_nParityHarnessSearchID, aucFileHash) == NULL) {
+						EmitParityHarnessSearchEvent(m_strParityHarnessSearchResultsFile, "download_request_missing_result", m_nParityHarnessSearchID, m_strParityHarnessSearchTerm, &strRequestedHash);
+					}
+					else {
+						searchlist->AddFileToDownloadByHash(aucFileHash);
+						m_bParityHarnessSearchDownloadQueued = true;
+						m_strParityHarnessLastSearchDownloadHash = strRequestedHash;
+						EmitParityHarnessSearchEvent(m_strParityHarnessSearchResultsFile, "download_queued", m_nParityHarnessSearchID, m_strParityHarnessSearchTerm, &strRequestedHash);
+						Log(_T("Parity harness queued search result download: %s"), (LPCTSTR)strRequestedHash);
+					}
 				}
 			}
 			hashFile.Close();
