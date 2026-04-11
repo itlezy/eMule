@@ -136,7 +136,7 @@ namespace OracleTrace
 		CStringW sBase = szModulePath;
 		CStringW sLogDir = sBase + L"\\logs";
 		::CreateDirectoryW(sLogDir, NULL);
-		return sLogDir + L"\\oracle-kad-trace.log";
+		return sLogDir + L"\\emule-harness-kad-trace.log";
 	}
 
 	inline CStringA Timestamp()

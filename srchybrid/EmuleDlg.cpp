@@ -109,6 +109,26 @@ extern BOOL FirstTimeWizard();
 
 #define	SYS_TRAY_ICON_COOKIE_FORCE_UPDATE	UINT_MAX
 
+namespace
+{
+LPCTSTR GetOracleUpnpImplLabel(CUPnPImpl *pImpl)
+{
+	if (pImpl == NULL)
+		return _T("unknown");
+
+	switch (pImpl->GetImplementationID()) {
+	case UPNP_IMPL_WINDOWSERVICE:
+		return _T("win_service");
+	case UPNP_IMPL_MINIUPNPLIB:
+		return _T("miniupnpc");
+	case UPNP_IMPL_NONE:
+		return _T("none");
+	default:
+		return _T("unknown");
+	}
+}
+}
+
 UINT g_uMainThreadId = 0;
 static const UINT UWM_ARE_YOU_EMULE = RegisterWindowMessage(EMULE_GUID);
 
@@ -3461,6 +3481,16 @@ LRESULT CemuleDlg::OnUPnPResult(WPARAM wParam, LPARAM lParam)
 {
 	bool bWasRefresh = lParam != 0;
 	CUPnPImpl *impl = theApp.m_pUPnPFinder->GetImplementation();
+	CString strUpnpResultNote;
+	strUpnpResultNote.Format(
+		_T("impl=%s result=%Id refresh=%u tcp_port=%u udp_port=%u web_port=%u"),
+		GetOracleUpnpImplLabel(impl),
+		static_cast<INT_PTR>(wParam),
+		bWasRefresh ? 1 : 0,
+		impl != NULL ? impl->GetUsedTCPPort() : 0,
+		impl != NULL ? impl->GetUsedUDPPort() : 0,
+		impl != NULL ? impl->GetUsedTCPWebPort() : 0);
+	OracleEd2kTcpDumpMeta(_T("upnp"), _T("result"), GetOracleUpnpImplLabel(impl), _T("control"), strUpnpResultNote);
 
 //>>> WiZaRd - handle "UPNP_TIMEOUT" events!
 	if (!bWasRefresh && wParam != CUPnPImpl::UPNP_OK) {
@@ -3528,6 +3558,15 @@ void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPor
 		try {
 			CUPnPImpl *impl = theApp.m_pUPnPFinder->GetImplementation();
 			if (impl->IsReady()) {
+				CString strUpnpStartNote;
+				strUpnpStartNote.Format(
+					_T("impl=%s reset=%u tcp_port=%u udp_port=%u web_port=%u"),
+					GetOracleUpnpImplLabel(impl),
+					bReset ? 1 : 0,
+					(nForceTCPPort ? nForceTCPPort : thePrefs.GetPort()),
+					(nForceUDPPort ? nForceUDPPort : thePrefs.GetUDPPort()),
+					(thePrefs.GetWSUseUPnP() ? thePrefs.GetWSPort() : 0));
+				OracleEd2kTcpDumpMeta(_T("upnp"), _T("start"), GetOracleUpnpImplLabel(impl), _T("control"), strUpnpStartNote);
 				impl->SetMessageOnResult(this, UM_UPNP_RESULT);
 				if (bReset)
 					VERIFY((m_hUPnPTimeOutTimer = ::SetTimer(NULL, 0, SEC2MS(40), (TIMERPROC)UPnPTimeOutTimer)) != 0);

@@ -1183,9 +1183,12 @@ void CKademliaUDPListener::Process_KADEMLIA2_SEARCH_RES(const byte *pbyPacketDat
 void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey)
 {
 	// check if we are UDP firewalled
-	if (CUDPFirewallTester::IsFirewalledUDP(true))
+	if (CUDPFirewallTester::IsFirewalledUDP(true)) {
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Oracle parity drop KADEMLIA2_PUBLISH_KEY_REQ from %s:%u reason=udp_firewalled"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort);
 		//We are firewalled. We should not index this entry and give publisher a false report.
 		return;
+	}
 
 	CByteIO byteIO(pbyPacketData, uLenPacket);
 	CUInt128 uFile;
@@ -1195,13 +1198,19 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ(const byte *pbyPack
 	uDistance.Xor(uFile);
 
 	// Shouldn't LAN IPs already be filtered?
-	if (uDistance.Get32BitChunk(0) > SEARCHTOLERANCE && !IsLANIP(ntohl(uIP)))
+	if (uDistance.Get32BitChunk(0) > SEARCHTOLERANCE && !IsLANIP(ntohl(uIP))) {
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Oracle parity drop KADEMLIA2_PUBLISH_KEY_REQ from %s:%u reason=distance target=%s dist0=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), uDistance.Get32BitChunk(0));
 		return;
+	}
 
 	bool bDbgInfo = (thePrefs.GetDebugClientKadUDPLevel() > 0);
 	uint8 uLoad = 0;
 	CUInt128 uTarget;
-	for (unsigned uCount = byteIO.ReadUInt16(); uCount > 0; --uCount) {
+	const unsigned uEntryCount = byteIO.ReadUInt16();
+	if (thePrefs.GetVerbose())
+		DebugLog(_T("Oracle parity recv KADEMLIA2_PUBLISH_KEY_REQ from %s:%u target=%s entries=%u payload=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), uEntryCount, uLenPacket);
+	for (unsigned uCount = uEntryCount; uCount > 0; --uCount) {
 		CKadTag *pTag = NULL;
 		CKeyEntry *pEntry = NULL;
 		try {
@@ -1254,12 +1263,16 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ(const byte *pbyPack
 			if (bDbgInfo && !sInfo.IsEmpty())
 				Debug(_T("%s\n"), (LPCTSTR)sInfo);
 		} catch (...) {
+			if (thePrefs.GetVerbose())
+				DebugLogWarning(_T("Oracle parity drop KADEMLIA2_PUBLISH_KEY_REQ from %s:%u reason=parse_exception target=%s"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString());
 			delete pTag;
 			delete pEntry;
 			throw;
 		}
 
 		if (!CKademlia::GetIndexed()->AddKeyword(uFile, uTarget, pEntry, uLoad)) {
+			if (thePrefs.GetVerbose())
+				DebugLog(_T("Oracle parity reject KADEMLIA2_PUBLISH_KEY_REQ from %s:%u target=%s file=%s"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), (LPCTSTR)uTarget.ToHexString());
 			//We already indexed the maximum number of keywords.
 			//We do not index any more but we still send a success.
 			//Reason: Because if a VERY busy node tells the publisher it failed,
@@ -1273,6 +1286,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ(const byte *pbyPack
 	CSafeMemFile fileIO2(17);
 	fileIO2.WriteUInt128(uFile);
 	fileIO2.WriteUInt8(uLoad);
+	if (thePrefs.GetVerbose())
+		DebugLog(_T("Oracle parity ack KADEMLIA2_PUBLISH_KEY_REQ to %s:%u target=%s load=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), uLoad);
 	if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 		DebugSend("KADEMLIA2_PUBLISH_RES", uIP, uUDPPort);
 	SendPacket(fileIO2, KADEMLIA2_PUBLISH_RES, uIP, uUDPPort, senderUDPKey, NULL);
@@ -1282,9 +1297,12 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_KEY_REQ(const byte *pbyPack
 void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyPacketData, uint32 uLenPacket, uint32 uIP, uint16 uUDPPort, const CKadUDPKey &senderUDPKey)
 {
 	// check if we are UDP firewalled
-	if (CUDPFirewallTester::IsFirewalledUDP(true))
+	if (CUDPFirewallTester::IsFirewalledUDP(true)) {
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Oracle parity drop KADEMLIA2_PUBLISH_SOURCE_REQ from %s:%u reason=udp_firewalled"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort);
 		//We are firewalled. We should not index this entry and give publisher a false report.
 		return;
+	}
 
 	CByteIO byteIO(pbyPacketData, uLenPacket);
 	CUInt128 uFile;
@@ -1293,13 +1311,18 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 	CUInt128 uDistance(CKademlia::GetPrefs()->GetKadID());
 	uDistance.Xor(uFile);
 
-	if (uDistance.Get32BitChunk(0) > SEARCHTOLERANCE && !IsLANIP(ntohl(uIP)))
+	if (uDistance.Get32BitChunk(0) > SEARCHTOLERANCE && !IsLANIP(ntohl(uIP))) {
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Oracle parity drop KADEMLIA2_PUBLISH_SOURCE_REQ from %s:%u reason=distance target=%s dist0=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), uDistance.Get32BitChunk(0));
 		return;
+	}
 
 	bool bDbgInfo = (thePrefs.GetDebugClientKadUDPLevel() > 0);
 	uint8 uLoad = 0;
 	CUInt128 uTarget;
 	byteIO.ReadUInt128(uTarget);
+	if (thePrefs.GetVerbose())
+		DebugLog(_T("Oracle parity recv KADEMLIA2_PUBLISH_SOURCE_REQ from %s:%u target=%s source=%s payload=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), (LPCTSTR)uTarget.ToHexString(), uLenPacket);
 	CKadTag *pTag = NULL;
 	CEntry *pEntry = NULL;
 	try {
@@ -1385,6 +1408,8 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 		if (bDbgInfo && !sInfo.IsEmpty())
 			Debug(_T("%s\n"), (LPCTSTR)sInfo);
 	} catch (...) {
+		if (thePrefs.GetVerbose())
+			DebugLogWarning(_T("Oracle parity drop KADEMLIA2_PUBLISH_SOURCE_REQ from %s:%u reason=parse_exception target=%s source=%s"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), (LPCTSTR)uTarget.ToHexString());
 		delete pTag;
 		delete pEntry;
 		throw;
@@ -1394,11 +1419,16 @@ void CKademliaUDPListener::Process_KADEMLIA2_PUBLISH_SOURCE_REQ(const byte *pbyP
 		CSafeMemFile fileIO2(17);
 		fileIO2.WriteUInt128(uFile);
 		fileIO2.WriteUInt8(uLoad);
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Oracle parity ack KADEMLIA2_PUBLISH_SOURCE_REQ to %s:%u target=%s source=%s load=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), (LPCTSTR)uTarget.ToHexString(), uLoad);
 		if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 			DebugSend("KADEMLIA2_PUBLISH_RES", uIP, uUDPPort);
 		SendPacket(fileIO2, KADEMLIA2_PUBLISH_RES, uIP, uUDPPort, senderUDPKey, NULL);
-	} else
+	} else {
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Oracle parity reject KADEMLIA2_PUBLISH_SOURCE_REQ from %s:%u target=%s source=%s is_source=%u"), (LPCTSTR)ipstr(htonl(uIP)), uUDPPort, (LPCTSTR)uFile.ToHexString(), (LPCTSTR)uTarget.ToHexString(), pEntry->m_bSource ? 1 : 0);
 		delete pEntry;
+	}
 }
 
 // Used only by Kad1.0

@@ -37,6 +37,14 @@ static LPCSTR const sUDPa = "UDP";
 static LPCTSTR const sTCP = _T("TCP");
 static LPCTSTR const sUDP = _T("UDP");
 
+namespace
+{
+void OracleUpnpDumpMiniLib(LPCTSTR pszPhase, LPCTSTR pszNote)
+{
+	OracleEd2kTcpDumpMeta(_T("upnp"), pszPhase, _T("miniupnpc"), _T("control"), pszNote);
+}
+}
+
 CUPnPImplMiniLib::CUPnPImplMiniLib()
 	: m_pURLs()
 	, m_pIGDData()
@@ -222,6 +230,9 @@ int CUPnPImplMiniLib::CStartDiscoveryThread::Run()
 			UPNPDev *structDeviceList = upnpDiscover(2000, thePrefs.GetBindAddrA(), NULL, 0, 0, 2, &error);
 			if (structDeviceList == NULL) {
 				DebugLog(_T("UPNP: No Internet Gateway Devices found, aborting: %d"), error);
+				CString strNoGatewayNote;
+				strNoGatewayNote.Format(_T("error=%d bind_addr=%S"), error, thePrefs.GetBindAddrA());
+				OracleUpnpDumpMiniLib(_T("gateway_missing"), strNoGatewayNote);
 				m_pOwner->m_bUPnPPortsForwarded = TRIS_FALSE;
 				m_pOwner->SendResultMessage();
 				return 0;
@@ -265,11 +276,27 @@ int CUPnPImplMiniLib::CStartDiscoveryThread::Run()
 				bNotFound = true;
 			}
 			if (bNotFound || m_pOwner->m_pURLs->controlURL == NULL) {
+				CString strInvalidGatewayNote;
+				strInvalidGatewayNote.Format(
+					_T("result=%d control_url=%S lan_ip=%S wan_ip=%S"),
+					iResult,
+					m_pOwner->m_pURLs->controlURL != NULL ? m_pOwner->m_pURLs->controlURL : "",
+					m_pOwner->m_achLanIP,
+					m_pOwner->m_achWanIP);
+				OracleUpnpDumpMiniLib(_T("gateway_invalid"), strInvalidGatewayNote);
 				m_pOwner->m_bUPnPPortsForwarded = TRIS_FALSE;
 				m_pOwner->SendResultMessage();
 				return 0;
 			}
 			DebugLog(_T("Our LAN IP: %S"), m_pOwner->m_achLanIP);
+			CString strGatewayNote;
+			strGatewayNote.Format(
+				_T("result=%d control_url=%S lan_ip=%S wan_ip=%S"),
+				iResult,
+				m_pOwner->m_pURLs->controlURL,
+				m_pOwner->m_achLanIP,
+				m_pOwner->m_achWanIP);
+			OracleUpnpDumpMiniLib(_T("gateway_selected"), strGatewayNote);
 
 			if (m_pOwner->m_bAbortDiscovery)// requesting to abort ASAP?
 				return 0;
@@ -327,6 +354,14 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 
 		if (nResult == UPNPCOMMAND_SUCCESS && achOutIP[0] != 0) {
 			DebugLog(_T("Checking UPnP: Mapping for port %hu (%s) on local IP %S still exists"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
+			CString strRefreshNote;
+			strRefreshNote.Format(
+				_T("protocol=%s external_port=%hu local_ip=%S external_ip=%S refresh=1 status=exists"),
+				bTCP ? sTCP : sUDP,
+				nPort,
+				achOutIP,
+				m_pOwner->m_achWanIP);
+			OracleUpnpDumpMiniLib(_T("mapping_refresh"), strRefreshNote);
 			return true;
 		}
 
@@ -343,6 +378,16 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 
 	if (nResult != UPNPCOMMAND_SUCCESS) {
 		DebugLog(_T("Adding PortMapping failed, Error Code %u"), nResult);
+		CString strAddFailedNote;
+		strAddFailedNote.Format(
+			_T("protocol=%s external_port=%hu local_ip=%S external_ip=%S refresh=%u step=add_port_mapping result=%d"),
+			bTCP ? sTCP : sUDP,
+			nPort,
+			pachLANIP,
+			m_pOwner->m_achWanIP,
+			bCheckAndRefresh ? 1 : 0,
+			nResult);
+		OracleUpnpDumpMiniLib(_T("mapping_failed"), strAddFailedNote);
 		return false;
 	}
 
@@ -361,10 +406,31 @@ bool CUPnPImplMiniLib::CStartDiscoveryThread::OpenPort(uint16 nPort, bool bTCP, 
 
 	if (nResult == UPNPCOMMAND_SUCCESS && achOutIP[0] != 0) {
 		DebugLog(_T("Successfully added mapping for port %hu (%s) on local IP %S"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
+		CString strMappingNote;
+		strMappingNote.Format(
+			_T("protocol=%s external_port=%hu local_ip=%S verified_local_ip=%S external_ip=%S refresh=%u"),
+			bTCP ? sTCP : sUDP,
+			nPort,
+			pachLANIP,
+			achOutIP,
+			m_pOwner->m_achWanIP,
+			bCheckAndRefresh ? 1 : 0);
+		OracleUpnpDumpMiniLib(_T("mapping_added"), strMappingNote);
 		return true;
 	}
 
 	DebugLogWarning(_T("Failed to verify mapping for port %hu (%s) on local IP %S - considering as failed"), nPort, (bTCP ? sTCP : sUDP), achOutIP);
+	CString strVerifyFailedNote;
+	strVerifyFailedNote.Format(
+		_T("protocol=%s external_port=%hu local_ip=%S verified_local_ip=%S external_ip=%S refresh=%u step=verify_mapping result=%d"),
+		bTCP ? sTCP : sUDP,
+		nPort,
+		pachLANIP,
+		achOutIP,
+		m_pOwner->m_achWanIP,
+		bCheckAndRefresh ? 1 : 0,
+		nResult);
+	OracleUpnpDumpMiniLib(_T("mapping_failed"), strVerifyFailedNote);
 	// maybe counting this as error is a bit harsh as this may lead to false negatives, however if we would risk false positives
 	// this would mean that the fallback implementations are not tried because eMule thinks it worked out fine
 	return false;
