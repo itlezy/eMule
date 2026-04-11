@@ -43,6 +43,7 @@
 #include "Kademlia/Kademlia/Prefs.h"
 #include "Log.h"
 #include "collection.h"
+#include "UploadQueueSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -137,7 +138,7 @@ CUpDownClient* CUploadQueue::FindBestClientInQueue()
 			// finished clearing
 			uint32 cur_score = cur_client->GetScore(false);
 
-			if (cur_score > bestscore) {
+			if (PreferHigherUploadQueueScore(cur_score, bestscore)) {
 				bestscore = cur_score;
 				newclient = cur_client;
 			}
@@ -647,12 +648,12 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 	INT_PTR hardQueueLimit = softQueueLimit + max(softQueueLimit, 800) / 4;
 
 	// if soft queue limit has been reached, only let in high ranking clients
-	if (waitinglist.GetCount() >= hardQueueLimit
-		|| (waitinglist.GetCount() >= softQueueLimit // soft queue limit is reached
-			&& (!client->IsFriend() || !client->GetFriendSlot()) // client is not a friend with friend slot
-			&& client->GetCombinedFilePrioAndCredit() < GetAverageCombinedFilePrioAndCredit() // and client has lower credits/wants lower prio file than average client in queue
-		   )
-	   )
+	if (RejectSoftQueueCandidateByCombinedScore(
+			waitinglist.GetCount() >= hardQueueLimit,
+			waitinglist.GetCount() >= softQueueLimit,
+			client->IsFriend() && client->GetFriendSlot(),
+			client->GetCombinedFilePrioAndCredit(),
+			GetAverageCombinedFilePrioAndCredit()))
 	{
 		// block client from getting on queue
 		return;
@@ -798,8 +799,7 @@ void CUploadQueue::UpdateMaxClientScore()
 	m_imaxscore = 0;
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;) {
 		uint32 score = waitinglist.GetNext(pos)->GetScore(true, false);
-		if (score > m_imaxscore)
-			m_imaxscore = score;
+		UpdateUploadQueueMaxScore(m_imaxscore, score);
 	}
 }
 
@@ -913,7 +913,7 @@ UINT CUploadQueue::GetWaitingPosition(CUpDownClient *client)
 	UINT rank = 1;
 	UINT myscore = client->GetScore(false);
 	for (POSITION pos = waitinglist.GetHeadPosition(); pos != NULL;)
-		rank += static_cast<UINT>(waitinglist.GetNext(pos)->GetScore(false) > myscore);
+		rank = AddHigherUploadQueueScoreToRank(rank, waitinglist.GetNext(pos)->GetScore(false), myscore);
 
 	return rank;
 }

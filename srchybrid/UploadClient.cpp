@@ -141,7 +141,7 @@ float CUpDownClient::GetCombinedFilePrioAndCredit()
 		return 0.0F;
 	}
 
-	return 10.0f * credits->GetScoreRatio(GetIP()) * GetFilePrioAsNumber();
+	return UploadScoreSeams::ComputeCombinedFilePrioAndCredit(credits->GetScoreRatio(GetIP()), GetFilePrioAsNumber());
 }
 
 /*
@@ -179,72 +179,74 @@ int CUpDownClient::GetFilePrioAsNumber() const
  */
 uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasevalue) const
 {
+	return static_cast<uint32>(GetScoreBreakdown(sysvalue, isdownloading, onlybasevalue).uEffectiveScore);
+}
+
+UploadScoreSeams::UploadScoreBreakdown CUpDownClient::GetScoreBreakdown(bool sysvalue, bool isdownloading, bool onlybasevalue) const
+{
+	UploadScoreSeams::UploadScoreBreakdown breakdown = {};
 	if (!m_pszUsername)
-		return 0;
+		return breakdown;
 
 	if (!credits) {
 		ASSERT(IsKindOf(RUNTIME_CLASS(CUrlClient)));
-		return 0;
+		return breakdown;
 	}
 
-	if (!theApp.sharedfiles->GetFileByID(requpfileid)) //is any file requested?
-		return 0;
+	const CKnownFile *pRequestedFile = theApp.sharedfiles->GetFileByID(requpfileid);
+	if (pRequestedFile == NULL) //is any file requested?
+		return breakdown;
 
 	// bad clients (see note in function)
 	if (credits->GetCurrentIdentState(GetIP()) == IS_IDBADGUY)
-		return 0;
+		return breakdown;
 	// friend slot
-	if (IsFriend() && GetFriendSlot() && !HasLowID())
-		return 0x0FFFFFFFu;
+	if (IsFriend() && GetFriendSlot() && !HasLowID()) {
+		breakdown.eAvailability = UploadScoreSeams::uploadScoreFriendSlot;
+		breakdown.uEffectiveScore = 0x0FFFFFFFu;
+		return breakdown;
+	}
 
 	if (IsBanned() || m_bGPLEvildoer)
-		return 0;
-
-	if (IsInSlowUploadCooldown())
-		return 0;
+		return breakdown;
 
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
-		return 0;
+		return breakdown;
 
 	// calculate score, based on waiting time and other factors
-	DWORD dwBaseValue;
+	ULONGLONG ullBaseValue;
 	if (onlybasevalue)
-		dwBaseValue = SEC2MS(100);
+		ullBaseValue = SEC2MS(100);
 	else if (!isdownloading)
-		dwBaseValue = ::GetTickCount64() - GetWaitStartTime();
+		ullBaseValue = ::GetTickCount64() - GetWaitStartTime();
 	else {
 		// we don't want one client to download forever
 		// the first 15 min download time counts as 15 min waiting time and you get
 		// a 15 min bonus while you are in the first 15 min :)
 		// (to avoid 20 sec downloads) after this the score won't rise any more
-		dwBaseValue = m_dwUploadTime - GetWaitStartTime();
-		dwBaseValue += MIN2MS(::GetTickCount64() >= m_dwUploadTime + MIN2MS(15) ? 15 : 30);
+		ullBaseValue = m_dwUploadTime - GetWaitStartTime();
+		ullBaseValue += MIN2MS(::GetTickCount64() >= m_dwUploadTime + MIN2MS(15) ? 15 : 30);
 		//ASSERT ( m_dwUploadTime - GetWaitStartTime() >= 0 ); //oct 28, 02: changed this from "> 0" to ">= 0" -> // 02-Okt-2006 []: ">=0" is always true!
 	}
-	float fBaseValue = dwBaseValue / SEC2MS(1.0f);
-	if (thePrefs.UseCreditSystem())
-		fBaseValue *= credits->GetScoreRatio(GetIP());
 
-	if (!onlybasevalue)
-		fBaseValue *= GetFilePrioAsNumber() / 10.0f;
+	const bool bApplyOldClientPenalty = (IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19;
+	const UINT uLowIdDivisor = max(1u, thePrefs.GetBBLowIDDivisor());
 
-	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
-		fBaseValue *= 0.5f;
-
-	if (!onlybasevalue && HasLowID()) {
-		const UINT uLowIdDivisor = max(1u, thePrefs.GetBBLowIDDivisor());
-		if (uLowIdDivisor > 1)
-			fBaseValue /= uLowIdDivisor;
-	}
-
-	uint32 uScore = (uint32)fBaseValue;
-	if (!onlybasevalue && thePrefs.IsBBLowRatioBoostEnabled()) {
-		const CKnownFile *pRequestedFile = theApp.sharedfiles->GetFileByID(requpfileid);
-		if (pRequestedFile != NULL && pRequestedFile->GetAllTimeUploadRatio() < thePrefs.GetBBLowRatioThreshold())
-			uScore += thePrefs.GetBBLowRatioBonus();
-	}
-
-	return uScore;
+	UploadScoreSeams::UploadScoreInputs inputs = {};
+	inputs.uBaseValueMs = ullBaseValue;
+	inputs.fCreditRatio = credits->GetScoreRatio(GetIP());
+	inputs.iFilePrioNumber = GetFilePrioAsNumber();
+	inputs.bUseCreditSystem = thePrefs.UseCreditSystem();
+	inputs.bApplyPriority = !onlybasevalue;
+	inputs.bApplyLowRatioBonus = !onlybasevalue
+		&& thePrefs.IsBBLowRatioBoostEnabled()
+		&& pRequestedFile->GetAllTimeUploadRatio() < thePrefs.GetBBLowRatioThreshold();
+	inputs.uLowRatioBonus = thePrefs.GetBBLowRatioBonus();
+	inputs.bApplyLowIdDivisor = !onlybasevalue && HasLowID() && uLowIdDivisor > 1;
+	inputs.uLowIdDivisor = uLowIdDivisor;
+	inputs.bApplyOldClientPenalty = bApplyOldClientPenalty;
+	inputs.bCooldownSuppressed = IsInSlowUploadCooldown();
+	return UploadScoreSeams::BuildUploadScoreBreakdown(inputs);
 }
 
 bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqfile)

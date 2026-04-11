@@ -956,10 +956,16 @@ BEGIN
     GROUPBOX        "Scores",IDC_STATIC50,7,156,308,47
     RTEXT           "DL/UP Modifier:",IDC_STATIC51,19,166,87,8
     CONTROL         "Static",IDC_DRATIO,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,166,53,8
-    RTEXT           "Rating (total):",IDC_STATIC52,19,177,87,8
+    RTEXT           "Base Score:",IDC_STATIC52,19,177,87,8
     CONTROL         "Static",IDC_DRATING,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,177,53,8
-    RTEXT           "Upload queue Score:",IDC_STATIC53,19,188,87,8
+    RTEXT           "Effective Score:",IDC_STATIC53,19,188,87,8
     CONTROL         "Static",IDC_DSCORE,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,188,105,8
+    RTEXT           "Low-ratio bonus:",IDC_STATIC_SCORE_LOWRATIO,163,166,90,8
+    CONTROL         "Static",IDC_DLOWRATIOBONUS,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,256,166,50,8
+    RTEXT           "LowID divisor:",IDC_STATIC_SCORE_LOWID,163,177,90,8
+    CONTROL         "Static",IDC_DLOWIDDIVISOR,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,256,177,50,8
+    RTEXT           "Cooldown:",IDC_STATIC_SCORE_COOLDOWN,163,188,90,8
+    CONTROL         "Static",IDC_DCOOLDOWN,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,256,188,50,8
     RTEXT           "Currently downloading:",IDC_STATIC48,19,102,87,8
     CONTROL         "Static",IDC_UPLOADING,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,102,202,8
     RTEXT           "Kad:",IDC_CLIENTDETAIL_KAD,195,57,20,8
@@ -3715,17 +3721,21 @@ BEGIN
     IDS_BB_SLOW_GRACE_SECONDS "Slow grace [sec.]"
     IDS_BB_SLOW_WARMUP_SECONDS "Slow recycle warm-up [sec.]"
     IDS_BB_ZERO_RATE_GRACE_SECONDS "Zero-rate grace [sec.]"
-    IDS_BB_COOLDOWN_SECONDS "Cooldown [sec.]"
-    IDS_BB_LOW_RATIO_BOOST "Enable low-ratio boost"
-    IDS_BB_RATIO_THRESHOLD "Ratio threshold"
-    IDS_BB_SCORE_BONUS     "Score bonus"
-    IDS_BB_LOWID_DIVISOR   "LowID divisor"
+    IDS_BB_COOLDOWN_SECONDS "Cooldown score suppression [sec.]"
+    IDS_BB_LOW_RATIO_BOOST "Enable low-ratio queue-score boost"
+    IDS_BB_RATIO_THRESHOLD "Low-ratio threshold"
+    IDS_BB_SCORE_BONUS     "Effective score bonus"
+    IDS_BB_LOWID_DIVISOR   "LowID effective-score divisor"
     IDS_BB_SESSION_TRANSFER_LIMIT "Session transfer limit"
     IDS_BB_PERCENT_OF_FILE_SIZE "Percent of file size"
     IDS_BB_ABSOLUTE_MIB    "Absolute MiB"
     IDS_BB_SESSION_TIME_LIMIT "Session time limit [sec.]"
     IDS_BB_SESSION_TRANSFER_PERCENT_VALUE "Percent value"
     IDS_BB_SESSION_TRANSFER_MIB_VALUE "MiB value"
+    IDS_BASE_SCORE       "Base Score"
+    IDS_EFFECTIVE_SCORE  "Effective Score"
+    IDS_SCORE_MODIFIERS  "Modifiers"
+    IDS_LOW_RATIO_BONUS  "Low-ratio bonus"
     IDS_SPAM                "Spam"
     IDS_MARKSPAM            "Mark as Spam"
     IDS_MARKNOTSPAM         "Mark as not Spam"

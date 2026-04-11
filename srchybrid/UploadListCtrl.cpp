@@ -55,6 +55,17 @@ namespace
 		return str;
 	}
 
+	CString FormatUploadScoreColumn(const CUpDownClient *client)
+	{
+		return UploadScoreSeams::FormatUploadScoreCompact(
+			client->GetScoreBreakdown(false, client->IsDownloading(), false),
+			GetResString(IDS_LOW_RATIO_BONUS),
+			GetResString(IDS_BB_LOWID_DIVISOR),
+			GetResString(IDS_COOLDOWN),
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-"));
+	}
+
 	int CompareRatio(float fLeft, float fRight)
 	{
 		if (fLeft < fRight)
@@ -107,7 +118,8 @@ void CUploadListCtrl::Init()
 	InsertColumn(7,	_T(""),	LVCFMT_RIGHT,85);							//IDS_ALL_TIME_RATIO
 	InsertColumn(8,	_T(""),	LVCFMT_RIGHT,85);							//IDS_SESSION_RATIO
 	InsertColumn(9,	_T(""),	LVCFMT_RIGHT,70);							//IDS_COOLDOWN
-	InsertColumn(10,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
+	InsertColumn(10,_T(""),	LVCFMT_LEFT, 145);							//IDS_EFFECTIVE_SCORE
+	InsertColumn(11,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
 
 	SetAllIcons();
 	Localize();
@@ -118,10 +130,10 @@ void CUploadListCtrl::Init()
 
 void CUploadListCtrl::Localize()
 {
-	static const UINT uids[11] =
+	static const UINT uids[12] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_DL_SPEED, IDS_DL_TRANSF, IDS_WAITED
-		, IDS_UPLOADTIME, IDS_STATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS
+		, IDS_UPLOADTIME, IDS_STATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_EFFECTIVE_SCORE, IDS_UPSTATUS
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -190,7 +202,7 @@ void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				rcItem.right -= sm_iSubItemInset;
 				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
 				break;
-			case 10: //upload status bar
+			case 11: //upload status bar
 				++rcItem.top;
 				--rcItem.bottom;
 				client->DrawUpStatusBar(dc, &rcItem, false, thePrefs.UseFlatBar());
@@ -258,6 +270,9 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		sText = client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining());
 		break;
 	case 10:
+		sText = FormatUploadScoreColumn(client);
+		break;
+	case 11:
 		sText = GetResString(IDS_UPSTATUS);
 	}
 	return sText;
@@ -333,7 +348,8 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 7: // All-time ratio
 		case 8: // Session ratio
 		case 9: // Cooldown
-		case 10: // Part Count
+		case 10: // Effective score
+		case 11: // Part Count
 			sortAscending = false;
 			break;
 		default:
@@ -413,6 +429,14 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		iResult = CompareUnsigned(item1->GetSlowUploadCooldownRemaining(), item2->GetSlowUploadCooldownRemaining());
 		break;
 	case 10:
+		iResult = CompareUnsigned(item1->GetScore(false), item2->GetScore(false));
+		if (iResult == 0) {
+			iResult = CompareUnsigned(
+				UploadScoreSeams::BuildUploadScoreModifierSortKey(item1->GetScoreBreakdown(false, item1->IsDownloading(), false)),
+				UploadScoreSeams::BuildUploadScoreModifierSortKey(item2->GetScoreBreakdown(false, item2->IsDownloading(), false)));
+		}
+		break;
+	case 11:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
 	}
 

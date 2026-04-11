@@ -103,16 +103,17 @@ void CQueueListCtrl::Init()
 	InsertColumn(0, _T(""),	LVCFMT_LEFT, DFLT_CLIENTNAME_COL_WIDTH);	//IDS_QL_USERNAME
 	InsertColumn(1, _T(""),	LVCFMT_LEFT, DFLT_FILENAME_COL_WIDTH);		//IDS_FILE
 	InsertColumn(2, _T(""),	LVCFMT_LEFT, DFLT_PRIORITY_COL_WIDTH);		//IDS_FILEPRIO
-	InsertColumn(3, _T(""),	LVCFMT_LEFT,  60);							//IDS_QL_RATING
-	InsertColumn(4, _T(""),	LVCFMT_LEFT,  60);							//IDS_SCORE
-	InsertColumn(5, _T(""),	LVCFMT_LEFT,  60);							//IDS_ASKED
-	InsertColumn(6, _T(""),	LVCFMT_LEFT, 110);							//IDS_LASTSEEN
-	InsertColumn(7, _T(""),	LVCFMT_LEFT, 110);							//IDS_ENTERQUEUE
-	InsertColumn(8, _T(""),	LVCFMT_LEFT,  60);							//IDS_BANNED
-	InsertColumn(9, _T(""),	LVCFMT_RIGHT, 85);							//IDS_ALL_TIME_RATIO
-	InsertColumn(10,_T(""),	LVCFMT_RIGHT, 85);							//IDS_SESSION_RATIO
-	InsertColumn(11,_T(""),	LVCFMT_RIGHT, 70);							//IDS_COOLDOWN
-	InsertColumn(12,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
+	InsertColumn(3, _T(""),	LVCFMT_LEFT,  70);							//IDS_BASE_SCORE
+	InsertColumn(4, _T(""),	LVCFMT_LEFT,  80);							//IDS_EFFECTIVE_SCORE
+	InsertColumn(5, _T(""),	LVCFMT_LEFT, 150);							//IDS_SCORE_MODIFIERS
+	InsertColumn(6, _T(""),	LVCFMT_LEFT,  60);							//IDS_ASKED
+	InsertColumn(7, _T(""),	LVCFMT_LEFT, 110);							//IDS_LASTSEEN
+	InsertColumn(8, _T(""),	LVCFMT_LEFT, 110);							//IDS_ENTERQUEUE
+	InsertColumn(9, _T(""),	LVCFMT_LEFT,  60);							//IDS_BANNED
+	InsertColumn(10,_T(""),	LVCFMT_RIGHT, 85);							//IDS_ALL_TIME_RATIO
+	InsertColumn(11,_T(""),	LVCFMT_RIGHT, 85);							//IDS_SESSION_RATIO
+	InsertColumn(12,_T(""),	LVCFMT_RIGHT, 70);							//IDS_COOLDOWN
+	InsertColumn(13,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
 
 	SetAllIcons();
 	Localize();
@@ -123,10 +124,11 @@ void CQueueListCtrl::Init()
 
 void CQueueListCtrl::Localize()
 {
-	static const UINT uids[13] =
+	static const UINT uids[14] =
 	{
-		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_QL_RATING, IDS_SCORE
-		, IDS_ASKED, IDS_LASTSEEN, IDS_ENTERQUEUE, IDS_BANNED, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS
+		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_BASE_SCORE, IDS_EFFECTIVE_SCORE
+		, IDS_SCORE_MODIFIERS, IDS_ASKED, IDS_LASTSEEN, IDS_ENTERQUEUE, IDS_BANNED
+		, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -192,7 +194,7 @@ void CQueueListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 				rcItem.right -= sm_iSubItemInset;
 				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
 				break;
-			case 12: //obtained parts
+			case 13: //obtained parts
 				if (client->GetUpPartCount()) {
 					++rcItem.top;
 					--rcItem.bottom;
@@ -255,45 +257,52 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		}
 		break;
 	case 3:
-		sText.Format(_T("%u"), client->GetScore(false, false, true));
+		sText = UploadScoreSeams::FormatBaseUploadScore(
+			client->GetScoreBreakdown(false, false, false),
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-"));
 		break;
 	case 4:
-		{
-			UINT uScore = client->GetScore(false);
-			if (client->HasLowID())
-				sText.Format(_T("%u (%s)"), uScore, (LPCTSTR)GetResString(IDS_IDLOW));
-			else
-				sText.Format(_T("%u"), uScore);
-		}
+		sText = UploadScoreSeams::FormatEffectiveUploadScoreValue(
+			client->GetScoreBreakdown(false, false, false),
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-"));
 		break;
 	case 5:
-		sText.Format(_T("%u"), client->GetAskedCount());
+		sText = UploadScoreSeams::FormatUploadScoreModifiers(
+			client->GetScoreBreakdown(false, false, false),
+			GetResString(IDS_LOW_RATIO_BONUS),
+			GetResString(IDS_BB_LOWID_DIVISOR),
+			GetResString(IDS_COOLDOWN));
 		break;
 	case 6:
-		sText = CastSecondsToHM((::GetTickCount64() - client->GetLastUpRequest()) / SEC2MS(1));
+		sText.Format(_T("%u"), client->GetAskedCount());
 		break;
 	case 7:
-		sText = CastSecondsToHM((::GetTickCount64() - client->GetWaitStartTime()) / SEC2MS(1));
+		sText = CastSecondsToHM((::GetTickCount64() - client->GetLastUpRequest()) / SEC2MS(1));
 		break;
 	case 8:
-		sText = GetResString(client->IsBanned() ? IDS_YES : IDS_NO);
+		sText = CastSecondsToHM((::GetTickCount64() - client->GetWaitStartTime()) / SEC2MS(1));
 		break;
 	case 9:
+		sText = GetResString(client->IsBanned() ? IDS_YES : IDS_NO);
+		break;
+	case 10:
 		{
 			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 			sText = file ? FormatUploadRatio(file->GetAllTimeUploadRatio()) : _T("-");
 		}
 		break;
-	case 10:
+	case 11:
 		{
 			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
 			sText = file ? FormatUploadRatio(file->GetSessionUploadRatio()) : _T("-");
 		}
 		break;
-	case 11:
+	case 12:
 		sText = client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining());
 		break;
-	case 12:
+	case 13:
 		sText = GetResString(IDS_UPSTATUS);
 	}
 	return sText;
@@ -330,14 +339,15 @@ void CQueueListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	if (GetSortItem() != pNMLV->iSubItem)
 		switch (pNMLV->iSubItem) {
 		case 2: // Up Priority
-		case 3: // Rating
-		case 4: // Score
-		case 5: // Ask Count
-		case 8: // Banned
-		case 9: // All-time ratio
-		case 10: // Session ratio
-		case 11: // Cooldown
-		case 12: // Part Count
+		case 3: // Base score
+		case 4: // Effective score
+		case 5: // Modifiers
+		case 6: // Ask Count
+		case 9: // Banned
+		case 10: // All-time ratio
+		case 11: // Session ratio
+		case 12: // Cooldown
+		case 13: // Part Count
 			sortAscending = false;
 			break;
 		default:
@@ -390,24 +400,29 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		}
 		break;
 	case 3:
-		iResult = CompareUnsigned(item1->GetScore(false, false, true), item2->GetScore(false, false, true));
+		iResult = CompareUnsigned(item1->GetScoreBreakdown(false, false, false).uBaseScore, item2->GetScoreBreakdown(false, false, false).uBaseScore);
 		break;
 	case 4:
 		iResult = CompareUnsigned(item1->GetScore(false), item2->GetScore(false));
 		break;
 	case 5:
-		iResult = CompareUnsigned(item1->GetAskedCount(), item2->GetAskedCount());
+		iResult = CompareUnsigned(
+			UploadScoreSeams::BuildUploadScoreModifierSortKey(item1->GetScoreBreakdown(false, false, false)),
+			UploadScoreSeams::BuildUploadScoreModifierSortKey(item2->GetScoreBreakdown(false, false, false)));
 		break;
 	case 6:
-		iResult = CompareUnsigned(item1->GetLastUpRequest(), item2->GetLastUpRequest());
+		iResult = CompareUnsigned(item1->GetAskedCount(), item2->GetAskedCount());
 		break;
 	case 7:
-		iResult = CompareUnsigned(item1->GetWaitStartTime(), item2->GetWaitStartTime());
+		iResult = CompareUnsigned(item1->GetLastUpRequest(), item2->GetLastUpRequest());
 		break;
 	case 8:
-		iResult = item1->IsBanned() - item2->IsBanned();
+		iResult = CompareUnsigned(item1->GetWaitStartTime(), item2->GetWaitStartTime());
 		break;
 	case 9:
+		iResult = item1->IsBanned() - item2->IsBanned();
+		break;
+	case 10:
 		{
 			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
@@ -417,7 +432,7 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 				iResult = (file1 == NULL) ? 1 : -1;
 		}
 		break;
-	case 10:
+	case 11:
 		{
 			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
 			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
@@ -427,10 +442,10 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 				iResult = (file1 == NULL) ? 1 : -1;
 		}
 		break;
-	case 11:
+	case 12:
 		iResult = CompareUnsigned(item1->GetSlowUploadCooldownRemaining(), item2->GetSlowUploadCooldownRemaining());
 		break;
-	case 12:
+	case 13:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
 	}
 

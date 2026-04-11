@@ -34,7 +34,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // CClientDetailPage
 
@@ -155,19 +154,26 @@ BOOL CClientDetailPage::OnSetActive()
 			SetDlgItemText(IDC_CDIDENT, _T("?"));
 		}
 
-		if (client->GetUserName() && clcredits != NULL) {
-			buffer.Format(_T("%.1f"), (float)client->GetScore(false, client->IsDownloading(), true));
-			SetDlgItemText(IDC_DRATING, buffer);
-		} else
-			SetDlgItemText(IDC_DRATING, _T("?"));
+		const UploadScoreSeams::UploadScoreBreakdown breakdown = client->GetScoreBreakdown(false, client->IsDownloading(), false);
+		SetDlgItemText(IDC_DRATING, UploadScoreSeams::FormatBaseUploadScore(
+			breakdown,
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-")));
 
 		if (client->GetUploadState() != US_NONE && clcredits != NULL) {
-			if (!client->GetFriendSlot())
-				SetDlgItemInt(IDC_DSCORE, client->GetScore(false, client->IsDownloading(), false));
-			else
-				SetDlgItemText(IDC_DSCORE, GetResString(IDS_FRIENDDETAIL));
+			SetDlgItemText(IDC_DSCORE, UploadScoreSeams::FormatEffectiveUploadScoreValue(
+				breakdown,
+				GetResString(IDS_FRIENDDETAIL),
+				_T("-")));
 		} else
 			SetDlgItemText(IDC_DSCORE, _T("-"));
+
+		SetDlgItemText(IDC_DLOWRATIOBONUS, UploadScoreSeams::FormatUploadScoreLowRatioDetail(breakdown, _T("-")));
+		SetDlgItemText(IDC_DLOWIDDIVISOR, UploadScoreSeams::FormatUploadScoreLowIdDetail(breakdown, _T("-")));
+		SetDlgItemText(IDC_DCOOLDOWN, UploadScoreSeams::FormatUploadScoreCooldownDetail(
+			breakdown,
+			client->GetSlowUploadCooldownRemaining(),
+			_T("-")));
 
 		SetDlgItemText(IDC_CLIENTDETAIL_KADCON, GetResString(client->GetKadPort() ? IDS_CONNECTED : IDS_DISCONNECTED));
 
@@ -208,8 +214,11 @@ void CClientDetailPage::Localize()
 
 	SetDlgItemText(IDC_STATIC50, GetResString(IDS_CD_SCORES));
 	SetDlgItemText(IDC_STATIC51, GetResString(IDS_CD_MOD));
-	SetDlgItemText(IDC_STATIC52, GetResString(IDS_CD_RATING));
-	SetDlgItemText(IDC_STATIC53, GetResString(IDS_CD_USCORE));
+	SetDlgItemText(IDC_STATIC52, GetResString(IDS_BASE_SCORE) + _T(':'));
+	SetDlgItemText(IDC_STATIC53, GetResString(IDS_EFFECTIVE_SCORE) + _T(':'));
+	SetDlgItemText(IDC_STATIC_SCORE_LOWRATIO, GetResString(IDS_LOW_RATIO_BONUS) + _T(':'));
+	SetDlgItemText(IDC_STATIC_SCORE_LOWID, GetResString(IDS_BB_LOWID_DIVISOR) + _T(':'));
+	SetDlgItemText(IDC_STATIC_SCORE_COOLDOWN, GetResString(IDS_COOLDOWN) + _T(':'));
 	SetDlgItemText(IDC_STATIC133x, GetResString(IDS_CD_IDENT));
 	SetDlgItemText(IDC_CLIENTDETAIL_KAD, GetResString(IDS_KADEMLIA) + _T(':'));
 }
