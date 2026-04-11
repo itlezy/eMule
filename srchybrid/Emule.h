@@ -261,6 +261,7 @@ protected:
 	CString		m_strParityHarnessSearchTerm;
 	CString		m_strParityHarnessSearchResultsFile;
 	CString		m_strParityHarnessSearchDownloadHashFile;
+	CString		m_strParityHarnessLastSearchDownloadHash;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHelp();
