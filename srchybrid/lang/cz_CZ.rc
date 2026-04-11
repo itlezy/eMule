@@ -1939,7 +1939,6 @@ BEGIN
     IDS_UNSHARE             "Zrušit sdílení"
     IDS_WEBUPNPINCLUDE      "Zařadit port do UPnP nastavení"
     IDS_ADDEDON             "Přidán"
-    IDS_RESOLVELINKS        "Rozluštit shell links ve sdílených adresářích"
 END
 
 STRINGTABLE

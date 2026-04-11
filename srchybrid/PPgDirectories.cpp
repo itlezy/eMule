@@ -141,9 +141,9 @@ BOOL CPPgDirectories::OnApply()
 			// ignore real LNK files
 			if (ExtensionIs(ff.GetFileName(), _T(".lnk"))) {
 				SHFILEINFO info;
+				// TODO:MINOR(FEAT-010): Incoming-dir shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
 				if (::SHGetFileInfo(ff.GetFilePath(), 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
-					if (!thePrefs.GetResolveSharedShellLinks())
-						continue;
+					continue;
 			}
 
 			// ignore real THUMBS.DB files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute

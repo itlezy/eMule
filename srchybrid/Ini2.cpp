@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Ini2.h"
+#include "Ini2Seams.h"
 #include "StringConversion.h"
 
 #ifdef _DEBUG
@@ -12,54 +13,20 @@ static char THIS_FILE[] = __FILE__;
 
 void CIni::AddModulePath(CString &rstrFileName, bool bModulPath)
 {
-	TCHAR drive[_MAX_DRIVE];
-	TCHAR dir[_MAX_DIR];
-	TCHAR fname[_MAX_FNAME];
-	TCHAR ext[_MAX_EXT];
-
-	_tsplitpath(rstrFileName, drive, dir, fname, ext);
-	if (!drive[0]) {
+	if (Ini2Seams::NeedsBaseDirectoryPrefix(rstrFileName)) {
 		//PathCanonicalize(...) doesn't work with for all Platforms !
-		CString strModule;
-		if (bModulPath) {
-			DWORD dwModPathLen = ::GetModuleFileName(NULL, strModule.GetBuffer(MAX_PATH), MAX_PATH);
-			strModule.ReleaseBuffer((dwModPathLen == 0 || dwModPathLen == MAX_PATH) ? 0 : -1);
-		} else {
-			DWORD dwCurDirLen = ::GetCurrentDirectory(MAX_PATH, strModule.GetBuffer(MAX_PATH));
-			strModule.ReleaseBuffer((dwCurDirLen == 0 || dwCurDirLen >= MAX_PATH) ? 0 : -1);
-			// fix by "cpp@world-online.no"
-			strModule.TrimRight(_T("\\/"));
-			strModule += _T('\\');
-		}
-		_tsplitpath(strModule, drive, dir, fname, ext);
-		strModule.Format(_T("%s%s%s"), drive, dir, (LPCTSTR)rstrFileName);
-		rstrFileName = strModule;
+		const CString strBaseDirectory = bModulPath
+			? Ini2Seams::ExtractDirectoryPath(Ini2Seams::GetModuleFilePath())
+			: Ini2Seams::GetCurrentDirectoryPath();
+		rstrFileName = Ini2Seams::BuildPathFromBaseDirectory(strBaseDirectory, rstrFileName);
 	}
 }
 
 CString CIni::GetDefaultIniFile(bool bModulPath)
 {
-	TCHAR drive[_MAX_DRIVE];
-	TCHAR dir[_MAX_DIR];
-	TCHAR fname[_MAX_FNAME];
-	TCHAR ext[_MAX_EXT];
-	CString strTemp;
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, strTemp.GetBuffer(MAX_PATH), MAX_PATH);
-	strTemp.ReleaseBuffer((dwModPathLen == 0 || dwModPathLen == MAX_PATH) ? 0 : -1);
-	_tsplitpath(strTemp, drive, dir, fname, ext);
-	strTemp.Format(_T("%s.ini"), fname);
-
-	CString strApplName;
-	if (bModulPath)
-		strApplName.Format(_T("%s%s%s"), drive, dir, (LPCTSTR)strTemp);
-	else {
-		DWORD dwCurDirLen = ::GetCurrentDirectory(MAX_PATH, strApplName.GetBuffer(MAX_PATH));
-		strApplName.ReleaseBuffer((dwCurDirLen == 0 || dwCurDirLen >= MAX_PATH) ? 0 : -1);
-		strApplName.TrimRight(_T('\\'));
-		strApplName.TrimRight(_T('/'));
-		strApplName.AppendFormat(_T("\\%s"), (LPCTSTR)strTemp);
-	}
-	return strApplName;
+	const CString strModulePath = Ini2Seams::GetModuleFilePath();
+	const CString strCurrentDirectory = bModulPath ? CString() : Ini2Seams::GetCurrentDirectoryPath();
+	return Ini2Seams::BuildDefaultIniFilePath(strModulePath, strCurrentDirectory, bModulPath);
 }
 
 CIni::CIni()

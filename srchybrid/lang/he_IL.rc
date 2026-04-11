@@ -1929,7 +1929,6 @@ BEGIN
     IDS_UNSHARE             "בטל שיתוף"
     IDS_WEBUPNPINCLUDE      "הוסף פורט בהפעלת UPnP"
     IDS_ADDEDON             "נוסף בתאריך"
-    IDS_RESOLVELINKS        "אפשר שיתוף קבצים באמצעות קיצורי דרך בתיקיות משותפות"
 END
 
 STRINGTABLE

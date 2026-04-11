@@ -1496,7 +1496,6 @@
 #define IDS_WEBUPNPINCLUDE              1569
 #define IDS_ADDEDON                     1570
 #define IDS_FOLLOWLINKS                 1571
-#define IDS_RESOLVELINKS                1571
 #define IDS_PAUSEONPREVIEW              1572
 #define IDS_PREVIEWWITH                 1573
 #define IDS_DOWNLOADCOMMANDS            1574

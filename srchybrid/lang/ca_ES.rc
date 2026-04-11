@@ -1943,7 +1943,6 @@ BEGIN
     IDS_UNSHARE             "Unshare"
     IDS_WEBUPNPINCLUDE      "Include port into UPnP setup"
     IDS_ADDEDON             "added on"
-    IDS_RESOLVELINKS        "Resolve shell links in shared directories"
 END
 
 STRINGTABLE

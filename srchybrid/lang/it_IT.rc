@@ -1909,7 +1909,6 @@ BEGIN
     IDS_UNSHARE             "Non condividere"
     IDS_WEBUPNPINCLUDE      "Includi la porta nelle impostazioni dell'UPnP"
     IDS_ADDEDON             "Aggiunto"
-    IDS_RESOLVELINKS        "Condividi anche i file i cui collegamenti simbolici sono nelle cartelle condivise"
 END
 
 STRINGTABLE

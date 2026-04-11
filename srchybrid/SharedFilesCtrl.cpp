@@ -546,9 +546,8 @@ void CSharedFilesCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 					if (CheckBoxesEnabled()) {
 						CHECKBOXSTATES iState;
 						int iNoStyleState;
-						// no interaction with shell linked files or default shared directories
-						if ((file->IsShellLinked() && theApp.sharedfiles->ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), false))
-							|| (theApp.sharedfiles->ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), true)))
+						// no interaction with default shared directories
+						if (theApp.sharedfiles->ShouldBeShared(file->GetSharedDirectory(), file->GetFilePath(), true))
 						{
 							iState = CBS_CHECKEDDISABLED;
 							iNoStyleState = DFCS_CHECKED | DFCS_INACTIVE;
@@ -725,7 +724,7 @@ void CSharedFilesCtrl::OnContextMenu(CWnd*, CPoint point)
 		else if (iCompleteFileSelected != iCurCompleteFile)
 			iCompleteFileSelected = -1;
 
-		bContainsUnshareableFile = !pFile->IsShellLinked() && !pFile->IsPartFile() && (bContainsUnshareableFile || (theApp.sharedfiles->ShouldBeShared(pFile->GetSharedDirectory(), pFile->GetFilePath(), false)
+		bContainsUnshareableFile = !pFile->IsPartFile() && (bContainsUnshareableFile || (theApp.sharedfiles->ShouldBeShared(pFile->GetSharedDirectory(), pFile->GetFilePath(), false)
 			&& !theApp.sharedfiles->ShouldBeShared(pFile->GetSharedDirectory(), pFile->GetFilePath(), true)));
 
 		if (pFile->IsKindOf(RUNTIME_CLASS(CKnownFile))) {
@@ -1550,6 +1549,7 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 		// ignore real(!) LNK files
 		if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
 			SHFILEINFO info;
+			// TODO:MINOR(FEAT-010): Shared-files view shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
 			if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
 				continue;
 		}
@@ -1624,8 +1624,6 @@ void CSharedFilesCtrl::CheckBoxClicked(int iItem)
 	}
 	// check which state the checkbox (should) currently have
 	const CShareableFile *pFile = reinterpret_cast<CShareableFile*>(GetItemData(iItem));
-	if (pFile->IsShellLinked())
-		return; // no interacting with shell-linked files
 	if (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), false)) {
 		// this is currently shared so unshare it
 		if (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), true))

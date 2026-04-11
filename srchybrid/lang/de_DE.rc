@@ -1915,7 +1915,6 @@ BEGIN
     IDS_UNSHARE             "Freigabe aufheben"
     IDS_WEBUPNPINCLUDE      "Port in UPnP Einrichtung aufnehmen"
     IDS_ADDEDON             "hinzugefügt am"
-    IDS_RESOLVELINKS        "Shell-Links in freigegebenen Verzeichnissen auflösen"
 END
 
 STRINGTABLE

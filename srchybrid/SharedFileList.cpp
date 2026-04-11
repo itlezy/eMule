@@ -327,8 +327,10 @@ bool CAddFileThread::ImportParts()
 	}
 
 	CString strFilePath;
-	_tmakepath(strFilePath.GetBuffer(MAX_PATH), NULL, m_strDirectory, m_strFilename, NULL);
-	strFilePath.ReleaseBuffer();
+	strFilePath = m_strDirectory;
+	if (!strFilePath.IsEmpty() && strFilePath[strFilePath.GetLength() - 1] != _T('\\'))
+		strFilePath += _T('\\');
+	strFilePath += m_strFilename;
 
 	Log(LOG_STATUSBAR, GetResString(IDS_IMPORTPARTS_IMPORTSTART), m_PartsToImport.GetSize(), (LPCTSTR)strFilePath);
 
@@ -423,12 +425,15 @@ int CAddFileThread::Run()
 	// very heavy load and slowly progressing
 	CSingleLock hashingLock(&theApp.hashing_mut, TRUE); // hash only one file at a time
 
-	TCHAR strFilePath[MAX_PATH];
-	_tmakepathlimit(strFilePath, NULL, m_strDirectory, m_strFilename, NULL);
+	CString strFilePath;
+	strFilePath = m_strDirectory;
+	if (!strFilePath.IsEmpty() && strFilePath[strFilePath.GetLength() - 1] != _T('\\'))
+		strFilePath += _T('\\');
+	strFilePath += m_strFilename;
 	if (m_partfile)
-		Log(_T("%s \"%s\" \"%s\""), (LPCTSTR)GetResString(IDS_HASHINGFILE), (LPCTSTR)m_partfile->GetFileName(), strFilePath);
+		Log(_T("%s \"%s\" \"%s\""), (LPCTSTR)GetResString(IDS_HASHINGFILE), (LPCTSTR)m_partfile->GetFileName(), (LPCTSTR)strFilePath);
 	else
-		Log(_T("%s \"%s\""), (LPCTSTR)GetResString(IDS_HASHINGFILE), strFilePath);
+		Log(_T("%s \"%s\""), (LPCTSTR)GetResString(IDS_HASHINGFILE), (LPCTSTR)strFilePath);
 
 	if (!theApp.IsClosing()) {
 		CKnownFile *newKnown = new CKnownFile();
@@ -1576,7 +1581,6 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 	CString strFoundFileName(ff.GetFileName());
 	CString strFoundFilePath(ff.GetFilePath());
 	CString strFoundDirectory(strFoundFilePath, ff.GetFilePath().ReverseFind(_T('\\')) + 1); //with backslash
-	CString strShellLinkDir;
 	ULONGLONG ullFoundFileSize = ff.GetLength();
 
 	// check if this file is explicitly unshared
@@ -1590,39 +1594,10 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 	// ignore real(!) LNK files
 	if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
 		SHFILEINFO info;
+		// TODO:MINOR(FEAT-010): Shared-file shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
 		if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK)) {
-			if (!thePrefs.GetResolveSharedShellLinks()) {
-				TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
-				return;
-			}
-			CComPtr<IShellLink> pShellLink;
-			if (SUCCEEDED(pShellLink.CoCreateInstance(CLSID_ShellLink))) {
-				CComQIPtr<IPersistFile> pPersistFile(pShellLink);
-				if (pPersistFile && SUCCEEDED(pPersistFile->Load(strFoundFilePath, STGM_READ))) {
-					TCHAR szResolvedPath[MAX_PATH];
-					if (pShellLink->GetPath(szResolvedPath, _countof(szResolvedPath), NULL/*DO NOT USE (read below)*/, 0) == NOERROR) {
-						// WIN32_FIND_DATA provided by "IShellLink::GetPath" contains the file stats which where
-						// taken when the shortcut was created! Thus the file stats which are returned do *not*
-						// reflect the current real file stats. So, do *not* use that data!
-						//
-						// Need to do an explicit 'FindFile' to get the current WIN32_FIND_DATA file stats.
-						//
-						CFileFind ffResolved;
-						if (!ffResolved.FindFile(szResolvedPath))
-							return;
-						VERIFY(!ffResolved.FindNextFile());
-						if (ffResolved.IsDirectory() || ffResolved.IsSystem() || ffResolved.IsTemporary() || ffResolved.GetLength() == 0 || ffResolved.GetLength() > MAX_EMULE_FILE_SIZE)
-							return;
-						strShellLinkDir = strFoundDirectory;
-						strFoundDirectory = ffResolved.GetRoot();
-						strFoundFileName = ffResolved.GetFileName();
-						strFoundFilePath = ffResolved.GetFilePath();
-						ullFoundFileSize = ffResolved.GetLength();
-						ffResolved.GetLastWriteTime(&tFoundFileTime);
-						slosh(strFoundDirectory);
-					}
-				}
-			}
+			TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
+			return;
 		}
 	}
 
@@ -1655,11 +1630,8 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 					DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
 			}
 		} else {
-			if (!strShellLinkDir.IsEmpty())
-				DebugLog(_T("Shared link: %s from %s"), (LPCTSTR)strFoundFilePath, (LPCTSTR)strShellLinkDir);
 			toadd->SetPath(strFoundDirectory);
 			toadd->SetFilePath(strFoundFilePath);
-			toadd->SetSharedDirectory(strShellLinkDir);
 			AddFile(toadd);
 		}
 	} else {
@@ -1669,7 +1641,6 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 			UnknownFile_Struct *tohash = new UnknownFile_Struct;
 			tohash->strDirectory = strFoundDirectory;
 			tohash->strName = strFoundFileName;
-			tohash->strSharedDirectory = strShellLinkDir;
 			waitingforhash_list.AddTail(tohash);
 		} else
 			TRACE(_T("%hs: Did not share file \"%s\" - already hashing or temp. file\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);

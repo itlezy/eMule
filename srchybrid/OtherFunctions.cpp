@@ -631,6 +631,7 @@ bool ShellDeleteFile(LPCTSTR pszFilePath)
 
 CString ShellGetFolderPath(int iCSIDL)
 {
+	// TODO:MINOR(FEAT-010): Shell folder lookup still depends on SHGetFolderPath into a MAX_PATH buffer; defer the remaining shell/path-helper cleanup on this branch.
 	TCHAR szPath[MAX_PATH];
 	if (SUCCEEDED(::SHGetFolderPath(NULL, iCSIDL, NULL, SHGFP_TYPE_CURRENT, szPath)))
 		return CString(szPath);
@@ -1262,6 +1263,7 @@ bool SelectDir(HWND hWnd, LPTSTR pszPath, LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
 		}
 
 		LPITEMIDLIST pidlBrowse;
+		// TODO:MINOR(FEAT-010): Shared folder-browse helper still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 		if ((pidlBrowse = ::SHBrowseForFolder(&BrsInfo)) != NULL) {
 			bResult = ::SHGetPathFromIDList(pidlBrowse, pszPath);
 			pShlMalloc->Free(pidlBrowse);
@@ -1289,6 +1291,7 @@ void unslosh(CString &path)
 
 void canonical(CString &path)
 {
+	// TODO:MINOR(FEAT-010): Canonicalization still depends on MAX_PATH-bound PathCanonicalize output; defer the remaining shell/path-helper cleanup on this branch.
 	TCHAR szPath[MAX_PATH];
 	if (::PathCanonicalize(szPath, path))
 		path = szPath;
@@ -1311,6 +1314,7 @@ CString StringLimit(const CString &in, UINT length)
 
 BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName, DWORD dwFlags, bool openfilestyle)
 {
+	// TODO:MINOR(FEAT-010): Shared file-browse helper still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 	CFileDialog myFileDialog(openfilestyle, NULL, pszDefaultFileName
 		, dwFlags | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT
 		, pszFilters
@@ -3320,6 +3324,7 @@ void AddAutoStart()
 {
 #ifndef _DEBUG
 	RemAutoStart();
+	// TODO:MINOR(FEAT-010): Auto-start command construction still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
 	TCHAR sExeFilePath[MAX_PATH];
 	DWORD dwModPathLen = ::GetModuleFileName(NULL, sExeFilePath, _countof(sExeFilePath));
 	if (dwModPathLen == 0 || dwModPathLen == _countof(sExeFilePath))
@@ -3485,6 +3490,7 @@ ULONGLONG GetModuleVersion(LPCTSTR pszFilePath)
 
 ULONGLONG GetModuleVersion(HMODULE hModule)
 {
+	// TODO:MINOR(FEAT-010): Module-version lookup still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
 	TCHAR szFilePath[MAX_PATH];
 	DWORD dwModPathLen = ::GetModuleFileName(hModule, szFilePath, _countof(szFilePath));
 	if (dwModPathLen == 0 || dwModPathLen == _countof(szFilePath))
@@ -3547,6 +3553,7 @@ uint64 GetFreeTempSpace(INT_PTR tempdirindex)
 
 bool DoCollectionRegFix(bool checkOnly)
 {
+	// TODO:MINOR(FEAT-010): Collection shell-registration repair still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
 	TCHAR modbuffer[MAX_PATH];
 	DWORD dwModPathLen = ::GetModuleFileName(NULL, modbuffer, _countof(modbuffer));
 	if (dwModPathLen == 0 || dwModPathLen == _countof(modbuffer))

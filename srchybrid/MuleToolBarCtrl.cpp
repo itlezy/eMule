@@ -584,7 +584,7 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 	case MP_CUSTOMIZETOOLBAR:
 		Customize();
 		break;
-	case MP_SELECTTOOLBARBITMAP:
+		case MP_SELECTTOOLBARBITMAP:
 		{
 			// we could also load "*.jpg" here, but because of the typical non solid background of JPGs this
 			// doesn't make sense here.
@@ -603,6 +603,7 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 			strFilter += _T("||");
 
 			const CString &sInitialDir(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR, false));
+			// TODO:MINOR(FEAT-010): Toolbar/skin pickers still depend on SelectDir and CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 			CFileDialog dialog(TRUE, EMULTB_BASEEXT _T(".bmp"), (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, strFilter, NULL, 0);
 			if (IDOK == dialog.DoModal())
 				if (thePrefs.GetToolbarBitmapSettings() != dialog.GetPathName()) {

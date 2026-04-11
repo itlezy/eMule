@@ -3769,7 +3769,6 @@ BEGIN
     IDS_UNSHARE             "Unshare"
     IDS_WEBUPNPINCLUDE      "Include port into UPnP setup"
     IDS_ADDEDON             "Added On"
-    IDS_RESOLVELINKS        "Resolve shell links in shared directories"
     IDS_PAUSEONPREVIEW      "Pause when preview is possible"
     IDS_PREVIEWWITH         "Preview with"
     IDS_DOWNLOADCOMMANDS    "Download Commands"

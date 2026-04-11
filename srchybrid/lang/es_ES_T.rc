@@ -1942,7 +1942,6 @@ BEGIN
     IDS_UNSHARE             "No compartir"
     IDS_WEBUPNPINCLUDE      "Utilizar UPnP para redirigir puerto"
     IDS_ADDEDON             "Añadido el"
-    IDS_RESOLVELINKS        "Compartir archivos a partir de sus accesos directos"
 END
 
 STRINGTABLE

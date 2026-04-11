@@ -359,6 +359,8 @@ private:
 	void	CharFillRange(CStringA &buffer, uint32 start, uint32 end, char color) const;
 	void	AddToSharedFiles();
 	void	DeleteWrittenItem(const POSITION pos);
+	bool	HasDirtyBufferedData() const;
+	bool	FlushBufferedDataForShutdown();
 
 	static CBarShader s_LoadBar;
 	static CBarShader s_ChunkBar;

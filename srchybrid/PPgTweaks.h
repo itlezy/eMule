@@ -99,7 +99,6 @@ protected:
 	HTREEITEM m_htiRestoreLastLogPane;
 	HTREEITEM m_htiRestoreLastMainWndDlg;
 	HTREEITEM m_htiMinFreeDiskSpace;
-	HTREEITEM m_htiResolveShellLinks;
 	HTREEITEM m_htiServerKeepAliveTimeout;
 	HTREEITEM m_htiShareeMule;
 	HTREEITEM m_htiShareeMuleMultiUser;
@@ -165,7 +164,6 @@ protected:
 	bool m_bPreviewOnIconDblClk;
 	bool m_bRearrangeKadSearchKeywords;
 	bool m_bReBarToolbar;
-	bool m_bResolveShellLinks;
 	bool m_bRestoreLastLogPane;
 	bool m_bRestoreLastMainWndDlg;
 	bool m_bShowedWarning;

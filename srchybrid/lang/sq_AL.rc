@@ -1933,7 +1933,6 @@ BEGIN
     IDS_UNSHARE             "Mos e shpërnda"
     IDS_WEBUPNPINCLUDE      "Përfshi portin në ndërtimin UPnP"
     IDS_ADDEDON             "Shtuar Në"
-    IDS_RESOLVELINKS        "Zgjidhi linket bazë në direktoritë e shpërndara"
 END
 
 STRINGTABLE

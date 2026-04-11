@@ -1931,7 +1931,6 @@ BEGIN
     IDS_UNSHARE             "لا تشارك"
     IDS_WEBUPNPINCLUDE      "اضف البورت الى يو بي ان بي"
     IDS_ADDEDON             "اضيف في"
-    IDS_RESOLVELINKS        "عين روابط الشيل في المجلدات المشتركة"
 END
 
 STRINGTABLE

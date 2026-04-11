@@ -1947,7 +1947,6 @@ BEGIN
     IDS_UNSHARE             "Remover de partilha"
     IDS_WEBUPNPINCLUDE      "Incluir porta na configuração UPnP"
     IDS_ADDEDON             "Adicionado em"
-    IDS_RESOLVELINKS        "Resolve shell links in shared directories"
 END
 
 STRINGTABLE

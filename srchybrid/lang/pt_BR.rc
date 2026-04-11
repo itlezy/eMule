@@ -1921,7 +1921,6 @@ BEGIN
     IDS_UNSHARE             "Não compartilhar"
     IDS_WEBUPNPINCLUDE      "Incluir porta na configuração UPnP"
     IDS_ADDEDON             "Adicionado em"
-    IDS_RESOLVELINKS        "Seguir links em pastas compartilhadas"
     IDS_PAUSEONPREVIEW      "Pausar quando puder pré-visualizar"
     IDS_PREVIEWWITH         "Pré-visualizar com"
     IDS_DOWNLOADCOMMANDS    "Comandos de Download"

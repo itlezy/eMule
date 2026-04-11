@@ -255,6 +255,7 @@ HTREEITEM CDirectoryTreeCtrl::AddChildItem(HTREEITEM hRoot, const CString &strTe
 
 	SHFILEINFO shFinfo;
 	shFinfo.szDisplayName[0] = _T('\0');
+	// TODO:MINOR(FEAT-010): Directory tree shell icon/display lookup still depends on SHGetFileInfo; defer the long-path-safe helper and fallback policy to the shell/UI follow-up.
 	if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_SMALLICON | SHGFI_ICON | SHGFI_OPENICON | SHGFI_DISPLAYNAME)) {
 		itInsert.itemex.iImage = shFinfo.iIcon;
 		::DestroyIcon(shFinfo.hIcon);

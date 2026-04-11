@@ -1947,7 +1947,6 @@ BEGIN
     IDS_UNSHARE             "Ophæv deling"
     IDS_WEBUPNPINCLUDE      "Inkluder port i UPnP opsætningen"
     IDS_ADDEDON             "Tilføjet den"
-    IDS_RESOLVELINKS        "Resolve shell links in shared directories"
 END
 
 STRINGTABLE

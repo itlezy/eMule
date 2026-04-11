@@ -2236,6 +2236,7 @@ void CTreeOptionsEdit::BrowseForFolder(const CString &sInitialFolder)
 	bi.ulFlags = BIF_RETURNONLYFSDIRS;
 	bi.lpfn = SHBrowseSetSelProc;
 	bi.lParam = (LPARAM)(LPCTSTR)sInitialFolder;
+	// TODO:MINOR(FEAT-010): Tree-options folder browse still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 	LPITEMIDLIST pItemIDList = SHBrowseForFolder(&bi);
 
 	if (pItemIDList) {
@@ -2259,6 +2260,7 @@ void CTreeOptionsEdit::BrowseForFile(const CString &sInitialFile)
 	ASSERT(m_pTreeCtrl);
 
 	//Create the special file save dialog
+	// TODO:MINOR(FEAT-010): Tree-options file browse still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 	CTreeOptionsFileDialog dlg(TRUE, NULL, sInitialFile, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, GetFileExtensionFilter(), m_pTreeCtrl);
 
 	//Modify the title to the desired value

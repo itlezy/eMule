@@ -44,6 +44,7 @@
 #include "Collection.h"
 #include "emuledlg.h"
 #include "SharedFilesWnd.h"
+#include "KnownFileMetadataSeams.h"
 #include "MediaInfo.h"
 #include "id3/tag.h"
 #include "uploaddiskiothread.h"
@@ -1396,18 +1397,17 @@ void CKnownFile::UpdateMetaDataTags()
 
 	LPCTSTR pszExt = ::PathFindExtension(GetFileName());
 	pszExt += static_cast<int>(*pszExt != _T('\0'));
+	const CString strFullPath = KnownFileMetadataSeams::BuildMetadataFilePath(GetPath(), GetFileName());
 	if (!_tcsicmp(pszExt, _T("mp3")) || !_tcsicmp(pszExt, _T("mp2")) || !_tcsicmp(pszExt, _T("mp1")) || !_tcsicmp(pszExt, _T("mpa"))) {
-		TCHAR szFullPath[MAX_PATH];
-		if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
-			wchar_t *pszText = NULL;
-			try {
+		wchar_t *pszText = NULL;
+		try {
 				// ID3LIB BUG: If there are ID3v2 _and_ ID3v1 tags available, id3lib
 				// destroys (actually corrupts) the Unicode strings from ID3v2 tags due to
 				// converting Unicode to ASCII and then conversion back from ASCII to Unicode.
 				// To prevent this, we force the reading of ID3v2 tags only, in case there are
 				// also ID3v1 tags available.
 				ID3_Tag myTag;
-				CStringA strFilePathA(szFullPath);
+				CStringA strFilePathA(strFullPath);
 				size_t id3Size = myTag.Link(strFilePathA, ID3TT_ID3V2);
 				if (id3Size == 0) {
 					myTag.Clear();
@@ -1475,25 +1475,22 @@ void CKnownFile::UpdateMetaDataTags()
 					pszText = NULL;
 				}
 				delete iter;
-			} catch (...) {
-				if (thePrefs.GetVerbose())
-					AddDebugLogLine(false, _T("Unhandled exception while extracting MP3 file meta data from \"%s\""), szFullPath);
-				delete[] pszText;
-				ASSERT(0);
-			}
+		} catch (...) {
+			if (thePrefs.GetVerbose())
+				AddDebugLogLine(false, _T("Unhandled exception while extracting MP3 file meta data from \"%s\""), (LPCTSTR)strFullPath);
+			delete[] pszText;
+			ASSERT(0);
 		}
 	} else {
-		TCHAR szFullPath[MAX_PATH];
-		if (_tmakepathlimit(szFullPath, NULL, GetPath(), GetFileName(), NULL)) {
-			SMediaInfo *mi = NULL;
-			try {
-				mi = GetRIFFMediaInfo(szFullPath);
-				if (mi == NULL) {
-					mi = GetRMMediaInfo(szFullPath);
-					if (mi == NULL)
-						mi = GetWMMediaInfo(szFullPath);
-				}
-				if (mi) {
+		SMediaInfo *mi = NULL;
+		try {
+			mi = GetRIFFMediaInfo(strFullPath);
+			if (mi == NULL) {
+				mi = GetRMMediaInfo(strFullPath);
+				if (mi == NULL)
+					mi = GetWMMediaInfo(strFullPath);
+			}
+			if (mi) {
 					mi->InitFileLength();
 					UINT uLengthSec = (UINT)mi->fFileLengthSec;
 
@@ -1543,13 +1540,12 @@ void CKnownFile::UpdateMetaDataTags()
 					delete mi;
 					mi = NULL;
 				}
-			} catch (...) {
-				if (thePrefs.GetVerbose())
-					AddDebugLogLine(false, _T("Unhandled exception while extracting file meta (AVI) data from \"%s\""), szFullPath);
-				ASSERT(0);
-			}
-			delete mi;
+		} catch (...) {
+			if (thePrefs.GetVerbose())
+				AddDebugLogLine(false, _T("Unhandled exception while extracting file meta (AVI) data from \"%s\""), (LPCTSTR)strFullPath);
+			ASSERT(0);
 		}
+		delete mi;
 	}
 }
 
@@ -1652,6 +1648,7 @@ bool CKnownFile::ImportParts()
 		return false;
 	}
 
+	// TODO:MINOR(FEAT-010): Import-parts source selection still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 	CFileDialog dlg(true, NULL, NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
 	if (dlg.DoModal() != IDOK)
 		return false;

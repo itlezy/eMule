@@ -1933,7 +1933,6 @@ BEGIN
     IDS_UNSHARE             "Tühista jagamine"
     IDS_WEBUPNPINCLUDE      "Kaasa port UPnP seadistus"
     IDS_ADDEDON             "Lisatud"
-    IDS_RESOLVELINKS        "Resolve shell links in shared directories"
 END
 
 STRINGTABLE

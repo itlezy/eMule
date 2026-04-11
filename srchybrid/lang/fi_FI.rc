@@ -1909,7 +1909,6 @@ BEGIN
     IDS_UNSHARE             "Poista jako"
     IDS_WEBUPNPINCLUDE      "Sisällytä portti uPnP -asetuksiin"
     IDS_ADDEDON             "Lisätty"
-    IDS_RESOLVELINKS        "Ratkaise shell -linkit jaetuissa hakemistoissa"
 END
 
 STRINGTABLE

@@ -158,7 +158,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiRestoreLastLogPane()
 	, m_htiRestoreLastMainWndDlg()
 	, m_htiMinFreeDiskSpace()
-	, m_htiResolveShellLinks()
 	, m_htiServerKeepAliveTimeout()
 	, m_htiShareeMule()
 	, m_htiShareeMuleMultiUser()
@@ -221,7 +220,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bPreviewOnIconDblClk()
 	, m_bRearrangeKadSearchKeywords()
 	, m_bReBarToolbar()
-	, m_bResolveShellLinks()
 	, m_bRestoreLastLogPane()
 	, m_bRestoreLastMainWndDlg()
 	, m_bShowedWarning()
@@ -354,7 +352,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiExtractMetaDataNever = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_NEVER), m_htiExtractMetaData, m_iExtractMetaData == 0);
 		m_htiExtractMetaDataID3Lib = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_META_DATA_ID3LIB), m_htiExtractMetaData, m_iExtractMetaData == 1);
 		//m_htiExtractMetaDataMediaDet = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_META_DATA_MEDIADET), m_htiExtractMetaData, m_iExtractMetaData == 2);
-		m_htiResolveShellLinks = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESOLVELINKS), TVI_ROOT, m_bResolveShellLinks);
 		m_htiHiddenStartup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_STARTUP), iImgConnection, TVI_ROOT);
 		m_htiRestoreLastMainWndDlg = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTMAINWNDDLG), m_htiHiddenStartup, m_bRestoreLastMainWndDlg);
 		m_htiRestoreLastLogPane = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTLOGPANE), m_htiHiddenStartup, m_bRestoreLastLogPane);
@@ -527,7 +524,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceGB, static_cast<int>(PartFilePersistenceSeams::kMinDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiExtractMetaData, m_iExtractMetaData);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiResolveShellLinks, m_bResolveShellLinks);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastMainWndDlg, m_bRestoreLastMainWndDlg);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastLogPane, m_bRestoreLastLogPane);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferTimeLimit, m_uFileBufferTimeLimitSeconds);
@@ -639,7 +635,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bImportParts = thePrefs.m_bImportParts;
 	m_bFullAlloc = thePrefs.m_bAllocFull;
 	m_bCheckDiskspace = true;
-	m_bResolveShellLinks = thePrefs.GetResolveSharedShellLinks();
 	m_iMinFreeDiskSpaceGB = static_cast<int>(PartFilePersistenceSeams::ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(thePrefs.GetMinFreeDiskSpace()));
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
@@ -817,7 +812,6 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
 	thePrefs.checkDiskspace = true;
-	thePrefs.m_bResolveSharedShellLinks = m_bResolveShellLinks;
 	thePrefs.m_uMinFreeDiskSpace = thePrefs.NormalizeMinFreeDiskSpace(PartFilePersistenceSeams::ConvertDiskSpaceFloorGiBToBytes(thePrefs.NormalizeMinFreeDiskSpaceGiB(static_cast<UINT>(m_iMinFreeDiskSpaceGB))));
 	if (thePrefs.GetYourHostname() != m_sYourHostname) {
 		thePrefs.SetYourHostname(m_sYourHostname);
@@ -969,7 +963,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiReBarToolbar, IDS_REBARTOOLBAR);
 		LocalizeItemText(m_htiRestoreLastLogPane, IDS_RESTORELASTLOGPANE);
 		LocalizeItemText(m_htiRestoreLastMainWndDlg, IDS_RESTORELASTMAINWNDDLG);
-		LocalizeItemText(m_htiResolveShellLinks, IDS_RESOLVELINKS);
 		LocalizeItemText(m_htiShareeMule, IDS_SHAREEMULELABEL);
 		LocalizeItemText(m_htiShareeMuleMultiUser, IDS_SHAREEMULEMULTI);
 		LocalizeItemText(m_htiShareeMuleOldStyle, IDS_SHAREEMULEOLD);
@@ -1092,8 +1085,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiShareeMulePublicUser = NULL;
 	m_htiShareeMuleOldStyle = NULL;
 	//m_htiExtractMetaDataMediaDet = NULL;
-	m_htiResolveShellLinks = NULL;
-
 	CPropertyPage::OnDestroy();
 }
 

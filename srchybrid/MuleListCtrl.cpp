@@ -404,6 +404,7 @@ void CMuleListCtrl::SetColors()
 	SetBkImage(&lvimg);
 
 	if (!strBkImage.IsEmpty() && !g_bLowColorDesktop) {
+		// TODO:MINOR(longpath): Background skin resource path assembly still uses MAX_PATH buffers; keep tracked in FEAT-010 shell/UI follow-up.
 		// expand any optional available environment strings
 		TCHAR szExpSkinRes[MAX_PATH];
 		if (::ExpandEnvironmentStrings(strBkImage, szExpSkinRes, _countof(szExpSkinRes)) != 0)

@@ -1914,7 +1914,6 @@ BEGIN
     IDS_UNSHARE             "Anuluj udostępnienie"
     IDS_WEBUPNPINCLUDE      "Dołącz port do konfiguracji UPnP"
     IDS_ADDEDON             "dodane"
-    IDS_RESOLVELINKS        "Rozwiąż linki shellu w udostępnionych folderach"
 END
 
 STRINGTABLE

@@ -19,6 +19,7 @@
 #include <share.h>
 #include "emule.h"
 #include "Log.h"
+#include "LogFileSeams.h"
 #include "OtherFunctions.h"
 #include "Preferences.h"
 #include "emuledlg.h"
@@ -384,20 +385,7 @@ void CLogFile::StartNewLogFile()
 
 	TCHAR szDateLogStarted[40];
 	_tcsftime(szDateLogStarted, _countof(szDateLogStarted), _T("%Y.%m.%d %H.%M.%S"), localtime(&tStarted));
-
-	TCHAR szDrv[_MAX_DRIVE];
-	TCHAR szDir[_MAX_DIR];
-	TCHAR szNam[_MAX_FNAME];
-	TCHAR szExt[_MAX_EXT];
-	_tsplitpath(m_strFilePath, szDrv, szDir, szNam, szExt);
-
-	CString strLogBakNam;
-	strLogBakNam.Format(_T("%s - %s"), szNam, szDateLogStarted);
-
-	CString strLogBakFilePath(szDrv);
-	strLogBakFilePath += szDir;
-	strLogBakFilePath += strLogBakNam;
-	strLogBakFilePath += szExt;
+	const CString strLogBakFilePath = LogFileSeams::BuildRotatedLogFilePath(m_strFilePath, CString(szDateLogStarted));
 
 	if (!LongPathSeams::MoveFile(m_strFilePath, strLogBakFilePath))
 		VERIFY(LongPathSeams::DeleteFile(m_strFilePath) != FALSE);

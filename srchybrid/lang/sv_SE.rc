@@ -1940,7 +1940,6 @@ BEGIN
     IDS_UNSHARE             "Sluta dela ut"
     IDS_WEBUPNPINCLUDE      "Inkludera port i UPnP inställning"
     IDS_ADDEDON             "Tillagd"
-    IDS_RESOLVELINKS        "Resolve shell links in shared directories"
 END
 
 STRINGTABLE

@@ -1914,7 +1914,6 @@ BEGIN
     IDS_UNSHARE             "停止共享" //"Unshare"
     IDS_WEBUPNPINCLUDE      "包含该端口至 UPnP 设定" //"Include port into UPnP setup"
     IDS_ADDEDON             "加入时间" //"Added On"
-    IDS_RESOLVELINKS        "解析共享目录中的快捷方式" //"Resolve shell links in shared directories"
 END
 
 STRINGTABLE

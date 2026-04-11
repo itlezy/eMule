@@ -23,6 +23,7 @@
 #include "Preferences.h"
 #include "Statistics.h"
 #include "Log.h"
+#include "PerfLogSeams.h"
 #include "otherfunctions.h"
 
 #ifdef _DEBUG
@@ -72,21 +73,9 @@ void CPerfLog::Startup()
 			m_strFilePath = strDefFilePath;
 
 		if (m_eFileFormat == MRTG) {
-			TCHAR drv[_MAX_DRIVE];
-			TCHAR dir[_MAX_DIR];
-			TCHAR nam[_MAX_FNAME];
-			_tsplitpath(m_strFilePath, drv, dir, nam, NULL);
+			m_strMRTGDataFilePath = PerfLogSeams::BuildMrtgSidecarPath(m_strFilePath, _T("_data.mrtg"));
+			m_strMRTGOverheadFilePath = PerfLogSeams::BuildMrtgSidecarPath(m_strFilePath, _T("_overhead.mrtg"));
 			m_strFilePath.Empty();
-
-			if (_tmakepathlimit(m_strMRTGDataFilePath.GetBuffer(MAX_PATH), drv, dir, CString(nam) + _T("_data"), _T("mrtg")))
-				m_strMRTGDataFilePath.ReleaseBuffer();
-			else
-				m_strMRTGDataFilePath.ReleaseBuffer(0);
-
-			if (_tmakepathlimit(m_strMRTGOverheadFilePath.GetBuffer(MAX_PATH), drv, dir, CString(nam) + _T("_overhead"), _T("mrtg")))
-				m_strMRTGOverheadFilePath.ReleaseBuffer();
-			else
-				m_strMRTGOverheadFilePath.ReleaseBuffer(0);
 		}
 
 		m_dwInterval = MIN2MS(ini.GetInt(_T("Interval"), 5));

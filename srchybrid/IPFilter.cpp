@@ -20,6 +20,7 @@
 #include <io.h>
 #include "emule.h"
 #include "IPFilter.h"
+#include "IPFilterSeams.h"
 #include "OtherFunctions.h"
 #include "Preferences.h"
 #include "Log.h"
@@ -86,12 +87,10 @@ INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 			} eFileType = Unknown;
 			::setvbuf(readFile, NULL, _IOFBF, 32768);
 
-			TCHAR szNam[_MAX_FNAME];
-			TCHAR szExt[_MAX_EXT];
-			_tsplitpath(pszFilePath, NULL, NULL, szNam, szExt);
-			if (_tcsicmp(szExt, _T(".p2p")) == 0 || (_tcsicmp(szNam, _T("guarding.p2p")) == 0 && _tcsicmp(szExt, _T(".txt")) == 0))
+			const IPFilterSeams::PathHintType ePathHintType = IPFilterSeams::DetectFileTypeFromPath(CString(pszFilePath));
+			if (ePathHintType == IPFilterSeams::PathHintPeerGuardian)
 				eFileType = PeerGuardian;
-			else if (_tcsicmp(szExt, _T(".prefix")) == 0)
+			else if (ePathHintType == IPFilterSeams::PathHintFilterDat)
 				eFileType = FilterDat;
 			else {
 				VERIFY(_setmode(_fileno(readFile), _O_BINARY) != -1);

@@ -37,7 +37,9 @@
 #include "IPFilter.h"
 #include "Packets.h"
 #include "Preferences.h"
+#include "PartFileCompletionSeams.h"
 #include "PartFilePauseResumeSeams.h"
+#include "PartFilePreviewSeams.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "SharedFileList.h"
@@ -69,6 +71,9 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+constexpr DWORD kShutdownFlushWaitMs = 5000;
+constexpr DWORD kShutdownFlushPollMs = 10;
+
 PartFilePauseResumeSeams::RuntimeStatus ResolvePauseResumeRuntimeStatus(const EPartFileStatus eStatus)
 {
 	switch (eStatus) {
@@ -305,15 +310,15 @@ CPartFile::~CPartFile()
 {
 	// Barry - Ensure all buffered data is written
 	if ((HANDLE)m_hpartfile != INVALID_HANDLE_VALUE) {
-		CPartFileWriteThread *pThread = theApp.m_pPartFileWriteThread;
-		const bool bShouldFlush = PartFilePersistenceSeams::ShouldFlushPartFileOnDestroy(theApp.IsClosing(), pThread != NULL, pThread != NULL && pThread->IsRunning());
-		// commit file and directory entry
-		if (bShouldFlush)
-			FlushBuffer(false, true);
+		const bool bFlushedBufferedData = FlushBufferedDataForShutdown();
 		CPartFileWriteThread::RemFile(this);
 		m_hpartfile.Close();
-		// Update met file (with the current directory entry)
-		SavePartFile();
+		if (bFlushedBufferedData) {
+			// Update met file (with the current directory entry)
+			SavePartFile();
+		} else {
+			theApp.QueueDebugLogLineEx(LOG_WARNING, _T("Skipping part.met save for \"%s\" because buffered part data could not be flushed during shutdown."), (LPCTSTR)GetFileName());
+		}
 	} else
 		CPartFileWriteThread::RemFile(this);
 
@@ -323,6 +328,39 @@ CPartFile::~CPartFile()
 		delete item;
 	}
 	delete m_pAICHRecoveryHashSet;
+}
+
+bool CPartFile::HasDirtyBufferedData() const
+{
+	return m_iWrites > 0 || m_nTotalBufferData > 0 || !m_BufferedData_list.IsEmpty();
+}
+
+bool CPartFile::FlushBufferedDataForShutdown()
+{
+	if (!HasDirtyBufferedData())
+		return true;
+
+	FlushBuffer(false, true);
+	if (!HasDirtyBufferedData())
+		return true;
+
+	CPartFileWriteThread *pThread = theApp.m_pPartFileWriteThread;
+	if (pThread != NULL && pThread->IsRunning()) {
+		const DWORD dwStartTick = ::GetTickCount();
+		do {
+			if (m_iWrites > 0) {
+				pThread->WakeUpCall();
+				::Sleep(kShutdownFlushPollMs);
+			}
+			FlushBuffer(false, true);
+			if (!HasDirtyBufferedData())
+				return true;
+		} while (::GetTickCount() - dwStartTick < kShutdownFlushWaitMs);
+	} else {
+		FlushBuffer(false, true);
+	}
+
+	return !HasDirtyBufferedData();
 }
 
 #ifdef _DEBUG
@@ -2910,9 +2948,8 @@ BOOL CPartFile::PerformFileComplete()
 		if (dwMoveResult != ERROR_SHARING_VIOLATION || !bFirstTry) {
 			theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - \"%s\": %s")
 				, (LPCTSTR)GetFileName(), (LPCTSTR)strNewname, (LPCTSTR)GetErrorMessage(dwMoveResult));
-			// If the destination file path is too long, the default system error message may be unhelpful for user to know what failed.
-			if (strNewname.GetLength() >= MAX_PATH)
-				theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - \"%s\": Path too long")
+			if (PartFileCompletionSeams::ShouldWarnAboutDisabledLongPathSupport(dwMoveResult, strNewname, IsWin32LongPathsEnabled()))
+				theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - \"%s\": Windows long-path support is disabled; enable LongPathsEnabled to avoid failures with overlong paths")
 					, (LPCTSTR)GetFileName(), (LPCTSTR)strNewname);
 
 			m_paused = m_stopped = true;
@@ -3585,12 +3622,11 @@ bool CPartFile::IsReadyForPreview() const
 			&& IsComplete(0)
 			&& IsComplete(GetPartCount() - 1);
 
-	TCHAR szVideoPlayerFileName[_MAX_FNAME];
-	_tsplitpath(thePrefs.GetVideoPlayer(), NULL, NULL, szVideoPlayerFileName, NULL);
+	const CString strVideoPlayerFileName = PartFilePreviewSeams::ExtractConfiguredVideoPlayerBaseName(thePrefs.GetVideoPlayer());
 
 	// enable the preview command if 'PreviewSmallBlocks' option is enabled
 	// or if VideoLAN client is specified
-	if (thePrefs.GetPreviewSmallBlocks() || _tcsicmp(szVideoPlayerFileName, _T("vlc")) == 0) {
+	if (thePrefs.GetPreviewSmallBlocks() || strVideoPlayerFileName.CompareNoCase(_T("vlc")) == 0) {
 		switch (uStatus) {
 		case PS_READY:
 		case PS_EMPTY:

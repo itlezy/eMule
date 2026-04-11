@@ -1904,7 +1904,6 @@ BEGIN
     IDS_UNSHARE             "ھەمبەھىرلىمە"
     IDS_WEBUPNPINCLUDE      "‫بۇ ئېغىز UPnP بەلگىلەشنىڭ ئىچىدە‬"
     IDS_ADDEDON             "قوشۇلغان ۋاقتى"
-    IDS_RESOLVELINKS        "ھەمبەھىر قىسقۇچتىكى قىسقا يولنى تەھلىل قىل"
 END
 
 STRINGTABLE

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include <locale.h>
 #include "emule.h"
+#include "I18nSeams.h"
 #include "OtherFunctions.h"
 #include "Preferences.h"
 #include "langids.h"
@@ -149,11 +150,10 @@ static void InitLanguages(const CString &rstrLangDir1, const CString &rstrLangDi
 		bFound = ff.FindNextFile();
 		if (ff.IsDirectory())
 			continue;
-		TCHAR szLangDLLFileName[_MAX_FNAME];
-		_tsplitpath(ff.GetFileName(), NULL, NULL, szLangDLLFileName, NULL);
+		const CString strLangDLLFileName = I18nSeams::ExtractLanguageDllBaseName(ff.GetFileName());
 
 		for (SLanguage *pLang = s_aLanguages; pLang->lid; ++pLang)
-			if (_tcsicmp(pLang->pszISOLocale, szLangDLLFileName) == 0) {
+			if (_tcsicmp(pLang->pszISOLocale, strLangDLLFileName) == 0) {
 				pLang->bSupported = true;
 				break;
 			}

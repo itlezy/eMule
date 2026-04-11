@@ -1938,7 +1938,6 @@ BEGIN
     IDS_UNSHARE             "Départager"
     IDS_WEBUPNPINCLUDE      "Inclure le port dans le réglage UPnP"
     IDS_ADDEDON             "Ajouté le"
-    IDS_RESOLVELINKS        "Résoudre les liens de ligne de commande dans les dossiers partagés"
 END
 
 STRINGTABLE

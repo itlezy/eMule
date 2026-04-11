@@ -238,6 +238,7 @@ BOOL CMiniMule::OnInitDialog()
 	}
 
 	if (m_strCurrentUrl.IsEmpty()) {
+		// TODO:MINOR(FEAT-010): Resource URL fallback still uses MAX_PATH-bound GetModuleFileName output; defer the remaining shell/path-helper cleanup on this branch.
 		TCHAR szModulePath[MAX_PATH];
 		DWORD dwModPathLen = ::GetModuleFileName(AfxGetResourceHandle(), szModulePath, _countof(szModulePath));
 		if (dwModPathLen != 0 && dwModPathLen < _countof(szModulePath)) {
@@ -396,6 +397,7 @@ void CMiniMule::UpdateContent(UINT uUpDatarate, UINT uDownDatarate)
 		UINT uIconIdx = theApp.emuledlg->GetConnectionStateIconIndex();
 		ASSERT(uIconIdx < _countof(_apszConnectedImgs));
 
+		// TODO:MINOR(FEAT-010): Embedded resource image lookup still uses MAX_PATH-bound GetModuleFileName output; defer the remaining shell/path-helper cleanup on this branch.
 		TCHAR szModulePath[MAX_PATH];
 		DWORD dwModPathLen = ::GetModuleFileName(AfxGetResourceHandle(), szModulePath, _countof(szModulePath));
 		if (dwModPathLen != 0 && dwModPathLen < _countof(szModulePath)) {
@@ -492,6 +494,7 @@ void CMiniMule::OnDocumentComplete(LPDISPATCH pDisp, LPCTSTR pszUrl)
 	CDHtmlDialog::OnDocumentComplete(pDisp, pszUrl);
 
 	if (m_bResolveImages) {
+		// TODO:MINOR(FEAT-010): Embedded HTML image resolution still uses MAX_PATH-bound GetModuleFileName output; defer the remaining shell/path-helper cleanup on this branch.
 		TCHAR szModulePath[MAX_PATH];
 		DWORD dwModPathLen = ::GetModuleFileName(AfxGetResourceHandle(), szModulePath, _countof(szModulePath));
 		if (dwModPathLen != 0 && dwModPathLen < _countof(szModulePath)) {

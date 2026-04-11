@@ -1940,7 +1940,6 @@ BEGIN
     IDS_UNSHARE             "Nešarinti"
     IDS_WEBUPNPINCLUDE      "Naudotį šį portą UPnP nustatymuose"
     IDS_ADDEDON             "Pridėta"
-    IDS_RESOLVELINKS        "Atpažinti shell nuorodas šarintuose kataloguose"
 END
 
 STRINGTABLE

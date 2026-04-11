@@ -1939,7 +1939,6 @@ BEGIN
     IDS_UNSHARE             "Paylaşma"
     IDS_WEBUPNPINCLUDE      "UPnP ayarlaması içine bağlantı noktasını dahil et"
     IDS_ADDEDON             "Eklenen"
-    IDS_RESOLVELINKS        "Paylaşılan dizinlerdeki dış bağlantıyı çöz"
 END
 
 STRINGTABLE

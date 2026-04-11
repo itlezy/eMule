@@ -1884,7 +1884,6 @@ BEGIN
     IDS_UNSHARE             "Αφαίρεση από τα κοινόχρηστα"
     IDS_WEBUPNPINCLUDE      "Να περιλαμβάνεται το port στις ρυθμίσεις του UPnP"
     IDS_ADDEDON             "Προστέθηκε στις"
-    IDS_RESOLVELINKS        "Χρήση των shell links σε κοινόχρηστους φακέλους"
 END
 
 STRINGTABLE

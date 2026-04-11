@@ -1938,7 +1938,6 @@ BEGIN
     IDS_UNSHARE             "Prenehaj deliti"
     IDS_WEBUPNPINCLUDE      "Dodaj vrata v UPnP nastavitve"
     IDS_ADDEDON             "Dodano"
-    IDS_RESOLVELINKS        "Sledi povezavam v deljenih mapah"
 END
 
 STRINGTABLE

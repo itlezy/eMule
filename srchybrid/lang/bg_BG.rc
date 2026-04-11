@@ -1921,7 +1921,6 @@ BEGIN
     IDS_UNSHARE             "Не споделяй"
     IDS_WEBUPNPINCLUDE      "Включи порта в UPnP настройките"
     IDS_ADDEDON             "Добавен на"
-    IDS_RESOLVELINKS        "Разреши shell-връзки в споделените папки"
 END
 
 STRINGTABLE

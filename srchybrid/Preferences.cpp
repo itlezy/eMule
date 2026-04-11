@@ -431,7 +431,6 @@ bool	CPreferences::m_bExtraPreviewWithMenu;
 bool    CPreferences::m_bA4AFSaveCpu;
 // ZZ:DownloadManager <--
 bool    CPreferences::m_bHighresTimer;
-bool	CPreferences::m_bResolveSharedShellLinks;
 bool	CPreferences::m_bKeepUnavailableFixedSharedDirs;
 CCriticalSection CPreferences::m_csSharedDirList;
 CStringList CPreferences::shareddir_list;
@@ -1617,7 +1616,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("CheckDiskspace"), true);
 	ini.WriteUInt64(_T("MinFreeDiskSpace"), GetMinFreeDiskSpace());
 	ini.WriteBool(_T("SparsePartFiles"), m_bSparsePartFiles);
-	ini.WriteBool(_T("ResolveSharedShellLinks"), m_bResolveSharedShellLinks);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
 	ini.WriteBool(_T("ShowWin7TaskbarGoodies"), m_bShowWin7TaskbarGoodies);
@@ -2105,7 +2103,6 @@ void CPreferences::LoadPreferences()
 	SetBBSessionTimeLimitSeconds((UINT)max(0, ini.GetInt(_T("BBSessionTimeLimitSeconds"), 3600)));
 	m_uMinFreeDiskSpace = NormalizeMinFreeDiskSpace(ini.GetUInt64(_T("MinFreeDiskSpace"), GetMinFreeDiskSpaceFloor()));
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
-	m_bResolveSharedShellLinks = ini.GetBool(_T("ResolveSharedShellLinks"), false);
 	m_bKeepUnavailableFixedSharedDirs = ini.GetBool(_T("KeepUnavailableFixedSharedDirs"), false);
 	m_strYourHostname = ini.GetString(_T("YourHostname"), _T(""));
 	m_bImportParts = false; //enable on demand for the current session only

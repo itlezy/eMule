@@ -1905,7 +1905,6 @@ BEGIN
     IDS_UNSHARE             "بدون اشتراک"
     IDS_WEBUPNPINCLUDE      "در پورت هاي اضافه کن UPnP"
     IDS_ADDEDON             "اضافه شده در"
-    IDS_RESOLVELINKS        "رفع مشکل توده لينک هاي موجود در پوشه اشتراکي"
 END
 
 STRINGTABLE

@@ -1903,7 +1903,6 @@ BEGIN
     IDS_UNSHARE             "공유 해제"
     IDS_WEBUPNPINCLUDE      "UPnP 설치에 포트 포함"
     IDS_ADDEDON             "추가됨"
-    IDS_RESOLVELINKS        "공유 디렉토리에 쉘 링크 해결"
 END
 
 STRINGTABLE

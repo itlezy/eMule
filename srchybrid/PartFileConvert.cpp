@@ -627,6 +627,7 @@ void CPartFileConvertDlg::OnAddFolder()
 
 		// Now cause the dialog to appear.
 		LPITEMIDLIST pidlRoot;
+		// TODO:MINOR(FEAT-010): Part-file import folder browse still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 		if ((pidlRoot = SHBrowseForFolder(&bi)) != NULL) {
 			int reply;
 			if (thePrefs.IsExtControlsEnabled())

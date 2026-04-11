@@ -100,6 +100,7 @@ public:
 			if (m_hLib == NULL) {
 				CRegKey key;
 				if (key.Open(HKEY_CURRENT_USER, _T("Software\\MediaInfo"), KEY_READ) == ERROR_SUCCESS) {
+					// TODO:MINOR(FEAT-010): MediaInfo DLL discovery still uses MAX_PATH-bound PathCombine output; defer the remaining shell/path-helper cleanup on this branch.
 					TCHAR szPath[MAX_PATH];
 					ULONG ulChars = _countof(szPath);
 					if (key.QueryStringValue(_T("Path"), szPath, &ulChars) == ERROR_SUCCESS) {
@@ -1922,6 +1923,7 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 	}
 
 	if (!bFoundHeader && bGiveMediaInfoLibHint) {
+		// TODO:MINOR(FEAT-010): MediaInfo install-folder hinting still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
 		TCHAR szBuff[MAX_PATH];
 		DWORD dwModPathLen = ::GetModuleFileName(theApp.m_hInstance, szBuff, _countof(szBuff));
 		if (dwModPathLen == 0 || dwModPathLen == _countof(szBuff))

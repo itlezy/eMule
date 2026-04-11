@@ -486,7 +486,7 @@ BOOL CemuleApp::InitInstance()
 	}
 	Log(_T("Starting eMule v%s"), (LPCTSTR)m_strCurVersionLong);
 	if (!IsWin32LongPathsEnabled())
-		QueueLogLineEx(LOG_WARNING, _T("Windows long-path support is disabled. Overlong paths may fail until LongPathsEnabled is turned on."));
+		QueueLogLineEx(LOG_WARNING, _T("Windows long-path support is disabled. Enable LongPathsEnabled to avoid failures with overlong paths."));
 
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 
@@ -1009,6 +1009,7 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 		if (!m_aBigExtToSysImgIdx.Lookup(pszCacheExt, vData)) {
 			// Get index for the system's big icon image list
 			SHFILEINFO sfi;
+			// TODO:MINOR(FEAT-010): System icon cache population still depends on SHGetFileInfo; defer the long-path-safe shell helper and fallback policy to the shell/UI follow-up.
 			HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(pszFilePath, dwFileAttributes, &sfi, sizeof(sfi), SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX);
 			if (hResult == 0)
 				return 0;
@@ -1136,6 +1137,7 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 	HICON hIcon = NULL;
 	const CString &sSkinProfile(thePrefs.GetSkinProfile());
 	if (!sSkinProfile.IsEmpty()) {
+		// TODO:MINOR(longpath): Skin resource path assembly in LoadIcon/LoadImage/GetSkinFileItem still uses MAX_PATH buffers; keep tracked in FEAT-010 shell/UI follow-up.
 		// load icon resource file specification from skin profile
 		TCHAR szSkinResource[MAX_PATH];
 		::GetPrivateProfileString(_T("Icons"), lpszResourceName, NULL, szSkinResource, _countof(szSkinResource), sSkinProfile);

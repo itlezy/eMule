@@ -1934,7 +1934,6 @@ BEGIN
     IDS_UNSHARE             "Không chia sẻ"
     IDS_WEBUPNPINCLUDE      "Thêm cổng này trong cài đặt UPnP"
     IDS_ADDEDON             "Được thêm vào"
-    IDS_RESOLVELINKS        "Phân giải liên kết đường dẫn trong thư mục chia sẻ"
 END
 
 STRINGTABLE

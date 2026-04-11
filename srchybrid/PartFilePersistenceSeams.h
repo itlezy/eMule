@@ -100,7 +100,7 @@ inline bool CanWritePartMetWithFreeSpace(const uint64_t nFreeBytes, const uint64
 
 inline PartMetWriteGuardDecision ResolvePartMetWriteGuard(const bool bHasCachedResult, const bool bCachedCanWrite, const bool bForceRefresh, const uint64_t nFreeBytes, const uint64_t nRequiredBytes = kMinPartMetWriteFreeBytes)
 {
-	if (bHasCachedResult && !bForceRefresh) {
+	if (bHasCachedResult && bCachedCanWrite && !bForceRefresh) {
 		PartMetWriteGuardDecision decision = { true, bCachedCanWrite };
 		return decision;
 	}

@@ -1940,7 +1940,6 @@ BEGIN
     IDS_UNSHARE             "Niet delen"
     IDS_WEBUPNPINCLUDE      "Poort bijvoegen in UPnP-instelling"
     IDS_ADDEDON             "toegevoegd op"
-    IDS_RESOLVELINKS        "Shelllinks oplossen in gedeelde mappen"
 END
 
 STRINGTABLE

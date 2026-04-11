@@ -1942,7 +1942,6 @@ BEGIN
     IDS_UNSHARE             "Scoate din share"
     IDS_WEBUPNPINCLUDE      "Include port în setările UPnP"
     IDS_ADDEDON             "Adăugat"
-    IDS_RESOLVELINKS        "Rezolvă link-urile (shell links) în dosarele partajate"
 END
 
 STRINGTABLE

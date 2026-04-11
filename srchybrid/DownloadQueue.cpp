@@ -38,6 +38,7 @@
 #include "MenuCmds.h"
 #include "Log.h"
 #include "DownloadQueueDiskSpaceSeams.h"
+#include "DownloadQueueOverviewSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1668,10 +1669,8 @@ void CDownloadQueue::KademliaSearchFile(uint32 nSearchID, const Kademlia::CUInt1
 void CDownloadQueue::ExportPartMetFilesOverview() const
 {
 	const CString &strFileListPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("downloads.txt"));
-
-	CString strTmpFileListPath(strFileListPath);
-	::PathRenameExtension(strTmpFileListPath.GetBuffer(MAX_PATH), _T(".tmp"));
-	strTmpFileListPath.ReleaseBuffer();
+	const CString strFileListPathWithoutExtension(RemoveFileExtension(strFileListPath));
+	const CString strTmpFileListPath(strFileListPathWithoutExtension + _T(".tmp"));
 
 	CSafeBufferedFile file;
 	CFileException fex;
@@ -1694,20 +1693,14 @@ void CDownloadQueue::ExportPartMetFilesOverview() const
 			const CPartFile *pPartFile = filelist.GetNext(pos);
 			if (pPartFile->GetStatus(true) != PS_COMPLETE) {
 				const CString &strPartFilePath(pPartFile->GetFilePath());
-				TCHAR szNam[_MAX_FNAME];
-				TCHAR szExt[_MAX_EXT];
-				_tsplitpath(strPartFilePath, NULL, NULL, szNam, szExt);
-				if (thePrefs.GetTempDirCount() == 1)
-					file.printf(_T("%s%s\t%s\r\n"), szNam, szExt, (LPCTSTR)pPartFile->GetED2kLink());
-				else
-					file.printf(_T("%s\t%s\r\n"), (LPCTSTR)pPartFile->GetFullName(), (LPCTSTR)pPartFile->GetED2kLink());
+				const CString strDisplayName = DownloadQueueOverviewSeams::GetPartMetOverviewDisplayName(
+					strPartFilePath, pPartFile->GetFullName(), thePrefs.GetTempDirCount() == 1);
+				file.printf(_T("%s\t%s\r\n"), (LPCTSTR)strDisplayName, (LPCTSTR)pPartFile->GetED2kLink());
 			}
 		}
 		CommitAndClose(file);
 
-		CString strBakFileListPath(strFileListPath);
-		::PathRenameExtension(strBakFileListPath.GetBuffer(MAX_PATH), _T(".bak"));
-		strBakFileListPath.ReleaseBuffer();
+		const CString strBakFileListPath(strFileListPathWithoutExtension + _T(".bak"));
 
 		if (LongPathSeams::PathExists(strBakFileListPath))
 			(void)LongPathSeams::DeleteFile(strBakFileListPath);

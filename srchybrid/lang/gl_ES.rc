@@ -1946,7 +1946,6 @@ BEGIN
     IDS_UNSHARE             "Non compartir"
     IDS_WEBUPNPINCLUDE      "Incluír porto na configuración de UPnP"
     IDS_ADDEDON             "Engadido o"
-    IDS_RESOLVELINKS        "Compartir arquivos a partir dos seus accesos directos"
 END
 
 STRINGTABLE

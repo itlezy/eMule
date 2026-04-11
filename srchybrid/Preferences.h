@@ -591,7 +591,6 @@ public:
 
 	static bool		m_bHighresTimer;
 
-	static bool		m_bResolveSharedShellLinks;
 	/// Guards ownership of the live shared-directory list.
 	static CCriticalSection m_csSharedDirList;
 	static CStringList shareddir_list;
@@ -1165,7 +1164,6 @@ public:
 	static ULONGLONG GetMinFreeDiskSpace()				{ return NormalizeMinFreeDiskSpace(m_uMinFreeDiskSpace); }
 	static bool		GetSparsePartFiles();
 	static void		SetSparsePartFiles(bool bEnable)	{ m_bSparsePartFiles = bEnable; }
-	static bool		GetResolveSharedShellLinks()		{ return m_bResolveSharedShellLinks; }
 	static bool		IsShowUpDownIconInTaskbar()			{ return m_bShowUpDownIconInTaskbar; }
 	static bool		IsWin7TaskbarGoodiesEnabled()		{ return m_bShowWin7TaskbarGoodies; }
 	static void		SetWin7TaskbarGoodiesEnabled(bool flag)	{ m_bShowWin7TaskbarGoodies = flag; }

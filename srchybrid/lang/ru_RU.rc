@@ -1935,7 +1935,6 @@ BEGIN
     IDS_UNSHARE             "Отменить обмен"
     IDS_WEBUPNPINCLUDE      "Добавить порт в UPnP настройку"
     IDS_ADDEDON             "Добавлен"
-    IDS_RESOLVELINKS        "Разрешать shell-ссылки в папках обмена"
 END
 
 STRINGTABLE

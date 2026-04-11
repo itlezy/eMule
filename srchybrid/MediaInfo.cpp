@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "resource.h"
+#include "KnownFileMetadataSeams.h"
 #include "LongPathSeams.h"
 #include "OtherFunctions.h"
 #include "MediaInfo.h"
@@ -624,7 +625,7 @@ bool GetRIFFHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsAVI, bool bFu
 	ASSERT(!bFullInfo || mi->strInfo.m_hWnd != NULL);
 
 	// Open AVI file
-	int hAviFile = _topen(pszFileName, O_RDONLY | O_BINARY);
+	int hAviFile = KnownFileMetadataSeams::OpenMetadataReadOnlyDescriptor(pszFileName);
 	if (hAviFile < 0)
 		return false;
 

@@ -511,6 +511,7 @@ void CStatisticsTree::ExportHTML()
 	if (dwCurDirLen == 0 || dwCurDirLen >= _countof(szCurDir))
 		*szCurDir = _T('\0');
 
+	// TODO:MINOR(FEAT-010): Statistics HTML export still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
 	CFileDialog saveAsDlg(false, _T("html"), _T("eMule Statistics.html"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_EXPLORER, _T("HTML Files (*.html)|*.html|All Files (*.*)|*.*||"), this, 0);
 	if (saveAsDlg.DoModal() == IDOK) {
 		theApp.emuledlg->statisticswnd->ShowStatistics(true); //force update

@@ -1914,7 +1914,6 @@ BEGIN
     IDS_UNSHARE             "解除分享"
     IDS_WEBUPNPINCLUDE      "包含連接埠至 UPnP 設定"
     IDS_ADDEDON             "已加入在"
-    IDS_RESOLVELINKS        "解析在已分享資內的捷徑"
 END
 
 STRINGTABLE
