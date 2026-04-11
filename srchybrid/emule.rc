@@ -956,10 +956,16 @@ BEGIN
     GROUPBOX        "Scores",IDC_STATIC50,7,156,308,47
     RTEXT           "DL/UP Modifier:",IDC_STATIC51,19,166,87,8
     CONTROL         "Static",IDC_DRATIO,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,166,53,8
-    RTEXT           "Rating (total):",IDC_STATIC52,19,177,87,8
+    RTEXT           "Base Score:",IDC_STATIC52,19,177,87,8
     CONTROL         "Static",IDC_DRATING,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,177,53,8
-    RTEXT           "Upload queue Score:",IDC_STATIC53,19,188,87,8
+    RTEXT           "Effective Score:",IDC_STATIC53,19,188,87,8
     CONTROL         "Static",IDC_DSCORE,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,188,105,8
+    RTEXT           "Low-ratio bonus:",IDC_STATIC_SCORE_LOWRATIO,163,166,90,8
+    CONTROL         "Static",IDC_DLOWRATIOBONUS,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,256,166,50,8
+    RTEXT           "LowID divisor:",IDC_STATIC_SCORE_LOWID,163,177,90,8
+    CONTROL         "Static",IDC_DLOWIDDIVISOR,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,256,177,50,8
+    RTEXT           "Cooldown:",IDC_STATIC_SCORE_COOLDOWN,163,188,90,8
+    CONTROL         "Static",IDC_DCOOLDOWN,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,256,188,50,8
     RTEXT           "Currently downloading:",IDC_STATIC48,19,102,87,8
     CONTROL         "Static",IDC_UPLOADING,"Static",SS_LEFTNOWORDWRAP | SS_NOPREFIX | WS_GROUP,110,102,202,8
     RTEXT           "Kad:",IDC_CLIENTDETAIL_KAD,195,57,20,8
@@ -3726,6 +3732,10 @@ BEGIN
     IDS_BB_SESSION_TIME_LIMIT "Session time limit [sec.]"
     IDS_BB_SESSION_TRANSFER_PERCENT_VALUE "Percent value"
     IDS_BB_SESSION_TRANSFER_MIB_VALUE "MiB value"
+    IDS_BASE_SCORE       "Base Score"
+    IDS_EFFECTIVE_SCORE  "Effective Score"
+    IDS_SCORE_MODIFIERS  "Modifiers"
+    IDS_LOW_RATIO_BONUS  "Low-ratio bonus"
     IDS_SPAM                "Spam"
     IDS_MARKSPAM            "Mark as Spam"
     IDS_MARKNOTSPAM         "Mark as not Spam"

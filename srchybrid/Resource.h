@@ -1712,6 +1712,12 @@
 #define IDC_UPLOADING                   2254
 #define IDC_DRATING                     2255
 #define IDC_DSCORE                      2256
+#define IDC_DLOWRATIOBONUS              3043
+#define IDC_DLOWIDDIVISOR               3044
+#define IDC_DCOOLDOWN                   3045
+#define IDC_STATIC_SCORE_LOWRATIO       3046
+#define IDC_STATIC_SCORE_LOWID          3047
+#define IDC_STATIC_SCORE_COOLDOWN       3048
 #define IDC_FD_XI1                      2259
 #define IDC_FD_XI2                      2261
 #define IDC_POPBAR                      2262
@@ -2394,6 +2400,10 @@
 #define IDS_BB_SESSION_TRANSFER_PERCENT_VALUE 1681
 #define IDS_BB_SESSION_TRANSFER_MIB_VALUE 1682
 #define IDS_BB_SLOW_WARMUP_SECONDS      1683
+#define IDS_BASE_SCORE                  1684
+#define IDS_EFFECTIVE_SCORE             1685
+#define IDS_SCORE_MODIFIERS             1686
+#define IDS_LOW_RATIO_BONUS             1687
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2402,7 +2412,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3043
-#define _APS_NEXT_SYMED_VALUE           1683
+#define _APS_NEXT_CONTROL_VALUE         3049
+#define _APS_NEXT_SYMED_VALUE           1687
 #endif
 #endif

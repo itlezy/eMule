@@ -19,6 +19,7 @@
 #include "ClientStateDefs.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
+#include "UploadScoreSeams.h"
 #include "ring.h"
 
 class CClientReqSocket;
@@ -234,6 +235,7 @@ public:
 	bool			IsDownloading() const							{ return (m_eUploadState == US_UPLOADING); }
 	UINT			GetUploadDatarate() const						{ return m_nUpDatarate; }
 	UINT			GetScore(bool sysvalue, bool isdownloading = false, bool onlybasevalue = false) const;
+	UploadScoreSeams::UploadScoreBreakdown GetScoreBreakdown(bool sysvalue, bool isdownloading = false, bool onlybasevalue = false) const;
 	void			AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIOThread);
 	ULONGLONG		GetUpStartTime() const							{ return m_dwUploadTime; }
 	ULONGLONG		GetUpStartTimeDelay() const						{ return ::GetTickCount64() - m_dwUploadTime; }

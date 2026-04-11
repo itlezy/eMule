@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 enum UploadQueueEntryAccessState
 {
 	uploadQueueEntryMissing,
@@ -25,4 +27,26 @@ inline UploadQueueEntryAccessState ClassifyUploadQueueEntryAccess(bool bFoundInA
 inline bool CanReclaimUploadQueueEntry(bool bRetired, int nPendingIOBlocks)
 {
 	return bRetired && nPendingIOBlocks == 0;
+}
+
+inline bool PreferHigherUploadQueueScore(std::uint32_t uCandidateScore, std::uint32_t uBestScore)
+{
+	return uCandidateScore > uBestScore;
+}
+
+inline void UpdateUploadQueueMaxScore(std::uint32_t &uMaxScore, std::uint32_t uCandidateScore)
+{
+	if (uCandidateScore > uMaxScore)
+		uMaxScore = uCandidateScore;
+}
+
+inline std::uint32_t AddHigherUploadQueueScoreToRank(std::uint32_t uRank, std::uint32_t uOtherScore, std::uint32_t uMyScore)
+{
+	return uRank + static_cast<std::uint32_t>(uOtherScore > uMyScore);
+}
+
+inline bool RejectSoftQueueCandidateByCombinedScore(bool bHardQueueLimitReached, bool bSoftQueueLimitReached, bool bHasFriendSlot, float fClientCombinedFilePrioAndCredit, float fAverageCombinedFilePrioAndCredit)
+{
+	return bHardQueueLimitReached
+		|| (bSoftQueueLimitReached && !bHasFriendSlot && fClientCombinedFilePrioAndCredit < fAverageCombinedFilePrioAndCredit);
 }

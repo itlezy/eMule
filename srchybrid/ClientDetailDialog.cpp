@@ -34,6 +34,18 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	CString FormatCooldown(ULONGLONG ullRemainingMs)
+	{
+		if (ullRemainingMs == 0)
+			return _T("-");
+		CString str;
+		str.Format(_T("%us"), static_cast<UINT>((ullRemainingMs + 999) / 1000));
+		return str;
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // CClientDetailPage
@@ -155,19 +167,37 @@ BOOL CClientDetailPage::OnSetActive()
 			SetDlgItemText(IDC_CDIDENT, _T("?"));
 		}
 
-		if (client->GetUserName() && clcredits != NULL) {
-			buffer.Format(_T("%.1f"), (float)client->GetScore(false, client->IsDownloading(), true));
+		const UploadScoreSeams::UploadScoreBreakdown breakdown = client->GetScoreBreakdown(false, client->IsDownloading(), false);
+		if (breakdown.eAvailability != UploadScoreSeams::uploadScoreUnavailable) {
+			buffer.Format(_T("%u"), breakdown.uBaseScore);
 			SetDlgItemText(IDC_DRATING, buffer);
 		} else
-			SetDlgItemText(IDC_DRATING, _T("?"));
+			SetDlgItemText(IDC_DRATING, _T("-"));
 
 		if (client->GetUploadState() != US_NONE && clcredits != NULL) {
-			if (!client->GetFriendSlot())
-				SetDlgItemInt(IDC_DSCORE, client->GetScore(false, client->IsDownloading(), false));
-			else
-				SetDlgItemText(IDC_DSCORE, GetResString(IDS_FRIENDDETAIL));
+			SetDlgItemText(IDC_DSCORE, UploadScoreSeams::FormatEffectiveUploadScore(
+				breakdown,
+				GetResString(IDS_LOW_RATIO_BONUS),
+				GetResString(IDS_BB_LOWID_DIVISOR),
+				GetResString(IDS_COOLDOWN),
+				GetResString(IDS_FRIENDDETAIL),
+				_T("-")));
 		} else
 			SetDlgItemText(IDC_DSCORE, _T("-"));
+
+		if (breakdown.bLowRatioApplied) {
+			buffer.Format(_T("+%u"), breakdown.uLowRatioBonus);
+			SetDlgItemText(IDC_DLOWRATIOBONUS, buffer);
+		} else
+			SetDlgItemText(IDC_DLOWRATIOBONUS, _T("-"));
+
+		if (breakdown.bLowIdPenaltyApplied) {
+			buffer.Format(_T("/%u"), breakdown.uLowIdDivisor);
+			SetDlgItemText(IDC_DLOWIDDIVISOR, buffer);
+		} else
+			SetDlgItemText(IDC_DLOWIDDIVISOR, _T("-"));
+
+		SetDlgItemText(IDC_DCOOLDOWN, client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining()));
 
 		SetDlgItemText(IDC_CLIENTDETAIL_KADCON, GetResString(client->GetKadPort() ? IDS_CONNECTED : IDS_DISCONNECTED));
 
@@ -208,8 +238,11 @@ void CClientDetailPage::Localize()
 
 	SetDlgItemText(IDC_STATIC50, GetResString(IDS_CD_SCORES));
 	SetDlgItemText(IDC_STATIC51, GetResString(IDS_CD_MOD));
-	SetDlgItemText(IDC_STATIC52, GetResString(IDS_CD_RATING));
-	SetDlgItemText(IDC_STATIC53, GetResString(IDS_CD_USCORE));
+	SetDlgItemText(IDC_STATIC52, GetResString(IDS_BASE_SCORE) + _T(':'));
+	SetDlgItemText(IDC_STATIC53, GetResString(IDS_EFFECTIVE_SCORE) + _T(':'));
+	SetDlgItemText(IDC_STATIC_SCORE_LOWRATIO, GetResString(IDS_LOW_RATIO_BONUS) + _T(':'));
+	SetDlgItemText(IDC_STATIC_SCORE_LOWID, GetResString(IDS_BB_LOWID_DIVISOR) + _T(':'));
+	SetDlgItemText(IDC_STATIC_SCORE_COOLDOWN, GetResString(IDS_COOLDOWN) + _T(':'));
 	SetDlgItemText(IDC_STATIC133x, GetResString(IDS_CD_IDENT));
 	SetDlgItemText(IDC_CLIENTDETAIL_KAD, GetResString(IDS_KADEMLIA) + _T(':'));
 }
