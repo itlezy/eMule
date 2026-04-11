@@ -55,6 +55,7 @@ their client on the eMule forum.
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
+#include "kademlia/utils/OracleTrace.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -215,6 +216,15 @@ void CKademliaUDPListener::SendPublishSourcePacket(CContact *pContact, const CUI
 	if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 		DebugSend(pszOper, pContact->GetIPAddress(), pContact->GetUDPPort());
 	uint32 uLen = (uint32)(sizeof byPacket - byteIO.GetAvailable());
+	CStringA sFields;
+	sFields.Format("target=%s contact_id=%s peer=%s opcode=%s tags=%s payload=%u"
+		, (LPCSTR)OracleTrace::Hex128(uTargetID)
+		, (LPCSTR)OracleTrace::Hex128(uContactID)
+		, (LPCSTR)OracleTrace::HostPort(pContact->GetIPAddress(), pContact->GetUDPPort())
+		, pszOper
+		, (LPCSTR)OracleTrace::TagSummary(tags)
+		, static_cast<unsigned>(uLen));
+	OracleTrace::Append("publish_send_opcode", sFields);
 	if (pContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) { // obfuscated?
 		CUInt128 uClientID = pContact->GetClientID();
 		SendPacket(byPacket, uLen, pContact->GetIPAddress(), pContact->GetUDPPort(), pContact->GetUDPKey(), &uClientID);

@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <windows.h>
+#include "Preferences.h"
 #include "opcodes.h"
 #include "kademlia/kademlia/Tag.h"
 #include "kademlia/utils/UInt128.h"
@@ -126,17 +127,8 @@ namespace OracleTrace
 
 	inline CStringW TraceFilePath()
 	{
-		wchar_t szModulePath[MAX_PATH] = {};
-		::GetModuleFileNameW(NULL, szModulePath, _countof(szModulePath));
-		szModulePath[_countof(szModulePath) - 1] = L'\0';
-		wchar_t *pszFileName = wcsrchr(szModulePath, L'\\');
-		if (pszFileName != NULL)
-			*pszFileName = L'\0';
-
-		CStringW sBase = szModulePath;
-		CStringW sLogDir = sBase + L"\\logs";
-		::CreateDirectoryW(sLogDir, NULL);
-		return sLogDir + L"\\emule-harness-kad-trace.log";
+		const CString sLogDir = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true);
+		return CStringW(sLogDir) + L"emule-harness-kad-trace.log";
 	}
 
 	inline CStringA Timestamp()
