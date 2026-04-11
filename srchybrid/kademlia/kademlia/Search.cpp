@@ -57,6 +57,7 @@ their client on the eMule forum.
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/utils/KadClientSearcher.h"
 #include "kademlia/utils/LookupHistory.h"
+#include "kademlia/utils/OracleTrace.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -690,6 +691,13 @@ void CSearch::StorePacket()
 			}
 
 			listTag.push_back(new CKadTagUInt8(TAG_ENCRYPTION, CKademlia::GetPrefs()->GetMyConnectOptions(true, true)));
+			CStringA sStoreSourceFields;
+			sStoreSourceFields.Format("target=%s peer=%s contact_id=%s tags=%s"
+				, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+				, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+				, (LPCSTR)OracleTrace::Hex128(uID)
+				, (LPCSTR)OracleTrace::TagSummary(listTag));
+			OracleTrace::Append("search_storesource_prepare", sStoreSourceFields);
 
 			// Send packet
 			CKademlia::GetUDPListener()->SendPublishSourcePacket(pFromContact, m_uTarget, uID, listTag);
@@ -737,16 +745,36 @@ void CSearch::StorePacket()
 				byIO.Seek(16);
 				byIO.WriteUInt16(iPacketCount);
 				byIO.Seek(current_pos);
+				CStringA sStoreKeywordFields;
+				sStoreKeywordFields.Format("target=%s peer=%s files=%u"
+					, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+					, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+					, static_cast<unsigned>(iPacketCount));
+				OracleTrace::Append("search_storekeyword_prepare", sStoreKeywordFields);
 
 				// Send packet
 				if (pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) {
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA2_PUBLISH_KEY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
+					CStringA sSendFields;
+					sSendFields.Format("target=%s peer=%s opcode=%s files=%u"
+						, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+						, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+						, (LPCSTR)OracleTrace::OpcodeName(KADEMLIA2_PUBLISH_KEY_REQ)
+						, static_cast<unsigned>(iPacketCount));
+					OracleTrace::Append("publish_send_opcode", sSendFields);
 					CUInt128 uClientID = pFromContact->GetClientID();
 					CKademlia::GetUDPListener()->SendPacket(byPacket, (uint32)(sizeof byPacket - byIO.GetAvailable()), KADEMLIA2_PUBLISH_KEY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 				} else if (pFromContact->GetVersion() >= KADEMLIA_VERSION2_47a) {
 					if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 						DebugSend("KADEMLIA2_PUBLISH_KEY_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
+					CStringA sSendFields;
+					sSendFields.Format("target=%s peer=%s opcode=%s files=%u"
+						, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+						, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+						, (LPCSTR)OracleTrace::OpcodeName(KADEMLIA2_PUBLISH_KEY_REQ)
+						, static_cast<unsigned>(iPacketCount));
+					OracleTrace::Append("publish_send_opcode", sSendFields);
 					CKademlia::GetUDPListener()->SendPacket(byPacket, (uint32)(sizeof byPacket - byIO.GetAvailable()), KADEMLIA2_PUBLISH_KEY_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), CKadUDPKey(), NULL);
 					ASSERT(CKadUDPKey() == pFromContact->GetUDPKey());
 				} else
@@ -786,16 +814,34 @@ void CSearch::StorePacket()
 			if (pFromContact->GetVersion() >= KADEMLIA_VERSION2_47a)
 				listTag.push_back(new CKadTagUInt(TAG_FILESIZE, pFile->GetFileSize()));
 			byIO.WriteTagList(listTag);
+			CStringA sStoreNotesFields;
+			sStoreNotesFields.Format("target=%s peer=%s tags=%s"
+				, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+				, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+				, (LPCSTR)OracleTrace::TagSummary(listTag));
+			OracleTrace::Append("search_storenotes_prepare", sStoreNotesFields);
 
 			// Send packet
 			if (pFromContact->GetVersion() >= KADEMLIA_VERSION6_49aBETA) {
 				if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 					DebugSend("KADEMLIA2_PUBLISH_NOTES_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
+				CStringA sSendFields;
+				sSendFields.Format("target=%s peer=%s opcode=%s"
+					, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+					, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+					, (LPCSTR)OracleTrace::OpcodeName(KADEMLIA2_PUBLISH_NOTES_REQ));
+				OracleTrace::Append("publish_send_opcode", sSendFields);
 				CUInt128 uClientID = pFromContact->GetClientID();
 				CKademlia::GetUDPListener()->SendPacket(byPacket, (uint32)(sizeof byPacket - byIO.GetAvailable()), KADEMLIA2_PUBLISH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), pFromContact->GetUDPKey(), &uClientID);
 			} else if (pFromContact->GetVersion() >= KADEMLIA_VERSION2_47a) {
 				if (thePrefs.GetDebugClientKadUDPLevel() > 0)
 					DebugSend("KADEMLIA2_PUBLISH_NOTES_REQ", pFromContact->GetIPAddress(), pFromContact->GetUDPPort());
+				CStringA sSendFields;
+				sSendFields.Format("target=%s peer=%s opcode=%s"
+					, (LPCSTR)OracleTrace::Hex128(m_uTarget)
+					, (LPCSTR)OracleTrace::HostPort(pFromContact->GetIPAddress(), pFromContact->GetUDPPort())
+					, (LPCSTR)OracleTrace::OpcodeName(KADEMLIA2_PUBLISH_NOTES_REQ));
+				OracleTrace::Append("publish_send_opcode", sSendFields);
 				CKademlia::GetUDPListener()->SendPacket(byPacket, (uint32)(sizeof byPacket - byIO.GetAvailable()), KADEMLIA2_PUBLISH_NOTES_REQ, pFromContact->GetIPAddress(), pFromContact->GetUDPPort(), CKadUDPKey(), NULL);
 				ASSERT(CKadUDPKey() == pFromContact->GetUDPKey());
 			} else

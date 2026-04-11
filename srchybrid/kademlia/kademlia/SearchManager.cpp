@@ -44,6 +44,7 @@ their client on the eMule forum.
 #include "kademlia/kademlia/Indexed.h"
 #include "kademlia/kademlia/prefs.h"
 #include "kademlia/io/IOException.h"
+#include "kademlia/utils/OracleTrace.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -313,6 +314,7 @@ void CSearchManager::JumpStart()
 				bDel = true;
 				// Tell Kad that it can start publishing.
 				CKademlia::GetPrefs()->SetPublish(true);
+				OracleTrace::Append("publish_gate_ready", "reason=nodecomplete_lookup_completed");
 			}
 			break;
 		case CSearch::STOREFILE:
@@ -412,6 +414,14 @@ void CSearchManager::ProcessPublishResult(const CUInt128 &uTarget, const uint8 u
 
 	// Inc the number of answers.
 	++pSearch->m_uAnswers;
+	CStringA sFields;
+	sFields.Format("target=%s search_type=%u load=%u load_response=%u answers=%u"
+		, (LPCSTR)OracleTrace::Hex128(uTarget)
+		, pSearch->GetSearchType()
+		, static_cast<unsigned>(uLoad)
+		, bLoadResponse ? 1 : 0
+		, static_cast<unsigned>(pSearch->m_uAnswers));
+	OracleTrace::Append("publish_res_accept", sFields);
 	// Update the search for the GUI
 	theApp.emuledlg->kademliawnd->searchList->SearchRef(pSearch);
 }
