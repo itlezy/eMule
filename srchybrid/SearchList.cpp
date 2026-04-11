@@ -385,6 +385,51 @@ void CSearchList::GetWebList(CQArray<SearchFileStruct, SearchFileStruct> *Search
 	}
 }
 
+void CSearchList::GetWebListForSearchID(uint32 nSearchID, CQArray<SearchFileStruct, SearchFileStruct> *SearchFileArray, int iSortBy) const
+{
+	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
+		const SearchListsStruct *listCur = m_listFileLists.GetNext(pos);
+		if (listCur == NULL || listCur->m_nSearchID != nSearchID)
+			continue;
+
+		for (POSITION pos2 = listCur->m_listSearchFiles.GetHeadPosition(); pos2 != NULL;) {
+			const CSearchFile *pFile = listCur->m_listSearchFiles.GetNext(pos2);
+			if (pFile == NULL || pFile->GetListParent() != NULL || !(uint64)pFile->GetFileSize() || pFile->GetFileName().IsEmpty() || pFile->m_flags.noshow)
+				continue;
+
+			SearchFileStruct structFile;
+			structFile.m_strFileName = pFile->GetFileName();
+			structFile.m_strFileType = pFile->GetFileTypeDisplayStr();
+			structFile.m_strFileHash = md4str(pFile->GetFileHash());
+			structFile.m_uSourceCount = pFile->GetSourceCount();
+			structFile.m_dwCompleteSourceCount = pFile->GetCompleteSourceCount();
+			structFile.m_uFileSize = pFile->GetFileSize();
+
+			switch (iSortBy) {
+			case 0:
+				structFile.m_strIndex = structFile.m_strFileName;
+				break;
+			case 1:
+				structFile.m_strIndex.Format(_T("%10I64u"), structFile.m_uFileSize);
+				break;
+			case 2:
+				structFile.m_strIndex = structFile.m_strFileHash;
+				break;
+			case 3:
+				structFile.m_strIndex.Format(_T("%09u"), structFile.m_uSourceCount);
+				break;
+			case 4:
+				structFile.m_strIndex = structFile.m_strFileType;
+				break;
+			default:
+				structFile.m_strIndex.Empty();
+			}
+			SearchFileArray->Add(structFile);
+		}
+		break;
+	}
+}
+
 void CSearchList::AddFileToDownloadByHash(const uchar *hash, int cat)
 {
 	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
@@ -397,6 +442,36 @@ void CSearchList::AddFileToDownloadByHash(const uchar *hash, int cat)
 			}
 		}
 	}
+}
+
+CSearchFile* CSearchList::GetSearchFileByHash(const uchar *hash) const
+{
+	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
+		const SearchListsStruct *listCur = m_listFileLists.GetNext(pos);
+		for (POSITION pos2 = listCur->m_listSearchFiles.GetHeadPosition(); pos2 != NULL;) {
+			CSearchFile *sf = listCur->m_listSearchFiles.GetNext(pos2);
+			if (md4equ(hash, sf->GetFileHash()))
+				return sf;
+		}
+	}
+	return NULL;
+}
+
+const CSearchFile* CSearchList::GetSearchFileByHashForID(uint32 nSearchID, const uchar *hash) const
+{
+	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
+		const SearchListsStruct *listCur = m_listFileLists.GetNext(pos);
+		if (listCur == NULL || listCur->m_nSearchID != nSearchID)
+			continue;
+
+		for (POSITION pos2 = listCur->m_listSearchFiles.GetHeadPosition(); pos2 != NULL;) {
+			const CSearchFile *sf = listCur->m_listSearchFiles.GetNext(pos2);
+			if (md4equ(hash, sf->GetFileHash()))
+				return sf;
+		}
+		break;
+	}
+	return NULL;
 }
 
 bool CSearchList::AddToList(CSearchFile *toadd, bool bClientResponse, uint32 dwFromUDPServerIP)
@@ -645,19 +720,6 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool bClientResponse, uint32 dwF
 		outputwnd->AddResult(toadd);
 
 	return true;
-}
-
-CSearchFile* CSearchList::GetSearchFileByHash(const uchar *hash) const
-{
-	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
-		const SearchListsStruct *listCur = m_listFileLists.GetNext(pos);
-		for (POSITION pos2 = listCur->m_listSearchFiles.GetHeadPosition(); pos2 != NULL;) {
-			CSearchFile *sf = listCur->m_listSearchFiles.GetNext(pos2);
-			if (md4equ(hash, sf->GetFileHash()))
-				return sf;
-		}
-	}
-	return NULL;
 }
 
 bool CSearchList::AddNotes(const Kademlia::CEntry &cEntry, const uchar *hash)

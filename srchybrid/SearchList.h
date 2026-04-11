@@ -76,11 +76,13 @@ public:
 	void	RemoveResult(CSearchFile *todel);
 	void	ShowResults(uint32 nSearchID);
 	void	GetWebList(CQArray<SearchFileStruct, SearchFileStruct> *SearchFileArray, int iSortBy) const;
+	void	GetWebListForSearchID(uint32 nSearchID, CQArray<SearchFileStruct, SearchFileStruct> *SearchFileArray, int iSortBy) const;
 
 	void	AddFileToDownloadByHash(const uchar *hash)	{ AddFileToDownloadByHash(hash, 0); }
 	void	AddFileToDownloadByHash(const uchar *hash, int cat);
 	bool	AddToList(CSearchFile *toadd, bool bClientResponse = false, uint32 dwFromUDPServerIP = 0);
 	CSearchFile* GetSearchFileByHash(const uchar *hash) const;
+	const CSearchFile* GetSearchFileByHashForID(uint32 nSearchID, const uchar *hash) const;
 	void	KademliaSearchKeyword(uint32 nSearchID, const Kademlia::CUInt128 *pFileID
 				, LPCTSTR name, uint64 size, LPCTSTR type, UINT uKadPublishInfo
 				, CArray<CAICHHash>& raAICHHashes, CArray<uint8, uint8> &raAICHHashPopularity

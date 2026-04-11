@@ -27,7 +27,10 @@
 #include "opcodes.h"
 #include "mdump.h"
 #include "Scheduler.h"
+#include "SearchDlg.h"
 #include "SearchList.h"
+#include "SearchParams.h"
+#include "SearchResultsWnd.h"
 #include "kademlia/kademlia/Error.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
@@ -296,6 +299,10 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bParityHarnessShareIssued()
 	, m_bParityHarnessLinkWritten()
 	, m_bParityHarnessDownloadIssued()
+	, m_bParityHarnessSearchStarted()
+	, m_bParityHarnessSearchDownloadQueued()
+	, m_nParityHarnessSearchID()
+	, m_uParityHarnessSearchLastExportedCount()
 	, m_bStandbyOff()
 {
 	// Initialize Windows security features.
@@ -360,7 +367,10 @@ bool CemuleApp::IsParityHarnessMode() const
 		|| !m_strParityHarnessReadyFile.IsEmpty()
 		|| !m_strParityHarnessShareFile.IsEmpty()
 		|| !m_strParityHarnessExportLinkFile.IsEmpty()
-		|| !m_strParityHarnessDownloadLinkFile.IsEmpty())
+		|| !m_strParityHarnessDownloadLinkFile.IsEmpty()
+		|| !m_strParityHarnessSearchTerm.IsEmpty()
+		|| !m_strParityHarnessSearchResultsFile.IsEmpty()
+		|| !m_strParityHarnessSearchDownloadHashFile.IsEmpty())
 		return true;
 
 	TCHAR tchBuffer[MAX_PATH];
@@ -404,6 +414,114 @@ static CString NormalizeParityHarnessDirectoryArgument(const CString &strValue)
 		strNormalized += _T("\\");
 
 	return strNormalized;
+}
+
+static CStringA EscapeJsonUtf8(const CString &strValue)
+{
+	CUnicodeToUTF8 utf8Value((LPCWSTR)strValue);
+	CStringA strEscaped;
+	const int iLength = utf8Value.GetLength();
+	for (int i = 0; i < iLength; ++i) {
+		const unsigned char ch = (unsigned char)((LPCSTR)utf8Value)[i];
+		switch (ch) {
+		case '\"':
+			strEscaped += "\\\"";
+			break;
+		case '\\':
+			strEscaped += "\\\\";
+			break;
+		case '\b':
+			strEscaped += "\\b";
+			break;
+		case '\f':
+			strEscaped += "\\f";
+			break;
+		case '\n':
+			strEscaped += "\\n";
+			break;
+		case '\r':
+			strEscaped += "\\r";
+			break;
+		case '\t':
+			strEscaped += "\\t";
+			break;
+		default:
+			if (ch < 0x20) {
+				CStringA strHex;
+				strHex.Format("\\u%04x", ch);
+				strEscaped += strHex;
+			} else
+				strEscaped += (char)ch;
+		}
+	}
+
+	return strEscaped;
+}
+
+static bool AppendParityHarnessSearchJsonLine(const CString &strPath, const CStringA &strLine)
+{
+	FILE *pFile = _tfsopen(strPath, _T("ab"), _SH_DENYNO);
+	if (pFile == NULL)
+		return false;
+
+	const bool bSuccess = fwrite((LPCSTR)strLine, 1, strLine.GetLength(), pFile) == (size_t)strLine.GetLength()
+		&& fwrite("\n", 1, 1, pFile) == 1;
+	fclose(pFile);
+	return bSuccess;
+}
+
+static void EmitParityHarnessSearchEvent(const CString &strPath, LPCSTR pszEvent, uint32 nSearchID, const CString &strTerm)
+{
+	if (strPath.IsEmpty())
+		return;
+
+	const CString strTimestamp = CTime::GetCurrentTime().FormatGmt(_T("%Y-%m-%dT%H:%M:%SZ"));
+	CStringA strLine;
+	strLine.Format(
+		"{\"schema\":\"parity_harness_search_v1\",\"source\":\"emule_harness\",\"ts_utc\":\"%s\",\"event\":\"%s\",\"search_id\":%lu,\"term\":\"%s\"}",
+		(LPCSTR)CT2A(strTimestamp),
+		pszEvent,
+		(unsigned long)nSearchID,
+		(LPCSTR)EscapeJsonUtf8(strTerm)
+	);
+	AppendParityHarnessSearchJsonLine(strPath, strLine);
+}
+
+static void EmitParityHarnessSearchSnapshot(const CString &strPath, uint32 nSearchID, const CString &strTerm, const CQArray<SearchFileStruct, SearchFileStruct> &aResults)
+{
+	if (strPath.IsEmpty())
+		return;
+
+	const CString strTimestamp = CTime::GetCurrentTime().FormatGmt(_T("%Y-%m-%dT%H:%M:%SZ"));
+	CStringA strLine;
+	strLine.Format(
+		"{\"schema\":\"parity_harness_search_v1\",\"source\":\"emule_harness\",\"ts_utc\":\"%s\",\"event\":\"results_snapshot\",\"search_id\":%lu,\"term\":\"%s\",\"result_count\":%d,\"results\":[",
+		(LPCSTR)CT2A(strTimestamp),
+		(unsigned long)nSearchID,
+		(LPCSTR)EscapeJsonUtf8(strTerm),
+		aResults.GetCount()
+	);
+
+	for (int i = 0; i < aResults.GetCount(); ++i) {
+		const SearchFileStruct &rFile = aResults[i];
+		if (i > 0)
+			strLine += ",";
+
+		CStringA strEntry;
+		strEntry.Format(
+			"{\"hash\":\"%s\",\"name\":\"%s\",\"size\":%I64u,\"type\":\"%s\",\"source_count\":%lu,\"complete_source_count\":%lu}",
+			(LPCSTR)EscapeJsonUtf8(rFile.m_strFileHash),
+			(LPCSTR)EscapeJsonUtf8(rFile.m_strFileName),
+			(unsigned __int64)rFile.m_uFileSize,
+			(LPCSTR)EscapeJsonUtf8(rFile.m_strFileType),
+			(unsigned long)rFile.m_uSourceCount,
+			(unsigned long)rFile.m_dwCompleteSourceCount
+		);
+		strLine += strEntry;
+	}
+
+	strLine += "]}";
+	AppendParityHarnessSearchJsonLine(strPath, strLine);
 }
 
 void CemuleApp::ApplyPendingParityHarnessActions()
@@ -491,13 +609,23 @@ bool CemuleApp::HasPendingParityHarnessScenario() const
 {
 	return !m_strParityHarnessShareFile.IsEmpty()
 		|| !m_strParityHarnessExportLinkFile.IsEmpty()
-		|| !m_strParityHarnessDownloadLinkFile.IsEmpty();
+		|| !m_strParityHarnessDownloadLinkFile.IsEmpty()
+		|| HasPendingParityHarnessSearch();
+}
+
+bool CemuleApp::HasPendingParityHarnessSearch() const
+{
+	return !m_strParityHarnessSearchTerm.IsEmpty()
+		|| !m_strParityHarnessSearchResultsFile.IsEmpty()
+		|| !m_strParityHarnessSearchDownloadHashFile.IsEmpty();
 }
 
 bool CemuleApp::ShouldKeepParityHarnessStartupTimerRunning() const
 {
-	return !m_strParityHarnessBootstrapPeers.IsEmpty()
-		&& Kademlia::CKademlia::IsRunning();
+	if (!m_strParityHarnessBootstrapPeers.IsEmpty() && Kademlia::CKademlia::IsRunning())
+		return true;
+
+	return HasPendingParityHarnessSearch();
 }
 
 bool CemuleApp::ProcessPendingParityHarnessScenario()
@@ -562,7 +690,74 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 
 	const bool exportDone = m_strParityHarnessExportLinkFile.IsEmpty() || m_bParityHarnessLinkWritten;
 	const bool downloadDone = m_strParityHarnessDownloadLinkFile.IsEmpty() || m_bParityHarnessDownloadIssued;
-	return exportDone && downloadDone;
+	if (!HasPendingParityHarnessSearch())
+		return exportDone && downloadDone;
+
+	if (emuledlg->searchwnd == NULL || emuledlg->searchwnd->m_pwndResults == NULL || searchlist == NULL)
+		return false;
+
+	if (!m_bParityHarnessSearchStarted) {
+		if (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected())
+			return false;
+
+		SSearchParams *pParams = new SSearchParams;
+		pParams->eType = SearchTypeKademlia;
+		pParams->strExpression = m_strParityHarnessSearchTerm;
+
+		try {
+			if (!emuledlg->searchwnd->m_pwndResults->DoNewKadSearch(pParams)) {
+				delete pParams;
+				return false;
+			}
+		}
+		catch (...) {
+			delete pParams;
+			return false;
+		}
+
+		m_bParityHarnessSearchStarted = true;
+		m_nParityHarnessSearchID = pParams->dwSearchID;
+		m_uParityHarnessSearchLastExportedCount = 0;
+		EmitParityHarnessSearchEvent(m_strParityHarnessSearchResultsFile, "search_started", m_nParityHarnessSearchID, m_strParityHarnessSearchTerm);
+		Log(_T("Parity harness started Kad search: %s (search_id=%lu)"), (LPCTSTR)m_strParityHarnessSearchTerm, (unsigned long)m_nParityHarnessSearchID);
+	}
+
+	if (!m_strParityHarnessSearchResultsFile.IsEmpty()) {
+		CQArray<SearchFileStruct, SearchFileStruct> aResults;
+		searchlist->GetWebListForSearchID(m_nParityHarnessSearchID, &aResults, 0);
+		if ((UINT)aResults.GetCount() != m_uParityHarnessSearchLastExportedCount) {
+			EmitParityHarnessSearchSnapshot(m_strParityHarnessSearchResultsFile, m_nParityHarnessSearchID, m_strParityHarnessSearchTerm, aResults);
+			m_uParityHarnessSearchLastExportedCount = (UINT)aResults.GetCount();
+		}
+	}
+
+	if (!m_bParityHarnessSearchDownloadQueued
+		&& !m_strParityHarnessSearchDownloadHashFile.IsEmpty()
+		&& _taccess(m_strParityHarnessSearchDownloadHashFile, 0) == 0)
+	{
+		CStdioFile hashFile;
+		if (hashFile.Open(m_strParityHarnessSearchDownloadHashFile, CFile::modeRead | CFile::shareDenyNone)) {
+			CString strRequestedHash;
+			if (hashFile.ReadString(strRequestedHash)) {
+				strRequestedHash.Trim();
+				byte aucFileHash[16];
+				if (strmd4(strRequestedHash, aucFileHash)
+					&& searchlist->GetSearchFileByHashForID(m_nParityHarnessSearchID, aucFileHash) != NULL)
+				{
+					searchlist->AddFileToDownloadByHash(aucFileHash);
+					m_bParityHarnessSearchDownloadQueued = true;
+					EmitParityHarnessSearchEvent(m_strParityHarnessSearchResultsFile, "download_queued", m_nParityHarnessSearchID, m_strParityHarnessSearchTerm);
+					Log(_T("Parity harness queued search result download: %s"), (LPCTSTR)strRequestedHash);
+				}
+			}
+			hashFile.Close();
+		}
+	}
+
+	if (m_strParityHarnessSearchDownloadHashFile.IsEmpty())
+		return false;
+
+	return exportDone && downloadDone && m_bParityHarnessSearchDownloadQueued;
 }
 
 static bool TryParseNamedArgument(int &i, LPCTSTR pszLongName, LPCTSTR pszShortName, CString &strValue)
@@ -996,6 +1191,21 @@ bool CemuleApp::ProcessCommandline()
 		CString strDownloadLinkFile;
 		if (TryParseNamedArgument(i, _T("downloadlinkfile"), _T("dlf"), strDownloadLinkFile)) {
 			m_strParityHarnessDownloadLinkFile = strDownloadLinkFile;
+			continue;
+		}
+		CString strSearchTerm;
+		if (TryParseNamedArgument(i, _T("searchterm"), _T("st"), strSearchTerm)) {
+			m_strParityHarnessSearchTerm = strSearchTerm;
+			continue;
+		}
+		CString strSearchResultsFile;
+		if (TryParseNamedArgument(i, _T("searchresultsfile"), _T("srf"), strSearchResultsFile)) {
+			m_strParityHarnessSearchResultsFile = strSearchResultsFile;
+			continue;
+		}
+		CString strSearchDownloadHashFile;
+		if (TryParseNamedArgument(i, _T("searchdownloadhashfile"), _T("sdhf"), strSearchDownloadHashFile)) {
+			m_strParityHarnessSearchDownloadHashFile = strSearchDownloadHashFile;
 			continue;
 		}
 
