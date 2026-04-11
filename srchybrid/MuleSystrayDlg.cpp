@@ -39,14 +39,9 @@ CMuleSystrayDlg::CMuleSystrayDlg(CWnd *pParent, CPoint pt, int iMaxUp, int iMaxD
 	, m_hDownArrow()
 	, m_nExitCode()
 {
-	if (iCurDown == UNLIMITED)
-		iCurDown = 0;
-	if (iCurUp == UNLIMITED)
-		iCurUp = 0;
-
 	//{{AFX_DATA_INIT(CMuleSystrayDlg)
-	m_nDownSpeedTxt = iMaxDown < iCurDown ? iMaxDown : iCurDown;
-	m_nUpSpeedTxt = iMaxUp < iCurUp ? iMaxUp : iCurUp;
+	m_nDownSpeedTxt = max(1, iMaxDown < iCurDown ? iMaxDown : iCurDown);
+	m_nUpSpeedTxt = max(1, iMaxUp < iCurUp ? iMaxUp : iCurUp);
 	//}}AFX_DATA_INIT
 }
 
@@ -273,14 +268,11 @@ BOOL CMuleSystrayDlg::OnInitDialog()
 	SetDlgItemText(IDC_DOWNKB, GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_UPKB, GetResString(IDS_KBYTESPERSEC));
 
-	m_ctrlDownSpeedSld.SetRange(0, m_iMaxDown);
+	m_ctrlDownSpeedSld.SetRange(1, m_iMaxDown);
 	m_ctrlDownSpeedSld.SetPos(m_nDownSpeedTxt);
 
-	m_ctrlUpSpeedSld.SetRange(0, m_iMaxUp);
+	m_ctrlUpSpeedSld.SetRange(1, m_iMaxUp);
 	m_ctrlUpSpeedSld.SetPos(m_nUpSpeedTxt);
-
-	m_DownSpeedInput.EnableWindow(m_nDownSpeedTxt > 0);
-	m_UpSpeedInput.EnableWindow(m_nUpSpeedTxt > 0);
 
 	CFont Font;
 	Font.CreateFont(-16, 0, 900, 0, 700, 0, 0, 0, 0, 3, 2, 1, 34, _T("Tahoma"));
@@ -316,14 +308,10 @@ BOOL CMuleSystrayDlg::OnInitDialog()
 void CMuleSystrayDlg::OnChangeDowntxt()
 {
 	UpdateData();
-
-	if (CPPgConnection::CheckDown(m_nUpSpeedTxt, m_nDownSpeedTxt)) {
-		if (CPPgConnection::CheckUp(m_nUpSpeedTxt, m_nDownSpeedTxt))
-			m_ctrlDownSpeedSld.SetPos(m_nDownSpeedTxt);
-		m_ctrlUpSpeedSld.SetPos(m_nUpSpeedTxt);
-	}
-	m_DownSpeedInput.EnableWindow(m_nDownSpeedTxt > 0);
-	thePrefs.SetMaxDownload(m_nDownSpeedTxt ? m_nDownSpeedTxt : UNLIMITED);
+	if (m_nDownSpeedTxt == 0)
+		m_nDownSpeedTxt = 1;
+	m_ctrlDownSpeedSld.SetPos(m_nDownSpeedTxt);
+	thePrefs.SetMaxDownload(m_nDownSpeedTxt);
 
 	UpdateData(FALSE);
 }
@@ -331,14 +319,10 @@ void CMuleSystrayDlg::OnChangeDowntxt()
 void CMuleSystrayDlg::OnChangeUptxt()
 {
 	UpdateData();
-
-	if (CPPgConnection::CheckUp(m_nUpSpeedTxt, m_nDownSpeedTxt)) {
-		if (CPPgConnection::CheckDown(m_nUpSpeedTxt, m_nDownSpeedTxt))
-			m_ctrlUpSpeedSld.SetPos(m_nUpSpeedTxt);
-		m_ctrlDownSpeedSld.SetPos(m_nDownSpeedTxt);
-	}
-	m_UpSpeedInput.EnableWindow(m_nUpSpeedTxt > 0);
-	thePrefs.SetMaxUpload(m_nUpSpeedTxt ? m_nUpSpeedTxt : UNLIMITED);
+	if (m_nUpSpeedTxt == 0)
+		m_nUpSpeedTxt = 1;
+	m_ctrlUpSpeedSld.SetPos(m_nUpSpeedTxt);
+	thePrefs.SetMaxUpload(m_nUpSpeedTxt);
 
 	UpdateData(FALSE);
 }
@@ -347,27 +331,9 @@ void CMuleSystrayDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
 {
 	m_nUpSpeedTxt = m_ctrlUpSpeedSld.GetPos();
 	m_nDownSpeedTxt = m_ctrlDownSpeedSld.GetPos();
-
-	if (pScrollBar->GetSafeHwnd() == m_ctrlUpSpeedSld.m_hWnd) {
-		if (CPPgConnection::CheckUp(m_nUpSpeedTxt, m_nDownSpeedTxt)) {
-			if (CPPgConnection::CheckDown(m_nUpSpeedTxt, m_nDownSpeedTxt))
-				m_ctrlUpSpeedSld.SetPos(m_nUpSpeedTxt);
-			m_ctrlDownSpeedSld.SetPos(m_nDownSpeedTxt);
-		}
-		UpdateData(FALSE);
-		thePrefs.SetMaxDownload((m_nDownSpeedTxt == 0) ? UNLIMITED : m_nDownSpeedTxt);
-	} else { /*if (hWnd == m_ctrlDownSpeedSld.m_hWnd) { */
-		if (CPPgConnection::CheckDown(m_nUpSpeedTxt, m_nDownSpeedTxt)) {
-			if (CPPgConnection::CheckUp(m_nUpSpeedTxt, m_nDownSpeedTxt))
-				m_ctrlDownSpeedSld.SetPos(m_nDownSpeedTxt);
-			m_ctrlUpSpeedSld.SetPos(m_nUpSpeedTxt);
-		}
-		UpdateData(FALSE);
-		thePrefs.SetMaxUpload((m_nUpSpeedTxt == 0) ? UNLIMITED : m_nUpSpeedTxt);
-	}
-
-	m_UpSpeedInput.EnableWindow(m_nUpSpeedTxt > 0);
-	m_DownSpeedInput.EnableWindow(m_nDownSpeedTxt > 0);
+	UpdateData(FALSE);
+	thePrefs.SetMaxUpload(m_nUpSpeedTxt);
+	thePrefs.SetMaxDownload(m_nDownSpeedTxt);
 
 	CDialog::OnHScroll(nSBCode, nPos, pScrollBar);
 }

@@ -253,8 +253,19 @@ public:
 	void			FlushSendBlocks(); // call this when you stop upload, or the socket might be not able to send
 	ULONGLONG		GetLastUpRequest() const						{ return m_dwLastUpRequest; }
 	void			SetLastUpRequest()								{ m_dwLastUpRequest = ::GetTickCount64(); }
+	// Correctness-only marker for collection block validation. It does not
+	// bypass fixed-cap admission or broadband recycle policy on this branch.
 	void			SetCollectionUploadSlot(bool bValue);
 	bool			HasCollectionUploadSlot() const					{ return m_bCollectionUploadSlot; }
+	void			ResetSlowUploadTracking();
+	void			UpdateSlowUploadTracking(ULONGLONG curTick, uint32 slowThresholdBytesPerSec);
+	bool			ShouldRecycleSlowUpload(UINT slowGraceMs, UINT zeroGraceMs) const;
+	bool			IsInSlowUploadCooldown() const;
+	ULONGLONG		GetSlowUploadCooldownRemaining() const;
+	void			SetSlowUploadCooldownUntil(ULONGLONG ullTick)	{ m_ullSlowUploadCooldownUntil = ullTick; }
+	void			ClearSlowUploadCooldown()						{ m_ullSlowUploadCooldownUntil = 0; }
+	ULONGLONG		GetAccumulatedSlowUploadMs() const				{ return m_ullSlowUploadAccumulatedMs; }
+	ULONGLONG		GetAccumulatedZeroUploadMs() const				{ return m_ullZeroUploadAccumulatedMs; }
 
 	uint64			GetSessionUp() const							{ return m_nTransferredUp - m_nCurSessionUp; }
 	void			ResetSessionUp() {
@@ -442,7 +453,6 @@ public:
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherRequests_list;
 	CTypedPtrList<CPtrList, CPartFile*> m_OtherNoNeeded_list;
 	uint16			m_lastPartAsked;
-	bool			m_bAddNextConnect;
 
 	void			SetSlotNumber(UINT newValue)					{ m_slotNumber = newValue; }
 	UINT			GetSlotNumber() const							{ return m_slotNumber; }
@@ -557,6 +567,10 @@ protected:
 	uint64		m_addedPayloadQueueSession;
 	ULONGLONG	m_dwUploadTime;
 	ULONGLONG	m_dwLastUpRequest;
+	ULONGLONG	m_ullSlowUploadAccumulatedMs;
+	ULONGLONG	m_ullZeroUploadAccumulatedMs;
+	ULONGLONG	m_ullLastSlowUploadSampleTick;
+	ULONGLONG	m_ullSlowUploadCooldownUntil;
 	UINT		m_cAsked;
 	UINT		m_slotNumber;
 	uchar		requpfileid[MDX_DIGEST_SIZE];

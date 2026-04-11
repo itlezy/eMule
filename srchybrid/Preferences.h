@@ -54,6 +54,13 @@ enum SMTPauth: byte
 	AUTH_OAUTH2 */
 };
 
+enum EBBSessionTransferMode : uint8
+{
+	BBSTM_DISABLED = 0,
+	BBSTM_PERCENT_OF_FILE = 1,
+	BBSTM_ABSOLUTE_MIB = 2
+};
+
 
 enum EDefaultDirectory
 {
@@ -190,8 +197,6 @@ public:
 	static uchar	userhash[16];
 	static WINDOWPLACEMENT EmuleWindowPlacement;
 	static uint32	maxGraphDownloadRate;
-	static uint32	maxGraphUploadRate;
-	static uint32	maxGraphUploadRateEstimated;
 	static bool		beepOnError;
 	static bool		confirmExit;
 	static DWORD	m_adwStatsColors[15];
@@ -602,6 +607,19 @@ public:
 	static bool		m_bRememberCancelledFiles;
 	static bool		m_bRememberDownloadedFiles;
 	static bool		m_bPartiallyPurgeOldKnownFiles;
+	static UINT		m_uBBMaxUploadClientsAllowed;
+	static float	m_fBBSlowUploadThresholdFactor;
+	static UINT		m_uBBSlowUploadGraceSeconds;
+	static UINT		m_uBBSlowUploadWarmupSeconds;
+	static UINT		m_uBBZeroRateGraceSeconds;
+	static UINT		m_uBBSlowUploadCooldownSeconds;
+	static bool		m_bBBLowRatioBoostEnabled;
+	static float	m_fBBLowRatioThreshold;
+	static UINT		m_uBBLowRatioBonus;
+	static UINT		m_uBBLowIDDivisor;
+	static EBBSessionTransferMode m_eBBSessionTransferMode;
+	static UINT		m_uBBSessionTransferValue;
+	static UINT		m_uBBSessionTimeLimitSeconds;
 
 	//email notifier
 	static EmailSettings m_email;
@@ -942,9 +960,7 @@ public:
 	static bool		GetAllowLocalHostIP()				{ return m_bAllocLocalHostIP; }
 	static bool		IsOnlineSignatureEnabled()			{ return onlineSig; }
 	static uint32	GetMaxGraphDownloadRate()			{ return maxGraphDownloadRate; }
-	static void		SetMaxGraphDownloadRate(uint32 in)	{ maxGraphDownloadRate = (in ? in : 96); }
-	static uint32	GetMaxGraphUploadRate(bool bEstimateIfUnlimited);
-	static void		SetMaxGraphUploadRate(uint32 in);
+	static void		SetMaxGraphDownloadRate(uint32 in);
 
 	static uint32	GetMaxDownload();
 	static uint64	GetMaxDownloadInBytesPerSec(bool dynamic = false);
@@ -1198,6 +1214,32 @@ public:
 
 	static bool		GetLog2Disk()						{ return log2disk; }
 	static bool		GetDebug2Disk()						{ return m_bVerbose && debug2disk; }
+	static UINT		GetBBMaxUploadClientsAllowed()		{ return m_uBBMaxUploadClientsAllowed; }
+	static void		SetBBMaxUploadClientsAllowed(UINT uVal) { m_uBBMaxUploadClientsAllowed = min(32u, max(1u, uVal)); }
+	static float	GetBBSlowUploadThresholdFactor()	{ return m_fBBSlowUploadThresholdFactor; }
+	static void		SetBBSlowUploadThresholdFactor(float fVal) { m_fBBSlowUploadThresholdFactor = min(1.0f, max(0.10f, fVal)); }
+	static UINT		GetBBSlowUploadGraceSeconds()		{ return m_uBBSlowUploadGraceSeconds; }
+	static void		SetBBSlowUploadGraceSeconds(UINT uVal) { m_uBBSlowUploadGraceSeconds = min(300u, max(5u, uVal)); }
+	static UINT		GetBBSlowUploadWarmupSeconds()		{ return m_uBBSlowUploadWarmupSeconds; }
+	static void		SetBBSlowUploadWarmupSeconds(UINT uVal) { m_uBBSlowUploadWarmupSeconds = min(uVal, 3600u); }
+	static UINT		GetBBZeroRateGraceSeconds()			{ return m_uBBZeroRateGraceSeconds; }
+	static void		SetBBZeroRateGraceSeconds(UINT uVal) { m_uBBZeroRateGraceSeconds = min(120u, max(3u, uVal)); }
+	static UINT		GetBBSlowUploadCooldownSeconds()	{ return m_uBBSlowUploadCooldownSeconds; }
+	static void		SetBBSlowUploadCooldownSeconds(UINT uVal) { m_uBBSlowUploadCooldownSeconds = min(3600u, max(10u, uVal)); }
+	static bool		IsBBLowRatioBoostEnabled()			{ return m_bBBLowRatioBoostEnabled; }
+	static void		SetBBLowRatioBoostEnabled(bool bVal) { m_bBBLowRatioBoostEnabled = bVal; }
+	static float	GetBBLowRatioThreshold()			{ return m_fBBLowRatioThreshold; }
+	static void		SetBBLowRatioThreshold(float fVal) { m_fBBLowRatioThreshold = min(2.0f, max(0.0f, fVal)); }
+	static UINT		GetBBLowRatioBonus()				{ return m_uBBLowRatioBonus; }
+	static void		SetBBLowRatioBonus(UINT uVal)		{ m_uBBLowRatioBonus = min(500u, uVal); }
+	static UINT		GetBBLowIDDivisor()					{ return m_uBBLowIDDivisor; }
+	static void		SetBBLowIDDivisor(UINT uVal)		{ m_uBBLowIDDivisor = min(8u, max(1u, uVal)); }
+	static EBBSessionTransferMode GetBBSessionTransferMode() { return m_eBBSessionTransferMode; }
+	static void		SetBBSessionTransferMode(EBBSessionTransferMode eMode) { m_eBBSessionTransferMode = eMode; }
+	static UINT		GetBBSessionTransferValue()			{ return m_uBBSessionTransferValue; }
+	static void		SetBBSessionTransferValue(UINT uVal) { m_uBBSessionTransferValue = min(4096u, uVal); }
+	static UINT		GetBBSessionTimeLimitSeconds()		{ return m_uBBSessionTimeLimitSeconds; }
+	static void		SetBBSessionTimeLimitSeconds(UINT uVal) { m_uBBSessionTimeLimitSeconds = min(86400u, uVal); }
 	static int		GetMaxLogBuff()						{ return iMaxLogBuff; }
 	static UINT		GetMaxLogFileSize()					{ return uMaxLogFileSize; }
 	static ELogFileFormat GetLogFileFormat()			{ return m_iLogFileFormat; }
@@ -1361,8 +1403,6 @@ public:
 	static void		SetNotifierSendMail(bool nv)		{ m_email.bSendMail = nv; }
 	static bool		DoFlashOnNewMessage()				{ return m_bIconflashOnNewMessage; }
 	static void		IniCopy(const CString &si, const CString &di);
-
-	static void		EstimateMaxUploadCap(uint32 nCurrentUpload);
 	static bool		GetAllocCompleteMode()				{ return m_bAllocFull; }
 	static void		SetAllocCompleteMode(bool in)		{ m_bAllocFull = in; }
 

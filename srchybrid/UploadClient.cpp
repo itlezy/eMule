@@ -200,6 +200,9 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 	if (IsBanned() || m_bGPLEvildoer)
 		return 0;
 
+	if (IsInSlowUploadCooldown())
+		return 0;
+
 	if (sysvalue && HasLowID() && !(socket && socket->IsConnected()))
 		return 0;
 
@@ -227,7 +230,21 @@ uint32 CUpDownClient::GetScore(bool sysvalue, bool isdownloading, bool onlybasev
 
 	if ((IsEmuleClient() || GetClientSoft() < 10) && m_byEmuleVersion <= 0x19)
 		fBaseValue *= 0.5f;
-	return (uint32)fBaseValue;
+
+	if (!onlybasevalue && HasLowID()) {
+		const UINT uLowIdDivisor = max(1u, thePrefs.GetBBLowIDDivisor());
+		if (uLowIdDivisor > 1)
+			fBaseValue /= uLowIdDivisor;
+	}
+
+	uint32 uScore = (uint32)fBaseValue;
+	if (!onlybasevalue && thePrefs.IsBBLowRatioBoostEnabled()) {
+		const CKnownFile *pRequestedFile = theApp.sharedfiles->GetFileByID(requpfileid);
+		if (pRequestedFile != NULL && pRequestedFile->GetAllTimeUploadRatio() < thePrefs.GetBBLowRatioThreshold())
+			uScore += thePrefs.GetBBLowRatioBonus();
+	}
+
+	return uScore;
 }
 
 bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqfile)
@@ -331,6 +348,9 @@ void CUpDownClient::AddReqBlock(Requested_Block_Struct *reqblock, bool bSignalIO
 		}
 
 		if (HasCollectionUploadSlot()) {
+			// This is a correctness guard only. Collection traffic no longer gets
+			// a scheduling exception, but a client that started a collection
+			// upload must not switch block requests to an unrelated file mid-slot.
 			CKnownFile *pDownloadingFile = theApp.sharedfiles->GetFileByID(reqblock->FileID);
 			if (pDownloadingFile != NULL) {
 				if (!CCollection::HasCollectionExtention(pDownloadingFile->GetFileName()) || pDownloadingFile->GetFileSize() > (uint64)MAXPRIORITYCOLL_SIZE) {
@@ -480,6 +500,78 @@ void CUpDownClient::UpdateUploadingStatisticsData()
 		theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(this);
 		m_lastRefreshedULDisplay = curTick;
 	}
+}
+
+void CUpDownClient::ResetSlowUploadTracking()
+{
+	m_ullSlowUploadAccumulatedMs = 0;
+	m_ullZeroUploadAccumulatedMs = 0;
+	m_ullLastSlowUploadSampleTick = 0;
+}
+
+void CUpDownClient::UpdateSlowUploadTracking(ULONGLONG curTick, uint32 slowThresholdBytesPerSec)
+{
+	if (m_ullLastSlowUploadSampleTick == 0 || curTick <= m_ullLastSlowUploadSampleTick) {
+		m_ullLastSlowUploadSampleTick = curTick;
+		return;
+	}
+
+	const ULONGLONG ullDelta = curTick - m_ullLastSlowUploadSampleTick;
+	m_ullLastSlowUploadSampleTick = curTick;
+
+	// Slow-slot accounting is deliberately local and monotonic: the queue owns
+	// the policy decision, while the client only accumulates "slow" and "zero"
+	// time for an already-active slot. Callers reset these counters whenever the
+	// slot leaves upload, is still warming up, or no longer meets recycle
+	// preconditions.
+	if (GetUploadState() != US_UPLOADING || GetUpStartTimeDelay() < SEC2MS(2)) {
+		m_ullSlowUploadAccumulatedMs = 0;
+		m_ullZeroUploadAccumulatedMs = 0;
+		return;
+	}
+
+	const uint32 uRate = GetUploadDatarate();
+	if (uRate == 0) {
+		m_ullZeroUploadAccumulatedMs += ullDelta;
+		m_ullSlowUploadAccumulatedMs += ullDelta;
+		return;
+	}
+
+	if (uRate < slowThresholdBytesPerSec) {
+		m_ullSlowUploadAccumulatedMs += ullDelta;
+		if (m_ullZeroUploadAccumulatedMs > ullDelta)
+			m_ullZeroUploadAccumulatedMs -= ullDelta;
+		else
+			m_ullZeroUploadAccumulatedMs = 0;
+		return;
+	}
+
+	if (m_ullSlowUploadAccumulatedMs > ullDelta)
+		m_ullSlowUploadAccumulatedMs -= ullDelta;
+	else
+		m_ullSlowUploadAccumulatedMs = 0;
+
+	if (m_ullZeroUploadAccumulatedMs > ullDelta)
+		m_ullZeroUploadAccumulatedMs -= ullDelta;
+	else
+		m_ullZeroUploadAccumulatedMs = 0;
+}
+
+bool CUpDownClient::ShouldRecycleSlowUpload(UINT slowGraceMs, UINT zeroGraceMs) const
+{
+	return m_ullZeroUploadAccumulatedMs >= zeroGraceMs
+		|| m_ullSlowUploadAccumulatedMs >= slowGraceMs;
+}
+
+bool CUpDownClient::IsInSlowUploadCooldown() const
+{
+	return GetSlowUploadCooldownRemaining() != 0;
+}
+
+ULONGLONG CUpDownClient::GetSlowUploadCooldownRemaining() const
+{
+	const ULONGLONG curTick = ::GetTickCount64();
+	return (m_ullSlowUploadCooldownUntil > curTick) ? m_ullSlowUploadCooldownUntil - curTick : 0;
 }
 
 void CUpDownClient::SendOutOfPartReqsAndAddToWaitingQueue()

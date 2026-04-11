@@ -72,13 +72,18 @@ public:
 	uint32	GetDatarate() const								{ return datarate; }
 	uint32  GetToNetworkDatarate() const;
 
-	bool	CheckForTimeOver(const CUpDownClient *client);
+	bool	CheckForTimeOver(CUpDownClient *client, CString *pstrReason = NULL, bool *pbRequeue = NULL);
 	INT_PTR	GetWaitingUserCount() const						{ return waitinglist.GetCount(); }
 	INT_PTR	GetUploadQueueLength() const					{ return uploadinglist.GetCount(); }
 	INT_PTR	GetActiveUploadsCount()	const					{ return m_MaxActiveClientsShortTime; }
 	uint32	GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged);
 	uint32	GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const;
 	uint32	GetTargetClientDataRate(bool bMinDatarate) const;
+	INT_PTR	GetBroadbandSlotCap() const						{ return GetSoftMaxUploadSlots(); }
+	/** Returns the preferred queued block count for a client at the given upload rate. */
+	uint32	GetUploadBufferBlockCount(uint32 uClientDatarate) const;
+	/** Returns whether a client at the given upload rate should use the large send buffer. */
+	bool	ShouldUseBigSendBuffer(uint32 uClientDatarate) const;
 
 	POSITION GetFirstFromUploadList() const					{ return uploadinglist.GetHeadPosition(); }
 	CUpDownClient* GetNextFromUploadList(POSITION &curpos) const { return static_cast<UploadingToClient_Struct*>(uploadinglist.GetNext(curpos))->m_pClient; }
@@ -109,7 +114,6 @@ public:
 
 protected:
 	void		RemoveFromWaitingQueue(POSITION pos, bool updatewindow);
-	bool		AcceptNewClient(bool addOnNextConnect = false) const;
 	bool		AcceptNewClient(INT_PTR curUploadSlots) const;
 	bool		ForceNewClient(bool allowEmptyWaitingQueue = false);
 	bool		AddUpNextClient(LPCTSTR pszReason, CUpDownClient *directadd = NULL);
@@ -117,6 +121,22 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	uint32	GetConfiguredUploadBudgetBytesPerSec() const;
+	INT_PTR	GetSoftMaxUploadSlots() const;
+	/** Returns the broadband per-slot target derived from the configured upload budget and fixed cap. */
+	uint32	GetTargetClientDataRateBroadband() const;
+	/** Returns the minimum headroom required before underfill may recycle a weak slot. */
+	uint32	GetBroadbandUnderfillMarginBytesPerSec() const;
+	/** Returns whether the current upload rate is materially below the configured upload budget. */
+	bool	IsBroadbandUploadUnderfilled() const;
+	/** Updates the sustained-underfill timer used by conservative slow-slot recycling. */
+	void	UpdateBroadbandUnderfillState(ULONGLONG curTick);
+	/** Returns whether broadband underfill has persisted long enough to recycle a weak slot. */
+	bool	HasSustainedBroadbandUnderfill(ULONGLONG curTick) const;
+	/** Returns whether a slot has aged enough to be judged for broadband slow-slot recycling. */
+	bool	HasCompletedSlowUploadWarmup(const CUpDownClient *client) const;
+	uint32	GetSlowUploadRateThreshold() const;
+	bool	ShouldTrackSlowUploadSlots() const;
 	void	UpdateMaxClientScore();
 	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
@@ -149,6 +169,7 @@ private:
 
 	ULONGLONG m_dwLastCalculatedAverageCombinedFilePrioAndCredit;
 	float	m_fAverageCombinedFilePrioAndCredit;
+	ULONGLONG m_ullBroadbandUnderfillSince;
 	INT_PTR	m_iHighestNumberOfFullyActivatedSlotsSinceLastCall;
 	INT_PTR	m_MaxActiveClients;
 	INT_PTR	m_MaxActiveClientsShortTime;

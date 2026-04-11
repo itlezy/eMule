@@ -37,9 +37,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define SLOT_COMPRESSION_DATARATE		(1000 * 1024)	// Data rate for a single client from which we start to check if we need to disable compression
-#define BIGBUFFER_MINDATARATE			(512 * 1024)
-
 #define RUN_STOP	0
 #define RUN_IDLE	1
 #define RUN_WORK	2
@@ -188,8 +185,9 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 	// GetQueueSessionPayloadUp is probably outdated so also add the value reported by the sockets as sent
 	nCurQueueSessionPayloadUp += pSock->GetSentPayloadSinceLastCall(false);
 	uint64 addedPayloadQueueSession = pClient->GetQueueSessionUploadAdded();
-	// buffer at least 1 block (180KB) for normal uploads, and 5 blocks (~900KB) for fast uploads
-	const uint32 nBufferLimit = (pClient->GetUploadDatarate() > BIGBUFFER_MINDATARATE) ? (5 * EMBLOCKSIZE + 1) : (EMBLOCKSIZE + 1);
+	// Scale read-ahead with the broadband target so a fast slot stays fed without over-buffering weak slots.
+	const uint32 nBufferBlocks = theApp.uploadqueue->GetUploadBufferBlockCount(pClient->GetUploadDatarate());
+	const uint32 nBufferLimit = nBufferBlocks * EMBLOCKSIZE + 1;
 
 	if (addedPayloadQueueSession > nCurQueueSessionPayloadUp && addedPayloadQueueSession - nCurQueueSessionPayloadUp >= nBufferLimit)
 		return; // the buffered data is large enough already

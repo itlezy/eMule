@@ -26,6 +26,24 @@ protected:
 	HTREEITEM m_htiA4AFSaveCpu;
 	HTREEITEM m_htiAutoArch;
 	HTREEITEM m_htiAutoTakeEd2kLinks;
+	HTREEITEM m_htiBroadband;
+	HTREEITEM m_htiBBMaxUploadClients;
+	HTREEITEM m_htiBBSlowThreshold;
+	HTREEITEM m_htiBBSlowGrace;
+	HTREEITEM m_htiBBSlowWarmup;
+	HTREEITEM m_htiBBZeroRateGrace;
+	HTREEITEM m_htiBBCooldown;
+	HTREEITEM m_htiBBLowRatioBoost;
+	HTREEITEM m_htiBBLowRatioThreshold;
+	HTREEITEM m_htiBBLowRatioBonus;
+	HTREEITEM m_htiBBLowIdDivisor;
+	HTREEITEM m_htiBBSessionTransfer;
+	HTREEITEM m_htiBBSessionTransferDisabled;
+	HTREEITEM m_htiBBSessionTransferPercent;
+	HTREEITEM m_htiBBSessionTransferMiB;
+	HTREEITEM m_htiBBSessionTransferPercentValue;
+	HTREEITEM m_htiBBSessionTransferMiBValue;
+	HTREEITEM m_htiBBSessionTimeLimit;
 	HTREEITEM m_htiCheckDiskspace;
 	HTREEITEM m_htiCloseUPnPPorts;
 	HTREEITEM m_htiCommit;
@@ -109,12 +127,16 @@ protected:
 	int m_iMaxConnPerFive;
 	int m_iMaxHalfOpen;
 	int m_iShareeMule;
+	int m_iBBSessionTransferMode;
 
 	CString m_sDateTimeFormat4Lists;
+	CString m_sBBSlowThresholdFactor;
+	CString m_sBBLowRatioThreshold;
 
 	bool m_bA4AFSaveCpu;
 	bool m_bAutoArchDisable;
 	bool m_bAutoTakeEd2kLinks;
+	bool m_bBBLowRatioBoost;
 	bool m_bAdjustNTFSDaylightFileTime;
 	bool m_bCheckDiskspace;
 	bool m_bCloseUPnPOnExit;
@@ -158,6 +180,16 @@ protected:
 	bool m_bForceSpeedsToKB;
 
 	UINT m_uFileBufferTimeLimitSeconds;
+	int m_iBBMaxUploadClients;
+	int m_iBBSlowGraceSeconds;
+	int m_iBBSlowWarmupSeconds;
+	int m_iBBZeroRateGraceSeconds;
+	int m_iBBCooldownSeconds;
+	int m_iBBLowRatioBonus;
+	int m_iBBLowIdDivisor;
+	int m_iBBSessionTransferPercent;
+	int m_iBBSessionTransferMiB;
+	int m_iBBSessionTimeLimitSeconds;
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();

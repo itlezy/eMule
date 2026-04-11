@@ -32,6 +32,16 @@ static char THIS_FILE[] = __FILE__;
 
 #define REFRESH_TIMER_ID	9042
 
+namespace
+{
+	CString FormatUploadRatio(double dRatio)
+	{
+		CString str;
+		str.Format(_T("%.1f"), dRatio);
+		return str;
+	}
+}
+
 IMPLEMENT_DYNAMIC(CFileDetailDlgStatistics, CResizablePage)
 
 BEGIN_MESSAGE_MAP(CFileDetailDlgStatistics, CResizablePage)
@@ -144,6 +154,7 @@ void CFileDetailDlgStatistics::RefreshData()
 		return;
 	uint64 uTransferred = 0;
 	uint64 uAllTimeTransferred = 0;
+	uint64 uTotalFileSize = 0;
 	const CKnownFile *pTheFile = NULL;
 	int iFiles = 0;
 	UINT uRequests = 0;
@@ -159,6 +170,7 @@ void CFileDetailDlgStatistics::RefreshData()
 		if (!iFiles)
 			pTheFile = pFile;
 		++iFiles;
+		uTotalFileSize += (uint64)pFile->GetFileSize();
 
 		uTransferred += pFile->statistic.GetTransferred();
 		uRequests += pFile->statistic.GetRequests();
@@ -200,6 +212,8 @@ void CFileDetailDlgStatistics::RefreshData()
 		SetDlgItemText(IDC_STRANSFERRED2, (LPCTSTR)CastItoXBytes(uAllTimeTransferred));
 		SetDlgItemInt(IDC_SREQUESTED2, uAllTimeRequests, FALSE);
 		SetDlgItemInt(IDC_SACCEPTED2, uAllTimeAccepted, FALSE);
+		SetDlgItemText(IDC_SSESSIONRATIO, FormatUploadRatio(uTotalFileSize != 0 ? uTransferred / static_cast<double>(uTotalFileSize) : 0.0));
+		SetDlgItemText(IDC_SALLTIMERATIO, FormatUploadRatio(uTotalFileSize != 0 ? uAllTimeTransferred / static_cast<double>(uTotalFileSize) : 0.0));
 
 		uint32 nQueueCount = theApp.uploadqueue->GetWaitingUserForFileCount(*m_paFiles, !m_bDataChanged);
 		if (nQueueCount != _UI32_MAX)
@@ -228,6 +242,8 @@ void CFileDetailDlgStatistics::RefreshData()
 		SetDlgItemText(IDC_STRANSFERRED2, _T("-"));
 		SetDlgItemText(IDC_SREQUESTED2, _T("-"));
 		SetDlgItemText(IDC_SACCEPTED2, _T("-"));
+		SetDlgItemText(IDC_SSESSIONRATIO, _T("-"));
+		SetDlgItemText(IDC_SALLTIMERATIO, _T("-"));
 		SetDlgItemText(IDC_FS_POPULARITY_VAL, _T("-"));
 		SetDlgItemText(IDC_FS_POPULARITY2_VAL, _T("-"));
 		SetDlgItemText(IDC_FS_ONQUEUE_VAL, _T("-"));
@@ -263,9 +279,11 @@ void CFileDetailDlgStatistics::Localize()
 	SetDlgItemText(IDC_FSTATIC6, GetResString(IDS_SF_TRANS));
 	SetDlgItemText(IDC_FSTATIC5, GetResString(IDS_SF_ACCEPTED));
 	SetDlgItemText(IDC_FSTATIC4, GetResString(IDS_SF_REQUESTS) + _T(':'));
+	SetDlgItemText(IDC_FSTATIC_SESSION_RATIO, GetResString(IDS_SESSION_RATIO) + _T(':'));
 	SetDlgItemText(IDC_FSTATIC9, GetResString(IDS_SF_TRANS));
 	SetDlgItemText(IDC_FSTATIC8, GetResString(IDS_SF_ACCEPTED));
 	SetDlgItemText(IDC_FSTATIC7, GetResString(IDS_SF_REQUESTS) + _T(':'));
+	SetDlgItemText(IDC_FSTATIC_ALLTIME_RATIO, GetResString(IDS_ALL_TIME_RATIO) + _T(':'));
 	SetDlgItemText(IDC_FS_POPULARITY_LBL, GetResString(IDS_POPULARITY) + _T(':'));
 	SetDlgItemText(IDC_FS_POPULARITY2_LBL, GetResString(IDS_POPULARITY) + _T(':'));
 	SetDlgItemText(IDC_FS_ONQUEUE_LBL, GetResString(IDS_ONQUEUE) + _T(':'));

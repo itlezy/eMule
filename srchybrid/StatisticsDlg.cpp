@@ -174,7 +174,7 @@ BOOL CStatisticsDlg::OnInitDialog()
 	rcUp.top = rcDown.bottom + 4;
 	rcUp.bottom = rcUp.top + rcDown.Height();
 	m_UploadOMeter.CreateWnd(WS_VISIBLE | WS_CHILD, rcUp, this, IDC_SCOPE_U);
-	SetARange(false, thePrefs.GetMaxGraphUploadRate(true));
+	SetARange(false, thePrefs.GetMaxUpload());
 	m_UploadOMeter.SetYUnits(GetResString(IDS_KBYTESPERSEC));
 
 	// Setup additional graph scope

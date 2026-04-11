@@ -196,6 +196,22 @@ void CKnownFile::UpdateFileRatingCommentAvail(bool bForceUpdate)
 		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.UpdateFile(this);
 }
 
+float CKnownFile::GetSessionUploadRatio() const
+{
+	const uint64 nFileSize = (uint64)GetFileSize();
+	if (nFileSize == 0)
+		return 0.0f;
+	return static_cast<float>(statistic.GetTransferred() / static_cast<double>(nFileSize));
+}
+
+float CKnownFile::GetAllTimeUploadRatio() const
+{
+	const uint64 nFileSize = (uint64)GetFileSize();
+	if (nFileSize == 0)
+		return 0.0f;
+	return static_cast<float>(statistic.GetAllTimeTransferred() / static_cast<double>(nFileSize));
+}
+
 void CKnownFile::UpdatePartsInfo()
 {
 	time_t tNow = time(NULL);

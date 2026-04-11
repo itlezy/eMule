@@ -1820,7 +1820,7 @@ void CemuleDlg::OnTrayRButtonUp(CPoint pt)
 
 	try {
 		m_pSystrayDlg = new CMuleSystrayDlg(this, pt
-			, thePrefs.GetMaxGraphUploadRate(true), thePrefs.GetMaxGraphDownloadRate()
+			, thePrefs.GetMaxUpload(), thePrefs.GetMaxGraphDownloadRate()
 			, thePrefs.GetMaxUpload(), thePrefs.GetMaxDownload());
 	} catch (...) {
 		return;
@@ -1860,7 +1860,7 @@ void CemuleDlg::AddSpeedSelectorMenus(CMenu *addToMenu)
 	ASSERT(m_menuUploadCtrl.m_hMenu == NULL);
 	CString text;
 	if (m_menuUploadCtrl.CreateMenu()) {
-		int rate = thePrefs.GetMaxGraphUploadRate(true);
+		int rate = thePrefs.GetMaxUpload();
 		text.Format(_T("20%%\t%i %s"), max(rate * 1 / 5, 1), (LPCTSTR)kbyps);
 		m_menuUploadCtrl.AppendMenu(MF_STRING, MP_QS_U20, text);
 		text.Format(_T("40%%\t%i %s"), max(rate * 2 / 5, 1), (LPCTSTR)kbyps);
@@ -2296,7 +2296,7 @@ void CemuleDlg::QuickSpeedOther(UINT nID)
 		thePrefs.SetMaxUpload(1);
 		thePrefs.SetMaxDownload(1);
 	} else if (nID == MP_QS_UA) {
-		thePrefs.SetMaxUpload(thePrefs.GetMaxGraphUploadRate(true));
+		thePrefs.SetMaxUpload(thePrefs.GetMaxUpload());
 		thePrefs.SetMaxDownload(thePrefs.GetMaxGraphDownloadRate());
 	}
 }
@@ -2337,13 +2337,12 @@ void CemuleDlg::QuickSpeedUpload(UINT nID)
 		return;
 	case MP_QS_UPC:
 	default:
-//		thePrefs.SetMaxUpload(UNLIMITED);
 		return;
 	case MP_QS_UP10:
 		thePrefs.SetMaxUpload(GetRecMaxUpload());
 		return;
 	}
-	thePrefs.SetMaxUpload((uint32)(thePrefs.GetMaxGraphUploadRate(true) * 0.1 * nID));
+	thePrefs.SetMaxUpload((uint32)(thePrefs.GetMaxUpload() * 0.1 * nID));
 }
 
 void CemuleDlg::QuickSpeedDownload(UINT nID)
@@ -2390,7 +2389,7 @@ void CemuleDlg::QuickSpeedDownload(UINT nID)
 // quick-speed changer -- based on xrmb
 int CemuleDlg::GetRecMaxUpload()
 {
-	int rate = thePrefs.GetMaxGraphUploadRate(true);
+	int rate = thePrefs.GetMaxUpload();
 	if (rate < 7)
 		return 0;
 	if (rate < 15)

@@ -41,6 +41,7 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 	, m_SentBytesSinceLastCall()
 	, m_SentBytesSinceLastCallOverhead()
 	, m_highestNumberOfFullyActivatedSlots()
+	, m_nNeedsMoreBandwidthSlots()
 	, m_bRun(true)
 {
 	AfxBeginThread(RunProc, (LPVOID)this);
@@ -247,22 +248,26 @@ void UploadBandwidthThrottler::EndThread()
 */
 uint32 UploadBandwidthThrottler::GetSlotLimit(uint32 currentUpSpeed)
 {
-	uint32 upPerClient = theApp.uploadqueue->GetTargetClientDataRate(true);
-	// if throttler doesn't require another slot, go with a slightly more restrictive method
-	if (currentUpSpeed > 49 * 1024) {
-		upPerClient += currentUpSpeed / 43;
-		if (upPerClient > UPLOAD_CLIENT_MAXDATARATE)
-			upPerClient = UPLOAD_CLIENT_MAXDATARATE;
-	}
+	uint32 upPerClient = max(theApp.uploadqueue->GetTargetClientDataRate(true), 3u * 1024u);
+	const uint32 uBroadbandCap = max((uint32)MIN_UP_CLIENTS_ALLOWED, static_cast<uint32>(theApp.uploadqueue->GetBroadbandSlotCap()));
+	// The throttler keeps a coarse internal slot-pressure heuristic, but the
+	// stabilization branch clamps that heuristic to the queue's fixed broadband
+	// cap so the throttler cannot silently drift into a wider slot model.
+	// If the throttler is already above the per-slot target, bias slightly against extra slot growth.
+	if (currentUpSpeed > upPerClient * 2)
+		upPerClient += max(upPerClient / 3, 1024u);
 
-	//now the final check
-	if (currentUpSpeed > 25 * 1024)
-		return max(currentUpSpeed / upPerClient, MIN_UP_CLIENTS_ALLOWED + 3);
-	if (currentUpSpeed > 16 * 1024)
-		return MIN_UP_CLIENTS_ALLOWED + 2;
-	if (currentUpSpeed > 9 * 1024)
-		return MIN_UP_CLIENTS_ALLOWED + 1;
-	return MIN_UP_CLIENTS_ALLOWED;
+	uint32 uSlotLimit;
+	if (currentUpSpeed > upPerClient)
+		uSlotLimit = max(currentUpSpeed / upPerClient, MIN_UP_CLIENTS_ALLOWED + 3);
+	else if (currentUpSpeed > (upPerClient * 2) / 3)
+		uSlotLimit = MIN_UP_CLIENTS_ALLOWED + 2;
+	else if (currentUpSpeed > upPerClient / 3)
+		uSlotLimit = MIN_UP_CLIENTS_ALLOWED + 1;
+	else
+		uSlotLimit = MIN_UP_CLIENTS_ALLOWED;
+
+	return min(uSlotLimit, uBroadbandCap);
 }
 
 uint32 UploadBandwidthThrottler::CalculateChangeDelta(uint32 numberOfConsecutiveChanges)
@@ -319,9 +324,7 @@ UINT UploadBandwidthThrottler::RunInternal()
 
 		DWORD timeSinceLastLoop = timeGetTime() - lastLoopTick;
 
-		uint32 allowedDataRate = (thePrefs.GetMaxUpload() == UNLIMITED)
-			? (thePrefs.GetMaxGraphUploadRate(true) * 1024u)
-			: (thePrefs.GetMaxUpload() * 1024u);
+		uint32 allowedDataRate = thePrefs.GetMaxUpload() * 1024u;
 
 		// check busy level for all the slots (WSAEWOULDBLOCK status)
 		uint32 nBusy = 0;
@@ -344,95 +347,15 @@ UINT UploadBandwidthThrottler::RunInternal()
 		//if (theApp.uploadqueue)
 		//   nCanSend = max(nCanSend, GetSlotLimit(theApp.uploadqueue->GetDatarate()));
 
-		// When no upload limit has been set in options, try to guess a good upload limit.
-		if (thePrefs.GetMaxUpload() == UNLIMITED) {
-			++loopsCount;
-			//if (lotsOfLog)
-			//	theApp.QueueDebugLogLine(false,_T("Throttler: busy: %i/%i nSlotsBusyLevel: %i Guessed limit: %0.5f changesCount: %i loopsCount: %i"), nBusy, nCanSend, nSlotsBusyLevel, nEstiminatedLimit/1024.0f, changesCount, loopsCount);
-			if (nCanSend > 0) {
-				//float fBusyFraction = nBusy / (float)nCanSend;
-				//the limits were: "fBusyFraction > 0.75f" and "fBusyFraction < 0.25f"
-				const int iBusyFraction = (nBusy << 5) / nCanSend; //now the limits will be 24 and 8
-				if (nBusy > 2 && iBusyFraction > 24 && nSlotsBusyLevel < 255) {
-					++nSlotsBusyLevel;
-					++changesCount;
-					if (thePrefs.GetVerbose() && nSlotsBusyLevel % 25 == 0 && lotsOfLog)
-						theApp.QueueDebugLogLine(false, _T("Throttler: nSlotsBusyLevel: %i Guessed limit: %0.5f changesCount: %i loopsCount: %i"), nSlotsBusyLevel, nEstiminatedDataRate / 1024.0f, changesCount, loopsCount);
-				} else if ((nBusy <= 2 || iBusyFraction < 8) && nSlotsBusyLevel > -255) {
-					--nSlotsBusyLevel;
-					++changesCount;
-					if (thePrefs.GetVerbose() && nSlotsBusyLevel % 25 == 0 && lotsOfLog)
-						theApp.QueueDebugLogLine(false, _T("Throttler: nSlotsBusyLevel: %i Guessed limit: %0.5f changesCount %i loopsCount: %i"), nSlotsBusyLevel, nEstiminatedDataRate / 1024.0f, changesCount, loopsCount);
-				}
-			}
-
-			if (nUploadStartTime == 0) {
-				if (GetStandardListSize() >= 3)
-					nUploadStartTime = timeGetTime();
-			} else if (timeGetTime() >= nUploadStartTime + SEC2MS(60) && theApp.uploadqueue) {
-				if (nEstiminatedDataRate == 0) { // no auto limit was set yet
-					if (nSlotsBusyLevel >= 250) { // sockets indicated that the BW limit has been reached
-						nEstiminatedDataRate = theApp.uploadqueue->GetDatarate();
-						nSlotsBusyLevel = -200;
-						if (thePrefs.GetVerbose() && estimateChangedLog)
-							theApp.QueueDebugLogLine(false, _T("Throttler: Set initial estimated limit to %0.5f changesCount: %i loopsCount: %i"), nEstiminatedDataRate / 1024.0f, changesCount, loopsCount);
-						changesCount = 0;
-						loopsCount = 0;
-					}
-				} else if (nSlotsBusyLevel > 250) {
-					if (changesCount > 500 || (changesCount > 300 && loopsCount > 1000) || loopsCount > 2000)
-						numberOfConsecutiveDownChanges = 0;
-					else
-						++numberOfConsecutiveDownChanges;
-					uint32 changeDelta = CalculateChangeDelta(numberOfConsecutiveDownChanges);
-
-					// Don't lower speed below 1 KiB/s
-					if (nEstiminatedDataRate < changeDelta + 1024)
-						changeDelta = (nEstiminatedDataRate > 1024) ? nEstiminatedDataRate - 1024 : 0;
-
-					ASSERT(nEstiminatedDataRate >= changeDelta + 1024);
-					nEstiminatedDataRate -= changeDelta;
-
-					if (thePrefs.GetVerbose() && estimateChangedLog)
-						theApp.QueueDebugLogLine(false, _T("Throttler: REDUCED limit #%i by %i bytes to: %0.5f changesCount: %i loopsCount: %i"), numberOfConsecutiveDownChanges, changeDelta, nEstiminatedDataRate / 1024.0f, changesCount, loopsCount);
-
-					numberOfConsecutiveUpChanges = 0;
-					nSlotsBusyLevel = 0;
-					changesCount = 0;
-					loopsCount = 0;
-				} else if (nSlotsBusyLevel < -250) {
-					if (changesCount > 500 || (changesCount > 300 && loopsCount > 1000) || loopsCount > 2000)
-						numberOfConsecutiveUpChanges = 0;
-					else
-						++numberOfConsecutiveUpChanges;
-					uint32 changeDelta = CalculateChangeDelta(numberOfConsecutiveUpChanges);
-					nEstiminatedDataRate += changeDelta;
-					// Don't raise speed unless we are under current allowedDataRate
-					if (nEstiminatedDataRate > allowedDataRate) {
-						if (estimateChangedLog)
-							changeDelta = nEstiminatedDataRate - allowedDataRate; //for logs only
-						nEstiminatedDataRate = allowedDataRate;
-					}
-
-					if (thePrefs.GetVerbose() && estimateChangedLog)
-						theApp.QueueDebugLogLine(false, _T("Throttler: INCREASED limit #%i by %i bytes to: %0.5f changesCount: %i loopsCount: %i"), numberOfConsecutiveUpChanges, changeDelta, nEstiminatedDataRate / 1024.0f, changesCount, loopsCount);
-
-					numberOfConsecutiveDownChanges = 0;
-					nSlotsBusyLevel = 0;
-					changesCount = 0;
-					loopsCount = 0;
-				}
-
-				if (allowedDataRate > nEstiminatedDataRate)
-					allowedDataRate = nEstiminatedDataRate;
-			}
-
-			if (nCanSend == nBusy && GetStandardListSize() > 0 && nSlotsBusyLevel < 125) {
-				nSlotsBusyLevel = 125;
-				if (thePrefs.GetVerbose() && lotsOfLog)
-					theApp.QueueDebugLogLine(false, _T("Throttler: nSlotsBusyLevel: %i Guessed limit: %0.5f changesCount %i loopsCount: %i (set due to all slots busy)"), nSlotsBusyLevel, nEstiminatedDataRate / 1024.0f, changesCount, loopsCount);
-			}
-		}
+		(void)nBusy;
+		(void)nCanSend;
+		(void)nUploadStartTime;
+		(void)nEstiminatedDataRate;
+		(void)numberOfConsecutiveUpChanges;
+		(void)numberOfConsecutiveDownChanges;
+		(void)changesCount;
+		(void)loopsCount;
+		(void)nSlotsBusyLevel;
 
 		uint32 minFragSize, doubleSendSize;
 		if (allowedDataRate < 6 * 1024)
@@ -612,6 +535,7 @@ UINT UploadBandwidthThrottler::RunInternal()
 				spendingRate = SEC2MS(1) - 1;
 				if (thisLoopTick >= lastTickReachedBandwidth + max(SEC2MS(1), timeSinceLastLoop * 2)) {
 					m_highestNumberOfFullyActivatedSlots = GetStandardListSize() + 1;
+					::InterlockedExchange(&m_nNeedsMoreBandwidthSlots, 1);
 					lastTickReachedBandwidth = thisLoopTick;
 					//theApp.QueueDebugLogLine(false, _T("UploadBandwidthThrottler: request new slot due to bw not reached. m_highestNumberOfFullyActivatedSlots: %i GetStandardListSize(): %i tick: %i"), m_highestNumberOfFullyActivatedSlots, GetStandardListSize(), thisLoopTick);
 				}

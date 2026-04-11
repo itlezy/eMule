@@ -28,6 +28,40 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+struct BroadbandPreset
+{
+	LPCTSTR pszName;
+	uint32 uploadMbit;
+	uint32 downloadMbit;
+	uint32 uploadLimitKiB;
+	uint32 downloadLimitKiB;
+	UINT maxConnections;
+	UINT maxSourcesPerFile[3];
+};
+
+constexpr uint32 MbitToKiB(uint32 nMbit)
+{
+	return (nMbit * 1000000u + 4096u) / 8192u;
+}
+
+const BroadbandPreset kBroadbandPresets[] =
+{
+	{ _T("Tier 1"),  25u,  100u, MbitToKiB(25u),  MbitToKiB(100u), 400u, { 350u, 250u, 175u } },
+	{ _T("Tier 2"),  50u,  250u, MbitToKiB(50u),  MbitToKiB(250u), 500u, { 500u, 350u, 225u } },
+	{ _T("Tier 3"), 100u,  500u, MbitToKiB(100u), MbitToKiB(500u), 500u, { 650u, 450u, 300u } },
+	{ _T("Tier 4"), 250u, 1000u, MbitToKiB(250u), MbitToKiB(1000u), 500u, { 800u, 550u, 375u } }
+};
+
+constexpr UINT kRecommendedMaxConnections = 500u;
+
+int GetPresetIndex(int iSelectionMark)
+{
+	return iSelectionMark - 1;
+}
+}
+
 
 // CConnectionWizardDlg dialog
 
@@ -65,93 +99,52 @@ void CConnectionWizardDlg::DoDataExchange(CDataExchange *pDX)
 
 void CConnectionWizardDlg::OnBnClickedApply()
 {
-	if (m_provider.GetSelectionMark() == 0) {
-		// change the upload/download to unlimited and don't touch other stuff, keep the default values
-		thePrefs.maxGraphUploadRate = UNLIMITED;
-		thePrefs.maxGraphDownloadRate = 96;
-		thePrefs.m_maxupload = UNLIMITED;
-		thePrefs.m_maxdownload = UNLIMITED;
-		theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxGraphUploadRate(true));
-		theApp.emuledlg->statisticswnd->SetARange(true, thePrefs.maxGraphDownloadRate);
-		theApp.emuledlg->preferenceswnd->m_wndConnection.LoadSettings();
-		CDialog::OnOK();
-		return;
-	}
-
-	UINT download = GetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, NULL, TRUE);
+	UINT download = GetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, NULL, FALSE);
 	if (download <= 0) {
 		GetDlgItem(IDC_WIZ_TRUEDOWNLOAD_BOX)->SetFocus();
 		return;
 	}
 
-	UINT upload = GetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, NULL, TRUE);
+	UINT upload = GetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, NULL, FALSE);
 	if (upload <= 0) {
 		GetDlgItem(IDC_WIZ_TRUEUPLOAD_BOX)->SetFocus();
 		return;
 	}
 
-	if (IsDlgButtonChecked(IDC_KBITS)) {
-		upload = (upload / 8 * 1000 + 512) / 1024;
-		download = (download / 8 * 1000 + 512) / 1024;
+	int iPreset = GetPresetIndex(m_provider.GetSelectionMark());
+	if (iPreset >= 0 && iPreset < static_cast<int>(_countof(kBroadbandPresets))) {
+		const BroadbandPreset &preset = kBroadbandPresets[iPreset];
+		upload = preset.uploadLimitKiB;
+		download = preset.downloadLimitKiB;
+		thePrefs.maxconnections = min(preset.maxConnections, kRecommendedMaxConnections);
+		thePrefs.maxsourceperfile = preset.maxSourcesPerFile[m_iTotalDownload];
 	} else {
-		upload = (upload * 1000 + 512) / 1024;
-		download = (download * 1000 + 512) / 1024;
-	}
-
-	thePrefs.maxGraphDownloadRate = download;
-	thePrefs.maxGraphUploadRate = upload;
-
-	if (upload > 0 && download > 0) {
-		thePrefs.m_maxupload = upload * 4 / 5;
-		if (upload < 4 && download > upload * 3) {
-			thePrefs.m_maxdownload = thePrefs.m_maxupload * 3;
-			download = upload * 3;
-		} else if (upload < 10 && download > upload * 4) {
-			thePrefs.m_maxdownload = thePrefs.m_maxupload * 4;
-			download = upload * 4;
-		} else if (upload < 20 && download > upload * 5) {
-			thePrefs.m_maxdownload = thePrefs.m_maxupload * 5;
-			download = upload * 5;
-		} else
-			thePrefs.m_maxdownload = download * 9 / 10;
-
-		theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.maxGraphUploadRate);
-		theApp.emuledlg->statisticswnd->SetARange(true, thePrefs.maxGraphDownloadRate);
-
-		if (upload <= 7)
-			thePrefs.maxconnections = 80;
-		else if (upload < 12)
-			thePrefs.maxconnections = 200;
-		else if (upload < 25)
-			thePrefs.maxconnections = 400;
-		else if (upload < 37)
-			thePrefs.maxconnections = 600;
-		else
-			thePrefs.maxconnections = 800;
-
-		static const UINT srcperfile[5][3] =
+		static const UINT aMaxConnections[4] = { 400u, 500u, 500u, 500u };
+		static const UINT aMaxSourcesPerFile[4][3] =
 		{
-			{ 100u,  60u,  40u},
-			{ 300u, 200u, 100u},
-			{ 500u, 400u, 350u},
-			{ 800u, 600u, 400u},
-			{1000u, 750u, 500u}
+			{ 350u, 250u, 175u },
+			{ 500u, 350u, 225u },
+			{ 650u, 450u, 300u },
+			{ 800u, 550u, 375u }
 		};
 
-		int i;
-		if (download <= 7)
-			i = 0;
-		else if (download < 62)
-			i = 1;
-		else if (download < 187)
-			i = 2;
-		else if (download <= 312)
-			i = 3;
-		else
-			i = 4;
+		int iProfile = 0;
+		if (download > kBroadbandPresets[2].downloadLimitKiB)
+			iProfile = 3;
+		else if (download > kBroadbandPresets[1].downloadLimitKiB)
+			iProfile = 2;
+		else if (download > kBroadbandPresets[0].downloadLimitKiB)
+			iProfile = 1;
 
-		thePrefs.maxsourceperfile = srcperfile[i][m_iTotalDownload];
+		thePrefs.maxconnections = min(aMaxConnections[iProfile], kRecommendedMaxConnections);
+		thePrefs.maxsourceperfile = aMaxSourcesPerFile[iProfile][m_iTotalDownload];
 	}
+
+	thePrefs.SetMaxUpload(upload);
+	thePrefs.SetMaxDownload(download);
+	thePrefs.SetMaxGraphDownloadRate(download);
+	theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxUpload());
+	theApp.emuledlg->statisticswnd->SetARange(true, thePrefs.GetMaxGraphDownloadRate());
 	theApp.emuledlg->preferenceswnd->m_wndConnection.LoadSettings();
 	CDialog::OnOK();
 }
@@ -190,77 +183,35 @@ BOOL CConnectionWizardDlg::OnInitDialog()
 	SetIcon(m_icoWnd = theApp.LoadIcon(_T("Wizard")), FALSE);
 
 	CheckRadioButton(IDC_WIZ_LOWDOWN_RADIO, IDC_WIZ_HIGHDOWN_RADIO, IDC_WIZ_LOWDOWN_RADIO);
-	CheckRadioButton(IDC_KBITS, IDC_KBYTES, IDC_KBITS);
+	GetDlgItem(IDC_KBITS)->ShowWindow(SW_HIDE);
+	GetDlgItem(IDC_KBYTES)->ShowWindow(SW_HIDE);
 
-	SetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, 0, FALSE);
-	SetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, 0, FALSE);
+	SetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, thePrefs.GetMaxDownload(), FALSE);
+	SetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, thePrefs.GetMaxUpload(), FALSE);
 
 	m_provider.InsertColumn(0, GetResString(IDS_TYPE), LVCFMT_LEFT, 150);
 	m_provider.InsertColumn(1, GetResString(IDS_WIZ_DOWN), LVCFMT_LEFT, 85);
 	m_provider.InsertColumn(2, GetResString(IDS_WIZ_UP), LVCFMT_LEFT, 85);
 	m_provider.SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP);
 
-	m_provider.InsertItem(0, GetResString(IDS_UNKNOWN));
-	m_provider.SetItemText(0, 1, _T(""));
-	m_provider.SetItemText(0, 2, _T(""));
-	m_provider.InsertItem(1, GetResString(IDS_WIZARD_CUSTOM));
-	m_provider.SetItemText(1, 1, GetResString(IDS_WIZARD_ENTERBELOW));
-	m_provider.SetItemText(1, 2, GetResString(IDS_WIZARD_ENTERBELOW));
-	m_provider.InsertItem(2, _T("V.92 Modem"));
-	m_provider.SetItemText(2, 1, _T("56"));
-	m_provider.SetItemText(2, 2, _T("48"));
-	m_provider.InsertItem(3, _T("ISDN"));
-	m_provider.SetItemText(3, 1, _T("64"));
-	m_provider.SetItemText(3, 2, _T("64"));
-	m_provider.InsertItem(4, _T("ISDN 2x"));
-	m_provider.SetItemText(4, 1, _T("128"));
-	m_provider.SetItemText(4, 2, _T("128"));
+	m_provider.InsertItem(0, GetResString(IDS_WIZARD_CUSTOM));
+	m_provider.SetItemText(0, 1, GetResString(IDS_WIZARD_ENTERBELOW));
+	m_provider.SetItemText(0, 2, GetResString(IDS_WIZARD_ENTERBELOW));
+	for (int i = 0; i < static_cast<int>(_countof(kBroadbandPresets)); ++i) {
+		CString sValue;
+		const int iItem = i + 1;
+		m_provider.InsertItem(iItem, kBroadbandPresets[i].pszName);
+		sValue.Format(_T("%u"), kBroadbandPresets[i].downloadMbit);
+		m_provider.SetItemText(iItem, 1, sValue);
+		sValue.Format(_T("%u"), kBroadbandPresets[i].uploadMbit);
+		m_provider.SetItemText(iItem, 2, sValue);
+	}
 
-	m_provider.InsertItem(5, _T("T DSL 1000 (T,Arcor,Freenet,1&1)"));
-	m_provider.SetItemText(5, 1, _T("1024"));
-	m_provider.SetItemText(5, 2, _T("128"));
-	m_provider.InsertItem(6, _T("T DSL 1500 (T)"));
-	m_provider.SetItemText(6, 1, _T("1536"));
-	m_provider.SetItemText(6, 2, _T("192"));
-	m_provider.InsertItem(7, _T("T DSL 2000 (T,Arcor,Freenet,Tiscali,Alice)"));
-	m_provider.SetItemText(7, 1, _T("2048"));
-	m_provider.SetItemText(7, 2, _T("192"));
-	m_provider.InsertItem(8, _T("Versatel DSL 2000"));
-	m_provider.SetItemText(8, 1, _T("2048"));
-	m_provider.SetItemText(8, 2, _T("384"));
-
-	m_provider.InsertItem(9, _T("T-DSL 3000 (T,Arcor)"));
-	m_provider.SetItemText(9, 1, _T("3072"));
-	m_provider.SetItemText(9, 2, _T("384"));
-	m_provider.InsertItem(10, _T("T DSL 6000 (T,Arcor)"));
-	m_provider.SetItemText(10, 1, _T("6016"));
-	m_provider.SetItemText(10, 2, _T("576"));
-	m_provider.InsertItem(11, _T("  DSL 6000 (Tiscali,Freenet,1&1)"));
-	m_provider.SetItemText(11, 1, _T("6016"));
-	m_provider.SetItemText(11, 2, _T("572"));
-	m_provider.InsertItem(12, _T("  DSL 6000 (Lycos,Alice)"));
-	m_provider.SetItemText(12, 1, _T("6016"));
-	m_provider.SetItemText(12, 2, _T("512"));
-	m_provider.InsertItem(13, _T("Versatel DSL 6000"));
-	m_provider.SetItemText(13, 1, _T("6144"));
-	m_provider.SetItemText(13, 2, _T("512"));
-
-	m_provider.InsertItem(14, _T("Cable"));
-	m_provider.SetItemText(14, 1, _T("187"));
-	m_provider.SetItemText(14, 2, _T("32"));
-	m_provider.InsertItem(15, _T("Cable"));
-	m_provider.SetItemText(15, 1, _T("187"));
-	m_provider.SetItemText(15, 2, _T("64"));
-	m_provider.InsertItem(16, _T("T1"));
-	m_provider.SetItemText(16, 1, _T("1500"));
-	m_provider.SetItemText(16, 2, _T("1500"));
-	m_provider.InsertItem(17, _T("T3+"));
-	m_provider.SetItemText(17, 1, _T("44 Mbps"));
-	m_provider.SetItemText(17, 2, _T("44 Mbps"));
-
-	m_provider.SetSelectionMark(0);
-	m_provider.SetItemState(0, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
+	m_provider.SetSelectionMark(1);
+	m_provider.SetItemState(1, LVIS_FOCUSED | LVIS_SELECTED, LVIS_FOCUSED | LVIS_SELECTED);
 	SetCustomItemsActivation();
+	SetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, kBroadbandPresets[0].downloadLimitKiB, FALSE);
+	SetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, kBroadbandPresets[0].uploadLimitKiB, FALSE);
 
 	Localize();
 
@@ -270,30 +221,16 @@ BOOL CConnectionWizardDlg::OnInitDialog()
 void CConnectionWizardDlg::OnNmClickProviders(LPNMHDR, LRESULT *pResult)
 {
 	SetCustomItemsActivation();
-	int i = m_provider.GetSelectionMark();
-	if (i < 0 || i > 17)
-		return;
-	static const UINT adown[18] =
-	{
-		0, 0, 56u, 64u, 128u, 1024u, 1536u, 2048u, 2048u, 3072u, 6016u, 6016u, 6016u, 6144u, 187u, 187u, 1500u, 44000u
-	};
-	static const UINT aup[18] =
-	{
-		0, 0, 48u, 64u, 128u,  128u,  192u,  192u,  384u,  384u,  576u,  572u,  512u,  512u,  32u,  64u, 1500u, 44000u
-	};
-	UINT up, down;
-	if (i == 1) { //this is 'custom'; convert to kilobits
-		down = (thePrefs.maxGraphDownloadRate * 1024 + 500) / 1000 * 8;
-		up = (thePrefs.GetMaxGraphUploadRate(true) * 1024 + 500) / 1000 * 8;
+	int iPreset = GetPresetIndex(m_provider.GetSelectionMark());
+	if (iPreset >= 0 && iPreset < static_cast<int>(_countof(kBroadbandPresets))) {
+		SetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, kBroadbandPresets[iPreset].downloadLimitKiB, FALSE);
+		SetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, kBroadbandPresets[iPreset].uploadLimitKiB, FALSE);
 	} else {
-		down = adown[i];
-		up = aup[i];
+		SetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, thePrefs.GetMaxDownload(), FALSE);
+		SetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, thePrefs.GetMaxUpload(), FALSE);
 	}
-
-	SetDlgItemInt(IDC_WIZ_TRUEDOWNLOAD_BOX, down, FALSE);
-	SetDlgItemInt(IDC_WIZ_TRUEUPLOAD_BOX, up, FALSE);
-	CheckRadioButton(IDC_KBITS, IDC_KBYTES, IDC_KBITS);
-	*pResult = 0;
+	if (pResult)
+		*pResult = 0;
 }
 
 void CConnectionWizardDlg::Localize()
@@ -304,17 +241,13 @@ void CConnectionWizardDlg::Localize()
 	SetDlgItemText(IDC_WIZ_HOTBUTTON_FRAME, GetResString(IDS_WIZ_CTFRAME));
 	SetDlgItemText(IDC_WIZ_TRUEUPLOAD_TEXT, GetResString(IDS_WIZ_TRUEUPLOAD_TEXT));
 	SetDlgItemText(IDC_WIZ_TRUEDOWNLOAD_TEXT, GetResString(IDS_WIZ_TRUEDOWNLOAD_TEXT));
-	SetDlgItemText(IDC_KBITS, GetResString(IDS_KBITSSEC));
-	SetDlgItemText(IDC_KBYTES, GetResString(IDS_KBYTESSEC));
 	SetDlgItemText(IDC_WIZ_APPLY_BUTTON, GetResString(IDS_PW_APPLY));
 	SetDlgItemText(IDC_WIZ_CANCEL_BUTTON, GetResString(IDS_CANCEL));
 }
 
 void CConnectionWizardDlg::SetCustomItemsActivation()
 {
-	BOOL bActive = (m_provider.GetSelectionMark() == 1);
+	BOOL bActive = (m_provider.GetSelectionMark() == 0);
 	GetDlgItem(IDC_WIZ_TRUEUPLOAD_BOX)->EnableWindow(bActive);
 	GetDlgItem(IDC_WIZ_TRUEDOWNLOAD_BOX)->EnableWindow(bActive);
-	GetDlgItem(IDC_KBITS)->EnableWindow(bActive);
-	GetDlgItem(IDC_KBYTES)->EnableWindow(bActive);
 }
