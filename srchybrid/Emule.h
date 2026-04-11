@@ -210,6 +210,7 @@ public:
 	bool		ProcessPendingParityHarnessScenario();
 	bool		HasPendingParityHarnessScenario() const;
 	bool		ShouldKeepParityHarnessStartupTimerRunning() const;
+	bool		HasPendingParityHarnessSearch() const;
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
@@ -246,6 +247,10 @@ protected:
 	bool		m_bParityHarnessShareIssued;
 	bool		m_bParityHarnessLinkWritten;
 	bool		m_bParityHarnessDownloadIssued;
+	bool		m_bParityHarnessSearchStarted;
+	bool		m_bParityHarnessSearchDownloadQueued;
+	uint32		m_nParityHarnessSearchID;
+	UINT		m_uParityHarnessSearchLastExportedCount;
 	CString		m_strConfigRootOverride;
 	CString		m_strParityHarnessBootstrapPeers;
 	CString		m_strParityHarnessReadyFile;
@@ -253,6 +258,9 @@ protected:
 	CString		m_strParityHarnessExportLinkFile;
 	CString		m_strParityHarnessExportSourceIp;
 	CString		m_strParityHarnessDownloadLinkFile;
+	CString		m_strParityHarnessSearchTerm;
+	CString		m_strParityHarnessSearchResultsFile;
+	CString		m_strParityHarnessSearchDownloadHashFile;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHelp();
