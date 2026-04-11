@@ -99,6 +99,56 @@ static void MaybeSelfIndexParityHarnessSource(CKnownFile *pKnownFile)
 	}
 }
 
+static void MaybeSelfIndexParityHarnessKeywords(CKnownFile *pKnownFile)
+{
+	if (pKnownFile == NULL || !theApp.IsParityHarnessSeedPublisher())
+		return;
+
+	Kademlia::CIndexed *pIndexed = Kademlia::CKademlia::GetIndexed();
+	if (pIndexed == NULL)
+		return;
+
+	const Kademlia::WordList &wordlist = pKnownFile->GetKadKeywords();
+	if (wordlist.empty())
+		return;
+
+	const uint32 uPublisherIp = theApp.GetParityHarnessExportSourceIp();
+	const uint16 uKadPort = Kademlia::CKademlia::GetPrefs()->GetInternKadPort();
+	const uint16 uTcpPort = thePrefs.GetPort();
+	const Kademlia::CUInt128 uFileHash(pKnownFile->GetFileHash());
+
+	for (Kademlia::WordList::const_iterator it = wordlist.begin(); it != wordlist.end(); ++it) {
+		Kademlia::CKeyEntry *pEntry = new Kademlia::CKeyEntry();
+		uint8 uLoad = 0;
+		try {
+			Kademlia::CUInt128 uKeywordId;
+			KadGetKeywordHash(Kademlia::CKadTagValueString(*it), &uKeywordId);
+
+			pEntry->m_uIP = uPublisherIp;
+			pEntry->m_uTCPPort = uTcpPort;
+			pEntry->m_uUDPPort = uKadPort;
+			pEntry->m_uKeyID.SetValue(uKeywordId);
+			pEntry->m_uSourceID.SetValue(uFileHash);
+			pEntry->m_uSize = pKnownFile->GetFileSize();
+			pEntry->m_tLifetime = time(NULL) + KADEMLIAREPUBLISHTIMEK;
+			pEntry->m_bSource = false;
+			pEntry->SetFileName(Kademlia::CKadTagValueString(pKnownFile->GetFileName()));
+
+			if (pIndexed->AddKeyword(uKeywordId, uFileHash, pEntry, uLoad)) {
+				DebugLog(_T("Oracle parity self-indexed keyword file=%s keyword=%s target=%s load=%u")
+					, (LPCTSTR)pKnownFile->GetFileName()
+					, (LPCTSTR)Kademlia::CKadTagValueString(*it)
+					, (LPCTSTR)uKeywordId.ToHexString()
+					, static_cast<unsigned>(uLoad));
+			} else
+				delete pEntry;
+		} catch (...) {
+			delete pEntry;
+			throw;
+		}
+	}
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // CPublishKeyword
@@ -1366,6 +1416,7 @@ void CSharedFileList::Publish()
 			CKnownFile *pCurKnownFile = GetFileByIndex(m_currFileSrc);
 			if (pCurKnownFile && pCurKnownFile->PublishSrc()) {
 				MaybeSelfIndexParityHarnessSource(pCurKnownFile);
+				MaybeSelfIndexParityHarnessKeywords(pCurKnownFile);
 				if (Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::STOREFILE, true, Kademlia::CUInt128(pCurKnownFile->GetFileHash())) == NULL)
 					pCurKnownFile->SetLastPublishTimeKadSrc(0, 0);
 			}
