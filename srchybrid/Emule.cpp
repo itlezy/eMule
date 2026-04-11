@@ -414,14 +414,6 @@ void CemuleApp::ApplyPendingParityHarnessActions()
 	if (!Kademlia::CKademlia::IsRunning())
 		return;
 
-	Kademlia::CRoutingZone *pRoutingZone = Kademlia::CKademlia::GetRoutingZone();
-	if (Kademlia::CKademlia::IsConnected()
-		|| (pRoutingZone != NULL && pRoutingZone->GetNumContacts() > 0))
-	{
-		m_bParityHarnessBootstrapIssued = true;
-		return;
-	}
-
 	const time_t tNow = time(NULL);
 	if (m_bParityHarnessBootstrapIssued && tNow < m_tParityHarnessBootstrapLastAttempt + 5)
 		return;
@@ -500,6 +492,12 @@ bool CemuleApp::HasPendingParityHarnessScenario() const
 	return !m_strParityHarnessShareFile.IsEmpty()
 		|| !m_strParityHarnessExportLinkFile.IsEmpty()
 		|| !m_strParityHarnessDownloadLinkFile.IsEmpty();
+}
+
+bool CemuleApp::ShouldKeepParityHarnessStartupTimerRunning() const
+{
+	return !m_strParityHarnessBootstrapPeers.IsEmpty()
+		&& Kademlia::CKademlia::IsRunning();
 }
 
 bool CemuleApp::ProcessPendingParityHarnessScenario()

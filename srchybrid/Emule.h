@@ -209,6 +209,7 @@ public:
 	void		EmitParityHarnessReadyFile();
 	bool		ProcessPendingParityHarnessScenario();
 	bool		HasPendingParityHarnessScenario() const;
+	bool		ShouldKeepParityHarnessStartupTimerRunning() const;
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
