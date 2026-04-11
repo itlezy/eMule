@@ -106,6 +106,9 @@ inline std::uint32_t BuildUploadScoreModifierSortKey(const UploadScoreBreakdown 
 
 inline CString FormatUploadScoreModifiers(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszLowRatioLabel, LPCTSTR pszLowIdLabel, LPCTSTR pszCooldownLabel)
 {
+	if (rBreakdown.eAvailability == uploadScoreFriendSlot || rBreakdown.eAvailability == uploadScoreUnavailable)
+		return CString(_T("-"));
+
 	CString strModifiers;
 	if (rBreakdown.eAvailability == uploadScoreCooldown)
 		strModifiers = pszCooldownLabel;
@@ -129,7 +132,7 @@ inline CString FormatUploadScoreModifiers(const UploadScoreBreakdown &rBreakdown
 	return strModifiers.IsEmpty() ? CString(_T("-")) : strModifiers;
 }
 
-inline CString FormatEffectiveUploadScore(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszLowRatioLabel, LPCTSTR pszLowIdLabel, LPCTSTR pszCooldownLabel, LPCTSTR pszFriendSlotLabel, LPCTSTR pszUnavailableLabel)
+inline CString FormatBaseUploadScore(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszFriendSlotLabel, LPCTSTR pszUnavailableLabel)
 {
 	switch (rBreakdown.eAvailability) {
 	case uploadScoreFriendSlot:
@@ -140,11 +143,68 @@ inline CString FormatEffectiveUploadScore(const UploadScoreBreakdown &rBreakdown
 		break;
 	}
 
-	const CString strModifiers = FormatUploadScoreModifiers(rBreakdown, pszLowRatioLabel, pszLowIdLabel, pszCooldownLabel);
+	CString strScore;
+	strScore.Format(_T("%u"), rBreakdown.uBaseScore);
+	return strScore;
+}
+
+inline CString FormatEffectiveUploadScoreValue(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszFriendSlotLabel, LPCTSTR pszUnavailableLabel)
+{
+	switch (rBreakdown.eAvailability) {
+	case uploadScoreFriendSlot:
+		return pszFriendSlotLabel;
+	case uploadScoreUnavailable:
+		return pszUnavailableLabel;
+	default:
+		break;
+	}
+
 	CString strScore;
 	strScore.Format(_T("%u"), rBreakdown.uEffectiveScore);
+	return strScore;
+}
+
+inline CString FormatUploadScoreCompact(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszLowRatioLabel, LPCTSTR pszLowIdLabel, LPCTSTR pszCooldownLabel, LPCTSTR pszFriendSlotLabel, LPCTSTR pszUnavailableLabel)
+{
+	CString strScore = FormatEffectiveUploadScoreValue(rBreakdown, pszFriendSlotLabel, pszUnavailableLabel);
+	const CString strModifiers = FormatUploadScoreModifiers(rBreakdown, pszLowRatioLabel, pszLowIdLabel, pszCooldownLabel);
 	if (strModifiers != _T("-"))
 		strScore.AppendFormat(_T(" (%s)"), (LPCTSTR)strModifiers);
 	return strScore;
+}
+
+inline CString FormatEffectiveUploadScore(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszLowRatioLabel, LPCTSTR pszLowIdLabel, LPCTSTR pszCooldownLabel, LPCTSTR pszFriendSlotLabel, LPCTSTR pszUnavailableLabel)
+{
+	return FormatUploadScoreCompact(rBreakdown, pszLowRatioLabel, pszLowIdLabel, pszCooldownLabel, pszFriendSlotLabel, pszUnavailableLabel);
+}
+
+inline CString FormatUploadScoreLowRatioDetail(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszInactiveLabel)
+{
+	if (!rBreakdown.bLowRatioApplied)
+		return pszInactiveLabel;
+
+	CString strValue;
+	strValue.Format(_T("+%u"), rBreakdown.uLowRatioBonus);
+	return strValue;
+}
+
+inline CString FormatUploadScoreLowIdDetail(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszInactiveLabel)
+{
+	if (!rBreakdown.bLowIdPenaltyApplied)
+		return pszInactiveLabel;
+
+	CString strValue;
+	strValue.Format(_T("/%u"), rBreakdown.uLowIdDivisor);
+	return strValue;
+}
+
+inline CString FormatUploadScoreCooldownDetail(const UploadScoreBreakdown &rBreakdown, std::uint64_t uRemainingMs, LPCTSTR pszInactiveLabel)
+{
+	if (rBreakdown.eAvailability == uploadScoreUnavailable || rBreakdown.eAvailability == uploadScoreFriendSlot || uRemainingMs == 0)
+		return pszInactiveLabel;
+
+	CString strValue;
+	strValue.Format(_T("%us"), static_cast<UINT>((uRemainingMs + 999u) / 1000u));
+	return strValue;
 }
 }

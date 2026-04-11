@@ -56,49 +56,6 @@ namespace
 		return str;
 	}
 
-	CString FormatQueueBaseScore(const CUpDownClient *client)
-	{
-		const UploadScoreSeams::UploadScoreBreakdown breakdown = client->GetScoreBreakdown(false, false, false);
-		switch (breakdown.eAvailability) {
-		case UploadScoreSeams::uploadScoreFriendSlot:
-			return GetResString(IDS_FRIENDDETAIL);
-		case UploadScoreSeams::uploadScoreUnavailable:
-			return _T("-");
-		default:
-			break;
-		}
-
-		CString str;
-		str.Format(_T("%u"), breakdown.uBaseScore);
-		return str;
-	}
-
-	CString FormatQueueEffectiveScore(const CUpDownClient *client)
-	{
-		const UploadScoreSeams::UploadScoreBreakdown breakdown = client->GetScoreBreakdown(false, false, false);
-		switch (breakdown.eAvailability) {
-		case UploadScoreSeams::uploadScoreFriendSlot:
-			return GetResString(IDS_FRIENDDETAIL);
-		case UploadScoreSeams::uploadScoreUnavailable:
-			return _T("-");
-		default:
-			break;
-		}
-
-		CString str;
-		str.Format(_T("%u"), breakdown.uEffectiveScore);
-		return str;
-	}
-
-	CString FormatQueueScoreModifiers(const CUpDownClient *client)
-	{
-		return UploadScoreSeams::FormatUploadScoreModifiers(
-			client->GetScoreBreakdown(false, false, false),
-			GetResString(IDS_LOW_RATIO_BONUS),
-			GetResString(IDS_BB_LOWID_DIVISOR),
-			GetResString(IDS_COOLDOWN));
-	}
-
 	int CompareRatio(float fLeft, float fRight)
 	{
 		if (fLeft < fRight)
@@ -300,13 +257,23 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		}
 		break;
 	case 3:
-		sText = FormatQueueBaseScore(client);
+		sText = UploadScoreSeams::FormatBaseUploadScore(
+			client->GetScoreBreakdown(false, false, false),
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-"));
 		break;
 	case 4:
-		sText = FormatQueueEffectiveScore(client);
+		sText = UploadScoreSeams::FormatEffectiveUploadScoreValue(
+			client->GetScoreBreakdown(false, false, false),
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-"));
 		break;
 	case 5:
-		sText = FormatQueueScoreModifiers(client);
+		sText = UploadScoreSeams::FormatUploadScoreModifiers(
+			client->GetScoreBreakdown(false, false, false),
+			GetResString(IDS_LOW_RATIO_BONUS),
+			GetResString(IDS_BB_LOWID_DIVISOR),
+			GetResString(IDS_COOLDOWN));
 		break;
 	case 6:
 		sText.Format(_T("%u"), client->GetAskedCount());

@@ -34,19 +34,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-namespace
-{
-	CString FormatCooldown(ULONGLONG ullRemainingMs)
-	{
-		if (ullRemainingMs == 0)
-			return _T("-");
-		CString str;
-		str.Format(_T("%us"), static_cast<UINT>((ullRemainingMs + 999) / 1000));
-		return str;
-	}
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // CClientDetailPage
 
@@ -168,36 +155,25 @@ BOOL CClientDetailPage::OnSetActive()
 		}
 
 		const UploadScoreSeams::UploadScoreBreakdown breakdown = client->GetScoreBreakdown(false, client->IsDownloading(), false);
-		if (breakdown.eAvailability != UploadScoreSeams::uploadScoreUnavailable) {
-			buffer.Format(_T("%u"), breakdown.uBaseScore);
-			SetDlgItemText(IDC_DRATING, buffer);
-		} else
-			SetDlgItemText(IDC_DRATING, _T("-"));
+		SetDlgItemText(IDC_DRATING, UploadScoreSeams::FormatBaseUploadScore(
+			breakdown,
+			GetResString(IDS_FRIENDDETAIL),
+			_T("-")));
 
 		if (client->GetUploadState() != US_NONE && clcredits != NULL) {
-			SetDlgItemText(IDC_DSCORE, UploadScoreSeams::FormatEffectiveUploadScore(
+			SetDlgItemText(IDC_DSCORE, UploadScoreSeams::FormatEffectiveUploadScoreValue(
 				breakdown,
-				GetResString(IDS_LOW_RATIO_BONUS),
-				GetResString(IDS_BB_LOWID_DIVISOR),
-				GetResString(IDS_COOLDOWN),
 				GetResString(IDS_FRIENDDETAIL),
 				_T("-")));
 		} else
 			SetDlgItemText(IDC_DSCORE, _T("-"));
 
-		if (breakdown.bLowRatioApplied) {
-			buffer.Format(_T("+%u"), breakdown.uLowRatioBonus);
-			SetDlgItemText(IDC_DLOWRATIOBONUS, buffer);
-		} else
-			SetDlgItemText(IDC_DLOWRATIOBONUS, _T("-"));
-
-		if (breakdown.bLowIdPenaltyApplied) {
-			buffer.Format(_T("/%u"), breakdown.uLowIdDivisor);
-			SetDlgItemText(IDC_DLOWIDDIVISOR, buffer);
-		} else
-			SetDlgItemText(IDC_DLOWIDDIVISOR, _T("-"));
-
-		SetDlgItemText(IDC_DCOOLDOWN, client->GetFriendSlot() ? _T("-") : FormatCooldown(client->GetSlowUploadCooldownRemaining()));
+		SetDlgItemText(IDC_DLOWRATIOBONUS, UploadScoreSeams::FormatUploadScoreLowRatioDetail(breakdown, _T("-")));
+		SetDlgItemText(IDC_DLOWIDDIVISOR, UploadScoreSeams::FormatUploadScoreLowIdDetail(breakdown, _T("-")));
+		SetDlgItemText(IDC_DCOOLDOWN, UploadScoreSeams::FormatUploadScoreCooldownDetail(
+			breakdown,
+			client->GetSlowUploadCooldownRemaining(),
+			_T("-")));
 
 		SetDlgItemText(IDC_CLIENTDETAIL_KADCON, GetResString(client->GetKadPort() ? IDS_CONNECTED : IDS_DISCONNECTED));
 

@@ -57,7 +57,7 @@ namespace
 
 	CString FormatUploadScoreColumn(const CUpDownClient *client)
 	{
-		return UploadScoreSeams::FormatEffectiveUploadScore(
+		return UploadScoreSeams::FormatUploadScoreCompact(
 			client->GetScoreBreakdown(false, client->IsDownloading(), false),
 			GetResString(IDS_LOW_RATIO_BONUS),
 			GetResString(IDS_BB_LOWID_DIVISOR),
