@@ -37,9 +37,6 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define SLOT_COMPRESSION_DATARATE		(1000 * 1024)	// Data rate for a single client from which we start to check if we need to disable compression
-#define BIGBUFFER_MINDATARATE			(512 * 1024)
-
 #define RUN_STOP	0
 #define RUN_IDLE	1
 #define RUN_WORK	2
@@ -167,7 +164,7 @@ void CUploadDiskIOThread::DissociateFile(CKnownFile *pFile)
 
 void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &session)
 {
-	if (session == NULL || theApp.uploadqueue->HasUploadSessionIoError(session))
+	if (session == NULL || !theApp.uploadqueue->IsCurrentUploadSession(session) || theApp.uploadqueue->HasUploadSessionIoError(session))
 		return;
 	CUpDownClient *pClient = session->client;
 	CClientReqSocket *pSock = pClient->socket;
@@ -177,8 +174,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(const UploadSessionPtr &se
 	uint64 nCurQueueSessionPayloadUp = pClient->GetQueueSessionPayloadUp();
 	// GetQueueSessionPayloadUp is probably outdated so also add the value reported by the sockets as sent
 	nCurQueueSessionPayloadUp += pSock->GetSentPayloadSinceLastCall(false);
-	// buffer at least 1 block (180KB) for normal uploads, and 5 blocks (~900KB) for fast uploads
-	const uint32 nBufferLimit = (pClient->GetUploadDatarate() > BIGBUFFER_MINDATARATE) ? (5 * EMBLOCKSIZE + 1) : (EMBLOCKSIZE + 1);
+	const uint32 nBufferLimit = theApp.uploadqueue->GetBufferedUploadPayloadLimit(pClient);
 
 	try {
 		// Get more data if currently buffered was less than nBufferLimit Bytes

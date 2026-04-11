@@ -425,13 +425,8 @@ void CUploadQueue::PublishActiveUploadSnapshot()
 			}
 		}
 		if (!source.session->completedBlocks.IsEmpty()) {
-			const Requested_Block_Struct *block = source.session->completedBlocks.GetHead();
-			if (block != NULL) {
-				const uint64 start = (block->StartOffset / PARTSIZE) * PARTSIZE;
-				state.pendingRanges.push_back(ActiveUploadRange{start, start + PARTSIZE});
-			}
 			for (POSITION pos = source.session->completedBlocks.GetHeadPosition(); pos != NULL;) {
-				block = source.session->completedBlocks.GetNext(pos);
+				const Requested_Block_Struct *block = source.session->completedBlocks.GetNext(pos);
 				if (block != NULL)
 					state.completedRanges.push_back(ActiveUploadRange{block->StartOffset, block->EndOffset + 1});
 			}
@@ -446,6 +441,28 @@ std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> CUploadQueue::GetActiv
 {
 	CSingleLock lock(const_cast<CCriticalSection*>(&m_csActiveSnapshotRead), TRUE);
 	return m_activeUploadSnapshot;
+}
+
+CUploadQueue::ClientQueueView CUploadQueue::GetClientQueueView(const CUpDownClient *client) const
+{
+	ClientQueueView view;
+	if (client == NULL)
+		return view;
+
+	const std::shared_ptr<const WaitingQueueSnapshot> waitingSnapshot = GetWaitingSnapshot();
+	if (waitingSnapshot != NULL)
+		view.waitingPosition = waitingSnapshot->GetPosition(client);
+
+	const std::shared_ptr<const ActiveUploadSnapshot> activeSnapshot = GetActiveUploadSnapshot();
+	if (activeSnapshot != NULL) {
+		const ActiveUploadVisualState *visualState = activeSnapshot->FindVisualState(client);
+		if (visualState != NULL) {
+			view.activeUpload = *visualState;
+			view.hasActiveUploadState = true;
+		}
+	}
+
+	return view;
 }
 
 const CUploadQueue::ActiveUploadVisualState* CUploadQueue::ActiveUploadSnapshot::FindVisualState(const CUpDownClient *client) const
@@ -1156,7 +1173,7 @@ bool CUploadQueue::ValidateActiveUploadHeadBlock(CUpDownClient *client, const Up
 
 void CUploadQueue::MaybeUseBigSendBuffer(CUpDownClient *client) const
 {
-	if (client->GetUploadDatarate() <= 512 * 1024)
+	if (!ShouldUseBigSendBuffer(client))
 		return;
 
 	CEMSocket *socket = client->GetFileUploadSocket();
@@ -1166,6 +1183,9 @@ void CUploadQueue::MaybeUseBigSendBuffer(CUpDownClient *client) const
 
 void CUploadQueue::ProcessActiveUploadSession(const UploadSessionPtr &session, const UploadSchedulingSnapshot &snapshot)
 {
+	if (!IsCurrentUploadSession(session))
+		return;
+
 	CUpDownClient *client = session->client;
 	if (thePrefs.m_iDbgHeap >= 2)
 		ASSERT_VALID(client);
@@ -1190,7 +1210,8 @@ void CUploadQueue::ProcessActiveUploadSession(const UploadSessionPtr &session, c
 	}
 
 	MaybeUseBigSendBuffer(client);
-	(void)ValidateActiveUploadHeadBlock(client, session);
+	if (!ValidateActiveUploadHeadBlock(client, session))
+		return;
 }
 
 bool CUploadQueue::DetachActiveUploadSession(CUpDownClient *client, UploadSessionPtr &session)
@@ -1229,28 +1250,31 @@ bool CUploadQueue::ActivateUploadClient(CUpDownClient *newclient, LPCTSTR pszRea
 	if (pszReason && thePrefs.GetLogUlDlEvents())
 		AddDebugLogLine(false, _T("Adding client to upload list: %s Client: %s"), pszReason, (LPCTSTR)newclient->DbgGetClientInfo());
 
+	const bool bHasConnectedSocket = newclient->socket && newclient->socket->IsConnected() && newclient->CheckHandshakeFinished();
+
 	// tell the client that we are now ready to upload
-	if (!newclient->socket || !newclient->socket->IsConnected() || !newclient->CheckHandshakeFinished()) {
+	if (!bHasConnectedSocket) {
 		if (!newclient->TryToConnect(true)) {
 			ClearClientQueueState(newclient);
 			FlushDirtySnapshots();
 			return false;
 		}
-	} else {
-		if (!CompleteUploadActivation(newclient)) {
-			ClearClientQueueState(newclient);
-			FlushDirtySnapshots();
-			return false;
-		}
 	}
-	BeginUploadSessionBookkeeping(newclient);
 
 	if (!AttachActiveUploadSession(newclient)) {
 		ClearClientQueueState(newclient);
 		FlushDirtySnapshots();
 		return false;
 	}
-	FlushDirtySnapshots();
+	BeginUploadSessionBookkeeping(newclient);
+
+	if (bHasConnectedSocket) {
+		if (!CompleteUploadActivation(newclient)) {
+			(void)RemoveActiveUploadSlot(newclient, _T("Failed to complete upload activation"), false, true);
+			return false;
+		}
+	} else
+		FlushDirtySnapshots();
 
 	m_nLastStartUpload = ::GetTickCount64();
 	NotifyActiveUploadAdded(newclient);
@@ -1450,6 +1474,20 @@ uint32 CUploadQueue::GetTargetClientDataRateBroadband() const
 	return (std::max<uint32>)(3 * 1024, uBudgetBytesPerSec / static_cast<uint32>(iSoftMaxSlots));
 }
 
+uint32 CUploadQueue::GetBufferedUploadPayloadLimit(const CUpDownClient *client) const
+{
+	const uint32 uUploadRate = (client != NULL) ? client->GetUploadDatarate() : 0;
+	const uint32 uTargetPerSlot = GetTargetClientDataRateBroadband();
+	if (uTargetPerSlot == 0)
+		return (uUploadRate > 512 * 1024) ? (5 * EMBLOCKSIZE + 1) : (EMBLOCKSIZE + 1);
+
+	if (uUploadRate >= uTargetPerSlot)
+		return 5 * EMBLOCKSIZE + 1;
+	if (uUploadRate * 2 >= uTargetPerSlot)
+		return 3 * EMBLOCKSIZE + 1;
+	return EMBLOCKSIZE + 1;
+}
+
 uint32 CUploadQueue::GetSlowUploadRateThreshold() const
 {
 	const uint32 uTargetPerSlot = GetTargetClientDataRateBroadband();
@@ -1458,6 +1496,19 @@ uint32 CUploadQueue::GetSlowUploadRateThreshold() const
 
 	const float fFactor = (std::max)(0.05f, thePrefs.GetBBSlowUploadThresholdFactor());
 	return (std::max<uint32>)(1024u, static_cast<uint32>(uTargetPerSlot * fFactor));
+}
+
+bool CUploadQueue::ShouldUseBigSendBuffer(const CUpDownClient *client) const
+{
+	if (client == NULL)
+		return false;
+
+	const uint32 uUploadRate = client->GetUploadDatarate();
+	const uint32 uTargetPerSlot = GetTargetClientDataRateBroadband();
+	if (uTargetPerSlot == 0)
+		return uUploadRate > 512 * 1024;
+
+	return uUploadRate * 2 >= uTargetPerSlot;
 }
 
 bool CUploadQueue::ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const
@@ -1785,8 +1836,6 @@ void CUploadQueue::DeleteAll()
 
 UINT CUploadQueue::GetWaitingPosition(const CUpDownClient *client)
 {
-	if (!IsClientWaitingForUpload(client))
-		return 0;
 	const std::shared_ptr<const WaitingQueueSnapshot> snapshot = GetWaitingSnapshot();
 	return (snapshot != NULL) ? snapshot->GetPosition(client) : 0;
 }

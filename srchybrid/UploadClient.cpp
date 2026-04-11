@@ -51,13 +51,11 @@ CBarShader CUpDownClient::s_UpStatusBar(16);
 void CUpDownClient::DrawUpStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect, bool  bFlat) const
 {
 	COLORREF crNeither, crNextSending, crBoth, crSending;
-	const std::shared_ptr<const CUploadQueue::ActiveUploadSnapshot> activeSnapshot = theApp.uploadqueue->GetActiveUploadSnapshot();
-	const CUploadQueue::ActiveUploadVisualState emptyVisualState;
-	const CUploadQueue::ActiveUploadVisualState *visualStatePtr = (activeSnapshot != NULL) ? activeSnapshot->FindVisualState(this) : NULL;
-	const CUploadQueue::ActiveUploadVisualState &visualState = (visualStatePtr != NULL) ? *visualStatePtr : emptyVisualState;
+	const CUploadQueue::ClientQueueView queueView = theApp.uploadqueue->GetClientQueueView(this);
+	const CUploadQueue::ActiveUploadVisualState &visualState = queueView.activeUpload;
 	const UINT uVisualSlotNumber = visualState.slotNumber;
-	const bool bVisualActivating = visualStatePtr != NULL ? visualState.isActivating : theApp.uploadqueue->IsClientUploadActivating(this);
-	const bool bVisualActive = visualStatePtr != NULL ? visualState.isActive : theApp.uploadqueue->IsClientUploadActive(this);
+	const bool bVisualActivating = queueView.hasActiveUploadState && visualState.isActivating;
+	const bool bVisualActive = queueView.hasActiveUploadState && visualState.isActive;
 
 	if (uVisualSlotNumber <= (UINT)theApp.uploadqueue->GetActiveUploadsCount()
 		|| (!bVisualActive && !bVisualActivating))

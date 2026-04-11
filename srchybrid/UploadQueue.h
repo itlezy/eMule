@@ -126,6 +126,13 @@ public:
 		std::unordered_map<const CUpDownClient*, ActiveUploadVisualState> visualStateByClient;
 	};
 
+	struct ClientQueueView
+	{
+		UINT waitingPosition = 0;
+		ActiveUploadVisualState activeUpload = {};
+		bool hasActiveUploadState = false;
+	};
+
 	CUploadQueue();
 	~CUploadQueue();
 	CUploadQueue(const CUploadQueue&) = delete;
@@ -151,6 +158,7 @@ public:
 
 	std::shared_ptr<const WaitingQueueSnapshot> GetWaitingSnapshot() const;
 	std::shared_ptr<const ActiveUploadSnapshot> GetActiveUploadSnapshot() const;
+	ClientQueueView GetClientQueueView(const CUpDownClient *client) const;
 	bool	EnqueueUploadRequestBlock(CUpDownClient *client, Requested_Block_Struct *reqblock, INT_PTR *pQueueCount = NULL);
 	int		CompareWaitingClientsByRank(const CUpDownClient *left, const CUpDownClient *right) const;
 	float	GetWaitingClientCreditFactor(const CUpDownClient *client) const;
@@ -353,7 +361,9 @@ private:
 	uint32	GetEffectiveUploadBudgetBytesPerSec() const;
 	INT_PTR	GetSoftMaxUploadSlots() const;
 	uint32	GetTargetClientDataRateBroadband() const;
+	uint32	GetBufferedUploadPayloadLimit(const CUpDownClient *client) const;
 	uint32	GetSlowUploadRateThreshold() const;
+	bool	ShouldUseBigSendBuffer(const CUpDownClient *client) const;
 	bool	ShouldTrackSlowUploadSlots(const UploadSchedulingSnapshot &snapshot) const;
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
 	bool	RemoveWaitingClientAt(size_t index, bool updatewindow, bool publishSnapshots = true);

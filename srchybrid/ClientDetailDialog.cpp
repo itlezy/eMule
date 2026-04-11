@@ -162,11 +162,12 @@ BOOL CClientDetailPage::OnSetActive()
 		} else
 			SetDlgItemText(IDC_DRATING, _T("-"));
 
-		if (theApp.uploadqueue->IsClientWaitingForUpload(client))
-			SetDlgItemInt(IDC_DSCORE, theApp.uploadqueue->GetWaitingPosition(client));
-		else if (theApp.uploadqueue->IsClientUploadActive(client))
+		const CUploadQueue::ClientQueueView queueView = theApp.uploadqueue->GetClientQueueView(client);
+		if (queueView.waitingPosition != 0)
+			SetDlgItemInt(IDC_DSCORE, queueView.waitingPosition);
+		else if (queueView.hasActiveUploadState && queueView.activeUpload.isActive)
 			SetDlgItemText(IDC_DSCORE, GetResString(IDS_UPLOADING));
-		else if (theApp.uploadqueue->IsClientUploadActivating(client))
+		else if (queueView.hasActiveUploadState && queueView.activeUpload.isActivating)
 			SetDlgItemText(IDC_DSCORE, GetResString(IDS_CONNECTING));
 		else
 			SetDlgItemText(IDC_DSCORE, _T("-"));
