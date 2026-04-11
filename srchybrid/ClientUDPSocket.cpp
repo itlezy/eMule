@@ -482,18 +482,20 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 			uchar *decodedbuffer = new uchar[uDecodedLen];
 			memcpy(decodedbuffer, sendbuffer + iLen, uDecodedLen);
 			EOracleUdpTransportMode eTransportMode = ORACLE_UDP_TRANSPORT_PLAINTEXT;
+			const bool bRequestedObfuscation = iLen != 0;
 			if (iLen) {
 				nLen = EncryptSendClient(sendbuffer, nLen, cur_packet->pachTargetClientHashORKadID, cur_packet->bKad, cur_packet->nReceiverVerifyKey, (cur_packet->bKad ? Kademlia::CPrefs::GetUDPVerifyKey(cur_packet->dwIP) : 0u), &eTransportMode);
 				//DEBUG_ONLY(  AddDebugLogLine(DLP_VERYLOW, false, _T("Sent obfuscated UDP packet to clientIP: %s, Kad: %s, ReceiverKey: %u"), (LPCTSTR)ipstr(cur_packet->dwIP), cur_packet->bKad ? _T("Yes") : _T("No"), cur_packet->nReceiverVerifyKey) );
 			}
+			const bool bRawObfuscated = eTransportMode != ORACLE_UDP_TRANSPORT_PLAINTEXT;
 			CString strMetadata;
 			strMetadata.Format(
 				_T("transport_mode=%s protocol=0x%02X opcode=0x%02X raw_obfuscated=%s requested_obfuscation=%s receiver_verify_key=%u"),
 				OracleUdpTransportModeToString(eTransportMode),
 				cur_packet->packet->GetUDPHeader()[0],
 				cur_packet->packet->opcode,
-				(iLen != 0) ? _T("yes") : _T("no"),
-				cur_packet->bEncrypt ? _T("yes") : _T("no"),
+				bRawObfuscated ? _T("yes") : _T("no"),
+				bRequestedObfuscation ? _T("yes") : _T("no"),
 				cur_packet->nReceiverVerifyKey);
 			OracleUdpDump(_T("send"), cur_packet->bKad ? _T("kad") : _T("client_udp"), cur_packet->dwIP, cur_packet->nPort, sendbuffer, nLen, strMetadata, decodedbuffer, uDecodedLen);
 			delete[] decodedbuffer;

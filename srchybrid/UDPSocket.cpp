@@ -804,7 +804,7 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 			uRawPacketSize = EncryptSendServer(pRawPacket, uRawPacketSize, pServer->GetServerKeyUDP(), &eTransportMode);
 			if (thePrefs.GetDebugServerUDPLevel() > 0)
 				DEBUG_ONLY(DebugLog(_T("Sending encrypted packet to server %s, UDPKey %u"), (LPCTSTR)pServer->GetListName(), pServer->GetServerKeyUDP()));
-			if (!nPort)
+			if (eTransportMode != ORACLE_UDP_TRANSPORT_PLAINTEXT && !nPort)
 				nPort = pServer->GetObfuscationPortUDP();
 		}
 	} else if (pInRawPacket != 0) {
@@ -827,10 +827,11 @@ void CUDPSocket::SendPacket(Packet *packet, CServer *pServer, uint16 nSpecialPor
 	CString strMetadata;
 	if (packet != NULL) {
 		strMetadata.Format(
-			_T("transport_mode=%s protocol=0x%02X opcode=0x%02X raw_obfuscated=%s server_name=%s"),
+			_T("transport_mode=%s protocol=0x%02X opcode=0x%02X raw_obfuscated=%s requested_obfuscation=%s server_name=%s"),
 			OracleUdpTransportModeToString(eTransportMode),
 			packet->GetUDPHeader()[0],
 			packet->opcode,
+			(eTransportMode != ORACLE_UDP_TRANSPORT_PLAINTEXT) ? _T("yes") : _T("no"),
 			(thePrefs.IsCryptLayerEnabled() && pServer->GetServerKeyUDP() && pServer->SupportsObfuscationUDP()) ? _T("yes") : _T("no"),
 			(LPCTSTR)pServer->GetListName());
 	} else {
