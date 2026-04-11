@@ -173,11 +173,6 @@ inline CString FormatUploadScoreCompact(const UploadScoreBreakdown &rBreakdown, 
 	return strScore;
 }
 
-inline CString FormatEffectiveUploadScore(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszLowRatioLabel, LPCTSTR pszLowIdLabel, LPCTSTR pszCooldownLabel, LPCTSTR pszFriendSlotLabel, LPCTSTR pszUnavailableLabel)
-{
-	return FormatUploadScoreCompact(rBreakdown, pszLowRatioLabel, pszLowIdLabel, pszCooldownLabel, pszFriendSlotLabel, pszUnavailableLabel);
-}
-
 inline CString FormatUploadScoreLowRatioDetail(const UploadScoreBreakdown &rBreakdown, LPCTSTR pszInactiveLabel)
 {
 	if (!rBreakdown.bLowRatioApplied)
