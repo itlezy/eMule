@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <atomic>
 #include "ring.h"
 
 struct Requested_Block_Struct;
@@ -27,6 +28,9 @@ struct UploadingToClient_Struct
 		: m_pClient()
 		, m_bIOError()
 		, m_bDisableCompression()
+		, m_bRetired()
+		, m_nPendingIOBlocks()
+		, m_dwRetiredTick()
 	{
 	}
 	~UploadingToClient_Struct();
@@ -37,6 +41,9 @@ struct UploadingToClient_Struct
 	CCriticalSection									m_csBlockListsLock; // don't acquire other locks while having this one in any thread other than UploadDiskIOThread or make sure deadlocks are impossible
 	bool												m_bIOError;
 	bool												m_bDisableCompression;
+	bool												m_bRetired;
+	std::atomic<LONG>									m_nPendingIOBlocks;
+	DWORD												m_dwRetiredTick;
 };
 typedef CTypedPtrList<CPtrList, UploadingToClient_Struct*> CUploadingPtrList;
 
@@ -121,6 +128,10 @@ protected:
 	static VOID CALLBACK UploadTimer(HWND hWnd, UINT nMsg, UINT_PTR nId, DWORD dwTime) noexcept;
 
 private:
+	struct RetiredUploadClientStructContext
+	{
+		UploadingToClient_Struct *pUploadClientStruct;
+	};
 	uint32	GetConfiguredUploadBudgetBytesPerSec() const;
 	INT_PTR	GetSoftMaxUploadSlots() const;
 	/** Returns the broadband per-slot target derived from the configured upload budget and fixed cap. */
@@ -140,12 +151,17 @@ private:
 	void	UpdateMaxClientScore();
 	uint32	GetMaxClientScore() const						{ return m_imaxscore; }
 	void	UpdateActiveClientsInfo(ULONGLONG curTick);
+	void	RetireUploadClientStruct(POSITION pos, UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient);
+	void	ReclaimRetiredUploadClientStructs();
+	void	InvalidateUploadClientStruct(UploadingToClient_Struct *pUploadClientStruct, CUpDownClient *pClient);
+	RetiredUploadClientStructContext RemoveUploadClientStructFromActiveList(POSITION pos, UploadingToClient_Struct *pUploadClientStruct);
 
 	void InsertInUploadingList(CUpDownClient *newclient, bool bNoLocking);
 	void InsertInUploadingList(UploadingToClient_Struct *pNewClientUploadStruct, bool bNoLocking);
 	float GetAverageCombinedFilePrioAndCredit();
 
 	CUploadingPtrList	uploadinglist;
+	CUploadingPtrList	m_retiredUploadingList;
 	// This lock ensures that only the main thread writes the uploading list,
 	// other threads need to fetch the lock if they want to read (but are not allowed to write).
 	// Don't acquire other locks while having this one in any thread

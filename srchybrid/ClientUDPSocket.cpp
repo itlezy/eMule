@@ -25,6 +25,7 @@
 #include "SharedFileList.h"
 #include "UploadQueue.h"
 #include "Preferences.h"
+#include "CompressionBufferSeams.h"
 #include "ProtocolGuards.h"
 #include "ClientList.h"
 #include "EncryptedDatagramSocket.h"
@@ -97,34 +98,31 @@ void CClientUDPSocket::OnReceive(int nErrorCode)
 				if (!HasCompressedUdpPayload(static_cast<UINT>(nPacketLen)))
 					strError = _T("Kad packet (compressed) too short");
 				else {
-					BYTE *unpack = NULL;
-					uLongf unpackedsize = 0;
-					uint32 nNewSize = nPacketLen * 10 + 300;
+					static const size_t MAX_KAD_UNPACK_SIZE = 250000u;
+					size_t nBufferSize = 0;
+					if (!TryDeriveZlibBufferSize(static_cast<size_t>(nPacketLen), 10u, 300u, MAX_KAD_UNPACK_SIZE, &nBufferSize) || nBufferSize <= 2u) {
+						strError = _T("Failed to derive Kad packet buffer size");
+						break;
+					}
+
 					int iZLibResult = Z_OK;
+					uLongf unpackedsize = 0;
+					std::vector<BYTE> unpackBuffer;
 					do {
-						delete[] unpack;
-						unpack = new BYTE[nNewSize];
-						unpackedsize = nNewSize - 2;
-						iZLibResult = uncompress(unpack + 2, &unpackedsize, pBuffer + 2, nPacketLen - 2);
-						nNewSize *= 2; // size for the next try if needed
-					} while (iZLibResult == Z_BUF_ERROR && nNewSize < 250000);
+						unpackBuffer.resize(nBufferSize);
+						unpackedsize = static_cast<uLongf>(nBufferSize - 2u);
+						iZLibResult = uncompress(unpackBuffer.data() + 2, &unpackedsize, pBuffer + 2, nPacketLen - 2);
+					} while (iZLibResult == Z_BUF_ERROR && TryGrowZlibBufferSize(nBufferSize, MAX_KAD_UNPACK_SIZE, &nBufferSize));
 
 					if (iZLibResult != Z_OK) {
-						delete[] unpack;
 						strError.Format(_T("Failed to uncompress Kad packet: zip error: %d (%hs)"), iZLibResult, zError(iZLibResult));
 					} else {
-						unpack[0] = OP_KADEMLIAHEADER;
-						unpack[1] = pBuffer[1];
-						try {
-							Kademlia::CKademlia::ProcessPacket(unpack, unpackedsize + 2
-								, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
-								, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
-								, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
-						} catch (...) {
-							delete[] unpack;
-							throw;
-						}
-						delete[] unpack;
+						unpackBuffer[0] = OP_KADEMLIAHEADER;
+						unpackBuffer[1] = pBuffer[1];
+						Kademlia::CKademlia::ProcessPacket(unpackBuffer.data(), unpackedsize + 2
+							, ntohl(sockAddr.sin_addr.s_addr), ntohs(sockAddr.sin_port)
+							, (Kademlia::CPrefs::GetUDPVerifyKey(sockAddr.sin_addr.s_addr) == nReceiverVerifyKey)
+							, Kademlia::CKadUDPKey(nSenderVerifyKey, theApp.GetPublicIP()));
 					}
 				}
 				break;

@@ -26,6 +26,7 @@
 #include "preferences.h"
 #include "safefile.h"
 #include "listensocket.h"
+#include "LockScopeSeams.h"
 #include "packets.h"
 #include "Statistics.h"
 #include "UploadBandwidthThrottler.h"
@@ -167,17 +168,18 @@ void CUploadDiskIOThread::DissociateFile(CKnownFile *pFile)
 
 void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *pUploadClientStruct)
 {
-	if (pUploadClientStruct->m_bIOError || pUploadClientStruct->m_BlockRequests_queue.IsEmpty())
-		return;
 	// when calling this function we already have a lock on the uploadlist
-	// (so pUploadClientStruct and its members are safe in terms of not getting deleted/changed)
+	// (so pUploadClientStruct is stable), but retired entries must still be treated as inert.
+
+	// now also get a lock on the Block lists
+	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
+	if (pUploadClientStruct->m_bRetired || pUploadClientStruct->m_bIOError || pUploadClientStruct->m_pClient == NULL || pUploadClientStruct->m_BlockRequests_queue.IsEmpty())
+		return;
+
 	CUpDownClient *pClient = pUploadClientStruct->m_pClient;
 	CClientReqSocket *pSock = pClient->socket;
 	if (pSock == NULL || !pSock->IsConnected())
 		return;
-
-	// now also get a lock on the Block lists
-	CSingleLock lockBlockLists(&pUploadClientStruct->m_csBlockListsLock, TRUE);
 	// See if we can do an early return.
 	// There may be no new blocks to load from disk and add to buffer, or buffer may be large enough already.
 
@@ -251,6 +253,7 @@ void CUploadDiskIOThread::StartCreateNextBlockPackage(UploadingToClient_Struct *
 				}
 			}
 			++pFile->nInUse;
+			pUploadClientStruct->m_nPendingIOBlocks.fetch_add(1);
 			pOverlappedRead->pos = m_listPendingIO.AddTail(pOverlappedRead);
 			DEBUG_ONLY(dbgDataReadPending += uTogo);
 
@@ -277,6 +280,7 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 	ASSERT(pOvRead->pFile && pOvRead->pos);
 
 	--pOvRead->pFile->nInUse;
+	UploadingToClient_Struct *pStruct = pOvRead->pUploadClientStruct;
 
 	CKnownFile *pKnownFile = pOvRead->pFile;
 	if (m_Run) {
@@ -290,55 +294,56 @@ void CUploadDiskIOThread::ReadCompletionRoutine(DWORD dwRead, const OverlappedRe
 			bReadError = true;
 		}
 		if (pKnownFile->m_hRead != INVALID_HANDLE_VALUE) { //discard data from closed files
-			UploadingToClient_Struct *pStruct = pOvRead->pUploadClientStruct;
 			DEBUG_ONLY(dbgDataReadPending -= pOvRead->uEndOffset - pOvRead->uStartOffset);
-			// check if the client struct is still in the upload list (otherwise it is a deleted pointer)
-			CCriticalSection *pcsUploadListRead = NULL;
-			const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
-			CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
-			ASSERT(lockUploadListRead.IsLocked());
-			bool bFound = (rUploadList.Find(pStruct) != NULL);
+			CPacketList packetsList;
+			CClientReqSocket *pSocket = NULL;
+			UploadDiskReadCompletionAction completionAction = uploadDiskReadCompletionDiscard;
+			bool bLoggedCompletionDiscard = false;
+			{
+				CCriticalSection *pcsUploadListRead = NULL;
+				const CUploadingPtrList &rUploadList = theApp.uploadqueue->GetUploadListTS(&pcsUploadListRead);
+				CSingleLock lockUploadListRead(pcsUploadListRead, TRUE);
+				ASSERT(lockUploadListRead.IsLocked());
+				const bool bFound = (rUploadList.Find(pStruct) != NULL);
+				const UploadQueueEntryAccessState entryState = ClassifyUploadQueueEntryAccess(bFound, pStruct->m_bRetired, pStruct->m_pClient != NULL);
+				completionAction = ClassifyUploadDiskReadCompletion(entryState, bReadError);
 
-			// all important prechecks done, create the packets
-			if (bFound && !bReadError) {
-				// Keep the uploadlist locked while working with the client object.
-				// Instead of sending the packets immediately, we store them
-				// and send after we have released the uploadlist lock -
-				// just to be sure there is no chance of a deadlock (now or in future version, also it doesn't cost us much)
-				CPacketList packetsList;
-				CUpDownClient *pClient = pStruct->m_pClient;
-				CClientReqSocket *pSocket = pClient->socket;
-				if (pSocket && pSocket->IsConnected()) {
-					// Try to use compression whenever possible (see CreatePackedPackets notes)
-					if (pKnownFile->bCompress)
-						CreatePackedPackets(*pOvRead, packetsList);
-					else
-						CreateStandardPackets(*pOvRead, packetsList);
+				if (completionAction == uploadDiskReadCompletionSendPackets) {
+					CUpDownClient *pClient = pStruct->m_pClient;
+					pSocket = pClient != NULL ? pClient->socket : NULL;
+					if (pClient != NULL && pSocket != NULL && pSocket->IsConnected()) {
+						if (pKnownFile->bCompress)
+							CreatePackedPackets(*pOvRead, packetsList);
+						else
+							CreateStandardPackets(*pOvRead, packetsList);
 
-					m_bSignalThrottler = true;
-				} else
-					theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pClient->DbgGetClientInfo(true));
-
-				lockUploadListRead.Unlock();
-
-				// Send out all packets we have made. By default, our socket object is not safe
-				// to use now either, because we have no lock on itself (to make sure it is not deleted).
-				// However the way we handle sockets, they cannot get deleted directly (takes 10s),
-				// so this isn't a problem in our case
-				while (!packetsList.IsEmpty() && pSocket != NULL) {
-					Packet *packet = packetsList.RemoveHead();
-					pSocket->SendPacket(packet, false, packet->uStatsPayLoad);
+						m_bSignalThrottler = true;
+					} else if (pClient != NULL) {
+						theApp.QueueDebugLogLineEx(LOG_ERROR, _T("ReadCompletionRoutine: Client has no connected socket, %s"), (LPCTSTR)pClient->DbgGetClientInfo(true));
+						completionAction = uploadDiskReadCompletionDiscard;
+						pSocket = NULL;
+						bLoggedCompletionDiscard = true;
+					} else {
+						theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Upload entry retired before packet delivery; discarding block"));
+						completionAction = uploadDiskReadCompletionDiscard;
+						bLoggedCompletionDiscard = true;
+					}
 				}
-			} else { // bReadError is true
-				if (bFound)
+
+				if (completionAction == uploadDiskReadCompletionMarkIoError)
 					pStruct->m_bIOError = true;
-				else
+				else if (completionAction == uploadDiskReadCompletionDiscard && !bLoggedCompletionDiscard)
 					theApp.QueueDebugLogLineEx(LOG_WARNING, _T("ReadCompletionRoutine: Client not found in uploadlist when reading finished; discarding block"));
-				lockUploadListRead.Unlock();
+			}
+
+			while (!packetsList.IsEmpty() && pSocket != NULL) {
+				Packet *packet = packetsList.RemoveHead();
+				pSocket->SendPacket(packet, false, packet->uStatsPayLoad);
 			}
 		}
 	} else if (pKnownFile)
 		DissociateFile(pKnownFile);
+	pStruct->m_nPendingIOBlocks.fetch_sub(1);
 
 	// cleanup
 	delete[] pOvRead->pBuffer;

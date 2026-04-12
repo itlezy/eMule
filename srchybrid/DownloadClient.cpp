@@ -26,6 +26,7 @@
 #include "ClientCredits.h"
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
+#include "CompressionBufferSeams.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "clientlist.h"
@@ -1041,13 +1042,14 @@ void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool pa
 					, true); //copy data to a new buffer
 		} else { // Packed
 			ASSERT((int)size > 0);
-			// Create space to store unzipped data, the size is only an initial guess, will be resized in unzip() if not big enough
-			// Don't get too big
-			uint32 lenUnzipped = min(size * 2, EMBLOCKSIZE + 300);
-			BYTE *unzipped = new BYTE[lenUnzipped];
+			// Create space to store unzipped data, the size is only an initial guess, will be resized in unzip() if not big enough.
+			size_t nInitialUnzippedSize = 0;
+			TryDeriveZlibBufferSize(static_cast<size_t>(size), 2u, 0u, EMBLOCKSIZE + 300u, &nInitialUnzippedSize);
+			std::vector<BYTE> unzipped(nInitialUnzippedSize);
+			uint32 lenUnzipped = static_cast<uint32>(unzipped.size());
 
 			// Try to unzip the packet
-			int result = unzip(cur_block, &packet[nHeaderSize], uTransferredFileDataSize, &unzipped, &lenUnzipped);
+			int result = unzip(cur_block, &packet[nHeaderSize], uTransferredFileDataSize, unzipped, &lenUnzipped);
 			// no block can be uncompressed to >2GB, 'lenUnzipped' is obviously erroneous.
 			if (result == Z_OK && (int)lenUnzipped >= 0) {
 				if (lenUnzipped > 0) { // Write any unzipped data to disk
@@ -1062,16 +1064,23 @@ void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool pa
 						m_reqfile->RemoveBlockFromList(cur_block->block->StartOffset, cur_block->block->EndOffset);
 						// There is no chance to recover from this error
 					} else {
+						std::unique_ptr<unsigned char[]> pOwnedUnzipped = MakeOwnedByteBufferCopy(unzipped, lenUnzipped);
+						if (!pOwnedUnzipped) {
+							DebugLogError(_T("PrcBlkPkt: Failed to stage the uncompressed packet buffer for file \"%s\""), (LPCTSTR)m_reqfile->GetFileName());
+							m_reqfile->RemoveBlockFromList(cur_block->block->StartOffset, cur_block->block->EndOffset);
+							return;
+						}
+
 						// Write uncompressed data to file
 						lenWritten = m_reqfile->WriteToBuffer(uTransferredFileDataSize
-							, unzipped
+							, pOwnedUnzipped.get()
 							, nStartPos
 							, nEndPos
 							, cur_block->block
 							, this
 							, false); //use the given buffer, no copy
 						if (lenWritten)
-							unzipped = NULL; //do not delete the buffer
+							pOwnedUnzipped.release(); // WriteToBuffer(..., false) now owns the buffer.
 					}
 				}
 			} else {
@@ -1101,7 +1110,6 @@ void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool pa
 				cur_block->fZStreamError = 1;
 				cur_block->totalUnzipped = 0;
 			}
-			delete[] unzipped;
 		}
 
 		// These checks only need to be done if any data was written
@@ -1133,30 +1141,31 @@ void CUpDownClient::ProcessBlockPacket(const uchar *packet, uint32 size, bool pa
 	TRACE("%s - Dropping packet\n", __FUNCTION__);
 }
 
-int CUpDownClient::unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32 lenZipped, BYTE **unzipped, uint32 *lenUnzipped, int iRecursion)
+int CUpDownClient::unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32 lenZipped, std::vector<BYTE> &runzipped, uint32 *lenUnzipped)
 {
 //#define TRACE_UNZIP	TRACE
 #define TRACE_UNZIP	__noop
-	TRACE_UNZIP("unzip: Zipd=%6u Unzd=%6u Rcrs=%d", lenZipped, *lenUnzipped, iRecursion);
+	TRACE_UNZIP("unzip: Zipd=%6u Unzd=%6u", lenZipped, *lenUnzipped);
 	int err = Z_DATA_ERROR;
 	try {
+		if (lenUnzipped == NULL || runzipped.empty()) {
+			ASSERT(0);
+			return Z_BUF_ERROR;
+		}
+
 		// Save some typing
 		z_stream *zS = block->zStream;
 
 		// Is this the first time this block has been unzipped
 		if (zS == NULL) {
 			// Create stream
-			block->zStream = new z_stream;
-			zS = block->zStream;
+			std::unique_ptr<z_stream> pNewStream(new z_stream());
+			zS = pNewStream.get();
 
 			// Initialise stream values
 			zS->zalloc = (alloc_func)NULL;
 			zS->zfree = (free_func)NULL;
 			zS->opaque = (voidpf)NULL;
-
-			// Set output data streams, do this here to avoid overwriting on recursive calls
-			zS->next_out = *unzipped;
-			zS->avail_out = *lenUnzipped;
 
 			// Initialise the z_stream
 			err = inflateInit(zS);
@@ -1164,6 +1173,8 @@ int CUpDownClient::unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32
 				TRACE_UNZIP("; Error: new stream failed: %d\n", err);
 				return err;
 			}
+			block->zStream = pNewStream.release();
+			zS = block->zStream;
 
 			ASSERT(block->totalUnzipped == 0);
 		}
@@ -1172,61 +1183,54 @@ int CUpDownClient::unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32
 		zS->next_in = const_cast<Bytef*>(zipped);
 		zS->avail_in = lenZipped;
 
-		// Only set the output if not being called recursively
-		if (iRecursion == 0) {
-			zS->next_out = *unzipped;
-			zS->avail_out = *lenUnzipped;
-		}
-
-		// Try to unzip the data
-		TRACE_UNZIP("; inflate(ain=%6u tin=%6u aout=%6u tout=%6u)", zS->avail_in, zS->total_in, zS->avail_out, zS->total_out);
-		err = inflate(zS, Z_SYNC_FLUSH);
-
-		// Is zip finished reading all currently available input and writing all generated output
-		if (err == Z_STREAM_END) {
-			// Finish up
-			err = inflateEnd(zS);
-			if (err != Z_OK) {
-				TRACE_UNZIP("; Error: end stream failed: %d\n", err);
-				return err;
+		for (;;) {
+			const size_t nAlreadyUnzipped = static_cast<size_t>(zS->total_out - block->totalUnzipped);
+			if (nAlreadyUnzipped > runzipped.size()) {
+				err = Z_DATA_ERROR;
+				break;
 			}
-			TRACE_UNZIP("; Z_STREAM_END\n");
 
-			// Got a good result, set the size to the amount unzipped in this call (including all recursive calls)
-			*lenUnzipped = zS->total_out - block->totalUnzipped;
-			block->totalUnzipped = zS->total_out;
-		} else if ((err == Z_OK) && (zS->avail_out == 0) && (zS->avail_in != 0)) {
-			// Output array was not big enough, call recursively until there is enough space
-			TRACE_UNZIP("; output array not big enough (ain=%u)\n", zS->avail_in);
+			zS->next_out = runzipped.data() + nAlreadyUnzipped;
+			zS->avail_out = static_cast<uInt>(runzipped.size() - nAlreadyUnzipped);
 
-			// What size should we try next
-			*lenUnzipped *= 2;
-			uint32 newLength = *lenUnzipped;
-			if (newLength == 0)
-				newLength = lenZipped * 2;
+			TRACE_UNZIP("; inflate(ain=%6u tin=%6u aout=%6u tout=%6u)", zS->avail_in, zS->total_in, zS->avail_out, zS->total_out);
+			err = inflate(zS, Z_SYNC_FLUSH);
 
-			// Copy any data that was successfully unzipped to new array
-			BYTE *temp = new BYTE[newLength];
-			ASSERT(zS->total_out - block->totalUnzipped <= newLength);
-			memcpy(temp, *unzipped, zS->total_out - block->totalUnzipped);
-			delete[] *unzipped;
-			*unzipped = temp;
-			*lenUnzipped = newLength;
+			if (err == Z_STREAM_END) {
+				const uLongf nTotalOut = zS->total_out;
+				const int nEndResult = inflateEnd(zS);
+				delete zS;
+				block->zStream = NULL;
+				if (nEndResult != Z_OK) {
+					TRACE_UNZIP("; Error: end stream failed: %d\n", nEndResult);
+					err = nEndResult;
+					break;
+				}
 
-			// Position stream output to correct place in new array
-			zS->next_out = *unzipped + (zS->total_out - block->totalUnzipped);
-			zS->avail_out = *lenUnzipped - (zS->total_out - block->totalUnzipped);
+				TRACE_UNZIP("; Z_STREAM_END\n");
+				*lenUnzipped = static_cast<uint32>(nTotalOut - block->totalUnzipped);
+				block->totalUnzipped = nTotalOut;
+				return Z_OK;
+			}
 
-			// Try again
-			err = unzip(block, zS->next_in, zS->avail_in, unzipped, lenUnzipped, iRecursion + 1);
-		} else if ((err == Z_OK) && (zS->avail_in == 0)) {
-			TRACE_UNZIP("; all input processed\n");
-			// All available input has been processed, everything OK.
-			// Set the size to the amount unzipped in this call (including all recursive calls)
-			*lenUnzipped = zS->total_out - block->totalUnzipped;
-			block->totalUnzipped = zS->total_out;
-		} else {
-			// Should not get here unless input data is corrupt
+			if ((err == Z_OK) && (zS->avail_out == 0) && (zS->avail_in != 0)) {
+				TRACE_UNZIP("; output array not big enough (ain=%u)\n", zS->avail_in);
+				size_t nNextSize = 0;
+				if (!TryGrowZlibBufferSize(runzipped.size(), EMBLOCKSIZE + 300u, &nNextSize)) {
+					err = Z_BUF_ERROR;
+					break;
+				}
+				runzipped.resize(nNextSize);
+				continue;
+			}
+
+			if ((err == Z_OK) && (zS->avail_in == 0)) {
+				TRACE_UNZIP("; all input processed\n");
+				*lenUnzipped = static_cast<uint32>(zS->total_out - block->totalUnzipped);
+				block->totalUnzipped = zS->total_out;
+				return Z_OK;
+			}
+
 			if (thePrefs.GetVerbose()) {
 				CString strZipError;
 				if (zS->msg || err != Z_OK)
@@ -1234,15 +1238,27 @@ int CUpDownClient::unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32
 				TRACE_UNZIP("; Error: %s\n", strZipError);
 				DebugLogError(_T("Unexpected zip error%s in file \"%s\""), (LPCTSTR)strZipError, m_reqfile ? (LPCTSTR)m_reqfile->GetFileName() : _T(""));
 			}
+			break;
 		}
 
-		if (err != Z_OK)
-			*lenUnzipped = 0;
+		*lenUnzipped = 0;
+	} catch (CMemoryException *ex) {
+		ex->Delete();
+		if (thePrefs.GetVerbose())
+			DebugLogError(_T("Memory exception in %hs: file \"%s\""), __FUNCTION__, m_reqfile ? (LPCTSTR)m_reqfile->GetFileName() : _T(""));
+		err = Z_MEM_ERROR;
+		*lenUnzipped = 0;
+	} catch (CException *ex) {
+		ex->Delete();
+		if (thePrefs.GetVerbose())
+			DebugLogError(_T("MFC exception in %hs: file \"%s\""), __FUNCTION__, m_reqfile ? (LPCTSTR)m_reqfile->GetFileName() : _T(""));
+		err = Z_DATA_ERROR;
+		*lenUnzipped = 0;
 	} catch (...) {
 		if (thePrefs.GetVerbose())
 			DebugLogError(_T("Unknown exception in %hs: file \"%s\""), __FUNCTION__, m_reqfile ? (LPCTSTR)m_reqfile->GetFileName() : _T(""));
 		err = Z_DATA_ERROR;
-		ASSERT(0);
+		*lenUnzipped = 0;
 	}
 
 	return err;
