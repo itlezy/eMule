@@ -28,6 +28,7 @@
 #include "Opcodes.h"
 #include "SafeFile.h"
 #include "Preferences.h"
+#include "ClientSocketLifetimeSeams.h"
 #include "Server.h"
 #include "ClientCredits.h"
 #include "IPFilter.h"
@@ -298,8 +299,9 @@ CUpDownClient::~CUpDownClient()
 	theApp.clientlist->RemoveClient(this, _T("Destructing client object"));
 
 	if (socket) {
-		socket->client = NULL;
-		socket->Safe_Delete();
+		CClientReqSocket *pSocket = socket;
+		DetachClientSocketPair(this, pSocket);
+		pSocket->Safe_Delete();
 	}
 
 	free(m_pszUsername);
@@ -1233,8 +1235,10 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 
 	// Delete Socket
 	if (!bFromSocket && socket) {
-		ASSERT(theApp.listensocket->IsValidSocket(socket));
-		socket->Safe_Delete();
+		CClientReqSocket *pSocket = socket;
+		ASSERT(theApp.listensocket->IsValidSocket(pSocket));
+		DetachClientSocketPair(this, pSocket);
+		pSocket->Safe_Delete();
 	}
 	socket = NULL;
 	if (!bDelete)
@@ -1311,7 +1315,9 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 				DebugLogWarning(_T("TryToConnect found connected socket, but without Handshake finished - %s"), (LPCTSTR)DbgGetClientInfo());
 			return true;
 		}
-		socket->Safe_Delete();
+		CClientReqSocket *pSocket = socket;
+		DetachClientSocketPair(this, pSocket);
+		pSocket->Safe_Delete();
 	}
 	m_eConnectingState = CCS_PRECONDITIONS; // We now officially try to connect :)
 

@@ -39,6 +39,7 @@
 #include "Kademlia/Kademlia/kademlia.h"
 #include "Kademlia/Kademlia/prefs.h"
 #include "ClientUDPSocket.h"
+#include "ResourceOwnershipSeams.h"
 #include "SHAHashSet.h"
 #include "Log.h"
 
@@ -233,17 +234,20 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			theStats.AddDownDataOverheadOther(size);
 
 			bool bNewClient = !client;
+			std::unique_ptr<CUpDownClient> pOwnedClient;
 			if (bNewClient)
+			{
 				// create new client to save standard information
-				client = new CUpDownClient(this);
+				pOwnedClient.reset(new CUpDownClient(this));
+				client = pOwnedClient.get();
+			}
 
 			bool bIsMuleHello;
 			try {
 				bIsMuleHello = client->ProcessHelloPacket(packet, size);
 			} catch (...) {
-				if (bNewClient) {
+				if (bNewClient && pOwnedClient) {
 					// Don't let CUpDownClient::Disconnected process a client which is not in the list of clients.
-					delete client;
 					client = NULL;
 				}
 				throw;
@@ -258,11 +262,14 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 			// be attached to the known client, the new client will be deleted
 			// and the var. "client" will point to the known client.
 			// if not we keep our new-constructed client ;)
-			if (theApp.clientlist->AttachToAlreadyKnown(&client, this))
+			CUpDownClient *pHelloClient = pOwnedClient.get();
+			if (theApp.clientlist->AttachToAlreadyKnown(&client, this)) {
+				ReleaseOwnedObjectIfSuperseded(pOwnedClient, pHelloClient, client);
 				// update the old client informations
 				bIsMuleHello = client->ProcessHelloPacket(packet, size);
-			else {
+			} else {
 				theApp.clientlist->AddClient(client);
+				ReleaseOwnedObjectIfMatched(pOwnedClient, client);
 				client->SetCommentDirty();
 			}
 

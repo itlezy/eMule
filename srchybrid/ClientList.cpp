@@ -28,6 +28,7 @@
 #include "UpDownClient.h"
 #include "UploadQueue.h"
 #include "DownloadQueue.h"
+#include "ClientSocketLifetimeSeams.h"
 #include "ClientCredits.h"
 #include "ListenSocket.h"
 #include "Opcodes.h"
@@ -217,8 +218,9 @@ bool CClientList::AttachToAlreadyKnown(CUpDownClient **client, CClientReqSocket 
 				}
 				return false;
 			}
-			found_client->socket->client = NULL;
-			found_client->socket->Safe_Delete();
+			CClientReqSocket *pSocket = found_client->socket;
+			DetachClientSocketPair(found_client, pSocket);
+			pSocket->Safe_Delete();
 		}
 		found_client->socket = sender;
 		tocheck->socket = NULL;
