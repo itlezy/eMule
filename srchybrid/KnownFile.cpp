@@ -35,6 +35,7 @@
 #include "Packets.h"
 #include "ProtocolGuards.h"
 #include "DisplayRefreshSeams.h"
+#include "SourceExchangeSeams.h"
 #include "UserMsgs.h"
 #include "Kademlia/Kademlia/SearchManager.h"
 #include "Kademlia/Kademlia/Entry.h"
@@ -1051,24 +1052,16 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 by
 
 	CSafeMemFile data(1024);
 
-	uint8 byUsedVersion;
-	bool bIsSX2Packet;
-	if (forClient->SupportsSourceExchange2() && byRequestedVersion > 0) {
-		// the client uses SourceExchange2 and requested the highest version he knows
-		// and we send the highest version we know, but of course not higher than his request
-		byUsedVersion = min(byRequestedVersion, (uint8)SOURCEEXCHANGE2_VERSION);
-		bIsSX2Packet = true;
-		data.WriteUInt8(byUsedVersion);
+	const SourceExchangeSeams::ResponsePlan plan = SourceExchangeSeams::ResolveSourceExchangeResponsePlan(forClient->SupportsSourceExchange2(), byRequestedVersion);
+	if (!plan.bShouldSend)
+		return NULL;
 
-		// we don't support any special SX2 options yet, reserved for later use
-		if (nRequestedOptions != 0)
-			DebugLogWarning(_T("Client requested unknown options for SourceExchange2: %u (%s)"), nRequestedOptions, (LPCTSTR)forClient->DbgGetClientInfo());
-	} else {
-		byUsedVersion = forClient->GetSourceExchange1Version();
-		bIsSX2Packet = false;
-		if (forClient->SupportsSourceExchange2())
-			DebugLogWarning(_T("Client which announced to support SX2 sent SX1 packet instead (%s)"), (LPCTSTR)forClient->DbgGetClientInfo());
-	}
+	const uint8 byUsedVersion = plan.byUsedVersion;
+	data.WriteUInt8(byUsedVersion);
+
+	// We keep accepting the options field for forward compatibility, but only SX2 packets are valid.
+	if (nRequestedOptions != 0)
+		DebugLogWarning(_T("Client requested unknown options for SourceExchange2: %u (%s)"), nRequestedOptions, (LPCTSTR)forClient->DbgGetClientInfo());
 
 	uint16 nCount = 0;
 	data.WriteHash16(forClient->GetUploadFileID());
@@ -1168,16 +1161,16 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 by
 	TRACE(_T("%hs: Out of %u clients, %u had no valid chunk status\n"), __FUNCTION__, m_ClientUploadList.GetCount(), cDbgNoSrc);
 	if (!nCount)
 		return 0;
-	data.Seek(bIsSX2Packet ? 17 : 16, CFile::begin);
+	data.Seek(plan.nCountSeekOffset, CFile::begin);
 	data.WriteUInt16((uint16)nCount);
 
 	Packet *result = new Packet(data, OP_EMULEPROT);
-	result->opcode = bIsSX2Packet ? OP_ANSWERSOURCES2 : OP_ANSWERSOURCES;
+	result->opcode = plan.byAnswerOpcode;
 	// (1+)16+2+501*(4+2+4+2+16+1) = 14547 (14548) bytes max.
 	if (result->size > 354)
 		result->PackPacket();
 	if (thePrefs.GetDebugSourceExchange())
-		AddDebugLogLine(false, _T("SXSend: Client source response SX2=%s, Version=%u; Count=%u, %s, File=\"%s\""), bIsSX2Packet ? _T("Yes") : _T("No"), byUsedVersion, nCount, (LPCTSTR)forClient->DbgGetClientInfo(), (LPCTSTR)GetFileName());
+		AddDebugLogLine(false, _T("SXSend: Client source response SX2 Version=%u; Count=%u, %s, File=\"%s\""), byUsedVersion, nCount, (LPCTSTR)forClient->DbgGetClientInfo(), (LPCTSTR)GetFileName());
 	return result;
 }
 

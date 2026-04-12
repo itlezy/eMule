@@ -259,7 +259,8 @@ public:
 	void	SetPauseOnPreview(bool bVal)				{ m_bPauseOnPreview = bVal; }
 
 	virtual Packet* CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 byRequestedVersion, uint16 nRequestedOptions) const;
-	void	AddClientSources(CSafeMemFile *sources, uint8 uClientSXVersion, bool bSourceExchange2, const CUpDownClient *pClient = NULL);
+	void	AddEd2kLinkSources(CSafeMemFile *sources);
+	void	AddClientSources(CSafeMemFile *sources, uint8 uClientSXVersion, const CUpDownClient *pClient = NULL);
 
 	UINT	GetAvailablePartCount() const				{ return (status == PS_COMPLETING || status == PS_COMPLETE) ? GetPartCount() : availablePartsCount; }
 	void	UpdateAvailablePartsCount();
@@ -284,7 +285,7 @@ public:
 	void	UpdateDisplayedInfo(bool force = false);
 	void	DispatchQueuedDisplayUpdate();
 
-	UINT	GetCategory() /*const*/;
+	UINT	GetCategory() const;
 	void	SetCategory(UINT cat);
 	bool	HasDefaultCategory() const;
 	bool	CheckShowItemInGivenCat(INT_PTR inCategory) /*const*/;
@@ -401,7 +402,7 @@ private:
 	std::atomic<LONG> m_nPendingDisplayUpdate;
 	std::atomic<uint32> m_nHashLayoutGeneration;
 	UINT	m_anStates[STATES_COUNT];
-	UINT	m_category;
+	mutable UINT	m_category;
 	UINT	m_uMaxSources;
 	UINT	availablePartsCount;
 	ULONGLONG m_ClientSrcAnswered;

@@ -139,7 +139,6 @@ public:
 	bool			SupportsLargeFiles() const						{ return m_fSupportsLargeFiles; }
 	bool			SupportsFileIdentifiers() const					{ return m_fSupportsFileIdent; }
 	bool			IsEmuleClient() const							{ return m_byEmuleVersion != 0; }
-	uint8			GetSourceExchange1Version() const				{ return m_bySourceExchange1Ver; }
 	bool			SupportsSourceExchange2() const					{ return m_fSupportsSourceEx2; }
 	CClientCredits*	Credits() const									{ return credits; }
 	bool			IsBanned() const;
@@ -497,7 +496,6 @@ protected:
 	uint16	m_nKadPort;
 	//--group aligned to int32
 	uint8	m_byUDPVer;
-	uint8	m_bySourceExchange1Ver;
 	uint8	m_byAcceptCommentVer;
 	uint8	m_byExtendedRequestsVer;
 	//--group aligned to int32

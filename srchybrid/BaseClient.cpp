@@ -150,7 +150,6 @@ void CUpDownClient::Init()
 	m_nKadPort = 0;
 
 	m_byUDPVer = 0;
-	m_bySourceExchange1Ver = 0;
 	m_byAcceptCommentVer = 0;
 	m_byExtendedRequestsVer = 0;
 
@@ -339,7 +338,6 @@ void CUpDownClient::ClearHelloProperties()
 	m_byUDPVer = 0;
 	m_byDataCompVer = 0;
 	m_byEmuleVersion = 0;
-	m_bySourceExchange1Ver = 0;
 	m_byAcceptCommentVer = 0;
 	m_byExtendedRequestsVer = 0;
 	m_byCompatibleClient = 0;
@@ -490,7 +488,7 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 			//  4 UDP version
 			//  4 Data compression version
 			//  4 Secure Ident
-			//  4 Source Exchange - deprecated
+			//  4 Source Exchange - deprecated and ignored
 			//  4 Ext. Requests
 			//  4 Comments
 			//	1 PeerChache supported
@@ -503,7 +501,6 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 				m_byUDPVer = (uint8)((temptag.GetInt() >> 24) & 0x0f);
 				m_byDataCompVer = (uint8)((temptag.GetInt() >> 20) & 0x0f);
 				m_bySupportSecIdent = (uint8)((temptag.GetInt() >> 16) & 0x0f);
-				m_bySourceExchange1Ver = (uint8)((temptag.GetInt() >> 12) & 0x0f);
 				m_byExtendedRequestsVer = (uint8)((temptag.GetInt() >> 8) & 0x0f);
 				m_byAcceptCommentVer = (uint8)((temptag.GetInt() >> 4) & 0x0f);
 				m_fPeerCache = (temptag.GetInt() >> 3) & 0x01;
@@ -512,9 +509,9 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 				m_fSupportsPreview = (temptag.GetInt() >> 0) & 0x01;
 				dwEmuleTags |= 2;
 				if (bDbgInfo) {
-					m_strHelloInfo.AppendFormat(_T("\n  PeerCache=%u  UDPVer=%u  DataComp=%u  SecIdent=%u  SrcExchg=%u")
+					m_strHelloInfo.AppendFormat(_T("\n  PeerCache=%u  UDPVer=%u  DataComp=%u  SecIdent=%u")
 						_T("  ExtReq=%u  Commnt=%u  Preview=%u  NoViewFiles=%u  Unicode=%u")
-						, m_fPeerCache, m_byUDPVer, m_byDataCompVer, m_bySupportSecIdent, m_bySourceExchange1Ver
+						, m_fPeerCache, m_byUDPVer, m_byDataCompVer, m_bySupportSecIdent
 						, m_byExtendedRequestsVer, m_byAcceptCommentVer, m_fSupportsPreview, m_fNoViewSharedFiles, m_bUnicodeSupport);
 				}
 			} else if (bDbgInfo)
@@ -783,9 +780,6 @@ void CUpDownClient::ProcessMuleInfoPacket(const uchar *pachPacket, uint32 nSize)
 	if (m_byEmuleVersion < 0x25 && m_byEmuleVersion > 0x22)
 		m_byUDPVer = 1;
 
-	if (m_byEmuleVersion < 0x25 && m_byEmuleVersion > 0x21)
-		m_bySourceExchange1Ver = 1;
-
 	if (m_byEmuleVersion == 0x24)
 		m_byAcceptCommentVer = 1;
 
@@ -832,16 +826,6 @@ void CUpDownClient::ProcessMuleInfoPacket(const uchar *pachPacket, uint32 nSize)
 				m_byUDPVer = (uint8)temptag.GetInt();
 				if (bDbgInfo)
 					m_strMuleInfo.AppendFormat(_T("\n  UDPVer=%u"), temptag.GetInt());
-			} else if (bDbgInfo)
-				m_strMuleInfo.AppendFormat(_T("\n  ***UnkType=%s"), (LPCTSTR)temptag.GetFullInfo());
-			break;
-		case ET_SOURCEEXCHANGE:
-			// Bits 31- 8: 0 - reserved
-			// Bits  7- 0: source exchange protocol version
-			if (temptag.IsInt()) {
-				m_bySourceExchange1Ver = (uint8)temptag.GetInt();
-				if (bDbgInfo)
-					m_strMuleInfo.AppendFormat(_T("\n  SrcExch=%u"), temptag.GetInt());
 			} else if (bDbgInfo)
 				m_strMuleInfo.AppendFormat(_T("\n  ***UnkType=%s"), (LPCTSTR)temptag.GetFullInfo());
 			break;
@@ -904,7 +888,6 @@ void CUpDownClient::ProcessMuleInfoPacket(const uchar *pachPacket, uint32 nSize)
 		}
 	}
 	if (m_byDataCompVer == 0) {
-		m_bySourceExchange1Ver = 0;
 		m_byExtendedRequestsVer = 0;
 		m_byAcceptCommentVer = 0;
 		m_nUDPPort = 0;
@@ -996,9 +979,7 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 	const UINT uDataCompVer = 1;
 	const UINT uSupportSecIdent = theApp.clientcredits->CryptoAvailable() ? 3 : 0;
 	// ***
-	// deprecated - will be set back to 3 with the next release (to allow the new version to spread first),
-	// due to a bug in earlier eMule version. Use SupportsSourceEx2 and new opcodes instead
-	const UINT uSourceExchange1Ver = 4;
+	const UINT uDeprecatedSourceExchange1Ver = 0;
 	// ***
 	const UINT uExtendedRequestsVer = 2;
 	const UINT uAcceptCommentVer = 1;
@@ -1014,7 +995,7 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 				(uUdpVer			  << 24) |
 				(uDataCompVer		  << 20) |
 				(uSupportSecIdent	  << 16) |
-				(uSourceExchange1Ver  << 12) |
+				(uDeprecatedSourceExchange1Ver << 12) |
 				(uExtendedRequestsVer <<  8) |
 				(uAcceptCommentVer	  <<  4) |
 				(uPeerCache			  <<  3) |
@@ -2264,7 +2245,6 @@ void CUpDownClient::AssertValid() const
 	(void)m_nUDPPort;
 	(void)m_nKadPort;
 	(void)m_byUDPVer;
-	(void)m_bySourceExchange1Ver;
 	(void)m_byAcceptCommentVer;
 	(void)m_byExtendedRequestsVer;
 	CHECK_BOOL(m_bFriendSlot);

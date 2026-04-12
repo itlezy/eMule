@@ -40,6 +40,7 @@
 #include "Kademlia/Kademlia/prefs.h"
 #include "ClientUDPSocket.h"
 #include "ResourceOwnershipSeams.h"
+#include "SourceExchangeSeams.h"
 #include "SHAHashSet.h"
 #include "Log.h"
 
@@ -975,22 +976,18 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 					break;
 				//We still send the source packet separately.
 				case OP_REQUESTSOURCES2:
-				case OP_REQUESTSOURCES:
 					{
 						if (thePrefs.GetDebugClientTCPLevel() > 0)
-							DebugRecv(opcode_in == OP_REQUESTSOURCES ? "OP_MPReqSources2" : "OP_MPReqSources", client, packet);
+							DebugRecv("OP_MPReqSources2", client, packet);
 
 						if (thePrefs.GetDebugSourceExchange())
 							AddDebugLogLine(false, _T("SXRecv: Client source request; %s, File=\"%s\""), (LPCTSTR)client->DbgGetClientInfo(), (LPCTSTR)reqfile->GetFileName());
 
 						uint8 byRequestedVersion = 0;
 						uint16 byRequestedOptions = 0;
-						if (opcode_in == OP_REQUESTSOURCES2) { // SX2 requests contains additional data
-							byRequestedVersion = data_in.ReadUInt8();
-							byRequestedOptions = data_in.ReadUInt16();
-						}
-						//Although this shouldn't happen, it's just in case for any Mods that mess with version numbers.
-						if (byRequestedVersion > 0 || client->GetSourceExchange1Version() > 1) {
+						byRequestedVersion = data_in.ReadUInt8();
+						byRequestedOptions = data_in.ReadUInt16();
+						if (SourceExchangeSeams::IsValidSourceExchange2Request(byRequestedVersion)) {
 							ULONGLONG dwTimePassed = ::GetTickCount64() - client->GetLastSrcReqTime() + CONNECTION_LATENCY;
 							bool bNeverAskedBefore = client->GetLastSrcReqTime() == 0;
 							if ( //if not complete and file is rare
@@ -1170,24 +1167,23 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 		client->ProcessEmuleQueueRank(packet, size);
 		return;
 	case OP_REQUESTSOURCES2:
-	case OP_REQUESTSOURCES:
 		{
+			if (size < 19)
+				throw GetResString(IDS_ERR_BADSIZE);
+
 			CSafeMemFile data(packet, size);
 			if (thePrefs.GetDebugClientTCPLevel() > 0)
-				DebugRecv(opcode == OP_REQUESTSOURCES2 ? "OP_MPReqSources2" : "OP_MPReqSources", client, (size >= 16) ? packet : NULL);
+				DebugRecv("OP_RequestSources2", client, packet);
 
 			theStats.AddDownDataOverheadSourceExchange(uRawSize);
 			//client->CheckHandshakeFinished();
 
 			uint8 byRequestedVersion = 0;
 			uint16 byRequestedOptions = 0;
-			if (opcode == OP_REQUESTSOURCES2) { // SX2 requests contains additional data
-				byRequestedVersion = data.ReadUInt8();
-				byRequestedOptions = data.ReadUInt16();
-			}
-			//Although this shouldn't happen, it's just in case to any Mods that mess with version numbers.
-			if (byRequestedVersion > 0 || client->GetSourceExchange1Version() > 1) {
-				if (size < 16)
+			byRequestedVersion = data.ReadUInt8();
+			byRequestedOptions = data.ReadUInt16();
+			if (SourceExchangeSeams::IsValidSourceExchange2Request(byRequestedVersion)) {
+				if (size < 19)
 					throw GetResString(IDS_ERR_BADSIZE);
 
 				if (thePrefs.GetDebugSourceExchange())
@@ -1201,7 +1197,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 					reqfile = theApp.downloadqueue->GetFileByID(ucHash);
 				if (reqfile) {
 					// There are some clients which do not follow the correct protocol sequence
-					// of sending OP_REQUESTFILENAME, OP_SETREQFILEID, OP_REQUESTSOURCES. Those clients
+					// of sending OP_REQUESTFILENAME, OP_SETREQFILEID, OP_REQUESTSOURCES2. Those clients
 					// will not get the best set of sources we could offer if they followed
 					// the above noted protocol sequence. They better do it the right way
 					// or they will get a random set of sources because we do not know their download
@@ -1234,15 +1230,14 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 		}
 		return;
 	case OP_ANSWERSOURCES2:
-	case OP_ANSWERSOURCES:
 		{
 			if (thePrefs.GetDebugClientTCPLevel() > 0)
-				DebugRecv(opcode == OP_ANSWERSOURCES2 ? "OP_AnswerSources2" : "OP_AnswerSources", client, (size >= (opcode == OP_ANSWERSOURCES2 ? 17u : 16u)) ? packet : NULL);
+				DebugRecv("OP_AnswerSources2", client, (size >= 17u) ? packet : NULL);
 			theStats.AddDownDataOverheadSourceExchange(uRawSize);
 			//client->CheckHandshakeFinished();
 
 			CSafeMemFile data(packet, size);
-			uint8 byVersion = (opcode == OP_ANSWERSOURCES2) ? data.ReadUInt8() : client->GetSourceExchange1Version();
+			uint8 byVersion = data.ReadUInt8();
 			uchar hash[MDX_DIGEST_SIZE];
 			data.ReadHash16(hash);
 			CKnownFile *file = theApp.downloadqueue->GetFileByID(hash);
@@ -1253,7 +1248,7 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 				client->SetLastSrcAnswerTime();
 				//and set the file's last answer time
 				static_cast<CPartFile*>(file)->SetLastAnsweredTime();
-				static_cast<CPartFile*>(file)->AddClientSources(&data, byVersion, (opcode == OP_ANSWERSOURCES2), client);
+				static_cast<CPartFile*>(file)->AddClientSources(&data, byVersion, client);
 			}
 		}
 		return;

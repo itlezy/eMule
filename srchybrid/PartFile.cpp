@@ -46,6 +46,7 @@
 #include "UserMsgs.h"
 #include "SharedFileList.h"
 #include "ListenSocket.h"
+#include "SourceExchangeSeams.h"
 #include "ServerConnect.h"
 #include "Server.h"
 #include "KnownFileList.h"
@@ -3807,24 +3808,16 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 byR
 
 	CSafeMemFile data(1024);
 
-	uint8 byUsedVersion;
-	bool bIsSX2Packet;
-	if (forClient->SupportsSourceExchange2() && byRequestedVersion > 0) {
-		// the client uses SourceExchange2 and requested the highest version he knows
-		// and we send the highest version we know, but of course not higher than his request
-		byUsedVersion = min(byRequestedVersion, (uint8)SOURCEEXCHANGE2_VERSION);
-		bIsSX2Packet = true;
-		data.WriteUInt8(byUsedVersion);
+	const SourceExchangeSeams::ResponsePlan plan = SourceExchangeSeams::ResolveSourceExchangeResponsePlan(forClient->SupportsSourceExchange2(), byRequestedVersion);
+	if (!plan.bShouldSend)
+		return NULL;
 
-		// we don't support any special SX2 options yet, reserved for later use
-		if (nRequestedOptions != 0)
-			DebugLogWarning(_T("Client requested unknown options for SourceExchange2: %u (%s)"), nRequestedOptions, (LPCTSTR)forClient->DbgGetClientInfo());
-	} else {
-		byUsedVersion = forClient->GetSourceExchange1Version();
-		bIsSX2Packet = false;
-		if (forClient->SupportsSourceExchange2())
-			DebugLogWarning(_T("Client which announced to support SX2 sent SX1 packet instead (%s)"), (LPCTSTR)forClient->DbgGetClientInfo());
-	}
+	const uint8 byUsedVersion = plan.byUsedVersion;
+	data.WriteUInt8(byUsedVersion);
+
+	// We keep accepting the options field for forward compatibility, but only SX2 packets are valid.
+	if (nRequestedOptions != 0)
+		DebugLogWarning(_T("Client requested unknown options for SourceExchange2: %u (%s)"), nRequestedOptions, (LPCTSTR)forClient->DbgGetClientInfo());
 
 	UINT nCount = 0;
 	data.WriteHash16(m_FileIdentifier.GetMD4Hash());
@@ -3879,20 +3872,20 @@ Packet* CPartFile::CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 byR
 	}
 	if (!nCount)
 		return 0;
-	data.Seek(bIsSX2Packet ? 17 : 16, CFile::begin);
+	data.Seek(plan.nCountSeekOffset, CFile::begin);
 	data.WriteUInt16((uint16)nCount);
 
 	Packet *result = new Packet(data, OP_EMULEPROT);
-	result->opcode = bIsSX2Packet ? OP_ANSWERSOURCES2 : OP_ANSWERSOURCES;
+	result->opcode = plan.byAnswerOpcode;
 	// (1+)16+2+501*(4+2+4+2+16+1) = 14547 (14548) bytes max.
 	if (result->size > 354)
 		result->PackPacket();
 	if (thePrefs.GetDebugSourceExchange())
-		AddDebugLogLine(false, _T("SXSend: Client source response SX2=%s, Version=%u; Count=%u, %s, File=\"%s\""), bIsSX2Packet ? _T("Yes") : _T("No"), byUsedVersion, nCount, (LPCTSTR)forClient->DbgGetClientInfo(), (LPCTSTR)GetFileName());
+		AddDebugLogLine(false, _T("SXSend: Client source response SX2 Version=%u; Count=%u, %s, File=\"%s\""), byUsedVersion, nCount, (LPCTSTR)forClient->DbgGetClientInfo(), (LPCTSTR)GetFileName());
 	return result;
 }
 
-void CPartFile::AddClientSources(CSafeMemFile *sources, uint8 uClientSXVersion, bool bSourceExchange2, const CUpDownClient *pClient)
+void CPartFile::AddClientSources(CSafeMemFile *sources, uint8 uClientSXVersion, const CUpDownClient *pClient)
 {
 	if (m_stopped)
 		return;
@@ -3901,112 +3894,50 @@ void CPartFile::AddClientSources(CSafeMemFile *sources, uint8 uClientSXVersion, 
 		CString strDbgClientInfo;
 		if (pClient)
 			strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-		AddDebugLogLine(false, _T("SXRecv: Client source response; SX2=%s, Ver=%u, %sFile=\"%s\""), bSourceExchange2 ? _T("Yes") : _T("No"), uClientSXVersion, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
+		AddDebugLogLine(false, _T("SXRecv: Client source response SX2; Ver=%u, %sFile=\"%s\""), uClientSXVersion, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
 	}
 
-	UINT nCount;
-	UINT uPacketSXVersion;
-	if (!bSourceExchange2) {
-		// for SX1 (deprecated):
-		// Check if the data size matches the 'nCount' for v1 or v2 and eventually correct the source
-		// exchange version while reading the packet data. Otherwise we could experience a higher
-		// chance in dealing with wrong source data, userhashes and finally duplicate sources.
-		nCount = sources->ReadUInt16();
-		UINT uDataSize = (UINT)(sources->GetLength() - sources->GetPosition());
-		// Checks if version 1 packet is correct size
-		if (nCount * (4 + 2 + 4 + 2) == uDataSize) {
-			// Received v1 packet: Check if remote client supports at least v1
-			if (uClientSXVersion < 1) {
-				if (thePrefs.GetVerbose()) {
-					CString strDbgClientInfo;
-					if (pClient)
-						strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-					DebugLogWarning(_T("Received invalid SX packet (v%u, count=%u, size=%u), %sFile=\"%s\""), uClientSXVersion, nCount, uDataSize, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
-				}
-				return;
-			}
-			uPacketSXVersion = 1;
-		} else if (nCount * (4 + 2 + 4 + 2 + 16) == uDataSize) {	// Checks if version 2&3 packet is correct size
-			// Received v2,v3 packet: Check if remote client supports at least v2
-			if (uClientSXVersion < 2) {
-				if (thePrefs.GetVerbose()) {
-					CString strDbgClientInfo;
-					if (pClient)
-						strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-					DebugLogWarning(_T("Received invalid SX packet (v%u, count=%u, size=%u), %sFile=\"%s\""), uClientSXVersion, nCount, uDataSize, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
-				}
-				return;
-			}
-			uPacketSXVersion = (uClientSXVersion == 2) ? 2 : 3;
-		} else if (nCount * (4 + 2 + 4 + 2 + 16 + 1) == uDataSize) {	// v4 packets
-			// Received v4 packet: Check if remote client supports at least v4
-			if (uClientSXVersion < 4) {
-				if (thePrefs.GetVerbose()) {
-					CString strDbgClientInfo;
-					if (pClient)
-						strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-					DebugLogWarning(_T("Received invalid SX packet (v%u, count=%u, size=%u), %sFile=\"%s\""), uClientSXVersion, nCount, uDataSize, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
-				}
-				return;
-			}
-			uPacketSXVersion = 4;
-		} else {
-			// If v5+ inserts additional data (like v2), the above code will correctly filter those packets.
-			// If v5+ appends additional data after <count>(<Sources>)[count], we are in trouble with the
-			// above code. Though a client which does not understand v5+ should never receive such a packet.
-			if (thePrefs.GetVerbose()) {
-				CString strDbgClientInfo;
-				if (pClient)
-					strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-				DebugLogWarning(_T("Received invalid SX packet (v%u, count=%u, size=%u), %sFile=\"%s\""), uClientSXVersion, nCount, uDataSize, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
-			}
-			return;
+	if (uClientSXVersion > SOURCEEXCHANGE2_VERSION || uClientSXVersion == 0) {
+		if (thePrefs.GetVerbose()) {
+			CString strDbgClientInfo;
+			if (pClient)
+				strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
+			DebugLogWarning(_T("Received invalid SX2 packet - Version unknown (v%u), %sFile=\"%s\""), uClientSXVersion, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
 		}
-	} else {
-		// for SX2:
-		// We only check if the version is known by us and do a quick sanitize check on known version
-		// other then SX1, the packet will be ignored in case of error, since it can't be a "misunderstanding" any more
-		if (uClientSXVersion > SOURCEEXCHANGE2_VERSION || uClientSXVersion == 0) {
-			if (thePrefs.GetVerbose()) {
-				CString strDbgClientInfo;
-				if (pClient)
-					strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-				DebugLogWarning(_T("Received invalid SX2 packet - Version unknown (v%u), %sFile=\"%s\""), uClientSXVersion, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
-			}
-			return;
-		}
-		// all known versions use the first 2 bytes as count, and unknown versions have been already filtered above
-		nCount = sources->ReadUInt16();
-		UINT uDataSize = (UINT)(sources->GetLength() - sources->GetPosition());
-		bool bError;
-		switch (uClientSXVersion) {
-		case 1:
-			bError = nCount * (4 + 2 + 4 + 2) != uDataSize;
-			break;
-		case 2:
-		case 3:
-			bError = nCount * (4 + 2 + 4 + 2 + 16) != uDataSize;
-			break;
-		case 4:
-			bError = nCount * (4 + 2 + 4 + 2 + 16 + 1) != uDataSize;
-			break;
-		default:
-			bError = false;
-			ASSERT(0);
-		}
-
-		if (bError) {
-			ASSERT(0);
-			if (thePrefs.GetVerbose()) {
-				CString strDbgClientInfo;
-				if (pClient)
-					strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
-				DebugLogWarning(_T("Received invalid/corrupt SX2 packet (v%u, count=%u, size=%u), %sFile=\"%s\""), uClientSXVersion, nCount, uDataSize, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
-			}
-			return;
-		}
-		uPacketSXVersion = uClientSXVersion;
+		return;
 	}
+
+	UINT nCount = sources->ReadUInt16();
+	const UINT uDataSize = (UINT)(sources->GetLength() - sources->GetPosition());
+	bool bError;
+	switch (uClientSXVersion) {
+	case 1:
+		bError = nCount * (4 + 2 + 4 + 2) != uDataSize;
+		break;
+	case 2:
+	case 3:
+		bError = nCount * (4 + 2 + 4 + 2 + 16) != uDataSize;
+		break;
+	case 4:
+		bError = nCount * (4 + 2 + 4 + 2 + 16 + 1) != uDataSize;
+		break;
+	default:
+		bError = false;
+		ASSERT(0);
+	}
+
+	if (bError) {
+		ASSERT(0);
+		if (thePrefs.GetVerbose()) {
+			CString strDbgClientInfo;
+			if (pClient)
+				strDbgClientInfo.Format(_T("%s, "), (LPCTSTR)pClient->DbgGetClientInfo());
+			DebugLogWarning(_T("Received invalid/corrupt SX2 packet (v%u, count=%u, size=%u), %sFile=\"%s\""), uClientSXVersion, nCount, uDataSize, (LPCTSTR)strDbgClientInfo, (LPCTSTR)GetFileName());
+		}
+		return;
+	}
+
+	const UINT uPacketSXVersion = uClientSXVersion;
 
 	for (; nCount > 0; --nCount) {
 		uint32 dwID = sources->ReadUInt32();
@@ -4066,6 +3997,30 @@ void CPartFile::AddClientSources(CSafeMemFile *sources, uint8 uClientSXVersion, 
 			//if (thePrefs.GetDebugSourceExchange()) // remove this log later
 			//	AddDebugLogLine(false, _T("Received CryptLayer aware (%u) source from V4 Sourceexchange (%s)"), byCryptOptions, (LPCTSTR)newsource->DbgGetClientInfo());
 		}
+		newsource->SetSourceFrom(SF_SOURCE_EXCHANGE);
+		theApp.downloadqueue->CheckAndAddSource(this, newsource);
+	}
+}
+
+void CPartFile::AddEd2kLinkSources(CSafeMemFile *sources)
+{
+	if (m_stopped || sources == NULL)
+		return;
+
+	UINT nCount = sources->ReadUInt16();
+	for (; nCount > 0; --nCount) {
+		uint32 dwID = sources->ReadUInt32();
+		uint16 nPort = sources->ReadUInt16();
+		uint32 dwServerIP = sources->ReadUInt32();
+		uint16 nServerPort = sources->ReadUInt16();
+
+		if (!CanAddSource(dwID, nPort, dwServerIP, nServerPort))
+			continue;
+
+		if (GetSourceCount() >= GetMaxSources())
+			break;
+
+		CUpDownClient *newsource = new CUpDownClient(this, nPort, dwID, dwServerIP, nServerPort, true);
 		newsource->SetSourceFrom(SF_SOURCE_EXCHANGE);
 		theApp.downloadqueue->CheckAndAddSource(this, newsource);
 	}
@@ -4590,7 +4545,7 @@ void CPartFile::UpdateAutoDownPriority()
 	}
 }
 
-UINT CPartFile::GetCategory() /*const*/
+UINT CPartFile::GetCategory() const
 {
 	if (m_category >= (UINT)thePrefs.GetCatCount())
 		m_category = 0;

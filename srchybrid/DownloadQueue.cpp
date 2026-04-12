@@ -344,7 +344,7 @@ void CDownloadQueue::AddFileLinkToDownload(const CED2KFileLink &Link, int cat)
 		CFileIdentifier &fileid = partfile->GetFileIdentifier();
 		if (fileid.CompareRelaxed(tmpFileIdent)) {
 			if (Link.HasValidSources())
-				partfile->AddClientSources(Link.SourcesList, 1, false);
+				partfile->AddEd2kLinkSources(Link.SourcesList);
 			if (!fileid.HasAICHHash() && tmpFileIdent.HasAICHHash()) {
 				fileid.SetAICHHash(tmpFileIdent.GetAICHHash());
 				partfile->GetAICHRecoveryHashSet()->SetMasterHash(tmpFileIdent.GetAICHHash(), AICH_VERIFIED);
@@ -545,7 +545,6 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 	// filter sources which are incompatible with our encryption setting (one requires it, and the other one doesn't support it)
 	if ((source->RequiresCryptLayer() && (!thePrefs.IsCryptLayerEnabled() || !source->HasValidHash())) || (thePrefs.IsCryptLayerRequired() && (!source->SupportsCryptLayer() || !source->HasValidHash()))) {
 #if defined(_DEBUG) || defined(_BETA) || defined(_DEVBUILD)
-		//if (thePrefs.GetDebugSourceExchange()) // TODO: Uncomment after testing
 		AddDebugLogLine(DLP_DEFAULT, false, _T("Rejected source because CryptLayer-Setting (Obfuscation) was incompatible for file %s : %s"), (LPCTSTR)sender->GetFileName(), (LPCTSTR)source->DbgGetClientInfo());
 #endif
 		delete source;
@@ -621,7 +620,6 @@ bool CDownloadQueue::CheckAndAddKnownSource(CPartFile *sender, CUpDownClient *so
 	// filter sources which are incompatible with our encryption setting (one requires it, and the other one doesn't support it)
 	if ((source->RequiresCryptLayer() && (!thePrefs.IsCryptLayerEnabled() || !source->HasValidHash())) || (thePrefs.IsCryptLayerRequired() && (!source->SupportsCryptLayer() || !source->HasValidHash()))) {
 #if defined(_DEBUG) || defined(_BETA) || defined(_DEVBUILD)
-		//if (thePrefs.GetDebugSourceExchange()) // TODO: Uncomment after testing
 		AddDebugLogLine(DLP_DEFAULT, false, _T("Rejected source because CryptLayer-Setting (Obfuscation) was incompatible for file %s : %s"), (LPCTSTR)sender->GetFileName(), (LPCTSTR)source->DbgGetClientInfo());
 #endif
 		return false;

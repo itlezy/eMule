@@ -27,6 +27,7 @@
 #include "DownloadQueue.h"
 #include "ClientUDPSocket.h"
 #include "CompressionBufferSeams.h"
+#include "SourceExchangeSeams.h"
 #include "emuledlg.h"
 #include "UserMsgs.h"
 #include "TransferDlg.h"
@@ -228,7 +229,7 @@ bool CUpDownClient::IsSourceRequestAllowed(CPartFile *partfile, bool sourceExcha
 	UINT uReqValidSources = m_reqfile->GetValidSourcesCount();
 
 	return //if client has the correct extended protocol
-		   ExtProtocolAvailable() && (SupportsSourceExchange2() || GetSourceExchange1Version() > 1)
+		   SourceExchangeSeams::ShouldAllowSourceExchangeRequest(ExtProtocolAvailable(), SupportsSourceExchange2())
 		//AND if we need more sources
 		&& m_reqfile->GetMaxSourcePerFileSoft() > uSources
 		//AND if...
@@ -306,7 +307,7 @@ void CUpDownClient::SendFileRequest()
 			SetRemoteQueueRank(0);
 		}
 
-		// OP_REQUESTSOURCES // OP_REQUESTSOURCES2
+		// OP_REQUESTSOURCES2
 		if (IsSourceRequestAllowed()) {
 			if (thePrefs.GetDebugClientTCPLevel() > 0) {
 				DebugSend("OP_MPReqSources", this, m_reqfile->GetFileHash());
@@ -315,18 +316,15 @@ void CUpDownClient::SendFileRequest()
 				else
 					Debug(_T("  last source request was before %s\n"), (LPCTSTR)CastSecondsToHM((::GetTickCount64() - GetLastAskedForSources()) / SEC2MS(1)));
 			}
-			if (SupportsSourceExchange2()) {
-				dataFileReq.WriteUInt8(OP_REQUESTSOURCES2);
-				dataFileReq.WriteUInt8(SOURCEEXCHANGE2_VERSION);
-				const uint16 nOptions = 0; // 16 ... Reserved
-				dataFileReq.WriteUInt16(nOptions);
-			} else
-				dataFileReq.WriteUInt8(OP_REQUESTSOURCES);
+			dataFileReq.WriteUInt8(OP_REQUESTSOURCES2);
+			dataFileReq.WriteUInt8(SOURCEEXCHANGE2_VERSION);
+			const uint16 nOptions = 0; // 16 ... Reserved
+			dataFileReq.WriteUInt16(nOptions);
 
 			m_reqfile->SetLastAnsweredTimeTimeout();
 			SetLastAskedForSources();
 			if (thePrefs.GetDebugSourceExchange())
-				AddDebugLogLine(false, _T("SXSend (%s): Client source request; %s, File=\"%s\""), SupportsSourceExchange2() ? _T("Version 2") : _T("Version 1"), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)m_reqfile->GetFileName());
+				AddDebugLogLine(false, _T("SXSend: Client source request SX2; %s, File=\"%s\""), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)m_reqfile->GetFileName());
 		}
 
 		// OP_AICHFILEHASHREQ - deprecated with file identifiers
@@ -391,23 +389,17 @@ void CUpDownClient::SendFileRequest()
 			}
 			m_reqfile->SetLastAnsweredTimeTimeout();
 
-			Packet *packet1;
-			if (SupportsSourceExchange2()) {
-				packet1 = new Packet(OP_REQUESTSOURCES2, 19, OP_EMULEPROT);
-				PokeUInt8(&packet1->pBuffer[0], SOURCEEXCHANGE2_VERSION);
-				const uint16 nOptions = 0; // 16 ... Reserved
-				PokeUInt16(&packet1->pBuffer[1], nOptions);
-				md4cpy(&packet1->pBuffer[3], m_reqfile->GetFileHash());
-			} else {
-				packet1 = new Packet(OP_REQUESTSOURCES, 16, OP_EMULEPROT);
-				md4cpy(packet1->pBuffer, m_reqfile->GetFileHash());
-			}
+			Packet *packet1 = new Packet(OP_REQUESTSOURCES2, 19, OP_EMULEPROT);
+			PokeUInt8(&packet1->pBuffer[0], SOURCEEXCHANGE2_VERSION);
+			const uint16 nOptions = 0; // 16 ... Reserved
+			PokeUInt16(&packet1->pBuffer[1], nOptions);
+			md4cpy(&packet1->pBuffer[3], m_reqfile->GetFileHash());
 
 			theStats.AddUpDataOverheadSourceExchange(packet1->size);
 			SendPacket(packet1);
 			SetLastAskedForSources();
 			if (thePrefs.GetDebugSourceExchange())
-				AddDebugLogLine(false, _T("SXSend (%s): Client source request; %s, File=\"%s\""), SupportsSourceExchange2() ? _T("Version 2") : _T("Version 1"), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)m_reqfile->GetFileName());
+				AddDebugLogLine(false, _T("SXSend: Client source request SX2; %s, File=\"%s\""), (LPCTSTR)DbgGetClientInfo(), (LPCTSTR)m_reqfile->GetFileName());
 		}
 
 		if (IsSupportingAICH()) {

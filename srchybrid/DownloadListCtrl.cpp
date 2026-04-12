@@ -1734,10 +1734,9 @@ int CDownloadListCtrl::Compare(const CPartFile *file1, const CPartFile *file2, L
 	case 11: //last received Time
 		return sgn(file1->GetLastReceptionDate() - file2->GetLastReceptionDate());
 	case 12: //category
-		//TODO: 'GetCategory' SHOULD be a 'const' function and 'GetResString' should NOT be called.
 		return CompareLocaleStringNoCase(
-					(const_cast<CPartFile*>(file1)->GetCategory() != 0) ? thePrefs.GetCategory(const_cast<CPartFile*>(file1)->GetCategory())->strTitle : GetResString(IDS_ALL)
-				  , (const_cast<CPartFile*>(file2)->GetCategory() != 0) ? thePrefs.GetCategory(const_cast<CPartFile*>(file2)->GetCategory())->strTitle : GetResString(IDS_ALL));
+					(file1->GetCategory() != 0) ? thePrefs.GetCategory(file1->GetCategory())->strTitle : GetResString(IDS_ALL)
+				  , (file2->GetCategory() != 0) ? thePrefs.GetCategory(file2->GetCategory())->strTitle : GetResString(IDS_ALL));
 	case 13: // added on
 		return sgn(file1->GetCrFileDate() - file2->GetCrFileDate());
 	}
@@ -2061,7 +2060,7 @@ CString CDownloadListCtrl::GetFileItemDisplayText(const CPartFile *lpPartFile, i
 		break;
 	case 12: //cat
 		{
-			UINT cat = const_cast<CPartFile*>(lpPartFile)->GetCategory();
+			UINT cat = lpPartFile->GetCategory();
 			if (cat)
 				sText = thePrefs.GetCategory(cat)->strTitle;
 		}
