@@ -35,13 +35,13 @@ template<class TYPE> class CRing
 public:
 	explicit CRing(UINT_PTR nSize = 128, UINT_PTR nIncrement = 128); //zero values default to 128
 	~CRing()								{ delete[] m_pData; }
-	const TYPE& operator [](UINT_PTR index) const	{ return m_pData[(index + (m_pHead - m_pData)) % m_nSize]; }
+	const TYPE& operator [](UINT_PTR index) const	{ ASSERT(index < m_nCount); return m_pData[(index + (m_pHead - m_pData)) % m_nSize]; }
 
 	void AddTail(const TYPE &newElement);
 	UINT_PTR Capacity() const				{ return m_nSize; }
 	UINT_PTR Count() const					{ return m_nCount; }
-	const TYPE& Head() const				{ return *m_pHead; }
-	const TYPE& Tail() const				{ return *m_pTail; }
+	const TYPE& Head() const				{ ASSERT(m_nCount > 0); return *m_pHead; }
+	const TYPE& Tail() const				{ ASSERT(m_nCount > 0); return *m_pTail; }
 	bool IsEmpty() const					{ return !m_nCount; }
 	void RemoveAll();
 	void RemoveHead();
@@ -64,6 +64,12 @@ void CRing<TYPE>::AddTail(const TYPE &newElement)
 {
 	if (m_nCount >= m_nSize)
 		SetCapacity(m_nSize + m_nIncrement);
+	if (m_nCount == 0) {
+		m_pHead = m_pTail = m_pData;
+		m_nCount = 1;
+		*m_pTail = newElement;
+		return;
+	}
 	++m_nCount;
 	if (++m_pTail >= m_pEnd)
 		m_pTail = m_pData;
@@ -83,7 +89,10 @@ void CRing<TYPE>::RemoveHead()
 {
 	if (m_nCount) {
 		--m_nCount;
-		if (++m_pHead >= m_pEnd)
+		if (m_nCount == 0) {
+			m_pHead = m_pData;
+			m_pTail = m_pEnd;
+		} else if (++m_pHead >= m_pEnd)
 			m_pHead = m_pData;
 	}
 }
@@ -94,15 +103,17 @@ void CRing<TYPE>::SetBuffer(UINT_PTR nSize)
 	TYPE *dst = new TYPE[nSize];
 	if (m_nCount)
 		if (m_pHead > m_pTail) {
-			memcpy(dst, m_pHead, (m_pEnd - m_pHead) * sizeof TYPE);
-			memcpy(&dst[m_pEnd - m_pHead], m_pData, (m_pTail - m_pData + 1) * sizeof TYPE);
+			const UINT_PTR nHeadCount = static_cast<UINT_PTR>(m_pEnd - m_pHead);
+			const UINT_PTR nTailCount = m_nCount - nHeadCount;
+			memcpy(dst, m_pHead, nHeadCount * sizeof TYPE);
+			memcpy(&dst[nHeadCount], m_pData, nTailCount * sizeof TYPE);
 		} else
-			memcpy(dst, m_pHead, (m_pTail - m_pHead + 1) * sizeof TYPE);
+			memcpy(dst, m_pHead, m_nCount * sizeof TYPE);
 	delete[] m_pData;
 	m_nSize = nSize;
 	m_pHead = m_pData = dst;
 	m_pEnd = &dst[nSize];
-	m_pTail = &dst[m_nCount - 1];
+	m_pTail = m_nCount ? &dst[m_nCount - 1] : m_pEnd;
 }
 
 template<class TYPE>
