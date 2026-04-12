@@ -32,6 +32,7 @@
 #include "emuledlg.h"
 #include "ServerWnd.h"
 #include "SearchDlg.h"
+#include "LockScopeSeams.h"
 #include "Log.h"
 #include "ServerConnect.h"
 
@@ -659,10 +660,12 @@ void CUDPSocket::OnSend(int nErrorCode)
 
 // ZZ:UploadBandWithThrottler (UDP) -->
 	sendLocker.Lock();
-	if (!controlpacket_queue.IsEmpty())
-		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
+	const UdpControlQueueSignalAction eSignalAction = ClassifyUdpControlQueueSignal(m_bWouldBlock, controlpacket_queue.IsEmpty());
 
 	sendLocker.Unlock();
+
+	if (eSignalAction == udpControlQueueSignalAfterUnlock)
+		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 // <-- ZZ:UploadBandWithThrottler (UDP)
 }
 
@@ -689,10 +692,12 @@ SocketSentBytes CUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend, uint3
 	}
 
 // ZZ:UploadBandWithThrottler (UDP) -->
-	if (!IsBusy() && !controlpacket_queue.IsEmpty())
-		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
+	const UdpControlQueueSignalAction eSignalAction = ClassifyUdpControlQueueSignal(m_bWouldBlock, controlpacket_queue.IsEmpty());
 
 	sendLocker.Unlock();
+
+	if (eSignalAction == udpControlQueueSignalAfterUnlock)
+		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 
 	return SocketSentBytes{0, sentBytes, true};
 // <-- ZZ:UploadBandWithThrottler (UDP)

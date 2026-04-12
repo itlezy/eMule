@@ -45,6 +45,22 @@ inline bool ShouldSignalUdpControlQueue(bool bWouldBlock, bool bQueueEmpty)
 	return !bWouldBlock && !bQueueEmpty;
 }
 
+enum UdpControlQueueSignalAction
+{
+	udpControlQueueNoSignal,
+	udpControlQueueSignalAfterUnlock
+};
+
+/**
+ * @brief Classifies whether a queued UDP control send should wake the throttler after the socket lock is released.
+ */
+inline UdpControlQueueSignalAction ClassifyUdpControlQueueSignal(bool bWouldBlock, bool bQueueEmpty)
+{
+	return ShouldSignalUdpControlQueue(bWouldBlock, bQueueEmpty)
+		? udpControlQueueSignalAfterUnlock
+		: udpControlQueueNoSignal;
+}
+
 enum UploadDiskReadCompletionAction
 {
 	uploadDiskReadCompletionSendPackets,

@@ -30,6 +30,7 @@
 #include "EncryptedDatagramSocket.h"
 #include "IPFilter.h"
 #include "Listensocket.h"
+#include "LockScopeSeams.h"
 #include "Log.h"
 #include "SafeFile.h"
 #include "kademlia/kademlia/Kademlia.h"
@@ -419,10 +420,12 @@ void CClientUDPSocket::OnSend(int nErrorCode)
 // ZZ:UploadBandWithThrottler (UDP) -->
 	sendLocker.Lock();
 	m_bWouldBlock = false;
+	const UdpControlQueueSignalAction eSignalAction = ClassifyUdpControlQueueSignal(m_bWouldBlock, controlpacket_queue.IsEmpty());
 
-	if (!controlpacket_queue.IsEmpty())
-		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 	sendLocker.Unlock();
+
+	if (eSignalAction == udpControlQueueSignalAfterUnlock)
+		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 // <-- ZZ:UploadBandWithThrottler (UDP)
 }
 
@@ -468,10 +471,12 @@ SocketSentBytes CClientUDPSocket::SendControlData(uint32 maxNumberOfBytesToSend,
 	}
 
 // ZZ:UploadBandWithThrottler (UDP) -->
-	if (!IsBusy() && !controlpacket_queue.IsEmpty())
-		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
+	const UdpControlQueueSignalAction eSignalAction = ClassifyUdpControlQueueSignal(m_bWouldBlock, controlpacket_queue.IsEmpty());
 
 	sendLocker.Unlock();
+
+	if (eSignalAction == udpControlQueueSignalAfterUnlock)
+		theApp.uploadBandwidthThrottler->QueueForSendingControlPacket(this);
 
 	return SocketSentBytes{0, sentBytes, true};
 // <-- ZZ:UploadBandWithThrottler (UDP)
