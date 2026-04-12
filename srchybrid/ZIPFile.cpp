@@ -431,8 +431,7 @@ bool CZIPFile::File::Extract(LPCTSTR pszFile)
 			if (pStream.avail_out < BUFFER_OUT_SIZE) {
 				DWORD nWrite = BUFFER_OUT_SIZE - pStream.avail_out;
 				DWORD nWritten;
-				::WriteFile(hFile, pBufferOut, nWrite, &nWritten, NULL);
-				if (nWritten != nWrite)
+				if (!::WriteFile(hFile, pBufferOut, nWrite, &nWritten, NULL) || nWritten != nWrite)
 					break;
 				nUncompressed += nWrite;
 			}
@@ -444,13 +443,13 @@ bool CZIPFile::File::Extract(LPCTSTR pszFile)
 	} else
 		while (nUncompressed < m_nSize) {
 			DWORD nChunk = (DWORD)min(m_nSize - nUncompressed, BUFFER_OUT_SIZE);
-			DWORD nProcess;
+			DWORD nRead;
+			DWORD nWritten;
 
-			VERIFY(::ReadFile(m_pZIP->m_hFile, pBufferOut, nChunk, &nProcess, NULL));
-			if (nChunk != nProcess)
+			VERIFY(::ReadFile(m_pZIP->m_hFile, pBufferOut, nChunk, &nRead, NULL));
+			if (nChunk != nRead)
 				break;
-			::WriteFile(hFile, pBufferOut, nChunk, &nProcess, NULL);
-			if (nChunk != nProcess)
+			if (!::WriteFile(hFile, pBufferOut, nChunk, &nWritten, NULL) || nChunk != nWritten)
 				break;
 			nUncompressed += nChunk;
 		}
