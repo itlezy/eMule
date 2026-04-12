@@ -39,6 +39,7 @@
 #include "collection.h"
 #include "LongPathSeams.h"
 #include "OtherFunctionsSeams.h"
+#include "PathHelperSeams.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "kademlia/io/BufferedFileIO.h"
@@ -661,11 +662,7 @@ bool ShellDeleteFile(LPCTSTR pszFilePath)
 
 CString ShellGetFolderPath(int iCSIDL)
 {
-	// TODO:MINOR(FEAT-010): Shell folder lookup still depends on SHGetFolderPath into a MAX_PATH buffer; defer the remaining shell/path-helper cleanup on this branch.
-	TCHAR szPath[MAX_PATH];
-	if (SUCCEEDED(::SHGetFolderPath(NULL, iCSIDL, NULL, SHGFP_TYPE_CURRENT, szPath)))
-		return CString(szPath);
-	return CString();
+	return PathHelperSeams::GetShellFolderPath(iCSIDL);
 }
 
 // Print the hash in a format which is similar to CertMgr's.
@@ -793,11 +790,10 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 	bool bGlobalSet = false;
 	CRegKey regkey;
 	LONG result;
-	TCHAR modbuffer[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, modbuffer, _countof(modbuffer));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(modbuffer))
+	const CString strModulePath(PathHelperSeams::GetModuleFilePath(NULL));
+	if (strModulePath.IsEmpty())
 		return false;
-	CString strCanonFileName(modbuffer);
+	CString strCanonFileName(strModulePath);
 	strCanonFileName.Replace(_T("%"), _T("%%"));
 	CString regbuffer;
 	regbuffer.Format(_T("\"%s\" \"%%1\""), (LPCTSTR)strCanonFileName);
@@ -824,7 +820,7 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 				VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
 
 				VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\DefaultIcon")) == ERROR_SUCCESS);
-				VERIFY(regkey.SetStringValue(NULL, modbuffer) == ERROR_SUCCESS);
+				VERIFY(regkey.SetStringValue(NULL, strModulePath) == ERROR_SUCCESS);
 
 				VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k")) == ERROR_SUCCESS);
 				VERIFY(regkey.SetStringValue(NULL, _T("URL: ed2k Protocol")) == ERROR_SUCCESS);
@@ -1321,10 +1317,7 @@ void unslosh(CString &path)
 
 void canonical(CString &path)
 {
-	// TODO:MINOR(FEAT-010): Canonicalization still depends on MAX_PATH-bound PathCanonicalize output; defer the remaining shell/path-helper cleanup on this branch.
-	TCHAR szPath[MAX_PATH];
-	if (::PathCanonicalize(szPath, path))
-		path = szPath;
+	path = PathHelperSeams::CanonicalizePath(path);
 }
 
 void MakeFoldername(CString &rstrPath)
@@ -3354,13 +3347,11 @@ void AddAutoStart()
 {
 #ifndef _DEBUG
 	RemAutoStart();
-	// TODO:MINOR(FEAT-010): Auto-start command construction still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-	TCHAR sExeFilePath[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, sExeFilePath, _countof(sExeFilePath));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(sExeFilePath))
+	const CString strExeFilePath(PathHelperSeams::GetModuleFilePath(NULL));
+	if (strExeFilePath.IsEmpty())
 		return;
 	CString sFullExeCommand;
-	sFullExeCommand.Format(_T("%s -AutoStart"), sExeFilePath);
+	sFullExeCommand.Format(_T("%s -AutoStart"), (LPCTSTR)strExeFilePath);
 	CRegKey mKey;
 	mKey.Create(HKEY_CURRENT_USER
 		, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
@@ -3520,12 +3511,10 @@ ULONGLONG GetModuleVersion(LPCTSTR pszFilePath)
 
 ULONGLONG GetModuleVersion(HMODULE hModule)
 {
-	// TODO:MINOR(FEAT-010): Module-version lookup still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-	TCHAR szFilePath[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(hModule, szFilePath, _countof(szFilePath));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(szFilePath))
+	const CString strFilePath(PathHelperSeams::GetModuleFilePath(hModule));
+	if (strFilePath.IsEmpty())
 		return 0;
-	return GetModuleVersion(szFilePath);
+	return GetModuleVersion(strFilePath);
 }
 
 int GetPathDriveNumber(const CString &path)
@@ -3583,12 +3572,10 @@ uint64 GetFreeTempSpace(INT_PTR tempdirindex)
 
 bool DoCollectionRegFix(bool checkOnly)
 {
-	// TODO:MINOR(FEAT-010): Collection shell-registration repair still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-	TCHAR modbuffer[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, modbuffer, _countof(modbuffer));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(modbuffer))
+	const CString strModulePath(PathHelperSeams::GetModuleFilePath(NULL));
+	if (strModulePath.IsEmpty())
 		return false;
-	CString strCanonFileName(modbuffer);
+	CString strCanonFileName(strModulePath);
 	strCanonFileName.Replace(_T("%"), _T("%%"));
 	CString regbuffer;
 	regbuffer.Format(_T("\"%s\" \"%%1\""), (LPCTSTR)strCanonFileName);
@@ -3616,7 +3603,7 @@ bool DoCollectionRegFix(bool checkOnly)
 			VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
 
 			VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\eMule\\DefaultIcon")) == ERROR_SUCCESS);
-			VERIFY(regkey.SetStringValue(NULL, CString(modbuffer) + _T(",1")) == ERROR_SUCCESS);
+			VERIFY(regkey.SetStringValue(NULL, strModulePath + _T(",1")) == ERROR_SUCCESS);
 
 			VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\eMule")) == ERROR_SUCCESS);
 			VERIFY(regkey.SetStringValue(NULL, _T("eMule Collection File")) == ERROR_SUCCESS);

@@ -171,7 +171,7 @@ uint32 DecodeBase32(LPCTSTR pszInput, CAICHHash &Hash);
 //
 void slosh(CString &path); //add trailing backslash to the path
 void unslosh(CString &path); //remove trailing backslash from the path
-void canonical(CString &path); //applies PathCanonicalize
+void canonical(CString &path); //lexically canonicalizes dot segments
 void MakeFoldername(CString &path); //removes trailing backslash
 CString RemoveFileExtension(const CString &rstrFilePath);
 bool EqualPaths(const CString &rstrDir1, const CString &rstrDir2);
