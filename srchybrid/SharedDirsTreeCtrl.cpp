@@ -252,15 +252,14 @@ bool CSharedDirsTreeCtrl::FilterTreeIsSubDirectory(const CString &strDir, const 
 
 CString GetFolderLabel(const CString &strFolderPath, bool bTopFolder, bool bAccessible)
 {
-	CString strLabel(strFolderPath);
+	CString strLabel(PathHelpers::TrimTrailingSeparatorForLeaf(strFolderPath));
 	if (strLabel.GetLength() == 2 && strLabel[1] == _T(':')) {
 		ASSERT(bTopFolder);
 		strLabel += _T('\\');
 	} else {
-		strLabel = PathHelpers::TrimTrailingSeparator(strLabel);
 		strLabel.Delete(0, strLabel.ReverseFind(_T('\\')) + 1);
 		if (bTopFolder) {
-			CString strParentFolder(strFolderPath);
+			CString strParentFolder(PathHelpers::TrimTrailingSeparatorForLeaf(strFolderPath));
 			::PathRemoveFileSpec(strParentFolder.GetBuffer());
 			strParentFolder.ReleaseBuffer();
 			strLabel.AppendFormat(_T("  (%s)"), (LPCTSTR)strParentFolder);

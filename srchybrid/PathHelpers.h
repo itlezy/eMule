@@ -288,6 +288,21 @@ inline CString TrimTrailingSeparator(const CString &rstrPath)
 }
 
 /**
+ * @brief Trims a trailing separator even for logical roots when callers need a leaf-style path view.
+ */
+inline CString TrimTrailingSeparatorForLeaf(const CString &rstrPath)
+{
+	CString strNormalized(TrimTrailingSeparator(rstrPath));
+	if (strNormalized.IsEmpty() || !IsPathSeparator(strNormalized[strNormalized.GetLength() - 1]))
+		return strNormalized;
+
+	const ParsedPathRoot root(ParsePathRoot(strNormalized));
+	if (!root.strPrefix.IsEmpty() && strNormalized.GetLength() == root.strPrefix.GetLength())
+		strNormalized.Truncate(strNormalized.GetLength() - 1);
+	return strNormalized;
+}
+
+/**
  * @brief Lexically removes `.` and `..` segments without depending on `PathCanonicalize`.
  */
 inline CString CanonicalizePath(const CString &rstrPath)

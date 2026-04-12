@@ -1783,7 +1783,7 @@ CString CSharedFileList::GetPseudoDirName(const CString &strDirectoryName)
 	}
 
 	// create a new Pseudoname
-	CString strDirectoryTmp(PathHelpers::TrimTrailingSeparator(strDirectoryName));
+	CString strDirectoryTmp(PathHelpers::TrimTrailingSeparatorForLeaf(strDirectoryName));
 
 	CString strPseudoName;
 	int iPos;

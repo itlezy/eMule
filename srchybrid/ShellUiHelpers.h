@@ -170,6 +170,14 @@ inline CString FinalizeFolderSelection(const CString &rstrFolderPath)
 }
 
 /**
+ * @brief Prepares a folder path for shell parsing without degrading drive or UNC share roots.
+ */
+inline CString PrepareFolderSelectionPathForShell(const CString &rstrFolderPath)
+{
+	return PathHelpers::StripExtendedLengthPrefix(PathHelpers::TrimTrailingSeparator(rstrFolderPath));
+}
+
+/**
  * @brief Expands environment variables through an injected callback before resolving a skin resource path.
  */
 template <typename ExpandEnvironmentFn>
