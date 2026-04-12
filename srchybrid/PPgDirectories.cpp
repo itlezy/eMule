@@ -23,7 +23,7 @@
 #include "InputBox.h"
 #include "Preferences.h"
 #include "HelpIDs.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "UserMsgs.h"
 #include "opcodes.h"
 
@@ -119,7 +119,7 @@ BOOL CPPgDirectories::OnApply()
 {
 	CString strIncomingDir;
 	GetDlgItemText(IDC_INCFILES, strIncomingDir);
-	MakeFoldername(strIncomingDir);
+	strIncomingDir = PathHelpers::CanonicalizeDirectoryPath(strIncomingDir);
 	if (strIncomingDir.IsEmpty()) {
 		strIncomingDir = thePrefs.GetDefaultDirectory(EMULE_INCOMINGDIR, true); // will create the directory here if it doesn't exist
 		SetDlgItemText(IDC_INCFILES, strIncomingDir);
@@ -139,7 +139,7 @@ BOOL CPPgDirectories::OnApply()
 			if (ff.IsDirectory() || ff.IsSystem() || ff.IsTemporary() || ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE)
 				continue;
 
-			if (ShellUiSeams::ShouldIgnoreShortcutFileName(ff.GetFileName()))
+			if (ShellUiHelpers::ShouldIgnoreShortcutFileName(ff.GetFileName()))
 				continue;
 
 			// ignore real THUMBS.DB files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
@@ -202,8 +202,7 @@ BOOL CPPgDirectories::OnApply()
 	if (testtempdirchanged) {
 		thePrefs.tempdir.RemoveAll();
 		for (INT_PTR i = 0; i < temptempfolders.GetCount(); ++i) {
-			CString toadd(temptempfolders[i]);
-			MakeFoldername(toadd);
+			CString toadd(PathHelpers::CanonicalizeDirectoryPath(temptempfolders[i]));
 			if (!LongPathSeams::PathExists(toadd))
 				LongPathSeams::CreateDirectory(toadd, NULL);
 			if (LongPathSeams::PathExists(toadd))
@@ -213,8 +212,7 @@ BOOL CPPgDirectories::OnApply()
 	if (thePrefs.tempdir.IsEmpty())
 		thePrefs.tempdir.Add(thePrefs.GetDefaultDirectory(EMULE_TEMPDIR, true));
 
-	thePrefs.m_strIncomingDir = strIncomingDir;
-	MakeFoldername(thePrefs.m_strIncomingDir);
+	thePrefs.m_strIncomingDir = PathHelpers::CanonicalizeDirectoryPath(strIncomingDir);
 
 	CStringList sharedDirs;
 	m_ShareSelector.GetSharedDirectories(sharedDirs);
@@ -290,7 +288,7 @@ void CPPgDirectories::OnBnClickedAddUNC()
 		LocMessageBox(IDS_ERR_BADUNC, MB_ICONERROR, 0);
 		return;
 	}
-	slosh(unc);
+	unc = PathHelpers::EnsureTrailingSeparator(unc);
 
 	if (thePrefs.IsSharedDirectoryListed(unc))
 		return;

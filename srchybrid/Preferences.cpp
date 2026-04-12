@@ -27,6 +27,7 @@
 #include "Statistics.h"
 #include "MD5Sum.h"
 #include "PartFile.h"
+#include "PathHelpers.h"
 #include "ServerConnect.h"
 #include "ListenSocket.h"
 #include "ServerList.h"
@@ -613,7 +614,7 @@ void CPreferences::Init()
 			while (sdirfile.CStdioFile::ReadString(toadd)) {
 				toadd.Trim(_T(" \t\r\n")); // need to trim '\r' in binary mode
 				if (!toadd.IsEmpty()) {
-					MakeFoldername(toadd);
+					toadd = PathHelpers::CanonicalizeDirectoryPath(toadd);
 					// skip non-shareable directories
 					// maybe skip non-existing directories on fixed disks only
 					if (IsShareableDirectory(toadd) && (m_bKeepUnavailableFixedSharedDirs || DirAccsess(toadd)))
@@ -1946,7 +1947,7 @@ void CPreferences::LoadPreferences()
 	m_strIncomingDir = ini.GetString(_T("IncomingDir"), _T(""));
 	if (m_strIncomingDir.IsEmpty()) // We want GetDefaultDirectory to also create the folder, so we have to know if we use the default or not
 		m_strIncomingDir = GetDefaultDirectory(EMULE_INCOMINGDIR, true);
-	MakeFoldername(m_strIncomingDir);
+	m_strIncomingDir = PathHelpers::CanonicalizeDirectoryPath(m_strIncomingDir);
 
 	// load tempdir(s) setting
 	CString sTempdirs(ini.GetString(_T("TempDir"), _T("")));
@@ -1958,7 +1959,7 @@ void CPreferences::LoadPreferences()
 		CString sTmp(sTempdirs.Tokenize(_T("|"), iPos));
 		if (sTmp.Trim().IsEmpty())
 			continue;
-		MakeFoldername(sTmp);
+		sTmp = PathHelpers::CanonicalizeDirectoryPath(sTmp);
 		bool bDup = false;
 		for (INT_PTR i = tempdir.GetCount(); --i >= 0;)	// avoid duplicate tempdirs
 			if (sTmp.CompareNoCase(GetTempDir(i)) == 0) {
@@ -2304,7 +2305,7 @@ void CPreferences::LoadPreferences()
 	if (m_sToolbarBitmapFolder.IsEmpty()) // We want GetDefaultDirectory to also create the folder, so we have to know if we use the default or not
 		m_sToolbarBitmapFolder = GetDefaultDirectory(EMULE_TOOLBARDIR, true);
 	else
-		slosh(m_sToolbarBitmapFolder);
+		m_sToolbarBitmapFolder = PathHelpers::EnsureTrailingSeparator(m_sToolbarBitmapFolder);
 	m_nToolbarLabels = (EToolbarLabelType)ini.GetInt(_T("ToolbarLabels"), CMuleToolbarCtrl::GetDefaultLabelType());
 	m_bReBarToolbar = ini.GetBool(_T("ReBarToolbar"), 1);
 	m_sizToolbarIconSize.cx = m_sizToolbarIconSize.cy = ini.GetInt(_T("ToolbarIconSize"), 32);
@@ -2316,7 +2317,7 @@ void CPreferences::LoadPreferences()
 	if (m_strSkinProfileDir.IsEmpty()) // We want GetDefaultDirectory to also create the folder, so we have to know if we use the default or not
 		m_strSkinProfileDir = GetDefaultDirectory(EMULE_SKINDIR, true);
 	else
-		slosh(m_strSkinProfileDir);
+		m_strSkinProfileDir = PathHelpers::EnsureTrailingSeparator(m_strSkinProfileDir);
 
 	LPBYTE pData = NULL;
 	UINT uSize = sizeof m_lfHyperText;
@@ -2521,8 +2522,7 @@ void CPreferences::LoadCats()
 		newcat->filter = 0;
 		newcat->strTitle = ini.GetStringUTF8(_T("Title"));
 		if (i != 0) { // All category
-			newcat->strIncomingPath = ini.GetStringUTF8(_T("Incoming"));
-			MakeFoldername(newcat->strIncomingPath);
+			newcat->strIncomingPath = PathHelpers::CanonicalizeDirectoryPath(ini.GetStringUTF8(_T("Incoming")));
 			if (!IsShareableDirectory(newcat->strIncomingPath)
 				|| (!LongPathSeams::PathExists(newcat->strIncomingPath) && !LongPathSeams::CreateDirectory(newcat->strIncomingPath, 0)))
 			{
@@ -2930,10 +2930,10 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 							CString strPersonalDownloads(pszPersonalDownloads);
 							CString strPublicDownloads(pszPublicDownloads);
 							CString strProgramData(pszProgramData);
-							slosh(strLocalAppData);
-							slosh(strPersonalDownloads);
-							slosh(strPublicDownloads);
-							slosh(strProgramData);
+							strLocalAppData = PathHelpers::EnsureTrailingSeparator(strLocalAppData);
+							strPersonalDownloads = PathHelpers::EnsureTrailingSeparator(strPersonalDownloads);
+							strPublicDownloads = PathHelpers::EnsureTrailingSeparator(strPublicDownloads);
+							strProgramData = PathHelpers::EnsureTrailingSeparator(strProgramData);
 
 							if (nRegistrySetting == _UI32_MAX) {
 								// no registry default, check if we find a preferences.ini to use
@@ -2984,10 +2984,10 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 								&& !bConfigAvailableExecutable
 								&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
 						{
-							slosh(const_cast<CString&>(strAppData));
-							slosh(const_cast<CString&>(strPersonal));
-							strSelectedDataBaseDirectory = strPersonal + _T("eMule Downloads\\");
-							strSelectedConfigBaseDirectory = strAppData + _T("eMule\\");
+							const CString strAppDataDir(PathHelpers::EnsureTrailingSeparator(strAppData));
+							const CString strPersonalDir(PathHelpers::EnsureTrailingSeparator(strPersonal));
+							strSelectedDataBaseDirectory = strPersonalDir + _T("eMule Downloads\\");
+							strSelectedConfigBaseDirectory = strAppDataDir + _T("eMule\\");
 							// strSelectedExpansionBaseDirectory stays unchanged
 							m_nCurrentUserDirMode = 0;
 						} else
@@ -3063,11 +3063,11 @@ void CPreferences::SetMuleDirectory(EDefaultDirectory eDirectory, const CString 
 		break;
 	case EMULE_SKINDIR:
 		m_strSkinProfileDir = strNewDir;
-		slosh(m_strSkinProfileDir);
+		m_strSkinProfileDir = PathHelpers::EnsureTrailingSeparator(m_strSkinProfileDir);
 		break;
 	case EMULE_TOOLBARDIR:
 		m_sToolbarBitmapFolder = strNewDir;
-		slosh(m_sToolbarBitmapFolder);
+		m_sToolbarBitmapFolder = PathHelpers::EnsureTrailingSeparator(m_sToolbarBitmapFolder);
 		break;
 	default:
 		ASSERT(0);

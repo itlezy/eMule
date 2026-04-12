@@ -22,7 +22,7 @@
 #include "SharedFilesCtrl.h"
 #include "MenuCmds.h"
 #include "partfile.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "SharedFileList.h"
@@ -257,7 +257,7 @@ CString GetFolderLabel(const CString &strFolderPath, bool bTopFolder, bool bAcce
 		ASSERT(bTopFolder);
 		strLabel += _T('\\');
 	} else {
-		unslosh(strLabel);
+		strLabel = PathHelpers::TrimTrailingSeparator(strLabel);
 		strLabel.Delete(0, strLabel.ReverseFind(_T('\\')) + 1);
 		if (bTopFolder) {
 			CString strParentFolder(strFolderPath);
@@ -713,9 +713,9 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 {
 	CString strPath(pRoot->m_strFullPath);
 	if (!strPath.IsEmpty())
-		slosh(strPath);
+		strPath = PathHelpers::EnsureTrailingSeparator(strPath);
 	CString strDir(strPath + strText);
-	slosh(strDir);
+	strDir = PathHelpers::EnsureTrailingSeparator(strDir);
 	TVINSERTSTRUCT itInsert = {};
 
 	if (m_bUseIcons) {
@@ -746,7 +746,7 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 			itInsert.item.state |= INDEXTOOVERLAYMASK(1);
 		}
 
-		slosh(strDir);
+		strDir = PathHelpers::EnsureTrailingSeparator(strDir);
 		UINT nType = ::GetDriveType(strDir);
 		if (DRIVE_REMOVABLE <= nType && nType <= DRIVE_RAMDISK)
 			itInsert.item.iImage = nType;
@@ -762,7 +762,7 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 		} else
 			itInsert.itemex.iImage = 0;
 
-		if (bTopLevel && ShellUiSeams::CanUseShellDisplayName(strDir)) {
+		if (bTopLevel && ShellUiHelpers::CanUseShellDisplayName(strDir)) {
 			SHFILEINFO shFinfo = {};
 			if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_DISPLAYNAME) && shFinfo.szDisplayName[0] != _T('\0'))
 				itInsert.item.pszText = shFinfo.szDisplayName;
@@ -867,8 +867,7 @@ void CSharedDirsTreeCtrl::OnTvnGetdispinfo(LPNMHDR pNMHDR, LRESULT *pResult)
 
 void CSharedDirsTreeCtrl::AddSharedDirectory(const CString &strDir, bool bSubDirectories)
 {
-	CString sDir(strDir);
-	slosh(sDir);
+	CString sDir(PathHelpers::EnsureTrailingSeparator(strDir));
 	if (!FileSystemTreeIsShared(sDir) && thePrefs.IsShareableDirectory(sDir))
 		m_strliSharedDirs.AddTail(sDir);
 

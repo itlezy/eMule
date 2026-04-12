@@ -137,8 +137,6 @@ protected:
 	afx_msg UINT OnGetDlgCode();
 	afx_msg void OnKillFocus(CWnd *pNewWnd);
 
-	static int CALLBACK SHBrowseSetSelProc(HWND hWnd, UINT uMsg, LPARAM, LPARAM lpData);
-
 	DECLARE_MESSAGE_MAP()
 	DECLARE_DYNCREATE(CTreeOptionsEdit)
 
@@ -218,23 +216,6 @@ protected:
 	CTreeOptionsEdit *m_pEdit;
 	CTreeOptionsCombo *m_pCombo;
 	HTREEITEM m_hTreeCtrlItem;
-};
-
-
-//Class which is used for browsing for file names
-class CTREEOPTIONSCTRL_EXT_CLASS CTreeOptionsFileDialog : public CFileDialog
-{
-public:
-	//Constructors / Destructors
-	explicit CTreeOptionsFileDialog(BOOL bOpenFileDialog, LPCTSTR lpszDefExt = NULL, LPCTSTR lpszFileName = NULL
-		, DWORD dwFlags = OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, LPCTSTR lpszFilter = NULL, CWnd *pParentWnd = NULL);
-
-protected:
-	DECLARE_DYNAMIC(CTreeOptionsFileDialog)
-
-	virtual void OnInitDone();
-
-	DECLARE_MESSAGE_MAP()
 };
 
 

@@ -3,7 +3,9 @@
 #include <atlstr.h>
 #include <windows.h>
 
-namespace Ini2Seams
+#include "PathHelpers.h"
+
+namespace Ini2Helpers
 {
 inline bool NeedsBaseDirectoryPrefix(const CString &rstrFileName)
 {
@@ -21,26 +23,6 @@ inline bool NeedsBaseDirectoryPrefix(const CString &rstrFileName)
 	if (rstrFileName.Left(4).CompareNoCase(_T("\\\\?\\")) == 0)
 		return false;
 	return true;
-}
-
-inline CString EnsureTrailingSlash(const CString &rstrPath)
-{
-	if (rstrPath.IsEmpty())
-		return rstrPath;
-	if (rstrPath.Right(1) == _T("\\") || rstrPath.Right(1) == _T("/"))
-		return rstrPath;
-	return rstrPath + _T("\\");
-}
-
-inline CString ExtractDirectoryPath(const CString &rstrPath)
-{
-	int iSeparator = rstrPath.ReverseFind(_T('\\'));
-	const int iAltSeparator = rstrPath.ReverseFind(_T('/'));
-	if (iAltSeparator > iSeparator)
-		iSeparator = iAltSeparator;
-	if (iSeparator < 0)
-		return CString();
-	return rstrPath.Left(iSeparator + 1);
 }
 
 inline CString ExtractBaseNameWithoutExtension(const CString &rstrPath)
@@ -62,7 +44,7 @@ inline CString BuildPathFromBaseDirectory(const CString &rstrBaseDirectory, cons
 {
 	if (rstrBaseDirectory.IsEmpty())
 		return rstrRelativePath;
-	return EnsureTrailingSlash(rstrBaseDirectory) + rstrRelativePath;
+	return PathHelpers::AppendPathComponent(rstrBaseDirectory, rstrRelativePath);
 }
 
 inline CString BuildDefaultIniFilePath(const CString &rstrModulePath, const CString &rstrCurrentDirectory, const bool bModulePath)
@@ -71,47 +53,17 @@ inline CString BuildDefaultIniFilePath(const CString &rstrModulePath, const CStr
 		return CString();
 	const CString strIniFileName = ExtractBaseNameWithoutExtension(rstrModulePath) + _T(".ini");
 	return bModulePath
-		? BuildPathFromBaseDirectory(ExtractDirectoryPath(rstrModulePath), strIniFileName)
+		? BuildPathFromBaseDirectory(PathHelpers::GetDirectoryPath(rstrModulePath), strIniFileName)
 		: BuildPathFromBaseDirectory(rstrCurrentDirectory, strIniFileName);
 }
 
 inline CString GetModuleFilePath()
 {
-	DWORD dwCapacity = MAX_PATH;
-	CString strPath;
-	for (;;) {
-		LPTSTR pszBuffer = strPath.GetBuffer(dwCapacity);
-		const DWORD dwLength = ::GetModuleFileName(NULL, pszBuffer, dwCapacity);
-		if (dwLength == 0) {
-			strPath.ReleaseBuffer(0);
-			return CString();
-		}
-		if (dwLength < dwCapacity) {
-			strPath.ReleaseBuffer(dwLength);
-			return strPath;
-		}
-		strPath.ReleaseBuffer(dwCapacity);
-		dwCapacity *= 2;
-	}
+	return PathHelpers::GetModuleFilePath(NULL);
 }
 
 inline CString GetCurrentDirectoryPath()
 {
-	DWORD dwCapacity = MAX_PATH;
-	CString strPath;
-	for (;;) {
-		LPTSTR pszBuffer = strPath.GetBuffer(dwCapacity);
-		const DWORD dwLength = ::GetCurrentDirectory(dwCapacity, pszBuffer);
-		if (dwLength == 0) {
-			strPath.ReleaseBuffer(0);
-			return CString();
-		}
-		if (dwLength < dwCapacity) {
-			strPath.ReleaseBuffer(dwLength);
-			return strPath;
-		}
-		strPath.ReleaseBuffer(dwCapacity);
-		dwCapacity = dwLength + 1;
-	}
+	return PathHelpers::GetCurrentDirectoryPath();
 }
 }

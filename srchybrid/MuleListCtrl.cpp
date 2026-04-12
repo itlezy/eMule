@@ -22,7 +22,7 @@
 #include "SharedFilesCtrl.h"
 #include "MenuCmds.h"
 #include "OtherFunctions.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "ListViewSearchDlg.h"
 #include <atlimage.h>
 
@@ -387,9 +387,9 @@ void CMuleListCtrl::SetColors()
 		theApp.LoadSkinColorAlt(strKey + _T("Fg"), _T("DefLvFg"), m_crWindowText);
 		theApp.LoadSkinColorAlt(strKey + _T("Hl"), _T("DefLvHl"), crHighlight);
 
-		strBkImage = ShellUiSeams::GetProfileString(_T("Colors"), strKey + _T("BkImg"), NULL, sSkinProfile);
+		strBkImage = ShellUiHelpers::GetProfileString(_T("Colors"), strKey + _T("BkImg"), NULL, sSkinProfile);
 		if (strBkImage.IsEmpty())
-			strBkImage = ShellUiSeams::GetProfileString(_T("Colors"), _T("DefLvBkImg"), NULL, sSkinProfile);
+			strBkImage = ShellUiHelpers::GetProfileString(_T("Colors"), _T("DefLvBkImg"), NULL, sSkinProfile);
 	}
 
 	SetBkColor(m_crWindow);
@@ -402,7 +402,7 @@ void CMuleListCtrl::SetColors()
 	SetBkImage(&lvimg);
 
 	if (!strBkImage.IsEmpty() && !g_bLowColorDesktop) {
-		const CString strFullResPath(ShellUiSeams::ResolveSkinResourcePath(sSkinProfile, strBkImage));
+		const CString strFullResPath(ShellUiHelpers::ResolveSkinResourcePath(sSkinProfile, strBkImage));
 		HBITMAP hbm = LoadImageAsPARGB(strFullResPath);
 		if (hbm) {
 			LVBKIMAGE lvbkimg = {};

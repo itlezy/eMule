@@ -40,8 +40,8 @@
 #include "collection.h"
 #include "LongPathSeams.h"
 #include "OtherFunctionsSeams.h"
-#include "PathHelperSeams.h"
-#include "ShellUiSeams.h"
+#include "PathHelpers.h"
+#include "ShellUiHelpers.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "kademlia/io/BufferedFileIO.h"
@@ -619,7 +619,7 @@ bool DeleteFileToRecycleBinIFileOperation(LPCTSTR pszFilePath, HWND hOwnerWindow
 	if (pszFilePath == NULL || pszFilePath[0] == _T('\0'))
 		return false;
 
-	const CString strShellPath = OtherFunctionsSeams::PreparePathForShellOperation(CString(pszFilePath));
+	const CString strShellPath = PathHelpers::StripExtendedLengthPrefix(CString(pszFilePath));
 	const HRESULT hrCoInitialize = ::CoInitialize(NULL);
 	const bool bShouldUninitialize = SUCCEEDED(hrCoInitialize);
 	if (FAILED(hrCoInitialize) && hrCoInitialize != RPC_E_CHANGED_MODE)
@@ -664,7 +664,7 @@ bool ShellDeleteFile(LPCTSTR pszFilePath)
 
 CString ShellGetFolderPath(int iCSIDL)
 {
-	return PathHelperSeams::GetShellFolderPath(iCSIDL);
+	return PathHelpers::GetShellFolderPath(iCSIDL);
 }
 
 // Print the hash in a format which is similar to CertMgr's.
@@ -792,7 +792,7 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 	bool bGlobalSet = false;
 	CRegKey regkey;
 	LONG result;
-	const CString strModulePath(PathHelperSeams::GetModuleFilePath(NULL));
+	const CString strModulePath(PathHelpers::GetModuleFilePath(NULL));
 	if (strModulePath.IsEmpty())
 		return false;
 	CString strCanonFileName(strModulePath);
@@ -1321,15 +1321,15 @@ DialogFilterStorage BuildDialogFilterStorage(LPCTSTR pszFilters)
 
 void InitializeDialogPathSelection(IFileDialog &rDialog, const CString &rstrInitialPath, const bool bFolderMode)
 {
-	ShellUiSeams::DialogInitialSelection selection = ShellUiSeams::SplitDialogInitialSelection(rstrInitialPath);
+	ShellUiHelpers::DialogInitialSelection selection = ShellUiHelpers::SplitDialogInitialSelection(rstrInitialPath);
 	if (bFolderMode && selection.strInitialFolder.IsEmpty())
 		selection.strInitialFolder = rstrInitialPath;
 
 	if (!selection.strInitialFolder.IsEmpty()) {
 		CString strInitialFolder(selection.strInitialFolder);
-		if (bFolderMode && PathHelperSeams::IsPathSeparator(strInitialFolder[strInitialFolder.GetLength() - 1]))
+		if (bFolderMode && PathHelpers::IsPathSeparator(strInitialFolder[strInitialFolder.GetLength() - 1]))
 			strInitialFolder.Truncate(strInitialFolder.GetLength() - 1);
-		strInitialFolder = OtherFunctionsSeams::PreparePathForShellOperation(strInitialFolder);
+		strInitialFolder = PathHelpers::StripExtendedLengthPrefix(strInitialFolder);
 		CComPtr<IShellItem> pFolder;
 		if (SUCCEEDED(::SHCreateItemFromParsingName(strInitialFolder, NULL, IID_PPV_ARGS(&pFolder)))) {
 			(void)rDialog.SetDefaultFolder(pFolder);
@@ -1379,7 +1379,7 @@ bool ShowShellFolderPicker(const CString &rstrInitialPath, HWND hWnd, LPCTSTR ps
 	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
 		return false;
 
-	rstrSelectedPath = ShellUiSeams::FinalizeFolderSelection(CString(pszResultPath));
+	rstrSelectedPath = ShellUiHelpers::FinalizeFolderSelection(CString(pszResultPath));
 	::CoTaskMemFree(pszResultPath);
 	return !rstrSelectedPath.IsEmpty();
 }
@@ -1447,7 +1447,7 @@ bool ShowShellFileDialog(const CString &rstrInitialPath, LPCTSTR pszFilters, DWO
 	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
 		return false;
 
-	rstrSelectedPath = PathHelperSeams::NormalizePathSeparators(CString(pszResultPath));
+	rstrSelectedPath = PathHelpers::NormalizePathSeparators(CString(pszResultPath));
 	::CoTaskMemFree(pszResultPath);
 	return !rstrSelectedPath.IsEmpty();
 }
@@ -1462,45 +1462,9 @@ bool SelectDir(CString &rstrPath, HWND hWnd, LPCTSTR pszTitle, LPCTSTR pszDlgTit
 	return true;
 }
 
-bool SelectDir(HWND hWnd, LPTSTR pszPath, LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
-{
-	ASSERT(pszPath != NULL);
-	CString strPath(pszPath);
-	if (!SelectDir(strPath, hWnd, pszTitle, pszDlgTitle))
-		return false;
-	if (strPath.GetLength() >= MAX_PATH) {
-		::SetLastError(ERROR_INSUFFICIENT_BUFFER);
-		return false;
-	}
-	_tcscpy(pszPath, strPath);
-	return true;
-}
-
-void slosh(CString &path)
-{
-	int i = path.GetLength() - 1;
-	if (i >= 0 && path[i] != _T('\\'))
-		path += _T('\\');
-}
-
-void unslosh(CString &path)
-{
-	int i = path.GetLength() - 1;
-	if (i >= 0 && path[i] == _T('\\'))
-		path.Truncate(i);
-}
-
 void canonical(CString &path)
 {
-	path = PathHelperSeams::CanonicalizePath(path);
-}
-
-void MakeFoldername(CString &rstrPath)
-{
-	if (!rstrPath.IsEmpty()) { // don't canonicalize an empty path, we would get a "\"
-		canonical(rstrPath);
-		slosh(rstrPath);
-	}
+	path = PathHelpers::CanonicalizePath(path);
 }
 
 CString StringLimit(const CString &in, UINT length)
@@ -3128,7 +3092,7 @@ static bool IsFileOnNTFSVolume(LPCTSTR pszFilePath)
 		return false;
 	// Need to add a trailing backslash in case of a network share
 	if (!strRootPath.IsEmpty())
-		slosh(strRootPath);
+		strRootPath = PathHelpers::EnsureTrailingSeparator(strRootPath);
 	return IsNTFSVolume(strRootPath);
 }
 
@@ -3141,7 +3105,7 @@ bool IsFileOnFATVolume(LPCTSTR pszFilePath)
 		return false;
 	// Need to add a trailing backslash in case of a network share
 	if (!strRootPath.IsEmpty())
-		slosh(strRootPath);
+		strRootPath = PathHelpers::EnsureTrailingSeparator(strRootPath);
 	return IsFATVolume(strRootPath);
 }
 
@@ -3522,7 +3486,7 @@ void AddAutoStart()
 {
 #ifndef _DEBUG
 	RemAutoStart();
-	const CString strExeFilePath(PathHelperSeams::GetModuleFilePath(NULL));
+	const CString strExeFilePath(PathHelpers::GetModuleFilePath(NULL));
 	if (strExeFilePath.IsEmpty())
 		return;
 	CString sFullExeCommand;
@@ -3686,7 +3650,7 @@ ULONGLONG GetModuleVersion(LPCTSTR pszFilePath)
 
 ULONGLONG GetModuleVersion(HMODULE hModule)
 {
-	const CString strFilePath(PathHelperSeams::GetModuleFilePath(hModule));
+	const CString strFilePath(PathHelpers::GetModuleFilePath(hModule));
 	if (strFilePath.IsEmpty())
 		return 0;
 	return GetModuleVersion(strFilePath);
@@ -3747,7 +3711,7 @@ uint64 GetFreeTempSpace(INT_PTR tempdirindex)
 
 bool DoCollectionRegFix(bool checkOnly)
 {
-	const CString strModulePath(PathHelperSeams::GetModuleFilePath(NULL));
+	const CString strModulePath(PathHelpers::GetModuleFilePath(NULL));
 	if (strModulePath.IsEmpty())
 		return false;
 	CString strCanonFileName(strModulePath);
@@ -4139,8 +4103,7 @@ bool HasSubdirectories(const CString &strDir)
 	// to explicitly open the drive to really get the content) - and that approach will be fine
 	// for eMule as well.
 	// Since the restriction for drives 'A:' and 'B:' was removed, this gets more important now.
-	CString sDir(strDir);
-	slosh(sDir); //required for PathIsRoot
+	CString sDir(PathHelpers::EnsureTrailingSeparator(strDir)); //required for PathIsRoot
 	if (::PathIsRoot(sDir))
 		return true;
 	CFileFind finder;

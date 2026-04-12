@@ -21,7 +21,7 @@
 #include "TransferDlg.h"
 #include "MiniMule.h"
 #include "OtherFunctions.h"
-#include "PathHelperSeams.h"
+#include "PathHelpers.h"
 #include "Preferences.h"
 #include "MenuCmds.h"
 #include "IESecurity.h"
@@ -239,7 +239,7 @@ BOOL CMiniMule::OnInitDialog()
 	}
 
 	if (m_strCurrentUrl.IsEmpty()) {
-		m_strCurrentUrl = PathHelperSeams::BuildModuleResourceBaseUrl(AfxGetResourceHandle());
+		m_strCurrentUrl = PathHelpers::BuildModuleResourceBaseUrl(AfxGetResourceHandle());
 		if (!m_strCurrentUrl.IsEmpty()) {
 			m_strCurrentUrl.AppendFormat(_T("/%u"), m_nHtmlResID);
 			m_nHtmlResID = 0;
@@ -395,7 +395,7 @@ void CMiniMule::UpdateContent(UINT uUpDatarate, UINT uDownDatarate)
 		UINT uIconIdx = theApp.emuledlg->GetConnectionStateIconIndex();
 		ASSERT(uIconIdx < _countof(_apszConnectedImgs));
 
-		const CString strResourceBaseUrl(PathHelperSeams::BuildModuleResourceBaseUrl(AfxGetResourceHandle()));
+		const CString strResourceBaseUrl(PathHelpers::BuildModuleResourceBaseUrl(AfxGetResourceHandle()));
 		if (!strResourceBaseUrl.IsEmpty()) {
 			CComPtr<IHTMLImgElement> img;
 			GetElementInterface(_T("connectedImg"), &img);
@@ -490,7 +490,7 @@ void CMiniMule::OnDocumentComplete(LPDISPATCH pDisp, LPCTSTR pszUrl)
 	CDHtmlDialog::OnDocumentComplete(pDisp, pszUrl);
 
 	if (m_bResolveImages) {
-		const CString strFilePathUrl(PathHelperSeams::BuildModuleResourceBaseUrl(AfxGetResourceHandle()));
+		const CString strFilePathUrl(PathHelpers::BuildModuleResourceBaseUrl(AfxGetResourceHandle()));
 		if (!strFilePathUrl.IsEmpty()) {
 
 			static const struct

@@ -22,6 +22,7 @@
 #include "TransferDlg.h"
 #include "CatDialog.h"
 #include "OtherFunctions.h"
+#include "PathHelpers.h"
 #include "UserMsgs.h"
 
 #ifdef _DEBUG
@@ -160,7 +161,7 @@ void CCatDialog::OnBnClickedOk()
 
 	GetDlgItemText(IDC_COMMENT, m_myCat->strComment);
 
-	MakeFoldername(m_myCat->strIncomingPath);
+	m_myCat->strIncomingPath = PathHelpers::CanonicalizeDirectoryPath(m_myCat->strIncomingPath);
 	if (!thePrefs.IsShareableDirectory(m_myCat->strIncomingPath))
 		m_myCat->strIncomingPath = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
 

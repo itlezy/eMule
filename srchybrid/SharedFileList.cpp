@@ -38,7 +38,7 @@
 #include "ClientList.h"
 #include "Log.h"
 #include "Collection.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "LongPathSeams.h"
 #include "ImportParts.h"
@@ -757,7 +757,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0)
 			return;
 
-	if (ShellUiSeams::ShouldIgnoreShortcutFileName(strFoundFileName))
+	if (ShellUiHelpers::ShouldIgnoreShortcutFileName(strFoundFileName))
 		return;
 
 	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {
@@ -1632,7 +1632,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 	FILETIME tFoundFileTime;
 	ff.GetLastWriteTime(&tFoundFileTime);
 
-	if (ShellUiSeams::ShouldIgnoreShortcutFileName(strFoundFileName))
+	if (ShellUiHelpers::ShouldIgnoreShortcutFileName(strFoundFileName))
 		return;
 
 	// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
@@ -1783,8 +1783,7 @@ CString CSharedFileList::GetPseudoDirName(const CString &strDirectoryName)
 	}
 
 	// create a new Pseudoname
-	CString strDirectoryTmp(strDirectoryName);
-	unslosh(strDirectoryTmp);
+	CString strDirectoryTmp(PathHelpers::TrimTrailingSeparator(strDirectoryName));
 
 	CString strPseudoName;
 	int iPos;

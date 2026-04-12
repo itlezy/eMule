@@ -6,7 +6,7 @@
 #include <windows.h>
 #include <ShlObj_core.h>
 
-namespace PathHelperSeams
+namespace PathHelpers
 {
 constexpr size_t kMaxDynamicPathChars = 32768u;
 
@@ -25,6 +25,29 @@ inline CString NormalizePathSeparators(const CString &rstrPath)
 {
 	CString strNormalized(rstrPath);
 	strNormalized.Replace(_T('/'), _T('\\'));
+	return strNormalized;
+}
+
+/**
+ * @brief Returns true when the path already uses a Win32 extended-length prefix.
+ */
+inline bool HasExtendedLengthPrefix(const CString &rstrPath)
+{
+	const CString strNormalized(NormalizePathSeparators(rstrPath));
+	return strNormalized.Left(8).CompareNoCase(_T("\\\\?\\UNC\\")) == 0
+		|| strNormalized.Left(4).CompareNoCase(_T("\\\\?\\")) == 0;
+}
+
+/**
+ * @brief Removes the Win32 extended-length prefix before passing a path to shell-facing APIs.
+ */
+inline CString StripExtendedLengthPrefix(const CString &rstrPath)
+{
+	const CString strNormalized(NormalizePathSeparators(rstrPath));
+	if (strNormalized.Left(8).CompareNoCase(_T("\\\\?\\UNC\\")) == 0)
+		return CString(_T("\\\\")) + strNormalized.Mid(8);
+	if (strNormalized.Left(4).CompareNoCase(_T("\\\\?\\")) == 0)
+		return strNormalized.Mid(4);
 	return strNormalized;
 }
 
@@ -57,6 +80,29 @@ inline CString GetModuleFilePath(HMODULE hModule, GetModuleFileNameFn getModuleF
 inline CString GetModuleFilePath(HMODULE hModule)
 {
 	return GetModuleFilePath(hModule, ::GetModuleFileName);
+}
+
+/**
+ * @brief Grows the current-directory buffer until `GetCurrentDirectory` returns the full path.
+ */
+inline CString GetCurrentDirectoryPath()
+{
+	DWORD dwCapacity = MAX_PATH;
+	CString strPath;
+	for (;;) {
+		LPTSTR pszBuffer = strPath.GetBuffer(dwCapacity);
+		const DWORD dwLength = ::GetCurrentDirectory(dwCapacity, pszBuffer);
+		if (dwLength == 0) {
+			strPath.ReleaseBuffer(0);
+			return CString();
+		}
+		if (dwLength < dwCapacity) {
+			strPath.ReleaseBuffer(dwLength);
+			return strPath;
+		}
+		strPath.ReleaseBuffer(dwCapacity);
+		dwCapacity = dwLength + 1;
+	}
 }
 
 /**
@@ -215,6 +261,33 @@ inline ParsedPathRoot ParsePathRoot(const CString &rstrPath)
 }
 
 /**
+ * @brief Ensures that a directory-valued path ends with a backslash.
+ */
+inline CString EnsureTrailingSeparator(const CString &rstrPath)
+{
+	CString strNormalized(NormalizePathSeparators(rstrPath));
+	if (!strNormalized.IsEmpty() && !IsPathSeparator(strNormalized[strNormalized.GetLength() - 1]))
+		strNormalized += _T('\\');
+	return strNormalized;
+}
+
+/**
+ * @brief Trims trailing separators without stripping the logical path root.
+ */
+inline CString TrimTrailingSeparator(const CString &rstrPath)
+{
+	CString strNormalized(NormalizePathSeparators(rstrPath));
+	if (strNormalized.IsEmpty())
+		return strNormalized;
+
+	const ParsedPathRoot root(ParsePathRoot(strNormalized));
+	const int nRootLength = root.strPrefix.GetLength();
+	while (strNormalized.GetLength() > nRootLength && IsPathSeparator(strNormalized[strNormalized.GetLength() - 1]))
+		strNormalized.Truncate(strNormalized.GetLength() - 1);
+	return strNormalized;
+}
+
+/**
  * @brief Lexically removes `.` and `..` segments without depending on `PathCanonicalize`.
  */
 inline CString CanonicalizePath(const CString &rstrPath)
@@ -260,6 +333,16 @@ inline CString CanonicalizePath(const CString &rstrPath)
 }
 
 /**
+ * @brief Canonicalizes a directory-valued path and preserves the trailing separator expected by callers.
+ */
+inline CString CanonicalizeDirectoryPath(const CString &rstrPath)
+{
+	if (rstrPath.IsEmpty())
+		return rstrPath;
+	return EnsureTrailingSeparator(CanonicalizePath(rstrPath));
+}
+
+/**
  * @brief Formats a `res://` URL from the current module path without truncating overlong paths.
  */
 template <typename GetModuleFileNameFn>
@@ -283,4 +366,4 @@ inline CString BuildModuleResourceBaseUrl(HMODULE hModule)
 }
 }
 
-#define EMULE_TEST_HAVE_PATH_HELPER_SEAMS 1
+#define EMULE_TEST_HAVE_PATH_HELPERS 1

@@ -169,10 +169,7 @@ uint32 DecodeBase32(LPCTSTR pszInput, CAICHHash &Hash);
 ///////////////////////////////////////////////////////////////////////////////
 // File/Path string helpers
 //
-void slosh(CString &path); //add trailing backslash to the path
-void unslosh(CString &path); //remove trailing backslash from the path
 void canonical(CString &path); //lexically canonicalizes dot segments
-void MakeFoldername(CString &path); //removes trailing backslash
 CString RemoveFileExtension(const CString &rstrFilePath);
 bool EqualPaths(const CString &rstrDir1, const CString &rstrDir2);
 CString StringLimit(const CString &in, UINT length);
@@ -226,7 +223,6 @@ void ShellDefaultVerb(LPCTSTR lpName);
 bool ShellDeleteFile(LPCTSTR pszFilePath);
 CString ShellGetFolderPath(int iCSIDL);
 bool SelectDir(CString &rstrPath, HWND hWnd, LPCTSTR pszTitle = NULL, LPCTSTR pszDlgTitle = NULL);
-bool SelectDir(HWND hWnd, LPTSTR pszPath, LPCTSTR pszTitle = NULL, LPCTSTR pszDlgTitle = NULL);
 BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName = NULL, DWORD dwFlags = 0, bool openfilestyle = true, HWND hWndOwner = NULL, LPCTSTR pszDlgTitle = NULL, LPCTSTR pszDefExt = NULL);
 void AddBuddyButton(HWND hwndEdit, HWND hwndButton);
 void DestroyIconsArr(HICON *pIcon, size_t cnt);

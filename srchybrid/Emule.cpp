@@ -53,7 +53,7 @@
 #include "ED2KLink.h"
 #include "Preferences.h"
 #include "SafeFile.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
 #include "StringConversion.h"
@@ -78,11 +78,11 @@ CString GetSkinProfileResourcePath(const CString &rstrSkinProfile, LPCTSTR pszSe
 	if (rstrSkinProfile.IsEmpty() || pszSection == NULL || pszResourceName == NULL)
 		return CString();
 
-	const CString strSkinResource(ShellUiSeams::GetProfileString(pszSection, pszResourceName, NULL, rstrSkinProfile));
+	const CString strSkinResource(ShellUiHelpers::GetProfileString(pszSection, pszResourceName, NULL, rstrSkinProfile));
 	if (strSkinResource.IsEmpty())
 		return CString();
 
-	return ShellUiSeams::ResolveSkinResourcePath(rstrSkinProfile, strSkinResource);
+	return ShellUiHelpers::ResolveSkinResourcePath(rstrSkinProfile, strSkinResource);
 }
 }
 
@@ -132,7 +132,7 @@ static bool TryGetVolumeRootPath(const CString &strPath, CString *pstrVolumeRoot
 	if (strVolumeRoot.IsEmpty())
 		return false;
 
-	slosh(strVolumeRoot);
+	strVolumeRoot = PathHelpers::EnsureTrailingSeparator(strVolumeRoot);
 	*pstrVolumeRoot = strVolumeRoot;
 	return true;
 }
@@ -997,29 +997,11 @@ bool CemuleApp::ShowWebHelp(UINT uTopic)
 int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -1 */, bool bNormalsSize)
 {
 	DWORD dwFileAttributes;
-	LPCTSTR pszCacheExt;
 	if (iLength == -1)
 		iLength = (int)_tcslen(pszFilePath);
-	if (iLength > 0 && (pszFilePath[iLength - 1] == _T('\\') || pszFilePath[iLength - 1] == _T('/'))) {
-		// it's a directory
-		pszCacheExt = _T("\\");
-		dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-	} else {
-		dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-		// search last '.' character *after* the last '\\' character
-		pszCacheExt = _T(""); //default to empty extension
-		for (int i = iLength; --i >= 0;) {
-			if (pszFilePath[i] == _T('\\') || pszFilePath[i] == _T('/'))
-				break;
-			if (pszFilePath[i] == _T('.')) {
-				// point to 1st character of extension (skip the '.')
-				pszCacheExt = &pszFilePath[i + 1];
-				break;
-			}
-		}
-	}
-	const ShellUiSeams::ShellIconQuery iconQuery = ShellUiSeams::BuildShellIconQuery(pszFilePath, iLength);
-	dwFileAttributes = iconQuery.dwFileAttributes;
+	const ShellUiHelpers::ShellIconDescriptor iconDescriptor = ShellUiHelpers::DescribeShellIcon(pszFilePath, iLength);
+	const LPCTSTR pszCacheExt = iconDescriptor.strCacheKey;
+	dwFileAttributes = iconDescriptor.dwFileAttributes;
 
 	// Search extension in "ext->idx" cache.
 	LPVOID vData;
@@ -1027,7 +1009,7 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 		if (!m_aBigExtToSysImgIdx.Lookup(pszCacheExt, vData)) {
 			// Get index for the system's big icon image list
 			SHFILEINFO sfi;
-			HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(iconQuery.strQueryPath, dwFileAttributes, &sfi, sizeof(sfi), SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX);
+			HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(iconDescriptor.strQueryPath, dwFileAttributes, &sfi, sizeof(sfi), SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX);
 			if (hResult == 0)
 				return 0;
 			ASSERT(m_hBigSystemImageList == NULL || m_hBigSystemImageList == hResult);
@@ -1040,7 +1022,7 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 	} else if (!m_aExtToSysImgIdx.Lookup(pszCacheExt, vData)) {
 		// Get index for the system's small icon image list
 		SHFILEINFO sfi;
-		HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(iconQuery.strQueryPath, dwFileAttributes, &sfi, sizeof(sfi)
+		HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(iconDescriptor.strQueryPath, dwFileAttributes, &sfi, sizeof(sfi)
 			, SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
 		if (hResult == 0)
 			return 0;

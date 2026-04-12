@@ -28,18 +28,6 @@ inline ShellDeleteRoute ResolveShellDeleteRoute(const bool bPathExists, const bo
 }
 
 /**
- * @brief Removes a Win32 long-path prefix before passing a path to shell parsing APIs.
- */
-inline CString PreparePathForShellOperation(const CString &rstrFilePath)
-{
-	if (rstrFilePath.Left(8).CompareNoCase(_T("\\\\?\\UNC\\")) == 0)
-		return CString(_T("\\\\")) + rstrFilePath.Mid(8);
-	if (rstrFilePath.Left(4).CompareNoCase(_T("\\\\?\\")) == 0)
-		return rstrFilePath.Mid(4);
-	return rstrFilePath;
-}
-
-/**
  * @brief Runs the shell-delete flow through injected filesystem and recycle-bin callbacks.
  */
 template <typename PathExistsFn, typename RecycleDeleteFn, typename DirectDeleteFn>

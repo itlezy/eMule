@@ -29,7 +29,7 @@
 #include "StatisticsTree.h"
 #include "StatisticsDlg.h"
 #include "LongPathSeams.h"
-#include "PathHelperSeams.h"
+#include "PathHelpers.h"
 #include "SafeFile.h"
 #include "emuledlg.h"
 #include "Preferences.h"
@@ -579,9 +579,7 @@ void CStatisticsTree::ExportHTML()
 			_T("stats_14.gif"), _T("stats_15.gif"), _T("stats_16.gif"), _T("stats_17.gif"),
 			_T("stats_hidden.gif"), _T("stats_space.gif"), _T("stats_visible.gif")
 		};
-		CString strDst(PathHelperSeams::GetDirectoryPath(strSavePath));
-		if (!strDst.IsEmpty() && strDst[strDst.GetLength() - 1] != _T('\\'))
-			strDst += _T('\\');
+		CString strDst(PathHelpers::EnsureTrailingSeparator(PathHelpers::GetDirectoryPath(strSavePath)));
 		CString strSrc(thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR));
 
 		for (size_t i = 0; i < _countof(s_apcFileNames); ++i)

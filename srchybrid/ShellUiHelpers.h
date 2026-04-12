@@ -5,12 +5,13 @@
 #include <vector>
 #include <windows.h>
 
-#include "PathHelperSeams.h"
+#include "PathHelpers.h"
 
-namespace ShellUiSeams
+namespace ShellUiHelpers
 {
-struct ShellIconQuery
+struct ShellIconDescriptor
 {
+	CString strCacheKey;
 	CString strQueryPath;
 	DWORD dwFileAttributes;
 };
@@ -28,7 +29,7 @@ template <typename GetProfileStringFn>
 inline CString GetProfileString(const CString &rstrSection, const CString &rstrKey, LPCTSTR pszDefaultValue, const CString &rstrProfilePath, GetProfileStringFn getProfileStringFn)
 {
 	std::vector<TCHAR> buffer(MAX_PATH, _T('\0'));
-	while (buffer.size() < PathHelperSeams::kMaxDynamicPathChars) {
+	while (buffer.size() < PathHelpers::kMaxDynamicPathChars) {
 		const DWORD dwCopied = getProfileStringFn(rstrSection, rstrKey, pszDefaultValue, buffer.data(), static_cast<DWORD>(buffer.size()), rstrProfilePath);
 		if (dwCopied == 0)
 			return CString();
@@ -59,20 +60,11 @@ inline CString GetProfileString(const CString &rstrSection, const CString &rstrK
 }
 
 /**
- * @brief Returns true when the path already uses a Win32 extended-length prefix.
- */
-inline bool HasExtendedLengthPrefix(const CString &rstrPath)
-{
-	return rstrPath.Left(8).CompareNoCase(_T("\\\\?\\UNC\\")) == 0
-		|| rstrPath.Left(4).CompareNoCase(_T("\\\\?\\")) == 0;
-}
-
-/**
  * @brief Limits shell display-name enrichment to shell-friendly non-prefixed paths.
  */
 inline bool CanUseShellDisplayName(const CString &rstrPath)
 {
-	return !rstrPath.IsEmpty() && !HasExtendedLengthPrefix(rstrPath) && rstrPath.GetLength() < MAX_PATH;
+	return !rstrPath.IsEmpty() && !PathHelpers::HasExtendedLengthPrefix(rstrPath) && rstrPath.GetLength() < MAX_PATH;
 }
 
 /**
@@ -96,39 +88,42 @@ inline bool IsDirectoryPathHint(LPCTSTR pszFilePath, int iLength = -1)
 		return false;
 	if (iLength < 0)
 		iLength = static_cast<int>(_tcslen(pszFilePath));
-	return iLength > 0 && PathHelperSeams::IsPathSeparator(pszFilePath[iLength - 1]);
+	return iLength > 0 && PathHelpers::IsPathSeparator(pszFilePath[iLength - 1]);
 }
 
 /**
- * @brief Builds a shell icon query that relies on stable extension/attribute lookup instead of a real path.
+ * @brief Describes shell icon lookup using stable cache-key and attribute-based query data.
  */
-inline ShellIconQuery BuildShellIconQuery(LPCTSTR pszFilePath, int iLength = -1)
+inline ShellIconDescriptor DescribeShellIcon(LPCTSTR pszFilePath, int iLength = -1)
 {
-	ShellIconQuery query = { CString(_T("file")), FILE_ATTRIBUTE_NORMAL };
+	ShellIconDescriptor descriptor = { CString(), CString(_T("file")), FILE_ATTRIBUTE_NORMAL };
 	if (pszFilePath == NULL)
-		return query;
+		return descriptor;
 
 	if (iLength < 0)
 		iLength = static_cast<int>(_tcslen(pszFilePath));
 
 	if (IsDirectoryPathHint(pszFilePath, iLength)) {
-		query.strQueryPath = _T("folder\\");
-		query.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-		return query;
+		descriptor.strCacheKey = _T("\\");
+		descriptor.strQueryPath = _T("folder\\");
+		descriptor.dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
+		return descriptor;
 	}
 
 	int iLastSlash = -1;
 	int iLastDot = -1;
 	for (int i = 0; i < iLength; ++i) {
-		if (PathHelperSeams::IsPathSeparator(pszFilePath[i]))
+		if (PathHelpers::IsPathSeparator(pszFilePath[i]))
 			iLastSlash = i;
 		else if (pszFilePath[i] == _T('.'))
 			iLastDot = i;
 	}
 
-	if (iLastDot > iLastSlash && iLastDot + 1 < iLength)
-		query.strQueryPath = CString(_T("file")) + CString(pszFilePath + iLastDot);
-	return query;
+	if (iLastDot > iLastSlash && iLastDot + 1 < iLength) {
+		descriptor.strCacheKey = CString(pszFilePath + iLastDot + 1);
+		descriptor.strQueryPath = CString(_T("file")) + CString(pszFilePath + iLastDot);
+	}
+	return descriptor;
 }
 
 /**
@@ -137,11 +132,11 @@ inline ShellIconQuery BuildShellIconQuery(LPCTSTR pszFilePath, int iLength = -1)
 inline DialogInitialSelection SplitDialogInitialSelection(const CString &rstrInitialPath)
 {
 	DialogInitialSelection selection;
-	const CString strNormalized(PathHelperSeams::NormalizePathSeparators(rstrInitialPath));
+	const CString strNormalized(PathHelpers::NormalizePathSeparators(rstrInitialPath));
 	if (strNormalized.IsEmpty())
 		return selection;
 
-	if (PathHelperSeams::IsPathSeparator(strNormalized[strNormalized.GetLength() - 1])) {
+	if (PathHelpers::IsPathSeparator(strNormalized[strNormalized.GetLength() - 1])) {
 		selection.strInitialFolder = strNormalized;
 		return selection;
 	}
@@ -157,7 +152,7 @@ inline DialogInitialSelection SplitDialogInitialSelection(const CString &rstrIni
 
 	const CString strLeaf(strNormalized.Mid(iLastSlash + 1));
 	if (strLeaf.ReverseFind(_T('.')) >= 0) {
-		selection.strInitialFolder = PathHelperSeams::GetDirectoryPath(strNormalized);
+		selection.strInitialFolder = PathHelpers::GetDirectoryPath(strNormalized);
 		selection.strFileName = strLeaf;
 		return selection;
 	}
@@ -171,10 +166,7 @@ inline DialogInitialSelection SplitDialogInitialSelection(const CString &rstrIni
  */
 inline CString FinalizeFolderSelection(const CString &rstrFolderPath)
 {
-	CString strFolder(PathHelperSeams::NormalizePathSeparators(rstrFolderPath));
-	if (!strFolder.IsEmpty() && !PathHelperSeams::IsPathSeparator(strFolder[strFolder.GetLength() - 1]))
-		strFolder += _T('\\');
-	return strFolder;
+	return PathHelpers::EnsureTrailingSeparator(rstrFolderPath);
 }
 
 /**
@@ -189,12 +181,12 @@ inline CString ResolveSkinResourcePath(const CString &rstrSkinProfile, const CSt
 	CString strExpanded(expandEnvironmentFn(rstrSkinResource));
 	if (strExpanded.IsEmpty())
 		strExpanded = rstrSkinResource;
-	strExpanded = PathHelperSeams::NormalizePathSeparators(strExpanded);
+	strExpanded = PathHelpers::NormalizePathSeparators(strExpanded);
 
-	if (PathHelperSeams::ParsePathRoot(strExpanded).bAbsolute)
+	if (PathHelpers::ParsePathRoot(strExpanded).bAbsolute)
 		return strExpanded;
 
-	return PathHelperSeams::AppendPathComponent(PathHelperSeams::GetDirectoryPath(rstrSkinProfile), strExpanded);
+	return PathHelpers::AppendPathComponent(PathHelpers::GetDirectoryPath(rstrSkinProfile), strExpanded);
 }
 
 /**
@@ -206,7 +198,7 @@ inline CString ResolveSkinResourcePath(const CString &rstrSkinProfile, const CSt
 		rstrSkinProfile,
 		rstrSkinResource,
 		[](const CString &rstrInput) -> CString {
-			std::vector<TCHAR> buffer(PathHelperSeams::kMaxDynamicPathChars, _T('\0'));
+			std::vector<TCHAR> buffer(PathHelpers::kMaxDynamicPathChars, _T('\0'));
 			const DWORD dwChars = ::ExpandEnvironmentStrings(rstrInput, buffer.data(), static_cast<DWORD>(buffer.size()));
 			if (dwChars == 0 || dwChars >= buffer.size())
 				return CString();
@@ -215,4 +207,4 @@ inline CString ResolveSkinResourcePath(const CString &rstrSkinProfile, const CSt
 }
 }
 
-#define EMULE_TEST_HAVE_SHELL_UI_SEAMS 1
+#define EMULE_TEST_HAVE_SHELL_UI_HELPERS 1

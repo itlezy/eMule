@@ -37,6 +37,7 @@
 #include "DisplayRefreshSeams.h"
 #include "SourceExchangeSeams.h"
 #include "OtherFunctions.h"
+#include "PathHelpers.h"
 #include "UserMsgs.h"
 #include "Kademlia/Kademlia/SearchManager.h"
 #include "Kademlia/Kademlia/Entry.h"
@@ -1670,8 +1671,7 @@ bool CKnownFile::ImportParts()
 
 CString CKnownFile::GetInfoSummary(bool bNoFormatCommands) const
 {
-	CString strFolder(GetPath());
-	unslosh(strFolder);
+	CString strFolder(PathHelpers::TrimTrailingSeparator(GetPath()));
 
 	CString strAccepts, strRequests;
 	strRequests.Format(_T("%u (%u)"), statistic.GetRequests(), statistic.GetAllTimeRequests());

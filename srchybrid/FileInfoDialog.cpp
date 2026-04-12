@@ -18,7 +18,7 @@
 #include "eMule.h"
 #include "FileInfoDialog.h"
 #include "OtherFunctions.h"
-#include "PathHelperSeams.h"
+#include "PathHelpers.h"
 #include "MediaInfo.h"
 #include "PartFile.h"
 #include "Preferences.h"
@@ -101,10 +101,10 @@ public:
 			if (m_hLib == NULL) {
 				CRegKey key;
 				if (key.Open(HKEY_CURRENT_USER, _T("Software\\MediaInfo"), KEY_READ) == ERROR_SUCCESS) {
-					TCHAR szPath[PathHelperSeams::kMaxDynamicPathChars];
+					TCHAR szPath[PathHelpers::kMaxDynamicPathChars];
 					ULONG ulChars = _countof(szPath);
 					if (key.QueryStringValue(_T("Path"), szPath, &ulChars) == ERROR_SUCCESS) {
-						strPath = PathHelperSeams::AppendPathComponent(szPath, _T("MEDIAINFO.DLL"));
+						strPath = PathHelpers::AppendPathComponent(szPath, _T("MEDIAINFO.DLL"));
 						m_hLib = ::LoadLibrary(strPath);
 					}
 				}
@@ -112,7 +112,7 @@ public:
 			if (m_hLib == NULL) {
 				const CString &strProgramFiles(ShellGetFolderPath(CSIDL_PROGRAM_FILES));
 				if (!strProgramFiles.IsEmpty()) {
-					strPath = PathHelperSeams::AppendPathComponent(strProgramFiles, _T("MediaInfo\\MEDIAINFO.DLL"));
+					strPath = PathHelpers::AppendPathComponent(strProgramFiles, _T("MediaInfo\\MEDIAINFO.DLL"));
 					m_hLib = ::LoadLibrary(strPath);
 				}
 			}
@@ -1919,7 +1919,7 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 	}
 
 	if (!bFoundHeader && bGiveMediaInfoLibHint) {
-		CString strInstFolder(PathHelperSeams::GetDirectoryPath(PathHelperSeams::GetModuleFilePath(theApp.m_hInstance)));
+		CString strInstFolder(PathHelpers::GetDirectoryPath(PathHelpers::GetModuleFilePath(theApp.m_hInstance)));
 		CString strHint;
 		strHint.Format(GetResString(IDS_MEDIAINFO_DLLMISSING), (LPCTSTR)strInstFolder);
 		if (!mi->strInfo.IsEmpty())

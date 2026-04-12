@@ -20,7 +20,7 @@
 #include "MenuCmds.h"
 #include "otherfunctions.h"
 #include "Preferences.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "TitledMenu.h"
 #include "UserMsgs.h"
 
@@ -233,7 +233,7 @@ HTREEITEM CDirectoryTreeCtrl::AddChildItem(HTREEITEM hRoot, const CString &strTe
 	CString strDir(GetFullPath(hRoot));
 	ASSERT(strDir.IsEmpty() || strDir.Right(1) == _T("\\"));
 	strDir += strText;
-	slosh(strDir);
+	strDir = PathHelpers::EnsureTrailingSeparator(strDir);
 
 	TVINSERTSTRUCT itInsert = {};
 	itInsert.hParent = hRoot;
@@ -257,7 +257,7 @@ HTREEITEM CDirectoryTreeCtrl::AddChildItem(HTREEITEM hRoot, const CString &strTe
 	const int iSystemImage = theApp.GetFileTypeSystemImageIdx(strDir);
 	itInsert.itemex.iImage = iSystemImage > 0 ? iSystemImage : 0;
 
-	if (hRoot == NULL && ShellUiSeams::CanUseShellDisplayName(strDir)) {
+	if (hRoot == NULL && ShellUiHelpers::CanUseShellDisplayName(strDir)) {
 		SHFILEINFO shFinfo = {};
 		if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_DISPLAYNAME) && shFinfo.szDisplayName[0] != _T('\0')) {
 			STreeItem *pti = new STreeItem;

@@ -33,7 +33,7 @@
 #include "MemDC.h"
 #include "PartFile.h"
 #include "MenuCmds.h"
-#include "ShellUiSeams.h"
+#include "ShellUiHelpers.h"
 #include "IrcWnd.h"
 #include "SharedFilesWnd.h"
 #include "Opcodes.h"
@@ -637,8 +637,7 @@ CString CSharedFilesCtrl::GetItemDisplayText(const CShareableFile *file, int iSu
 	case 2:
 		return file->GetFileTypeDisplayStr();
 	case 9:
-		sText = file->GetPath();
-		unslosh(sText);
+		sText = PathHelpers::TrimTrailingSeparator(file->GetPath());
 		return sText;
 	}
 
@@ -929,8 +928,7 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 						break;
 					}
 
-					CString newpath(pKnownFile->GetPath());
-					slosh(newpath);
+					CString newpath(PathHelpers::EnsureTrailingSeparator(pKnownFile->GetPath()));
 					newpath += newname;
 					if (!LongPathSeams::MoveFile(pKnownFile->GetFilePath(), newpath)) {
 						CString strError;
@@ -1553,7 +1551,7 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 
 		FILETIME tFoundFileTime;
 		ff.GetLastWriteTime(&tFoundFileTime);
-		if (ShellUiSeams::ShouldIgnoreShortcutFileName(strFoundFileName))
+		if (ShellUiHelpers::ShouldIgnoreShortcutFileName(strFoundFileName))
 			continue;
 
 		// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
@@ -1740,9 +1738,7 @@ BOOL CSharedFilesCtrl::CShareDropTarget::OnDrop(CWnd*, COleDataObject *pDataObje
 					strFilePath.ReleaseBuffer();
 					if (ff.FindFile(strFilePath)) {
 						ff.FindNextFile();
-						CString ffpath(ff.GetFilePath());
-						if (ff.IsDirectory())
-							slosh(ffpath);
+						CString ffpath(ff.IsDirectory() ? PathHelpers::EnsureTrailingSeparator(ff.GetFilePath()) : ff.GetFilePath());
 						// just a quick pre-check, complete check is done later in the share function itself
 						if (ff.IsDots() || ff.IsSystem() || ff.IsTemporary()
 							|| (!ff.IsDirectory() && (ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE

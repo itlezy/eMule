@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Ini2.h"
-#include "Ini2Seams.h"
+#include "Ini2Helpers.h"
 #include "StringConversion.h"
 
 #ifdef _DEBUG
@@ -13,20 +13,20 @@ static char THIS_FILE[] = __FILE__;
 
 void CIni::AddModulePath(CString &rstrFileName, bool bModulPath)
 {
-	if (Ini2Seams::NeedsBaseDirectoryPrefix(rstrFileName)) {
+	if (Ini2Helpers::NeedsBaseDirectoryPrefix(rstrFileName)) {
 		//PathCanonicalize(...) doesn't work with for all Platforms !
 		const CString strBaseDirectory = bModulPath
-			? Ini2Seams::ExtractDirectoryPath(Ini2Seams::GetModuleFilePath())
-			: Ini2Seams::GetCurrentDirectoryPath();
-		rstrFileName = Ini2Seams::BuildPathFromBaseDirectory(strBaseDirectory, rstrFileName);
+			? PathHelpers::GetDirectoryPath(Ini2Helpers::GetModuleFilePath())
+			: Ini2Helpers::GetCurrentDirectoryPath();
+		rstrFileName = Ini2Helpers::BuildPathFromBaseDirectory(strBaseDirectory, rstrFileName);
 	}
 }
 
 CString CIni::GetDefaultIniFile(bool bModulPath)
 {
-	const CString strModulePath = Ini2Seams::GetModuleFilePath();
-	const CString strCurrentDirectory = bModulPath ? CString() : Ini2Seams::GetCurrentDirectoryPath();
-	return Ini2Seams::BuildDefaultIniFilePath(strModulePath, strCurrentDirectory, bModulPath);
+	const CString strModulePath = Ini2Helpers::GetModuleFilePath();
+	const CString strCurrentDirectory = bModulPath ? CString() : Ini2Helpers::GetCurrentDirectoryPath();
+	return Ini2Helpers::BuildDefaultIniFilePath(strModulePath, strCurrentDirectory, bModulPath);
 }
 
 CIni::CIni()

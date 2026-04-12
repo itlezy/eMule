@@ -2214,14 +2214,6 @@ CString CTreeOptionsEdit::GetFileExtensionFilter()
 	return CString(_T("All Files (*.*)|*.*||"));
 }
 
-int CALLBACK CTreeOptionsEdit::SHBrowseSetSelProc(HWND hWnd, UINT uMsg, LPARAM, LPARAM lpData)
-{
-	if (uMsg == BFFM_INITIALIZED)
-		::SendMessage(hWnd, BFFM_SETSELECTION, TRUE, lpData);
-
-	return 0;
-}
-
 void CTreeOptionsEdit::BrowseForFolder(const CString &sInitialFolder)
 {
 	ASSERT(m_pTreeCtrl);
@@ -2461,32 +2453,6 @@ void CTreeOptionsBrowseButton::SetFontItem(const LOGFONT *pLogFont)
 	ASSERT(pLogFont);
 	m_Font = *pLogFont;
 }
-
-
-
-IMPLEMENT_DYNAMIC(CTreeOptionsFileDialog, CFileDialog)
-
-CTreeOptionsFileDialog::CTreeOptionsFileDialog(BOOL bOpenFileDialog, LPCTSTR lpszDefExt, LPCTSTR lpszFileName, DWORD dwFlags
-												, LPCTSTR lpszFilter, CWnd *pParentWnd)
-	: CFileDialog(bOpenFileDialog, lpszDefExt, lpszFileName, dwFlags, lpszFilter, pParentWnd)
-{
-}
-
-BEGIN_MESSAGE_MAP(CTreeOptionsFileDialog, CFileDialog)
-END_MESSAGE_MAP()
-
-void CTreeOptionsFileDialog::OnInitDone()
-{
-	CStringA sText;
-	if (!sText.LoadString(IDS_TREEOPTIONS_OK))
-		ASSERT(0);
-	//modify the text on the IDOK button to OK
-	CommDlg_OpenSave_SetControlText(GetParent()->m_hWnd, IDOK, (LPCSTR)sText);
-}
-
-
-
-
 void DDX_TreeCheck(CDataExchange *pDX, int nIDC, HTREEITEM hItem, BOOL &bCheck)
 {
 	HWND hWndCtrl = pDX->PrepareCtrl(nIDC);
