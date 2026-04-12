@@ -2872,11 +2872,10 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 	if (m_astrDefaultDirs[0].IsEmpty()) { // already have all directories fetched and stored?
 
 		// Get executable starting directory which was our default till Vista
-		TCHAR tchBuffer[MAX_PATH];
-		::GetModuleFileName(NULL, tchBuffer, _countof(tchBuffer));
-		LPTSTR pszFileName = _tcsrchr(tchBuffer, _T('\\')) + 1;
-		*pszFileName = _T('\0');
-		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = tchBuffer;
+		CString strExecutableDir = PathHelpers::GetDirectoryPath(PathHelpers::GetModuleFilePath(NULL));
+		if (strExecutableDir.IsEmpty())
+			strExecutableDir = PathHelpers::GetCurrentDirectoryPath();
+		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = PathHelpers::EnsureTrailingSeparator(strExecutableDir);
 
 		// set our results to old default / fallback values
 		// those 3 dirs are the base for all others
@@ -2921,50 +2920,43 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 						&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
 						&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
 					{
-						if (   _tcsclen(pszLocalAppData) < MAX_PATH - 30
-							&& _tcsclen(pszPersonalDownloads) < MAX_PATH - 40
-							&& _tcsclen(pszProgramData) < MAX_PATH - 30
-							&& _tcsclen(pszPublicDownloads) < MAX_PATH - 40)
-						{
-							CString strLocalAppData(pszLocalAppData);
-							CString strPersonalDownloads(pszPersonalDownloads);
-							CString strPublicDownloads(pszPublicDownloads);
-							CString strProgramData(pszProgramData);
-							strLocalAppData = PathHelpers::EnsureTrailingSeparator(strLocalAppData);
-							strPersonalDownloads = PathHelpers::EnsureTrailingSeparator(strPersonalDownloads);
-							strPublicDownloads = PathHelpers::EnsureTrailingSeparator(strPublicDownloads);
-							strProgramData = PathHelpers::EnsureTrailingSeparator(strProgramData);
+						CString strLocalAppData(pszLocalAppData);
+						CString strPersonalDownloads(pszPersonalDownloads);
+						CString strPublicDownloads(pszPublicDownloads);
+						CString strProgramData(pszProgramData);
+						strLocalAppData = PathHelpers::EnsureTrailingSeparator(strLocalAppData);
+						strPersonalDownloads = PathHelpers::EnsureTrailingSeparator(strPersonalDownloads);
+						strPublicDownloads = PathHelpers::EnsureTrailingSeparator(strPublicDownloads);
+						strProgramData = PathHelpers::EnsureTrailingSeparator(strProgramData);
 
-							if (nRegistrySetting == _UI32_MAX) {
-								// no registry default, check if we find a preferences.ini to use
-								if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 0;
-								else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 1;
-								else if (bConfigAvailableExecutable)
-									m_nCurrentUserDirMode = 2;
-								else
-									m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
-							} else
-								m_nCurrentUserDirMode = nRegistrySetting;
-
-							switch (m_nCurrentUserDirMode) {
-							case 0: //multiuser
-								strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-								break;
-							case 1: //public user
-								strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-							case 2: //program directory
-								break;
-							default:
-								ASSERT(0);
-							}
+						if (nRegistrySetting == _UI32_MAX) {
+							// no registry default, check if we find a preferences.ini to use
+							if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+								m_nCurrentUserDirMode = 0;
+							else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+								m_nCurrentUserDirMode = 1;
+							else if (bConfigAvailableExecutable)
+								m_nCurrentUserDirMode = 2;
+							else
+								m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
 						} else
+							m_nCurrentUserDirMode = nRegistrySetting;
+
+						switch (m_nCurrentUserDirMode) {
+						case 0: //multiuser
+							strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
+							strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
+							strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+							break;
+						case 1: //public user
+							strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
+							strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
+							strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+						case 2: //program directory
+							break;
+						default:
 							ASSERT(0);
+						}
 					}
 					::CoTaskMemFree(pszLocalAppData);
 					::CoTaskMemFree(pszPersonalDownloads);
@@ -2978,20 +2970,17 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 				const CString &strAppData(ShellGetFolderPath(CSIDL_APPDATA));
 				const CString &strPersonal(ShellGetFolderPath(CSIDL_PERSONAL));
 				if (!strAppData.IsEmpty() && !strPersonal.IsEmpty()) {
-					if (strAppData.GetLength() < MAX_PATH - 30 && strPersonal.GetLength() < MAX_PATH - 40) {
-						if (nRegistrySetting == 0	// registry setting overwrites, use these folders
-							|| (nRegistrySetting == _UI32_MAX
-								&& !bConfigAvailableExecutable
-								&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
-						{
-							const CString strAppDataDir(PathHelpers::EnsureTrailingSeparator(strAppData));
-							const CString strPersonalDir(PathHelpers::EnsureTrailingSeparator(strPersonal));
-							strSelectedDataBaseDirectory = strPersonalDir + _T("eMule Downloads\\");
-							strSelectedConfigBaseDirectory = strAppDataDir + _T("eMule\\");
-							// strSelectedExpansionBaseDirectory stays unchanged
-							m_nCurrentUserDirMode = 0;
-						} else
-							ASSERT(0);
+					if (nRegistrySetting == 0	// registry setting overwrites, use these folders
+						|| (nRegistrySetting == _UI32_MAX
+							&& !bConfigAvailableExecutable
+							&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
+					{
+						const CString strAppDataDir(PathHelpers::EnsureTrailingSeparator(strAppData));
+						const CString strPersonalDir(PathHelpers::EnsureTrailingSeparator(strPersonal));
+						strSelectedDataBaseDirectory = strPersonalDir + _T("eMule Downloads\\");
+						strSelectedConfigBaseDirectory = strAppDataDir + _T("eMule\\");
+						// strSelectedExpansionBaseDirectory stays unchanged
+						m_nCurrentUserDirMode = 0;
 					} else
 						ASSERT(0);
 				}

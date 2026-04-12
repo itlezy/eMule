@@ -7,6 +7,26 @@
 
 namespace Ini2Helpers
 {
+template <typename CStringType, typename ReadFn>
+inline CStringType ReadProfileStringDynamic(ReadFn readFn)
+{
+	DWORD dwCapacity = 256u;
+	CStringType strValue;
+	for (;;) {
+		const DWORD dwCopied = readFn(strValue.GetBuffer(dwCapacity), dwCapacity);
+		if (dwCopied < dwCapacity - 1 || dwCapacity >= PathHelpers::kMaxDynamicPathChars) {
+			strValue.ReleaseBuffer(static_cast<int>(dwCopied < (dwCapacity - 1) ? dwCopied : (dwCapacity - 1)));
+			return strValue;
+		}
+
+		strValue.ReleaseBuffer(dwCapacity - 1);
+		const DWORD dwNextCapacity = dwCapacity * 2u;
+		dwCapacity = (dwNextCapacity < PathHelpers::kMaxDynamicPathChars)
+			? dwNextCapacity
+			: static_cast<DWORD>(PathHelpers::kMaxDynamicPathChars);
+	}
+}
+
 inline bool NeedsBaseDirectoryPrefix(const CString &rstrFileName)
 {
 	if (rstrFileName.IsEmpty())

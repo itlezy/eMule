@@ -36,6 +36,7 @@
 #include "DownloadQueue.h"
 #include "IPFilter.h"
 #include "Packets.h"
+#include "PathHelpers.h"
 #include "Preferences.h"
 #include "PartFileHashSeams.h"
 #include "PartFileCompletionSeams.h"
@@ -2882,9 +2883,7 @@ void UncompressFile(LPCTSTR pszFilePath, CPartFile *pPartFile)
 	if (dwAttr == INVALID_FILE_ATTRIBUTES || (dwAttr & FILE_ATTRIBUTE_COMPRESSED) == 0)
 		return;
 
-	CString strDir(pszFilePath);
-	::PathRemoveFileSpec(strDir.GetBuffer());
-	strDir.ReleaseBuffer();
+	const CString strDir(PathHelpers::GetDirectoryPath(pszFilePath));
 
 	// If the directory of the file has the 'Compress' attribute, do not uncompress the file
 	dwAttr = LongPathSeams::GetFileAttributes(strDir);

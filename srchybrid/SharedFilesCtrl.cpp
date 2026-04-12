@@ -1726,7 +1726,6 @@ BOOL CSharedFilesCtrl::CShareDropTarget::OnDrop(CWnd*, COleDataObject *pDataObje
 		HDROP hDrop = (HDROP)::GlobalLock(hGlobal);
 		if (hDrop != NULL) {
 			CString strFilePath;
-			CFileFind ff;
 			CStringList liToAddFiles; // all files to add
 			CStringList liToAddDirs; // all directories to add
 			bool bFromSingleDirectory = true;	// all files are in the same directory,
@@ -1734,20 +1733,37 @@ BOOL CSharedFilesCtrl::CShareDropTarget::OnDrop(CWnd*, COleDataObject *pDataObje
 
 			UINT nFileCount = ::DragQueryFile(hDrop, UINT_MAX, NULL, 0);
 			for (UINT nFile = 0; nFile < nFileCount; ++nFile) {
-				if (::DragQueryFile(hDrop, nFile, strFilePath.GetBuffer(MAX_PATH), MAX_PATH) > 0) {
-					strFilePath.ReleaseBuffer();
-					if (ff.FindFile(strFilePath)) {
-						ff.FindNextFile();
-						CString ffpath(ff.IsDirectory() ? PathHelpers::EnsureTrailingSeparator(ff.GetFilePath()) : ff.GetFilePath());
+				const UINT cchFilePath = ::DragQueryFile(hDrop, nFile, NULL, 0);
+				if (cchFilePath > 0) {
+					VERIFY(::DragQueryFile(hDrop, nFile, strFilePath.GetBuffer(cchFilePath + 1), cchFilePath + 1) == cchFilePath);
+					strFilePath.ReleaseBuffer(cchFilePath);
+
+					WIN32_FILE_ATTRIBUTE_DATA fileData = {};
+					if (LongPathSeams::GetFileAttributesEx(strFilePath, GetFileExInfoStandard, &fileData)) {
+						const CString strNormalizedPath(PathHelpers::NormalizePathSeparators(strFilePath));
+						const bool bIsDirectory = (fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+						const CString ffpath(bIsDirectory ? PathHelpers::EnsureTrailingSeparator(strNormalizedPath) : strNormalizedPath);
+						const CString strLeafPath(PathHelpers::TrimTrailingSeparatorForLeaf(ffpath));
+						const int iLastSlash = strLeafPath.ReverseFind(_T('\\'));
+						const CString strParentDirectory(iLastSlash >= 0 ? strLeafPath.Left(iLastSlash) : CString());
+						const CString strDisplayDirectory(iLastSlash >= 0 ? strLeafPath.Left(iLastSlash + 1) : CString());
+						const CString strFileName(iLastSlash >= 0 ? strLeafPath.Mid(iLastSlash + 1) : strLeafPath);
+						const bool bIsDots = strFileName == _T(".") || strFileName == _T("..");
+						const bool bIsSystem = (fileData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) != 0;
+						const bool bIsTemporary = (fileData.dwFileAttributes & FILE_ATTRIBUTE_TEMPORARY) != 0;
+						ULARGE_INTEGER fileSize = {};
+						fileSize.LowPart = fileData.nFileSizeLow;
+						fileSize.HighPart = fileData.nFileSizeHigh;
+
 						// just a quick pre-check, complete check is done later in the share function itself
-						if (ff.IsDots() || ff.IsSystem() || ff.IsTemporary()
-							|| (!ff.IsDirectory() && (ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE
-								|| theApp.sharedfiles->ShouldBeShared(ffpath.Left(ffpath.ReverseFind(_T('\\'))), ffpath, false)))
-							|| (ff.IsDirectory() && (!thePrefs.IsShareableDirectory(ffpath)
+						if (bIsDots || bIsSystem || bIsTemporary
+							|| (!bIsDirectory && (fileSize.QuadPart == 0 || fileSize.QuadPart > MAX_EMULE_FILE_SIZE
+								|| theApp.sharedfiles->ShouldBeShared(strParentDirectory, ffpath, false)))
+							|| (bIsDirectory && (!thePrefs.IsShareableDirectory(ffpath)
 								|| theApp.sharedfiles->ShouldBeShared(ffpath, NULL, false))))
 						{
 							DebugLog(_T("Drag&Drop'ed shared File ignored (%s)"), (LPCTSTR)ffpath);
-						} else if (ff.IsDirectory()) {
+						} else if (bIsDirectory) {
 							DEBUG_ONLY(DebugLog(_T("Drag&Drop'ed directory: %s"), (LPCTSTR)ffpath));
 							liToAddDirs.AddTail(ffpath);
 						} else {
@@ -1755,18 +1771,15 @@ BOOL CSharedFilesCtrl::CShareDropTarget::OnDrop(CWnd*, COleDataObject *pDataObje
 							liToAddFiles.AddTail(ffpath);
 							if (bFromSingleDirectory) {
 								if (strSingleDirectory.IsEmpty())
-									strSingleDirectory = ffpath.Left(ffpath.ReverseFind(_T('\\')) + 1);
-								else if (strSingleDirectory.CompareNoCase(ffpath.Left(ffpath.ReverseFind(_T('\\')) + 1)) != NULL)
+									strSingleDirectory = strDisplayDirectory;
+								else if (strSingleDirectory.CompareNoCase(strDisplayDirectory) != NULL)
 									bFromSingleDirectory = false;
 							}
 						}
 					} else
 						DebugLogError(_T("Drag&Drop'ed shared File not found (%s)"), (LPCTSTR)strFilePath);
-
-					ff.Close();
 				} else {
 					ASSERT(0);
-					strFilePath.ReleaseBuffer();
 				}
 			}
 

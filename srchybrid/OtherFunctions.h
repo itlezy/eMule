@@ -196,7 +196,6 @@ CString		GetFileTypeName(EFileType ftype);
 bool		ExtensionIs(LPCTSTR pszFilePath, LPCTSTR pszExt);
 int			IsExtensionTypeOf(EFileType type, LPCTSTR const pszExt);
 uint32		LevenshteinDistance(const CString &str1, const CString &str2);
-bool		_tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPCTSTR ext);
 bool		HasSubdirectories(const CString &strDir);
 bool		DirAccsess(const CString &strDir);
 #ifdef UNICODE
