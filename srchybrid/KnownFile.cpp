@@ -36,6 +36,7 @@
 #include "ProtocolGuards.h"
 #include "DisplayRefreshSeams.h"
 #include "SourceExchangeSeams.h"
+#include "OtherFunctions.h"
 #include "UserMsgs.h"
 #include "Kademlia/Kademlia/SearchManager.h"
 #include "Kademlia/Kademlia/Entry.h"
@@ -1652,14 +1653,13 @@ bool CKnownFile::ImportParts()
 		return false;
 	}
 
-	// TODO:MINOR(FEAT-010): Import-parts source selection still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	CFileDialog dlg(true, NULL, NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY);
-	if (dlg.DoModal() != IDOK)
+	CString strImportPath;
+	if (!DialogBrowseFile(strImportPath, _T("All Files (*.*)|*.*||"), NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY))
 		return false;
 
 	CAddFileThread *addfilethread = (CAddFileThread*)AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_LOWEST, 0, CREATE_SUSPENDED);
 	if (addfilethread) {
-		const CString &pathName = dlg.GetPathName();
+		const CString &pathName = strImportPath;
 		partfile->SetFileOpProgress(0);
 		addfilethread->SetValues(theApp.sharedfiles, partfile->GetPath(), partfile->m_hpartfile.GetFileName(), _T(""), partfile);
 		partfile->SetFileOp(addfilethread->SetPartToImport(pathName) ? PFOP_IMPORTPARTS : PFOP_HASHING);

@@ -248,6 +248,7 @@ to maintain a single distribution point for the source code.
 #include <shlobj.h>
 #endif
 #include "TreeOptionsCtrl.h"
+#include "OtherFunctions.h"
 #include "UserMsgs.h"
 
 //////////////// Macros / Locals /////////////////////////////////////
@@ -2225,51 +2226,18 @@ void CTreeOptionsEdit::BrowseForFolder(const CString &sInitialFolder)
 {
 	ASSERT(m_pTreeCtrl);
 
-	//Bring up a standard directory chooser dialog
-	TCHAR sDisplayName[MAX_PATH];
-	BROWSEINFO bi;
-	bi.hwndOwner = m_pTreeCtrl->GetSafeHwnd();
-	bi.pidlRoot = NULL;
-	const CString &sCaption(GetBrowseForFolderCaption());
-	bi.lpszTitle = sCaption;
-	bi.pszDisplayName = sDisplayName;
-	bi.ulFlags = BIF_RETURNONLYFSDIRS;
-	bi.lpfn = SHBrowseSetSelProc;
-	bi.lParam = (LPARAM)(LPCTSTR)sInitialFolder;
-	// TODO:MINOR(FEAT-010): Tree-options folder browse still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	LPITEMIDLIST pItemIDList = SHBrowseForFolder(&bi);
-
-	if (pItemIDList) {
-		//Retrieve the path and update on screen
-		TCHAR sPath[MAX_PATH];
-		if (SHGetPathFromIDList(pItemIDList, sPath))
-			SetWindowText(sPath);
-
-		//avoid memory leaks by deleting the PIDL
-		//using the shells task allocator
-		IMalloc *pMalloc;
-		if (SUCCEEDED(SHGetMalloc(&pMalloc))) {
-			pMalloc->Free(pItemIDList);
-			pMalloc->Release();
-		}
-	}
+	CString strFolder(sInitialFolder);
+	if (SelectDir(strFolder, m_pTreeCtrl->GetSafeHwnd(), GetBrowseForFolderCaption()))
+		SetWindowText(strFolder);
 }
 
 void CTreeOptionsEdit::BrowseForFile(const CString &sInitialFile)
 {
 	ASSERT(m_pTreeCtrl);
 
-	//Create the special file save dialog
-	// TODO:MINOR(FEAT-010): Tree-options file browse still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	CTreeOptionsFileDialog dlg(TRUE, NULL, sInitialFile, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, GetFileExtensionFilter(), m_pTreeCtrl);
-
-	//Modify the title to the desired value
-	const CString &sCaption(GetBrowseForFileCaption());
-	dlg.m_ofn.lpstrTitle = sCaption;
-
-	//bring up the dialog and if hit OK set the text in this control to the new filename
-	if (dlg.DoModal() == IDOK)
-		SetWindowText(dlg.GetPathName());
+	CString strFile(sInitialFile);
+	if (DialogBrowseFile(strFile, GetFileExtensionFilter(), (sInitialFile.IsEmpty() ? NULL : sInitialFile), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, true, m_pTreeCtrl->GetSafeHwnd(), GetBrowseForFileCaption()))
+		SetWindowText(strFile);
 }
 
 

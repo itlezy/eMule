@@ -22,6 +22,7 @@
 #include "SharedFilesCtrl.h"
 #include "MenuCmds.h"
 #include "partfile.h"
+#include "ShellUiSeams.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "SharedFileList.h"
@@ -739,7 +740,6 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 	itInsert.item.mask |= TVIF_PARAM;
 	itInsert.item.lParam = (LPARAM)pti;
 
-	SHFILEINFO shFinfo;
 	if (m_bUseIcons) {
 		if (FileSystemTreeIsShared(strDir)) {
 			itInsert.item.stateMask |= TVIS_OVERLAYMASK;
@@ -751,16 +751,21 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 		if (DRIVE_REMOVABLE <= nType && nType <= DRIVE_RAMDISK)
 			itInsert.item.iImage = nType;
 
-		shFinfo.szDisplayName[0] = _T('\0');
-		// TODO:MINOR(FEAT-010): Shared-dirs shell icon/display lookup still depends on SHGetFileInfo; defer the long-path-safe helper and fallback policy to the shell/UI follow-up.
-		if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_SMALLICON | SHGFI_ICON | SHGFI_OPENICON | SHGFI_DISPLAYNAME)) {
-			itInsert.itemex.iImage = AddSystemIcon(shFinfo.hIcon, shFinfo.iIcon);
-			::DestroyIcon(shFinfo.hIcon);
-			if (bTopLevel && shFinfo.szDisplayName[0] != _T('\0'))
+		const int nSystemImage = theApp.GetFileTypeSystemImageIdx(strDir);
+		if (nSystemImage > 0 && theApp.GetSystemImageList() != NULL) {
+			HICON hIcon = ::ImageList_GetIcon(theApp.GetSystemImageList(), nSystemImage, 0);
+			if (hIcon != NULL) {
+				itInsert.itemex.iImage = AddSystemIcon(hIcon, nSystemImage);
+				::DestroyIcon(hIcon);
+			} else
+				itInsert.itemex.iImage = 0;
+		} else
+			itInsert.itemex.iImage = 0;
+
+		if (bTopLevel && ShellUiSeams::CanUseShellDisplayName(strDir)) {
+			SHFILEINFO shFinfo = {};
+			if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_DISPLAYNAME) && shFinfo.szDisplayName[0] != _T('\0'))
 				itInsert.item.pszText = shFinfo.szDisplayName;
-		} else {
-			TRACE(_T("Error getting SystemFileInfo!"));
-			itInsert.itemex.iImage = 0; // :(
 		}
 	}
 

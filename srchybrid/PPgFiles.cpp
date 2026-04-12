@@ -197,10 +197,8 @@ void CPPgFiles::BrowseVideoplayer()
 {
 	CString strPlayerPath;
 	GetDlgItemText(IDC_VIDEOPLAYER, strPlayerPath);
-	// TODO:MINOR(FEAT-010): Video-player picker still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	CFileDialog dlgFile(TRUE, _T("exe"), strPlayerPath, OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY, _T("Executable (*.exe)|*.exe||"), NULL, 0);
-	if (dlgFile.DoModal() == IDOK) {
-		SetDlgItemText(IDC_VIDEOPLAYER, dlgFile.GetPathName());
+	if (DialogBrowseFile(strPlayerPath, _T("Executable (*.exe)|*.exe||"), (strPlayerPath.IsEmpty() ? NULL : strPlayerPath), OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY, true, GetSafeHwnd(), NULL, _T("exe"))) {
+		SetDlgItemText(IDC_VIDEOPLAYER, strPlayerPath);
 		SetModified();
 	}
 }

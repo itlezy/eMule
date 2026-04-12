@@ -38,6 +38,7 @@
 #include "ClientList.h"
 #include "Log.h"
 #include "Collection.h"
+#include "ShellUiSeams.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "LongPathSeams.h"
 #include "ImportParts.h"
@@ -756,7 +757,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0)
 			return;
 
-	if (ExtensionIs(strFoundFileName, _T(".lnk")))
+	if (ShellUiSeams::ShouldIgnoreShortcutFileName(strFoundFileName))
 		return;
 
 	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {
@@ -1631,15 +1632,8 @@ void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
 	FILETIME tFoundFileTime;
 	ff.GetLastWriteTime(&tFoundFileTime);
 
-	// ignore real(!) LNK files
-	if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
-		SHFILEINFO info;
-		// TODO:MINOR(FEAT-010): Shared-file shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
-		if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK)) {
-			TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
-			return;
-		}
-	}
+	if (ShellUiSeams::ShouldIgnoreShortcutFileName(strFoundFileName))
+		return;
 
 	// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
 	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {

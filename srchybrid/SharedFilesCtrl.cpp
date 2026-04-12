@@ -33,6 +33,7 @@
 #include "MemDC.h"
 #include "PartFile.h"
 #include "MenuCmds.h"
+#include "ShellUiSeams.h"
 #include "IrcWnd.h"
 #include "SharedFilesWnd.h"
 #include "Opcodes.h"
@@ -1552,13 +1553,8 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 
 		FILETIME tFoundFileTime;
 		ff.GetLastWriteTime(&tFoundFileTime);
-		// ignore real(!) LNK files
-		if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
-			SHFILEINFO info;
-			// TODO:MINOR(FEAT-010): Shared-files view shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
-			if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
-				continue;
-		}
+		if (ShellUiSeams::ShouldIgnoreShortcutFileName(strFoundFileName))
+			continue;
 
 		// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
 		if (IsThumbsDb(strFoundFilePath, strFoundFileName))

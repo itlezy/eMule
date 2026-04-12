@@ -21,6 +21,7 @@
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "CatDialog.h"
+#include "OtherFunctions.h"
 #include "UserMsgs.h"
 
 #ifdef _DEBUG
@@ -142,10 +143,10 @@ void CCatDialog::Localize()
 
 void CCatDialog::OnBnClickedBrowse()
 {
-	TCHAR buffer[MAX_PATH];
-	GetDlgItemText(IDC_INCOMING, buffer, _countof(buffer));
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_INCOMINGDIR)))
-		SetDlgItemText(IDC_INCOMING, buffer);
+	CString strIncomingPath;
+	GetDlgItemText(IDC_INCOMING, strIncomingPath);
+	if (SelectDir(strIncomingPath, GetSafeHwnd(), GetResString(IDS_SELECT_INCOMINGDIR)))
+		SetDlgItemText(IDC_INCOMING, strIncomingPath);
 }
 
 void CCatDialog::OnBnClickedOk()

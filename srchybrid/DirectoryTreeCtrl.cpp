@@ -20,6 +20,7 @@
 #include "MenuCmds.h"
 #include "otherfunctions.h"
 #include "Preferences.h"
+#include "ShellUiSeams.h"
 #include "TitledMenu.h"
 #include "UserMsgs.h"
 
@@ -253,22 +254,18 @@ HTREEITEM CDirectoryTreeCtrl::AddChildItem(HTREEITEM hRoot, const CString &strTe
 	if (DRIVE_REMOVABLE <= nType && nType <= DRIVE_RAMDISK)
 		itInsert.item.iImage = nType;
 
-	SHFILEINFO shFinfo;
-	shFinfo.szDisplayName[0] = _T('\0');
-	// TODO:MINOR(FEAT-010): Directory tree shell icon/display lookup still depends on SHGetFileInfo; defer the long-path-safe helper and fallback policy to the shell/UI follow-up.
-	if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_SMALLICON | SHGFI_ICON | SHGFI_OPENICON | SHGFI_DISPLAYNAME)) {
-		itInsert.itemex.iImage = shFinfo.iIcon;
-		::DestroyIcon(shFinfo.hIcon);
-		if (hRoot == NULL && shFinfo.szDisplayName[0] != _T('\0')) {
+	const int iSystemImage = theApp.GetFileTypeSystemImageIdx(strDir);
+	itInsert.itemex.iImage = iSystemImage > 0 ? iSystemImage : 0;
+
+	if (hRoot == NULL && ShellUiSeams::CanUseShellDisplayName(strDir)) {
+		SHFILEINFO shFinfo = {};
+		if (::SHGetFileInfo(strDir, 0, &shFinfo, sizeof(shFinfo), SHGFI_DISPLAYNAME) && shFinfo.szDisplayName[0] != _T('\0')) {
 			STreeItem *pti = new STreeItem;
 			pti->strPath = strText;
 			itInsert.item.pszText = shFinfo.szDisplayName;
 			itInsert.item.mask |= TVIF_PARAM;
 			itInsert.item.lParam = (LPARAM)pti;
 		}
-	} else {
-		TRACE(_T("Error getting SystemFileInfo!"));
-		itInsert.itemex.iImage = 0; // :(
 	}
 	// END: added by FoRcHa //////////////
 

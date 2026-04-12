@@ -20,6 +20,7 @@
 #include <io.h>
 #include <regex>
 #include <share.h>
+#include <ShObjIdl_core.h>
 #include <ShlObj_core.h>
 #include <sys/stat.h>
 #include "emule.h"
@@ -40,6 +41,7 @@
 #include "LongPathSeams.h"
 #include "OtherFunctionsSeams.h"
 #include "PathHelperSeams.h"
+#include "ShellUiSeams.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "kademlia/io/BufferedFileIO.h"
@@ -1246,59 +1248,232 @@ void CWebServices::Edit()
 	ShellOpen(thePrefs.GetTxtEditor(), sDat);
 }
 
-typedef struct
+namespace
 {
-	LPCTSTR	pszInitialDir;
-	LPCTSTR	pszDlgTitle;
-} BROWSEINIT, *LPBROWSEINIT;
-
-extern "C" int CALLBACK BrowseCallbackProc(HWND hWnd, UINT uMsg, LPARAM, LPARAM lpData)
+class ScopedCoInitialize
 {
-	if (uMsg == BFFM_INITIALIZED) {
-		// Set initial directory
-		if (((LPBROWSEINIT)lpData)->pszInitialDir != NULL)
-			SendMessage(hWnd, BFFM_SETSELECTION, TRUE, (LPARAM)((LPBROWSEINIT)lpData)->pszInitialDir);
-
-		// Set dialog's window title
-		if (((LPBROWSEINIT)lpData)->pszDlgTitle != NULL)
-			SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)((LPBROWSEINIT)lpData)->pszDlgTitle);
+public:
+	ScopedCoInitialize()
+		: m_hr(::CoInitialize(NULL))
+	{
 	}
 
-	return 0;
+	~ScopedCoInitialize()
+	{
+		if (SUCCEEDED(m_hr))
+			::CoUninitialize();
+	}
+
+	bool IsReady() const
+	{
+		return SUCCEEDED(m_hr);
+	}
+
+private:
+	HRESULT m_hr;
+};
+
+struct DialogFilterStorage
+{
+	std::vector<CString> names;
+	std::vector<CString> patterns;
+	std::vector<COMDLG_FILTERSPEC> specs;
+};
+
+CString GetDialogTitle(LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
+{
+	return pszDlgTitle != NULL ? CString(pszDlgTitle) : CString(pszTitle != NULL ? pszTitle : _T(""));
+}
+
+CString NormalizeDefaultExtension(LPCTSTR pszDefExt)
+{
+	CString strDefExt(pszDefExt != NULL ? pszDefExt : _T(""));
+	while (!strDefExt.IsEmpty() && (strDefExt[0] == _T('.') || strDefExt[0] == _T('*')))
+		strDefExt = strDefExt.Mid(1);
+	return strDefExt;
+}
+
+DialogFilterStorage BuildDialogFilterStorage(LPCTSTR pszFilters)
+{
+	DialogFilterStorage storage;
+	if (pszFilters == NULL || *pszFilters == _T('\0'))
+		return storage;
+
+	CString strFilters(pszFilters);
+	int iStart = 0;
+	while (iStart >= 0) {
+		const CString strName(GetNextString(strFilters, _T('|'), iStart));
+		if (strName.IsEmpty())
+			break;
+
+		const CString strPattern(GetNextString(strFilters, _T('|'), iStart));
+		storage.names.push_back(strName);
+		storage.patterns.push_back(strPattern);
+	}
+
+	storage.specs.reserve(storage.names.size());
+	for (size_t i = 0; i < storage.names.size(); ++i) {
+		COMDLG_FILTERSPEC spec = { storage.names[i], storage.patterns[i] };
+		storage.specs.push_back(spec);
+	}
+	return storage;
+}
+
+void InitializeDialogPathSelection(IFileDialog &rDialog, const CString &rstrInitialPath, const bool bFolderMode)
+{
+	ShellUiSeams::DialogInitialSelection selection = ShellUiSeams::SplitDialogInitialSelection(rstrInitialPath);
+	if (bFolderMode && selection.strInitialFolder.IsEmpty())
+		selection.strInitialFolder = rstrInitialPath;
+
+	if (!selection.strInitialFolder.IsEmpty()) {
+		CString strInitialFolder(selection.strInitialFolder);
+		if (bFolderMode && PathHelperSeams::IsPathSeparator(strInitialFolder[strInitialFolder.GetLength() - 1]))
+			strInitialFolder.Truncate(strInitialFolder.GetLength() - 1);
+		strInitialFolder = OtherFunctionsSeams::PreparePathForShellOperation(strInitialFolder);
+		CComPtr<IShellItem> pFolder;
+		if (SUCCEEDED(::SHCreateItemFromParsingName(strInitialFolder, NULL, IID_PPV_ARGS(&pFolder)))) {
+			(void)rDialog.SetDefaultFolder(pFolder);
+			(void)rDialog.SetFolder(pFolder);
+		}
+	}
+
+	if (!selection.strFileName.IsEmpty())
+		(void)rDialog.SetFileName(selection.strFileName);
+}
+
+bool ShowShellFolderPicker(const CString &rstrInitialPath, HWND hWnd, LPCTSTR pszTitle, LPCTSTR pszDlgTitle, CString &rstrSelectedPath)
+{
+	rstrSelectedPath.Empty();
+	ScopedCoInitialize coInitialize;
+	if (!coInitialize.IsReady())
+		return false;
+
+	CComPtr<IFileOpenDialog> pOpenDialog;
+	if (FAILED(pOpenDialog.CoCreateInstance(CLSID_FileOpenDialog)))
+		return false;
+
+	DWORD dwOptions = 0;
+	if (FAILED(pOpenDialog->GetOptions(&dwOptions)))
+		return false;
+	dwOptions |= FOS_FORCEFILESYSTEM | FOS_PICKFOLDERS | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR;
+	if (FAILED(pOpenDialog->SetOptions(dwOptions)))
+		return false;
+
+	const CString strTitle(GetDialogTitle(pszTitle, pszDlgTitle));
+	if (!strTitle.IsEmpty())
+		(void)pOpenDialog->SetTitle(strTitle);
+
+	InitializeDialogPathSelection(*pOpenDialog, rstrInitialPath, true);
+
+	const HRESULT hrShow = pOpenDialog->Show(hWnd);
+	if (hrShow == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+		return false;
+	if (FAILED(hrShow))
+		return false;
+
+	CComPtr<IShellItem> pResult;
+	if (FAILED(pOpenDialog->GetResult(&pResult)))
+		return false;
+
+	LPWSTR pszResultPath = NULL;
+	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
+		return false;
+
+	rstrSelectedPath = ShellUiSeams::FinalizeFolderSelection(CString(pszResultPath));
+	::CoTaskMemFree(pszResultPath);
+	return !rstrSelectedPath.IsEmpty();
+}
+
+bool ShowShellFileDialog(const CString &rstrInitialPath, LPCTSTR pszFilters, DWORD dwFlags, const bool bOpenFileDialog, HWND hWndOwner, LPCTSTR pszDlgTitle, LPCTSTR pszDefExt, CString &rstrSelectedPath)
+{
+	rstrSelectedPath.Empty();
+	ScopedCoInitialize coInitialize;
+	if (!coInitialize.IsReady())
+		return false;
+
+	CComPtr<IFileDialog> pDialog;
+	if (bOpenFileDialog) {
+		CComPtr<IFileOpenDialog> pOpenDialog;
+		if (FAILED(pOpenDialog.CoCreateInstance(CLSID_FileOpenDialog)))
+			return false;
+		pDialog = pOpenDialog;
+	} else {
+		CComPtr<IFileSaveDialog> pSaveDialog;
+		if (FAILED(pSaveDialog.CoCreateInstance(CLSID_FileSaveDialog)))
+			return false;
+		pDialog = pSaveDialog;
+	}
+
+	DWORD dwOptions = 0;
+	if (FAILED(pDialog->GetOptions(&dwOptions)))
+		return false;
+	dwOptions |= FOS_FORCEFILESYSTEM | FOS_NOCHANGEDIR;
+	if (dwFlags & OFN_FILEMUSTEXIST)
+		dwOptions |= FOS_FILEMUSTEXIST;
+	if (dwFlags & OFN_PATHMUSTEXIST)
+		dwOptions |= FOS_PATHMUSTEXIST;
+	if (!bOpenFileDialog && (dwFlags & OFN_OVERWRITEPROMPT))
+		dwOptions |= FOS_OVERWRITEPROMPT;
+	if (FAILED(pDialog->SetOptions(dwOptions)))
+		return false;
+
+	const CString strTitle(GetDialogTitle(NULL, pszDlgTitle));
+	if (!strTitle.IsEmpty())
+		(void)pDialog->SetTitle(strTitle);
+
+	const DialogFilterStorage filterStorage(BuildDialogFilterStorage(pszFilters));
+	if (!filterStorage.specs.empty()) {
+		(void)pDialog->SetFileTypes(static_cast<UINT>(filterStorage.specs.size()), filterStorage.specs.data());
+		(void)pDialog->SetFileTypeIndex(1);
+	}
+
+	const CString strDefExt(NormalizeDefaultExtension(pszDefExt));
+	if (!strDefExt.IsEmpty())
+		(void)pDialog->SetDefaultExtension(strDefExt);
+
+	InitializeDialogPathSelection(*pDialog, rstrInitialPath, false);
+
+	const HRESULT hrShow = pDialog->Show(hWndOwner);
+	if (hrShow == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+		return false;
+	if (FAILED(hrShow))
+		return false;
+
+	CComPtr<IShellItem> pResult;
+	if (FAILED(pDialog->GetResult(&pResult)))
+		return false;
+
+	LPWSTR pszResultPath = NULL;
+	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
+		return false;
+
+	rstrSelectedPath = PathHelperSeams::NormalizePathSeparators(CString(pszResultPath));
+	::CoTaskMemFree(pszResultPath);
+	return !rstrSelectedPath.IsEmpty();
+}
+}
+
+bool SelectDir(CString &rstrPath, HWND hWnd, LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
+{
+	CString strSelectedPath;
+	if (!ShowShellFolderPicker(rstrPath, hWnd, pszTitle, pszDlgTitle, strSelectedPath))
+		return false;
+	rstrPath = strSelectedPath;
+	return true;
 }
 
 bool SelectDir(HWND hWnd, LPTSTR pszPath, LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
 {
 	ASSERT(pszPath != NULL);
-	(void)::CoInitialize(NULL);
-	LPMALLOC pShlMalloc;
-	bool bResult = (SHGetMalloc(&pShlMalloc) == NOERROR);
-	if (bResult) {
-		BROWSEINFO BrsInfo = {};
-		BrsInfo.hwndOwner = hWnd;
-		BrsInfo.lpszTitle = (pszTitle != NULL) ? pszTitle : pszDlgTitle;
-		BrsInfo.ulFlags = BIF_VALIDATE | BIF_NEWDIALOGSTYLE | BIF_RETURNONLYFSDIRS | BIF_SHAREABLE | BIF_DONTGOBELOWDOMAIN;
-
-		BROWSEINIT BrsInit = {};
-		if (pszTitle != NULL || pszDlgTitle != NULL) {
-			// Need the 'BrowseCallbackProc' to set those strings
-			BrsInfo.lpfn = BrowseCallbackProc;
-			BrsInfo.lParam = (LPARAM)&BrsInit;
-			BrsInit.pszDlgTitle = (pszDlgTitle != NULL) ? pszDlgTitle : NULL/*pszTitle*/;
-			BrsInit.pszInitialDir = pszPath;
-		}
-
-		LPITEMIDLIST pidlBrowse;
-		// TODO:MINOR(FEAT-010): Shared folder-browse helper still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-		if ((pidlBrowse = ::SHBrowseForFolder(&BrsInfo)) != NULL) {
-			bResult = ::SHGetPathFromIDList(pidlBrowse, pszPath);
-			pShlMalloc->Free(pidlBrowse);
-		}
-		pShlMalloc->Release();
-		::PathAddBackslash(pszPath);
+	CString strPath(pszPath);
+	if (!SelectDir(strPath, hWnd, pszTitle, pszDlgTitle))
+		return false;
+	if (strPath.GetLength() >= MAX_PATH) {
+		::SetLastError(ERROR_INSUFFICIENT_BUFFER);
+		return false;
 	}
-	::CoUninitialize();
-	return bResult;
+	_tcscpy(pszPath, strPath);
+	return true;
 }
 
 void slosh(CString &path)
@@ -1335,18 +1510,18 @@ CString StringLimit(const CString &in, UINT length)
 	return in.Left(length - 8) + _T("...") + in.Right(8);
 }
 
-BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName, DWORD dwFlags, bool openfilestyle)
+BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName, DWORD dwFlags, bool openfilestyle, HWND hWndOwner, LPCTSTR pszDlgTitle, LPCTSTR pszDefExt)
 {
-	// TODO:MINOR(FEAT-010): Shared file-browse helper still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	CFileDialog myFileDialog(openfilestyle, NULL, pszDefaultFileName
-		, dwFlags | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT
-		, pszFilters
-		, NULL //parent CWnd
-		, 0); //MFC will automatically determine the size of OPENFILENAME structure
-	if (myFileDialog.DoModal() != IDOK)
-		return FALSE;
-	rstrPath = myFileDialog.GetPathName();
-	return TRUE;
+	const DWORD dwEffectiveFlags = dwFlags | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	return ShowShellFileDialog(
+		pszDefaultFileName != NULL ? CString(pszDefaultFileName) : rstrPath,
+		pszFilters,
+		dwEffectiveFlags,
+		openfilestyle,
+		hWndOwner,
+		pszDlgTitle,
+		pszDefExt,
+		rstrPath) ? TRUE : FALSE;
 }
 
 void md4str(const byte *hash, TCHAR *pszHash)

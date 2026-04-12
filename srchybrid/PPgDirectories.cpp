@@ -23,6 +23,7 @@
 #include "InputBox.h"
 #include "Preferences.h"
 #include "HelpIDs.h"
+#include "ShellUiSeams.h"
 #include "UserMsgs.h"
 #include "opcodes.h"
 
@@ -100,18 +101,18 @@ void CPPgDirectories::LoadSettings()
 
 void CPPgDirectories::OnBnClickedSelincdir()
 {
-	TCHAR buffer[MAX_PATH];
-	buffer[GetDlgItemText(IDC_INCFILES, buffer, MAX_PATH)] = _T('\0');
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_INCOMINGDIR)))
-		SetDlgItemText(IDC_INCFILES, buffer);
+	CString strIncomingPath;
+	GetDlgItemText(IDC_INCFILES, strIncomingPath);
+	if (SelectDir(strIncomingPath, GetSafeHwnd(), GetResString(IDS_SELECT_INCOMINGDIR)))
+		SetDlgItemText(IDC_INCFILES, strIncomingPath);
 }
 
 void CPPgDirectories::OnBnClickedSeltempdir()
 {
-	TCHAR buffer[MAX_PATH];
-	buffer[GetDlgItemText(IDC_TEMPFILES, buffer, MAX_PATH)] = _T('\0');
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_TEMPDIR)))
-		SetDlgItemText(IDC_TEMPFILES, buffer);
+	CString strTempPath;
+	GetDlgItemText(IDC_TEMPFILES, strTempPath);
+	if (SelectDir(strTempPath, GetSafeHwnd(), GetResString(IDS_SELECT_TEMPDIR)))
+		SetDlgItemText(IDC_TEMPFILES, strTempPath);
 }
 
 BOOL CPPgDirectories::OnApply()
@@ -138,13 +139,8 @@ BOOL CPPgDirectories::OnApply()
 			if (ff.IsDirectory() || ff.IsSystem() || ff.IsTemporary() || ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE)
 				continue;
 
-			// ignore real LNK files
-			if (ExtensionIs(ff.GetFileName(), _T(".lnk"))) {
-				SHFILEINFO info;
-				// TODO:MINOR(FEAT-010): Incoming-dir shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
-				if (::SHGetFileInfo(ff.GetFilePath(), 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
-					continue;
-			}
+			if (ShellUiSeams::ShouldIgnoreShortcutFileName(ff.GetFileName()))
+				continue;
 
 			// ignore real THUMBS.DB files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
 			bExistingFile = (ff.GetFileName().CompareNoCase(_T("thumbs.db")) != 0);
@@ -319,11 +315,9 @@ void CPPgDirectories::OnBnClickedSeltempdiradd()
 	CString paths;
 	GetDlgItemText(IDC_TEMPFILES, paths);
 
-	TCHAR buffer[MAX_PATH];
-	//GetDlgItemText(IDC_TEMPFILES, buffer, _countof(buffer));
-
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_TEMPDIR))) {
-		paths.AppendFormat(_T("|%s"), (LPCTSTR)buffer);
+	CString strTempPath;
+	if (SelectDir(strTempPath, GetSafeHwnd(), GetResString(IDS_SELECT_TEMPDIR))) {
+		paths.AppendFormat(_T("|%s"), (LPCTSTR)strTempPath);
 		SetDlgItemText(IDC_TEMPFILES, paths);
 	}
 }

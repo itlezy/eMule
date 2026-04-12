@@ -574,11 +574,9 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 	switch (wParam) {
 	case MP_SELECTTOOLBARBITMAPDIR:
 		{
-			TCHAR buffer[MAX_PATH];
-			_sntprintf(buffer, _countof(buffer), _T("%s"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR));
-			buffer[_countof(buffer) - 1] = _T('\0');
-			if (SelectDir(m_hWnd, buffer, GetResString(IDS_SELECTTOOLBARBITMAPDIR)))
-				thePrefs.SetMuleDirectory(EMULE_TOOLBARDIR, buffer);
+			CString strToolbarDir(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR));
+			if (SelectDir(strToolbarDir, m_hWnd, GetResString(IDS_SELECTTOOLBARBITMAPDIR)))
+				thePrefs.SetMuleDirectory(EMULE_TOOLBARDIR, strToolbarDir);
 		}
 		break;
 	case MP_CUSTOMIZETOOLBAR:
@@ -603,12 +601,11 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 			strFilter += _T("||");
 
 			const CString &sInitialDir(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR, false));
-			// TODO:MINOR(FEAT-010): Toolbar/skin pickers still depend on SelectDir and CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-			CFileDialog dialog(TRUE, EMULTB_BASEEXT _T(".bmp"), (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, strFilter, NULL, 0);
-			if (IDOK == dialog.DoModal())
-				if (thePrefs.GetToolbarBitmapSettings() != dialog.GetPathName()) {
-					ChangeToolbarBitmap(dialog.GetPathName(), true);
-					thePrefs.SetToolbarBitmapSettings(dialog.GetPathName());
+			CString strToolbarBitmap(sInitialDir);
+			if (DialogBrowseFile(strToolbarBitmap, strFilter, (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, true, m_hWnd, NULL, EMULTB_BASEEXT))
+				if (thePrefs.GetToolbarBitmapSettings() != strToolbarBitmap) {
+					ChangeToolbarBitmap(strToolbarBitmap, true);
+					thePrefs.SetToolbarBitmapSettings(strToolbarBitmap);
 				}
 		}
 		break;
@@ -632,11 +629,9 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 		break;
 	case MP_SELECT_SKIN_DIR:
 		{
-			TCHAR buffer[MAX_PATH];
-			_sntprintf(buffer, _countof(buffer), _T("%s"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_SKINDIR, false));
-			buffer[_countof(buffer) - 1] = _T('\0');
-			if (SelectDir(m_hWnd, buffer, GetResString(IDS_SELSKINPROFILEDIR)))
-				thePrefs.SetMuleDirectory(EMULE_SKINDIR, buffer);
+			CString strSkinDir(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false));
+			if (SelectDir(strSkinDir, m_hWnd, GetResString(IDS_SELSKINPROFILEDIR)))
+				thePrefs.SetMuleDirectory(EMULE_SKINDIR, strSkinDir);
 		}
 		break;
 	case MP_SELECT_SKIN_FILE:
@@ -656,10 +651,10 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 			strFilter += _T("||");
 
 			const CString &sInitialDir(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false));
-			CFileDialog dialog(TRUE, EMULSKIN_BASEEXT _T(".ini"), (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, strFilter, NULL, 0);
-			if (dialog.DoModal() == IDOK) {
-				if (thePrefs.GetSkinProfile().CompareNoCase(dialog.GetPathName()) != 0)
-					theApp.ApplySkin(dialog.GetPathName());
+			CString strSkinProfile(sInitialDir);
+			if (DialogBrowseFile(strSkinProfile, strFilter, (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, true, m_hWnd, NULL, EMULSKIN_BASEEXT)) {
+				if (thePrefs.GetSkinProfile().CompareNoCase(strSkinProfile) != 0)
+					theApp.ApplySkin(strSkinProfile);
 			}
 		}
 		break;

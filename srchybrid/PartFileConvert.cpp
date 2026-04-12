@@ -609,51 +609,18 @@ void CPartFileConvertDlg::PostNcDestroy()
 
 void CPartFileConvertDlg::OnAddFolder()
 {
-	// browse...
-	LPMALLOC pMalloc = NULL;
-	if (SHGetMalloc(&pMalloc) == NOERROR) {
-		// buffer - a place to hold the file system pathname
-		TCHAR buffer[MAX_PATH];
+	CString strSourceFolder;
+	if (SelectDir(strSourceFolder, m_hWnd, GetResString(IDS_IMP_SELFOLDER))) {
+		int reply;
+		if (thePrefs.IsExtControlsEnabled())
+			reply = LocMessageBox(IDS_IMP_DELSRC, MB_YESNOCANCEL | MB_DEFBUTTON2, 0);
+		else
+			reply = IDNO;
 
-		// This struct holds the various options for the dialog
-		BROWSEINFO bi;
-		bi.hwndOwner = m_hWnd;
-		bi.pidlRoot = NULL;
-		bi.pszDisplayName = buffer;
-		CString title(GetResString(IDS_IMP_SELFOLDER));
-		bi.lpszTitle = title.GetBuffer(title.GetLength());
-		bi.ulFlags = BIF_EDITBOX | BIF_NEWDIALOGSTYLE | BIF_NONEWFOLDERBUTTON | BIF_SHAREABLE;
-		bi.lpfn = NULL;
-
-		// Now cause the dialog to appear.
-		LPITEMIDLIST pidlRoot;
-		// TODO:MINOR(FEAT-010): Part-file import folder browse still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-		if ((pidlRoot = SHBrowseForFolder(&bi)) != NULL) {
-			int reply;
-			if (thePrefs.IsExtControlsEnabled())
-				reply = LocMessageBox(IDS_IMP_DELSRC, MB_YESNOCANCEL | MB_DEFBUTTON2, 0);
-			else
-				reply = IDNO;
-
-			if (reply != IDCANCEL) {
-				bool removesrc = (reply == IDYES);
-
-				//
-				// Again, almost undocumented. How to get an ASCII pathname
-				// from the LPITEMIDLIST struct.
-				// I guess you just have to "know" this stuff.
-				//
-				if (SHGetPathFromIDList(pidlRoot, buffer)) {
-					// Do something with the converted string.
-					CPartFileConvert::ScanFolderToAdd(CString(buffer), removesrc);
-				}
-			}
-
-			// Free the returned item identifier list using the
-			// shell's task allocator!Arghhhh.
-			pMalloc->Free(pidlRoot);
+		if (reply != IDCANCEL) {
+			const bool removesrc = (reply == IDYES);
+			CPartFileConvert::ScanFolderToAdd(strSourceFolder, removesrc);
 		}
-		pMalloc->Release();
 	}
 }
 
