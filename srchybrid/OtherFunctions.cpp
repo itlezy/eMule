@@ -38,6 +38,7 @@
 #include "shahashset.h"
 #include "collection.h"
 #include "LongPathSeams.h"
+#include "OtherFunctionsSeams.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "kademlia/io/BufferedFileIO.h"
@@ -608,25 +609,54 @@ void ShellDefaultVerb(LPCTSTR lpName)
 	ShellExecute(NULL, NULL, lpName, NULL, NULL, SW_SHOW);
 }
 
+namespace
+{
+bool DeleteFileToRecycleBinIFileOperation(LPCTSTR pszFilePath, HWND hOwnerWindow)
+{
+	if (pszFilePath == NULL || pszFilePath[0] == _T('\0'))
+		return false;
+
+	const CString strShellPath = OtherFunctionsSeams::PreparePathForShellOperation(CString(pszFilePath));
+	const HRESULT hrCoInitialize = ::CoInitialize(NULL);
+	const bool bShouldUninitialize = SUCCEEDED(hrCoInitialize);
+	if (FAILED(hrCoInitialize) && hrCoInitialize != RPC_E_CHANGED_MODE)
+		return false;
+
+	CComPtr<IFileOperation> pFileOperation;
+	HRESULT hr = pFileOperation.CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_INPROC_SERVER);
+	if (SUCCEEDED(hr) && hOwnerWindow != NULL)
+		hr = pFileOperation->SetOwnerWindow(hOwnerWindow);
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->SetOperationFlags(FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NORECURSION | FOF_NOERRORUI);
+
+	CComPtr<IShellItem> pShellItem;
+	if (SUCCEEDED(hr))
+		hr = ::SHCreateItemFromParsingName(strShellPath, NULL, IID_PPV_ARGS(&pShellItem));
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->DeleteItem(pShellItem, NULL);
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->PerformOperations();
+
+	BOOL bAnyOperationsAborted = FALSE;
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->GetAnyOperationsAborted(&bAnyOperationsAborted);
+
+	if (bShouldUninitialize)
+		::CoUninitialize();
+
+	return SUCCEEDED(hr) && !bAnyOperationsAborted;
+}
+}
+
 bool ShellDeleteFile(LPCTSTR pszFilePath)
 {
-	if (!LongPathSeams::PathExists(pszFilePath))
-		return true;
-	if (thePrefs.GetRemoveToBin()) {
-		TCHAR todel[MAX_PATH + 1] = {};
-		_tcsncpy(todel, pszFilePath, _countof(todel) - 2);
-
-		SHFILEOPSTRUCT fp = {};
-		fp.wFunc = FO_DELETE;
-		fp.hwnd = theApp.emuledlg->m_hWnd;
-		fp.pFrom = todel;
-		fp.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NORECURSION;
-		__try {
-			return !SHFileOperation(&fp);
-		} __except (EXCEPTION_EXECUTE_HANDLER) {
-		}
-	}
-	return LongPathSeams::DeleteFile(pszFilePath) != 0;
+	return OtherFunctionsSeams::ExecuteShellDelete(
+		pszFilePath,
+		thePrefs.GetRemoveToBin(),
+		theApp.emuledlg != NULL ? theApp.emuledlg->m_hWnd : NULL,
+		[](LPCTSTR pszPath) { return LongPathSeams::PathExists(pszPath) != FALSE; },
+		[](LPCTSTR pszPath, HWND hOwnerWindow) { return DeleteFileToRecycleBinIFileOperation(pszPath, hOwnerWindow); },
+		[](LPCTSTR pszPath) { return LongPathSeams::DeleteFile(pszPath) != FALSE; });
 }
 
 CString ShellGetFolderPath(int iCSIDL)
