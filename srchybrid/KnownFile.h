@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "BarShader.h"
+#include "KnownFileProgressSeams.h"
 #include "StatisticFile.h"
 #include "ShareableFile.h"
 
@@ -39,7 +40,7 @@ public:
 
 	virtual void SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystemChars = false, bool bRemoveControlChars = false); // 'bReplaceInvalidFileSystemChars' is set to 'false' for backward compatibility!
 
-	bool	CreateFromFile(LPCTSTR directory, LPCTSTR filename, LPVOID pvProgressParam); // create date, hashset and tags from a file
+	bool	CreateFromFile(LPCTSTR directory, LPCTSTR filename, const CKnownFileProgressTargetSnapshot *pProgressTarget); // create date, hashset and tags from a file
 	bool	LoadFromFile(CFileDataIO &file);	//load date, hashset and tags from a .met file
 	bool	WriteToFile(CFileDataIO &file);
 	bool	CreateAICHHashSetOnly();
@@ -124,6 +125,8 @@ public:
 	//aich
 	void	SetAICHRecoverHashSetAvailable(bool bVal)	{ m_bAICHRecoverHashSetAvailable = bVal; }
 	bool	IsAICHRecoverHashSetAvailable() const		{ return m_bAICHRecoverHashSetAvailable; }
+	void	SetPartFileHashLayoutGenerationSnapshot(uint32 nGeneration) { m_nPartFileHashLayoutGenerationSnapshot = nGeneration; }
+	uint32	GetPartFileHashLayoutGenerationSnapshot() const { return m_nPartFileHashLayoutGenerationSnapshot; }
 
 	static bool	CreateHash(const uchar *pucData, uint32 uSize, uchar *pucHash, CAICHHashTree *pShaHashOut = NULL);
 
@@ -174,4 +177,5 @@ private:
 	bool	m_bAutoUpPriority;
 	bool	m_PublishedED2K;
 	bool	m_bAICHRecoverHashSetAvailable;
+	uint32	m_nPartFileHashLayoutGenerationSnapshot;
 };

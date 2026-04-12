@@ -303,6 +303,7 @@ public:
 	EPartFileOp GetFileOp() const						{ return m_eFileOp; }
 	void	SetFileOpProgress(WPARAM uProgress)			{ m_uFileOpProgress = uProgress; } //ASSERT(uProgress <= 100);
 	WPARAM	GetFileOpProgress() const					{ return m_uFileOpProgress; }
+	uint32	GetHashLayoutGeneration() const				{ return m_nHashLayoutGeneration.load(); }
 
 	CAICHRecoveryHashSet* GetAICHRecoveryHashSet() const { return m_pAICHRecoveryHashSet; }
 	void	RequestAICHRecovery(UINT nPart);
@@ -363,6 +364,7 @@ private:
 	void	DeleteWrittenItem(const POSITION pos);
 	bool	HasDirtyBufferedData() const;
 	bool	FlushBufferedDataForShutdown();
+	void	NoteHashLayoutChanged();
 
 	static CBarShader s_LoadBar;
 	static CBarShader s_ChunkBar;
@@ -397,6 +399,7 @@ private:
 	DWORD	m_dwFileAttributes;
 	ULONGLONG m_random_update_wait;
 	std::atomic<LONG> m_nPendingDisplayUpdate;
+	std::atomic<uint32> m_nHashLayoutGeneration;
 	UINT	m_anStates[STATES_COUNT];
 	UINT	m_category;
 	UINT	m_uMaxSources;

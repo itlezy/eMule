@@ -2,6 +2,13 @@
 
 #include <cstdint>
 
+struct CKnownFileProgressTargetSnapshot
+{
+	unsigned char fileHash[16];
+	uint64_t fileSize;
+	bool isPartFile;
+};
+
 /**
  * @brief Reports whether a worker-side progress owner still matches the file currently being hashed.
  */

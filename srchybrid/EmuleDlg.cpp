@@ -206,6 +206,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
 	ON_MESSAGE(UM_PARTFILE_DISPLAY_UPDATE, OnPartFileDisplayUpdate)
 	ON_MESSAGE(UM_CLIENT_DISPLAY_UPDATE, OnClientDisplayUpdate)
+	ON_MESSAGE(UM_PARTFILE_PROGRESS_UPDATE, OnPartFileProgressUpdate)
 
 	///////////////////////////////////////////////////////////////////////////
 	// WM_APP messages
@@ -3227,6 +3228,24 @@ LRESULT CemuleDlg::OnClientDisplayUpdate(WPARAM wParam, LPARAM)
 
 	if (pClient != NULL)
 		pClient->DispatchQueuedDisplayUpdate();
+	return 0;
+}
+
+LRESULT CemuleDlg::OnPartFileProgressUpdate(WPARAM wParam, LPARAM)
+{
+	CPartFileProgressUpdateRequest *pRequest = reinterpret_cast<CPartFileProgressUpdateRequest*>(wParam);
+	if (pRequest == NULL)
+		return 0;
+
+	CPartFile *pPartFile = theApp.downloadqueue != NULL ? theApp.downloadqueue->GetFileByID(pRequest->fileHash) : NULL;
+	if (pPartFile != NULL
+		&& IsCompatibleKnownFileProgressOwner(true, pRequest->fileSize, static_cast<uint64>(pPartFile->GetFileSize())))
+	{
+		pPartFile->SetFileOpProgress(static_cast<WPARAM>(pRequest->progress));
+		pPartFile->UpdateDisplayedInfo(true);
+	}
+
+	delete pRequest;
 	return 0;
 }
 

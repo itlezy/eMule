@@ -17,6 +17,13 @@ struct CPartFileDisplayUpdateRequest
 	unsigned char fileHash[16];
 };
 
+struct CPartFileProgressUpdateRequest
+{
+	unsigned char fileHash[16];
+	uint64_t fileSize;
+	uint32_t progress;
+};
+
 struct CClientDisplayUpdateRequest
 {
 	unsigned char userHash[16];

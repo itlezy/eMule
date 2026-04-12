@@ -311,6 +311,7 @@ protected:
 	afx_msg LRESULT OnUPnPResult(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnPartFileDisplayUpdate(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnClientDisplayUpdate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnPartFileProgressUpdate(WPARAM wParam, LPARAM lParam);
 };
 
 #ifdef _DEBUG

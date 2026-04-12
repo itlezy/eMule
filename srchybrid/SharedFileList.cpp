@@ -32,6 +32,7 @@
 #include "SafeFile.h"
 #include "Server.h"
 #include "PartFile.h"
+#include "DisplayRefreshSeams.h"
 #include "emuledlg.h"
 #include "SharedFilesWnd.h"
 #include "ClientList.h"
@@ -41,12 +42,41 @@
 #include "LongPathSeams.h"
 #include "ImportParts.h"
 #include "MD5Sum.h"
+#include "UserMsgs.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+CKnownFileProgressTargetSnapshot MakePartFileProgressTargetSnapshot(const CPartFile &partFile)
+{
+	CKnownFileProgressTargetSnapshot snapshot{};
+	md4cpy(snapshot.fileHash, partFile.GetFileHash());
+	snapshot.fileSize = static_cast<uint64>(partFile.GetFileSize());
+	snapshot.isPartFile = true;
+	return snapshot;
+}
+
+bool QueuePartFileProgressUpdate(const CKnownFileProgressTargetSnapshot &progressTarget, uint32 uProgress)
+{
+	if (!progressTarget.isPartFile || theApp.emuledlg == NULL)
+		return false;
+
+	CPartFileProgressUpdateRequest *pRequest = new CPartFileProgressUpdateRequest{};
+	memcpy(pRequest->fileHash, progressTarget.fileHash, sizeof pRequest->fileHash);
+	pRequest->fileSize = progressTarget.fileSize;
+	pRequest->progress = uProgress;
+	if (!theApp.emuledlg->PostMessage(UM_PARTFILE_PROGRESS_UPDATE, reinterpret_cast<WPARAM>(pRequest), 0)) {
+		delete pRequest;
+		return false;
+	}
+	return true;
+}
+}
 
 
 typedef CSimpleArray<CKnownFile*> CSimpleKnownFileArray;
@@ -338,6 +368,7 @@ bool CAddFileThread::ImportParts()
 	BYTE *partData = NULL;
 	unsigned partsuccess = 0;
 	CKnownFile kfimport;
+	const CKnownFileProgressTargetSnapshot progressTarget = MakePartFileProgressTargetSnapshot(*m_partfile);
 	for (INT_PTR i = 0; i < m_PartsToImport.GetSize(); ++i) {
 		const uint16 partnumber = m_PartsToImport[i];
 		const uint64 uStart = PARTSIZE * partnumber;
@@ -372,8 +403,8 @@ bool CAddFileThread::ImportParts()
 			++partsuccess;
 
 			if (theApp.IsRunning()) {
-				WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(static_cast<uint64>(i), static_cast<uint64>(m_PartsToImport.GetSize())));
-				VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)m_partfile));
+				const uint32 uProgress = static_cast<uint32>(CalculateProgressPercent(static_cast<uint64>(i), static_cast<uint64>(m_PartsToImport.GetSize())));
+				QueuePartFileProgressUpdate(progressTarget, uProgress);
 				::Sleep(100); // sleep very shortly to give time to write (or else mem grows!)
 			}
 
@@ -437,7 +468,16 @@ int CAddFileThread::Run()
 
 	if (!theApp.IsClosing()) {
 		CKnownFile *newKnown = new CKnownFile();
-		if (newKnown->CreateFromFile(m_strDirectory, m_strFilename, m_partfile)) { // SLUGFILLER: SafeHash - in case of shutdown while still hashing
+		CKnownFileProgressTargetSnapshot progressTarget{};
+		const CKnownFileProgressTargetSnapshot *pProgressTarget = NULL;
+		uint32 nHashLayoutGeneration = 0;
+		if (m_partfile != NULL) {
+			progressTarget = MakePartFileProgressTargetSnapshot(*m_partfile);
+			pProgressTarget = &progressTarget;
+			nHashLayoutGeneration = m_partfile->GetHashLayoutGeneration();
+		}
+		if (newKnown->CreateFromFile(m_strDirectory, m_strFilename, pProgressTarget)) { // SLUGFILLER: SafeHash - in case of shutdown while still hashing
+			newKnown->SetPartFileHashLayoutGenerationSnapshot(nHashLayoutGeneration);
 			newKnown->SetSharedDirectory(m_strSharedDir);
 			if (m_partfile && m_partfile->GetFileOp() == PFOP_HASHING)
 				m_partfile->SetFileOp(PFOP_NONE);

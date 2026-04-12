@@ -34,6 +34,8 @@
 #include "PartFile.h"
 #include "Packets.h"
 #include "ProtocolGuards.h"
+#include "DisplayRefreshSeams.h"
+#include "UserMsgs.h"
 #include "Kademlia/Kademlia/SearchManager.h"
 #include "Kademlia/Kademlia/Entry.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -63,6 +65,25 @@ static char THIS_FILE[] = __FILE__;
 //	2	0.49c: trusted meta data, Unicode
 #define	META_DATA_VER	2
 
+namespace
+{
+bool QueuePartFileProgressUpdate(const CKnownFileProgressTargetSnapshot *pProgressTarget, uint32 uProgress)
+{
+	if (pProgressTarget == NULL || !pProgressTarget->isPartFile || theApp.emuledlg == NULL)
+		return false;
+
+	CPartFileProgressUpdateRequest *pRequest = new CPartFileProgressUpdateRequest{};
+	memcpy(pRequest->fileHash, pProgressTarget->fileHash, sizeof pRequest->fileHash);
+	pRequest->fileSize = pProgressTarget->fileSize;
+	pRequest->progress = uProgress;
+	if (!theApp.emuledlg->PostMessage(UM_PARTFILE_PROGRESS_UPDATE, reinterpret_cast<WPARAM>(pRequest), 0)) {
+		delete pRequest;
+		return false;
+	}
+	return true;
+}
+}
+
 IMPLEMENT_DYNAMIC(CKnownFile, CShareableFile)
 
 CKnownFile::CKnownFile()
@@ -88,6 +109,7 @@ CKnownFile::CKnownFile()
 	, m_bAutoUpPriority(thePrefs.GetNewAutoUp())
 	, m_PublishedED2K()
 	, m_bAICHRecoverHashSetAvailable()
+	, m_nPartFileHashLayoutGenerationSnapshot()
 {
 	m_iUpPriority = m_bAutoUpPriority ? PR_HIGH : PR_NORMAL;
 	statistic.fileParent = this;
@@ -361,7 +383,7 @@ void CKnownFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystem
 		theApp.sharedfiles->AddKeywords(this);
 }
 
-bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOID pvProgressParam)
+bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, const CKnownFileProgressTargetSnapshot *pProgressTarget)
 {
 	SetPath(in_directory);
 	SetFileName(in_filename);
@@ -444,21 +466,12 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 			fclose(file);
 			return false;
 		}
-		if (pvProgressParam) {
-			if (reinterpret_cast<CPartFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CPartFile))
-				&& reinterpret_cast<CPartFile*>(pvProgressParam)->IsDeleting()) {
-				LogError(_T("Hashing cancelled (pending delete), file \"%s\""), (LPCTSTR)strFilePath);
-				fclose(file);
-				return false;
-			}
-
-			ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CKnownFile)));
-			ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->GetFileSize() == GetFileSize());
+		if (pProgressTarget != NULL && pProgressTarget->isPartFile) {
 			const uint64 nFileSize = static_cast<uint64>(GetFileSize());
 			const uint64 nBytesHashed = nFileSize >= togo ? nFileSize - togo : 0;
-			WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(nBytesHashed, nFileSize));
+			const uint32 uProgress = static_cast<uint32>(CalculateProgressPercent(nBytesHashed, nFileSize));
 			ASSERT(uProgress <= 100);
-			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam));
+			QueuePartFileProgressUpdate(pProgressTarget, uProgress);
 		}
 	}
 
@@ -481,12 +494,10 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 		// now something went pretty wrong
 		DebugLogError(LOG_STATUSBAR, _T("Failed to calculate AICH Hashset from file %s"), (LPCTSTR)GetFileName());
 
-	if (pvProgressParam && !theApp.IsClosing()) {
-		ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CKnownFile)));
-		ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->GetFileSize() == GetFileSize());
-		WPARAM uProgress = 100;
+	if (pProgressTarget != NULL && pProgressTarget->isPartFile && !theApp.IsClosing()) {
+		const uint32 uProgress = 100;
 		ASSERT(uProgress <= 100);
-		VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam));
+		QueuePartFileProgressUpdate(pProgressTarget, uProgress);
 	}
 
 	// set last write date

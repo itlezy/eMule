@@ -37,6 +37,7 @@
 #include "IPFilter.h"
 #include "Packets.h"
 #include "Preferences.h"
+#include "PartFileHashSeams.h"
 #include "PartFileCompletionSeams.h"
 #include "PartFilePauseResumeSeams.h"
 #include "PartFilePreviewSeams.h"
@@ -88,6 +89,37 @@ PartFilePauseResumeSeams::RuntimeStatus ResolvePauseResumeRuntimeStatus(const EP
 		return PartFilePauseResumeSeams::RuntimeStatus::Active;
 	}
 }
+
+CKnownFileProgressTargetSnapshot MakePartFileProgressTargetSnapshot(const CPartFile &partFile)
+{
+	CKnownFileProgressTargetSnapshot snapshot{};
+	md4cpy(snapshot.fileHash, partFile.GetFileHash());
+	snapshot.fileSize = static_cast<uint64>(partFile.GetFileSize());
+	snapshot.isPartFile = true;
+	return snapshot;
+}
+
+bool QueuePartFileProgressUpdate(const CKnownFileProgressTargetSnapshot &progressTarget, uint32 uProgress)
+{
+	if (!progressTarget.isPartFile || theApp.emuledlg == NULL)
+		return false;
+
+	CPartFileProgressUpdateRequest *pRequest = new CPartFileProgressUpdateRequest{};
+	memcpy(pRequest->fileHash, progressTarget.fileHash, sizeof pRequest->fileHash);
+	pRequest->fileSize = progressTarget.fileSize;
+	pRequest->progress = uProgress;
+	if (!theApp.emuledlg->PostMessage(UM_PARTFILE_PROGRESS_UPDATE, reinterpret_cast<WPARAM>(pRequest), 0)) {
+		delete pRequest;
+		return false;
+	}
+	return true;
+}
+
+struct CPartFileCopyProgressContext
+{
+	CKnownFileProgressTargetSnapshot progressTarget;
+	uint32 lastProgress;
+};
 }
 
 CBarShader CPartFile::s_LoadBar(PROGRESS_HEIGHT); // Barry - was 5
@@ -283,6 +315,7 @@ void CPartFile::Init()
 	m_dwFileAttributes = 0;
 	m_random_update_wait = (DWORD)(rand() % SEC2MS(1));
 	m_nPendingDisplayUpdate = 0;
+	m_nHashLayoutGeneration = 0;
 	memset(m_anStates, 0, sizeof m_anStates);
 	m_category = 0;
 	m_uMaxSources = 0;
@@ -685,6 +718,7 @@ EPartFileLoadResult CPartFile::ImportShareazaTempfile(LPCTSTR in_directory, LPCT
 
 			if (badGapList) {
 				m_gaplist.RemoveAll();
+				NoteHashLayoutChanged();
 				Log(LOG_WARNING, GetResString(IDS_X_SHAREAZA_IMPORT_GAP_LIST_CORRUPT), in_filename);
 			}
 
@@ -754,6 +788,7 @@ EPartFileLoadResult CPartFile::ImportShareazaTempfile(LPCTSTR in_directory, LPCT
 
 	m_FileIdentifier.DeleteMD4Hashset();
 	m_gaplist.RemoveAll();
+	NoteHashLayoutChanged();
 
 	return LoadPartFile(in_directory, in_filename);
 }
@@ -1534,6 +1569,39 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak)
 
 void CPartFile::PartFileHashFinished(CKnownFile *result)
 {
+	if (!HasMatchingPartFileHashLayout(result->GetPartFileHashLayoutGenerationSnapshot(), GetHashLayoutGeneration(),
+		result->GetFileIdentifier().GetTheoreticalMD4PartHashCount(), m_FileIdentifier.GetTheoreticalMD4PartHashCount(),
+		result->GetFileIdentifier().GetTheoreticalAICHPartHashCount(), m_FileIdentifier.GetTheoreticalAICHPartHashCount()))
+	{
+		AddDebugLogLine(false, _T("Discarded stale hash result for \"%s\" because the part-file hash layout changed while hashing"), (LPCTSTR)GetFileName());
+		delete result;
+
+		if (m_gaplist.IsEmpty()) {
+			m_FileIdentifier.DeleteMD4Hashset();
+			m_FileIdentifier.ClearAICHHash();
+			m_bMD4HashsetNeeded = true;
+			m_bAICHPartHashsetNeeded = true;
+			m_pAICHRecoveryHashSet->FreeHashSet();
+			SetAICHRecoverHashSetAvailable(false);
+
+			CAddFileThread *addfilethread = static_cast<CAddFileThread*>(AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
+			if (addfilethread) {
+				const CString mytemppath(m_fullname, m_fullname.GetLength() - m_partmetfilename.GetLength());
+				SetStatus(PS_WAITINGFORHASH);
+				SetFileOp(PFOP_HASHING);
+				addfilethread->SetValues(NULL, mytemppath, RemoveFileExtension(m_partmetfilename), _T(""), this);
+				SetFileOpProgress(0);
+				SetStatus(PS_HASHING);
+				addfilethread->ResumeThread();
+			} else
+				SetStatus(PS_ERROR);
+		} else {
+			SetStatus(PS_READY);
+			SavePartFile();
+		}
+		return;
+	}
+
 	ASSERT(result->GetFileIdentifier().GetTheoreticalMD4PartHashCount() == m_FileIdentifier.GetTheoreticalMD4PartHashCount());
 	ASSERT(result->GetFileIdentifier().GetTheoreticalAICHPartHashCount() == m_FileIdentifier.GetTheoreticalAICHPartHashCount());
 	bool errorfound = false;
@@ -1632,6 +1700,7 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 void CPartFile::AddGap(uint64 start, uint64 end) //keep the list ordered!
 {
 	ASSERT(end < (uint64)m_nFileSize && start <= end);
+	bool bChanged = false;
 	POSITION before = NULL;
 	for (POSITION pos = m_gaplist.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
@@ -1650,12 +1719,16 @@ void CPartFile::AddGap(uint64 start, uint64 end) //keep the list ordered!
 				start = gap.start; //extend the head
 			//this gap is fully contained in the new gap
 			m_gaplist.RemoveAt(pos2);
+			bChanged = true;
 		}
 	}
 	if (before)
 		m_gaplist.InsertBefore(before, Gap_Struct{start, end});
 	else
 		m_gaplist.AddTail(Gap_Struct{start, end});
+	bChanged = true;
+	if (bChanged)
+		NoteHashLayoutChanged();
 	UpdateDisplayedInfo();
 }
 
@@ -1909,6 +1982,7 @@ bool CPartFile::GetNextEmptyBlockInPart(UINT partNumber, Requested_Block_Struct 
 void CPartFile::FillGap(uint64 start, uint64 end)
 {
 	ASSERT(end < (uint64)m_nFileSize && start <= end);
+	bool bChanged = false;
 
 	for (POSITION pos = m_gaplist.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
@@ -1918,19 +1992,26 @@ void CPartFile::FillGap(uint64 start, uint64 end)
 		if (gap.end >= start) {
 			if (gap.start >= start && gap.end <= end) {
 				m_gaplist.RemoveAt(pos2); //this gap is fully filled
-			} else if (gap.start >= start)
+				bChanged = true;
+			} else if (gap.start >= start) {
 				gap.start = end + 1; //cut the head of this gap
-			else if (gap.end <= end)
+				bChanged = true;
+			} else if (gap.end <= end) {
 				gap.end = start - 1; //cut the tail of this gap
+				bChanged = true;
+			}
 			else {
 				uint64 prev = gap.end; //this gap fully includes the filler
 				gap.end = start - 1;   //cut the tail, then add the rest
 				m_gaplist.InsertAfter(pos2, Gap_Struct{end + 1, prev});
+				bChanged = true;
 				break; // [Lord KiRon]
 			}
 		}
 	}
 
+	if (bChanged)
+		NoteHashLayoutChanged();
 	UpdateCompletedInfos();
 	UpdateDisplayedInfo();
 }
@@ -2852,15 +2933,16 @@ DWORD CALLBACK CopyProgressRoutine(LARGE_INTEGER TotalFileSize, LARGE_INTEGER To
 	DWORD /*dwCallbackReason*/, HANDLE /*hSourceFile*/, HANDLE /*hDestinationFile*/,
 	LPVOID lpData)
 {
-	CPartFile *pPartFile = static_cast<CPartFile*>(lpData);
-	if (TotalFileSize.QuadPart && pPartFile && pPartFile->IsKindOf(RUNTIME_CLASS(CPartFile))) {
+	CPartFileCopyProgressContext *pContext = static_cast<CPartFileCopyProgressContext*>(lpData);
+	if (TotalFileSize.QuadPart && pContext != NULL && pContext->progressTarget.isPartFile) {
 		/** Keep the runtime zero-denominator guard inline with the progress calculation. */
-		WPARAM uProgress = (WPARAM)(TotalFileSize.QuadPart
+		const uint32 uProgress = static_cast<uint32>(TotalFileSize.QuadPart
 			? (TotalBytesTransferred.QuadPart * 100 / TotalFileSize.QuadPart)
 			: 0);
-		if (uProgress != pPartFile->GetFileOpProgress()) {
+		if (uProgress != pContext->lastProgress) {
+			pContext->lastProgress = uProgress;
 			ASSERT(uProgress <= 100);
-			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pPartFile));
+			QueuePartFileProgressUpdate(pContext->progressTarget, uProgress);
 		}
 	} else
 		ASSERT(0);
@@ -2943,8 +3025,9 @@ BOOL CPartFile::PerformFileComplete()
 	free(newfilename);
 
 	bNoNewReads = true; //this file is on the move and cannot be read
+	CPartFileCopyProgressContext copyProgressContext{MakePartFileProgressTargetSnapshot(*this), 0u};
 	for (bool bFirstTry = true; ;) {
-		if (LongPathSeams::MoveFileWithProgress(strPartfilename, strNewname, CopyProgressRoutine, this, MOVEFILE_COPY_ALLOWED))
+		if (LongPathSeams::MoveFileWithProgress(strPartfilename, strNewname, CopyProgressRoutine, &copyProgressContext, MOVEFILE_COPY_ALLOWED))
 			break;
 		DWORD dwMoveResult = ::GetLastError();
 		if (dwMoveResult != ERROR_SHARING_VIOLATION || !bFirstTry) {
@@ -5473,8 +5556,15 @@ void CPartFile::RefilterFileComments()
 
 void CPartFile::SetFileSize(EMFileSize nFileSize)
 {
+	if (GetFileSize() != nFileSize)
+		NoteHashLayoutChanged();
 	ASSERT(m_pAICHRecoveryHashSet != NULL);
 	m_pAICHRecoveryHashSet->SetFileSize(nFileSize);
 	CKnownFile::SetFileSize(nFileSize);
 	m_aChangedPart.SetSize((INT_PTR)(((uint64)nFileSize + PARTSIZE - 1) / PARTSIZE));
+}
+
+void CPartFile::NoteHashLayoutChanged()
+{
+	m_nHashLayoutGeneration.fetch_add(1);
 }
