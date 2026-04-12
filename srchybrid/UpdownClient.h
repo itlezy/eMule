@@ -17,6 +17,7 @@
 #pragma once
 #include "BarShader.h"
 #include "ClientStateDefs.h"
+#include "DisplayRefreshSeams.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
 #include "UploadScoreSeams.h"
@@ -405,6 +406,8 @@ public:
 	// Barry - Process zip file as it arrives, don't need to wait until end of block
 	int				unzip(Pending_Block_Struct *block, const BYTE *zipped, uint32 lenZipped, std::vector<BYTE> &runzipped, uint32 *lenUnzipped);
 	void			UpdateDisplayedInfo(bool force = false);
+	void			QueueDisplayUpdate(uint32 nMask);
+	void			DispatchQueuedDisplayUpdate();
 	int				GetFileListRequested() const					{ return m_iFileListRequested; }
 	void			SetFileListRequested(int iFileListRequested)	{ m_iFileListRequested = iFileListRequested; }
 	uint32			GetSearchID() const								{ return m_uSearchID; }
@@ -640,6 +643,7 @@ protected:
 	ULONGLONG m_lastRefreshedDLDisplay;
 	ULONGLONG m_lastRefreshedULDisplay;
 	ULONGLONG m_random_update_wait;
+	std::atomic<LONG> m_nPendingDisplayUpdateMask;
 
 	// using bit fields for less important flags, to save some bytes
 	UINT m_fHashsetRequestingMD4 : 1, // we have sent a hashset request to this client in the current connection

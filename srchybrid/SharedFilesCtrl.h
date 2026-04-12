@@ -64,6 +64,7 @@ public:
 	void	ShowFilesCount();
 	void	ShowComments(CShareableFile *file);
 	void	SetAICHHashing(INT_PTR nVal)				{ nAICHHashing = nVal; }
+	void	ApplyAICHHashingCount(INT_PTR nVal);
 	void	SetDirectoryFilter(CDirectoryItem *pNewFilter, bool bRefresh = true);
 
 protected:

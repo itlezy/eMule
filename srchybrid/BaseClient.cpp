@@ -249,6 +249,7 @@ void CUpDownClient::Init()
 	m_lastRefreshedDLDisplay = 0;
 	m_lastRefreshedULDisplay = ::GetTickCount64();
 	m_random_update_wait = (DWORD)(rand() % SEC2MS(1));
+	m_nPendingDisplayUpdateMask = 0;
 
 	m_fHashsetRequestingMD4 = 0;
 	m_fSharedDirectories = 0;
@@ -1242,7 +1243,7 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 	}
 	socket = NULL;
 	if (!bDelete)
-		theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(this);
+		QueueDisplayUpdate(DISPLAY_REFRESH_CLIENT_LIST);
 
 	// finally, remove the client from the timeout timer and reset the connecting state
 	m_eConnectingState = CCS_NONE;

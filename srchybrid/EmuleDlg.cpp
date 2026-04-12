@@ -46,6 +46,7 @@
 #include "CreditsDlg.h"
 #include "PreferencesDlg.h"
 #include "ServerConnect.h"
+#include "UpDownClient.h"
 #include "KnownFileList.h"
 #include "ServerList.h"
 #include "Opcodes.h"
@@ -115,6 +116,26 @@ static const UINT UWM_ARE_YOU_EMULE = RegisterWindowMessage(EMULE_GUID);
 static const UINT UWM_TASK_BUTTON_CREATED = RegisterWindowMessage(_T("TaskbarButtonCreated"));
 #endif
 
+namespace
+{
+	CUpDownClient* ResolveQueuedClient(const CClientDisplayUpdateRequest &request)
+	{
+		if (theApp.clientlist == NULL)
+			return NULL;
+		if (!isnulmd4(request.userHash)) {
+			if (CUpDownClient *pClient = theApp.clientlist->FindClientByUserHash(request.userHash, request.connectIP, request.userPort))
+				return pClient;
+		}
+		if (request.connectIP != 0 && request.userPort != 0) {
+			if (CUpDownClient *pClient = theApp.clientlist->FindClientByIP(request.connectIP, request.userPort))
+				return pClient;
+		}
+		if (request.connectIP != 0)
+			return theApp.clientlist->FindClientByIP(request.connectIP);
+		return NULL;
+	}
+}
+
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -183,6 +204,8 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 
 	// UPnP
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
+	ON_MESSAGE(UM_PARTFILE_DISPLAY_UPDATE, OnPartFileDisplayUpdate)
+	ON_MESSAGE(UM_CLIENT_DISPLAY_UPDATE, OnClientDisplayUpdate)
 
 	///////////////////////////////////////////////////////////////////////////
 	// WM_APP messages
@@ -3176,6 +3199,34 @@ LRESULT CemuleDlg::OnAddRemoveFriend(WPARAM wParam, LPARAM lParam)
 LRESULT CemuleDlg::OnWebSetCatPrio(WPARAM wParam, LPARAM lParam)
 {
 	theApp.downloadqueue->SetCatPrio((UINT)wParam, (uint8)lParam);
+	return 0;
+}
+
+LRESULT CemuleDlg::OnPartFileDisplayUpdate(WPARAM wParam, LPARAM)
+{
+	CPartFileDisplayUpdateRequest *pRequest = reinterpret_cast<CPartFileDisplayUpdateRequest*>(wParam);
+	if (pRequest == NULL)
+		return 0;
+
+	CPartFile *pPartFile = theApp.downloadqueue != NULL ? theApp.downloadqueue->GetFileByID(pRequest->fileHash) : NULL;
+	delete pRequest;
+
+	if (pPartFile != NULL)
+		pPartFile->DispatchQueuedDisplayUpdate();
+	return 0;
+}
+
+LRESULT CemuleDlg::OnClientDisplayUpdate(WPARAM wParam, LPARAM)
+{
+	CClientDisplayUpdateRequest *pRequest = reinterpret_cast<CClientDisplayUpdateRequest*>(wParam);
+	if (pRequest == NULL)
+		return 0;
+
+	CUpDownClient *pClient = ResolveQueuedClient(*pRequest);
+	delete pRequest;
+
+	if (pClient != NULL)
+		pClient->DispatchQueuedDisplayUpdate();
 	return 0;
 }
 

@@ -226,7 +226,7 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 
 		if (client) {
 			client->ConnectionEstablished();
-			theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(client);
+			client->QueueDisplayUpdate(DISPLAY_REFRESH_CLIENT_LIST);
 		}
 		return;
 	case OP_HELLO:
@@ -273,7 +273,7 @@ void CClientReqSocket::ProcessPacket(const BYTE *packet, uint32 size, UINT opcod
 				client->SetCommentDirty();
 			}
 
-			theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(client);
+			client->QueueDisplayUpdate(DISPLAY_REFRESH_CLIENT_LIST);
 
 			// send a response packet with standard informations
 			if (client->GetHashType() == SO_EMULE && !bIsMuleHello)

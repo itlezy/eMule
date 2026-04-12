@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include "MapKey.h"
 
 class CKnownFile;
 class CSafeFile;
@@ -34,5 +35,5 @@ protected:
 	bool ConvertKnown2ToKnown264(CSafeFile &TargetFile);
 
 private:
-	CTypedPtrList<CPtrList, CKnownFile*> m_liToHash;
+	CArray<CSKey, const CSKey&> m_aToHash;
 };

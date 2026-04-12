@@ -588,7 +588,7 @@ void CUploadQueue::AddClientToQueue(CUpDownClient *client, bool bIgnoreTimelimit
 		CUpDownClient *cur_client = waitinglist.GetNext(pos);
 		if (cur_client == client) {
 			client->SendRankingInfo();
-			theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(client);
+			client->QueueDisplayUpdate(DISPLAY_REFRESH_QUEUE_LIST);
 			return;
 		}
 		if (client->Compare(cur_client)) {

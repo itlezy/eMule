@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "StdAfx.h"
 #include "aichsyncthread.h"
+#include "AICHSyncThreadSeams.h"
 #include "shahashset.h"
 #include "safefile.h"
 #include "knownfile.h"
@@ -24,13 +25,76 @@
 #include "sharedfilelist.h"
 #include "knownfilelist.h"
 #include "sharedfileswnd.h"
+#include "DownloadQueue.h"
+#include "PartFile.h"
 #include "Log.h"
+#include "UserMsgs.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+	void SnapshotSharedAICHFiles(CArray<CKnownFile*, CKnownFile*> &aSharedFiles)
+	{
+		aSharedFiles.RemoveAll();
+		if (theApp.sharedfiles == NULL)
+			return;
+
+		CSingleLock sharelock(&theApp.sharedfiles->m_mutWriteList, TRUE);
+		for (POSITION pos = BEFORE_START_POSITION; pos != NULL;) {
+			CKnownFile *pFile = theApp.sharedfiles->GetFileNext(pos);
+			if (pFile != NULL && !pFile->IsPartFile())
+				aSharedFiles.Add(pFile);
+		}
+	}
+
+	bool HasPendingPartFileHashing()
+	{
+		if (theApp.downloadqueue == NULL)
+			return false;
+
+		for (POSITION pos = NULL; ; ) {
+			const CPartFile *pPartFile = theApp.downloadqueue->GetFileNext(pos);
+			if (pPartFile == NULL)
+				break;
+			if (pPartFile != NULL && (pPartFile->GetStatus() == PS_WAITINGFORHASH || pPartFile->GetStatus() == PS_HASHING))
+				return true;
+		}
+		return false;
+	}
+
+	bool ResolveSharedAICHSyncFile(const uchar *pFileHash, CKnownFile *&rpResolvedFile)
+	{
+		rpResolvedFile = NULL;
+		if (theApp.sharedfiles == NULL || pFileHash == NULL)
+			return false;
+
+		CSingleLock sharelock(&theApp.sharedfiles->m_mutWriteList, TRUE);
+		rpResolvedFile = theApp.sharedfiles->GetFileByID(pFileHash);
+		return rpResolvedFile != NULL && !rpResolvedFile->IsPartFile();
+	}
+
+	HWND GetAICHSyncProgressWindow()
+	{
+		if (theApp.emuledlg == NULL || theApp.emuledlg->sharedfileswnd == NULL)
+			return NULL;
+		return theApp.emuledlg->sharedfileswnd->GetSafeHwnd();
+	}
+
+	void PostAICHSyncProgressCount(INT_PTR nRemainingHashes)
+	{
+		if (!HasValidAICHSyncProgressCount(nRemainingHashes))
+			return;
+
+		const HWND hSharedFilesWnd = GetAICHSyncProgressWindow();
+		if (hSharedFilesWnd != NULL && ::IsWindow(hSharedFilesWnd))
+			VERIFY(::PostMessage(hSharedFilesWnd, UM_AICH_HASHING_COUNT_CHANGED, static_cast<WPARAM>(nRemainingHashes), 0));
+	}
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////////////
@@ -48,6 +112,8 @@ int CAICHSyncThread::Run()
 {
 	if (theApp.IsClosing())
 		return 0;
+
+	m_aToHash.RemoveAll();
 
 	// we collect all masterhashes which we find in the known2.met and store them in a list
 	CArray<CAICHHash> aKnown2Hashes;
@@ -111,53 +177,53 @@ int CAICHSyncThread::Run()
 	// now we check that all files which are in the shared file list have a corresponding hash in the out list
 	// those who don't are added to the hashing list
 	CList<CAICHHash> liUsedHashes;
+	CArray<CKnownFile*, CKnownFile*> aSharedFiles;
 	bool bDbgMsgCreatingPartHashes = true;
 
-	CSingleLock sharelock(&theApp.sharedfiles->m_mutWriteList, TRUE);
-	for (POSITION pos = BEFORE_START_POSITION; pos != NULL;) {
+	SnapshotSharedAICHFiles(aSharedFiles);
+	for (INT_PTR iFile = 0; iFile < aSharedFiles.GetCount(); ++iFile) {
 		if (theApp.IsClosing()) // in case of shutdown while still hashing
 			return 0;
-		CKnownFile *pFile = theApp.sharedfiles->GetFileNext(pos);
-		if (pFile != NULL && !pFile->IsPartFile()) {
-			CFileIdentifier &fileid = pFile->GetFileIdentifier();
-			if (fileid.HasAICHHash()) {
-				bool bAICHfound = false;
-				for (INT_PTR i = aKnown2Hashes.GetCount(); --i >= 0;) {
-					if (aKnown2Hashes[i] == fileid.GetAICHHash()) {
-						bAICHfound = true;
-						liUsedHashes.AddTail(CAICHHash(aKnown2Hashes[i]));
-						pFile->SetAICHRecoverHashSetAvailable(true);
-						// Has the file the proper AICH Part hashset? If not, probably upgrading, create it
-						if (!fileid.HasExpectedAICHHashCount()) {
-							if (bDbgMsgCreatingPartHashes) {
-								bDbgMsgCreatingPartHashes = false;
-								DebugLogWarning(_T("Missing AICH Part Hashsets for known files - maybe upgrading from earlier version. Creating them out of full AICH recovery Hashsets, shouldn't take too long"));
-							}
-							CAICHRecoveryHashSet tempHashSet(pFile, pFile->GetFileSize());
-							tempHashSet.SetMasterHash(fileid.GetAICHHash(), AICH_HASHSETCOMPLETE);
-							if (!tempHashSet.LoadHashSet()) {
-								ASSERT(0);
-								DebugLogError(_T("Failed to load full AICH recovery Hashset - known2.met might be corrupt. Unable to create AICH Part Hashset - %s"), (LPCTSTR)pFile->GetFileName());
-							} else {
-								if (!fileid.SetAICHHashSet(tempHashSet)) {
-									DebugLogError(_T("Failed to create AICH Part Hashset out of full AICH recovery Hashset - %s"), (LPCTSTR)pFile->GetFileName());
-									ASSERT(0);
-								}
-								ASSERT(fileid.HasExpectedAICHHashCount());
-							}
+		CKnownFile *pFile = aSharedFiles[iFile];
+		if (pFile == NULL)
+			continue;
+		CFileIdentifier &fileid = pFile->GetFileIdentifier();
+		if (fileid.HasAICHHash()) {
+			bool bAICHfound = false;
+			for (INT_PTR i = aKnown2Hashes.GetCount(); --i >= 0;) {
+				if (aKnown2Hashes[i] == fileid.GetAICHHash()) {
+					bAICHfound = true;
+					liUsedHashes.AddTail(CAICHHash(aKnown2Hashes[i]));
+					pFile->SetAICHRecoverHashSetAvailable(true);
+					// Has the file the proper AICH Part hashset? If not, probably upgrading, create it
+					if (!fileid.HasExpectedAICHHashCount()) {
+						if (bDbgMsgCreatingPartHashes) {
+							bDbgMsgCreatingPartHashes = false;
+							DebugLogWarning(_T("Missing AICH Part Hashsets for known files - maybe upgrading from earlier version. Creating them out of full AICH recovery Hashsets, shouldn't take too long"));
 						}
-						//theApp.QueueDebugLogLine(false, _T("%s - %s"), current_hash.GetString(), pFile->GetFileName());
-						break;
+						CAICHRecoveryHashSet tempHashSet(pFile, pFile->GetFileSize());
+						tempHashSet.SetMasterHash(fileid.GetAICHHash(), AICH_HASHSETCOMPLETE);
+						if (!tempHashSet.LoadHashSet()) {
+							ASSERT(0);
+							DebugLogError(_T("Failed to load full AICH recovery Hashset - known2.met might be corrupt. Unable to create AICH Part Hashset - %s"), (LPCTSTR)pFile->GetFileName());
+						} else {
+							if (!fileid.SetAICHHashSet(tempHashSet)) {
+								DebugLogError(_T("Failed to create AICH Part Hashset out of full AICH recovery Hashset - %s"), (LPCTSTR)pFile->GetFileName());
+								ASSERT(0);
+							}
+							ASSERT(fileid.HasExpectedAICHHashCount());
+						}
 					}
+					//theApp.QueueDebugLogLine(false, _T("%s - %s"), current_hash.GetString(), pFile->GetFileName());
+					break;
 				}
-				if (bAICHfound)
-					continue;
 			}
-			pFile->SetAICHRecoverHashSetAvailable(false);
-			m_liToHash.AddTail(pFile);
+			if (bAICHfound)
+				continue;
 		}
+		pFile->SetAICHRecoverHashSetAvailable(false);
+		m_aToHash.Add(CSKey(pFile->GetFileHash()));
 	}
-	sharelock.Unlock();
 
 	// remove all unused AICH hashsets from known2.met
 	if (liUsedHashes.GetCount() != aKnown2Hashes.GetCount()
@@ -262,41 +328,43 @@ int CAICHSyncThread::Run()
 
 	lockKnown2Met.Unlock();
 	// warn the user if he just upgraded
-	if (thePrefs.IsFirstStart() && !m_liToHash.IsEmpty() && !bJustCreated)
+	if (thePrefs.IsFirstStart() && m_aToHash.GetCount() != 0 && !bJustCreated)
 		LogWarning(GetResString(IDS_AICH_WARNUSER));
 
-	if (!m_liToHash.IsEmpty()) {
-		theApp.QueueLogLine(true, GetResString(IDS_AICH_SYNCTOTAL), m_liToHash.GetCount());
-		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.SetAICHHashing(m_liToHash.GetCount());
-		// first let all normal hashing be done before starting out sync hashing
-		CSingleLock sLock1(&theApp.hashing_mut); // only one file hash at a time
-		while (theApp.sharedfiles->GetHashingCount() != 0) {
-			if (theApp.IsClosing())
-				return 0;
-			::Sleep(100);
-		}
-		sLock1.Lock();
-		INT_PTR cDone = 0;
-		for (POSITION pos = m_liToHash.GetHeadPosition(); pos != NULL; ++cDone) {
+	if (m_aToHash.GetCount() != 0) {
+		theApp.QueueLogLine(true, GetResString(IDS_AICH_SYNCTOTAL), m_aToHash.GetCount());
+		PostAICHSyncProgressCount(m_aToHash.GetCount());
+		for (INT_PTR iFile = 0; iFile < m_aToHash.GetCount(); ++iFile) {
 			if (theApp.IsClosing()) // in case of shutdown while still hashing
 				return 0;
 
-			theApp.emuledlg->sharedfileswnd->sharedfilesctrl.SetAICHHashing(m_liToHash.GetCount() - cDone);
-			if (theApp.emuledlg->sharedfileswnd->sharedfilesctrl.m_hWnd != NULL)
-				theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ShowFilesCount();
-			CKnownFile *pCurFile = m_liToHash.GetNext(pos);
-			// just to be sure that the file hasn't been deleted lately
-			if (!(theApp.knownfiles->IsKnownFile(pCurFile) && theApp.sharedfiles->GetFileByID(pCurFile->GetFileHash())))
+			for (;;) {
+				const AICHSyncForegroundHashState state = {
+					theApp.IsClosing(),
+					theApp.sharedfiles->GetHashingCount(),
+					HasPendingPartFileHashing()
+				};
+				const AICHSyncForegroundWaitAction action = AICHMaintenanceSeams::GetForegroundHashWaitAction(state);
+				if (action.bShouldExit)
+					return 0;
+				if (action.dwSleepMilliseconds == 0u)
+					break;
+				::Sleep(action.dwSleepMilliseconds);
+			}
+
+			CSingleLock hashingLock(&theApp.hashing_mut, TRUE); // only one file hash at a time
+
+			PostAICHSyncProgressCount(m_aToHash.GetCount() - iFile);
+			CKnownFile *pCurFile = NULL;
+			const bool bIsStillShared = ResolveSharedAICHSyncFile(m_aToHash[iFile].m_key, pCurFile);
+			if (!ShouldCreateAICHSyncHash(theApp.IsClosing(), bIsStillShared))
 				continue;
 			theApp.QueueLogLine(false, GetResString(IDS_AICH_CALCFILE), (LPCTSTR)pCurFile->GetFileName());
 			if (!pCurFile->CreateAICHHashSetOnly())
 				theApp.QueueDebugLogLine(false, _T("Failed to create AICH Hashset while sync. for file %s"), (LPCTSTR)pCurFile->GetFileName());
 		}
 
-		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.SetAICHHashing(0);
-		if (theApp.emuledlg->sharedfileswnd->sharedfilesctrl.m_hWnd != NULL)
-			theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ShowFilesCount();
-		sLock1.Unlock();
+		PostAICHSyncProgressCount(0);
 	}
 
 	theApp.QueueDebugLogLine(false, _T("AICHSyncThread finished"));

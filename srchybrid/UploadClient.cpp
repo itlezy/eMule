@@ -126,7 +126,7 @@ void CUpDownClient::SetUploadState(EUploadState eNewState)
 
 		// don't add any final cleanups for US_NONE here
 		m_eUploadState = eNewState;
-		theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(this);
+		QueueDisplayUpdate(DISPLAY_REFRESH_CLIENT_LIST);
 	}
 }
 
@@ -291,7 +291,7 @@ bool CUpDownClient::ProcessExtendedInfo(CSafeMemFile &data, CKnownFile *tempreqf
 		if (nCompleteCountLast != nCompleteCountNew)
 			tempreqfile->UpdatePartsInfo();
 	}
-	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(this);
+	QueueDisplayUpdate(DISPLAY_REFRESH_QUEUE_LIST);
 	return true;
 }
 
@@ -498,8 +498,7 @@ void CUpDownClient::UpdateUploadingStatisticsData()
 	// Check if it's time to update the display.
 	if (curTick >= m_lastRefreshedULDisplay + MINWAIT_BEFORE_ULDISPLAY_WINDOWUPDATE + rand() % 800) {
 		// Update display
-		theApp.emuledlg->transferwnd->GetUploadList()->RefreshClient(this);
-		theApp.emuledlg->transferwnd->GetClientList()->RefreshClient(this);
+		QueueDisplayUpdate(DISPLAY_REFRESH_UPLOAD_LIST | DISPLAY_REFRESH_CLIENT_LIST);
 		m_lastRefreshedULDisplay = curTick;
 	}
 }
@@ -744,7 +743,7 @@ void CUpDownClient::Ban(LPCTSTR pszReason)
 	theApp.clientlist->AddBannedClient(GetIP());
 	SetUploadState(US_BANNED);
 	theApp.emuledlg->transferwnd->ShowQueueCount(theApp.uploadqueue->GetWaitingUserCount());
-	theApp.emuledlg->transferwnd->GetQueueList()->RefreshClient(this);
+	QueueDisplayUpdate(DISPLAY_REFRESH_QUEUE_LIST);
 	if (socket != NULL && socket->IsConnected())
 		socket->ShutDown(CAsyncSocket::receives); // let the socket timeout, since we don't want to risk to delete the client right now. This isn't actually perfect, could be changed later
 }

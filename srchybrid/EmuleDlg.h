@@ -46,6 +46,8 @@ class CStatisticsDlg;
 class CTransferDlg;
 struct Status;
 
+extern UINT g_uMainThreadId;
+
 // emuleapp <-> emuleapp
 #define OP_ED2KLINK				12000
 #define OP_CLCOMMAND			12001
@@ -307,6 +309,8 @@ protected:
 	afx_msg LRESULT OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam);
 	// UPnP
 	afx_msg LRESULT OnUPnPResult(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnPartFileDisplayUpdate(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnClientDisplayUpdate(WPARAM wParam, LPARAM lParam);
 };
 
 #ifdef _DEBUG

@@ -55,6 +55,7 @@ BEGIN_MESSAGE_MAP(CSharedFilesWnd, CResizableDialog)
 	ON_BN_CLICKED(IDC_SF_HIDESHOWDETAILS, OnBnClickedSfHideshowdetails)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SFLIST, OnLvnItemchangedSflist)
 	ON_WM_SHOWWINDOW()
+	ON_MESSAGE(UM_AICH_HASHING_COUNT_CHANGED, OnAICHHashingCountChanged)
 END_MESSAGE_MAP()
 
 CSharedFilesWnd::CSharedFilesWnd(CWnd *pParent /*=NULL*/)
@@ -213,6 +214,12 @@ void CSharedFilesWnd::OnBnClickedReloadSharedFiles()
 	}
 #endif
 	Reload(true);
+}
+
+LRESULT CSharedFilesWnd::OnAICHHashingCountChanged(WPARAM wParam, LPARAM)
+{
+	sharedfilesctrl.ApplyAICHHashingCount(static_cast<INT_PTR>(wParam));
+	return 0;
 }
 
 void CSharedFilesWnd::OnLvnItemActivateSharedFiles(LPNMHDR, LRESULT*)

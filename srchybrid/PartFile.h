@@ -18,6 +18,7 @@
 #include "KnownFile.h"
 #include "DeadSourceList.h"
 #include "CorruptionBlackBox.h"
+#include "DisplayRefreshSeams.h"
 #include "SafeFile.h"
 
 enum EPartFileStatus : uint8
@@ -281,6 +282,7 @@ public:
 	CString GetInfoSummary(bool bNoFormatCommands = false) const;
 
 	void	UpdateDisplayedInfo(bool force = false);
+	void	DispatchQueuedDisplayUpdate();
 
 	UINT	GetCategory() /*const*/;
 	void	SetCategory(UINT cat);
@@ -394,6 +396,7 @@ private:
 	ULONGLONG m_nFileFlushTime; //if file is idle long enough, flush new data to disk
 	DWORD	m_dwFileAttributes;
 	ULONGLONG m_random_update_wait;
+	std::atomic<LONG> m_nPendingDisplayUpdate;
 	UINT	m_anStates[STATES_COUNT];
 	UINT	m_category;
 	UINT	m_uMaxSources;
