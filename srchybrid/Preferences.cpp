@@ -28,6 +28,7 @@
 #include "MD5Sum.h"
 #include "PartFile.h"
 #include "PathHelpers.h"
+#include "SharedFileIntakePolicy.h"
 #include "ServerConnect.h"
 #include "ListenSocket.h"
 #include "ServerList.h"
@@ -46,6 +47,7 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 #define SHAREDDIRS	_T("shareddir.dat")
+#define SHAREIGNORE	_T("shareignore.dat")
 LPCTSTR const strPreferencesDat = _T("preferences.dat");
 LPCTSTR const strDefaultToolbar = _T("0099010203040506070899091011");
 CPreferences thePrefs;
@@ -58,6 +60,38 @@ constexpr uint32 kDefaultBroadbandDownloadLimitKiB = 12207;
 uint32 NormalizeConfiguredUploadLimitKiB(uint32 value)
 {
 	return (value == 0 || value >= UNLIMITED) ? kDefaultConfiguredUploadLimitKiB : value;
+}
+
+void LoadSharedIgnoreRules(const CString &rstrConfigDirectory)
+{
+	SharedFileIntakePolicy::ClearUserRules();
+
+	const CString strFullPath(rstrConfigDirectory + SHAREIGNORE);
+	const bool bIsUnicodeFile = IsUnicodeFile(strFullPath);
+	CSafeBufferedFile ignoreFile;
+	if (!LongPathSeams::OpenFile(ignoreFile, strFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0)))
+		return;
+
+	try {
+		if (bIsUnicodeFile)
+			ignoreFile.Seek(sizeof(WORD), CFile::begin);
+
+		std::vector<SharedFileIntakePolicy::IgnoreRule> userRules;
+		CString strRuleLine;
+		while (ignoreFile.CStdioFile::ReadString(strRuleLine)) {
+			strRuleLine.Trim(_T("\r\n"));
+			SharedFileIntakePolicy::IgnoreRule rule = {};
+			if (SharedFileIntakePolicy::TryParseUserRule(strRuleLine, rule))
+				userRules.push_back(rule);
+		}
+
+		SharedFileIntakePolicy::ReplaceUserRules(userRules);
+	} catch (CFileException *ex) {
+		if (thePrefs.GetVerbose())
+			AddDebugLogLine(false, _T("Failed to load %s%s"), (LPCTSTR)strFullPath, (LPCTSTR)CExceptionStrDash(*ex));
+		ex->Delete();
+	}
+	ignoreFile.Close();
 }
 }
 
@@ -576,6 +610,7 @@ void CPreferences::Init()
 
 	const CString &sConfDir(GetMuleDirectory(EMULE_CONFIGDIR));
 	m_strFileCommentsFilePath.Format(_T("%sfileinfo.ini"), (LPCTSTR)sConfDir);
+	LoadSharedIgnoreRules(sConfDir);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Move *.log files from application directory into 'log' directory
@@ -2650,6 +2685,9 @@ bool CPreferences::IsInstallationDirectory(const CString &rstrDir)
 
 bool CPreferences::IsShareableDirectory(const CString &rstrDir)
 {
+	if (SharedFileIntakePolicy::ShouldIgnoreDirectoryPath(rstrDir))
+		return false;
+
 	// skip sharing of several special eMule folders
 	if (IsInstallationDirectory(rstrDir))
 		return false;

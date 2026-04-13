@@ -4104,7 +4104,8 @@ bool HasSubdirectories(const CString &strDir)
 	bool bHasSubdirectories = false;
 	(void)PathHelpers::ForEachDirectoryEntry(sDir, [&](const WIN32_FIND_DATA &findData) -> bool {
 		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0
-			&& (findData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) == 0)
+			&& (findData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) == 0
+			&& !SharedFileIntakePolicy::ShouldIgnoreDirectoryByName(findData.cFileName))
 		{
 			bHasSubdirectories = true;
 			return false;

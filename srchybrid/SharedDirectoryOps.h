@@ -3,6 +3,7 @@
 #include <afxtempl.h>
 
 #include "PathHelpers.h"
+#include "SharedFileIntakePolicy.h"
 
 bool EqualPaths(const CString &rstrDir1, const CString &rstrDir2);
 
@@ -69,7 +70,8 @@ inline bool EnumerateChildDirectories(const CString &rstrDirectory, CStringList 
 	DWORD dwError = ERROR_SUCCESS;
 	const bool bEnumerated = PathHelpers::ForEachDirectoryEntry(rstrDirectory, [&](const WIN32_FIND_DATA &findData) -> bool {
 		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0
-			&& (findData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) == 0)
+			&& (findData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) == 0
+			&& !SharedFileIntakePolicy::ShouldIgnoreDirectoryByName(findData.cFileName))
 		{
 			rChildNames.AddTail(findData.cFileName);
 		}

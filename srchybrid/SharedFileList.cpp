@@ -686,6 +686,9 @@ void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
 bool CSharedFileList::AddSingleSharedFile(const CString &rstrFilePath, bool bNoUpdate)
 {
 	const CString strFilePath(NormalizeSharedFilePath(rstrFilePath));
+	if (ShouldIgnoreSharedFileCandidate(strFilePath, SharedFileIntakePolicy::GetLeafName(strFilePath)))
+		return false;
+
 	bool bExclude = false;
 	// first check if we are explicitly excluding this file
 	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;) {
