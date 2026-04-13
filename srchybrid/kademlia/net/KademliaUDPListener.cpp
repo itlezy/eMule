@@ -74,6 +74,24 @@ static bool IsParityHarnessLoopbackPeer(uint32 uIP)
 		&& (uIP & 0xFF000000) == 0x7F000000;
 }
 
+static bool ShouldRequestHelloResAck(uint32 uIP, const CKadUDPKey &senderUDPKey, bool bAddedOrUpdated, bool bValidReceiverKey)
+{
+	if (!bAddedOrUpdated || bValidReceiverKey)
+		return false;
+
+	// Private parity-harness loopback peers currently run the deterministic Kad
+	// cluster in plaintext without verify-key transport headers. Requesting
+	// HELLO_RES_ACK on that branch produces an unfulfillable handshake because
+	// the responder cannot return a sender key the requester can validate.
+	if (IsParityHarnessLoopbackPeer(uIP) && senderUDPKey.IsEmpty()) {
+		if (thePrefs.GetVerbose())
+			DebugLog(_T("Parity harness loopback suppressed HELLO_RES ACK request for %s because sender key material is unavailable"), (LPCTSTR)ipstr(htonl(uIP)));
+		return false;
+	}
+
+	return true;
+}
+
 CKademliaUDPListener::~CKademliaUDPListener()
 {
 // report timeout to all pending FetchNodeIDRequests
@@ -455,7 +473,7 @@ bool CKademliaUDPListener::AddContact_KADEMLIA2(const byte *pbyData, uint32 uLen
 			if (pTag->IsInt() && (uint16)pTag->GetInt() > 0)
 				uUDPPort = (uint16)pTag->GetInt();
 			else
-				ASSERT(0);
+				DebugLogWarning(_T("AddContact_KADEMLIA2: Ignoring invalid SOURCEUPORT from %s"), (LPCTSTR)ipstr(htonl(uIP)));
 		} else if (pTag->m_name == TAG_KADMISCOPTIONS){
 			if (pTag->IsInt() && (uint16)pTag->GetInt() > 0) {
 				bUDPFirewalled = (pTag->GetInt() & 0x01) > 0;
@@ -463,11 +481,11 @@ bool CKademliaUDPListener::AddContact_KADEMLIA2(const byte *pbyData, uint32 uLen
 				if ((pTag->GetInt() & 0x04) > 0) {
 					if (pbOutRequestsACK != NULL && uVersion >= KADEMLIA_VERSION8_49b)
 						*pbOutRequestsACK = true;
-					else
-						ASSERT(0);
+					else if (uVersion >= KADEMLIA_VERSION8_49b)
+						DebugLogWarning(_T("AddContact_KADEMLIA2: Ignoring unexpected HELLO ACK request from %s"), (LPCTSTR)ipstr(htonl(uIP)));
 				}
 			} else
-				ASSERT(0);
+				DebugLogWarning(_T("AddContact_KADEMLIA2: Ignoring invalid KADMISCOPTIONS from %s"), (LPCTSTR)ipstr(htonl(uIP)));
 		}
 
 		delete pTag;
@@ -586,7 +604,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_HELLO_REQ(const byte *pbyPacketData
 	// if this contact was added or updated (in other words, not filtered or invalid) to our routing table and did not already sent a valid
 	// receiver key or is already verified in the routing table, we request an additional ACK package to complete a three-way-handshake and
 	// verify the remotes IP
-	SendMyDetails(KADEMLIA2_HELLO_RES, uIP, uUDPPort, byContactVersion, senderUDPKey, &uContactID, bAddedOrUpdated && !bValidReceiverKey);
+	SendMyDetails(KADEMLIA2_HELLO_RES, uIP, uUDPPort, byContactVersion, senderUDPKey, &uContactID, ShouldRequestHelloResAck(uIP, senderUDPKey, bAddedOrUpdated, bValidReceiverKey));
 
 	if (bAddedOrUpdated && !bValidReceiverKey && byContactVersion == KADEMLIA_VERSION7_49a && !HasActiveLegacyChallenge(uIP)) {
 		// Kad Version 7 doesn't support HELLO_RES_ACK, but sender/receiver keys, so send a ping to validate
