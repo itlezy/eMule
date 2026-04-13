@@ -6,8 +6,10 @@
 #include <io.h>
 #include <string>
 #include <tchar.h>
+#include <unordered_set>
 #include <vector>
 #include <windows.h>
+#include <winioctl.h>
 
 #if defined(__AFX_H__)
 class CFileException;
@@ -15,6 +17,8 @@ class CSafeBufferedFile;
 class CSafeFile;
 namespace Kademlia { class CBufferedFileIO; }
 #endif
+
+#define EMULE_LONG_PATH_SEAMS_HAS_NTFS_JOURNAL_HELPERS 1
 
 namespace LongPathSeams
 {
@@ -34,6 +38,47 @@ inline bool operator==(const FileSystemObjectIdentity &rLeft, const FileSystemOb
 		&& rLeft.bHasExtendedFileId == rRight.bHasExtendedFileId
 		&& rLeft.fileId == rRight.fileId;
 }
+
+/**
+ * @brief Captures the local NTFS USN journal guard for one volume.
+ */
+struct NtfsJournalVolumeState
+{
+	PathString strVolumeKey;
+	PathString strMountRoot;
+	PathString strVolumeGuidPath;
+	ULONGLONG ullVolumeSerialNumber = 0;
+	ULONGLONG ullUsnJournalId = 0;
+	LONGLONG llLowestValidUsn = 0;
+	LONGLONG llNextUsn = 0;
+};
+
+/**
+ * @brief Captures the directory reference number used for NTFS journal validation.
+ */
+struct NtfsDirectoryJournalState
+{
+	ULONGLONG ullFileReferenceNumber = 0;
+	LONGLONG llUsn = 0;
+};
+
+/**
+ * @brief Describes the real local volume that owns one absolute path, including mounted-folder volumes.
+ */
+struct ResolvedVolumeContext
+{
+	PathString strMountRoot;
+	PathString strVolumeGuidPath;
+	PathString strVolumeKey;
+	PathString strFileSystemName;
+	ULONGLONG ullVolumeSerialNumber = 0;
+	DWORD dwDriveType = DRIVE_UNKNOWN;
+	DWORD dwFileSystemFlags = 0;
+	DWORD dwMaximumComponentLength = 0;
+	bool bIsLocal = false;
+	bool bIsNtfs = false;
+	bool bSupportsJournal = false;
+};
 
 /**
  * @brief Normalizes forward slashes to backslashes before building extended-length DOS/UNC paths.
@@ -135,6 +180,135 @@ inline size_t GetLogicalPathComponentStart(LPCTSTR pszPath)
 	}
 
 	return 0u;
+}
+
+/**
+ * @brief Ensures a path-like string ends with one directory separator.
+ */
+inline bool EnsureTrailingSeparator(PathString &rPath)
+{
+	if (!rPath.empty() && !IsPathSeparator(rPath[rPath.size() - 1]))
+		rPath += _T('\\');
+	return !rPath.empty();
+}
+
+/**
+ * @brief Normalizes one volume GUID path so callers can compare and hash mounted-volume identities consistently.
+ */
+inline PathString NormalizeVolumeGuidPathForKey(const PathString &rPath)
+{
+	PathString normalized(rPath);
+	for (size_t i = 0; i < normalized.size(); ++i) {
+		if (normalized[i] == _T('/'))
+			normalized[i] = _T('\\');
+		else
+			normalized[i] = static_cast<TCHAR>(_totlower(normalized[i]));
+	}
+	EnsureTrailingSeparator(normalized);
+	return normalized;
+}
+
+/**
+ * @brief Resolves the real containing local volume for an absolute path, including mounted-folder volumes.
+ */
+inline bool TryResolveContainingVolumeContext(LPCTSTR pszPath, ResolvedVolumeContext &rContext, DWORD *pdwLastError = NULL)
+{
+	rContext = ResolvedVolumeContext{};
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (pszPath == NULL || pszPath[0] == _T('\0')) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return false;
+	}
+
+	const PathString logicalPath = StripLongPathPrefix(pszPath);
+	if (!IsDriveAbsolutePath(logicalPath.c_str())) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_NOT_SUPPORTED;
+		return false;
+	}
+
+	std::vector<TCHAR> mountRootBuffer(4096u, _T('\0'));
+	if (!::GetVolumePathName(logicalPath.c_str(), mountRootBuffer.data(), static_cast<DWORD>(mountRootBuffer.size()))) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ::GetLastError();
+		return false;
+	}
+
+	rContext.strMountRoot.assign(mountRootBuffer.data());
+	rContext.strMountRoot = NormalizeAbsolutePathSeparators(rContext.strMountRoot.c_str());
+	EnsureTrailingSeparator(rContext.strMountRoot);
+	rContext.dwDriveType = ::GetDriveType(rContext.strMountRoot.c_str());
+	if (rContext.dwDriveType == DRIVE_REMOTE || rContext.dwDriveType == DRIVE_NO_ROOT_DIR || rContext.dwDriveType == DRIVE_UNKNOWN) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_NOT_SUPPORTED;
+		return false;
+	}
+
+	std::vector<TCHAR> volumeGuidBuffer(4096u, _T('\0'));
+	if (!::GetVolumeNameForVolumeMountPoint(rContext.strMountRoot.c_str(), volumeGuidBuffer.data(), static_cast<DWORD>(volumeGuidBuffer.size()))) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ::GetLastError();
+		return false;
+	}
+
+	rContext.strVolumeGuidPath.assign(volumeGuidBuffer.data());
+	rContext.strVolumeGuidPath = NormalizeAbsolutePathSeparators(rContext.strVolumeGuidPath.c_str());
+	EnsureTrailingSeparator(rContext.strVolumeGuidPath);
+	rContext.strVolumeKey = NormalizeVolumeGuidPathForKey(rContext.strVolumeGuidPath);
+
+	DWORD dwVolumeSerialNumber = 0;
+	TCHAR szFileSystemName[MAX_PATH] = {};
+	if (!::GetVolumeInformation(
+			rContext.strMountRoot.c_str(),
+			NULL,
+			0,
+			&dwVolumeSerialNumber,
+			&rContext.dwMaximumComponentLength,
+			&rContext.dwFileSystemFlags,
+			szFileSystemName,
+			_countof(szFileSystemName)))
+	{
+		if (pdwLastError != NULL)
+			*pdwLastError = ::GetLastError();
+		return false;
+	}
+
+	rContext.ullVolumeSerialNumber = dwVolumeSerialNumber;
+	rContext.strFileSystemName.assign(szFileSystemName);
+	rContext.bIsLocal = true;
+	rContext.bIsNtfs = (_tcsicmp(rContext.strFileSystemName.c_str(), _T("NTFS")) == 0);
+	rContext.bSupportsJournal = rContext.bIsNtfs && !rContext.strVolumeGuidPath.empty();
+	return true;
+}
+
+/**
+ * @brief Opens the resolved local volume for NTFS journal queries through its stable volume GUID path.
+ */
+inline HANDLE OpenResolvedVolumeHandleForJournalQuery(const ResolvedVolumeContext &rContext, DWORD *pdwLastError = NULL)
+{
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (rContext.strVolumeGuidPath.empty()) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return INVALID_HANDLE_VALUE;
+	}
+
+	PathString volumePath(rContext.strVolumeGuidPath);
+	while (!volumePath.empty() && IsPathSeparator(volumePath[volumePath.size() - 1]))
+		volumePath.erase(volumePath.size() - 1);
+	HANDLE hVolume = ::CreateFile(volumePath.c_str(),
+		0,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_ATTRIBUTE_NORMAL,
+		NULL);
+	if (hVolume == INVALID_HANDLE_VALUE && pdwLastError != NULL)
+		*pdwLastError = ::GetLastError();
+	return hVolume;
 }
 
 /**
@@ -392,6 +566,257 @@ inline bool TryGetResolvedDirectoryIdentity(LPCTSTR pszPath, FileSystemObjectIde
 	}
 
 	const DWORD dwCloseError = (::CloseHandle(hDirectory) != FALSE) ? ERROR_SUCCESS : ::GetLastError();
+	if (!bOk) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwError;
+		return false;
+	}
+	if (dwCloseError != ERROR_SUCCESS) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwCloseError;
+		return false;
+	}
+	return true;
+}
+
+/**
+ * @brief Queries the local NTFS journal guard for the volume that owns the path.
+ */
+inline bool TryGetLocalNtfsJournalVolumeState(LPCTSTR pszPath, NtfsJournalVolumeState &rState, DWORD *pdwLastError = NULL)
+{
+	rState = NtfsJournalVolumeState{};
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (pszPath == NULL || pszPath[0] == _T('\0')) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return false;
+	}
+
+	ResolvedVolumeContext volumeContext = {};
+	if (!TryResolveContainingVolumeContext(pszPath, volumeContext, pdwLastError))
+		return false;
+	if (!volumeContext.bIsLocal || !volumeContext.bIsNtfs || !volumeContext.bSupportsJournal) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_NOT_SUPPORTED;
+		return false;
+	}
+
+	HANDLE hVolume = OpenResolvedVolumeHandleForJournalQuery(volumeContext, pdwLastError);
+	if (hVolume == INVALID_HANDLE_VALUE)
+		return false;
+
+	USN_JOURNAL_DATA_V0 journalData = {};
+	DWORD dwBytesReturned = 0;
+	const BOOL bOk = ::DeviceIoControl(
+		hVolume,
+		FSCTL_QUERY_USN_JOURNAL,
+		NULL,
+		0,
+		&journalData,
+		sizeof(journalData),
+		&dwBytesReturned,
+		NULL);
+	const DWORD dwQueryError = bOk != FALSE ? ERROR_SUCCESS : ::GetLastError();
+	const DWORD dwCloseError = (::CloseHandle(hVolume) != FALSE) ? ERROR_SUCCESS : ::GetLastError();
+	if (bOk == FALSE) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwQueryError;
+		return false;
+	}
+	if (dwCloseError != ERROR_SUCCESS) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwCloseError;
+		return false;
+	}
+
+	rState.strVolumeKey = volumeContext.strVolumeKey;
+	rState.strMountRoot = volumeContext.strMountRoot;
+	rState.strVolumeGuidPath = volumeContext.strVolumeGuidPath;
+	rState.ullVolumeSerialNumber = volumeContext.ullVolumeSerialNumber;
+	rState.ullUsnJournalId = journalData.UsnJournalID;
+	rState.llLowestValidUsn = journalData.LowestValidUsn;
+	rState.llNextUsn = journalData.NextUsn;
+	return true;
+}
+
+/**
+ * @brief Queries the NTFS file reference number for an existing directory.
+ */
+inline bool TryGetNtfsDirectoryJournalState(LPCTSTR pszPath, NtfsDirectoryJournalState &rState, DWORD *pdwLastError = NULL)
+{
+	rState = NtfsDirectoryJournalState{};
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (pszPath == NULL || pszPath[0] == _T('\0')) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return false;
+	}
+
+	HANDLE hDirectory = ::CreateFile(
+		PreparePathForLongPath(pszPath).c_str(),
+		FILE_READ_ATTRIBUTES,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		NULL);
+	if (hDirectory == INVALID_HANDLE_VALUE) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ::GetLastError();
+		return false;
+	}
+
+	READ_FILE_USN_DATA input = {};
+	input.MinMajorVersion = 2;
+	input.MaxMajorVersion = 2;
+	std::array<BYTE, sizeof(USN_RECORD_V2) + MAX_PATH * sizeof(WCHAR)> buffer = {};
+	DWORD dwBytesReturned = 0;
+	const BOOL bOk = ::DeviceIoControl(
+		hDirectory,
+		FSCTL_READ_FILE_USN_DATA,
+		&input,
+		sizeof(input),
+		buffer.data(),
+		static_cast<DWORD>(buffer.size()),
+		&dwBytesReturned,
+		NULL);
+	const DWORD dwReadError = bOk != FALSE ? ERROR_SUCCESS : ::GetLastError();
+	const DWORD dwCloseError = (::CloseHandle(hDirectory) != FALSE) ? ERROR_SUCCESS : ::GetLastError();
+	if (bOk == FALSE || dwBytesReturned < sizeof(USN_RECORD_COMMON_HEADER)) {
+		if (pdwLastError != NULL)
+			*pdwLastError = (bOk == FALSE) ? dwReadError : ERROR_INVALID_DATA;
+		return false;
+	}
+
+	const USN_RECORD_COMMON_HEADER *pHeader = reinterpret_cast<const USN_RECORD_COMMON_HEADER *>(buffer.data());
+	if (pHeader->MajorVersion != 2 || dwBytesReturned < sizeof(USN_RECORD_V2)) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_NOT_SUPPORTED;
+		return false;
+	}
+
+	const USN_RECORD_V2 *pRecord = reinterpret_cast<const USN_RECORD_V2 *>(buffer.data());
+	rState.ullFileReferenceNumber = pRecord->FileReferenceNumber;
+	rState.llUsn = pRecord->Usn;
+	if (dwCloseError != ERROR_SUCCESS) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwCloseError;
+		return false;
+	}
+	return true;
+}
+
+/**
+ * @brief Scans the local NTFS journal delta once and reports cached directories touched since the checkpoint.
+ */
+inline bool TryCollectChangedDirectoryFileReferences(LPCTSTR pszPath, const ULONGLONG ullExpectedJournalId, const LONGLONG llCheckpointUsn, const std::unordered_set<ULONGLONG> &rTrackedDirectoryFileReferences, std::unordered_set<ULONGLONG> &rChangedDirectoryFileReferences, DWORD *pdwLastError = NULL)
+{
+	rChangedDirectoryFileReferences.clear();
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (pszPath == NULL || pszPath[0] == _T('\0') || ullExpectedJournalId == 0 || llCheckpointUsn <= 0) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return false;
+	}
+	if (rTrackedDirectoryFileReferences.empty())
+		return true;
+
+	NtfsJournalVolumeState volumeState = {};
+	if (!TryGetLocalNtfsJournalVolumeState(pszPath, volumeState, pdwLastError))
+		return false;
+	if (volumeState.ullUsnJournalId != ullExpectedJournalId || llCheckpointUsn < volumeState.llLowestValidUsn || llCheckpointUsn > volumeState.llNextUsn) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_JOURNAL_DELETE_IN_PROGRESS;
+		return false;
+	}
+	if (llCheckpointUsn == volumeState.llNextUsn)
+		return true;
+
+	ResolvedVolumeContext volumeContext = {};
+	if (!TryResolveContainingVolumeContext(pszPath, volumeContext, pdwLastError))
+		return false;
+	if (NormalizeVolumeGuidPathForKey(volumeContext.strVolumeGuidPath) != NormalizeVolumeGuidPathForKey(volumeState.strVolumeGuidPath)) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_NOT_SUPPORTED;
+		return false;
+	}
+
+	HANDLE hVolume = OpenResolvedVolumeHandleForJournalQuery(volumeContext, pdwLastError);
+	if (hVolume == INVALID_HANDLE_VALUE)
+		return false;
+
+	std::vector<BYTE> buffer(64u * 1024u, 0);
+	READ_USN_JOURNAL_DATA_V1 input = {};
+	input.StartUsn = llCheckpointUsn;
+	input.ReasonMask = 0xFFFFFFFFu;
+	input.ReturnOnlyOnClose = FALSE;
+	input.Timeout = 0;
+	input.BytesToWaitFor = 0;
+	input.UsnJournalID = ullExpectedJournalId;
+	input.MinMajorVersion = 2;
+	input.MaxMajorVersion = 2;
+
+	bool bOk = true;
+	DWORD dwError = ERROR_SUCCESS;
+	while (input.StartUsn < volumeState.llNextUsn && rChangedDirectoryFileReferences.size() < rTrackedDirectoryFileReferences.size()) {
+		DWORD dwBytesReturned = 0;
+		if (::DeviceIoControl(
+			hVolume,
+			FSCTL_READ_USN_JOURNAL,
+			&input,
+			sizeof(input),
+			buffer.data(),
+			static_cast<DWORD>(buffer.size()),
+			&dwBytesReturned,
+			NULL) == FALSE)
+		{
+			bOk = false;
+			dwError = ::GetLastError();
+			break;
+		}
+		if (dwBytesReturned < sizeof(USN))
+			break;
+
+		const BYTE *pCursor = buffer.data() + sizeof(USN);
+		const BYTE *pEnd = buffer.data() + dwBytesReturned;
+		while (pCursor + sizeof(USN_RECORD_COMMON_HEADER) <= pEnd) {
+			const USN_RECORD_COMMON_HEADER *pHeader = reinterpret_cast<const USN_RECORD_COMMON_HEADER *>(pCursor);
+			if (pHeader->RecordLength < sizeof(USN_RECORD_COMMON_HEADER) || pCursor + pHeader->RecordLength > pEnd) {
+				bOk = false;
+				dwError = ERROR_INVALID_DATA;
+				break;
+			}
+			if (pHeader->MajorVersion != 2) {
+				bOk = false;
+				dwError = ERROR_NOT_SUPPORTED;
+				break;
+			}
+
+			const USN_RECORD_V2 *pRecord = reinterpret_cast<const USN_RECORD_V2 *>(pCursor);
+			const auto itFileReference = rTrackedDirectoryFileReferences.find(pRecord->FileReferenceNumber);
+			if (itFileReference != rTrackedDirectoryFileReferences.end())
+				rChangedDirectoryFileReferences.insert(*itFileReference);
+			const auto itParentReference = rTrackedDirectoryFileReferences.find(pRecord->ParentFileReferenceNumber);
+			if (itParentReference != rTrackedDirectoryFileReferences.end())
+				rChangedDirectoryFileReferences.insert(*itParentReference);
+
+			pCursor += pHeader->RecordLength;
+		}
+		if (!bOk)
+			break;
+
+		input.StartUsn = *reinterpret_cast<const USN *>(buffer.data());
+		if (input.StartUsn <= llCheckpointUsn) {
+			bOk = false;
+			dwError = ERROR_INVALID_DATA;
+			break;
+		}
+	}
+
+	const DWORD dwCloseError = (::CloseHandle(hVolume) != FALSE) ? ERROR_SUCCESS : ::GetLastError();
 	if (!bOk) {
 		if (pdwLastError != NULL)
 			*pdwLastError = dwError;

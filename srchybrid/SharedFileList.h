@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include <unordered_map>
+#include <unordered_set>
 #include <string>
 #include "SharedStartupCachePolicy.h"
 #include "MapKey.h"
@@ -122,6 +123,30 @@ protected:
 
 private:
 	using SharedStartupCacheRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::DirectoryRecord>;
+	using SharedStartupCacheVolumeRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::VolumeRecord>;
+
+	/**
+	 * @brief Captures the current startup-validation state for one shared directory.
+	 */
+	struct DirectoryStartupState
+	{
+		LongPathSeams::FileSystemObjectIdentity identity = {};
+		bool bHasIdentity = false;
+		LONGLONG utcDirectoryDate = -1;
+		bool bHasTrustedNtfsJournalState = false;
+		SharedStartupCachePolicy::VolumeRecord volumeRecord = {};
+		ULONGLONG ullDirectoryFileReferenceNumber = 0;
+	};
+
+	/**
+	 * @brief Memoizes the journal-delta decision for one cached NTFS volume during startup.
+	 */
+	struct StartupCacheVolumeValidationState
+	{
+		bool bInitialized = false;
+		bool bRescanAllDirectories = false;
+		std::unordered_set<ULONGLONG> changedDirectoryFileReferences;
+	};
 
 	void	AddDirectory(const CString &strDir, CStringList &dirlist, bool bAllowStartupCache);
 	void	CollectSharedDirectories(CStringList &dirlist) const;
@@ -129,11 +154,27 @@ private:
 	void	SaveStartupCache();
 	void	MarkStartupCacheDirty();
 	bool	TryRehydrateSharedDirectoryFromCache(const CString &strDirectory);
-	bool	BuildStartupCacheRecord(const CString &strDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord) const;
+	/**
+	 * @brief Builds one startup-cache directory block and records any shared NTFS volume guard it depends on.
+	 */
+	bool	BuildStartupCacheRecord(const CString &strDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord, SharedStartupCacheVolumeRecordMap &rVolumeRecords) const;
 	bool	HasPendingHashForDirectory(const CString &strDirectory) const;
-	bool	GetDirectoryStartupState(const CString &strDirectory, LongPathSeams::FileSystemObjectIdentity &rIdentity, bool &rbHasIdentity, LONGLONG &rUtcDirectoryDate) const;
+	/**
+	 * @brief Resolves the current directory state used by both generic and NTFS startup-cache validation.
+	 */
+	bool	GetDirectoryStartupState(const CString &strDirectory, DirectoryStartupState &rState) const;
+	bool	GetFileStartupState(const CString &strFilePath, LONGLONG &rUtcFileDate, ULONGLONG &rullFileSize) const;
+	/**
+	 * @brief Computes the one-scan-per-volume NTFS journal verdict for cached directories on the same local volume.
+	 */
+	bool	EnsureStartupCacheVolumeValidation(const CString &strDirectory, const SharedStartupCachePolicy::DirectoryRecord &rRecord);
+	/**
+	 * @brief Collects every cached directory reference guarded by one shared NTFS volume record.
+	 */
+	void	CollectTrackedStartupCacheDirectoryRefs(const SharedStartupCachePolicy::VolumeRecord &rVolumeRecord, std::unordered_set<ULONGLONG> &rTrackedDirectoryRefs) const;
 	static CString GetStartupCachePath();
 	static std::wstring MakeStartupCacheKey(const CString &strDirectory);
+	static std::wstring MakeStartupCacheVolumeKey(const CString &strVolumeKey);
 	static bool ReadStartupCacheString(CSafeBufferedFile &file, CString &rValue);
 	static void WriteStartupCacheString(CSafeBufferedFile &file, const CString &strValue);
 
@@ -161,6 +202,8 @@ private:
 	bool	m_bStartupCacheDirty;
 	ULONGLONG m_nLastStartupCacheSave;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
+	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;
+	std::unordered_map<std::wstring, StartupCacheVolumeValidationState> m_startupCacheVolumeValidation;
 };
 
 class CAddFileThread : public CWinThread

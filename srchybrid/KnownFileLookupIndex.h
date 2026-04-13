@@ -5,6 +5,12 @@
 #include <unordered_map>
 #include <vector>
 
+/**
+ * \brief Composite lookup key for startup reuse of known-file metadata.
+ *
+ * The key mirrors the legacy filename/date/size tuple used by `FindKnownFile`
+ * so callers can replace linear scans without changing lookup semantics.
+ */
 struct KnownFileLookupKey
 {
 	std::wstring fileName;
@@ -19,6 +25,9 @@ struct KnownFileLookupKey
 	}
 };
 
+/**
+ * \brief Hash functor for `KnownFileLookupKey`.
+ */
 struct KnownFileLookupKeyHash
 {
 	size_t operator()(const KnownFileLookupKey &rKey) const noexcept
@@ -30,6 +39,9 @@ struct KnownFileLookupKeyHash
 	}
 };
 
+/**
+ * \brief Builds a lookup key from the legacy filename/date/size tuple.
+ */
 inline KnownFileLookupKey BuildKnownFileLookupKey(const wchar_t *pszFileName, time_t tUtcFileDate, std::uint64_t ullFileSize)
 {
 	KnownFileLookupKey key = {};
@@ -39,6 +51,12 @@ inline KnownFileLookupKey BuildKnownFileLookupKey(const wchar_t *pszFileName, ti
 	return key;
 }
 
+/**
+ * \brief Small collision-preserving index for known-file startup lookups.
+ *
+ * Multiple values may share the same filename/date/size tuple, so callers must
+ * resolve collisions inside the returned bucket.
+ */
 template <typename TValue>
 class TKnownFileLookupIndex
 {
