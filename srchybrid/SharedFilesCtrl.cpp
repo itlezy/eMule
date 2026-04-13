@@ -962,6 +962,7 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 						theApp.sharedfiles->RemoveKeywords(pKnownFile);
 						pKnownFile->SetFileName(newname);
 						theApp.sharedfiles->AddKeywords(pKnownFile);
+						theApp.knownfiles->InvalidateLookupIndex();
 					}
 					pKnownFile->SetFilePath(newpath);
 					UpdateFile(pKnownFile);

@@ -15,6 +15,9 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <unordered_map>
+#include <string>
+#include "SharedStartupCachePolicy.h"
 #include "MapKey.h"
 #include "FileIdentifier.h"
 
@@ -106,7 +109,8 @@ public:
 protected:
 	bool	AddFile(CKnownFile *pFile);
 	void	AddFilesFromDirectory(const CString &rstrDirectory);
-	void	FindSharedFiles();
+	void	FindSharedFiles(bool bAllowStartupCache = true);
+	bool	AddKnownSharedFile(CKnownFile *pFile, const CString &strFoundDirectory, const CString &strFoundFilePath);
 
 	void	HashNextFile();
 	bool	IsHashing(const CString &rstrDirectory, const CString &rstrName);
@@ -117,7 +121,21 @@ protected:
 	bool	CheckAndAddSingleFile(const CString &rstrFilePath); // add specific files without editing sharing preferences
 
 private:
-	void	AddDirectory(const CString &strDir, CStringList &dirlist);
+	using SharedStartupCacheRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::DirectoryRecord>;
+
+	void	AddDirectory(const CString &strDir, CStringList &dirlist, bool bAllowStartupCache);
+	void	CollectSharedDirectories(CStringList &dirlist) const;
+	bool	TryLoadStartupCache();
+	void	SaveStartupCache();
+	void	MarkStartupCacheDirty();
+	bool	TryRehydrateSharedDirectoryFromCache(const CString &strDirectory);
+	bool	BuildStartupCacheRecord(const CString &strDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord) const;
+	bool	HasPendingHashForDirectory(const CString &strDirectory) const;
+	bool	GetDirectoryStartupState(const CString &strDirectory, LongPathSeams::FileSystemObjectIdentity &rIdentity, bool &rbHasIdentity, LONGLONG &rUtcDirectoryDate) const;
+	static CString GetStartupCachePath();
+	static std::wstring MakeStartupCacheKey(const CString &strDirectory);
+	static bool ReadStartupCacheString(CSafeBufferedFile &file, CString &rValue);
+	static void WriteStartupCacheString(CSafeBufferedFile &file, const CString &strValue);
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
@@ -140,6 +158,9 @@ private:
 	ULONGLONG m_lastPublishED2K;
 	bool	m_lastPublishED2KFlag;
 	bool	bHaveSingleSharedFiles;
+	bool	m_bStartupCacheDirty;
+	ULONGLONG m_nLastStartupCacheSave;
+	SharedStartupCacheRecordMap m_startupCacheRecords;
 };
 
 class CAddFileThread : public CWinThread

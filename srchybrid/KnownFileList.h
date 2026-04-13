@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include "KnownFileLookupIndex.h"
 #include "MapKey.h"
 #include "SHAHashset.h"
 
@@ -42,6 +43,7 @@ public:
 	CKnownFile* FindKnownFileByPath(const CString &sFilePath) const;
 	bool	IsKnownFile(const CKnownFile *file) const;
 	bool	IsFilePtrInList(const CKnownFile *file) const;
+	void	InvalidateLookupIndex();
 
 	void	AddCancelledFileID(const uchar *hash);
 	bool	IsCancelledFileByID(const uchar *hash) const;
@@ -59,6 +61,9 @@ public:
 private:
 	bool	LoadKnownFiles();
 	bool	LoadCancelledFiles();
+	void	AddToLookupIndex(CKnownFile *pFile);
+	void	RemoveFromLookupIndex(const CKnownFile *pFile);
+	void	RebuildLookupIndex();
 
 	uint64	transferred;
 	CKnownFilesMap		m_Files_map;
@@ -68,6 +73,8 @@ private:
 	// (files which got AICH hashed later will not be added yet, because we don't need them,
 	// make sure to change this if needed)
 	KnonwFilesByAICHMap m_mapKnownFilesByAICH;
+	TKnownFileLookupIndex<CKnownFile*> m_lookupIndex;
+	bool	m_bLookupIndexDirty;
 	uint32	m_dwCancelledFilesSeed;
 	ULONGLONG m_nLastSaved;
 	uint16	requested;
