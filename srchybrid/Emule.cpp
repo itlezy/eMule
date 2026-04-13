@@ -96,6 +96,42 @@ CLogFile theOracleUdpDumpLog;
 CLogFile theOracleEd2kTcpDumpLog;
 bool g_bLowColorDesktop = false;
 
+static CString BuildParityHarnessDumpLogPath(LPCTSTR pszPrefix, UINT uAttempt)
+{
+	const CString strLogDir = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true);
+	SYSTEMTIME stLocalTime = {};
+	::GetLocalTime(&stLocalTime);
+
+	CString strFileName;
+	strFileName.Format(
+		_T("%s%04u.%02u.%02u-%02u.%02u.%02u.%03u-p%lu"),
+		pszPrefix,
+		stLocalTime.wYear,
+		stLocalTime.wMonth,
+		stLocalTime.wDay,
+		stLocalTime.wHour,
+		stLocalTime.wMinute,
+		stLocalTime.wSecond,
+		stLocalTime.wMilliseconds,
+		::GetCurrentProcessId());
+	if (uAttempt > 0)
+		strFileName.AppendFormat(_T("-r%u"), uAttempt);
+	strFileName.Append(_T(".jsonl"));
+	return strLogDir + strFileName;
+}
+
+static bool OpenParityHarnessDumpLog(CLogFile& rLogFile, LPCTSTR pszPrefix)
+{
+	for (UINT uAttempt = 0; uAttempt < 4; ++uAttempt) {
+		const CString strDumpPath = BuildParityHarnessDumpLogPath(pszPrefix, uAttempt);
+		if (rLogFile.SetFilePath(strDumpPath) && rLogFile.Open())
+			return true;
+		::Sleep(10);
+	}
+
+	return false;
+}
+
 //#define USE_16COLOR_ICONS
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -530,6 +566,120 @@ static void EmitParityHarnessSearchSnapshot(const CString &strPath, uint32 nSear
 	AppendParityHarnessSearchJsonLine(strPath, strLine);
 }
 
+static bool ReadParityHarnessTextFile(const CString &strPath, CStringA &strContent)
+{
+	FILE *pFile = _tfsopen(strPath, _T("rb"), _SH_DENYNO);
+	if (pFile == NULL)
+		return false;
+
+	if (fseek(pFile, 0, SEEK_END) != 0) {
+		fclose(pFile);
+		return false;
+	}
+	const long nLength = ftell(pFile);
+	if (nLength < 0) {
+		fclose(pFile);
+		return false;
+	}
+	rewind(pFile);
+
+	LPSTR pBuffer = strContent.GetBufferSetLength(nLength);
+	const size_t nRead = fread(pBuffer, 1, nLength, pFile);
+	strContent.ReleaseBuffer((int)nRead);
+	fclose(pFile);
+	return nRead == (size_t)nLength;
+}
+
+static bool ExtractParityHarnessJsonStringValue(const CStringA &strJson, LPCSTR pszKey, CString &strValue)
+{
+	CStringA strPattern;
+	strPattern.Format("\"%s\"", pszKey);
+	const int iKey = strJson.Find(strPattern);
+	if (iKey < 0)
+		return false;
+
+	int iCursor = strJson.Find(':', iKey + strPattern.GetLength());
+	if (iCursor < 0)
+		return false;
+	++iCursor;
+	while (iCursor < strJson.GetLength() && (strJson[iCursor] == ' ' || strJson[iCursor] == '\t' || strJson[iCursor] == '\r' || strJson[iCursor] == '\n'))
+		++iCursor;
+	if (iCursor >= strJson.GetLength() || strJson[iCursor] != '"')
+		return false;
+	++iCursor;
+
+	CStringA strResult;
+	bool bEscape = false;
+	for (; iCursor < strJson.GetLength(); ++iCursor) {
+		const char ch = strJson[iCursor];
+		if (bEscape) {
+			switch (ch) {
+				case '\\': strResult += '\\'; break;
+				case '"': strResult += '"'; break;
+				case '/': strResult += '/'; break;
+				case 'b': strResult += '\b'; break;
+				case 'f': strResult += '\f'; break;
+				case 'n': strResult += '\n'; break;
+				case 'r': strResult += '\r'; break;
+				case 't': strResult += '\t'; break;
+				default: strResult += ch; break;
+			}
+			bEscape = false;
+			continue;
+		}
+		if (ch == '\\') {
+			bEscape = true;
+			continue;
+		}
+		if (ch == '"') {
+			strValue = CString(strResult);
+			return true;
+		}
+		strResult += ch;
+	}
+
+	return false;
+}
+
+static void EmitParityHarnessHookEvent(const CString &strPath, LPCSTR pszEvent, const CString &strHookSetId, const CString &strConfigPath)
+{
+	if (strPath.IsEmpty())
+		return;
+
+	const CString strTimestamp = CTime::GetCurrentTime().FormatGmt(_T("%Y-%m-%dT%H:%M:%SZ"));
+	CStringA strLine;
+	strLine.Format(
+		"{\"schema\":\"parity_harness_hooks_v1\",\"source\":\"emule_harness\",\"ts_utc\":\"%s\",\"event\":\"%s\",\"hook_set_id\":\"%s\",\"config_path\":\"%s\"}",
+		(LPCSTR)CT2A(strTimestamp),
+		pszEvent,
+		(LPCSTR)EscapeJsonUtf8(strHookSetId),
+		(LPCSTR)EscapeJsonUtf8(strConfigPath)
+	);
+	AppendParityHarnessSearchJsonLine(strPath, strLine);
+}
+
+void CemuleApp::LoadParityHarnessHookConfig()
+{
+	if (m_strParityHarnessHookConfigFile.IsEmpty())
+		return;
+
+	CStringA strConfigJson;
+	if (!ReadParityHarnessTextFile(m_strParityHarnessHookConfigFile, strConfigJson)) {
+		Log(_T("Parity hook config could not be read: %s"), (LPCTSTR)m_strParityHarnessHookConfigFile);
+		return;
+	}
+
+	ExtractParityHarnessJsonStringValue(strConfigJson, "hookSetId", m_strParityHarnessHookSetId);
+	ExtractParityHarnessJsonStringValue(strConfigJson, "eventLogPath", m_strParityHarnessHookEventsFile);
+	if (m_strParityHarnessHookSetId.IsEmpty())
+		m_strParityHarnessHookSetId = _T("default");
+
+	if (!m_strParityHarnessHookEventsFile.IsEmpty())
+		EmitParityHarnessHookEvent(m_strParityHarnessHookEventsFile, "hook_config_loaded", m_strParityHarnessHookSetId, m_strParityHarnessHookConfigFile);
+
+	Log(_T("Parity hook config loaded: %s (hook_set_id=%s)"), (LPCTSTR)m_strParityHarnessHookConfigFile, (LPCTSTR)m_strParityHarnessHookSetId);
+}
+
 void CemuleApp::ApplyPendingParityHarnessActions()
 {
 	if (m_strParityHarnessBootstrapPeers.IsEmpty())
@@ -607,6 +757,12 @@ void CemuleApp::EmitParityHarnessReadyFile()
 	_ftprintf(pFile, _T("config_dir=%s\n"), (LPCTSTR)strConfigDir);
 	_ftprintf(pFile, _T("log_dir=%s\n"), (LPCTSTR)strLogDir);
 	_ftprintf(pFile, _T("profile=%s\n"), (LPCTSTR)strConfigDir);
+	if (!m_strParityHarnessHookConfigFile.IsEmpty())
+		_ftprintf(pFile, _T("parity_hook_config_file=%s\n"), (LPCTSTR)m_strParityHarnessHookConfigFile);
+	if (!m_strParityHarnessHookSetId.IsEmpty())
+		_ftprintf(pFile, _T("parity_hook_set_id=%s\n"), (LPCTSTR)m_strParityHarnessHookSetId);
+	if (!m_strParityHarnessHookEventsFile.IsEmpty())
+		_ftprintf(pFile, _T("parity_hook_events_file=%s\n"), (LPCTSTR)m_strParityHarnessHookEventsFile);
 	fclose(pFile);
 	m_bParityHarnessReadyFileWritten = true;
 }
@@ -989,10 +1145,6 @@ BOOL CemuleApp::InitInstance()
 #endif
 	VERIFY(theLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, thePrefs.GetLog2Disk()) + _T("eMule.log")));
 	VERIFY(theVerboseLog.SetFilePath(thePrefs.GetMuleDirectory(EMULE_LOGDIR, false) + _T("eMule_Verbose.log")));
-	const CString strOracleUdpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("emule-harness-udp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
-	const CString strOracleEd2kTcpDumpPath = thePrefs.GetMuleDirectory(EMULE_LOGDIR, true) + _T("emule-harness-ed2k-tcp-dump-") + CTime::GetCurrentTime().Format(_T("%Y.%m.%d-%H.%M.%S")) + _T(".jsonl");
-	VERIFY(theOracleUdpDumpLog.SetFilePath(strOracleUdpDumpPath));
-	VERIFY(theOracleEd2kTcpDumpLog.SetFilePath(strOracleEd2kTcpDumpPath));
 	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
 	theLog.SetFileFormat(thePrefs.GetLogFileFormat());
 	theVerboseLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
@@ -1007,8 +1159,10 @@ BOOL CemuleApp::InitInstance()
 		theVerboseLog.Open();
 		theVerboseLog.Log(_T("\r\n"));
 	}
-	VERIFY(theOracleUdpDumpLog.Open());
-	VERIFY(theOracleEd2kTcpDumpLog.Open());
+	if (!OpenParityHarnessDumpLog(theOracleUdpDumpLog, _T("emule-harness-udp-dump-")))
+		::OutputDebugString(_T("eMule parity harness failed to open UDP dump log\r\n"));
+	if (!OpenParityHarnessDumpLog(theOracleEd2kTcpDumpLog, _T("emule-harness-ed2k-tcp-dump-")))
+		::OutputDebugString(_T("eMule parity harness failed to open ED2K TCP dump log\r\n"));
 	Log(_T("Starting eMule v%s"), (LPCTSTR)m_strCurVersionLong);
 
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
@@ -1222,6 +1376,11 @@ bool CemuleApp::ProcessCommandline()
 			m_strParityHarnessSearchDownloadHashFile = strSearchDownloadHashFile;
 			continue;
 		}
+		CString strHookConfigFile;
+		if (TryParseNamedArgument(i, _T("hookconfigfile"), _T("hcf"), strHookConfigFile)) {
+			m_strParityHarnessHookConfigFile = strHookConfigFile;
+			continue;
+		}
 
 		LPCTSTR pszParam = __targv[i];
 		if (pszParam[0] == _T('-') || pszParam[0] == _T('/')) {
@@ -1235,6 +1394,8 @@ bool CemuleApp::ProcessCommandline()
 			m_bAutoStart |= (_tcsicmp(pszParam, _T("AutoStart")) == 0);
 		}
 	}
+	if (!m_strParityHarnessHookConfigFile.IsEmpty())
+		LoadParityHarnessHookConfig();
 
 	CCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);

@@ -211,6 +211,7 @@ public:
 	bool		HasPendingParityHarnessScenario() const;
 	bool		ShouldKeepParityHarnessStartupTimerRunning() const;
 	bool		HasPendingParityHarnessSearch() const;
+	void		LoadParityHarnessHookConfig();
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
@@ -262,6 +263,9 @@ protected:
 	CString		m_strParityHarnessSearchResultsFile;
 	CString		m_strParityHarnessSearchDownloadHashFile;
 	CString		m_strParityHarnessLastSearchDownloadHash;
+	CString		m_strParityHarnessHookConfigFile;
+	CString		m_strParityHarnessHookSetId;
+	CString		m_strParityHarnessHookEventsFile;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHelp();
