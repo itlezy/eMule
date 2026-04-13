@@ -49,6 +49,7 @@ BEGIN_MESSAGE_MAP(CServerListCtrl, CMuleListCtrl)
 END_MESSAGE_MAP()
 
 CServerListCtrl::CServerListCtrl()
+	: m_bBulkLoading(false)
 {
 	SetGeneralPurposeFind(true);
 	SetSkinKey(_T("ServersLv"));
@@ -303,10 +304,22 @@ bool CServerListCtrl::AddServer(const CServer *pServer, bool bAddToList, bool bR
 		return false;
 	if (bAddToList) {
 		InsertItem(LVIF_TEXT | LVIF_PARAM, bAddTail ? GetItemCount() : 0, _T(""), 0, 0, 0, (LPARAM)pServer);
-		RefreshServer(pServer);
+		if (!m_bBulkLoading)
+			RefreshServer(pServer);
 	}
-	ShowServerCount();
+	if (!m_bBulkLoading)
+		ShowServerCount();
 	return true;
+}
+
+void CServerListCtrl::EndBulkLoad()
+{
+	if (!m_bBulkLoading)
+		return;
+
+	m_bBulkLoading = false;
+	ShowServerCount();
+	Invalidate(FALSE);
 }
 
 void CServerListCtrl::OnContextMenu(CWnd*, CPoint point)
@@ -548,6 +561,8 @@ bool CServerListCtrl::AddServerMetToList(const CString &strFile)
 
 void CServerListCtrl::RefreshServer(const CServer *pServer)
 {
+	if (m_bBulkLoading)
+		return;
 	if (pServer && !theApp.IsClosing()) {
 		int iItem = FindServer(pServer);
 		if (iItem >= 0) {

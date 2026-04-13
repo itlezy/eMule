@@ -56,6 +56,14 @@ public:
 	void	Init();
 	void	SetToolTipsDelay(DWORD dwDelay);
 	void	CreateMenus();
+	/**
+	 * @brief Binds the visible shared-files list to the current shared-file model on demand.
+	 */
+	void	EnsureModelBound();
+	/**
+	 * @brief Returns whether the control has already materialized the shared-file model into UI items.
+	 */
+	bool	IsModelBound() const							{ return m_bModelBound; }
 	void	ReloadFileList();
 	void	AddFile(const CShareableFile *file);
 	void	RemoveFile(const CShareableFile *file, bool bDeletedFromDisk);
@@ -73,6 +81,7 @@ protected:
 	CMenu			m_PrioMenu;
 	bool			m_aSortBySecondValue[4];
 	CImageList		m_ImageList;
+	bool			m_bModelBound;
 	CDirectoryItem	*m_pDirectoryFilter;
 	volatile INT_PTR	nAICHHashing;
 	CToolTipCtrlX	*m_pToolTip;

@@ -66,6 +66,10 @@ public:
 	bool	SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd = false);
 	void	RepublishFile(CKnownFile *pFile);
 	void	SetOutputCtrl(CSharedFilesCtrl *in_ctrl);
+	/**
+	 * @brief Starts deferred shared-file hashing after startup UI initialization finishes.
+	 */
+	void	StartDeferredHashing()					{ HashNextFile(); }
 	bool	RemoveFile(CKnownFile *pFile, bool bDeleted = false);	// removes a specific shared file from the list
 	void	UpdateFile(const CKnownFile *toupdate);
 	void	AddFileFromNewlyCreatedCollection(const CString &rstrFilePath)	{ CheckAndAddSingleFile(rstrFilePath); }

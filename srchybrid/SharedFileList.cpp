@@ -995,8 +995,6 @@ void CSharedFileList::Reload()
 void CSharedFileList::SetOutputCtrl(CSharedFilesCtrl *in_ctrl)
 {
 	output = in_ctrl;
-	output->ReloadFileList();
-	HashNextFile();		// SLUGFILLER: SafeHash - if hashing not started yet, start it now
 }
 
 void CSharedFileList::SendListToServer()

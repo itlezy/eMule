@@ -26,6 +26,12 @@
 
 #define PORTTESTURL			_T("https://porttest.emule-project.net/connectiontest.php?tcpport=%i&udpport=%i&lang=%i")
 
+#if defined(_DEBUG) || defined(EMULE_ENABLE_STARTUP_PROFILING)
+#define EMULE_COMPILED_STARTUP_PROFILING 1
+#else
+#define EMULE_COMPILED_STARTUP_PROFILING 0
+#endif
+
 class CSearchList;
 class CUploadQueue;
 class CListenSocket;
@@ -69,6 +75,18 @@ public:
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
 	bool CanWritePartMetFiles(LPCTSTR pszPath, bool bForceRefresh = false);
 	void InvalidatePartMetWriteGuardCache(LPCTSTR pszPath = NULL);
+	/**
+	 * @brief Returns whether env-gated startup phase profiling is enabled for this process.
+	 */
+	bool IsStartupProfilingEnabled() const						{ return m_bStartupProfilingEnabled; }
+	/**
+	 * @brief Resets the startup phase profiler output and timing baseline.
+	 */
+	void ResetStartupProfile();
+	/**
+	 * @brief Appends one startup phase timing sample when profiling is enabled.
+	 */
+	void AppendStartupProfileLine(LPCTSTR pszPhase, ULONGLONG ullDurationMs, ULONGLONG ullAbsoluteMs = static_cast<ULONGLONG>(-1));
 
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	CemuleDlg			*emuledlg;
@@ -234,6 +252,9 @@ protected:
 private:
 	UINT		m_wTimerRes;
 	bool		m_bStandbyOff;
+	bool		m_bStartupProfilingEnabled;
+	ULONGLONG	m_ullStartupProfileBeginTick;
+	CString		m_strStartupProfilePath;
 };
 
 extern CemuleApp theApp;

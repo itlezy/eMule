@@ -24,9 +24,7 @@ inline bool IsPathSeparator(const TCHAR ch)
  */
 inline CString NormalizePathSeparators(const CString &rstrPath)
 {
-	CString strNormalized(rstrPath);
-	strNormalized.Replace(_T('/'), _T('\\'));
-	return strNormalized;
+	return CString(LongPathSeams::GetNormalizedPathText(rstrPath).c_str());
 }
 
 /**
@@ -34,7 +32,7 @@ inline CString NormalizePathSeparators(const CString &rstrPath)
  */
 inline bool HasExtendedLengthPrefix(const CString &rstrPath)
 {
-	const CString strNormalized(NormalizePathSeparators(rstrPath));
+	const CString strNormalized(CString(LongPathSeams::GetNormalizedPathText(rstrPath).c_str()));
 	return strNormalized.Left(8).CompareNoCase(_T("\\\\?\\UNC\\")) == 0
 		|| strNormalized.Left(4).CompareNoCase(_T("\\\\?\\")) == 0;
 }
@@ -44,12 +42,7 @@ inline bool HasExtendedLengthPrefix(const CString &rstrPath)
  */
 inline CString StripExtendedLengthPrefix(const CString &rstrPath)
 {
-	const CString strNormalized(NormalizePathSeparators(rstrPath));
-	if (strNormalized.Left(8).CompareNoCase(_T("\\\\?\\UNC\\")) == 0)
-		return CString(_T("\\\\")) + strNormalized.Mid(8);
-	if (strNormalized.Left(4).CompareNoCase(_T("\\\\?\\")) == 0)
-		return strNormalized.Mid(4);
-	return strNormalized;
+	return CString(LongPathSeams::GetLogicalPathText(rstrPath).c_str());
 }
 
 /**
@@ -57,7 +50,7 @@ inline CString StripExtendedLengthPrefix(const CString &rstrPath)
  */
 inline bool RequiresExtendedLengthPathForExactName(const CString &rstrPath)
 {
-	return LongPathSeams::RequiresExtendedLengthPathForExactName(NormalizePathSeparators(rstrPath));
+	return LongPathSeams::RequiresExtendedLengthPathForExactName(rstrPath);
 }
 
 /**
@@ -499,7 +492,7 @@ inline bool TryGetPathEntryData(const CString &rstrPath, WIN32_FIND_DATA &rFindD
 	if (pdwLastError != NULL)
 		*pdwLastError = ERROR_SUCCESS;
 
-	const HANDLE hFind = LongPathSeams::FindFirstFile(CanonicalizePathForComparison(rstrPath), &rFindData);
+	const HANDLE hFind = LongPathSeams::FindFirstFile(NormalizePathSeparators(rstrPath), &rFindData);
 	if (hFind == INVALID_HANDLE_VALUE) {
 		if (pdwLastError != NULL)
 			*pdwLastError = ::GetLastError();
@@ -521,9 +514,11 @@ inline bool ForEachMatchingEntry(const CString &rstrSearchPattern, EntryCallback
 
 	const CString strNormalizedPattern(NormalizePathSeparators(rstrSearchPattern));
 	const int iLastSlash = strNormalizedPattern.ReverseFind(_T('\\'));
-	const CString strSearchPath = (iLastSlash >= 0)
-		? AppendPathComponent(CanonicalizeDirectoryPath(strNormalizedPattern.Left(iLastSlash)), strNormalizedPattern.Mid(iLastSlash + 1))
-		: strNormalizedPattern;
+	CString strSearchPath(strNormalizedPattern);
+	if (iLastSlash >= 0) {
+		const CString strDirectory(EnsureTrailingSeparator(strNormalizedPattern.Left(iLastSlash)));
+		strSearchPath = AppendPathComponent(strDirectory, strNormalizedPattern.Mid(iLastSlash + 1));
+	}
 
 	WIN32_FIND_DATA findData = {};
 	const HANDLE hFind = LongPathSeams::FindFirstFile(strSearchPath, &findData);
@@ -565,7 +560,7 @@ inline bool ForEachDirectoryEntry(const CString &rstrDirectoryPath, EntryCallbac
 	if (pdwLastError != NULL)
 		*pdwLastError = ERROR_SUCCESS;
 
-	const CString strDirectory(EnsureTrailingSeparator(CanonicalizePathForComparison(rstrDirectoryPath)));
+	const CString strDirectory(EnsureTrailingSeparator(NormalizePathSeparators(rstrDirectoryPath)));
 	WIN32_FIND_DATA findData = {};
 	const HANDLE hFind = LongPathSeams::FindFirstFile(AppendPathComponent(strDirectory, _T("*")), &findData);
 	if (hFind == INVALID_HANDLE_VALUE) {

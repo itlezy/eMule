@@ -275,6 +275,7 @@ END_MESSAGE_MAP()
 CSharedFilesCtrl::CSharedFilesCtrl()
 	: CListCtrlItemWalk(this)
 	, m_aSortBySecondValue()
+	, m_bModelBound(false)
 	, m_pDirectoryFilter()
 	, nAICHHashing()
 	, m_pHighlightedItem()
@@ -397,6 +398,8 @@ void CSharedFilesCtrl::Localize()
 
 void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 {
+	if (!m_bModelBound)
+		return;
 	if (theApp.IsClosing())
 		return;
 	// check filter conditions if we should show this file right now
@@ -467,6 +470,8 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 
 void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromDisk)
 {
+	if (!m_bModelBound)
+		return;
 	int iItem = FindFile(file);
 	if (iItem >= 0) {
 		if (!bDeletedFromDisk && m_pDirectoryFilter != NULL && m_pDirectoryFilter->m_eItemType == SDI_UNSHAREDDIRECTORY)
@@ -482,6 +487,8 @@ void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromD
 
 void CSharedFilesCtrl::UpdateFile(const CShareableFile *file, bool bUpdateFileSummary)
 {
+	if (!m_bModelBound)
+		return;
 	if (file && !theApp.IsClosing()) {
 		int iItem = FindFile(file);
 		if (iItem >= 0) {
@@ -500,8 +507,25 @@ int CSharedFilesCtrl::FindFile(const CShareableFile *pFile)
 	return FindItem(&find);
 }
 
+void CSharedFilesCtrl::EnsureModelBound()
+{
+	if (m_bModelBound)
+		return;
+
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullPhaseStart = ::GetTickCount64();
+#endif
+	m_bModelBound = true;
+	ReloadFileList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CSharedFilesCtrl lazy model bind"), ::GetTickCount64() - ullPhaseStart);
+#endif
+}
+
 void CSharedFilesCtrl::ReloadFileList()
 {
+	if (!m_bModelBound)
+		return;
 	DeleteAllItems();
 	theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails();
 
@@ -519,6 +543,8 @@ void CSharedFilesCtrl::ReloadFileList()
 
 void CSharedFilesCtrl::ShowFilesCount()
 {
+	if (!m_bModelBound)
+		return;
 	CString str;
 	if (theApp.sharedfiles->GetHashingCount() + nAICHHashing > 0)
 		str.Format(_T(" (%i, %s %i)"), (int)theApp.sharedfiles->GetCount(), (LPCTSTR)GetResString(IDS_HASHING), (int)(theApp.sharedfiles->GetHashingCount() + nAICHHashing));
@@ -1473,7 +1499,7 @@ void CSharedFilesCtrl::SetDirectoryFilter(CDirectoryItem *pNewFilter, bool bRefr
 {
 	if (m_pDirectoryFilter != pNewFilter) {
 		m_pDirectoryFilter = pNewFilter;
-		if (bRefresh)
+		if (bRefresh && m_bModelBound)
 			ReloadFileList();
 	}
 }

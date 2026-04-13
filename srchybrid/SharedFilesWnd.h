@@ -72,8 +72,8 @@ public:
 	void SetToolTipsDelay(DWORD dwDelay);
 	void Reload(bool bForceTreeReload = false);
 	uint32	GetFilterColumn() const				{ return m_nFilterColumn; }
-	void OnVolumesChanged()						{ m_ctlSharedDirTree.OnVolumesChanged(); }
-	void OnSingleFileShareStatusChanged()		{ m_ctlSharedDirTree.FileSystemTreeUpdateBoldState(NULL); }
+	void OnVolumesChanged();
+	void OnSingleFileShareStatusChanged();
 	void ShowSelectedFilesDetails(bool bForce = false);
 	void ShowDetailsPanel(bool bShow);
 
@@ -89,11 +89,13 @@ private:
 	CHeaderCtrl		m_ctlSharedListHeader;
 	uint32			m_nFilterColumn;
 	bool			m_bDetailsVisible;
+	bool			m_bSharedTreeInitialized;
 	CSharedFileDetailsModelessSheet	m_dlgDetails;
 
 protected:
 	void SetAllIcons();
 	void DoResize(int iDelta);
+	void EnsureSharedTreeInitialized();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL PreTranslateMessage(MSG *pMsg);

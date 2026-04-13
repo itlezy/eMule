@@ -211,8 +211,7 @@ protected:
 	LPCTSTR GetIconFromCmdId(UINT uId);
 
 	// Startup Timer
-	UINT_PTR m_hTimer;
-	static void CALLBACK StartupTimer(HWND hwnd, UINT uiMsg, UINT_PTR idEvent, DWORD dwTime) noexcept;
+	void OnStartupTimer() noexcept;
 
 	// UPnP TimeOutTimer
 	UINT_PTR m_hUPnPTimeOutTimer;
@@ -251,6 +250,7 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
+	afx_msg LRESULT OnStartupNextStage(WPARAM, LPARAM);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnBnClickedConnect();

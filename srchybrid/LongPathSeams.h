@@ -1,12 +1,16 @@
 #pragma once
 
 #include <array>
+#include <atomic>
 #include <cstring>
 #include <cstdio>
 #include <fcntl.h>
 #include <io.h>
+#include <mutex>
+#include <shared_mutex>
 #include <string>
 #include <tchar.h>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <windows.h>
@@ -25,6 +29,7 @@ namespace LongPathSeams
 {
 using PathString = std::basic_string<TCHAR>;
 constexpr size_t kCreateDirectoryLegacyHeadroom = 12u;
+constexpr size_t kPreparedPathMemoMaxEntries = 16384u;
 
 struct FileSystemObjectIdentity
 {
@@ -207,7 +212,12 @@ struct ResolvedVolumeContext
 inline PathString NormalizeAbsolutePathSeparators(LPCTSTR pszPath)
 {
 	PathString normalized(pszPath != NULL ? pszPath : _T(""));
-	for (size_t i = 0; i < normalized.size(); ++i) {
+	const size_t iForwardSlash = normalized.find(_T('/'));
+	if (iForwardSlash == PathString::npos)
+		return normalized;
+
+	normalized[iForwardSlash] = _T('\\');
+	for (size_t i = iForwardSlash + 1u; i < normalized.size(); ++i) {
 		if (normalized[i] == _T('/'))
 			normalized[i] = _T('\\');
 	}
@@ -230,17 +240,21 @@ inline bool HasLongPathPrefix(LPCTSTR pszPath)
 	return pszPath != NULL && _tcsnicmp(pszPath, _T("\\\\?\\"), 4) == 0;
 }
 
+inline PathString StripLongPathPrefixRaw(const PathString &rNormalizedPath)
+{
+	if (rNormalizedPath.rfind(_T("\\\\?\\UNC\\"), 0) == 0)
+		return PathString(_T("\\\\")) + rNormalizedPath.substr(8);
+	if (rNormalizedPath.rfind(_T("\\\\?\\"), 0) == 0)
+		return rNormalizedPath.substr(4);
+	return rNormalizedPath;
+}
+
 /**
  * @brief Removes an existing extended-length prefix so callers can inspect the logical DOS/UNC path text.
  */
 inline PathString StripLongPathPrefix(LPCTSTR pszPath)
 {
-	const PathString normalized = NormalizeAbsolutePathSeparators(pszPath);
-	if (normalized.rfind(_T("\\\\?\\UNC\\"), 0) == 0)
-		return PathString(_T("\\\\")) + normalized.substr(8);
-	if (normalized.rfind(_T("\\\\?\\"), 0) == 0)
-		return normalized.substr(4);
-	return normalized;
+	return StripLongPathPrefixRaw(NormalizeAbsolutePathSeparators(pszPath));
 }
 
 /**
@@ -270,6 +284,222 @@ inline bool IsUncPath(LPCTSTR pszPath)
 		&& pszPath[2] != _T('.');
 }
 
+inline bool IsReservedWin32DeviceName(const PathString &rstrSegment);
+
+inline bool RequiresExtendedLengthPathForExactNameRaw(const PathString &rLogicalPath)
+{
+	size_t iIndex = 0u;
+	if (rLogicalPath.size() >= 3u
+		&& ((rLogicalPath[0] >= _T('A') && rLogicalPath[0] <= _T('Z')) || (rLogicalPath[0] >= _T('a') && rLogicalPath[0] <= _T('z')))
+		&& rLogicalPath[1] == _T(':')
+		&& IsPathSeparator(rLogicalPath[2]))
+	{
+		iIndex = 3u;
+	} else if (rLogicalPath.size() >= 2u && rLogicalPath[0] == _T('\\') && rLogicalPath[1] == _T('\\')) {
+		iIndex = 2u;
+		while (iIndex < rLogicalPath.size() && !IsPathSeparator(rLogicalPath[iIndex]))
+			++iIndex;
+		while (iIndex < rLogicalPath.size() && IsPathSeparator(rLogicalPath[iIndex]))
+			++iIndex;
+		while (iIndex < rLogicalPath.size() && !IsPathSeparator(rLogicalPath[iIndex]))
+			++iIndex;
+		while (iIndex < rLogicalPath.size() && IsPathSeparator(rLogicalPath[iIndex]))
+			++iIndex;
+	}
+	while (iIndex < rLogicalPath.size()) {
+		while (iIndex < rLogicalPath.size() && IsPathSeparator(rLogicalPath[iIndex]))
+			++iIndex;
+		if (iIndex >= rLogicalPath.size())
+			break;
+
+		const size_t iStart = iIndex;
+		while (iIndex < rLogicalPath.size() && !IsPathSeparator(rLogicalPath[iIndex]))
+			++iIndex;
+
+		const PathString segment = rLogicalPath.substr(iStart, iIndex - iStart);
+		if (!segment.empty()
+			&& segment != _T(".")
+			&& segment != _T("..")
+			&& (segment[0] == _T(' ')
+				|| segment[segment.size() - 1] == _T(' ')
+				|| segment[segment.size() - 1] == _T('.')
+				|| IsReservedWin32DeviceName(segment)))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+inline PathString PreparePathForLongPathRaw(const PathString &rOriginalPath, const PathString &rNormalizedPath, const bool bRequiresExactNamePrefix)
+{
+	const size_t nLength = rNormalizedPath.size();
+	if (nLength < MAX_PATH && !bRequiresExactNamePrefix)
+		return rOriginalPath;
+	if (!IsDriveAbsolutePath(rNormalizedPath.c_str()) && !IsUncPath(rNormalizedPath.c_str()))
+		return rOriginalPath;
+
+	if (IsUncPath(rNormalizedPath.c_str())) {
+		PathString prepared(_T("\\\\?\\UNC\\"));
+		prepared += rNormalizedPath.c_str() + 2;
+		return prepared;
+	}
+
+	PathString prepared(_T("\\\\?\\"));
+	prepared += rNormalizedPath;
+	return prepared;
+}
+
+inline PathString PrepareDirectoryCreatePathForLongPathRaw(const PathString &rOriginalPath, const PathString &rNormalizedPath, const bool bRequiresExactNamePrefix)
+{
+	const size_t nLength = rNormalizedPath.size();
+	if (nLength + kCreateDirectoryLegacyHeadroom < MAX_PATH && !bRequiresExactNamePrefix)
+		return rOriginalPath;
+	if (!IsDriveAbsolutePath(rNormalizedPath.c_str()) && !IsUncPath(rNormalizedPath.c_str()))
+		return rOriginalPath;
+
+	if (IsUncPath(rNormalizedPath.c_str())) {
+		PathString prepared(_T("\\\\?\\UNC\\"));
+		prepared += rNormalizedPath.c_str() + 2;
+		return prepared;
+	}
+
+	PathString prepared(_T("\\\\?\\"));
+	prepared += rNormalizedPath;
+	return prepared;
+}
+
+/**
+ * @brief Stores immutable path-preparation facts reused by long-path seam callers.
+ */
+struct PreparedPathMemoRecord
+{
+	PathString strOriginalPath;
+	PathString strNormalizedPath;
+	PathString strLogicalPath;
+	PathString strPreparedPath;
+	PathString strPreparedCreateDirectoryPath;
+	bool bRequiresExactNamePrefix = false;
+};
+
+/**
+ * @brief Reports current process-wide path-preparation memoization state.
+ */
+struct PreparedPathMemoStats
+{
+	size_t uEntryCount = 0;
+	ULONGLONG ullCacheHits = 0;
+	ULONGLONG ullCacheMisses = 0;
+};
+
+namespace detail
+{
+struct PreparedPathMemoCache
+{
+	std::shared_mutex mutex;
+	std::unordered_map<PathString, PreparedPathMemoRecord> entries;
+	std::atomic_ullong cacheHits{ 0 };
+	std::atomic_ullong cacheMisses{ 0 };
+};
+
+inline PreparedPathMemoCache &GetPreparedPathMemoCache()
+{
+	static PreparedPathMemoCache cache;
+	return cache;
+}
+
+inline PreparedPathMemoRecord BuildPreparedPathMemoRecord(LPCTSTR pszPath)
+{
+	PreparedPathMemoRecord record = {};
+	record.strOriginalPath.assign(pszPath != NULL ? pszPath : _T(""));
+	record.strNormalizedPath = NormalizeAbsolutePathSeparators(record.strOriginalPath.c_str());
+	record.strLogicalPath = StripLongPathPrefixRaw(record.strNormalizedPath);
+	record.bRequiresExactNamePrefix = RequiresExtendedLengthPathForExactNameRaw(record.strLogicalPath);
+	if (HasLongPathPrefix(record.strNormalizedPath.c_str())) {
+		record.strPreparedPath = record.strOriginalPath;
+		record.strPreparedCreateDirectoryPath = record.strOriginalPath;
+	} else {
+		record.strPreparedPath = PreparePathForLongPathRaw(record.strOriginalPath, record.strNormalizedPath, record.bRequiresExactNamePrefix);
+		record.strPreparedCreateDirectoryPath = PrepareDirectoryCreatePathForLongPathRaw(record.strOriginalPath, record.strNormalizedPath, record.bRequiresExactNamePrefix);
+	}
+	return record;
+}
+
+inline PreparedPathMemoRecord GetPreparedPathMemoRecord(LPCTSTR pszPath)
+{
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return BuildPreparedPathMemoRecord(pszPath);
+
+	PreparedPathMemoCache &cache = GetPreparedPathMemoCache();
+	{
+		std::shared_lock<std::shared_mutex> readLock(cache.mutex);
+		const auto it = cache.entries.find(pszPath);
+		if (it != cache.entries.end()) {
+			++cache.cacheHits;
+			return it->second;
+		}
+	}
+
+	PreparedPathMemoRecord record = BuildPreparedPathMemoRecord(pszPath);
+	{
+		std::unique_lock<std::shared_mutex> writeLock(cache.mutex);
+		const auto it = cache.entries.find(record.strOriginalPath);
+		if (it != cache.entries.end()) {
+			++cache.cacheHits;
+			return it->second;
+		}
+		if (cache.entries.size() >= kPreparedPathMemoMaxEntries)
+			cache.entries.clear();
+		cache.entries.emplace(record.strOriginalPath, record);
+	}
+	++cache.cacheMisses;
+	return record;
+}
+}
+
+/**
+ * @brief Clears the reusable process-wide path-preparation memoization cache.
+ */
+inline void ClearPreparedPathMemoizationCache()
+{
+	detail::PreparedPathMemoCache &cache = detail::GetPreparedPathMemoCache();
+	std::unique_lock<std::shared_mutex> writeLock(cache.mutex);
+	cache.entries.clear();
+	cache.cacheHits = 0;
+	cache.cacheMisses = 0;
+}
+
+/**
+ * @brief Returns current path-preparation memoization counters for tests and profiling.
+ */
+inline PreparedPathMemoStats GetPreparedPathMemoizationStats()
+{
+	PreparedPathMemoStats stats = {};
+	detail::PreparedPathMemoCache &cache = detail::GetPreparedPathMemoCache();
+	std::shared_lock<std::shared_mutex> readLock(cache.mutex);
+	stats.uEntryCount = cache.entries.size();
+	stats.ullCacheHits = cache.cacheHits.load();
+	stats.ullCacheMisses = cache.cacheMisses.load();
+	return stats;
+}
+
+/**
+ * @brief Returns normalized path text from the shared path-preparation memo cache.
+ */
+inline PathString GetNormalizedPathText(LPCTSTR pszPath)
+{
+	return detail::GetPreparedPathMemoRecord(pszPath).strNormalizedPath;
+}
+
+/**
+ * @brief Returns logical DOS/UNC path text from the shared path-preparation memo cache.
+ */
+inline PathString GetLogicalPathText(LPCTSTR pszPath)
+{
+	return detail::GetPreparedPathMemoRecord(pszPath).strLogicalPath;
+}
+
 /**
  * @brief Returns true when the path root denotes a DOS drive or UNC share and the logical tail begins after that root.
  */
@@ -278,7 +508,7 @@ inline size_t GetLogicalPathComponentStart(LPCTSTR pszPath)
 	if (pszPath == NULL || pszPath[0] == _T('\0'))
 		return 0u;
 
-	const PathString logicalPath = StripLongPathPrefix(pszPath);
+	const PathString logicalPath = GetLogicalPathText(pszPath);
 	if (logicalPath.size() >= 3u
 		&& ((logicalPath[0] >= _T('A') && logicalPath[0] <= _T('Z')) || (logicalPath[0] >= _T('a') && logicalPath[0] <= _T('z')))
 		&& logicalPath[1] == _T(':')
@@ -343,7 +573,7 @@ inline bool TryResolveContainingVolumeContext(LPCTSTR pszPath, ResolvedVolumeCon
 		return false;
 	}
 
-	const PathString logicalPath = StripLongPathPrefix(pszPath);
+	const PathString logicalPath = GetLogicalPathText(pszPath);
 	if (!IsDriveAbsolutePath(logicalPath.c_str())) {
 		if (pdwLastError != NULL)
 			*pdwLastError = ERROR_NOT_SUPPORTED;
@@ -482,35 +712,7 @@ inline bool IsReservedWin32DeviceName(const PathString &rstrSegment)
  */
 inline bool RequiresExtendedLengthPathForExactName(LPCTSTR pszPath)
 {
-	if (pszPath == NULL || pszPath[0] == _T('\0'))
-		return false;
-
-	const PathString logicalPath = StripLongPathPrefix(pszPath);
-	size_t iIndex = GetLogicalPathComponentStart(logicalPath.c_str());
-	while (iIndex < logicalPath.size()) {
-		while (iIndex < logicalPath.size() && IsPathSeparator(logicalPath[iIndex]))
-			++iIndex;
-		if (iIndex >= logicalPath.size())
-			break;
-
-		const size_t iStart = iIndex;
-		while (iIndex < logicalPath.size() && !IsPathSeparator(logicalPath[iIndex]))
-			++iIndex;
-
-		const PathString segment = logicalPath.substr(iStart, iIndex - iStart);
-		if (!segment.empty()
-			&& segment != _T(".")
-			&& segment != _T("..")
-			&& (segment[0] == _T(' ')
-				|| segment[segment.size() - 1] == _T(' ')
-				|| segment[segment.size() - 1] == _T('.')
-				|| IsReservedWin32DeviceName(segment)))
-		{
-			return true;
-		}
-	}
-
-	return false;
+	return detail::GetPreparedPathMemoRecord(pszPath).bRequiresExactNamePrefix;
 }
 
 /**
@@ -518,29 +720,7 @@ inline bool RequiresExtendedLengthPathForExactName(LPCTSTR pszPath)
  */
 inline PathString PreparePathForLongPath(LPCTSTR pszPath)
 {
-	if (pszPath == NULL || pszPath[0] == _T('\0'))
-		return PathString();
-
-	if (HasLongPathPrefix(pszPath))
-		return PathString(pszPath);
-
-	const PathString normalizedPath = NormalizeAbsolutePathSeparators(pszPath);
-	const size_t nLength = normalizedPath.size();
-	const bool bRequiresExactNamePrefix = RequiresExtendedLengthPathForExactName(normalizedPath.c_str());
-	if (nLength < MAX_PATH && !bRequiresExactNamePrefix)
-		return PathString(pszPath);
-	if (!IsDriveAbsolutePath(normalizedPath.c_str()) && !IsUncPath(normalizedPath.c_str()))
-		return PathString(pszPath);
-
-	if (IsUncPath(normalizedPath.c_str())) {
-		PathString prepared(_T("\\\\?\\UNC\\"));
-		prepared += normalizedPath.c_str() + 2;
-		return prepared;
-	}
-
-	PathString prepared(_T("\\\\?\\"));
-	prepared += normalizedPath;
-	return prepared;
+	return detail::GetPreparedPathMemoRecord(pszPath).strPreparedPath;
 }
 
 /**
@@ -548,29 +728,7 @@ inline PathString PreparePathForLongPath(LPCTSTR pszPath)
  */
 inline PathString PrepareDirectoryCreatePathForLongPath(LPCTSTR pszPath)
 {
-	if (pszPath == NULL || pszPath[0] == _T('\0'))
-		return PathString();
-
-	if (HasLongPathPrefix(pszPath))
-		return PathString(pszPath);
-
-	const PathString normalizedPath = NormalizeAbsolutePathSeparators(pszPath);
-	const size_t nLength = normalizedPath.size();
-	const bool bRequiresExactNamePrefix = RequiresExtendedLengthPathForExactName(normalizedPath.c_str());
-	if (nLength + kCreateDirectoryLegacyHeadroom < MAX_PATH && !bRequiresExactNamePrefix)
-		return PathString(pszPath);
-	if (!IsDriveAbsolutePath(normalizedPath.c_str()) && !IsUncPath(normalizedPath.c_str()))
-		return PathString(pszPath);
-
-	if (IsUncPath(normalizedPath.c_str())) {
-		PathString prepared(_T("\\\\?\\UNC\\"));
-		prepared += normalizedPath.c_str() + 2;
-		return prepared;
-	}
-
-	PathString prepared(_T("\\\\?\\"));
-	prepared += normalizedPath;
-	return prepared;
+	return detail::GetPreparedPathMemoRecord(pszPath).strPreparedCreateDirectoryPath;
 }
 
 /**
