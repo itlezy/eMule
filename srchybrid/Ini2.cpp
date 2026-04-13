@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Ini2.h"
-#include "Ini2Seams.h"
+#include "Ini2Helpers.h"
 #include "StringConversion.h"
 
 #ifdef _DEBUG
@@ -9,24 +9,22 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-#define MAX_INI_BUFFER 256
-
 void CIni::AddModulePath(CString &rstrFileName, bool bModulPath)
 {
-	if (Ini2Seams::NeedsBaseDirectoryPrefix(rstrFileName)) {
+	if (Ini2Helpers::NeedsBaseDirectoryPrefix(rstrFileName)) {
 		//PathCanonicalize(...) doesn't work with for all Platforms !
 		const CString strBaseDirectory = bModulPath
-			? Ini2Seams::ExtractDirectoryPath(Ini2Seams::GetModuleFilePath())
-			: Ini2Seams::GetCurrentDirectoryPath();
-		rstrFileName = Ini2Seams::BuildPathFromBaseDirectory(strBaseDirectory, rstrFileName);
+			? PathHelpers::GetDirectoryPath(Ini2Helpers::GetModuleFilePath())
+			: Ini2Helpers::GetCurrentDirectoryPath();
+		rstrFileName = Ini2Helpers::BuildPathFromBaseDirectory(strBaseDirectory, rstrFileName);
 	}
 }
 
 CString CIni::GetDefaultIniFile(bool bModulPath)
 {
-	const CString strModulePath = Ini2Seams::GetModuleFilePath();
-	const CString strCurrentDirectory = bModulPath ? CString() : Ini2Seams::GetCurrentDirectoryPath();
-	return Ini2Seams::BuildDefaultIniFilePath(strModulePath, strCurrentDirectory, bModulPath);
+	const CString strModulePath = Ini2Helpers::GetModuleFilePath();
+	const CString strCurrentDirectory = bModulPath ? CString() : Ini2Helpers::GetCurrentDirectoryPath();
+	return Ini2Helpers::BuildDefaultIniFilePath(strModulePath, strCurrentDirectory, bModulPath);
 }
 
 CIni::CIni()
@@ -87,22 +85,18 @@ CString CIni::GetString(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpszSect
 
 CString CIni::GetStringLong(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpszSection)
 {
-	unsigned maxstrlen = MAX_INI_BUFFER;
-
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-
-	CString ret;
-	do {
-		::GetPrivateProfileString(m_strSection, lpszEntry, (lpszDefault ? lpszDefault : _T(""))
-			, ret.GetBuffer(maxstrlen), maxstrlen, m_strFileName);
-		ret.ReleaseBuffer();
-		if ((unsigned)ret.GetLength() < maxstrlen - 2)
-			break;
-		maxstrlen += MAX_INI_BUFFER;
-	} while (maxstrlen < _UI16_MAX);
-
-	return ret;
+	return Ini2Helpers::ReadProfileStringDynamic<CString>(
+		[&](LPTSTR pszBuffer, DWORD dwCapacity) -> DWORD {
+			return ::GetPrivateProfileString(
+				m_strSection,
+				lpszEntry,
+				(lpszDefault ? lpszDefault : _T("")),
+				pszBuffer,
+				dwCapacity,
+				m_strFileName);
+		});
 }
 
 CString CIni::GetStringUTF8(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpszSection)
@@ -110,10 +104,20 @@ CString CIni::GetStringUTF8(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpsz
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
 
-	CStringA strUTF8;
-	::GetPrivateProfileStringA(CStringA(m_strSection), CStringA(lpszEntry), CStringA(lpszDefault)
-		, strUTF8.GetBuffer(MAX_INI_BUFFER), MAX_INI_BUFFER, CStringA(m_strFileName));
-	strUTF8.ReleaseBuffer();
+	const CStringA strSectionA(m_strSection);
+	const CStringA strEntryA(lpszEntry);
+	const CStringA strDefaultA(lpszDefault != NULL ? lpszDefault : _T(""));
+	const CStringA strFileNameA(m_strFileName);
+	const CStringA strUTF8 = Ini2Helpers::ReadProfileStringDynamic<CStringA>(
+		[&](LPSTR pszBuffer, DWORD dwCapacity) -> DWORD {
+			return ::GetPrivateProfileStringA(
+				strSectionA,
+				strEntryA,
+				strDefaultA,
+				pszBuffer,
+				dwCapacity,
+				strFileNameA);
+		});
 	return OptUtf8ToStr(strUTF8);
 }
 
@@ -651,15 +655,16 @@ int CIni::Parse(const CString &strIn, int nOffset, CString &strOut)
 
 CString CIni::Read(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault)
 {
-	CString strReturn;
-	::GetPrivateProfileString(lpszSection
-		, lpszEntry
-		, lpszDefault
-		, strReturn.GetBuffer(MAX_INI_BUFFER)
-		, MAX_INI_BUFFER
-		, lpszFileName);
-	strReturn.ReleaseBuffer();
-	return strReturn;
+	return Ini2Helpers::ReadProfileStringDynamic<CString>(
+		[&](LPTSTR pszBuffer, DWORD dwCapacity) -> DWORD {
+			return ::GetPrivateProfileString(
+				lpszSection,
+				lpszEntry,
+				lpszDefault,
+				pszBuffer,
+				dwCapacity,
+				lpszFileName);
+		});
 }
 
 void CIni::Write(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue)

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstdio>
 #include <fcntl.h>
 #include <io.h>
@@ -20,6 +21,20 @@ namespace LongPathSeams
 using PathString = std::basic_string<TCHAR>;
 constexpr size_t kCreateDirectoryLegacyHeadroom = 12u;
 
+struct FileSystemObjectIdentity
+{
+	ULONGLONG ullVolumeSerialNumber = 0;
+	std::array<BYTE, 16> fileId = {};
+	bool bHasExtendedFileId = false;
+};
+
+inline bool operator==(const FileSystemObjectIdentity &rLeft, const FileSystemObjectIdentity &rRight)
+{
+	return rLeft.ullVolumeSerialNumber == rRight.ullVolumeSerialNumber
+		&& rLeft.bHasExtendedFileId == rRight.bHasExtendedFileId
+		&& rLeft.fileId == rRight.fileId;
+}
+
 /**
  * @brief Normalizes forward slashes to backslashes before building extended-length DOS/UNC paths.
  */
@@ -34,11 +49,32 @@ inline PathString NormalizeAbsolutePathSeparators(LPCTSTR pszPath)
 }
 
 /**
+ * @brief Returns true when the character is treated as a Win32 path separator.
+ */
+inline bool IsPathSeparator(const TCHAR ch)
+{
+	return ch == _T('\\') || ch == _T('/');
+}
+
+/**
  * @brief Detects whether the incoming Win32 path is already in extended-length form.
  */
 inline bool HasLongPathPrefix(LPCTSTR pszPath)
 {
 	return pszPath != NULL && _tcsnicmp(pszPath, _T("\\\\?\\"), 4) == 0;
+}
+
+/**
+ * @brief Removes an existing extended-length prefix so callers can inspect the logical DOS/UNC path text.
+ */
+inline PathString StripLongPathPrefix(LPCTSTR pszPath)
+{
+	const PathString normalized = NormalizeAbsolutePathSeparators(pszPath);
+	if (normalized.rfind(_T("\\\\?\\UNC\\"), 0) == 0)
+		return PathString(_T("\\\\")) + normalized.substr(8);
+	if (normalized.rfind(_T("\\\\?\\"), 0) == 0)
+		return normalized.substr(4);
+	return normalized;
 }
 
 /**
@@ -69,18 +105,135 @@ inline bool IsUncPath(LPCTSTR pszPath)
 }
 
 /**
- * @brief Applies the extended-length prefix only to fully qualified overlong DOS/UNC paths.
+ * @brief Returns true when the path root denotes a DOS drive or UNC share and the logical tail begins after that root.
+ */
+inline size_t GetLogicalPathComponentStart(LPCTSTR pszPath)
+{
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return 0u;
+
+	const PathString logicalPath = StripLongPathPrefix(pszPath);
+	if (logicalPath.size() >= 3u
+		&& ((logicalPath[0] >= _T('A') && logicalPath[0] <= _T('Z')) || (logicalPath[0] >= _T('a') && logicalPath[0] <= _T('z')))
+		&& logicalPath[1] == _T(':')
+		&& IsPathSeparator(logicalPath[2]))
+	{
+		return 3u;
+	}
+
+	if (logicalPath.size() >= 2u && logicalPath[0] == _T('\\') && logicalPath[1] == _T('\\')) {
+		size_t iIndex = 2u;
+		while (iIndex < logicalPath.size() && !IsPathSeparator(logicalPath[iIndex]))
+			++iIndex;
+		while (iIndex < logicalPath.size() && IsPathSeparator(logicalPath[iIndex]))
+			++iIndex;
+		while (iIndex < logicalPath.size() && !IsPathSeparator(logicalPath[iIndex]))
+			++iIndex;
+		while (iIndex < logicalPath.size() && IsPathSeparator(logicalPath[iIndex]))
+			++iIndex;
+		return iIndex;
+	}
+
+	return 0u;
+}
+
+/**
+ * @brief Returns true when a logical path component is a reserved Win32 device alias that requires namespace bypass.
+ */
+inline bool IsReservedWin32DeviceName(const PathString &rstrSegment)
+{
+	if (rstrSegment.empty())
+		return false;
+
+	PathString strCandidate(rstrSegment);
+	while (!strCandidate.empty() && (strCandidate[strCandidate.size() - 1] == _T(' ') || strCandidate[strCandidate.size() - 1] == _T('.')))
+		strCandidate.erase(strCandidate.size() - 1);
+	if (strCandidate.empty())
+		return false;
+
+	const size_t iDot = strCandidate.find(_T('.'));
+	if (iDot != PathString::npos)
+		strCandidate.erase(iDot);
+
+	PathString strUpper(strCandidate);
+	for (size_t i = 0; i < strUpper.size(); ++i)
+		strUpper[i] = static_cast<TCHAR>(_totupper(strUpper[i]));
+
+	if (strUpper == _T("CON")
+		|| strUpper == _T("PRN")
+		|| strUpper == _T("AUX")
+		|| strUpper == _T("NUL"))
+	{
+		return true;
+	}
+
+	const auto IsReservedPortName = [&](LPCTSTR pszPrefix) -> bool {
+		const size_t nPrefixLength = _tcslen(pszPrefix);
+		if (strUpper.compare(0u, nPrefixLength, pszPrefix) != 0 || strUpper.size() != nPrefixLength + 1u)
+			return false;
+
+		const TCHAR chDigit = strUpper[nPrefixLength];
+		return (chDigit >= _T('1') && chDigit <= _T('9'))
+			|| chDigit == static_cast<TCHAR>(0x00B9)
+			|| chDigit == static_cast<TCHAR>(0x00B2)
+			|| chDigit == static_cast<TCHAR>(0x00B3);
+	};
+
+	return IsReservedPortName(_T("COM")) || IsReservedPortName(_T("LPT"));
+}
+
+/**
+ * @brief Returns true when any logical path component needs namespace semantics to preserve its exact Win32 meaning.
+ */
+inline bool RequiresExtendedLengthPathForExactName(LPCTSTR pszPath)
+{
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return false;
+
+	const PathString logicalPath = StripLongPathPrefix(pszPath);
+	size_t iIndex = GetLogicalPathComponentStart(logicalPath.c_str());
+	while (iIndex < logicalPath.size()) {
+		while (iIndex < logicalPath.size() && IsPathSeparator(logicalPath[iIndex]))
+			++iIndex;
+		if (iIndex >= logicalPath.size())
+			break;
+
+		const size_t iStart = iIndex;
+		while (iIndex < logicalPath.size() && !IsPathSeparator(logicalPath[iIndex]))
+			++iIndex;
+
+		const PathString segment = logicalPath.substr(iStart, iIndex - iStart);
+		if (!segment.empty()
+			&& segment != _T(".")
+			&& segment != _T("..")
+			&& (segment[0] == _T(' ')
+				|| segment[segment.size() - 1] == _T(' ')
+				|| segment[segment.size() - 1] == _T('.')
+				|| IsReservedWin32DeviceName(segment)))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * @brief Applies the extended-length prefix to fully qualified overlong or exact-name DOS/UNC paths.
  */
 inline PathString PreparePathForLongPath(LPCTSTR pszPath)
 {
 	if (pszPath == NULL || pszPath[0] == _T('\0'))
 		return PathString();
 
-	const size_t nLength = _tcslen(pszPath);
-	if (nLength < MAX_PATH || HasLongPathPrefix(pszPath))
+	if (HasLongPathPrefix(pszPath))
 		return PathString(pszPath);
 
 	const PathString normalizedPath = NormalizeAbsolutePathSeparators(pszPath);
+	const size_t nLength = normalizedPath.size();
+	const bool bRequiresExactNamePrefix = RequiresExtendedLengthPathForExactName(normalizedPath.c_str());
+	if (nLength < MAX_PATH && !bRequiresExactNamePrefix)
+		return PathString(pszPath);
 	if (!IsDriveAbsolutePath(normalizedPath.c_str()) && !IsUncPath(normalizedPath.c_str()))
 		return PathString(pszPath);
 
@@ -96,7 +249,7 @@ inline PathString PreparePathForLongPath(LPCTSTR pszPath)
 }
 
 /**
- * @brief Prepares directory-create paths early enough to avoid the legacy `MAX_PATH - 12` limit.
+ * @brief Prepares directory-create paths early enough to avoid the legacy `MAX_PATH - 12` limit or preserve exact namespace-only names.
  */
 inline PathString PrepareDirectoryCreatePathForLongPath(LPCTSTR pszPath)
 {
@@ -106,11 +259,11 @@ inline PathString PrepareDirectoryCreatePathForLongPath(LPCTSTR pszPath)
 	if (HasLongPathPrefix(pszPath))
 		return PathString(pszPath);
 
-	const size_t nLength = _tcslen(pszPath);
-	if (nLength + kCreateDirectoryLegacyHeadroom < MAX_PATH)
-		return PathString(pszPath);
-
 	const PathString normalizedPath = NormalizeAbsolutePathSeparators(pszPath);
+	const size_t nLength = normalizedPath.size();
+	const bool bRequiresExactNamePrefix = RequiresExtendedLengthPathForExactName(normalizedPath.c_str());
+	if (nLength + kCreateDirectoryLegacyHeadroom < MAX_PATH && !bRequiresExactNamePrefix)
+		return PathString(pszPath);
 	if (!IsDriveAbsolutePath(normalizedPath.c_str()) && !IsUncPath(normalizedPath.c_str()))
 		return PathString(pszPath);
 
@@ -179,6 +332,77 @@ inline BOOL CreateDirectory(LPCTSTR pszPath, LPSECURITY_ATTRIBUTES pSecurityAttr
 inline BOOL RemoveDirectory(LPCTSTR pszPath)
 {
 	return ::RemoveDirectory(PreparePathForLongPath(pszPath).c_str());
+}
+
+/**
+ * @brief Queries the resolved filesystem identity for an existing directory.
+ */
+inline bool TryGetResolvedDirectoryIdentity(LPCTSTR pszPath, FileSystemObjectIdentity &rIdentity, DWORD *pdwLastError = NULL)
+{
+	rIdentity = FileSystemObjectIdentity{};
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (pszPath == NULL || pszPath[0] == _T('\0')) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return false;
+	}
+
+	HANDLE hDirectory = ::CreateFile(
+		PreparePathForLongPath(pszPath).c_str(),
+		0,
+		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		NULL,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS,
+		NULL);
+	if (hDirectory == INVALID_HANDLE_VALUE) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ::GetLastError();
+		return false;
+	}
+
+	bool bOk = false;
+	DWORD dwError = ERROR_SUCCESS;
+
+	FILE_ID_INFO fileIdInfo = {};
+	if (::GetFileInformationByHandleEx(hDirectory, FileIdInfo, &fileIdInfo, sizeof(fileIdInfo)) != FALSE) {
+		rIdentity.ullVolumeSerialNumber = fileIdInfo.VolumeSerialNumber;
+		for (size_t i = 0; i < rIdentity.fileId.size(); ++i)
+			rIdentity.fileId[i] = fileIdInfo.FileId.Identifier[i];
+		rIdentity.bHasExtendedFileId = true;
+		bOk = true;
+	} else {
+		dwError = ::GetLastError();
+		BY_HANDLE_FILE_INFORMATION handleInfo = {};
+		if (::GetFileInformationByHandle(hDirectory, &handleInfo) != FALSE) {
+			rIdentity.ullVolumeSerialNumber = handleInfo.dwVolumeSerialNumber;
+			rIdentity.fileId[0] = static_cast<BYTE>(handleInfo.nFileIndexLow & 0xFFu);
+			rIdentity.fileId[1] = static_cast<BYTE>((handleInfo.nFileIndexLow >> 8) & 0xFFu);
+			rIdentity.fileId[2] = static_cast<BYTE>((handleInfo.nFileIndexLow >> 16) & 0xFFu);
+			rIdentity.fileId[3] = static_cast<BYTE>((handleInfo.nFileIndexLow >> 24) & 0xFFu);
+			rIdentity.fileId[4] = static_cast<BYTE>(handleInfo.nFileIndexHigh & 0xFFu);
+			rIdentity.fileId[5] = static_cast<BYTE>((handleInfo.nFileIndexHigh >> 8) & 0xFFu);
+			rIdentity.fileId[6] = static_cast<BYTE>((handleInfo.nFileIndexHigh >> 16) & 0xFFu);
+			rIdentity.fileId[7] = static_cast<BYTE>((handleInfo.nFileIndexHigh >> 24) & 0xFFu);
+			rIdentity.bHasExtendedFileId = false;
+			dwError = ERROR_SUCCESS;
+			bOk = true;
+		}
+	}
+
+	const DWORD dwCloseError = (::CloseHandle(hDirectory) != FALSE) ? ERROR_SUCCESS : ::GetLastError();
+	if (!bOk) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwError;
+		return false;
+	}
+	if (dwCloseError != ERROR_SUCCESS) {
+		if (pdwLastError != NULL)
+			*pdwLastError = dwCloseError;
+		return false;
+	}
+	return true;
 }
 
 /**

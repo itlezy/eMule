@@ -169,10 +169,7 @@ uint32 DecodeBase32(LPCTSTR pszInput, CAICHHash &Hash);
 ///////////////////////////////////////////////////////////////////////////////
 // File/Path string helpers
 //
-void slosh(CString &path); //add trailing backslash to the path
-void unslosh(CString &path); //remove trailing backslash from the path
-void canonical(CString &path); //applies PathCanonicalize
-void MakeFoldername(CString &path); //removes trailing backslash
+void canonical(CString &path); //lexically canonicalizes dot segments
 CString RemoveFileExtension(const CString &rstrFilePath);
 bool EqualPaths(const CString &rstrDir1, const CString &rstrDir2);
 CString StringLimit(const CString &in, UINT length);
@@ -199,7 +196,6 @@ CString		GetFileTypeName(EFileType ftype);
 bool		ExtensionIs(LPCTSTR pszFilePath, LPCTSTR pszExt);
 int			IsExtensionTypeOf(EFileType type, LPCTSTR const pszExt);
 uint32		LevenshteinDistance(const CString &str1, const CString &str2);
-bool		_tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPCTSTR ext);
 bool		HasSubdirectories(const CString &strDir);
 bool		DirAccsess(const CString &strDir);
 #ifdef UNICODE
@@ -208,6 +204,7 @@ bool		DirAccsess(const CString &strDir);
 #define CompareLocaleStringNoCase	CompareLocaleStringNoCaseA
 #endif // !UNICODE
 #include "LongPathSeams.h"
+#include "SharedFileIntakePolicy.h"
 bool IsThumbsDb(const CString &sFilePath, const CString &sFileName);
 bool CheckFileOpen(LPCTSTR pszFilePath, LPCTSTR pszFileTitle = NULL);
 bool CFileOpen(CSafeFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg);
@@ -225,8 +222,8 @@ void ShellOpenFile(LPCTSTR lpName);
 void ShellDefaultVerb(LPCTSTR lpName);
 bool ShellDeleteFile(LPCTSTR pszFilePath);
 CString ShellGetFolderPath(int iCSIDL);
-bool SelectDir(HWND hWnd, LPTSTR pszPath, LPCTSTR pszTitle = NULL, LPCTSTR pszDlgTitle = NULL);
-BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName = NULL, DWORD dwFlags = 0, bool openfilestyle = true);
+bool SelectDir(CString &rstrPath, HWND hWnd, LPCTSTR pszTitle = NULL, LPCTSTR pszDlgTitle = NULL);
+BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName = NULL, DWORD dwFlags = 0, bool openfilestyle = true, HWND hWndOwner = NULL, LPCTSTR pszDlgTitle = NULL, LPCTSTR pszDefExt = NULL);
 void AddBuddyButton(HWND hwndEdit, HWND hwndButton);
 void DestroyIconsArr(HICON *pIcon, size_t cnt);
 bool InitAttachedBrowseButton(HWND hwndButton, HICON &ricoBrowse);

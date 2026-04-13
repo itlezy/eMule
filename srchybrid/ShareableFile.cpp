@@ -18,6 +18,7 @@
 #include "ShareableFile.h"
 #include "emule.h"
 #include "otherfunctions.h"
+#include "PathHelpers.h"
 
 IMPLEMENT_DYNAMIC(CShareableFile, CAbstractFile)
 
@@ -28,8 +29,7 @@ CShareableFile::CShareableFile()
 
 CString CShareableFile::GetInfoSummary(bool bNoFormatCommands) const
 {
-	CString strFolder(GetPath());
-	unslosh(strFolder);
+	CString strFolder(PathHelpers::TrimTrailingSeparator(GetPath()));
 
 	CString strType(GetFileTypeDisplayStr());
 	if (strType.IsEmpty())

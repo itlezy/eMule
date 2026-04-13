@@ -26,6 +26,8 @@
 #include "DownloadQueue.h"
 #include "Statistics.h"
 #include "Preferences.h"
+#include "SharedFileIntakePolicy.h"
+#include "OtherFunctions.h"
 #include "ProtocolGuards.h"
 #include "UpDownClient.h"
 #include "ServerConnect.h"
@@ -38,6 +40,7 @@
 #include "ClientList.h"
 #include "Log.h"
 #include "Collection.h"
+#include "PathHelpers.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "LongPathSeams.h"
 #include "ImportParts.h"
@@ -52,6 +55,32 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+CString NormalizeSharedFilePath(const CString &rstrPath)
+{
+	return PathHelpers::CanonicalizePathForComparison(rstrPath);
+}
+
+CString NormalizeSharedDirectoryPath(const CString &rstrPath)
+{
+	return PathHelpers::CanonicalizeDirectoryPath(rstrPath);
+}
+
+bool UpdateEquivalentStoredPath(CStringList &rList, const CString &rstrCanonicalPath, LPCTSTR pszDebugReason)
+{
+	for (POSITION pos = rList.GetHeadPosition(); pos != NULL;) {
+		const POSITION posCurrent = pos;
+		const CString strExisting(rList.GetNext(pos));
+		if (!PathHelpers::ArePathsEquivalent(strExisting, rstrCanonicalPath))
+			continue;
+		if (strExisting.CompareNoCase(rstrCanonicalPath) != 0) {
+			rList.SetAt(posCurrent, rstrCanonicalPath);
+			DEBUG_ONLY(DebugLog(_T("%s: \"%s\" -> \"%s\""), pszDebugReason, (LPCTSTR)strExisting, (LPCTSTR)rstrCanonicalPath));
+		}
+		return true;
+	}
+	return false;
+}
+
 CKnownFileProgressTargetSnapshot MakePartFileProgressTargetSnapshot(const CPartFile &partFile)
 {
 	CKnownFileProgressTargetSnapshot snapshot{};
@@ -511,13 +540,13 @@ int CAddFileThread::Run()
 void CSharedFileList::AddDirectory(const CString &strDir, CStringList &dirlist)
 {
 	ASSERT(strDir.Right(1) == _T("\\"));
-	CString slDir(strDir);
-	slDir.MakeLower();
+	const CString strCanonicalDir(NormalizeSharedDirectoryPath(strDir));
+	for (POSITION pos = dirlist.GetHeadPosition(); pos != NULL;)
+		if (EqualPaths(dirlist.GetNext(pos), strCanonicalDir))
+			return;
 
-	if (dirlist.Find(slDir) == NULL) {
-		dirlist.AddHead(slDir);
-		AddFilesFromDirectory(strDir);
-	}
+	dirlist.AddHead(strCanonicalDir);
+	AddFilesFromDirectory(strCanonicalDir);
 }
 
 CSharedFileList::CSharedFileList(CServerConnect *in_server)
@@ -641,95 +670,63 @@ void CSharedFileList::FindSharedFiles()
 
 void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
 {
-	ASSERT(rstrDirectory.Right(1) == _T("\\"));
+	const CString strDirectory(NormalizeSharedDirectoryPath(rstrDirectory));
+	ASSERT(strDirectory.Right(1) == _T("\\"));
 
-	if (rstrDirectory.GetLength() >= MAX_PATH || rstrDirectory.Left(4).CompareNoCase(_T("\\\\?\\")) == 0) {
-		WIN32_FIND_DATA findData = {};
-		HANDLE hFind = LongPathSeams::FindFirstFile(rstrDirectory + _T('*'), &findData);
-		if (hFind == INVALID_HANDLE_VALUE) {
-			DWORD dwError = ::GetLastError();
-			if (dwError != ERROR_FILE_NOT_FOUND)
-				LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrDirectory, (LPCTSTR)GetErrorMessage(dwError));
-			return;
-		}
-
-		do {
-			if (_tcscmp(findData.cFileName, _T(".")) != 0 && _tcscmp(findData.cFileName, _T("..")) != 0)
-				CheckAndAddSingleFile(rstrDirectory, findData);
-		} while (::FindNextFile(hFind, &findData));
-
-		::FindClose(hFind);
-		return;
-	}
-
-	CFileFind ff;
-	BOOL bFound = ff.FindFile(rstrDirectory + _T('*'));
-	if (bFound) {
-		do {
-			bFound = ff.FindNextFile();
-			CheckAndAddSingleFile(ff);
-		} while (bFound);
-	} else {
-		DWORD dwError = ::GetLastError();
-		if (dwError != ERROR_FILE_NOT_FOUND)
-			LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrDirectory, (LPCTSTR)GetErrorMessage(dwError));
+	DWORD dwError = ERROR_SUCCESS;
+	if (!PathHelpers::ForEachDirectoryEntry(strDirectory, [&](const WIN32_FIND_DATA &findData) -> bool {
+		CheckAndAddSingleFile(strDirectory, findData);
+		return true;
+	}, &dwError) && dwError != ERROR_FILE_NOT_FOUND)
+	{
+		LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)strDirectory, (LPCTSTR)GetErrorMessage(dwError));
 	}
 }
 
 bool CSharedFileList::AddSingleSharedFile(const CString &rstrFilePath, bool bNoUpdate)
 {
+	const CString strFilePath(NormalizeSharedFilePath(rstrFilePath));
 	bool bExclude = false;
 	// first check if we are explicitly excluding this file
 	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
-		if (rstrFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0) {
+		const CString strExcluded(m_liSingleExcludedFiles.GetNext(pos));
+		if (PathHelpers::ArePathsEquivalent(strFilePath, strExcluded)) {
 			bExclude = true;
+			if (strExcluded.CompareNoCase(strFilePath) != 0) {
+				m_liSingleExcludedFiles.SetAt(pos2, strFilePath);
+				DEBUG_ONLY(DebugLog(_T("Upgraded excluded shared-file spelling: \"%s\" -> \"%s\""), (LPCTSTR)strExcluded, (LPCTSTR)strFilePath));
+			}
 			m_liSingleExcludedFiles.RemoveAt(pos2);
 			break;
 		}
 	}
 
 	// check if we share this file in general
-	bool bShared = ShouldBeShared(rstrFilePath.Left(rstrFilePath.ReverseFind(_T('\\'))), rstrFilePath, false);
+	const CString strDirectory(PathHelpers::EnsureTrailingSeparator(PathHelpers::GetDirectoryPath(strFilePath)));
+	bool bShared = ShouldBeShared(strDirectory, strFilePath, false);
 
 	if (bShared && !bExclude)
 		return false; // we should be sharing this file already
 	if (!bShared)
-		m_liSingleSharedFiles.AddTail(rstrFilePath); // the directory is not shared, so we need a new entry
+		m_liSingleSharedFiles.AddTail(strFilePath); // the directory is not shared, so we need a new entry
 
-	return bNoUpdate || CheckAndAddSingleFile(rstrFilePath);
+	return bNoUpdate || CheckAndAddSingleFile(strFilePath);
 }
 
 bool CSharedFileList::CheckAndAddSingleFile(const CString &rstrFilePath)
 {
-	if (rstrFilePath.GetLength() >= MAX_PATH || rstrFilePath.Left(4).CompareNoCase(_T("\\\\?\\")) == 0) {
-		WIN32_FIND_DATA findData = {};
-		HANDLE hFind = LongPathSeams::FindFirstFile(rstrFilePath, &findData);
-		if (hFind == INVALID_HANDLE_VALUE) {
-			DWORD dwError = ::GetLastError();
-			if (dwError != ERROR_FILE_NOT_FOUND)
-				LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrFilePath, (LPCTSTR)GetErrorMessage(dwError));
-			return false;
-		}
-
-		::FindClose(hFind);
-		const int iSlash = rstrFilePath.ReverseFind(_T('\\'));
-		CheckAndAddSingleFile(iSlash >= 0 ? rstrFilePath.Left(iSlash + 1) : CString(), findData);
-		HashNextFile();
-		bHaveSingleSharedFiles = true;
-		return true;
-	}
-
-	CFileFind ff;
-	if (!ff.FindFile(rstrFilePath)) {
-		DWORD dwError = ::GetLastError();
+	const CString strFilePath(NormalizeSharedFilePath(rstrFilePath));
+	WIN32_FIND_DATA findData = {};
+	DWORD dwError = ERROR_SUCCESS;
+	if (!PathHelpers::TryGetPathEntryData(strFilePath, findData, &dwError)) {
 		if (dwError != ERROR_FILE_NOT_FOUND)
-			LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)rstrFilePath, (LPCTSTR)GetErrorMessage(dwError));
+			LogWarning(GetResString(IDS_ERR_SHARED_DIR), (LPCTSTR)strFilePath, (LPCTSTR)GetErrorMessage(dwError));
 		return false;
 	}
-	ff.FindNextFile();
-	CheckAndAddSingleFile(ff);
-	ff.Close();
+
+	const int iSlash = strFilePath.ReverseFind(_T('\\'));
+	CheckAndAddSingleFile(iSlash >= 0 ? strFilePath.Left(iSlash + 1) : CString(), findData);
 	HashNextFile();
 	bHaveSingleSharedFiles = true;
 	// GUI update to be done by the caller
@@ -748,18 +745,16 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 	CString strFoundDirectory(strDirectory);
 	if (!strFoundDirectory.IsEmpty() && strFoundDirectory.Right(1) != _T("\\"))
 		strFoundDirectory += _T("\\");
+	strFoundDirectory = NormalizeSharedDirectoryPath(strFoundDirectory);
 
 	const CString strFoundFileName(findData.cFileName);
-	const CString strFoundFilePath(strFoundDirectory + strFoundFileName);
+	const CString strFoundFilePath(NormalizeSharedFilePath(strFoundDirectory + strFoundFileName));
 
 	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;)
-		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0)
+		if (PathHelpers::ArePathsEquivalent(strFoundFilePath, m_liSingleExcludedFiles.GetNext(pos)))
 			return;
 
-	if (ExtensionIs(strFoundFileName, _T(".lnk")))
-		return;
-
-	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {
+	if (ShouldIgnoreSharedFileCandidate(strFoundFilePath, strFoundFileName)) {
 		TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
 		return;
 	}
@@ -781,10 +776,17 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 			TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFilePath());
 			TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(toadd->GetFileHash()), (LPCTSTR)strFoundFilePath);
 			if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap)) {
-				if (strFoundFilePath.CompareNoCase(pFileInMap->GetFilePath()) != 0)
+				if (!PathHelpers::ArePathsEquivalent(strFoundFilePath, pFileInMap->GetFilePath()))
 					LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)strFoundFilePath);
-				else
+				else {
+					if (pFileInMap->GetFilePath().CompareNoCase(strFoundFilePath) != 0) {
+						const CString strOldFilePath(pFileInMap->GetFilePath());
+						pFileInMap->SetPath(strFoundDirectory);
+						pFileInMap->SetFilePath(strFoundFilePath);
+						DEBUG_ONLY(DebugLog(_T("Upgraded shared-file spelling: \"%s\" -> \"%s\""), (LPCTSTR)strOldFilePath, (LPCTSTR)strFoundFilePath));
+					}
 					DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
+				}
 			}
 		} else {
 			toadd->SetPath(strFoundDirectory);
@@ -835,7 +837,16 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 	if (m_Files_map.Lookup(key, pFileInMap)) {
 		TRACE(_T("%hs: File already in shared file list: %s \"%s\" \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFileName(), (LPCTSTR)pFileInMap->GetFilePath());
 		TRACE(_T("%hs: File to add:                      %s \"%s\" \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFile->GetFileHash()), (LPCTSTR)pFile->GetFileName(), (LPCTSTR)pFile->GetFilePath());
-		if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap))
+		if (PathHelpers::ArePathsEquivalent(pFileInMap->GetFilePath(), pFile->GetFilePath())
+			&& pFileInMap->GetFilePath().CompareNoCase(pFile->GetFilePath()) != 0)
+		{
+			const CString strOldFilePath(pFileInMap->GetFilePath());
+			pFileInMap->SetPath(pFile->GetPath());
+			pFileInMap->SetFilePath(pFile->GetFilePath());
+			DEBUG_ONLY(DebugLog(_T("Upgraded duplicate shared-file spelling: \"%s\" -> \"%s\""), (LPCTSTR)strOldFilePath, (LPCTSTR)pFileInMap->GetFilePath()));
+		}
+		if ((!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap))
+			&& !PathHelpers::ArePathsEquivalent(pFileInMap->GetFilePath(), pFile->GetFilePath()))
 			LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)pFile->GetFilePath());
 		return false;
 	}
@@ -1550,12 +1561,12 @@ bool CSharedFileList::ShouldBeShared(const CString &sDirPath, LPCTSTR const pFil
 	if (pFilePath) {
 		// check if this file is explicitly unshared
 		for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;)
-			if (m_liSingleExcludedFiles.GetNext(pos).CompareNoCase(pFilePath) == 0)
+			if (PathHelpers::ArePathsEquivalent(m_liSingleExcludedFiles.GetNext(pos), pFilePath))
 				return false;
 
 		// check if this file is explicitly shared (as single file)
 		for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL;)
-			if (m_liSingleSharedFiles.GetNext(pos).CompareNoCase(pFilePath) == 0)
+			if (PathHelpers::ArePathsEquivalent(m_liSingleSharedFiles.GetNext(pos), pFilePath))
 				return true;
 	}
 
@@ -1567,9 +1578,8 @@ bool CSharedFileList::ShouldBeShared(const CString &sDirPath, LPCTSTR const pFil
 
 bool CSharedFileList::ContainsSingleSharedFiles(const CString &strDirectory) const
 {
-	int iLen = strDirectory.GetLength();
 	for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL;)
-		if (_tcsnicmp(strDirectory, m_liSingleSharedFiles.GetNext(pos), iLen) == 0)
+		if (PathHelpers::IsPathWithinDirectory(strDirectory, m_liSingleSharedFiles.GetNext(pos)))
 			return true;
 
 	return false;
@@ -1577,115 +1587,47 @@ bool CSharedFileList::ContainsSingleSharedFiles(const CString &strDirectory) con
 
 bool CSharedFileList::ExcludeFile(const CString &strFilePath)
 {
+	const CString strCanonicalFilePath(NormalizeSharedFilePath(strFilePath));
 	bool bShared = false;
 	// first remove from explicitly shared files
 	for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL;) {
 		POSITION pos2 = pos;
-		if (strFilePath.CompareNoCase(m_liSingleSharedFiles.GetNext(pos)) == 0) {
+		const CString strExisting(m_liSingleSharedFiles.GetNext(pos));
+		if (PathHelpers::ArePathsEquivalent(strCanonicalFilePath, strExisting)) {
 			bShared = true;
+			if (strExisting.CompareNoCase(strCanonicalFilePath) != 0) {
+				m_liSingleSharedFiles.SetAt(pos2, strCanonicalFilePath);
+				DEBUG_ONLY(DebugLog(_T("Upgraded single-shared file spelling: \"%s\" -> \"%s\""), (LPCTSTR)strExisting, (LPCTSTR)strCanonicalFilePath));
+			}
 			m_liSingleSharedFiles.RemoveAt(pos2);
 			break;
 		}
 	}
 
 	// if this file was not shared as single file, check if we implicitly share it
-	if (!bShared && !ShouldBeShared(strFilePath.Left(strFilePath.ReverseFind(_T('\\'))), strFilePath, false)) {
+	const CString strCanonicalDirectory(PathHelpers::EnsureTrailingSeparator(PathHelpers::GetDirectoryPath(strCanonicalFilePath)));
+	if (!bShared && !ShouldBeShared(strCanonicalDirectory, strCanonicalFilePath, false)) {
 		// we don't actually share this file, can't be excluded
 		return false;
 	}
-	if (ShouldBeShared(strFilePath.Left(strFilePath.ReverseFind(_T('\\'))), strFilePath, true)) {
+	if (ShouldBeShared(strCanonicalDirectory, strCanonicalFilePath, true)) {
 		// we cannot unshare this file (incoming directories)
 		ASSERT(0); // checks should have been done earlier
 		return false;
 	}
 
 	// add to exclude list
-	m_liSingleExcludedFiles.AddTail(strFilePath);
+	m_liSingleExcludedFiles.AddTail(strCanonicalFilePath);
 
 	// check if the file is in the shared list (doesn't have to; for example, if it is hashing or not loaded yet) and remove
 	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair))
-		if (strFilePath.CompareNoCase(pair->value->GetFilePath()) == 0) {
+		if (PathHelpers::ArePathsEquivalent(strCanonicalFilePath, pair->value->GetFilePath())) {
 			RemoveFile(pair->value);
 			break;
 		}
 
 	// GUI update to be done by the caller
 	return true;
-}
-
-void CSharedFileList::CheckAndAddSingleFile(const CFileFind &ff)
-{
-	if (ff.IsDirectory() || ff.IsSystem() || ff.IsTemporary() || ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE)
-		return;
-
-	CString strFoundFileName(ff.GetFileName());
-	CString strFoundFilePath(ff.GetFilePath());
-	CString strFoundDirectory(strFoundFilePath, ff.GetFilePath().ReverseFind(_T('\\')) + 1); //with backslash
-	ULONGLONG ullFoundFileSize = ff.GetLength();
-
-	// check if this file is explicitly unshared
-	for (POSITION pos = m_liSingleExcludedFiles.GetHeadPosition(); pos != NULL;)
-		if (strFoundFilePath.CompareNoCase(m_liSingleExcludedFiles.GetNext(pos)) == 0)
-			return;
-
-	FILETIME tFoundFileTime;
-	ff.GetLastWriteTime(&tFoundFileTime);
-
-	// ignore real(!) LNK files
-	if (ExtensionIs(strFoundFileName, _T(".lnk"))) {
-		SHFILEINFO info;
-		// TODO:MINOR(FEAT-010): Shared-file shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
-		if (::SHGetFileInfo(strFoundFilePath, 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK)) {
-			TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
-			return;
-		}
-	}
-
-	// ignore real(!) thumbs.db files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
-	if (IsThumbsDb(strFoundFilePath, strFoundFileName)) {
-		TRACE(_T("%hs: Did not share file \"%s\" - not supported file type\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
-		return;
-	}
-
-	time_t fdate = (time_t)FileTimeToUnixTime(tFoundFileTime);
-	if (fdate <= 0)
-		fdate = (time_t)-1;
-	if (fdate == (time_t)-1) {
-		if (thePrefs.GetVerbose())
-			AddDebugLogLine(false, _T("Failed to get file date of \"%s\""), (LPCTSTR)strFoundFilePath);
-	} else
-		AdjustNTFSDaylightFileTime(fdate, strFoundFilePath);
-
-	CKnownFile *toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
-	if (toadd) {
-		CCKey key(toadd->GetFileHash());
-		CKnownFile *pFileInMap;
-		if (m_Files_map.Lookup(key, pFileInMap)) {
-			TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFilePath());
-			TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(toadd->GetFileHash()), (LPCTSTR)strFoundFilePath);
-			if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap)) {
-				if (strFoundFilePath.CompareNoCase(pFileInMap->GetFilePath()) != 0) //is it actually really the same file in the same place we already share? if so don't bother too much
-					LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)strFoundFilePath);
-				else
-					DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
-			}
-		} else {
-			toadd->SetPath(strFoundDirectory);
-			toadd->SetFilePath(strFoundFilePath);
-			AddFile(toadd);
-		}
-	} else {
-		// not in knownfile list - start adding thread to hash file if the hashing of this file isn't already waiting
-		// SLUGFILLER: SafeHash - don't double hash, MY way
-		if (!IsHashing(strFoundDirectory, strFoundFileName) && !thePrefs.IsTempFile(strFoundDirectory, strFoundFileName)) {
-			UnknownFile_Struct *tohash = new UnknownFile_Struct;
-			tohash->strDirectory = strFoundDirectory;
-			tohash->strName = strFoundFileName;
-			waitingforhash_list.AddTail(tohash);
-		} else
-			TRACE(_T("%hs: Did not share file \"%s\" - already hashing or temp. file\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
-		// SLUGFILLER: SafeHash
-	}
 }
 
 void CSharedFileList::Save() const
@@ -1734,6 +1676,7 @@ void CSharedFileList::LoadSingleSharedFilesList()
 				bool bExclude = (toadd[0] == _T('-')); // a '-' prefix means excluded
 				if (bExclude)
 					toadd.Delete(0, 1);
+				toadd = NormalizeSharedFilePath(toadd);
 
 				// Skip non-existing directories on fixed disks only
 				if (DirAccsess(toadd))
@@ -1753,15 +1696,16 @@ void CSharedFileList::LoadSingleSharedFilesList()
 
 bool CSharedFileList::AddSingleSharedDirectory(const CString &rstrFilePath, bool bNoUpdate)
 {
+	const CString strCanonicalDirectory(NormalizeSharedDirectoryPath(rstrFilePath));
 	// check if we share this dir already or are not allowed to
-	if (ShouldBeShared(rstrFilePath, NULL, false) || !thePrefs.IsShareableDirectory(rstrFilePath))
+	if (ShouldBeShared(strCanonicalDirectory, NULL, false) || !thePrefs.IsShareableDirectory(strCanonicalDirectory))
 		return false;
 
 	// add the new directory as shared, GUI update to be done by the caller
-	if (!thePrefs.AddSharedDirectoryIfAbsent(rstrFilePath))
+	if (!thePrefs.AddSharedDirectoryIfAbsent(strCanonicalDirectory))
 		return false;
 	if (!bNoUpdate) {
-		AddFilesFromDirectory(rstrFilePath);
+		AddFilesFromDirectory(strCanonicalDirectory);
 		HashNextFile();
 	}
 	return true;
@@ -1789,8 +1733,7 @@ CString CSharedFileList::GetPseudoDirName(const CString &strDirectoryName)
 	}
 
 	// create a new Pseudoname
-	CString strDirectoryTmp(strDirectoryName);
-	unslosh(strDirectoryTmp);
+	CString strDirectoryTmp(PathHelpers::TrimTrailingSeparatorForLeaf(strDirectoryName));
 
 	CString strPseudoName;
 	int iPos;

@@ -22,6 +22,7 @@
 #include "SharedFilesCtrl.h"
 #include "MenuCmds.h"
 #include "OtherFunctions.h"
+#include "ShellUiHelpers.h"
 #include "ListViewSearchDlg.h"
 #include <atlimage.h>
 
@@ -386,12 +387,9 @@ void CMuleListCtrl::SetColors()
 		theApp.LoadSkinColorAlt(strKey + _T("Fg"), _T("DefLvFg"), m_crWindowText);
 		theApp.LoadSkinColorAlt(strKey + _T("Hl"), _T("DefLvHl"), crHighlight);
 
-		TCHAR szColor[MAX_PATH];
-		::GetPrivateProfileString(_T("Colors"), strKey + _T("BkImg"), NULL, szColor, _countof(szColor), sSkinProfile);
-		if (*szColor == _T('\0'))
-			::GetPrivateProfileString(_T("Colors"), _T("DefLvBkImg"), NULL, szColor, _countof(szColor), sSkinProfile);
-		if (*szColor != _T('\0'))
-			strBkImage = szColor;
+		strBkImage = ShellUiHelpers::GetProfileString(_T("Colors"), strKey + _T("BkImg"), NULL, sSkinProfile);
+		if (strBkImage.IsEmpty())
+			strBkImage = ShellUiHelpers::GetProfileString(_T("Colors"), _T("DefLvBkImg"), NULL, sSkinProfile);
 	}
 
 	SetBkColor(m_crWindow);
@@ -404,26 +402,8 @@ void CMuleListCtrl::SetColors()
 	SetBkImage(&lvimg);
 
 	if (!strBkImage.IsEmpty() && !g_bLowColorDesktop) {
-		// TODO:MINOR(longpath): Background skin resource path assembly still uses MAX_PATH buffers; keep tracked in FEAT-010 shell/UI follow-up.
-		// expand any optional available environment strings
-		TCHAR szExpSkinRes[MAX_PATH];
-		if (::ExpandEnvironmentStrings(strBkImage, szExpSkinRes, _countof(szExpSkinRes)) != 0)
-			strBkImage = szExpSkinRes;
-
-		// create absolute path to icon resource file
-		TCHAR szFullResPath[MAX_PATH];
-		if (::PathIsRelative(strBkImage)) {
-			TCHAR szSkinResFolder[MAX_PATH];
-			_tcsncpy(szSkinResFolder, sSkinProfile, _countof(szSkinResFolder));
-			szSkinResFolder[_countof(szSkinResFolder) - 1] = _T('\0');
-			::PathRemoveFileSpec(szSkinResFolder);
-			_tmakepathlimit(szFullResPath, NULL, szSkinResFolder, strBkImage, NULL);
-		} else {
-			_tcsncpy(szFullResPath, strBkImage, _countof(szFullResPath));
-			szFullResPath[_countof(szFullResPath) - 1] = _T('\0');
-		}
-
-		HBITMAP hbm = LoadImageAsPARGB(szFullResPath);
+		const CString strFullResPath(ShellUiHelpers::ResolveSkinResourcePath(sSkinProfile, strBkImage));
+		HBITMAP hbm = LoadImageAsPARGB(strFullResPath);
 		if (hbm) {
 			LVBKIMAGE lvbkimg = {};
 			lvbkimg.ulFlags = LVBKIF_TYPE_WATERMARK;

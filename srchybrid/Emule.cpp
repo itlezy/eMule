@@ -53,6 +53,7 @@
 #include "ED2KLink.h"
 #include "Preferences.h"
 #include "SafeFile.h"
+#include "ShellUiHelpers.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
 #include "StringConversion.h"
@@ -69,6 +70,21 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+CString GetSkinProfileResourcePath(const CString &rstrSkinProfile, LPCTSTR pszSection, LPCTSTR pszResourceName)
+{
+	if (rstrSkinProfile.IsEmpty() || pszSection == NULL || pszResourceName == NULL)
+		return CString();
+
+	const CString strSkinResource(ShellUiHelpers::GetProfileString(pszSection, pszResourceName, NULL, rstrSkinProfile));
+	if (strSkinResource.IsEmpty())
+		return CString();
+
+	return ShellUiHelpers::ResolveSkinResourcePath(rstrSkinProfile, strSkinResource);
+}
+}
 
 
 #ifdef _UNICODE
@@ -116,7 +132,7 @@ static bool TryGetVolumeRootPath(const CString &strPath, CString *pstrVolumeRoot
 	if (strVolumeRoot.IsEmpty())
 		return false;
 
-	slosh(strVolumeRoot);
+	strVolumeRoot = PathHelpers::EnsureTrailingSeparator(strVolumeRoot);
 	*pstrVolumeRoot = strVolumeRoot;
 	return true;
 }
@@ -981,27 +997,11 @@ bool CemuleApp::ShowWebHelp(UINT uTopic)
 int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -1 */, bool bNormalsSize)
 {
 	DWORD dwFileAttributes;
-	LPCTSTR pszCacheExt;
 	if (iLength == -1)
 		iLength = (int)_tcslen(pszFilePath);
-	if (iLength > 0 && (pszFilePath[iLength - 1] == _T('\\') || pszFilePath[iLength - 1] == _T('/'))) {
-		// it's a directory
-		pszCacheExt = _T("\\");
-		dwFileAttributes = FILE_ATTRIBUTE_DIRECTORY;
-	} else {
-		dwFileAttributes = FILE_ATTRIBUTE_NORMAL;
-		// search last '.' character *after* the last '\\' character
-		pszCacheExt = _T(""); //default to empty extension
-		for (int i = iLength; --i >= 0;) {
-			if (pszFilePath[i] == _T('\\') || pszFilePath[i] == _T('/'))
-				break;
-			if (pszFilePath[i] == _T('.')) {
-				// point to 1st character of extension (skip the '.')
-				pszCacheExt = &pszFilePath[i + 1];
-				break;
-			}
-		}
-	}
+	const ShellUiHelpers::ShellIconDescriptor iconDescriptor = ShellUiHelpers::DescribeShellIcon(pszFilePath, iLength);
+	const LPCTSTR pszCacheExt = iconDescriptor.strCacheKey;
+	dwFileAttributes = iconDescriptor.dwFileAttributes;
 
 	// Search extension in "ext->idx" cache.
 	LPVOID vData;
@@ -1009,8 +1009,7 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 		if (!m_aBigExtToSysImgIdx.Lookup(pszCacheExt, vData)) {
 			// Get index for the system's big icon image list
 			SHFILEINFO sfi;
-			// TODO:MINOR(FEAT-010): System icon cache population still depends on SHGetFileInfo; defer the long-path-safe shell helper and fallback policy to the shell/UI follow-up.
-			HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(pszFilePath, dwFileAttributes, &sfi, sizeof(sfi), SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX);
+			HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(iconDescriptor.strQueryPath, dwFileAttributes, &sfi, sizeof(sfi), SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX);
 			if (hResult == 0)
 				return 0;
 			ASSERT(m_hBigSystemImageList == NULL || m_hBigSystemImageList == hResult);
@@ -1023,7 +1022,7 @@ int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -
 	} else if (!m_aExtToSysImgIdx.Lookup(pszCacheExt, vData)) {
 		// Get index for the system's small icon image list
 		SHFILEINFO sfi;
-		HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(pszFilePath, dwFileAttributes, &sfi, sizeof(sfi)
+		HIMAGELIST hResult = (HIMAGELIST)::SHGetFileInfo(iconDescriptor.strQueryPath, dwFileAttributes, &sfi, sizeof(sfi)
 			, SHGFI_USEFILEATTRIBUTES | SHGFI_SYSICONINDEX | SHGFI_SMALLICON);
 		if (hResult == 0)
 			return 0;
@@ -1137,34 +1136,11 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 	HICON hIcon = NULL;
 	const CString &sSkinProfile(thePrefs.GetSkinProfile());
 	if (!sSkinProfile.IsEmpty()) {
-		// TODO:MINOR(longpath): Skin resource path assembly in LoadIcon/LoadImage/GetSkinFileItem still uses MAX_PATH buffers; keep tracked in FEAT-010 shell/UI follow-up.
-		// load icon resource file specification from skin profile
-		TCHAR szSkinResource[MAX_PATH];
-		::GetPrivateProfileString(_T("Icons"), lpszResourceName, NULL, szSkinResource, _countof(szSkinResource), sSkinProfile);
-		if (szSkinResource[0] != _T('\0')) {
-			// expand any optional available environment strings
-			TCHAR szExpSkinRes[MAX_PATH];
-			if (::ExpandEnvironmentStrings(szSkinResource, szExpSkinRes, _countof(szExpSkinRes)) != 0) {
-				_tcsncpy(szSkinResource, szExpSkinRes, _countof(szSkinResource));
-				szSkinResource[_countof(szSkinResource) - 1] = _T('\0');
-			}
-
-			// create absolute path to icon resource file
-			TCHAR szFullResPath[MAX_PATH];
-			if (::PathIsRelative(szSkinResource)) {
-				TCHAR szSkinResFolder[MAX_PATH];
-				_tcsncpy(szSkinResFolder, sSkinProfile, _countof(szSkinResFolder));
-				szSkinResFolder[_countof(szSkinResFolder) - 1] = _T('\0');
-				::PathRemoveFileSpec(szSkinResFolder);
-				_tmakepathlimit(szFullResPath, NULL, szSkinResFolder, szSkinResource, NULL);
-			} else {
-				_tcsncpy(szFullResPath, szSkinResource, _countof(szFullResPath));
-				szFullResPath[_countof(szFullResPath) - 1] = _T('\0');
-			}
-
+		const CString strResolvedResourcePath(GetSkinProfileResourcePath(sSkinProfile, _T("Icons"), lpszResourceName));
+		if (!strResolvedResourcePath.IsEmpty()) {
 			// check for optional icon index or resource identifier within the icon resource file
 			bool bExtractIcon = false;
-			CString strFullResPath(szFullResPath);
+			CString strFullResPath(strResolvedResourcePath);
 			int iIconIndex = 0;
 			int iComma = strFullResPath.ReverseFind(_T(','));
 			if (iComma >= 0) {
@@ -1209,13 +1185,13 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 				//
 				// If the ICO file contains a 16x16 icon, 'LoadImage' will though return a 32x32 icon,
 				// if LR_DEFAULTSIZE is specified! -> always specify the requested size!
-				hIcon = (HICON)::LoadImage(NULL, szFullResPath, IMAGE_ICON, cx, cy, uFlags | LR_LOADFROMFILE);
+				hIcon = (HICON)::LoadImage(NULL, strFullResPath, IMAGE_ICON, cx, cy, uFlags | LR_LOADFROMFILE);
 				if (hIcon == NULL && ::GetLastError() != ERROR_PATH_NOT_FOUND/* && g_bGdiPlusInstalled*/) {
 					// NOTE: Do *NOT* forget to specify /DELAYLOAD:gdiplus.dll as link parameter.
 					ULONG_PTR gdiplusToken = 0;
 					Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 					if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok) {
-						Gdiplus::Bitmap bmp(szFullResPath);
+						Gdiplus::Bitmap bmp(strFullResPath);
 						bmp.GetHICON(&hIcon);
 					}
 					Gdiplus::GdiplusShutdown(gdiplusToken);
@@ -1243,32 +1219,10 @@ HBITMAP CemuleApp::LoadImage(LPCTSTR lpszResourceName, LPCTSTR pszResourceType) 
 {
 	const CString &sSkinProfile(thePrefs.GetSkinProfile());
 	if (!sSkinProfile.IsEmpty()) {
-		// load resource file specification from skin profile
-		TCHAR szSkinResource[MAX_PATH];
-		::GetPrivateProfileString(_T("Bitmaps"), lpszResourceName, NULL, szSkinResource, _countof(szSkinResource), sSkinProfile);
-		if (szSkinResource[0] != _T('\0')) {
-			// expand any optional available environment strings
-			TCHAR szExpSkinRes[MAX_PATH];
-			if (::ExpandEnvironmentStrings(szSkinResource, szExpSkinRes, _countof(szExpSkinRes)) != 0) {
-				_tcsncpy(szSkinResource, szExpSkinRes, _countof(szSkinResource));
-				szSkinResource[_countof(szSkinResource) - 1] = _T('\0');
-			}
-
-			// create absolute path to resource file
-			TCHAR szFullResPath[MAX_PATH];
-			if (::PathIsRelative(szSkinResource)) {
-				TCHAR szSkinResFolder[MAX_PATH];
-				_tcsncpy(szSkinResFolder, sSkinProfile, _countof(szSkinResFolder));
-				szSkinResFolder[_countof(szSkinResFolder) - 1] = _T('\0');
-				::PathRemoveFileSpec(szSkinResFolder);
-				_tmakepathlimit(szFullResPath, NULL, szSkinResFolder, szSkinResource, NULL);
-			} else {
-				_tcsncpy(szFullResPath, szSkinResource, _countof(szFullResPath));
-				szFullResPath[_countof(szFullResPath) - 1] = _T('\0');
-			}
-
+		const CString strFullResPath(GetSkinProfileResourcePath(sSkinProfile, _T("Bitmaps"), lpszResourceName));
+		if (!strFullResPath.IsEmpty()) {
 			CEnBitmap bmp;
-			if (bmp.LoadImage(szFullResPath))
+			if (bmp.LoadImage(strFullResPath))
 				return (HBITMAP)bmp.Detach();
 		}
 	}
@@ -1279,35 +1233,8 @@ HBITMAP CemuleApp::LoadImage(LPCTSTR lpszResourceName, LPCTSTR pszResourceType) 
 
 CString CemuleApp::GetSkinFileItem(LPCTSTR lpszResourceName, LPCTSTR pszResourceType) const
 {
-	TCHAR szFullResPath[MAX_PATH];
-	*szFullResPath = _T('\0');
 	const CString &sSkinProfile(thePrefs.GetSkinProfile());
-	if (!sSkinProfile.IsEmpty()) {
-		// load resource file specification from skin profile
-		TCHAR szSkinResource[MAX_PATH];
-		::GetPrivateProfileString(pszResourceType, lpszResourceName, NULL, szSkinResource, _countof(szSkinResource), sSkinProfile);
-		if (szSkinResource[0] != _T('\0')) {
-			// expand any optional available environment strings
-			TCHAR szExpSkinRes[MAX_PATH];
-			if (::ExpandEnvironmentStrings(szSkinResource, szExpSkinRes, _countof(szExpSkinRes)) != 0) {
-				_tcsncpy(szSkinResource, szExpSkinRes, _countof(szSkinResource));
-				szSkinResource[_countof(szSkinResource) - 1] = _T('\0');
-			}
-
-			// create absolute path to resource file
-			if (::PathIsRelative(szSkinResource)) {
-				TCHAR szSkinResFolder[MAX_PATH];
-				_tcsncpy(szSkinResFolder, sSkinProfile, _countof(szSkinResFolder));
-				szSkinResFolder[_countof(szSkinResFolder) - 1] = _T('\0');
-				::PathRemoveFileSpec(szSkinResFolder);
-				_tmakepathlimit(szFullResPath, NULL, szSkinResFolder, szSkinResource, NULL);
-			} else {
-				_tcsncpy(szFullResPath, szSkinResource, _countof(szFullResPath));
-				szFullResPath[_countof(szFullResPath) - 1] = _T('\0');
-			}
-		}
-	}
-	return CString(szFullResPath);
+	return GetSkinProfileResourcePath(sSkinProfile, pszResourceType, lpszResourceName);
 }
 
 bool CemuleApp::LoadSkinColor(LPCTSTR pszKey, COLORREF &crColor) const

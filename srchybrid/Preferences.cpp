@@ -27,6 +27,7 @@
 #include "Statistics.h"
 #include "MD5Sum.h"
 #include "PartFile.h"
+#include "PathHelpers.h"
 #include "ServerConnect.h"
 #include "ListenSocket.h"
 #include "ServerList.h"
@@ -477,17 +478,35 @@ void CPreferences::ReplaceSharedDirectoryList(const CStringList &in)
 		return;
 	CSingleLock lock(&m_csSharedDirList, TRUE);
 	shareddir_list.RemoveAll();
-	shareddir_list.AddTail(const_cast<CStringList*>(&in));
+	for (POSITION pos = in.GetHeadPosition(); pos != NULL;) {
+		const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(in.GetNext(pos)));
+		bool bDuplicate = false;
+		for (POSITION posExisting = shareddir_list.GetHeadPosition(); posExisting != NULL;) {
+			if (EqualPaths(shareddir_list.GetNext(posExisting), strCanonicalDir)) {
+				bDuplicate = true;
+				break;
+			}
+		}
+		if (!bDuplicate)
+			shareddir_list.AddTail(strCanonicalDir);
+	}
 }
 
 bool CPreferences::AddSharedDirectoryIfAbsent(const CString &dir)
 {
+	const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(dir));
 	CSingleLock lock(&m_csSharedDirList, TRUE);
 	for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
-		if (EqualPaths(shareddir_list.GetNext(pos), dir))
-			return false;
+		const POSITION posCurrent = pos;
+		const CString strExisting(shareddir_list.GetNext(pos));
+		if (!EqualPaths(strExisting, strCanonicalDir))
+			continue;
+		if (strExisting.CompareNoCase(strCanonicalDir) != 0) {
+			shareddir_list.SetAt(posCurrent, strCanonicalDir);
+		}
+		return false;
 	}
-	shareddir_list.AddTail(dir);
+	shareddir_list.AddTail(strCanonicalDir);
 	return true;
 }
 
@@ -561,13 +580,12 @@ void CPreferences::Init()
 	///////////////////////////////////////////////////////////////////////////
 	// Move *.log files from application directory into 'log' directory
 	//
-	CFileFind ff;
-	for (BOOL bFound = ff.FindFile(GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule*.log")); bFound;) {
-		bFound = ff.FindNextFile();
-		if (!ff.IsDirectory() && !ff.IsSystem() && !ff.IsHidden())
-			(void)LongPathSeams::MoveFile(ff.GetFilePath(), GetMuleDirectory(EMULE_LOGDIR) + ff.GetFileName());
-	}
-	ff.Close();
+	(void)PathHelpers::ForEachMatchingEntry(GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule*.log"),
+		[&](const WIN32_FIND_DATA &findData) -> bool {
+		if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN)) == 0)
+			(void)LongPathSeams::MoveFile(GetMuleDirectory(EMULE_EXECUTABLEDIR) + findData.cFileName, GetMuleDirectory(EMULE_LOGDIR) + findData.cFileName);
+		return true;
+	});
 
 	///////////////////////////////////////////////////////////////////////////
 	// Move 'downloads.txt/bak' files from application and/or database directory
@@ -613,11 +631,20 @@ void CPreferences::Init()
 			while (sdirfile.CStdioFile::ReadString(toadd)) {
 				toadd.Trim(_T(" \t\r\n")); // need to trim '\r' in binary mode
 				if (!toadd.IsEmpty()) {
-					MakeFoldername(toadd);
+					toadd = PathHelpers::CanonicalizeDirectoryPath(toadd);
 					// skip non-shareable directories
 					// maybe skip non-existing directories on fixed disks only
-					if (IsShareableDirectory(toadd) && (m_bKeepUnavailableFixedSharedDirs || DirAccsess(toadd)))
+					if (IsShareableDirectory(toadd) && (m_bKeepUnavailableFixedSharedDirs || DirAccsess(toadd))) {
+						bool bDuplicate = false;
+						for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;) {
+							if (EqualPaths(sharedDirs.GetNext(pos), toadd)) {
+								bDuplicate = true;
+								break;
+							}
+						}
+						if (!bDuplicate)
 						sharedDirs.AddTail(toadd);
+					}
 				}
 			}
 			ReplaceSharedDirectoryList(sharedDirs);
@@ -1217,13 +1244,12 @@ bool CPreferences::LoadStats(int loadBackUp)
 	// loadBackUp = 0: Load the stats normally like we used to do in LoadPreferences
 	// loadBackUp = 1: Load the stats from statbkup.ini and create a backup of the current stats.  Also, do not initialize session variables.
 	const CString &sConfDir(GetMuleDirectory(EMULE_CONFIGDIR));
-	CFileFind findBackUp;
 
 	CString sINI(sConfDir);
 	switch (loadBackUp) {
 	case 1:
 		sINI += _T("statbkup.ini");
-		if (!findBackUp.FindFile(sINI))
+		if (!LongPathSeams::PathExists(sINI))
 			return false;
 		SaveStats(2); // Save our temp backup of current values to statbkuptmp.ini, we will be renaming it at the end of this function.
 		break;
@@ -1364,7 +1390,7 @@ bool CPreferences::LoadStats(int loadBackUp)
 		// Check to make sure the backup of the values we just overwrote exists.  If so, rename it to the backup file.
 		// This allows us to undo a restore, so to speak, just in case we don't like the restored values...
 		CString sINIBackUp(sConfDir + _T("statbkuptmp.ini"));
-		if (findBackUp.FindFile(sINIBackUp)) {
+		if (LongPathSeams::PathExists(sINIBackUp)) {
 			(void)LongPathSeams::DeleteFile(sINI);				// Remove the backup that we just restored from
 			(void)LongPathSeams::MoveFile(sINIBackUp, sINI);	// Rename our temporary backup to the normal statbkup.ini filename.
 		}
@@ -1946,7 +1972,7 @@ void CPreferences::LoadPreferences()
 	m_strIncomingDir = ini.GetString(_T("IncomingDir"), _T(""));
 	if (m_strIncomingDir.IsEmpty()) // We want GetDefaultDirectory to also create the folder, so we have to know if we use the default or not
 		m_strIncomingDir = GetDefaultDirectory(EMULE_INCOMINGDIR, true);
-	MakeFoldername(m_strIncomingDir);
+	m_strIncomingDir = PathHelpers::CanonicalizeDirectoryPath(m_strIncomingDir);
 
 	// load tempdir(s) setting
 	CString sTempdirs(ini.GetString(_T("TempDir"), _T("")));
@@ -1958,10 +1984,10 @@ void CPreferences::LoadPreferences()
 		CString sTmp(sTempdirs.Tokenize(_T("|"), iPos));
 		if (sTmp.Trim().IsEmpty())
 			continue;
-		MakeFoldername(sTmp);
+		sTmp = PathHelpers::CanonicalizeDirectoryPath(sTmp);
 		bool bDup = false;
 		for (INT_PTR i = tempdir.GetCount(); --i >= 0;)	// avoid duplicate tempdirs
-			if (sTmp.CompareNoCase(GetTempDir(i)) == 0) {
+			if (EqualPaths(sTmp, GetTempDir(i))) {
 				bDup = true;
 				break;
 			}
@@ -2304,7 +2330,7 @@ void CPreferences::LoadPreferences()
 	if (m_sToolbarBitmapFolder.IsEmpty()) // We want GetDefaultDirectory to also create the folder, so we have to know if we use the default or not
 		m_sToolbarBitmapFolder = GetDefaultDirectory(EMULE_TOOLBARDIR, true);
 	else
-		slosh(m_sToolbarBitmapFolder);
+		m_sToolbarBitmapFolder = PathHelpers::EnsureTrailingSeparator(m_sToolbarBitmapFolder);
 	m_nToolbarLabels = (EToolbarLabelType)ini.GetInt(_T("ToolbarLabels"), CMuleToolbarCtrl::GetDefaultLabelType());
 	m_bReBarToolbar = ini.GetBool(_T("ReBarToolbar"), 1);
 	m_sizToolbarIconSize.cx = m_sizToolbarIconSize.cy = ini.GetInt(_T("ToolbarIconSize"), 32);
@@ -2316,7 +2342,7 @@ void CPreferences::LoadPreferences()
 	if (m_strSkinProfileDir.IsEmpty()) // We want GetDefaultDirectory to also create the folder, so we have to know if we use the default or not
 		m_strSkinProfileDir = GetDefaultDirectory(EMULE_SKINDIR, true);
 	else
-		slosh(m_strSkinProfileDir);
+		m_strSkinProfileDir = PathHelpers::EnsureTrailingSeparator(m_strSkinProfileDir);
 
 	LPBYTE pData = NULL;
 	UINT uSize = sizeof m_lfHyperText;
@@ -2521,8 +2547,7 @@ void CPreferences::LoadCats()
 		newcat->filter = 0;
 		newcat->strTitle = ini.GetStringUTF8(_T("Title"));
 		if (i != 0) { // All category
-			newcat->strIncomingPath = ini.GetStringUTF8(_T("Incoming"));
-			MakeFoldername(newcat->strIncomingPath);
+			newcat->strIncomingPath = PathHelpers::CanonicalizeDirectoryPath(ini.GetStringUTF8(_T("Incoming")));
 			if (!IsShareableDirectory(newcat->strIncomingPath)
 				|| (!LongPathSeams::PathExists(newcat->strIncomingPath) && !LongPathSeams::CreateDirectory(newcat->strIncomingPath, 0)))
 			{
@@ -2872,11 +2897,10 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 	if (m_astrDefaultDirs[0].IsEmpty()) { // already have all directories fetched and stored?
 
 		// Get executable starting directory which was our default till Vista
-		TCHAR tchBuffer[MAX_PATH];
-		::GetModuleFileName(NULL, tchBuffer, _countof(tchBuffer));
-		LPTSTR pszFileName = _tcsrchr(tchBuffer, _T('\\')) + 1;
-		*pszFileName = _T('\0');
-		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = tchBuffer;
+		CString strExecutableDir = PathHelpers::GetDirectoryPath(PathHelpers::GetModuleFilePath(NULL));
+		if (strExecutableDir.IsEmpty())
+			strExecutableDir = PathHelpers::GetCurrentDirectoryPath();
+		m_astrDefaultDirs[EMULE_EXECUTABLEDIR] = PathHelpers::EnsureTrailingSeparator(strExecutableDir);
 
 		// set our results to old default / fallback values
 		// those 3 dirs are the base for all others
@@ -2921,50 +2945,43 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 						&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
 						&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
 					{
-						if (   _tcsclen(pszLocalAppData) < MAX_PATH - 30
-							&& _tcsclen(pszPersonalDownloads) < MAX_PATH - 40
-							&& _tcsclen(pszProgramData) < MAX_PATH - 30
-							&& _tcsclen(pszPublicDownloads) < MAX_PATH - 40)
-						{
-							CString strLocalAppData(pszLocalAppData);
-							CString strPersonalDownloads(pszPersonalDownloads);
-							CString strPublicDownloads(pszPublicDownloads);
-							CString strProgramData(pszProgramData);
-							slosh(strLocalAppData);
-							slosh(strPersonalDownloads);
-							slosh(strPublicDownloads);
-							slosh(strProgramData);
+						CString strLocalAppData(pszLocalAppData);
+						CString strPersonalDownloads(pszPersonalDownloads);
+						CString strPublicDownloads(pszPublicDownloads);
+						CString strProgramData(pszProgramData);
+						strLocalAppData = PathHelpers::EnsureTrailingSeparator(strLocalAppData);
+						strPersonalDownloads = PathHelpers::EnsureTrailingSeparator(strPersonalDownloads);
+						strPublicDownloads = PathHelpers::EnsureTrailingSeparator(strPublicDownloads);
+						strProgramData = PathHelpers::EnsureTrailingSeparator(strProgramData);
 
-							if (nRegistrySetting == _UI32_MAX) {
-								// no registry default, check if we find a preferences.ini to use
-								if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 0;
-								else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-									m_nCurrentUserDirMode = 1;
-								else if (bConfigAvailableExecutable)
-									m_nCurrentUserDirMode = 2;
-								else
-									m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
-							} else
-								m_nCurrentUserDirMode = nRegistrySetting;
-
-							switch (m_nCurrentUserDirMode) {
-							case 0: //multiuser
-								strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-								break;
-							case 1: //public user
-								strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
-								strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
-								strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-							case 2: //program directory
-								break;
-							default:
-								ASSERT(0);
-							}
+						if (nRegistrySetting == _UI32_MAX) {
+							// no registry default, check if we find a preferences.ini to use
+							if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+								m_nCurrentUserDirMode = 0;
+							else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+								m_nCurrentUserDirMode = 1;
+							else if (bConfigAvailableExecutable)
+								m_nCurrentUserDirMode = 2;
+							else
+								m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
 						} else
+							m_nCurrentUserDirMode = nRegistrySetting;
+
+						switch (m_nCurrentUserDirMode) {
+						case 0: //multiuser
+							strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
+							strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
+							strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+							break;
+						case 1: //public user
+							strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
+							strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
+							strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+						case 2: //program directory
+							break;
+						default:
 							ASSERT(0);
+						}
 					}
 					::CoTaskMemFree(pszLocalAppData);
 					::CoTaskMemFree(pszPersonalDownloads);
@@ -2978,20 +2995,17 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 				const CString &strAppData(ShellGetFolderPath(CSIDL_APPDATA));
 				const CString &strPersonal(ShellGetFolderPath(CSIDL_PERSONAL));
 				if (!strAppData.IsEmpty() && !strPersonal.IsEmpty()) {
-					if (strAppData.GetLength() < MAX_PATH - 30 && strPersonal.GetLength() < MAX_PATH - 40) {
-						if (nRegistrySetting == 0	// registry setting overwrites, use these folders
-							|| (nRegistrySetting == _UI32_MAX
-								&& !bConfigAvailableExecutable
-								&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
-						{
-							slosh(const_cast<CString&>(strAppData));
-							slosh(const_cast<CString&>(strPersonal));
-							strSelectedDataBaseDirectory = strPersonal + _T("eMule Downloads\\");
-							strSelectedConfigBaseDirectory = strAppData + _T("eMule\\");
-							// strSelectedExpansionBaseDirectory stays unchanged
-							m_nCurrentUserDirMode = 0;
-						} else
-							ASSERT(0);
+					if (nRegistrySetting == 0	// registry setting overwrites, use these folders
+						|| (nRegistrySetting == _UI32_MAX
+							&& !bConfigAvailableExecutable
+							&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
+					{
+						const CString strAppDataDir(PathHelpers::EnsureTrailingSeparator(strAppData));
+						const CString strPersonalDir(PathHelpers::EnsureTrailingSeparator(strPersonal));
+						strSelectedDataBaseDirectory = strPersonalDir + _T("eMule Downloads\\");
+						strSelectedConfigBaseDirectory = strAppDataDir + _T("eMule\\");
+						// strSelectedExpansionBaseDirectory stays unchanged
+						m_nCurrentUserDirMode = 0;
 					} else
 						ASSERT(0);
 				}
@@ -3063,11 +3077,11 @@ void CPreferences::SetMuleDirectory(EDefaultDirectory eDirectory, const CString 
 		break;
 	case EMULE_SKINDIR:
 		m_strSkinProfileDir = strNewDir;
-		slosh(m_strSkinProfileDir);
+		m_strSkinProfileDir = PathHelpers::EnsureTrailingSeparator(m_strSkinProfileDir);
 		break;
 	case EMULE_TOOLBARDIR:
 		m_sToolbarBitmapFolder = strNewDir;
-		slosh(m_sToolbarBitmapFolder);
+		m_sToolbarBitmapFolder = PathHelpers::EnsureTrailingSeparator(m_sToolbarBitmapFolder);
 		break;
 	default:
 		ASSERT(0);

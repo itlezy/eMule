@@ -18,6 +18,7 @@
 #include "eMule.h"
 #include "FileInfoDialog.h"
 #include "OtherFunctions.h"
+#include "PathHelpers.h"
 #include "MediaInfo.h"
 #include "PartFile.h"
 #include "Preferences.h"
@@ -100,24 +101,19 @@ public:
 			if (m_hLib == NULL) {
 				CRegKey key;
 				if (key.Open(HKEY_CURRENT_USER, _T("Software\\MediaInfo"), KEY_READ) == ERROR_SUCCESS) {
-					// TODO:MINOR(FEAT-010): MediaInfo DLL discovery still uses MAX_PATH-bound PathCombine output; defer the remaining shell/path-helper cleanup on this branch.
-					TCHAR szPath[MAX_PATH];
+					TCHAR szPath[PathHelpers::kMaxDynamicPathChars];
 					ULONG ulChars = _countof(szPath);
 					if (key.QueryStringValue(_T("Path"), szPath, &ulChars) == ERROR_SUCCESS) {
-						LPTSTR pszResult = ::PathCombine(strPath.GetBuffer(MAX_PATH), szPath, _T("MEDIAINFO.DLL"));
-						strPath.ReleaseBuffer();
-						if (pszResult)
-							m_hLib = ::LoadLibrary(strPath);
+						strPath = PathHelpers::AppendPathComponent(szPath, _T("MEDIAINFO.DLL"));
+						m_hLib = ::LoadLibrary(strPath);
 					}
 				}
 			}
 			if (m_hLib == NULL) {
 				const CString &strProgramFiles(ShellGetFolderPath(CSIDL_PROGRAM_FILES));
 				if (!strProgramFiles.IsEmpty()) {
-					LPTSTR pszResult = ::PathCombine(strPath.GetBuffer(MAX_PATH), strProgramFiles, _T("MediaInfo\\MEDIAINFO.DLL"));
-					strPath.ReleaseBuffer();
-					if (pszResult)
-						m_hLib = ::LoadLibrary(strPath);
+					strPath = PathHelpers::AppendPathComponent(strProgramFiles, _T("MediaInfo\\MEDIAINFO.DLL"));
+					m_hLib = ::LoadLibrary(strPath);
 				}
 			}
 
@@ -1923,14 +1919,7 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 	}
 
 	if (!bFoundHeader && bGiveMediaInfoLibHint) {
-		// TODO:MINOR(FEAT-010): MediaInfo install-folder hinting still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-		TCHAR szBuff[MAX_PATH];
-		DWORD dwModPathLen = ::GetModuleFileName(theApp.m_hInstance, szBuff, _countof(szBuff));
-		if (dwModPathLen == 0 || dwModPathLen == _countof(szBuff))
-			szBuff[0] = _T('\0');
-		CString strInstFolder(szBuff);
-		::PathRemoveFileSpec(strInstFolder.GetBuffer(strInstFolder.GetLength()));
-		strInstFolder.ReleaseBuffer();
+		CString strInstFolder(PathHelpers::GetDirectoryPath(PathHelpers::GetModuleFilePath(theApp.m_hInstance)));
 		CString strHint;
 		strHint.Format(GetResString(IDS_MEDIAINFO_DLLMISSING), (LPCTSTR)strInstFolder);
 		if (!mi->strInfo.IsEmpty())

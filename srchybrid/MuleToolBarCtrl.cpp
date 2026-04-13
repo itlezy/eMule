@@ -28,6 +28,7 @@
 #include "ServerWnd.h"
 #include "TransferDlg.h"
 #include "SharedFilesWnd.h"
+#include "PathHelpers.h"
 #include "ChatWnd.h"
 #include "IrcWnd.h"
 #include "StatisticsDlg.h"
@@ -335,14 +336,11 @@ void CMuleToolbarCtrl::OnNmRClick(LPNMHDR, LRESULT *pResult)
 	if (!thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR).IsEmpty()) {
 		CStringArray astrToolbarFiles;
 		for (unsigned f = 0; f < _countof(s_apszTBFiles); ++f) {
-			WIN32_FIND_DATA FileData;
-			HANDLE hSearch = FindFirstFile(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR) + s_apszTBFiles[f], &FileData);
-			if (hSearch != INVALID_HANDLE_VALUE) {
-				do
-					astrToolbarFiles.Add(FileData.cFileName);
-				while (astrToolbarFiles.GetCount() < MAX_TOOLBAR_FILES && FindNextFile(hSearch, &FileData));
-				FindClose(hSearch);
-			}
+			(void)PathHelpers::ForEachMatchingEntry(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR) + s_apszTBFiles[f],
+				[&](const WIN32_FIND_DATA &findData) -> bool {
+				astrToolbarFiles.Add(findData.cFileName);
+				return astrToolbarFiles.GetCount() < MAX_TOOLBAR_FILES;
+			});
 		}
 
 		if (!astrToolbarFiles.IsEmpty()) {
@@ -353,7 +351,7 @@ void CMuleToolbarCtrl::OnNmRClick(LPNMHDR, LRESULT *pResult)
 				int iBaseLen = pTbBaseExt ? (int)(pTbBaseExt - (LPCTSTR)bitmapFileName - 1) : bitmapFileName.GetLength();
 				menuBitmaps.AppendMenu(MF_STRING, MP_TOOLBARBITMAP + i, CString(bitmapFileName, iBaseLen));
 				m_astrToolbarPaths.Add(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR) + bitmapFileName);
-				if (!checked && currentBitmapSettings.CompareNoCase(m_astrToolbarPaths[i]) == 0) {
+				if (!checked && EqualPaths(currentBitmapSettings, m_astrToolbarPaths[i])) {
 					menuBitmaps.CheckMenuItem(MP_TOOLBARBITMAP + i, MF_CHECKED);
 					menuBitmaps.EnableMenuItem(MP_TOOLBARBITMAP + i, MF_DISABLED);
 					checked = true;
@@ -393,14 +391,11 @@ void CMuleToolbarCtrl::OnNmRClick(LPNMHDR, LRESULT *pResult)
 	if (!thePrefs.GetMuleDirectory(EMULE_SKINDIR, false).IsEmpty()) {
 		CStringArray astrSkinFiles;
 		for (unsigned f = 0; f < _countof(s_apszSkinFiles); ++f) {
-			WIN32_FIND_DATA FileData;
-			HANDLE hSearch = FindFirstFile(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false) + s_apszSkinFiles[f], &FileData);
-			if (hSearch != INVALID_HANDLE_VALUE) {
-				do
-					astrSkinFiles.Add(FileData.cFileName);
-				while (astrSkinFiles.GetCount() < MAX_SKIN_FILES && FindNextFile(hSearch, &FileData));
-				FindClose(hSearch);
-			}
+			(void)PathHelpers::ForEachMatchingEntry(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false) + s_apszSkinFiles[f],
+				[&](const WIN32_FIND_DATA &findData) -> bool {
+				astrSkinFiles.Add(findData.cFileName);
+				return astrSkinFiles.GetCount() < MAX_SKIN_FILES;
+			});
 		}
 
 		if (!astrSkinFiles.IsEmpty()) {
@@ -411,7 +406,7 @@ void CMuleToolbarCtrl::OnNmRClick(LPNMHDR, LRESULT *pResult)
 				int iBaseLen = pSkinBaseExt ? (int)(pSkinBaseExt - (LPCTSTR)skinFileName - 1) : skinFileName.GetLength();
 				menuSkins.AppendMenu(MF_STRING, MP_SKIN_PROFILE + i, CString(skinFileName, iBaseLen));
 				m_astrSkinPaths.Add(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false) + skinFileName);
-				if (!checked && currentSkin.CompareNoCase(m_astrSkinPaths[i]) == 0) {
+				if (!checked && EqualPaths(currentSkin, m_astrSkinPaths[i])) {
 					menuSkins.CheckMenuItem(MP_SKIN_PROFILE + i, MF_CHECKED);
 					menuSkins.EnableMenuItem(MP_SKIN_PROFILE + i, MF_DISABLED);
 					checked = true;
@@ -574,11 +569,9 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 	switch (wParam) {
 	case MP_SELECTTOOLBARBITMAPDIR:
 		{
-			TCHAR buffer[MAX_PATH];
-			_sntprintf(buffer, _countof(buffer), _T("%s"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR));
-			buffer[_countof(buffer) - 1] = _T('\0');
-			if (SelectDir(m_hWnd, buffer, GetResString(IDS_SELECTTOOLBARBITMAPDIR)))
-				thePrefs.SetMuleDirectory(EMULE_TOOLBARDIR, buffer);
+			CString strToolbarDir(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR));
+			if (SelectDir(strToolbarDir, m_hWnd, GetResString(IDS_SELECTTOOLBARBITMAPDIR)))
+				thePrefs.SetMuleDirectory(EMULE_TOOLBARDIR, strToolbarDir);
 		}
 		break;
 	case MP_CUSTOMIZETOOLBAR:
@@ -603,12 +596,11 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 			strFilter += _T("||");
 
 			const CString &sInitialDir(thePrefs.GetMuleDirectory(EMULE_TOOLBARDIR, false));
-			// TODO:MINOR(FEAT-010): Toolbar/skin pickers still depend on SelectDir and CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-			CFileDialog dialog(TRUE, EMULTB_BASEEXT _T(".bmp"), (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, strFilter, NULL, 0);
-			if (IDOK == dialog.DoModal())
-				if (thePrefs.GetToolbarBitmapSettings() != dialog.GetPathName()) {
-					ChangeToolbarBitmap(dialog.GetPathName(), true);
-					thePrefs.SetToolbarBitmapSettings(dialog.GetPathName());
+			CString strToolbarBitmap(sInitialDir);
+			if (DialogBrowseFile(strToolbarBitmap, strFilter, (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, true, m_hWnd, NULL, EMULTB_BASEEXT))
+				if (thePrefs.GetToolbarBitmapSettings() != strToolbarBitmap) {
+					ChangeToolbarBitmap(strToolbarBitmap, true);
+					thePrefs.SetToolbarBitmapSettings(strToolbarBitmap);
 				}
 		}
 		break;
@@ -632,11 +624,9 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 		break;
 	case MP_SELECT_SKIN_DIR:
 		{
-			TCHAR buffer[MAX_PATH];
-			_sntprintf(buffer, _countof(buffer), _T("%s"), (LPCTSTR)thePrefs.GetMuleDirectory(EMULE_SKINDIR, false));
-			buffer[_countof(buffer) - 1] = _T('\0');
-			if (SelectDir(m_hWnd, buffer, GetResString(IDS_SELSKINPROFILEDIR)))
-				thePrefs.SetMuleDirectory(EMULE_SKINDIR, buffer);
+			CString strSkinDir(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false));
+			if (SelectDir(strSkinDir, m_hWnd, GetResString(IDS_SELSKINPROFILEDIR)))
+				thePrefs.SetMuleDirectory(EMULE_SKINDIR, strSkinDir);
 		}
 		break;
 	case MP_SELECT_SKIN_FILE:
@@ -656,21 +646,21 @@ BOOL CMuleToolbarCtrl::OnCommand(WPARAM wParam, LPARAM)
 			strFilter += _T("||");
 
 			const CString &sInitialDir(thePrefs.GetMuleDirectory(EMULE_SKINDIR, false));
-			CFileDialog dialog(TRUE, EMULSKIN_BASEEXT _T(".ini"), (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, strFilter, NULL, 0);
-			if (dialog.DoModal() == IDOK) {
-				if (thePrefs.GetSkinProfile().CompareNoCase(dialog.GetPathName()) != 0)
-					theApp.ApplySkin(dialog.GetPathName());
+			CString strSkinProfile(sInitialDir);
+			if (DialogBrowseFile(strSkinProfile, strFilter, (sInitialDir.IsEmpty() ? NULL : sInitialDir), OFN_HIDEREADONLY | OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST, true, m_hWnd, NULL, EMULSKIN_BASEEXT)) {
+				if (thePrefs.GetSkinProfile().CompareNoCase(strSkinProfile) != 0)
+					theApp.ApplySkin(strSkinProfile);
 			}
 		}
 		break;
 	default:
 		if (wParam >= MP_TOOLBARBITMAP && wParam < MP_TOOLBARBITMAP + MAX_TOOLBAR_FILES) {
-			if (thePrefs.GetToolbarBitmapSettings().CompareNoCase(m_astrToolbarPaths[wParam - MP_TOOLBARBITMAP]) != 0) {
+			if (!EqualPaths(thePrefs.GetToolbarBitmapSettings(), m_astrToolbarPaths[wParam - MP_TOOLBARBITMAP])) {
 				ChangeToolbarBitmap(m_astrToolbarPaths[wParam - MP_TOOLBARBITMAP], true);
 				thePrefs.SetToolbarBitmapSettings(m_astrToolbarPaths[wParam - MP_TOOLBARBITMAP]);
 			}
 		} else if (wParam >= MP_SKIN_PROFILE && wParam < MP_SKIN_PROFILE + MAX_SKIN_FILES) {
-			if (thePrefs.GetSkinProfile().CompareNoCase(m_astrSkinPaths[wParam - MP_SKIN_PROFILE]) != 0)
+			if (!EqualPaths(thePrefs.GetSkinProfile(), m_astrSkinPaths[wParam - MP_SKIN_PROFILE]))
 				theApp.ApplySkin(m_astrSkinPaths[wParam - MP_SKIN_PROFILE]);
 		}
 	}

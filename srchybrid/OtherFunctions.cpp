@@ -20,6 +20,7 @@
 #include <io.h>
 #include <regex>
 #include <share.h>
+#include <ShObjIdl_core.h>
 #include <ShlObj_core.h>
 #include <sys/stat.h>
 #include "emule.h"
@@ -38,6 +39,9 @@
 #include "shahashset.h"
 #include "collection.h"
 #include "LongPathSeams.h"
+#include "OtherFunctionsSeams.h"
+#include "PathHelpers.h"
+#include "ShellUiHelpers.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
 #include "kademlia/io/BufferedFileIO.h"
@@ -608,34 +612,61 @@ void ShellDefaultVerb(LPCTSTR lpName)
 	ShellExecute(NULL, NULL, lpName, NULL, NULL, SW_SHOW);
 }
 
+namespace
+{
+bool DeleteFileToRecycleBinIFileOperation(LPCTSTR pszFilePath, HWND hOwnerWindow)
+{
+	if (pszFilePath == NULL || pszFilePath[0] == _T('\0'))
+		return false;
+
+	const CString strShellPath = PathHelpers::StripExtendedLengthPrefix(CString(pszFilePath));
+	if (!PathHelpers::IsShellSafePath(strShellPath))
+		return false;
+	const HRESULT hrCoInitialize = ::CoInitialize(NULL);
+	const bool bShouldUninitialize = SUCCEEDED(hrCoInitialize);
+	if (FAILED(hrCoInitialize) && hrCoInitialize != RPC_E_CHANGED_MODE)
+		return false;
+
+	CComPtr<IFileOperation> pFileOperation;
+	HRESULT hr = pFileOperation.CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_INPROC_SERVER);
+	if (SUCCEEDED(hr) && hOwnerWindow != NULL)
+		hr = pFileOperation->SetOwnerWindow(hOwnerWindow);
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->SetOperationFlags(FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NORECURSION | FOF_NOERRORUI);
+
+	CComPtr<IShellItem> pShellItem;
+	if (SUCCEEDED(hr))
+		hr = ::SHCreateItemFromParsingName(strShellPath, NULL, IID_PPV_ARGS(&pShellItem));
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->DeleteItem(pShellItem, NULL);
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->PerformOperations();
+
+	BOOL bAnyOperationsAborted = FALSE;
+	if (SUCCEEDED(hr))
+		hr = pFileOperation->GetAnyOperationsAborted(&bAnyOperationsAborted);
+
+	if (bShouldUninitialize)
+		::CoUninitialize();
+
+	return SUCCEEDED(hr) && !bAnyOperationsAborted;
+}
+}
+
 bool ShellDeleteFile(LPCTSTR pszFilePath)
 {
-	if (!LongPathSeams::PathExists(pszFilePath))
-		return true;
-	if (thePrefs.GetRemoveToBin()) {
-		TCHAR todel[MAX_PATH + 1] = {};
-		_tcsncpy(todel, pszFilePath, _countof(todel) - 2);
-
-		SHFILEOPSTRUCT fp = {};
-		fp.wFunc = FO_DELETE;
-		fp.hwnd = theApp.emuledlg->m_hWnd;
-		fp.pFrom = todel;
-		fp.fFlags = FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_SILENT | FOF_NORECURSION;
-		__try {
-			return !SHFileOperation(&fp);
-		} __except (EXCEPTION_EXECUTE_HANDLER) {
-		}
-	}
-	return LongPathSeams::DeleteFile(pszFilePath) != 0;
+	return OtherFunctionsSeams::ExecuteShellDelete(
+		pszFilePath,
+		thePrefs.GetRemoveToBin(),
+		theApp.emuledlg != NULL ? theApp.emuledlg->m_hWnd : NULL,
+		[](LPCTSTR pszPath) { return LongPathSeams::PathExists(pszPath) != FALSE; },
+		[](LPCTSTR pszPath, HWND hOwnerWindow) { return DeleteFileToRecycleBinIFileOperation(pszPath, hOwnerWindow); },
+		[](LPCTSTR pszPath) { return LongPathSeams::DeleteFile(pszPath) != FALSE; });
 }
 
 CString ShellGetFolderPath(int iCSIDL)
 {
-	// TODO:MINOR(FEAT-010): Shell folder lookup still depends on SHGetFolderPath into a MAX_PATH buffer; defer the remaining shell/path-helper cleanup on this branch.
-	TCHAR szPath[MAX_PATH];
-	if (SUCCEEDED(::SHGetFolderPath(NULL, iCSIDL, NULL, SHGFP_TYPE_CURRENT, szPath)))
-		return CString(szPath);
-	return CString();
+	return PathHelpers::GetShellFolderPath(iCSIDL);
 }
 
 // Print the hash in a format which is similar to CertMgr's.
@@ -763,11 +794,10 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 	bool bGlobalSet = false;
 	CRegKey regkey;
 	LONG result;
-	TCHAR modbuffer[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, modbuffer, _countof(modbuffer));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(modbuffer))
+	const CString strModulePath(PathHelpers::GetModuleFilePath(NULL));
+	if (strModulePath.IsEmpty())
 		return false;
-	CString strCanonFileName(modbuffer);
+	CString strCanonFileName(strModulePath);
 	strCanonFileName.Replace(_T("%"), _T("%%"));
 	CString regbuffer;
 	regbuffer.Format(_T("\"%s\" \"%%1\""), (LPCTSTR)strCanonFileName);
@@ -794,7 +824,7 @@ bool Ask4RegFix(bool checkOnly, bool dontAsk, bool bAutoTakeCollections)
 				VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
 
 				VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k\\DefaultIcon")) == ERROR_SUCCESS);
-				VERIFY(regkey.SetStringValue(NULL, modbuffer) == ERROR_SUCCESS);
+				VERIFY(regkey.SetStringValue(NULL, strModulePath) == ERROR_SUCCESS);
 
 				VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\ed2k")) == ERROR_SUCCESS);
 				VERIFY(regkey.SetStringValue(NULL, _T("URL: ed2k Protocol")) == ERROR_SUCCESS);
@@ -1220,89 +1250,229 @@ void CWebServices::Edit()
 	ShellOpen(thePrefs.GetTxtEditor(), sDat);
 }
 
-typedef struct
+namespace
 {
-	LPCTSTR	pszInitialDir;
-	LPCTSTR	pszDlgTitle;
-} BROWSEINIT, *LPBROWSEINIT;
-
-extern "C" int CALLBACK BrowseCallbackProc(HWND hWnd, UINT uMsg, LPARAM, LPARAM lpData)
+class ScopedCoInitialize
 {
-	if (uMsg == BFFM_INITIALIZED) {
-		// Set initial directory
-		if (((LPBROWSEINIT)lpData)->pszInitialDir != NULL)
-			SendMessage(hWnd, BFFM_SETSELECTION, TRUE, (LPARAM)((LPBROWSEINIT)lpData)->pszInitialDir);
-
-		// Set dialog's window title
-		if (((LPBROWSEINIT)lpData)->pszDlgTitle != NULL)
-			SendMessage(hWnd, WM_SETTEXT, 0, (LPARAM)((LPBROWSEINIT)lpData)->pszDlgTitle);
+public:
+	ScopedCoInitialize()
+		: m_hr(::CoInitialize(NULL))
+	{
 	}
 
-	return 0;
-}
-
-bool SelectDir(HWND hWnd, LPTSTR pszPath, LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
-{
-	ASSERT(pszPath != NULL);
-	(void)::CoInitialize(NULL);
-	LPMALLOC pShlMalloc;
-	bool bResult = (SHGetMalloc(&pShlMalloc) == NOERROR);
-	if (bResult) {
-		BROWSEINFO BrsInfo = {};
-		BrsInfo.hwndOwner = hWnd;
-		BrsInfo.lpszTitle = (pszTitle != NULL) ? pszTitle : pszDlgTitle;
-		BrsInfo.ulFlags = BIF_VALIDATE | BIF_NEWDIALOGSTYLE | BIF_RETURNONLYFSDIRS | BIF_SHAREABLE | BIF_DONTGOBELOWDOMAIN;
-
-		BROWSEINIT BrsInit = {};
-		if (pszTitle != NULL || pszDlgTitle != NULL) {
-			// Need the 'BrowseCallbackProc' to set those strings
-			BrsInfo.lpfn = BrowseCallbackProc;
-			BrsInfo.lParam = (LPARAM)&BrsInit;
-			BrsInit.pszDlgTitle = (pszDlgTitle != NULL) ? pszDlgTitle : NULL/*pszTitle*/;
-			BrsInit.pszInitialDir = pszPath;
-		}
-
-		LPITEMIDLIST pidlBrowse;
-		// TODO:MINOR(FEAT-010): Shared folder-browse helper still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-		if ((pidlBrowse = ::SHBrowseForFolder(&BrsInfo)) != NULL) {
-			bResult = ::SHGetPathFromIDList(pidlBrowse, pszPath);
-			pShlMalloc->Free(pidlBrowse);
-		}
-		pShlMalloc->Release();
-		::PathAddBackslash(pszPath);
+	~ScopedCoInitialize()
+	{
+		if (SUCCEEDED(m_hr))
+			::CoUninitialize();
 	}
-	::CoUninitialize();
-	return bResult;
+
+	bool IsReady() const
+	{
+		return SUCCEEDED(m_hr);
+	}
+
+private:
+	HRESULT m_hr;
+};
+
+struct DialogFilterStorage
+{
+	std::vector<CString> names;
+	std::vector<CString> patterns;
+	std::vector<COMDLG_FILTERSPEC> specs;
+};
+
+CString GetDialogTitle(LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
+{
+	return pszDlgTitle != NULL ? CString(pszDlgTitle) : CString(pszTitle != NULL ? pszTitle : _T(""));
 }
 
-void slosh(CString &path)
+CString NormalizeDefaultExtension(LPCTSTR pszDefExt)
 {
-	int i = path.GetLength() - 1;
-	if (i >= 0 && path[i] != _T('\\'))
-		path += _T('\\');
+	CString strDefExt(pszDefExt != NULL ? pszDefExt : _T(""));
+	while (!strDefExt.IsEmpty() && (strDefExt[0] == _T('.') || strDefExt[0] == _T('*')))
+		strDefExt = strDefExt.Mid(1);
+	return strDefExt;
 }
 
-void unslosh(CString &path)
+DialogFilterStorage BuildDialogFilterStorage(LPCTSTR pszFilters)
 {
-	int i = path.GetLength() - 1;
-	if (i >= 0 && path[i] == _T('\\'))
-		path.Truncate(i);
+	DialogFilterStorage storage;
+	if (pszFilters == NULL || *pszFilters == _T('\0'))
+		return storage;
+
+	CString strFilters(pszFilters);
+	int iStart = 0;
+	while (iStart >= 0) {
+		const CString strName(GetNextString(strFilters, _T('|'), iStart));
+		if (strName.IsEmpty())
+			break;
+
+		const CString strPattern(GetNextString(strFilters, _T('|'), iStart));
+		storage.names.push_back(strName);
+		storage.patterns.push_back(strPattern);
+	}
+
+	storage.specs.reserve(storage.names.size());
+	for (size_t i = 0; i < storage.names.size(); ++i) {
+		COMDLG_FILTERSPEC spec = { storage.names[i], storage.patterns[i] };
+		storage.specs.push_back(spec);
+	}
+	return storage;
+}
+
+void InitializeDialogPathSelection(IFileDialog &rDialog, const CString &rstrInitialPath, const bool bFolderMode)
+{
+	ShellUiHelpers::DialogInitialSelection selection = ShellUiHelpers::SplitDialogInitialSelection(rstrInitialPath);
+	if (bFolderMode && selection.strInitialFolder.IsEmpty())
+		selection.strInitialFolder = rstrInitialPath;
+
+	if (!selection.strInitialFolder.IsEmpty()) {
+		CString strInitialFolder(selection.strInitialFolder);
+		if (bFolderMode)
+			strInitialFolder = ShellUiHelpers::PrepareFolderSelectionPathForShell(strInitialFolder);
+		else {
+			strInitialFolder = PathHelpers::StripExtendedLengthPrefix(strInitialFolder);
+			if (!PathHelpers::IsShellSafePath(strInitialFolder))
+				strInitialFolder.Empty();
+		}
+		if (!strInitialFolder.IsEmpty()) {
+			CComPtr<IShellItem> pFolder;
+			if (SUCCEEDED(::SHCreateItemFromParsingName(strInitialFolder, NULL, IID_PPV_ARGS(&pFolder)))) {
+				(void)rDialog.SetDefaultFolder(pFolder);
+				(void)rDialog.SetFolder(pFolder);
+			}
+		}
+	}
+
+	if (!selection.strFileName.IsEmpty())
+		(void)rDialog.SetFileName(selection.strFileName);
+}
+
+bool ShowShellFolderPicker(const CString &rstrInitialPath, HWND hWnd, LPCTSTR pszTitle, LPCTSTR pszDlgTitle, CString &rstrSelectedPath)
+{
+	rstrSelectedPath.Empty();
+	ScopedCoInitialize coInitialize;
+	if (!coInitialize.IsReady())
+		return false;
+
+	CComPtr<IFileOpenDialog> pOpenDialog;
+	if (FAILED(pOpenDialog.CoCreateInstance(CLSID_FileOpenDialog)))
+		return false;
+
+	DWORD dwOptions = 0;
+	if (FAILED(pOpenDialog->GetOptions(&dwOptions)))
+		return false;
+	dwOptions |= FOS_FORCEFILESYSTEM | FOS_PICKFOLDERS | FOS_PATHMUSTEXIST | FOS_NOCHANGEDIR;
+	if (FAILED(pOpenDialog->SetOptions(dwOptions)))
+		return false;
+
+	const CString strTitle(GetDialogTitle(pszTitle, pszDlgTitle));
+	if (!strTitle.IsEmpty())
+		(void)pOpenDialog->SetTitle(strTitle);
+
+	InitializeDialogPathSelection(*pOpenDialog, rstrInitialPath, true);
+
+	const HRESULT hrShow = pOpenDialog->Show(hWnd);
+	if (hrShow == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+		return false;
+	if (FAILED(hrShow))
+		return false;
+
+	CComPtr<IShellItem> pResult;
+	if (FAILED(pOpenDialog->GetResult(&pResult)))
+		return false;
+
+	LPWSTR pszResultPath = NULL;
+	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
+		return false;
+
+	rstrSelectedPath = ShellUiHelpers::FinalizeFolderSelection(CString(pszResultPath));
+	::CoTaskMemFree(pszResultPath);
+	return !rstrSelectedPath.IsEmpty();
+}
+
+bool ShowShellFileDialog(const CString &rstrInitialPath, LPCTSTR pszFilters, DWORD dwFlags, const bool bOpenFileDialog, HWND hWndOwner, LPCTSTR pszDlgTitle, LPCTSTR pszDefExt, CString &rstrSelectedPath)
+{
+	rstrSelectedPath.Empty();
+	ScopedCoInitialize coInitialize;
+	if (!coInitialize.IsReady())
+		return false;
+
+	CComPtr<IFileDialog> pDialog;
+	if (bOpenFileDialog) {
+		CComPtr<IFileOpenDialog> pOpenDialog;
+		if (FAILED(pOpenDialog.CoCreateInstance(CLSID_FileOpenDialog)))
+			return false;
+		pDialog = pOpenDialog;
+	} else {
+		CComPtr<IFileSaveDialog> pSaveDialog;
+		if (FAILED(pSaveDialog.CoCreateInstance(CLSID_FileSaveDialog)))
+			return false;
+		pDialog = pSaveDialog;
+	}
+
+	DWORD dwOptions = 0;
+	if (FAILED(pDialog->GetOptions(&dwOptions)))
+		return false;
+	dwOptions |= FOS_FORCEFILESYSTEM | FOS_NOCHANGEDIR;
+	if (dwFlags & OFN_FILEMUSTEXIST)
+		dwOptions |= FOS_FILEMUSTEXIST;
+	if (dwFlags & OFN_PATHMUSTEXIST)
+		dwOptions |= FOS_PATHMUSTEXIST;
+	if (!bOpenFileDialog && (dwFlags & OFN_OVERWRITEPROMPT))
+		dwOptions |= FOS_OVERWRITEPROMPT;
+	if (FAILED(pDialog->SetOptions(dwOptions)))
+		return false;
+
+	const CString strTitle(GetDialogTitle(NULL, pszDlgTitle));
+	if (!strTitle.IsEmpty())
+		(void)pDialog->SetTitle(strTitle);
+
+	const DialogFilterStorage filterStorage(BuildDialogFilterStorage(pszFilters));
+	if (!filterStorage.specs.empty()) {
+		(void)pDialog->SetFileTypes(static_cast<UINT>(filterStorage.specs.size()), filterStorage.specs.data());
+		(void)pDialog->SetFileTypeIndex(1);
+	}
+
+	const CString strDefExt(NormalizeDefaultExtension(pszDefExt));
+	if (!strDefExt.IsEmpty())
+		(void)pDialog->SetDefaultExtension(strDefExt);
+
+	InitializeDialogPathSelection(*pDialog, rstrInitialPath, false);
+
+	const HRESULT hrShow = pDialog->Show(hWndOwner);
+	if (hrShow == HRESULT_FROM_WIN32(ERROR_CANCELLED))
+		return false;
+	if (FAILED(hrShow))
+		return false;
+
+	CComPtr<IShellItem> pResult;
+	if (FAILED(pDialog->GetResult(&pResult)))
+		return false;
+
+	LPWSTR pszResultPath = NULL;
+	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
+		return false;
+
+	rstrSelectedPath = PathHelpers::NormalizePathSeparators(CString(pszResultPath));
+	::CoTaskMemFree(pszResultPath);
+	return !rstrSelectedPath.IsEmpty();
+}
+}
+
+bool SelectDir(CString &rstrPath, HWND hWnd, LPCTSTR pszTitle, LPCTSTR pszDlgTitle)
+{
+	CString strSelectedPath;
+	if (!ShowShellFolderPicker(rstrPath, hWnd, pszTitle, pszDlgTitle, strSelectedPath))
+		return false;
+	rstrPath = strSelectedPath;
+	return true;
 }
 
 void canonical(CString &path)
 {
-	// TODO:MINOR(FEAT-010): Canonicalization still depends on MAX_PATH-bound PathCanonicalize output; defer the remaining shell/path-helper cleanup on this branch.
-	TCHAR szPath[MAX_PATH];
-	if (::PathCanonicalize(szPath, path))
-		path = szPath;
-}
-
-void MakeFoldername(CString &rstrPath)
-{
-	if (!rstrPath.IsEmpty()) { // don't canonicalize an empty path, we would get a "\"
-		canonical(rstrPath);
-		slosh(rstrPath);
-	}
+	path = PathHelpers::CanonicalizePath(path);
 }
 
 CString StringLimit(const CString &in, UINT length)
@@ -1312,18 +1482,18 @@ CString StringLimit(const CString &in, UINT length)
 	return in.Left(length - 8) + _T("...") + in.Right(8);
 }
 
-BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName, DWORD dwFlags, bool openfilestyle)
+BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName, DWORD dwFlags, bool openfilestyle, HWND hWndOwner, LPCTSTR pszDlgTitle, LPCTSTR pszDefExt)
 {
-	// TODO:MINOR(FEAT-010): Shared file-browse helper still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	CFileDialog myFileDialog(openfilestyle, NULL, pszDefaultFileName
-		, dwFlags | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT
-		, pszFilters
-		, NULL //parent CWnd
-		, 0); //MFC will automatically determine the size of OPENFILENAME structure
-	if (myFileDialog.DoModal() != IDOK)
-		return FALSE;
-	rstrPath = myFileDialog.GetPathName();
-	return TRUE;
+	const DWORD dwEffectiveFlags = dwFlags | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;
+	return ShowShellFileDialog(
+		pszDefaultFileName != NULL ? CString(pszDefaultFileName) : rstrPath,
+		pszFilters,
+		dwEffectiveFlags,
+		openfilestyle,
+		hWndOwner,
+		pszDlgTitle,
+		pszDefExt,
+		rstrPath) ? TRUE : FALSE;
 }
 
 void md4str(const byte *hash, TCHAR *pszHash)
@@ -2187,12 +2357,19 @@ CString RemoveFileExtension(const CString &rstrFilePath)
 
 bool EqualPaths(const CString &rstrDir1, const CString &rstrDir2)
 {
-	int i1 = rstrDir1.GetLength();
-	i1 -= static_cast<int>(i1 && rstrDir1[i1 - 1] == _T('\\'));
-	int i2 = rstrDir2.GetLength();
-	i2 -= static_cast<int>(i2 && rstrDir2[i2 - 1] == _T('\\'));
-	bool bRet = (i1 == i2);
-	return bRet ? _tcsnicmp(rstrDir1, rstrDir2, i1) == 0 : bRet;
+	bool bLeftResolved = false;
+	bool bRightResolved = false;
+	DWORD dwLeftError = ERROR_SUCCESS;
+	DWORD dwRightError = ERROR_SUCCESS;
+	const CString strLeftCanonical(PathHelpers::TrimTrailingSeparator(PathHelpers::CanonicalizePathForComparison(rstrDir1, &bLeftResolved, &dwLeftError)));
+	const CString strRightCanonical(PathHelpers::TrimTrailingSeparator(PathHelpers::CanonicalizePathForComparison(rstrDir2, &bRightResolved, &dwRightError)));
+	if (!bLeftResolved && dwLeftError != ERROR_SUCCESS && LongPathSeams::PathExists(PathHelpers::StripExtendedLengthPrefix(rstrDir1)))
+		DEBUG_ONLY(DebugLogWarning(_T("EqualPaths fallback to lexical compare for \"%s\" (%s)"), (LPCTSTR)rstrDir1, (LPCTSTR)GetErrorMessage(dwLeftError)));
+	if (!bRightResolved && dwRightError != ERROR_SUCCESS && LongPathSeams::PathExists(PathHelpers::StripExtendedLengthPrefix(rstrDir2)))
+		DEBUG_ONLY(DebugLogWarning(_T("EqualPaths fallback to lexical compare for \"%s\" (%s)"), (LPCTSTR)rstrDir2, (LPCTSTR)GetErrorMessage(dwRightError)));
+
+	return strLeftCanonical.GetLength() == strRightCanonical.GetLength()
+		&& strLeftCanonical.CompareNoCase(strRightCanonical) == 0;
 }
 
 bool IsGoodIP(uint32 nIP, bool forceCheck)
@@ -2930,7 +3107,7 @@ static bool IsFileOnNTFSVolume(LPCTSTR pszFilePath)
 		return false;
 	// Need to add a trailing backslash in case of a network share
 	if (!strRootPath.IsEmpty())
-		slosh(strRootPath);
+		strRootPath = PathHelpers::EnsureTrailingSeparator(strRootPath);
 	return IsNTFSVolume(strRootPath);
 }
 
@@ -2943,7 +3120,7 @@ bool IsFileOnFATVolume(LPCTSTR pszFilePath)
 		return false;
 	// Need to add a trailing backslash in case of a network share
 	if (!strRootPath.IsEmpty())
-		slosh(strRootPath);
+		strRootPath = PathHelpers::EnsureTrailingSeparator(strRootPath);
 	return IsFATVolume(strRootPath);
 }
 
@@ -2966,6 +3143,16 @@ bool IsThumbsDb(const CString &sFilePath, const CString &sFileName)
 		}
 	}
 	return false;
+}
+
+bool ShouldIgnoreSharedFileCandidate(const CString &sFilePath, const CString &sFileName)
+{
+	return SharedFileIntakePolicy::ShouldIgnoreCandidate(
+		sFilePath,
+		sFileName,
+		[](const CString &rstrFilePath, const CString &rstrFileName) -> bool {
+			return IsThumbsDb(rstrFilePath, rstrFileName);
+		});
 }
 
 static bool IsAutoDaylightTimeSetActive()
@@ -3324,13 +3511,11 @@ void AddAutoStart()
 {
 #ifndef _DEBUG
 	RemAutoStart();
-	// TODO:MINOR(FEAT-010): Auto-start command construction still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-	TCHAR sExeFilePath[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, sExeFilePath, _countof(sExeFilePath));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(sExeFilePath))
+	const CString strExeFilePath(PathHelpers::GetModuleFilePath(NULL));
+	if (strExeFilePath.IsEmpty())
 		return;
 	CString sFullExeCommand;
-	sFullExeCommand.Format(_T("%s -AutoStart"), sExeFilePath);
+	sFullExeCommand.Format(_T("%s -AutoStart"), (LPCTSTR)strExeFilePath);
 	CRegKey mKey;
 	mKey.Create(HKEY_CURRENT_USER
 		, _T("Software\\Microsoft\\Windows\\CurrentVersion\\Run")
@@ -3490,12 +3675,10 @@ ULONGLONG GetModuleVersion(LPCTSTR pszFilePath)
 
 ULONGLONG GetModuleVersion(HMODULE hModule)
 {
-	// TODO:MINOR(FEAT-010): Module-version lookup still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-	TCHAR szFilePath[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(hModule, szFilePath, _countof(szFilePath));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(szFilePath))
+	const CString strFilePath(PathHelpers::GetModuleFilePath(hModule));
+	if (strFilePath.IsEmpty())
 		return 0;
-	return GetModuleVersion(szFilePath);
+	return GetModuleVersion(strFilePath);
 }
 
 int GetPathDriveNumber(const CString &path)
@@ -3553,12 +3736,10 @@ uint64 GetFreeTempSpace(INT_PTR tempdirindex)
 
 bool DoCollectionRegFix(bool checkOnly)
 {
-	// TODO:MINOR(FEAT-010): Collection shell-registration repair still uses MAX_PATH-bound GetModuleFileName output; defer the remaining path-helper cleanup on this branch.
-	TCHAR modbuffer[MAX_PATH];
-	DWORD dwModPathLen = ::GetModuleFileName(NULL, modbuffer, _countof(modbuffer));
-	if (dwModPathLen == 0 || dwModPathLen == _countof(modbuffer))
+	const CString strModulePath(PathHelpers::GetModuleFilePath(NULL));
+	if (strModulePath.IsEmpty())
 		return false;
-	CString strCanonFileName(modbuffer);
+	CString strCanonFileName(strModulePath);
 	strCanonFileName.Replace(_T("%"), _T("%%"));
 	CString regbuffer;
 	regbuffer.Format(_T("\"%s\" \"%%1\""), (LPCTSTR)strCanonFileName);
@@ -3586,7 +3767,7 @@ bool DoCollectionRegFix(bool checkOnly)
 			VERIFY(regkey.SetStringValue(NULL, regbuffer) == ERROR_SUCCESS);
 
 			VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\eMule\\DefaultIcon")) == ERROR_SUCCESS);
-			VERIFY(regkey.SetStringValue(NULL, CString(modbuffer) + _T(",1")) == ERROR_SUCCESS);
+			VERIFY(regkey.SetStringValue(NULL, strModulePath + _T(",1")) == ERROR_SUCCESS);
 
 			VERIFY(regkey.Create(hkeyCR, _T("Software\\Classes\\eMule")) == ERROR_SUCCESS);
 			VERIFY(regkey.SetStringValue(NULL, _T("eMule Collection File")) == ERROR_SUCCESS);
@@ -3906,37 +4087,6 @@ uint32 LevenshteinDistance(const CString &str1, const CString &str2)
 	return d_del;
 }
 
-/**
- * @brief Builds a path into a MAX_PATH-sized caller buffer without overflowing it.
- *
- * This helper mirrors `_tmakepath`, but treats MAX_PATH overflow as a normal runtime
- * failure instead of writing past the destination. Callers receive an empty output
- * string and `false` when the combined path does not fit.
- */
-bool _tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPCTSTR ext)
-{
-	if (path == NULL) {
-		ASSERT(0);
-		return false;
-	}
-
-	TCHAR tchBuffer[_MAX_DRIVE + _MAX_DIR + _MAX_FNAME + _MAX_EXT + 8];
-	_tmakepath(tchBuffer, drive, dir, fname, ext);
-
-	size_t sLen = _tcslen(tchBuffer);
-	if (sLen >= MAX_PATH) {
-		path[0] = _T('\0');
-		TRACE(_T("Path exceeds MAX_PATH in _tmakepathlimit: drive='%s' dir='%s' fname='%s' ext='%s'\n"),
-			drive != NULL ? drive : _T(""),
-			dir != NULL ? dir : _T(""),
-			fname != NULL ? fname : _T(""),
-			ext != NULL ? ext : _T(""));
-		return false;
-	}
-	_tcscpy(path, tchBuffer);
-	return true;
-}
-
 bool HasSubdirectories(const CString &strDir)
 {
 	// Never try to enumerate the files of a drive and thus physically access the drive, just
@@ -3947,17 +4097,21 @@ bool HasSubdirectories(const CString &strDir)
 	// to explicitly open the drive to really get the content) - and that approach will be fine
 	// for eMule as well.
 	// Since the restriction for drives 'A:' and 'B:' was removed, this gets more important now.
-	CString sDir(strDir);
-	slosh(sDir); //required for PathIsRoot
+	CString sDir(PathHelpers::EnsureTrailingSeparator(strDir)); //required for PathIsRoot
 	if (::PathIsRoot(sDir))
 		return true;
-	CFileFind finder;
-	for (BOOL bFound = finder.FindFile(sDir + _T('*')); bFound;) {
-		bFound = finder.FindNextFile();
-		if (finder.IsDirectory() && !finder.IsDots() && !finder.IsSystem())
-			return true;
-	}
-	return false;
+
+	bool bHasSubdirectories = false;
+	(void)PathHelpers::ForEachDirectoryEntry(sDir, [&](const WIN32_FIND_DATA &findData) -> bool {
+		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0
+			&& (findData.dwFileAttributes & FILE_ATTRIBUTE_SYSTEM) == 0)
+		{
+			bHasSubdirectories = true;
+			return false;
+		}
+		return true;
+	});
+	return bHasSubdirectories;
 }
 
 bool DirAccsess(const CString &strDir)

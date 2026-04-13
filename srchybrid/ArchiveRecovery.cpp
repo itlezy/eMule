@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "ArchiveRecovery.h"
+#include "PathHelpers.h"
 #include "Log.h"
 #include "PartFile.h"
 #include "zlib.h"
@@ -1450,7 +1451,7 @@ void CArchiveRecovery::ISOReadDirectory(archiveScannerThreadParams_s *aitp, UINT
 		free(file->name);
 
 		if (file->fileFlags & ISO_DIRECTORY)
-			slosh(pathNew); //make this a directory path
+			pathNew = PathHelpers::EnsureTrailingSeparator(pathNew); //make this a directory path
 		// store the entry
 		file->name = _tcsdup(pathNew);
 		aitp->ai->ISOdir->AddTail(file);

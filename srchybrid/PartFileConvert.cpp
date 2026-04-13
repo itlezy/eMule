@@ -24,6 +24,7 @@
 #include "SharedFileList.h"
 #include "Log.h"
 #include "LongPathSeams.h"
+#include "PathHelpers.h"
 #include "opcodes.h"
 #include "MuleListCtrl.h"
 
@@ -77,24 +78,30 @@ int CPartFileConvert::ScanFolderToAdd(const CString &folder, bool deletesource)
 {
 	ASSERT(folder.Right(1) != _T("\\"));
 	int count = 0;
-	CFileFind finder;
-	for (BOOL bFound = finder.FindFile(folder + _T("\\*.part.met")); bFound;) {
-		bFound = finder.FindNextFile();
-		ConvertToeMule(finder.GetFilePath(), deletesource);
-		++count;
-	}
+	(void)PathHelpers::ForEachMatchingEntry(PathHelpers::AppendPathComponent(folder, _T("*.part.met")),
+		[&](const WIN32_FIND_DATA &findData) -> bool {
+		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			ConvertToeMule(PathHelpers::AppendPathComponent(folder, findData.cFileName), deletesource);
+			++count;
+		}
+		return true;
+	});
 	// Shareaza
-	for (BOOL bFound = finder.FindFile(folder + _T("\\*.sd")); bFound;) {
-		bFound = finder.FindNextFile();
-		ConvertToeMule(finder.GetFilePath(), deletesource);
-		++count;
-	}
+	(void)PathHelpers::ForEachMatchingEntry(PathHelpers::AppendPathComponent(folder, _T("*.sd")),
+		[&](const WIN32_FIND_DATA &findData) -> bool {
+		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0) {
+			ConvertToeMule(PathHelpers::AppendPathComponent(folder, findData.cFileName), deletesource);
+			++count;
+		}
+		return true;
+	});
 
-	for (BOOL bFound = finder.FindFile(folder + _T("\\*.*")); bFound;) {
-		bFound = finder.FindNextFile();
-		if (finder.IsDirectory() && !finder.IsDots())
-			count += ScanFolderToAdd(finder.GetFilePath(), deletesource);
-	}
+	(void)PathHelpers::ForEachDirectoryEntry(folder,
+		[&](const WIN32_FIND_DATA &findData) -> bool {
+		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
+			count += ScanFolderToAdd(PathHelpers::AppendPathComponent(folder, findData.cFileName), deletesource);
+		return true;
+	});
 	return count;
 }
 
@@ -199,7 +206,6 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 	UpdateGUI(pfconverting);
 
 	CString newfilename;
-	CFileFind finder;
 	if (pfconverting->partmettype == PMT_SPLITTED) {
 		try {
 			CByteArray ba;
@@ -208,16 +214,17 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 			// find highest part file number
 			int maxindex = 0;
 			UINT partfilecount = 0;
-			for (BOOL bFound = finder.FindFile(sDir + filepartindex + _T(".*.part")); bFound;) {
-				bFound = finder.FindNextFile();
+			(void)PathHelpers::ForEachMatchingEntry(PathHelpers::AppendPathComponent(sDir, filepartindex + _T(".*.part")),
+				[&](const WIN32_FIND_DATA &findData) -> bool {
 				++partfilecount;
-				const CString &filename(finder.GetFileName());
+				const CString filename(findData.cFileName);
 				int pos1 = filename.Find('.');
 				int pos2 = filename.Find('.', pos1 + 1);
 				int fileindex = _tstoi(filename.Mid(pos1 + 1, pos2 - pos1));
 				if (fileindex > maxindex)
 					maxindex = fileindex;
-			}
+				return true;
+			});
 			float stepperpart;
 			if (partfilecount > 0) {
 				stepperpart = (80.0f / partfilecount);
@@ -247,8 +254,8 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 			CString buffer;
 			CSafeFile inputfile;
 			unsigned curindex = 0;
-			for (BOOL bFound = finder.FindFile(sDir + filepartindex + _T(".*.part")); bFound;) {
-				bFound = finder.FindNextFile();
+			(void)PathHelpers::ForEachMatchingEntry(PathHelpers::AppendPathComponent(sDir, filepartindex + _T(".*.part")),
+				[&](const WIN32_FIND_DATA &findData) -> bool {
 
 				//stats
 				++curindex;
@@ -256,18 +263,19 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 				buffer.Format(GetResString(IDS_IMP_LOADDATA), curindex, partfilecount);
 				UpdateGUI(fPercent, buffer);
 
-				const CString &filename(finder.GetFileName());
+				const CString filename(findData.cFileName);
 				int pos1 = filename.Find('.');
 				int pos2 = filename.Find('.', pos1 + 1);
 				int fileindex = _tstoi(filename.Mid(pos1 + 1, pos2 - pos1));
 				if (fileindex <= 0)
-					continue;
+					return true;
 
 				ULONGLONG chunkstart = fileindex * PARTSIZE + PARTSIZE - 1;
+				const CString strPartPath(PathHelpers::AppendPathComponent(sDir, filename));
 
 				// open, read data of the part-part-file into buffer, close file
-				if (!LongPathSeams::OpenFile(inputfile, finder.GetFilePath(), CFile::modeRead | CFile::shareDenyWrite))
-					CFileException::ThrowOsError((LONG)::GetLastError(), finder.GetFilePath());
+				if (!LongPathSeams::OpenFile(inputfile, strPartPath, CFile::modeRead | CFile::shareDenyWrite))
+					CFileException::ThrowOsError((LONG)::GetLastError(), strPartPath);
 				UINT nRead = inputfile.Read(ba.GetData(), (UINT)PARTSIZE);
 				inputfile.Close();
 
@@ -278,7 +286,8 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 				OVERLAPPED ov{0, 0, {{LODWORD(chunkstart), HIDWORD(chunkstart)}}};
 				if (!::WriteFile((HANDLE)file->m_hpartfile, ba.GetData(), nRead, NULL, &ov))
 					CFileException::ThrowOsError((LONG)::GetLastError(), file->m_hpartfile.GetFileName());
-			}
+				return true;
+			});
 		} catch (CFileException *ex) {
 			LogError(LOG_DEFAULT, _T("%s%s"), (LPCTSTR)GetResString(IDS_IMP_IOERROR), (LPCTSTR)CExceptionStrDash(*ex));
 			ex->Delete();
@@ -367,10 +376,11 @@ int CPartFileConvert::performConvertToeMule(const CString &folder)
 		theApp.sharedfiles->SafeAddKFile(file); // part files are always shared files
 
 	if (pfconverting->removeSource) {
-		for (BOOL bFound = finder.FindFile(sDir + filepartindex + _T(".*")); bFound;) {
-			bFound = finder.FindNextFile();
-			VERIFY(LongPathSeams::DeleteFileIfExists(finder.GetFilePath()));
-		}
+		(void)PathHelpers::ForEachMatchingEntry(PathHelpers::AppendPathComponent(sDir, filepartindex + _T(".*")),
+			[&](const WIN32_FIND_DATA &findData) -> bool {
+			VERIFY(LongPathSeams::DeleteFileIfExists(PathHelpers::AppendPathComponent(sDir, findData.cFileName)));
+			return true;
+		});
 
 		if (pfconverting->partmettype == PMT_SPLITTED)
 			(void)LongPathSeams::RemoveDirectory(sDir);
@@ -609,51 +619,18 @@ void CPartFileConvertDlg::PostNcDestroy()
 
 void CPartFileConvertDlg::OnAddFolder()
 {
-	// browse...
-	LPMALLOC pMalloc = NULL;
-	if (SHGetMalloc(&pMalloc) == NOERROR) {
-		// buffer - a place to hold the file system pathname
-		TCHAR buffer[MAX_PATH];
+	CString strSourceFolder;
+	if (SelectDir(strSourceFolder, m_hWnd, GetResString(IDS_IMP_SELFOLDER))) {
+		int reply;
+		if (thePrefs.IsExtControlsEnabled())
+			reply = LocMessageBox(IDS_IMP_DELSRC, MB_YESNOCANCEL | MB_DEFBUTTON2, 0);
+		else
+			reply = IDNO;
 
-		// This struct holds the various options for the dialog
-		BROWSEINFO bi;
-		bi.hwndOwner = m_hWnd;
-		bi.pidlRoot = NULL;
-		bi.pszDisplayName = buffer;
-		CString title(GetResString(IDS_IMP_SELFOLDER));
-		bi.lpszTitle = title.GetBuffer(title.GetLength());
-		bi.ulFlags = BIF_EDITBOX | BIF_NEWDIALOGSTYLE | BIF_NONEWFOLDERBUTTON | BIF_SHAREABLE;
-		bi.lpfn = NULL;
-
-		// Now cause the dialog to appear.
-		LPITEMIDLIST pidlRoot;
-		// TODO:MINOR(FEAT-010): Part-file import folder browse still depends on SHBrowseForFolder/SHGetPathFromIDList; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-		if ((pidlRoot = SHBrowseForFolder(&bi)) != NULL) {
-			int reply;
-			if (thePrefs.IsExtControlsEnabled())
-				reply = LocMessageBox(IDS_IMP_DELSRC, MB_YESNOCANCEL | MB_DEFBUTTON2, 0);
-			else
-				reply = IDNO;
-
-			if (reply != IDCANCEL) {
-				bool removesrc = (reply == IDYES);
-
-				//
-				// Again, almost undocumented. How to get an ASCII pathname
-				// from the LPITEMIDLIST struct.
-				// I guess you just have to "know" this stuff.
-				//
-				if (SHGetPathFromIDList(pidlRoot, buffer)) {
-					// Do something with the converted string.
-					CPartFileConvert::ScanFolderToAdd(CString(buffer), removesrc);
-				}
-			}
-
-			// Free the returned item identifier list using the
-			// shell's task allocator!Arghhhh.
-			pMalloc->Free(pidlRoot);
+		if (reply != IDCANCEL) {
+			const bool removesrc = (reply == IDYES);
+			CPartFileConvert::ScanFolderToAdd(strSourceFolder, removesrc);
 		}
-		pMalloc->Release();
 	}
 }
 

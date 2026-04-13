@@ -20,6 +20,7 @@
 #include "SharedFilesWnd.h"
 #include "PPgDirectories.h"
 #include "otherfunctions.h"
+#include "PathHelpers.h"
 #include "InputBox.h"
 #include "Preferences.h"
 #include "HelpIDs.h"
@@ -64,8 +65,6 @@ BOOL CPPgDirectories::OnInitDialog()
 	CPropertyPage::OnInitDialog();
 	InitWindowStyles(this);
 
-	static_cast<CEdit*>(GetDlgItem(IDC_INCFILES))->SetLimitText(MAX_PATH);
-
 	AddBuddyButton(GetDlgItem(IDC_INCFILES)->m_hWnd, ::GetDlgItem(m_hWnd, IDC_SELINCDIR));
 	InitAttachedBrowseButton(::GetDlgItem(m_hWnd, IDC_SELINCDIR), m_icoBrowse);
 
@@ -100,25 +99,25 @@ void CPPgDirectories::LoadSettings()
 
 void CPPgDirectories::OnBnClickedSelincdir()
 {
-	TCHAR buffer[MAX_PATH];
-	buffer[GetDlgItemText(IDC_INCFILES, buffer, MAX_PATH)] = _T('\0');
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_INCOMINGDIR)))
-		SetDlgItemText(IDC_INCFILES, buffer);
+	CString strIncomingPath;
+	GetDlgItemText(IDC_INCFILES, strIncomingPath);
+	if (SelectDir(strIncomingPath, GetSafeHwnd(), GetResString(IDS_SELECT_INCOMINGDIR)))
+		SetDlgItemText(IDC_INCFILES, strIncomingPath);
 }
 
 void CPPgDirectories::OnBnClickedSeltempdir()
 {
-	TCHAR buffer[MAX_PATH];
-	buffer[GetDlgItemText(IDC_TEMPFILES, buffer, MAX_PATH)] = _T('\0');
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_TEMPDIR)))
-		SetDlgItemText(IDC_TEMPFILES, buffer);
+	CString strTempPath;
+	GetDlgItemText(IDC_TEMPFILES, strTempPath);
+	if (SelectDir(strTempPath, GetSafeHwnd(), GetResString(IDS_SELECT_TEMPDIR)))
+		SetDlgItemText(IDC_TEMPFILES, strTempPath);
 }
 
 BOOL CPPgDirectories::OnApply()
 {
 	CString strIncomingDir;
 	GetDlgItemText(IDC_INCFILES, strIncomingDir);
-	MakeFoldername(strIncomingDir);
+	strIncomingDir = PathHelpers::CanonicalizeDirectoryPath(strIncomingDir);
 	if (strIncomingDir.IsEmpty()) {
 		strIncomingDir = thePrefs.GetDefaultDirectory(EMULE_INCOMINGDIR, true); // will create the directory here if it doesn't exist
 		SetDlgItemText(IDC_INCFILES, strIncomingDir);
@@ -128,27 +127,23 @@ BOOL CPPgDirectories::OnApply()
 	}
 
 	const CString &sOldIncoming(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
-	if (strIncomingDir.CompareNoCase(sOldIncoming) != 0 && strIncomingDir.CompareNoCase(thePrefs.GetDefaultDirectory(EMULE_INCOMINGDIR, false)) != 0) {
+	if (!EqualPaths(strIncomingDir, sOldIncoming) && !EqualPaths(strIncomingDir, thePrefs.GetDefaultDirectory(EMULE_INCOMINGDIR, false))) {
 		// if the user chooses a non-default directory which already contains files,
 		// inform him that all those files will be shared
 		bool bExistingFile = false;
-		CFileFind ff;
-		for (BOOL bFound = ff.FindFile(strIncomingDir + _T('*')); bFound && !bExistingFile;) {
-			bFound = ff.FindNextFile();
-			if (ff.IsDirectory() || ff.IsSystem() || ff.IsTemporary() || ff.GetLength() == 0 || ff.GetLength() > MAX_EMULE_FILE_SIZE)
-				continue;
+		DWORD dwEnumerateError = ERROR_SUCCESS;
+		(void)PathHelpers::ForEachDirectoryEntry(strIncomingDir, [&](const WIN32_FIND_DATA &findData) -> bool {
+			if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY)) != 0)
+				return true;
 
-			// ignore real LNK files
-			if (ExtensionIs(ff.GetFileName(), _T(".lnk"))) {
-				SHFILEINFO info;
-				// TODO:MINOR(FEAT-010): Incoming-dir shell attribute probing still depends on SHGetFileInfo; defer the long-path-safe shell helper/fallback work to the shell/UI follow-up.
-				if (::SHGetFileInfo(ff.GetFilePath(), 0, &info, sizeof info, SHGFI_ATTRIBUTES) && (info.dwAttributes & SFGAO_LINK))
-					continue;
-			}
+			const ULONGLONG ullFoundFileSize = (static_cast<ULONGLONG>(findData.nFileSizeHigh) << 32) | findData.nFileSizeLow;
+			if (ullFoundFileSize == 0 || ullFoundFileSize > MAX_EMULE_FILE_SIZE)
+				return true;
 
-			// ignore real THUMBS.DB files -- seems that lot of ppl have 'thumbs.db' files without the 'System' file attribute
-			bExistingFile = (ff.GetFileName().CompareNoCase(_T("thumbs.db")) != 0);
-		}
+			const CString strFoundFilePath(PathHelpers::AppendPathComponent(strIncomingDir, findData.cFileName));
+			bExistingFile = !ShouldIgnoreSharedFileCandidate(strFoundFilePath, findData.cFileName);
+			return !bExistingFile;
+		}, &dwEnumerateError);
 		if (bExistingFile && LocMessageBox(IDS_WRN_INCFILE_EXISTS, MB_OKCANCEL | MB_ICONINFORMATION, 0) == IDCANCEL)
 			return FALSE;
 	}
@@ -181,7 +176,7 @@ BOOL CPPgDirectories::OnApply()
 
 		bool bDup = false;
 		for (INT_PTR i = temptempfolders.GetCount(); --i >= 0;)	// avoid duplicate tempdirs
-			if (atmp.CompareNoCase(temptempfolders[i]) == 0) {
+			if (EqualPaths(atmp, temptempfolders[i])) {
 				bDup = true;
 				break;
 			}
@@ -189,7 +184,7 @@ BOOL CPPgDirectories::OnApply()
 		if (!bDup) {
 			temptempfolders.Add(atmp);
 			if (thePrefs.GetTempDirCount() < temptempfolders.GetCount()
-				|| atmp.CompareNoCase(thePrefs.GetTempDir(temptempfolders.GetCount() - 1)) != 0)
+				|| !EqualPaths(atmp, thePrefs.GetTempDir(temptempfolders.GetCount() - 1)))
 			{
 				testtempdirchanged = true;
 			}
@@ -206,8 +201,7 @@ BOOL CPPgDirectories::OnApply()
 	if (testtempdirchanged) {
 		thePrefs.tempdir.RemoveAll();
 		for (INT_PTR i = 0; i < temptempfolders.GetCount(); ++i) {
-			CString toadd(temptempfolders[i]);
-			MakeFoldername(toadd);
+			CString toadd(PathHelpers::CanonicalizeDirectoryPath(temptempfolders[i]));
 			if (!LongPathSeams::PathExists(toadd))
 				LongPathSeams::CreateDirectory(toadd, NULL);
 			if (LongPathSeams::PathExists(toadd))
@@ -217,8 +211,7 @@ BOOL CPPgDirectories::OnApply()
 	if (thePrefs.tempdir.IsEmpty())
 		thePrefs.tempdir.Add(thePrefs.GetDefaultDirectory(EMULE_TEMPDIR, true));
 
-	thePrefs.m_strIncomingDir = strIncomingDir;
-	MakeFoldername(thePrefs.m_strIncomingDir);
+	thePrefs.m_strIncomingDir = PathHelpers::CanonicalizeDirectoryPath(strIncomingDir);
 
 	CStringList sharedDirs;
 	m_ShareSelector.GetSharedDirectories(sharedDirs);
@@ -232,18 +225,21 @@ BOOL CPPgDirectories::OnApply()
 	thePrefs.ReplaceSharedDirectoryList(sharedDirs);
 
 	// on changing incoming dir, update directories for categories with the same path
-	if (sOldIncoming.CompareNoCase(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)) != 0) {
-		thePrefs.GetCategory(0)->strIncomingPath = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
+	const CString strNewIncoming(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
+	if (!EqualPaths(sOldIncoming, strNewIncoming)) {
+		thePrefs.GetCategory(0)->strIncomingPath = strNewIncoming;
 		bool bAskedOnce = false;
+		const CString strOldIncomingCanonical(PathHelpers::CanonicalizeDirectoryPath(sOldIncoming));
+		const CString strNewIncomingCanonical(PathHelpers::CanonicalizeDirectoryPath(strNewIncoming));
 		for (INT_PTR cat = thePrefs.GetCatCount(); --cat > 0;) { //skip 0
-			const CString &oldpath(thePrefs.GetCatPath(cat));
-			if (oldpath.Left(sOldIncoming.GetLength()).CompareNoCase(sOldIncoming) == 0) {
+			const CString strOldPath(PathHelpers::CanonicalizeDirectoryPath(thePrefs.GetCatPath(cat)));
+			if (EqualPaths(strOldPath, strOldIncomingCanonical) || PathHelpers::IsPathWithinDirectory(strOldIncomingCanonical, strOldPath)) {
 				if (!bAskedOnce) {
 					bAskedOnce = true;
 					if (LocMessageBox(IDS_UPDATECATINCOMINGDIRS, MB_YESNO, 0) == IDNO)
 						break;
 				}
-				thePrefs.GetCategory(cat)->strIncomingPath = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR) + oldpath.Mid(sOldIncoming.GetLength());
+				thePrefs.GetCategory(cat)->strIncomingPath = strNewIncomingCanonical + strOldPath.Mid(strOldIncomingCanonical.GetLength());
 			}
 		}
 		thePrefs.SaveCats();
@@ -294,7 +290,7 @@ void CPPgDirectories::OnBnClickedAddUNC()
 		LocMessageBox(IDS_ERR_BADUNC, MB_ICONERROR, 0);
 		return;
 	}
-	slosh(unc);
+	unc = PathHelpers::EnsureTrailingSeparator(unc);
 
 	if (thePrefs.IsSharedDirectoryListed(unc))
 		return;
@@ -319,11 +315,9 @@ void CPPgDirectories::OnBnClickedSeltempdiradd()
 	CString paths;
 	GetDlgItemText(IDC_TEMPFILES, paths);
 
-	TCHAR buffer[MAX_PATH];
-	//GetDlgItemText(IDC_TEMPFILES, buffer, _countof(buffer));
-
-	if (SelectDir(GetSafeHwnd(), buffer, GetResString(IDS_SELECT_TEMPDIR))) {
-		paths.AppendFormat(_T("|%s"), (LPCTSTR)buffer);
+	CString strTempPath;
+	if (SelectDir(strTempPath, GetSafeHwnd(), GetResString(IDS_SELECT_TEMPDIR))) {
+		paths.AppendFormat(_T("|%s"), (LPCTSTR)strTempPath);
 		SetDlgItemText(IDC_TEMPFILES, paths);
 	}
 }

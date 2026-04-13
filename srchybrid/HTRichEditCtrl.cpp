@@ -565,9 +565,9 @@ bool CHTRichEditCtrl::SaveLog(LPCTSTR pszDefName)
 {
 	bool bResult = false;
 	const CString &fname(pszDefName ? pszDefName : m_strTitle);
-	CFileDialog dlg(FALSE, _T("log"), (LPCTSTR)ValidFilename(fname), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT, _T("Log Files (*.log)|*.log||"), this, 0);
-	if (dlg.DoModal() == IDOK) {
-		FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(dlg.GetPathName(), _T("wb"));
+	CString strLogPath;
+	if (DialogBrowseFile(strLogPath, _T("Log Files (*.log)|*.log||"), ValidFilename(fname), OFN_PATHMUSTEXIST, false, m_hWnd, NULL, _T("log"))) {
+		FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(strLogPath, _T("wb"));
 		if (fp) {
 			// write Unicode byte order mark 0xFEFF
 			fputwc(u'\xFEFF', fp);
@@ -577,14 +577,14 @@ bool CHTRichEditCtrl::SaveLog(LPCTSTR pszDefName)
 			fwrite(strText, sizeof(TCHAR), strText.GetLength(), fp);
 			if (ferror(fp)) {
 				CString strError;
-				strError.Format(_T("Failed to write log file \"%s\" - %s"), (LPCTSTR)dlg.GetPathName(), _tcserror(errno));
+				strError.Format(_T("Failed to write log file \"%s\" - %s"), (LPCTSTR)strLogPath, _tcserror(errno));
 				AfxMessageBox(strError, MB_ICONERROR);
 			} else
 				bResult = true;
 			fclose(fp);
 		} else {
 			CString strError;
-			strError.Format(_T("Failed to create log file \"%s\" - %s"), (LPCTSTR)dlg.GetPathName(), _tcserror(errno));
+			strError.Format(_T("Failed to create log file \"%s\" - %s"), (LPCTSTR)strLogPath, _tcserror(errno));
 			AfxMessageBox(strError, MB_ICONERROR);
 		}
 	}

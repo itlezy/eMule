@@ -29,6 +29,7 @@
 #include "StatisticsTree.h"
 #include "StatisticsDlg.h"
 #include "LongPathSeams.h"
+#include "PathHelpers.h"
 #include "SafeFile.h"
 #include "emuledlg.h"
 #include "Preferences.h"
@@ -511,9 +512,8 @@ void CStatisticsTree::ExportHTML()
 	if (dwCurDirLen == 0 || dwCurDirLen >= _countof(szCurDir))
 		*szCurDir = _T('\0');
 
-	// TODO:MINOR(FEAT-010): Statistics HTML export still depends on CFileDialog; defer the long-path shell fallback/documentation work to the shell/UI follow-up.
-	CFileDialog saveAsDlg(false, _T("html"), _T("eMule Statistics.html"), OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_EXPLORER, _T("HTML Files (*.html)|*.html|All Files (*.*)|*.*||"), this, 0);
-	if (saveAsDlg.DoModal() == IDOK) {
+	CString strSavePath(_T("eMule Statistics.html"));
+	if (DialogBrowseFile(strSavePath, _T("HTML Files (*.html)|*.html|All Files (*.*)|*.*||"), strSavePath, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_EXPLORER, false, GetSafeHwnd(), NULL, _T("html"))) {
 		theApp.emuledlg->statisticswnd->ShowStatistics(true); //force update
 
 		CString strHTML;
@@ -560,8 +560,8 @@ void CStatisticsTree::ExportHTML()
 
 		CSafeFile htmlFile;
 		CFileException ex;
-		if (!LongPathSeams::OpenFile(htmlFile, saveAsDlg.GetPathName(), CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite, &ex)) {
-			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), (LPCTSTR)saveAsDlg.GetPathName(), (LPCTSTR)CExceptionStrDash(ex));
+		if (!LongPathSeams::OpenFile(htmlFile, strSavePath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite, &ex)) {
+			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), (LPCTSTR)strSavePath, (LPCTSTR)CExceptionStrDash(ex));
 			if (*szCurDir)
 				VERIFY(SetCurrentDirectory(szCurDir));
 			return;
@@ -579,7 +579,7 @@ void CStatisticsTree::ExportHTML()
 			_T("stats_14.gif"), _T("stats_15.gif"), _T("stats_16.gif"), _T("stats_17.gif"),
 			_T("stats_hidden.gif"), _T("stats_space.gif"), _T("stats_visible.gif")
 		};
-		CString strDst(saveAsDlg.GetPathName(), saveAsDlg.GetPathName().GetLength() - saveAsDlg.GetFileName().GetLength());// EC - what if directory name == filename? this should fix this
+		CString strDst(PathHelpers::EnsureTrailingSeparator(PathHelpers::GetDirectoryPath(strSavePath)));
 		CString strSrc(thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR));
 
 		for (size_t i = 0; i < _countof(s_apcFileNames); ++i)

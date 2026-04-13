@@ -17,6 +17,7 @@
 #pragma once
 
 #include "PartFilePersistenceSeams.h"
+#include "Opcodes.h"
 
 extern LPCTSTR const strDefaultToolbar;
 
