@@ -97,6 +97,8 @@ void CServerList::AutoUpdate()
 
 bool CServerList::Init()
 {
+	theApp.emuledlg->serverwnd->serverlistctrl.BeginBulkLoad();
+
 	// auto update the list by using a URL
 	if (thePrefs.GetAutoUpdateServerList())
 		AutoUpdate();
@@ -113,6 +115,7 @@ bool CServerList::Init()
 
 	// insert static servers from text file
 	AddServersFromTextFile(sConfDir + _T("staticservers.dat"));
+	theApp.emuledlg->serverwnd->serverlistctrl.EndBulkLoad();
 
 	return bRes;
 }
@@ -190,7 +193,8 @@ bool CServerList::AddServerMetToList(const CString &strFile, bool bMerge)
 		ex->Delete();
 	}
 	theApp.emuledlg->serverwnd->serverlistctrl.SetRedraw(true);
-	theApp.emuledlg->serverwnd->serverlistctrl.Visible();
+	if (theApp.m_app_state != APP_STATE_STARTING)
+		theApp.emuledlg->serverwnd->serverlistctrl.Visible();
 	return true;
 }
 

@@ -108,7 +108,7 @@
       <Optimization>MaxSpeed</Optimization>
       <OmitFramePointers>true</OmitFramePointers>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;EMULE_ENABLE_STARTUP_PROFILING;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
       <ControlFlowGuard>Guard</ControlFlowGuard>

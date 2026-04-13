@@ -65,6 +65,16 @@ CString NormalizeSharedDirectoryPath(const CString &rstrPath)
 	return PathHelpers::CanonicalizeDirectoryPath(rstrPath);
 }
 
+CString LexicallyNormalizeSharedDirectoryPath(const CString &rstrPath)
+{
+	return PathHelpers::EnsureTrailingSeparator(PathHelpers::CanonicalizePath(PathHelpers::StripExtendedLengthPrefix(rstrPath)));
+}
+
+CString LexicallyNormalizeSharedFilePath(const CString &rstrPath)
+{
+	return PathHelpers::CanonicalizePath(PathHelpers::StripExtendedLengthPrefix(rstrPath));
+}
+
 bool UpdateEquivalentStoredPath(CStringList &rList, const CString &rstrCanonicalPath, LPCTSTR pszDebugReason)
 {
 	for (POSITION pos = rList.GetHeadPosition(); pos != NULL;) {
@@ -537,16 +547,22 @@ int CAddFileThread::Run()
 ///////////////////////////////////////////////////////////////////////////////
 // CSharedFileList
 
-void CSharedFileList::AddDirectory(const CString &strDir, CStringList &dirlist)
+void CSharedFileList::AddDirectory(const CString &strDir, CStringList &dirlist, std::unordered_set<std::wstring> &rAddedDirectoryKeys, const bool bAllowStartupCache)
 {
 	ASSERT(strDir.Right(1) == _T("\\"));
-	const CString strCanonicalDir(NormalizeSharedDirectoryPath(strDir));
-	for (POSITION pos = dirlist.GetHeadPosition(); pos != NULL;)
-		if (EqualPaths(dirlist.GetNext(pos), strCanonicalDir))
-			return;
+	CString strCanonicalDir;
+	if (bAllowStartupCache) {
+		const CString strLexicalDir(LexicallyNormalizeSharedDirectoryPath(strDir));
+		const auto itRecord = m_startupCacheRecords.find(MakeStartupCacheKey(strLexicalDir));
+		strCanonicalDir = (itRecord != m_startupCacheRecords.end()) ? itRecord->second.strDirectoryPath : NormalizeSharedDirectoryPath(strDir);
+	} else
+		strCanonicalDir = NormalizeSharedDirectoryPath(strDir);
+	if (!rAddedDirectoryKeys.insert(MakeStartupCacheKey(strCanonicalDir)).second)
+		return;
 
 	dirlist.AddHead(strCanonicalDir);
-	AddFilesFromDirectory(strCanonicalDir);
+	if (!bAllowStartupCache || !TryRehydrateSharedDirectoryFromCache(strCanonicalDir))
+		AddFilesFromDirectory(strCanonicalDir);
 }
 
 CSharedFileList::CSharedFileList(CServerConnect *in_server)
@@ -559,6 +575,8 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	, m_lastPublishED2K()
 	, m_lastPublishED2KFlag(true)
 	, bHaveSingleSharedFiles()
+	, m_bStartupCacheDirty(false)
+	, m_nLastStartupCacheSave()
 {
 	m_Files_map.InitHashTable(1031);
 	m_keywords = new CPublishKeywordList;
@@ -572,7 +590,8 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	m_strBetaFileName.AppendFormat(_T("%s.txt"), (LPCTSTR)md5.GetHashString().Left(6));
 #endif
 	LoadSingleSharedFilesList();
-	FindSharedFiles();
+	(void)TryLoadStartupCache();
+	FindSharedFiles(true);
 }
 
 CSharedFileList::~CSharedFileList()
@@ -599,7 +618,7 @@ void CSharedFileList::CopySharedFileMap(CKnownFilesMap &Files_Map)
 		Files_Map[pair->key] = pair->value;
 }
 
-void CSharedFileList::FindSharedFiles()
+void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 {
 	if (!m_Files_map.IsEmpty() && theApp.downloadqueue) {
 		CSingleLock listlock(&m_mutWriteList);
@@ -624,6 +643,7 @@ void CSharedFileList::FindSharedFiles()
 
 	// khaos::kmod+ Fix: Shared files loaded multiple times.
 	CStringList l_sAdded;
+	std::unordered_set<std::wstring> addedDirectoryKeys;
 	const CString &tempDir(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
 
 #if defined(_BETA) || defined(_DEVBUILD)
@@ -645,15 +665,15 @@ void CSharedFileList::FindSharedFiles()
 		}
 	}
 #endif
-	AddDirectory(tempDir, l_sAdded);
+	AddDirectory(tempDir, l_sAdded, addedDirectoryKeys, bAllowStartupCache);
 
 	for (INT_PTR i = 1; i < thePrefs.GetCatCount(); ++i)
-		AddDirectory(thePrefs.GetCatPath(i), l_sAdded);
+		AddDirectory(thePrefs.GetCatPath(i), l_sAdded, addedDirectoryKeys, bAllowStartupCache);
 
 	CStringList sharedDirs;
 	thePrefs.CopySharedDirectoryList(sharedDirs);
 	for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;)
-		AddDirectory(sharedDirs.GetNext(pos), l_sAdded);
+		AddDirectory(sharedDirs.GetNext(pos), l_sAdded, addedDirectoryKeys, bAllowStartupCache);
 
 	// add all single shared files
 	for (POSITION pos = m_liSingleSharedFiles.GetHeadPosition(); pos != NULL;)
@@ -665,6 +685,7 @@ void CSharedFileList::FindSharedFiles()
 	else
 		AddLogLine(false, GetResString(IDS_SHAREDFOUNDHASHING), (unsigned)m_Files_map.GetCount(), (unsigned)waitingforhash_list.GetCount());
 
+	MarkStartupCacheDirty();
 	HashNextFile();
 }
 
@@ -773,29 +794,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 
 	CKnownFile *toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
 	if (toadd) {
-		CCKey key(toadd->GetFileHash());
-		CKnownFile *pFileInMap;
-		if (m_Files_map.Lookup(key, pFileInMap)) {
-			TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFilePath());
-			TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(toadd->GetFileHash()), (LPCTSTR)strFoundFilePath);
-			if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap)) {
-				if (!PathHelpers::ArePathsEquivalent(strFoundFilePath, pFileInMap->GetFilePath()))
-					LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)strFoundFilePath);
-				else {
-					if (pFileInMap->GetFilePath().CompareNoCase(strFoundFilePath) != 0) {
-						const CString strOldFilePath(pFileInMap->GetFilePath());
-						pFileInMap->SetPath(strFoundDirectory);
-						pFileInMap->SetFilePath(strFoundFilePath);
-						DEBUG_ONLY(DebugLog(_T("Upgraded shared-file spelling: \"%s\" -> \"%s\""), (LPCTSTR)strOldFilePath, (LPCTSTR)strFoundFilePath));
-					}
-					DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
-				}
-			}
-		} else {
-			toadd->SetPath(strFoundDirectory);
-			toadd->SetFilePath(strFoundFilePath);
-			AddFile(toadd);
-		}
+		(void)AddKnownSharedFile(toadd, strFoundDirectory, strFoundFilePath);
 	} else {
 		if (!IsHashing(strFoundDirectory, strFoundFileName) && !thePrefs.IsTempFile(strFoundDirectory, strFoundFileName)) {
 			UnknownFile_Struct *tohash = new UnknownFile_Struct;
@@ -805,6 +804,37 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 		} else
 			TRACE(_T("%hs: Did not share file \"%s\" - already hashing or temp. file\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
 	}
+}
+
+bool CSharedFileList::AddKnownSharedFile(CKnownFile *pFile, const CString &strFoundDirectory, const CString &strFoundFilePath)
+{
+	if (pFile == NULL)
+		return false;
+
+	CCKey key(pFile->GetFileHash());
+	CKnownFile *pFileInMap = NULL;
+	if (m_Files_map.Lookup(key, pFileInMap)) {
+		TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFilePath());
+		TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFile->GetFileHash()), (LPCTSTR)strFoundFilePath);
+		if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap)) {
+			if (!PathHelpers::ArePathsEquivalent(strFoundFilePath, pFileInMap->GetFilePath()))
+				LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)strFoundFilePath);
+			else {
+				if (pFileInMap->GetFilePath().CompareNoCase(strFoundFilePath) != 0) {
+					const CString strOldFilePath(pFileInMap->GetFilePath());
+					pFileInMap->SetPath(strFoundDirectory);
+					pFileInMap->SetFilePath(strFoundFilePath);
+					DEBUG_ONLY(DebugLog(_T("Upgraded shared-file spelling: \"%s\" -> \"%s\""), (LPCTSTR)strOldFilePath, (LPCTSTR)strFoundFilePath));
+				}
+				DebugLog(_T("File shared twice, might have been a single shared file before - %s"), (LPCTSTR)pFileInMap->GetFilePath());
+			}
+		}
+		return false;
+	}
+
+	pFile->SetPath(strFoundDirectory);
+	pFile->SetFilePath(strFoundFilePath);
+	return AddFile(pFile);
 }
 
 bool CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
@@ -886,6 +916,7 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 	theApp.knownfiles->m_nRequestedTotal += pFile->statistic.GetAllTimeRequests();
 	theApp.knownfiles->m_nAcceptedTotal += pFile->statistic.GetAllTimeAccepts();
 	theApp.knownfiles->m_nTransferredTotal += pFile->statistic.GetAllTimeTransferred();
+	MarkStartupCacheDirty();
 
 	return true;
 }
@@ -908,9 +939,10 @@ void CSharedFileList::FileHashingFinished(CKnownFile *file)
 				delete file;
 			else
 				ASSERT(0);
-		} else {
+	} else {
 			SafeAddKFile(file);
 			theApp.knownfiles->SafeAddKFile(file);
+			MarkStartupCacheDirty();
 		}
 	} else {
 		TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(found_file->GetFileHash()), (LPCTSTR)found_file->GetFilePath());
@@ -923,6 +955,9 @@ void CSharedFileList::FileHashingFinished(CKnownFile *file)
 		else
 			ASSERT(0);
 	}
+
+	if (GetHashingCount() == 0)
+		SaveStartupCache();
 }
 
 bool CSharedFileList::RemoveFile(CKnownFile *pFile, bool bDeleted)
@@ -938,6 +973,7 @@ bool CSharedFileList::RemoveFile(CKnownFile *pFile, bool bDeleted)
 		theApp.knownfiles->m_nRequestedTotal -= pFile->statistic.GetAllTimeRequests();
 		theApp.knownfiles->m_nAcceptedTotal -= pFile->statistic.GetAllTimeAccepts();
 		theApp.knownfiles->m_nTransferredTotal -= pFile->statistic.GetAllTimeTransferred();
+		MarkStartupCacheDirty();
 	}
 	return bResult;
 }
@@ -950,7 +986,7 @@ void CSharedFileList::Reload()
 	while (!waitingforhash_list.IsEmpty()) // delete all files which are waiting to get hashed, will be re-added if still shared below
 		delete waitingforhash_list.RemoveHead();
 	bHaveSingleSharedFiles = false;
-	FindSharedFiles();
+	FindSharedFiles(false);
 	m_keywords->PurgeUnreferencedKeywords();
 	if (output)
 		output->ReloadFileList();
@@ -959,8 +995,6 @@ void CSharedFileList::Reload()
 void CSharedFileList::SetOutputCtrl(CSharedFilesCtrl *in_ctrl)
 {
 	output = in_ctrl;
-	output->ReloadFileList();
-	HashNextFile();		// SLUGFILLER: SafeHash - if hashing not started yet, start it now
 }
 
 void CSharedFileList::SendListToServer()
@@ -1382,6 +1416,9 @@ void CSharedFileList::HashFailed(UnknownFile_Struct *hashed)
 		}
 	}
 	delete hashed;
+	MarkStartupCacheDirty();
+	if (GetHashingCount() == 0)
+		SaveStartupCache();
 }
 
 void CSharedFileList::UpdateFile(const CKnownFile *toupdate)
@@ -1396,6 +1433,8 @@ void CSharedFileList::Process()
 		SendListToServer();
 		m_lastPublishED2K = ::GetTickCount64();
 	}
+	if (m_bStartupCacheDirty && ::GetTickCount64() >= m_nLastStartupCacheSave + SEC2MS(15))
+		SaveStartupCache();
 }
 
 void CSharedFileList::Publish()
@@ -1633,8 +1672,482 @@ bool CSharedFileList::ExcludeFile(const CString &strFilePath)
 	return true;
 }
 
+void CSharedFileList::MarkStartupCacheDirty()
+{
+	m_bStartupCacheDirty = true;
+}
+
+CString CSharedFileList::GetStartupCachePath()
+{
+	return thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SharedStartupCachePolicy::GetFileName();
+}
+
+std::wstring CSharedFileList::MakeStartupCacheKey(const CString &strDirectory)
+{
+	return std::wstring(NormalizeSharedDirectoryPath(strDirectory));
+}
+
+std::wstring CSharedFileList::MakeStartupCacheVolumeKey(const CString &strVolumeKey)
+{
+	const LongPathSeams::PathString strNormalized(LongPathSeams::NormalizeVolumeGuidPathForKey(static_cast<LPCTSTR>(strVolumeKey)));
+	return std::wstring(strNormalized.c_str());
+}
+
+void CSharedFileList::CollectSharedDirectories(CStringList &dirlist) const
+{
+	const auto addUniqueDirectory = [&dirlist](const CString &strDirectory) {
+		const CString strCanonical(NormalizeSharedDirectoryPath(strDirectory));
+		for (POSITION pos = dirlist.GetHeadPosition(); pos != NULL;)
+			if (EqualPaths(dirlist.GetNext(pos), strCanonical))
+				return;
+		dirlist.AddTail(strCanonical);
+	};
+
+	addUniqueDirectory(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
+	for (INT_PTR i = 1; i < thePrefs.GetCatCount(); ++i)
+		addUniqueDirectory(thePrefs.GetCatPath(i));
+
+	CStringList sharedDirs;
+	thePrefs.CopySharedDirectoryList(sharedDirs);
+	for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;)
+		addUniqueDirectory(sharedDirs.GetNext(pos));
+}
+
+bool CSharedFileList::ReadStartupCacheString(CSafeBufferedFile &file, CString &rValue)
+{
+	constexpr uint32 kMaxStartupCacheChars = 32768u;
+	const uint32 uCharCount = file.ReadUInt32();
+	if (uCharCount > kMaxStartupCacheChars)
+		return false;
+	if (uCharCount == 0) {
+		rValue.Empty();
+		return true;
+	}
+
+	std::vector<WCHAR> buffer(uCharCount + 1u, L'\0');
+	file.Read(buffer.data(), uCharCount * sizeof(WCHAR));
+	buffer[uCharCount] = L'\0';
+	rValue = CString(buffer.data());
+	return true;
+}
+
+void CSharedFileList::WriteStartupCacheString(CSafeBufferedFile &file, const CString &strValue)
+{
+	const CStringW strWide(strValue);
+	file.WriteUInt32(static_cast<uint32>(strWide.GetLength()));
+	if (!strWide.IsEmpty())
+		file.Write(static_cast<LPCWSTR>(strWide), strWide.GetLength() * sizeof(WCHAR));
+}
+
+bool CSharedFileList::GetDirectoryStartupState(const CString &strDirectory, DirectoryStartupState &rState) const
+{
+	rState = DirectoryStartupState{};
+	const CString strCanonicalDirectory(LexicallyNormalizeSharedDirectoryPath(strDirectory));
+	const CString strDirectoryPath(PathHelpers::TrimTrailingSeparator(strCanonicalDirectory));
+
+	WIN32_FIND_DATA findData = {};
+	DWORD dwError = ERROR_SUCCESS;
+	const HANDLE hFind = LongPathSeams::FindFirstFile(strDirectoryPath, &findData);
+	if (hFind == INVALID_HANDLE_VALUE)
+		return false;
+	::FindClose(hFind);
+
+	time_t tUtcDirectoryDate = (time_t)FileTimeToUnixTime(findData.ftLastWriteTime);
+	if (tUtcDirectoryDate <= 0)
+		tUtcDirectoryDate = (time_t)-1;
+	else
+		AdjustNTFSDaylightFileTime(tUtcDirectoryDate, strDirectoryPath);
+	rState.utcDirectoryDate = static_cast<LONGLONG>(tUtcDirectoryDate);
+
+	rState.bHasIdentity = LongPathSeams::TryGetResolvedDirectoryIdentity(strDirectoryPath, rState.identity, &dwError);
+	if (!rState.bHasIdentity)
+		rState.identity = LongPathSeams::FileSystemObjectIdentity{};
+
+	LongPathSeams::NtfsJournalVolumeState volumeState = {};
+	LongPathSeams::NtfsDirectoryJournalState directoryJournalState = {};
+	if (LongPathSeams::TryGetLocalNtfsJournalVolumeState(strDirectoryPath, volumeState, &dwError)
+		&& LongPathSeams::TryGetNtfsDirectoryJournalState(strDirectoryPath, directoryJournalState, &dwError))
+	{
+		rState.bHasTrustedNtfsJournalState = true;
+		rState.volumeRecord.strVolumeKey = CString(volumeState.strVolumeKey.c_str());
+		rState.volumeRecord.ullVolumeSerialNumber = volumeState.ullVolumeSerialNumber;
+		rState.volumeRecord.ullUsnJournalId = volumeState.ullUsnJournalId;
+		rState.volumeRecord.llJournalCheckpointUsn = volumeState.llNextUsn;
+		rState.directoryFileReference = directoryJournalState.fileReference;
+	}
+	return true;
+}
+
+bool CSharedFileList::GetFileStartupState(const CString &strFilePath, LONGLONG &rUtcFileDate, ULONGLONG &rullFileSize) const
+{
+	const CString strCanonicalFilePath(LexicallyNormalizeSharedFilePath(strFilePath));
+	WIN32_FIND_DATA findData = {};
+	const HANDLE hFind = LongPathSeams::FindFirstFile(strCanonicalFilePath, &findData);
+	if (hFind == INVALID_HANDLE_VALUE)
+		return false;
+	::FindClose(hFind);
+
+	time_t tUtcFileDate = (time_t)FileTimeToUnixTime(findData.ftLastWriteTime);
+	if (tUtcFileDate <= 0)
+		tUtcFileDate = (time_t)-1;
+	else
+		AdjustNTFSDaylightFileTime(tUtcFileDate, strCanonicalFilePath);
+
+	rUtcFileDate = static_cast<LONGLONG>(tUtcFileDate);
+	rullFileSize = (static_cast<ULONGLONG>(findData.nFileSizeHigh) << 32) | findData.nFileSizeLow;
+	return true;
+}
+
+bool CSharedFileList::HasPendingHashForDirectory(const CString &strDirectory) const
+{
+	const CString strCanonicalDirectory(NormalizeSharedDirectoryPath(strDirectory));
+	for (POSITION pos = waitingforhash_list.GetHeadPosition(); pos != NULL;)
+		if (EqualPaths(waitingforhash_list.GetNext(pos)->strDirectory, strCanonicalDirectory))
+			return true;
+	for (POSITION pos = currentlyhashing_list.GetHeadPosition(); pos != NULL;)
+		if (EqualPaths(currentlyhashing_list.GetNext(pos)->strDirectory, strCanonicalDirectory))
+			return true;
+	return false;
+}
+
+bool CSharedFileList::BuildStartupCacheRecord(const CString &strDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord, SharedStartupCacheVolumeRecordMap &rVolumeRecords) const
+{
+	const CString strCanonicalDirectory(NormalizeSharedDirectoryPath(strDirectory));
+	if (!SharedStartupCachePolicy::CanPersistDirectorySnapshot(HasPendingHashForDirectory(strCanonicalDirectory)))
+		return false;
+
+	rRecord = SharedStartupCachePolicy::DirectoryRecord{};
+	rRecord.strDirectoryPath = strCanonicalDirectory;
+	DirectoryStartupState directoryState = {};
+	if (!GetDirectoryStartupState(strCanonicalDirectory, directoryState))
+		return false;
+	rRecord.identity = directoryState.identity;
+	rRecord.bHasIdentity = directoryState.bHasIdentity;
+	rRecord.utcDirectoryDate = directoryState.utcDirectoryDate;
+	if (directoryState.bHasTrustedNtfsJournalState) {
+		rRecord.eValidationMode = SharedStartupCachePolicy::ValidationMode::LocalNtfsJournalFastPath;
+		rRecord.volumeRecord = directoryState.volumeRecord;
+		rRecord.directoryFileReference = directoryState.directoryFileReference;
+		SharedStartupCachePolicy::VolumeRecord &rVolumeRecord = rVolumeRecords[MakeStartupCacheVolumeKey(rRecord.volumeRecord.strVolumeKey)];
+		if (rVolumeRecord.strVolumeKey.IsEmpty())
+			rVolumeRecord = rRecord.volumeRecord;
+		else if (rVolumeRecord.strVolumeKey.CompareNoCase(rRecord.volumeRecord.strVolumeKey) == 0
+			&& rVolumeRecord.ullUsnJournalId == rRecord.volumeRecord.ullUsnJournalId)
+		{
+			rVolumeRecord.llJournalCheckpointUsn = (rVolumeRecord.llJournalCheckpointUsn < rRecord.volumeRecord.llJournalCheckpointUsn)
+				? rVolumeRecord.llJournalCheckpointUsn
+				: rRecord.volumeRecord.llJournalCheckpointUsn;
+		}
+	}
+
+	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair)) {
+		CKnownFile *pFile = pair->value;
+		if (pFile == NULL || pFile->IsKindOf(RUNTIME_CLASS(CPartFile)))
+			continue;
+		if (!EqualPaths(pFile->GetPath(), strCanonicalDirectory))
+			continue;
+
+		SharedStartupCachePolicy::FileRecord fileRecord = {};
+		fileRecord.strLeafName = pFile->GetFileName();
+		fileRecord.utcFileDate = static_cast<LONGLONG>(pFile->GetUtcFileDate());
+		fileRecord.ullFileSize = static_cast<ULONGLONG>(pFile->GetFileSize());
+		rRecord.files.push_back(fileRecord);
+	}
+
+	rRecord.uCachedFileCount = static_cast<uint32>(rRecord.files.size());
+	return SharedStartupCachePolicy::IsStructurallyValid(rRecord);
+}
+
+bool CSharedFileList::TryRehydrateSharedDirectoryFromCache(const CString &strDirectory)
+{
+	const auto it = m_startupCacheRecords.find(MakeStartupCacheKey(strDirectory));
+	if (it == m_startupCacheRecords.end())
+		return false;
+
+	const SharedStartupCachePolicy::DirectoryRecord &rRecord = it->second;
+	DirectoryStartupState directoryState = {};
+	if (!GetDirectoryStartupState(strDirectory, directoryState))
+		return false;
+
+	const bool bIdentityMatches = !rRecord.bHasIdentity || (directoryState.bHasIdentity && directoryState.identity == rRecord.identity);
+	if (!SharedStartupCachePolicy::MatchesVerifiedDirectoryState(rRecord, bIdentityMatches, true, directoryState.utcDirectoryDate))
+		return false;
+
+	if (SharedStartupCachePolicy::UsesTrustedNtfsFastPath(rRecord)) {
+		if (!EnsureStartupCacheVolumeValidation(strDirectory, rRecord))
+			return false;
+
+		const auto itVolumeState = m_startupCacheVolumeValidation.find(MakeStartupCacheVolumeKey(rRecord.volumeRecord.strVolumeKey));
+		if (itVolumeState == m_startupCacheVolumeValidation.end() || itVolumeState->second.bRescanAllDirectories)
+			return false;
+
+		if (itVolumeState->second.changedDirectoryFileReferences.find(rRecord.directoryFileReference) != itVolumeState->second.changedDirectoryFileReferences.end())
+			return false;
+	}
+
+	struct RehydrateCandidate
+	{
+		CKnownFile *pKnownFile;
+		CString strFoundFilePath;
+	};
+	std::vector<RehydrateCandidate> candidates;
+	candidates.reserve(rRecord.files.size());
+
+	for (const SharedStartupCachePolicy::FileRecord &rFileRecord : rRecord.files) {
+		const CString strFoundFilePath(PathHelpers::AppendPathComponent(strDirectory, rFileRecord.strLeafName));
+		if (!SharedStartupCachePolicy::UsesTrustedNtfsFastPath(rRecord)) {
+			LONGLONG utcCurrentFileDate = -1;
+			ULONGLONG ullCurrentFileSize = 0;
+			if (!GetFileStartupState(strFoundFilePath, utcCurrentFileDate, ullCurrentFileSize))
+				return false;
+
+			if (!SharedStartupCachePolicy::MatchesVerifiedFileState(rFileRecord, true, utcCurrentFileDate, ullCurrentFileSize))
+				return false;
+		}
+
+		CKnownFile *pKnownFile = theApp.knownfiles->FindKnownFile(rFileRecord.strLeafName, static_cast<time_t>(rFileRecord.utcFileDate), rFileRecord.ullFileSize);
+		if (pKnownFile == NULL && SharedStartupCachePolicy::ShouldRescanDirectoryOnCachedLookupMiss())
+			return false;
+		if (pKnownFile != NULL)
+			candidates.push_back({ pKnownFile, strFoundFilePath });
+	}
+
+	for (const RehydrateCandidate &candidate : candidates)
+		(void)AddKnownSharedFile(candidate.pKnownFile, strDirectory, candidate.strFoundFilePath);
+
+	return true;
+}
+
+bool CSharedFileList::TryLoadStartupCache()
+{
+	m_startupCacheRecords.clear();
+	m_startupCacheVolumes.clear();
+	m_startupCacheVolumeValidation.clear();
+
+	const CString strFullPath(GetStartupCachePath());
+	if (!LongPathSeams::PathExists(strFullPath))
+		return true;
+
+	CSafeBufferedFile file;
+	if (!LongPathSeams::OpenFile(file, strFullPath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary))
+		return false;
+
+	try {
+		constexpr uint32 kMaxVolumeCount = 1024u;
+		constexpr uint32 kMaxDirectoryCount = 100000u;
+		constexpr uint32 kMaxFileCountPerDirectory = 1000000u;
+
+		if (file.ReadUInt32() != SharedStartupCachePolicy::kMagic || file.ReadUInt16() != SharedStartupCachePolicy::kVersion)
+			AfxThrowFileException(CFileException::genericException);
+
+		const uint32 uVolumeCount = file.ReadUInt32();
+		if (uVolumeCount > kMaxVolumeCount)
+			AfxThrowFileException(CFileException::genericException);
+		for (uint32 i = 0; i < uVolumeCount; ++i) {
+			SharedStartupCachePolicy::VolumeRecord volumeRecord = {};
+			if (!ReadStartupCacheString(file, volumeRecord.strVolumeKey))
+				AfxThrowFileException(CFileException::genericException);
+			volumeRecord.ullVolumeSerialNumber = file.ReadUInt64();
+			volumeRecord.ullUsnJournalId = file.ReadUInt64();
+			volumeRecord.llJournalCheckpointUsn = static_cast<LONGLONG>(file.ReadUInt64());
+			if (volumeRecord.strVolumeKey.IsEmpty()
+				|| volumeRecord.ullVolumeSerialNumber == 0
+				|| volumeRecord.ullUsnJournalId == 0
+				|| volumeRecord.llJournalCheckpointUsn <= 0
+				|| m_startupCacheVolumes.find(MakeStartupCacheVolumeKey(volumeRecord.strVolumeKey)) != m_startupCacheVolumes.end())
+			{
+				AfxThrowFileException(CFileException::genericException);
+			}
+			m_startupCacheVolumes.emplace(MakeStartupCacheVolumeKey(volumeRecord.strVolumeKey), volumeRecord);
+		}
+
+		const uint32 uDirectoryCount = file.ReadUInt32();
+		if (uDirectoryCount > kMaxDirectoryCount)
+			AfxThrowFileException(CFileException::genericException);
+
+		for (uint32 i = 0; i < uDirectoryCount; ++i) {
+			SharedStartupCachePolicy::DirectoryRecord record = {};
+			if (!ReadStartupCacheString(file, record.strDirectoryPath))
+				AfxThrowFileException(CFileException::genericException);
+
+			record.bHasIdentity = (file.ReadUInt8() != 0);
+			record.identity.bHasExtendedFileId = (file.ReadUInt8() != 0);
+			record.identity.ullVolumeSerialNumber = file.ReadUInt64();
+			file.Read(record.identity.fileId.data(), static_cast<UINT>(record.identity.fileId.size()));
+			record.utcDirectoryDate = static_cast<LONGLONG>(file.ReadUInt64());
+			record.eValidationMode = static_cast<SharedStartupCachePolicy::ValidationMode>(file.ReadUInt8());
+			if (!ReadStartupCacheString(file, record.volumeRecord.strVolumeKey))
+				AfxThrowFileException(CFileException::genericException);
+			file.Read(record.directoryFileReference.identifier.data(), static_cast<UINT>(record.directoryFileReference.identifier.size()));
+			record.uCachedFileCount = file.ReadUInt32();
+			if (record.uCachedFileCount > kMaxFileCountPerDirectory)
+				AfxThrowFileException(CFileException::genericException);
+
+			if (record.eValidationMode == SharedStartupCachePolicy::ValidationMode::LocalNtfsJournalFastPath) {
+				const auto itVolume = m_startupCacheVolumes.find(MakeStartupCacheVolumeKey(record.volumeRecord.strVolumeKey));
+				if (itVolume == m_startupCacheVolumes.end())
+					AfxThrowFileException(CFileException::genericException);
+				record.volumeRecord = itVolume->second;
+			}
+
+			record.files.reserve(record.uCachedFileCount);
+			for (uint32 j = 0; j < record.uCachedFileCount; ++j) {
+				SharedStartupCachePolicy::FileRecord fileRecord = {};
+				if (!ReadStartupCacheString(file, fileRecord.strLeafName))
+					AfxThrowFileException(CFileException::genericException);
+				fileRecord.utcFileDate = static_cast<LONGLONG>(file.ReadUInt64());
+				fileRecord.ullFileSize = file.ReadUInt64();
+				record.files.push_back(fileRecord);
+			}
+
+			if (!SharedStartupCachePolicy::IsStructurallyValid(record)
+				|| m_startupCacheRecords.find(MakeStartupCacheKey(record.strDirectoryPath)) != m_startupCacheRecords.end())
+			{
+				AfxThrowFileException(CFileException::genericException);
+			}
+
+			m_startupCacheRecords.emplace(MakeStartupCacheKey(record.strDirectoryPath), record);
+		}
+		file.Close();
+		return true;
+	} catch (CFileException *ex) {
+		ex->Delete();
+		m_startupCacheRecords.clear();
+		m_startupCacheVolumes.clear();
+		m_startupCacheVolumeValidation.clear();
+		if (SharedStartupCachePolicy::ShouldRejectWholeCacheOnMalformedBlock())
+			DebugLogWarning(_T("Ignoring malformed %s"), SharedStartupCachePolicy::GetFileName());
+	}
+	return false;
+}
+
+void CSharedFileList::CollectTrackedStartupCacheDirectoryRefs(const SharedStartupCachePolicy::VolumeRecord &rVolumeRecord, std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> &rTrackedDirectoryRefs) const
+{
+	rTrackedDirectoryRefs.clear();
+	for (const auto &entry : m_startupCacheRecords) {
+		const SharedStartupCachePolicy::DirectoryRecord &rRecord = entry.second;
+		if (!SharedStartupCachePolicy::UsesTrustedNtfsFastPath(rRecord))
+			continue;
+		if (MakeStartupCacheVolumeKey(rRecord.volumeRecord.strVolumeKey) != MakeStartupCacheVolumeKey(rVolumeRecord.strVolumeKey))
+			continue;
+		rTrackedDirectoryRefs.insert(rRecord.directoryFileReference);
+	}
+}
+
+bool CSharedFileList::EnsureStartupCacheVolumeValidation(const CString &strDirectory, const SharedStartupCachePolicy::DirectoryRecord &rRecord)
+{
+	const std::wstring strVolumeKey(MakeStartupCacheVolumeKey(rRecord.volumeRecord.strVolumeKey));
+	StartupCacheVolumeValidationState &rValidationState = m_startupCacheVolumeValidation[strVolumeKey];
+	if (rValidationState.bInitialized)
+		return !rValidationState.bRescanAllDirectories;
+
+	rValidationState.bInitialized = true;
+	LongPathSeams::NtfsJournalVolumeState currentVolumeState = {};
+	DWORD dwError = ERROR_SUCCESS;
+	if (!LongPathSeams::TryGetLocalNtfsJournalVolumeState(PathHelpers::TrimTrailingSeparator(strDirectory), currentVolumeState, &dwError)
+		|| !SharedStartupCachePolicy::MatchesTrustedNtfsVolumeGuard(rRecord.volumeRecord, true, CString(currentVolumeState.strVolumeKey.c_str()), currentVolumeState.ullVolumeSerialNumber, currentVolumeState.ullUsnJournalId, currentVolumeState.llLowestValidUsn, currentVolumeState.llNextUsn))
+	{
+		rValidationState.bRescanAllDirectories = true;
+		return false;
+	}
+
+	std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> trackedDirectoryRefs;
+	CollectTrackedStartupCacheDirectoryRefs(rRecord.volumeRecord, trackedDirectoryRefs);
+	if (!LongPathSeams::TryCollectChangedDirectoryFileReferences(
+			PathHelpers::TrimTrailingSeparator(strDirectory),
+			rRecord.volumeRecord.ullUsnJournalId,
+			rRecord.volumeRecord.llJournalCheckpointUsn,
+			trackedDirectoryRefs,
+			rValidationState.changedDirectoryFileReferences,
+			&dwError))
+	{
+		rValidationState.bRescanAllDirectories = true;
+		rValidationState.changedDirectoryFileReferences.clear();
+		return false;
+	}
+
+	return true;
+}
+
+void CSharedFileList::SaveStartupCache()
+{
+	CStringList sharedDirectories;
+	CollectSharedDirectories(sharedDirectories);
+
+	std::vector<SharedStartupCachePolicy::DirectoryRecord> records;
+	SharedStartupCacheVolumeRecordMap volumeRecords;
+	records.reserve(static_cast<size_t>(sharedDirectories.GetCount()));
+	for (POSITION pos = sharedDirectories.GetHeadPosition(); pos != NULL;) {
+		SharedStartupCachePolicy::DirectoryRecord record = {};
+		if (BuildStartupCacheRecord(sharedDirectories.GetNext(pos), record, volumeRecords))
+			records.push_back(record);
+	}
+	for (SharedStartupCachePolicy::DirectoryRecord &record : records) {
+		if (!SharedStartupCachePolicy::UsesTrustedNtfsFastPath(record))
+			continue;
+		const auto itVolume = volumeRecords.find(MakeStartupCacheVolumeKey(record.volumeRecord.strVolumeKey));
+		if (itVolume != volumeRecords.end())
+			record.volumeRecord = itVolume->second;
+	}
+
+	const CString strFullPath(GetStartupCachePath());
+	const CString strTempPath(strFullPath + _T(".tmp"));
+	CSafeBufferedFile file;
+	if (!LongPathSeams::OpenFile(file, strTempPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary))
+		return;
+
+	try {
+		file.WriteUInt32(SharedStartupCachePolicy::kMagic);
+		file.WriteUInt16(SharedStartupCachePolicy::kVersion);
+		file.WriteUInt32(static_cast<uint32>(volumeRecords.size()));
+		for (const auto &entry : volumeRecords) {
+			const SharedStartupCachePolicy::VolumeRecord &volumeRecord = entry.second;
+			WriteStartupCacheString(file, volumeRecord.strVolumeKey);
+			file.WriteUInt64(volumeRecord.ullVolumeSerialNumber);
+			file.WriteUInt64(volumeRecord.ullUsnJournalId);
+			file.WriteUInt64(static_cast<uint64>(volumeRecord.llJournalCheckpointUsn));
+		}
+		file.WriteUInt32(static_cast<uint32>(records.size()));
+		for (const SharedStartupCachePolicy::DirectoryRecord &record : records) {
+			WriteStartupCacheString(file, record.strDirectoryPath);
+			file.WriteUInt8(record.bHasIdentity ? 1u : 0u);
+			file.WriteUInt8(record.identity.bHasExtendedFileId ? 1u : 0u);
+			file.WriteUInt64(record.identity.ullVolumeSerialNumber);
+			file.Write(record.identity.fileId.data(), static_cast<UINT>(record.identity.fileId.size()));
+			file.WriteUInt64(static_cast<uint64>(record.utcDirectoryDate));
+			file.WriteUInt8(static_cast<uint8>(record.eValidationMode));
+			WriteStartupCacheString(file, record.volumeRecord.strVolumeKey);
+			file.Write(record.directoryFileReference.identifier.data(), static_cast<UINT>(record.directoryFileReference.identifier.size()));
+			file.WriteUInt32(record.uCachedFileCount);
+			for (const SharedStartupCachePolicy::FileRecord &fileRecord : record.files) {
+				WriteStartupCacheString(file, fileRecord.strLeafName);
+				file.WriteUInt64(static_cast<uint64>(fileRecord.utcFileDate));
+				file.WriteUInt64(fileRecord.ullFileSize);
+			}
+		}
+		CommitAndClose(file);
+		if (!LongPathSeams::MoveFileEx(strTempPath, strFullPath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+			(void)LongPathSeams::DeleteFileIfExists(strTempPath);
+			return;
+		}
+
+		m_startupCacheRecords.clear();
+		m_startupCacheVolumes = volumeRecords;
+		m_startupCacheVolumeValidation.clear();
+		for (const SharedStartupCachePolicy::DirectoryRecord &record : records)
+			m_startupCacheRecords.emplace(MakeStartupCacheKey(record.strDirectoryPath), record);
+		m_bStartupCacheDirty = false;
+		m_nLastStartupCacheSave = ::GetTickCount64();
+	} catch (CFileException *ex) {
+		ex->Delete();
+		(void)LongPathSeams::DeleteFileIfExists(strTempPath);
+	}
+}
+
 void CSharedFileList::Save() const
 {
+	const_cast<CSharedFileList*>(this)->SaveStartupCache();
+
 	const CString &strFullPath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SHAREDFILES_FILE);
 	CSafeBufferedFile file;
 	if (LongPathSeams::OpenFile(file, strFullPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
@@ -1707,6 +2220,7 @@ bool CSharedFileList::AddSingleSharedDirectory(const CString &rstrFilePath, bool
 	// add the new directory as shared, GUI update to be done by the caller
 	if (!thePrefs.AddSharedDirectoryIfAbsent(strCanonicalDirectory))
 		return false;
+	MarkStartupCacheDirty();
 	if (!bNoUpdate) {
 		AddFilesFromDirectory(strCanonicalDirectory);
 		HashNextFile();

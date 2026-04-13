@@ -367,6 +367,7 @@ void CKnownFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystem
 {
 	// The shared files object may not exist early in startup sequence.
 	bool bSharedFiles = theApp.sharedfiles && theApp.sharedfiles->GetFileByID(GetFileHash()) == this;
+	const bool bKnownFile = theApp.knownfiles && theApp.knownfiles->IsKnownFile(this);
 
 	if (bSharedFiles)
 		theApp.sharedfiles->RemoveKeywords(this);
@@ -382,6 +383,8 @@ void CKnownFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystem
 	} else
 		Kademlia::CSearchManager::GetWords((CStringW)GetFileName(), wordlist); //make sure that it is a CStringW
 
+	if (bKnownFile)
+		theApp.knownfiles->InvalidateLookupIndex();
 	if (bSharedFiles)
 		theApp.sharedfiles->AddKeywords(this);
 }
@@ -577,6 +580,7 @@ bool CKnownFile::CreateAICHHashSetOnly()
 
 void CKnownFile::SetFileSize(EMFileSize nFileSize)
 {
+	const bool bKnownFile = theApp.knownfiles && theApp.knownfiles->IsKnownFile(this);
 	CAbstractFile::SetFileSize(nFileSize);
 
 	// Examples of part hashes, hash sets and file hashes for different file sizes
@@ -649,6 +653,8 @@ void CKnownFile::SetFileSize(EMFileSize nFileSize)
 
 	// nr. of parts to be used with OP_FILESTATUS
 	m_iED2KPartCount = (uint16)((uint64)nFileSize / PARTSIZE + 1);
+	if (bKnownFile)
+		theApp.knownfiles->InvalidateLookupIndex();
 }
 
 bool CKnownFile::LoadTagsFromFile(CFileDataIO &file)

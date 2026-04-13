@@ -92,7 +92,7 @@ inline CString StripInvalidFilenameChars(const CString &strText)
 
 inline CString NormalizeDownloadFilename(const CString &strText)
 {
-	CString strNormalized(StripInvalidFilenameChars(strText));
+	CString strNormalized(FilenameNormalizationPolicy::StripInvalidFilenameChars(strText));
 
 	CString strBaseName(strNormalized);
 	CString strExtension;

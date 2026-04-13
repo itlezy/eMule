@@ -14,6 +14,8 @@ public:
 	CServerListCtrl();
 
 	bool	Init();
+	void	BeginBulkLoad()							{ m_bBulkLoading = true; }
+	void	EndBulkLoad();
 	bool	AddServer(const CServer *pServer, bool bAddToList = true, bool bRandom = false);
 	void	RemoveServer(const CServer *pServer);
 	bool	AddServerMetToList(const CString &strFile);
@@ -33,6 +35,7 @@ private:
 	int FindServer(const CServer *pServer);
 
 protected:
+	bool			m_bBulkLoading;
 	CToolTipCtrlX	m_tooltip;
 
 	CString CreateSelectedServersURLs();

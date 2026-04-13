@@ -54,6 +54,7 @@
 #include "Log.h"
 #include "KnownFileList.h"
 #include "PathHelpers.h"
+#include <algorithm>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -95,6 +96,134 @@ namespace
 			DEBUG_ONLY(DebugLog(_T("Canonicalized dropped shared path: \"%s\" -> \"%s\""), (LPCTSTR)strNormalizedInput, (LPCTSTR)rstrCanonicalPath));
 		return true;
 	}
+
+	struct SharedFilesRepositionState
+	{
+		CArray<CShareableFile*, CShareableFile*> aSelectedItems;
+		CShareableFile *pFocusedItem = NULL;
+		CShareableFile *pSelectionMarkItem = NULL;
+		int iTopIndex = 0;
+		int iHScrollPosition = 0;
+	};
+
+	void CaptureSharedFilesRepositionState(CSharedFilesCtrl &listCtrl, SharedFilesRepositionState &state)
+	{
+		for (POSITION pos = listCtrl.GetFirstSelectedItemPosition(); pos != NULL;) {
+			const int iSelectedIndex = listCtrl.GetNextSelectedItem(pos);
+			CShareableFile *pSelectedFile = listCtrl.GetFileByIndex(iSelectedIndex);
+			if (pSelectedFile != NULL)
+				state.aSelectedItems.Add(pSelectedFile);
+		}
+
+		state.pFocusedItem = listCtrl.GetFileByIndex(listCtrl.GetNextItem(-1, LVNI_FOCUSED));
+		state.pSelectionMarkItem = listCtrl.GetFileByIndex(listCtrl.GetSelectionMark());
+		state.iTopIndex = max(0, listCtrl.GetTopIndex());
+
+		SCROLLINFO siHorz = { sizeof(siHorz) };
+		if (listCtrl.GetScrollInfo(SB_HORZ, &siHorz, SIF_POS))
+			state.iHScrollPosition = siHorz.nPos;
+	}
+
+	void RestoreSharedFilesTopIndex(CSharedFilesCtrl &listCtrl, int iTopIndex)
+	{
+		const int iItemCount = listCtrl.GetItemCount();
+		if (iItemCount <= 0)
+			return;
+
+		iTopIndex = max(0, min(iTopIndex, iItemCount - 1));
+		if (iTopIndex == 0) {
+			listCtrl.EnsureVisible(0, FALSE);
+			return;
+		}
+
+		const int iRowsPerPage = listCtrl.GetCountPerPage();
+		if (iRowsPerPage > 0) {
+			int iBottomIndex = iTopIndex + iRowsPerPage - 1;
+			if (iBottomIndex >= iItemCount)
+				iBottomIndex = iItemCount - 1;
+			listCtrl.EnsureVisible(iBottomIndex, FALSE);
+		}
+		else
+			listCtrl.EnsureVisible(iTopIndex, FALSE);
+
+		const int iCurrentTop = listCtrl.GetTopIndex();
+		if (iCurrentTop == iTopIndex || iCurrentTop < 0)
+			return;
+
+		CRect rcTop;
+		CRect rcNext;
+		if (!listCtrl.GetItemRect(iCurrentTop, &rcTop, LVIR_BOUNDS) || iCurrentTop + 1 >= iItemCount || !listCtrl.GetItemRect(iCurrentTop + 1, &rcNext, LVIR_BOUNDS))
+			return;
+
+		const int iRowHeight = rcNext.top - rcTop.top;
+		if (iRowHeight > 0)
+			listCtrl.Scroll(CSize(0, (iTopIndex - iCurrentTop) * iRowHeight));
+	}
+
+	void RestoreSharedFilesHorizontalScroll(CSharedFilesCtrl &listCtrl, int iHScrollPosition)
+	{
+		SCROLLINFO siHorz = { sizeof(siHorz) };
+		if (!listCtrl.GetScrollInfo(SB_HORZ, &siHorz, SIF_POS | SIF_RANGE | SIF_PAGE))
+			return;
+
+		int iMaxHScroll = siHorz.nMax;
+		if (siHorz.nPage > 0)
+			iMaxHScroll = max(siHorz.nMin, siHorz.nMax - static_cast<int>(siHorz.nPage) + 1);
+
+		iHScrollPosition = max(siHorz.nMin, min(iHScrollPosition, iMaxHScroll));
+		if (siHorz.nPos != iHScrollPosition)
+			listCtrl.Scroll(CSize(iHScrollPosition - siHorz.nPos, 0));
+	}
+
+	void RestoreSharedFilesRepositionState(CSharedFilesCtrl &listCtrl, const SharedFilesRepositionState &state)
+	{
+		listCtrl.SetItemState(-1, 0, LVIS_FOCUSED | LVIS_SELECTED);
+
+		int iFirstSelectedIndex = -1;
+		for (INT_PTR i = 0; i < state.aSelectedItems.GetCount(); ++i) {
+			const int iSelectedIndex = listCtrl.FindFile(state.aSelectedItems[i]);
+			if (iSelectedIndex < 0)
+				continue;
+
+			listCtrl.SetItemState(iSelectedIndex, LVIS_SELECTED, LVIS_SELECTED);
+			if (iFirstSelectedIndex == -1 || iSelectedIndex < iFirstSelectedIndex)
+				iFirstSelectedIndex = iSelectedIndex;
+		}
+
+		int iSelectionMarkIndex = listCtrl.FindFile(state.pSelectionMarkItem);
+		if (iSelectionMarkIndex < 0)
+			iSelectionMarkIndex = iFirstSelectedIndex;
+		listCtrl.SetSelectionMark(iSelectionMarkIndex);
+
+		int iFocusedIndex = listCtrl.FindFile(state.pFocusedItem);
+		if (iFocusedIndex < 0)
+			iFocusedIndex = iSelectionMarkIndex;
+		if (iFocusedIndex < 0)
+			iFocusedIndex = iFirstSelectedIndex;
+		if (iFocusedIndex >= 0 && iFocusedIndex < listCtrl.GetItemCount())
+			listCtrl.SetItemState(iFocusedIndex, LVIS_FOCUSED, LVIS_FOCUSED);
+
+		RestoreSharedFilesTopIndex(listCtrl, state.iTopIndex);
+		RestoreSharedFilesHorizontalScroll(listCtrl, state.iHScrollPosition);
+	}
+
+	class CSharedFilesSelectionRestoreGuard
+	{
+	public:
+		explicit CSharedFilesSelectionRestoreGuard(CSharedFilesCtrl &listCtrl)
+			: m_listCtrl(listCtrl)
+		{
+			m_listCtrl.SetSelectionRestoreInProgress(true);
+		}
+
+		~CSharedFilesSelectionRestoreGuard()
+		{
+			m_listCtrl.SetSelectionRestoreInProgress(false);
+		}
+
+	private:
+		CSharedFilesCtrl &m_listCtrl;
+	};
 }
 
 bool NeedArchiveInfoPage(const CSimpleArray<CObject*> *paItems);
@@ -275,9 +404,11 @@ END_MESSAGE_MAP()
 CSharedFilesCtrl::CSharedFilesCtrl()
 	: CListCtrlItemWalk(this)
 	, m_aSortBySecondValue()
+	, m_bModelBound(false)
 	, m_pDirectoryFilter()
 	, nAICHHashing()
 	, m_pHighlightedItem()
+	, m_bSelectionRestoreInProgress(false)
 {
 	SetGeneralPurposeFind(true);
 	m_pToolTip = new CToolTipCtrlX;
@@ -294,6 +425,7 @@ CSharedFilesCtrl::~CSharedFilesCtrl()
 void CSharedFilesCtrl::Init()
 {
 	SetPrefsKey(_T("SharedFilesCtrl"));
+	ASSERT((GetStyle() & LVS_OWNERDATA) != 0);
 	SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP);
 	ASSERT((GetStyle() & LVS_SINGLESEL) == 0);
 
@@ -331,7 +463,6 @@ void CSharedFilesCtrl::Init()
 	else if (GetSortItem() == 11)
 		m_aSortBySecondValue[3] = GetSortSecondValue();
 	SetSortArrow();
-	SortItems(SortProc, MAKELONG(GetSortItem() + (GetSortSecondValue() ? 100 : 0), !GetSortAscending()));
 
 	CToolTipCtrl *tooltip = GetToolTips();
 	if (tooltip) {
@@ -389,53 +520,225 @@ void CSharedFilesCtrl::Localize()
 
 	CreateMenus();
 
-	for (int i = GetItemCount(); --i >= 0;)
-		Update(i);
+	if ((GetStyle() & LVS_OWNERDATA) != 0)
+		RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+	else
+		for (int i = GetItemCount(); --i >= 0;)
+			Update(i);
 
 	ShowFilesCount();
 }
 
-void CSharedFilesCtrl::AddFile(const CShareableFile *file)
+DWORD_PTR CSharedFilesCtrl::GetVirtualItemData(int iItem) const
 {
-	if (theApp.IsClosing())
-		return;
-	// check filter conditions if we should show this file right now
+	const CShareableFile *pFile = GetFileByIndex(iItem);
+	return reinterpret_cast<DWORD_PTR>(pFile);
+}
+
+int CSharedFilesCtrl::GetVirtualItemCount() const
+{
+	return static_cast<int>(m_aVisibleFiles.size());
+}
+
+CShareableFile* CSharedFilesCtrl::GetFileByIndex(int iItem) const
+{
+	if (iItem < 0 || iItem >= static_cast<int>(m_aVisibleFiles.size()))
+		return NULL;
+	return m_aVisibleFiles[static_cast<size_t>(iItem)];
+}
+
+void CSharedFilesCtrl::CollectSelectedFiles(CTypedPtrList<CPtrList, CShareableFile*> &rSelectedFiles) const
+{
+	rSelectedFiles.RemoveAll();
+	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
+		const int iSelectedIndex = GetNextSelectedItem(pos);
+		CShareableFile *pSelectedFile = GetFileByIndex(iSelectedIndex);
+		if (pSelectedFile != NULL)
+			rSelectedFiles.AddTail(pSelectedFile);
+	}
+}
+
+CShareableFile* CSharedFilesCtrl::GetSingleSelectedFile() const
+{
+	if (GetSelectedCount() != 1)
+		return NULL;
+
+	POSITION pos = GetFirstSelectedItemPosition();
+	if (pos == NULL)
+		return NULL;
+
+	return GetFileByIndex(GetNextSelectedItem(pos));
+}
+
+void CSharedFilesCtrl::RebuildVisibleFileIndex()
+{
+	m_mapVisibleFileIndex.RemoveAll();
+	for (int i = 0; i < static_cast<int>(m_aVisibleFiles.size()); ++i)
+		m_mapVisibleFileIndex.SetAt(m_aVisibleFiles[static_cast<size_t>(i)], i);
+}
+
+void CSharedFilesCtrl::ClearVisibleFiles()
+{
+	m_aVisibleFiles.clear();
+	m_mapVisibleFileIndex.RemoveAll();
+}
+
+void CSharedFilesCtrl::ApplyVisibleFileCount()
+{
+	SetItemCountEx(static_cast<int>(m_aVisibleFiles.size()), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (!theApp.IsClosing()) {
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesCtrl::ApplyVisibleFileCount model=%d control=%d"),
+			static_cast<int>(m_aVisibleFiles.size()),
+			CListCtrl::GetItemCount());
+		theApp.AppendStartupProfileLine(strPhase, 0);
+	}
+#endif
+}
+
+bool CSharedFilesCtrl::ShouldPreserveVirtualListState() const
+{
+	return m_pDirectoryFilter == NULL || m_pDirectoryFilter->m_eItemType != SDI_UNSHAREDDIRECTORY;
+}
+
+bool CSharedFilesCtrl::ShouldDisplayFile(const CShareableFile *file) const
+{
+	if (file == NULL)
+		return false;
+
 	if (m_pDirectoryFilter != NULL) {
 		ASSERT(file->IsKindOf(RUNTIME_CLASS(CKnownFile)) || m_pDirectoryFilter->m_eItemType == SDI_UNSHAREDDIRECTORY);
 		switch (m_pDirectoryFilter->m_eItemType) {
-		case SDI_ALL: // No filter
+		case SDI_ALL:
 			break;
 		case SDI_FILESYSTEMPARENT:
-			return;
-		case SDI_UNSHAREDDIRECTORY: // Items from the whole file system tree
+			return false;
+		case SDI_UNSHAREDDIRECTORY:
 			if (file->IsPartFile())
-				return;
+				return false;
 		case SDI_NO:
-			// some shared directory
-		case SDI_CATINCOMING: // Categories with special incoming dirs
+		case SDI_CATINCOMING:
 			if (!EqualPaths(file->GetSharedDirectory(), m_pDirectoryFilter->m_strFullPath))
-				return;
+				return false;
 			break;
-		case SDI_TEMP: // only temp files
+		case SDI_TEMP:
 			if (!file->IsPartFile())
-				return;
-			if (m_pDirectoryFilter->m_nCatFilter != -1 && (UINT)m_pDirectoryFilter->m_nCatFilter != ((CPartFile*)file)->GetCategory())
-				return;
+				return false;
+			if (m_pDirectoryFilter->m_nCatFilter != -1 && (UINT)m_pDirectoryFilter->m_nCatFilter != static_cast<const CPartFile*>(file)->GetCategory())
+				return false;
 			break;
-		case SDI_DIRECTORY: // any user selected shared dir but not incoming or temp
+		case SDI_DIRECTORY:
 			if (file->IsPartFile())
-				return;
+				return false;
 			if (EqualPaths(file->GetSharedDirectory(), thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)))
-				return;
+				return false;
 			break;
-		case SDI_INCOMING: // Main incoming directory
+		case SDI_INCOMING:
 			if (!EqualPaths(file->GetSharedDirectory(), thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR)))
-				return;
-			// Hmm should we show all incoming files dirs or only those from the main incoming dir here?
-			// hard choice, will only show the main for now
+				return false;
 		}
 	}
-	if (IsFilteredOut(file))
+
+	return !IsFilteredOut(file);
+}
+
+void CSharedFilesCtrl::SortVisibleFiles()
+{
+	const LPARAM lParamSort = MAKELONG(GetSortItem() + (GetSortSecondValue() ? 100 : 0), !GetSortAscending());
+	std::stable_sort(m_aVisibleFiles.begin(), m_aVisibleFiles.end(),
+		[lParamSort](const CShareableFile *pLeft, const CShareableFile *pRight) {
+			return SortProc(reinterpret_cast<LPARAM>(pLeft), reinterpret_cast<LPARAM>(pRight), lParamSort) < 0;
+		});
+	RebuildVisibleFileIndex();
+}
+
+bool CSharedFilesCtrl::HasActiveSortOrder() const
+{
+	return GetSortItem() != -1 && m_aVisibleFiles.size() >= 2;
+}
+
+bool CSharedFilesCtrl::NeedsSortReposition(int iIndex) const
+{
+	if (iIndex < 0 || iIndex >= static_cast<int>(m_aVisibleFiles.size()))
+		return false;
+
+	const CShareableFile *pFile = m_aVisibleFiles[static_cast<size_t>(iIndex)];
+	if (pFile == NULL)
+		return false;
+
+	const LPARAM lParamSort = MAKELONG(GetSortItem() + (GetSortSecondValue() ? 100 : 0), !GetSortAscending());
+	if (iIndex > 0 && SortProc(reinterpret_cast<LPARAM>(m_aVisibleFiles[static_cast<size_t>(iIndex - 1)]), reinterpret_cast<LPARAM>(pFile), lParamSort) > 0)
+		return true;
+	if (iIndex + 1 < static_cast<int>(m_aVisibleFiles.size()) && SortProc(reinterpret_cast<LPARAM>(pFile), reinterpret_cast<LPARAM>(m_aVisibleFiles[static_cast<size_t>(iIndex + 1)]), lParamSort) > 0)
+		return true;
+	return false;
+}
+
+bool CSharedFilesCtrl::RepositionFileByCurrentSort(CShareableFile *file, int iIndex)
+{
+	if (file == NULL || iIndex < 0 || iIndex >= static_cast<int>(m_aVisibleFiles.size()) || m_aVisibleFiles[static_cast<size_t>(iIndex)] != file)
+		return false;
+
+	const LPARAM lParamSort = MAKELONG(GetSortItem() + (GetSortSecondValue() ? 100 : 0), !GetSortAscending());
+	const bool bMoveLeft = iIndex > 0 && SortProc(reinterpret_cast<LPARAM>(m_aVisibleFiles[static_cast<size_t>(iIndex - 1)]), reinterpret_cast<LPARAM>(file), lParamSort) > 0;
+	const bool bMoveRight = !bMoveLeft && iIndex + 1 < static_cast<int>(m_aVisibleFiles.size()) && SortProc(reinterpret_cast<LPARAM>(file), reinterpret_cast<LPARAM>(m_aVisibleFiles[static_cast<size_t>(iIndex + 1)]), lParamSort) > 0;
+	if (!bMoveLeft && !bMoveRight)
+		return false;
+
+	SharedFilesRepositionState savedState;
+	CaptureSharedFilesRepositionState(*this, savedState);
+
+	auto sortFunc = [lParamSort](const CShareableFile *pLeft, const CShareableFile *pRight) {
+		return SortProc(reinterpret_cast<LPARAM>(pLeft), reinterpret_cast<LPARAM>(pRight), lParamSort) < 0;
+	};
+
+	SetRedraw(false);
+
+	int iNewIndex = iIndex;
+	if (bMoveLeft) {
+		std::vector<CShareableFile*>::iterator itNew = std::lower_bound(m_aVisibleFiles.begin(), m_aVisibleFiles.begin() + iIndex, file, sortFunc);
+		iNewIndex = static_cast<int>(std::distance(m_aVisibleFiles.begin(), itNew));
+		std::rotate(itNew, m_aVisibleFiles.begin() + iIndex, m_aVisibleFiles.begin() + iIndex + 1);
+	}
+	else {
+		std::vector<CShareableFile*>::iterator itNew = std::upper_bound(m_aVisibleFiles.begin() + iIndex + 1, m_aVisibleFiles.end(), file, sortFunc);
+		iNewIndex = static_cast<int>(std::distance(m_aVisibleFiles.begin(), itNew)) - 1;
+		std::rotate(m_aVisibleFiles.begin() + iIndex, m_aVisibleFiles.begin() + iIndex + 1, itNew);
+	}
+
+	const int iStartIndex = min(iIndex, iNewIndex);
+	const int iEndIndex = max(iIndex, iNewIndex);
+	RebuildVisibleFileIndex();
+	{
+		CSharedFilesSelectionRestoreGuard guard(*this);
+		RestoreSharedFilesRepositionState(*this, savedState);
+	}
+	SetRedraw(true);
+	RedrawItems(iStartIndex, iEndIndex);
+	return true;
+}
+
+void CSharedFilesCtrl::AppendVisibleFile(CShareableFile *file)
+{
+	if (file == NULL || !ShouldDisplayFile(file))
+		return;
+
+	int iExistingIndex = -1;
+	if (m_mapVisibleFileIndex.Lookup(file, iExistingIndex) && iExistingIndex >= 0)
+		return;
+
+	m_aVisibleFiles.push_back(file);
+	m_mapVisibleFileIndex.SetAt(file, static_cast<int>(m_aVisibleFiles.size() - 1));
+}
+
+void CSharedFilesCtrl::AddFile(const CShareableFile *file)
+{
+	if (!m_bModelBound)
+		return;
+	if (theApp.IsClosing())
+		return;
+	if (!ShouldDisplayFile(file))
 		return;
 	if (FindFile(file) >= 0) {
 		// in the file system view the shared status might have changed so we need to update the item to redraw the checkbox
@@ -452,21 +755,40 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 			if (PathHelpers::ArePathsEquivalent(pFile->GetFilePath(), file->GetFilePath())) {
 				int iOldFile = FindFile(pFile);
 				if (iOldFile >= 0) {
-					SetItemData(iOldFile, (LPARAM)file);
-					Update(iOldFile);
+					m_aVisibleFiles[static_cast<size_t>(iOldFile)] = const_cast<CShareableFile*>(file);
+					RebuildVisibleFileIndex();
+					RedrawItems(iOldFile, iOldFile);
 					ShowFilesCount();
 					return;
 				}
 			}
 		}
 
-	int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, GetItemCount(), LPSTR_TEXTCALLBACK, 0, 0, 0, (LPARAM)file);
-	if (iItem >= 0)
-		Update(iItem);
+	SharedFilesRepositionState savedState;
+	const bool bPreserveState = ShouldPreserveVirtualListState();
+	if (bPreserveState)
+		CaptureSharedFilesRepositionState(*this, savedState);
+
+	m_aVisibleFiles.push_back(const_cast<CShareableFile*>(file));
+	SortVisibleFiles();
+	ApplyVisibleFileCount();
+	if (bPreserveState) {
+		CSharedFilesSelectionRestoreGuard guard(*this);
+		RestoreSharedFilesRepositionState(*this, savedState);
+	}
+	const int iItem = FindFile(file);
+	if (iItem >= 0) {
+		RedrawItems(iItem, iItem);
+		if (!bPreserveState)
+			EnsureVisible(iItem, FALSE);
+	}
+	ShowFilesCount();
 }
 
 void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromDisk)
 {
+	if (!m_bModelBound)
+		return;
 	int iItem = FindFile(file);
 	if (iItem >= 0) {
 		if (!bDeletedFromDisk && m_pDirectoryFilter != NULL && m_pDirectoryFilter->m_eItemType == SDI_UNSHAREDDIRECTORY)
@@ -474,19 +796,51 @@ void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromD
 			// still be visible as its still in the file system and the knownfile object doesn't get deleted neither
 			// so to avoid having to reload the whole list we just update it instead of removing and re-finding
 			UpdateFile(file);
-		else
-			DeleteItem(iItem);
+		else {
+			SharedFilesRepositionState savedState;
+			const bool bPreserveState = ShouldPreserveVirtualListState();
+			if (bPreserveState)
+				CaptureSharedFilesRepositionState(*this, savedState);
+			m_aVisibleFiles.erase(m_aVisibleFiles.begin() + iItem);
+			RebuildVisibleFileIndex();
+			ApplyVisibleFileCount();
+			if (bPreserveState) {
+				CSharedFilesSelectionRestoreGuard guard(*this);
+				RestoreSharedFilesRepositionState(*this, savedState);
+			}
+			if (GetFirstSelectedItemPosition() == NULL)
+				AutoSelectItem();
+			theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails(false);
+			Invalidate(FALSE);
+		}
 		ShowFilesCount();
 	}
 }
 
 void CSharedFilesCtrl::UpdateFile(const CShareableFile *file, bool bUpdateFileSummary)
 {
+	if (!m_bModelBound)
+		return;
 	if (file && !theApp.IsClosing()) {
 		int iItem = FindFile(file);
+		if (!ShouldDisplayFile(file)) {
+			if (iItem >= 0)
+				RemoveFile(file, false);
+			return;
+		}
+		if (iItem < 0) {
+			AddFile(file);
+			return;
+		}
 		if (iItem >= 0) {
-			Update(iItem);
-			if (bUpdateFileSummary && GetItemState(iItem, LVIS_SELECTED))
+			bool bItemMoved = false;
+			if (ShouldPreserveVirtualListState() && HasActiveSortOrder() && NeedsSortReposition(iItem))
+				bItemMoved = RepositionFileByCurrentSort(const_cast<CShareableFile*>(file), iItem);
+			if (!bItemMoved)
+				RedrawItems(iItem, iItem);
+			else
+				iItem = FindFile(file);
+			if (bUpdateFileSummary && iItem >= 0 && GetItemState(iItem, LVIS_SELECTED))
 				theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails(true); //force update
 		}
 	}
@@ -494,31 +848,101 @@ void CSharedFilesCtrl::UpdateFile(const CShareableFile *file, bool bUpdateFileSu
 
 int CSharedFilesCtrl::FindFile(const CShareableFile *pFile)
 {
-	LVFINDINFO find;
-	find.flags = LVFI_PARAM;
-	find.lParam = (LPARAM)pFile;
-	return FindItem(&find);
+	int iItem = -1;
+	return (pFile != NULL && m_mapVisibleFileIndex.Lookup(pFile, iItem)) ? iItem : -1;
+}
+
+void CSharedFilesCtrl::EnsureModelBound()
+{
+	if (m_bModelBound)
+		return;
+
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullPhaseStart = ::GetTickCount64();
+#endif
+	m_bModelBound = true;
+	ReloadFileList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	{
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesCtrl model bind (%u shared, %d visible)"),
+			static_cast<unsigned>(theApp.sharedfiles->GetCount()),
+			static_cast<int>(m_aVisibleFiles.size()));
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+	}
+#endif
 }
 
 void CSharedFilesCtrl::ReloadFileList()
 {
-	DeleteAllItems();
+	if (!m_bModelBound)
+		return;
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullReloadStart = ::GetTickCount64();
+	ULONGLONG ullPhaseStart = ullReloadStart;
+#endif
+	SetRedraw(false);
+	SharedFilesRepositionState savedState;
+	const bool bPreserveState = ShouldPreserveVirtualListState() && !m_aVisibleFiles.empty();
+	if (bPreserveState)
+		CaptureSharedFilesRepositionState(*this, savedState);
+	ClearVisibleFiles();
+	ApplyVisibleFileCount();
 	theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails();
 
 	for (const CKnownFilesMap::CPair *pair = theApp.sharedfiles->m_Files_map.PGetFirstAssoc(); pair != NULL; pair = theApp.sharedfiles->m_Files_map.PGetNextAssoc(pair))
-		AddFile(pair->value);
+		AppendVisibleFile(pair->value);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	{
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesCtrl::ReloadFileList shared map append (%u shared -> %d visible pre-extra)"),
+			static_cast<unsigned>(theApp.sharedfiles->GetCount()),
+			static_cast<int>(m_aVisibleFiles.size()));
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		ullPhaseStart = ::GetTickCount64();
+	}
+#endif
 
 	if (m_pDirectoryFilter != NULL && m_pDirectoryFilter->m_eItemType == SDI_UNSHAREDDIRECTORY && !m_pDirectoryFilter->m_strFullPath.IsEmpty())
 		AddShareableFiles(m_pDirectoryFilter->m_strFullPath);
 	else
 		while (!liTempShareableFilesInDir.IsEmpty())	// clear temp file list
 			delete liTempShareableFilesInDir.RemoveHead();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	{
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesCtrl::ReloadFileList extra view append (filter=%d rows=%d)"),
+			m_pDirectoryFilter != NULL ? static_cast<int>(m_pDirectoryFilter->m_eItemType) : -1,
+			static_cast<int>(m_aVisibleFiles.size()));
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		ullPhaseStart = ::GetTickCount64();
+	}
+#endif
 
+	SortVisibleFiles();
+	ApplyVisibleFileCount();
+	if (bPreserveState) {
+		CSharedFilesSelectionRestoreGuard guard(*this);
+		RestoreSharedFilesRepositionState(*this, savedState);
+	}
+	SetRedraw(true);
+	Invalidate(FALSE);
+	theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails(false);
 	ShowFilesCount();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	{
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesCtrl::ReloadFileList sort/apply complete (%d rows)"), static_cast<int>(m_aVisibleFiles.size()));
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		theApp.AppendStartupProfileLine(_T("CSharedFilesCtrl::ReloadFileList total"), ::GetTickCount64() - ullReloadStart);
+	}
+#endif
 }
 
 void CSharedFilesCtrl::ShowFilesCount()
 {
+	if (!m_bModelBound)
+		return;
 	CString str;
 	if (theApp.sharedfiles->GetHashingCount() + nAICHHashing > 0)
 		str.Format(_T(" (%i, %s %i)"), (int)theApp.sharedfiles->GetCount(), (LPCTSTR)GetResString(IDS_HASHING), (int)(theApp.sharedfiles->GetHashingCount() + nAICHHashing));
@@ -535,7 +959,8 @@ void CSharedFilesCtrl::ApplyAICHHashingCount(INT_PTR nVal)
 
 void CSharedFilesCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
-	if (!lpDrawItemStruct->itemData || theApp.IsClosing())
+	CShareableFile *file = GetFileByIndex(static_cast<int>(lpDrawItemStruct->itemID));
+	if (file == NULL || theApp.IsClosing())
 		return;
 
 	CRect rcItem(lpDrawItemStruct->rcItem);
@@ -544,7 +969,6 @@ void CSharedFilesCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	InitItemMemDC(dc, lpDrawItemStruct, bCtrlFocused);
 	RECT rcClient;
 	GetClientRect(&rcClient);
-	CShareableFile *file = reinterpret_cast<CShareableFile*>(lpDrawItemStruct->itemData);
 	CKnownFile *pKnownFile = file->IsKindOf(RUNTIME_CLASS(CKnownFile)) ? static_cast<CKnownFile*>(file) : NULL;
 
 	const CHeaderCtrl *pHeaderCtrl = GetHeaderCtrl();
@@ -739,7 +1163,9 @@ void CSharedFilesCtrl::OnContextMenu(CWnd*, CPoint point)
 	UINT uPrioMenuItem = 0;
 	const CShareableFile *pSingleSelFile = NULL;
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-		const CShareableFile *pFile = reinterpret_cast<CShareableFile*>(GetItemData(GetNextSelectedItem(pos)));
+		const CShareableFile *pFile = GetFileByIndex(GetNextSelectedItem(pos));
+		if (pFile == NULL)
+			continue;
 		pSingleSelFile = bFirstItem ? pFile : NULL;
 
 		int iCurCompleteFile = static_cast<uint16>(!pFile->IsPartFile());
@@ -855,11 +1281,7 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 	wParam = LOWORD(wParam);
 
 	CTypedPtrList<CPtrList, CShareableFile*> selectedList;
-	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-		int index = GetNextSelectedItem(pos);
-		if (index >= 0)
-			selectedList.AddTail(reinterpret_cast<CShareableFile*>(GetItemData(index)));
-	}
+	CollectSelectedFiles(selectedList);
 
 	if (wParam == MP_CREATECOLLECTION || wParam == MP_FIND || !selectedList.IsEmpty()) {
 		CShareableFile *file = (selectedList.GetCount() == 1) ? selectedList.GetHead() : NULL;
@@ -1178,7 +1600,16 @@ void CSharedFilesCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		SetSortArrow(pNMLV->iSubItem, sortAscending ? arrowDoubleUp : arrowDoubleDown);
 
 	UpdateSortHistory(MAKELONG(pNMLV->iSubItem + adder, !sortAscending));
-	SortItems(SortProc, MAKELONG(pNMLV->iSubItem + adder, !sortAscending));
+	SharedFilesRepositionState savedState;
+	const bool bPreserveState = ShouldPreserveVirtualListState() && !m_aVisibleFiles.empty();
+	if (bPreserveState)
+		CaptureSharedFilesRepositionState(*this, savedState);
+	SortVisibleFiles();
+	if (bPreserveState) {
+		CSharedFilesSelectionRestoreGuard guard(*this);
+		RestoreSharedFilesRepositionState(*this, savedState);
+	}
+	Invalidate(FALSE);
 	*pResult = 0;
 }
 
@@ -1325,7 +1756,7 @@ void CSharedFilesCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 {
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	if (iSel >= 0) {
-		CShareableFile *file = reinterpret_cast<CShareableFile*>(GetItemData(iSel));
+		CShareableFile *file = GetFileByIndex(iSel);
 		if (file) {
 			if (GetKeyState(VK_MENU) & 0x8000) {
 				CTypedPtrList<CPtrList, CShareableFile*> aFiles;
@@ -1425,7 +1856,16 @@ void CSharedFilesCtrl::OnLvnGetDispInfo(LPNMHDR pNMHDR, LRESULT *pResult)
 		//
 		const LVITEMW &rItem = reinterpret_cast<NMLVDISPINFO*>(pNMHDR)->item;
 		if (rItem.mask & LVIF_TEXT) {
-			const CShareableFile *pFile = reinterpret_cast<CShareableFile*>(rItem.lParam);
+			const CShareableFile *pFile = GetFileByIndex(rItem.iItem);
+#if EMULE_COMPILED_STARTUP_PROFILING
+			if (rItem.iItem == 0 && rItem.iSubItem == 0) {
+				CString strPhase;
+				strPhase.Format(_T("CSharedFilesCtrl::OnLvnGetDispInfo first row requested (rows=%d file=%d)"),
+					static_cast<int>(m_aVisibleFiles.size()),
+					pFile != NULL ? 1 : 0);
+				theApp.AppendStartupProfileLine(strPhase, 0);
+			}
+#endif
 			if (pFile != NULL)
 				_tcsncpy_s(rItem.pszText, rItem.cchTextMax, GetItemDisplayText(pFile, rItem.iSubItem), _TRUNCATE);
 		}
@@ -1447,11 +1887,7 @@ void CSharedFilesCtrl::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 		// selection and item position might change during processing (shouldn't though, but lets make sure), so first get all pointers instead using the selection pos directly
 		SetRedraw(false);
 		CTypedPtrList<CPtrList, CShareableFile*> selectedList;
-		for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-			int index = GetNextSelectedItem(pos);
-			if (index >= 0)
-				selectedList.AddTail(reinterpret_cast<CShareableFile*>(GetItemData(index)));
-		}
+		CollectSelectedFiles(selectedList);
 		while (!selectedList.IsEmpty())
 			CheckBoxClicked(FindFile(selectedList.RemoveHead()));
 
@@ -1473,7 +1909,7 @@ void CSharedFilesCtrl::SetDirectoryFilter(CDirectoryItem *pNewFilter, bool bRefr
 {
 	if (m_pDirectoryFilter != pNewFilter) {
 		m_pDirectoryFilter = pNewFilter;
-		if (bRefresh)
+		if (bRefresh && m_bModelBound)
 			ReloadFileList();
 	}
 }
@@ -1491,7 +1927,7 @@ void CSharedFilesCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 			return;
 		}
 
-		const CShareableFile *pFile = reinterpret_cast<CShareableFile*>(GetItemData(pGetInfoTip->iItem));
+		const CShareableFile *pFile = GetFileByIndex(pGetInfoTip->iItem);
 		if (pFile && pGetInfoTip->pszText && pGetInfoTip->cchTextMax > 0) {
 			CString strInfo(pFile->GetInfoSummary());
 			strInfo += TOOLTIP_AUTOFORMAT_SUFFIX_CH;
@@ -1548,7 +1984,6 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 
 	ASSERT(strFromDir.Right(1) == _T("\\"));
 	DWORD dwEnumerateError = ERROR_SUCCESS;
-	SetRedraw(false);
 	if (!PathHelpers::ForEachDirectoryEntry(strFromDir, [&](const WIN32_FIND_DATA &findData) -> bool {
 		if ((findData.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY)) != 0)
 			return true;
@@ -1577,7 +2012,7 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 			if (toadd != NULL) {
 				toadd->SetFilePath(strFoundFilePath);
 				toadd->SetPath(strFoundDirectory);
-				AddFile(toadd);
+				AppendVisibleFile(toadd);
 			} else {
 				CShareableFile *pNewTempFile = new CShareableFile();
 				pNewTempFile->SetFilePath(strFoundFilePath);
@@ -1587,18 +2022,16 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 				uchar aucMD4[MDX_DIGEST_SIZE] = {};
 				pNewTempFile->SetFileHash(aucMD4);
 				liTempShareableFilesInDir.AddTail(pNewTempFile);
-				AddFile(pNewTempFile);
+				AppendVisibleFile(pNewTempFile);
 			}
 		}
 		return true;
 	}, &dwEnumerateError)) {
 		const DWORD dwError = dwEnumerateError;
-		SetRedraw(true);
 		if (dwError != ERROR_FILE_NOT_FOUND)
 			DebugLogError(_T("Failed to find files for SharedFilesListCtrl in %s, %s"), (LPCTSTR)strFromDir, (LPCTSTR)GetErrorMessage(dwError));
 		return;
 	}
-	SetRedraw(true);
 }
 
 BOOL CSharedFilesCtrl::OnNMClick(LPNMHDR pNMHDR, LRESULT *pResult)
@@ -1636,7 +2069,9 @@ void CSharedFilesCtrl::CheckBoxClicked(int iItem)
 		return;
 	}
 	// check which state the checkbox (should) currently have
-	const CShareableFile *pFile = reinterpret_cast<CShareableFile*>(GetItemData(iItem));
+	const CShareableFile *pFile = GetFileByIndex(iItem);
+	if (pFile == NULL)
+		return;
 	if (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), false)) {
 		// this is currently shared so unshare it
 		if (theApp.sharedfiles->ShouldBeShared(pFile->GetPath(), pFile->GetFilePath(), true))
@@ -1678,10 +2113,15 @@ void CSharedFilesCtrl::OnMouseMove(UINT nFlags, CPoint point)
 				rcItem.bottom = rcItem.top + 16;
 				if (rcItem.PtInRect(point)) {
 					// is this checkbox already hot?
-					if (m_pHighlightedItem != reinterpret_cast<CShareableFile*>(GetItemData(iItem))) {
+					CShareableFile *pHoveredItem = GetFileByIndex(iItem);
+					if (pHoveredItem == NULL) {
+						CMuleListCtrl::OnMouseMove(nFlags, point);
+						return;
+					}
+					if (m_pHighlightedItem != pHoveredItem) {
 						// update old highlighted item
 						CShareableFile *pOldItem = m_pHighlightedItem;
-						m_pHighlightedItem = reinterpret_cast<CShareableFile*>(GetItemData(iItem));
+						m_pHighlightedItem = pHoveredItem;
 						UpdateFile(pOldItem, false);
 						// highlight current item
 						InvalidateRect(rcItem);

@@ -52,8 +52,10 @@
 #include "Server.h"
 #include "ED2KLink.h"
 #include "Preferences.h"
+#include "StartupConfigOverride.h"
 #include "SafeFile.h"
 #include "ShellUiHelpers.h"
+#include "LongPathSeams.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
 #include "StringConversion.h"
@@ -84,6 +86,31 @@ CString GetSkinProfileResourcePath(const CString &rstrSkinProfile, LPCTSTR pszSe
 
 	return ShellUiHelpers::ResolveSkinResourcePath(rstrSkinProfile, strSkinResource);
 }
+
+/**
+ * @brief Command-line parser which skips the `-c <base-dir>` pair before handing the rest to MFC.
+ */
+class CEmuleCommandLineInfo : public CCommandLineInfo
+{
+public:
+	void ParseParam(const TCHAR *pszParam, BOOL bFlag, BOOL bLast) override
+	{
+		if (m_bSkipNextParam) {
+			m_bSkipNextParam = false;
+			return;
+		}
+
+		if (bFlag && pszParam != NULL && _tcsicmp(pszParam, _T("c")) == 0) {
+			m_bSkipNextParam = !bLast;
+			return;
+		}
+
+		CCommandLineInfo::ParseParam(pszParam, bFlag, bLast);
+	}
+
+private:
+	bool m_bSkipNextParam = false;
+};
 }
 
 
@@ -297,6 +324,8 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bGuardClipboardPrompt()
 	, m_bAutoStart()
 	, m_bStandbyOff()
+	, m_bStartupProfilingEnabled(EMULE_COMPILED_STARTUP_PROFILING != 0 && ::GetEnvironmentVariable(_T("EMULE_STARTUP_PROFILE"), NULL, 0) > 0)
+	, m_ullStartupProfileBeginTick()
 {
 	// Initialize Windows security features.
 	InitDEP();
@@ -346,6 +375,51 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 // MOD Note: end
 
 	EnableHtmlHelp();
+}
+
+void CemuleApp::ResetStartupProfile()
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	return;
+#else
+	if (!m_bStartupProfilingEnabled)
+		return;
+
+	m_ullStartupProfileBeginTick = ::GetTickCount64();
+	m_strStartupProfilePath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("startup-profile.txt");
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strStartupProfilePath, _T("wt"));
+	if (fp != NULL) {
+		_ftprintf(fp, _T("Startup profile for %s\r\n"), (LPCTSTR)m_strCurVersionLong);
+		_ftprintf(fp, _T("StartTickMs=%I64u\r\n"), m_ullStartupProfileBeginTick);
+		fclose(fp);
+	}
+#endif
+}
+
+void CemuleApp::AppendStartupProfileLine(LPCTSTR pszPhase, const ULONGLONG ullDurationMs, ULONGLONG ullAbsoluteMs)
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	UNREFERENCED_PARAMETER(pszPhase);
+	UNREFERENCED_PARAMETER(ullDurationMs);
+	UNREFERENCED_PARAMETER(ullAbsoluteMs);
+	return;
+#else
+	if (!m_bStartupProfilingEnabled || pszPhase == NULL || pszPhase[0] == _T('\0'))
+		return;
+
+	if (m_strStartupProfilePath.IsEmpty())
+		m_strStartupProfilePath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("startup-profile.txt");
+	if (ullAbsoluteMs == static_cast<ULONGLONG>(-1)) {
+		const ULONGLONG ullNow = ::GetTickCount64();
+		ullAbsoluteMs = (ullNow >= m_ullStartupProfileBeginTick) ? (ullNow - m_ullStartupProfileBeginTick) : 0;
+	}
+
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strStartupProfilePath, _T("at"));
+	if (fp != NULL) {
+		_ftprintf(fp, _T("%I64u ms | %I64u ms | %s\r\n"), ullAbsoluteMs, ullDurationMs, pszPhase);
+		fclose(fp);
+	}
+#endif
 }
 
 
@@ -408,6 +482,8 @@ BOOL CemuleApp::InitInstance()
 	// output all ASSERT messages to debug device
 	_CrtSetReportMode(_CRT_ASSERT, _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_REPORT_MODE) | _CRTDBG_MODE_DEBUG);
 #endif
+	if (!InitializeStartupConfigBaseDirOverride())
+		return FALSE;
 	free((void*)m_pszProfileName);
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	m_pszProfileName = _tcsdup(sConfDir + _T("preferences.ini"));
@@ -501,12 +577,22 @@ BOOL CemuleApp::InitInstance()
 		theVerboseLog.Log(_T("\r\n"));
 	}
 	Log(_T("Starting eMule v%s"), (LPCTSTR)m_strCurVersionLong);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	ResetStartupProfile();
+	AppendStartupProfileLine(_T("InitInstance: logging and profile setup"), 0);
+#endif
 	if (!IsWin32LongPathsEnabled())
 		QueueLogLineEx(LOG_WARNING, _T("Windows long-path support is disabled. Enable LongPathsEnabled to avoid failures with overlong paths."));
 
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 
+#if EMULE_COMPILED_STARTUP_PROFILING
+	ULONGLONG ullPhaseStart = ::GetTickCount64();
+#endif
 	emuledlg = new CemuleDlg;
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CemuleDlg"), ::GetTickCount64() - ullPhaseStart);
+#endif
 	m_pMainWnd = emuledlg;
 	// Barry - Auto-take ed2k links
 	if (thePrefs.AutoTakeED2KLinks())
@@ -515,7 +601,13 @@ BOOL CemuleApp::InitInstance()
 	SetAutoStart(thePrefs.GetAutoStart());
 
 	// UPnP Port forwarding
+#if EMULE_COMPILED_STARTUP_PROFILING
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	m_pUPnPFinder = new CUPnPImplWrapper();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct UPnP wrapper"), ::GetTickCount64() - ullPhaseStart);
+#endif
 
 	// Highres scheduling gives better resolution for Sleep(...) calls, and timeGetTime() calls
 	m_wTimerRes = 0;
@@ -538,29 +630,110 @@ BOOL CemuleApp::InitInstance()
 		}
 	}
 
+#if EMULE_COMPILED_STARTUP_PROFILING
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	clientlist = new CClientList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CClientList"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	friendlist = new CFriendList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CFriendList"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	searchlist = new CSearchList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CSearchList"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	knownfiles = new CKnownFileList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CKnownFileList (known.met/cancelled.met)"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	serverlist = new CServerList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CServerList"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	serverconnect = new CServerConnect();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CServerConnect"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	sharedfiles = new CSharedFileList(serverconnect);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CSharedFileList (share cache/scan)"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	listensocket = new CListenSocket();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CListenSocket"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	clientudp = new CClientUDPSocket();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CClientUDPSocket"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	clientcredits = new CClientCreditsList();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CClientCreditsList"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	downloadqueue = new CDownloadQueue();	// bugfix - do this before creating the upload queue
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CDownloadQueue"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	uploadqueue = new CUploadQueue();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CUploadQueue"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	ipfilter = new CIPFilter();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CIPFilter"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	webserver = new CWebServer(); // Web Server [kuchin]
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CWebServer"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	scheduler = new CScheduler();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CScheduler"), ::GetTickCount64() - ullPhaseStart);
 
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct UploadBandwidthThrottler"), ::GetTickCount64() - ullPhaseStart);
 
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	m_pUploadDiskIOThread = new CUploadDiskIOThread();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CUploadDiskIOThread"), ::GetTickCount64() - ullPhaseStart);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	m_pPartFileWriteThread = new CPartFileWriteThread();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CPartFileWriteThread"), ::GetTickCount64() - ullPhaseStart);
+#endif
 
 	thePerfLog.Startup();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("PerfLog startup"), 0);
+	ullPhaseStart = ::GetTickCount64();
+#endif
 	emuledlg->DoModal();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("CemuleDlg::DoModal lifetime"), ::GetTickCount64() - ullPhaseStart);
+#endif
 
 	DisableRTLWindowsLayout();
 
@@ -598,6 +771,42 @@ int CemuleApp::ExitInstance()
 		timeEndPeriod(m_wTimerRes);
 
 	return CWinApp::ExitInstance();
+}
+
+bool CemuleApp::InitializeStartupConfigBaseDirOverride()
+{
+	CString strStartupConfigBaseDir;
+	CString strStartupConfigError;
+	if (!StartupConfigOverride::TryParseConfigBaseDirOverride(__argc, __targv, strStartupConfigBaseDir, strStartupConfigError)) {
+		AfxMessageBox(strStartupConfigError, MB_OK | MB_ICONSTOP);
+		return false;
+	}
+
+	if (!strStartupConfigBaseDir.IsEmpty()) {
+		const CString strConfigDir(StartupConfigOverride::GetConfigDirectoryFromBaseDir(strStartupConfigBaseDir));
+		const CString strLogDir(StartupConfigOverride::GetLogDirectoryFromBaseDir(strStartupConfigBaseDir));
+		if (!LongPathSeams::CreateDirectory(strStartupConfigBaseDir, NULL) && !LongPathSeams::PathExists(strStartupConfigBaseDir)) {
+			CString strError;
+			strError.Format(_T("The -c base directory could not be created: %s"), (LPCTSTR)strStartupConfigBaseDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+		if (!LongPathSeams::CreateDirectory(strConfigDir, NULL) && !LongPathSeams::PathExists(strConfigDir)) {
+			CString strError;
+			strError.Format(_T("The -c config directory could not be created: %s"), (LPCTSTR)strConfigDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+		if (!LongPathSeams::CreateDirectory(strLogDir, NULL) && !LongPathSeams::PathExists(strLogDir)) {
+			CString strError;
+			strError.Format(_T("The -c log directory could not be created: %s"), (LPCTSTR)strLogDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+	}
+
+	m_strStartupConfigBaseDir = strStartupConfigBaseDir;
+	return true;
 }
 
 #ifdef _DEBUG
@@ -651,7 +860,7 @@ bool CemuleApp::ProcessCommandline()
 		}
 	}
 
-	CCommandLineInfo cmdInfo;
+	CEmuleCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
 	// If we create our TCP listen socket with SO_REUSEADDR, we have to ensure that there are

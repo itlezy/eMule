@@ -52,6 +52,7 @@ CKnownFileList::CKnownFileList()
 	, m_nRequestedTotal()
 	, m_nAcceptedTotal()
 	, transferred()
+	, m_bLookupIndexDirty(false)
 	, m_dwCancelledFilesSeed()
 	, requested()
 	, accepted()
@@ -257,6 +258,8 @@ void CKnownFileList::Save()
 
 void CKnownFileList::Clear()
 {
+	m_lookupIndex.Clear();
+	m_bLookupIndexDirty = false;
 	m_mapKnownFilesByAICH.RemoveAll();
 	CCKey key;
 	for (POSITION pos = m_Files_map.GetStartPosition(); pos != NULL;) {
@@ -265,6 +268,34 @@ void CKnownFileList::Clear()
 		delete pFile;
 	}
 	m_Files_map.RemoveAll();
+}
+
+void CKnownFileList::AddToLookupIndex(CKnownFile *pFile)
+{
+	if (pFile == NULL)
+		return;
+	m_lookupIndex.Add(pFile->GetFileName(), pFile->GetUtcFileDate(), static_cast<uint64>(pFile->GetFileSize()), pFile);
+}
+
+void CKnownFileList::RemoveFromLookupIndex(const CKnownFile *pFile)
+{
+	if (pFile == NULL)
+		return;
+	if (!m_lookupIndex.Remove(pFile->GetFileName(), pFile->GetUtcFileDate(), static_cast<uint64>(pFile->GetFileSize()), const_cast<CKnownFile*>(pFile)))
+		m_bLookupIndexDirty = true;
+}
+
+void CKnownFileList::RebuildLookupIndex()
+{
+	m_lookupIndex.Clear();
+	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair))
+		AddToLookupIndex(pair->value);
+	m_bLookupIndexDirty = false;
+}
+
+void CKnownFileList::InvalidateLookupIndex()
+{
+	m_bLookupIndexDirty = true;
 }
 
 void CKnownFileList::Process()
@@ -286,6 +317,7 @@ bool CKnownFileList::SafeAddKFile(CKnownFile *toadd)
 		// we can not delete any already available entry from known files list. that entry can already be used by the
 		// shared file list -> crash.
 
+		RemoveFromLookupIndex(pFileInMap);
 		m_Files_map.RemoveKey(CCKey(pFileInMap->GetFileHash()));
 		m_mapKnownFilesByAICH.RemoveKey(pFileInMap->GetFileIdentifier().GetAICHHash());
 		//This can happen in a couple of situations.
@@ -327,6 +359,7 @@ bool CKnownFileList::SafeAddKFile(CKnownFile *toadd)
 		delete pFileInMap;
 	}
 	m_Files_map[key] = toadd;
+	AddToLookupIndex(toadd);
 	if (bRemovedDuplicateSharedFile)
 		theApp.sharedfiles->SafeAddKFile(toadd);
 
@@ -337,9 +370,20 @@ bool CKnownFileList::SafeAddKFile(CKnownFile *toadd)
 
 CKnownFile* CKnownFileList::FindKnownFile(LPCTSTR filename, time_t date, uint64 size) const
 {
-	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair))
-		if (pair->value->GetUtcFileDate() == date && (uint64)pair->value->GetFileSize() == size && pair->value->GetFileName() == filename)
-			return pair->value;
+	if (m_bLookupIndexDirty)
+		const_cast<CKnownFileList*>(this)->RebuildLookupIndex();
+
+	if (const TKnownFileLookupIndex<CKnownFile*>::Bucket *pBucket = m_lookupIndex.FindBucket(filename, date, size)) {
+		for (CKnownFile *pFile : *pBucket) {
+			if (pFile != NULL
+				&& pFile->GetUtcFileDate() == date
+				&& static_cast<uint64>(pFile->GetFileSize()) == size
+				&& pFile->GetFileName() == filename)
+			{
+				return pFile;
+			}
+		}
+	}
 
 	return NULL;
 }

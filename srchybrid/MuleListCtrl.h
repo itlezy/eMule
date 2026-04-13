@@ -138,8 +138,20 @@ public:
 	// Retrieves the number of items in the control.
 	int GetItemCount() const
 	{
+		if (GetStyle() & LVS_OWNERDATA)
+			return GetVirtualItemCount();
 		return static_cast<int>(m_Params.GetCount());
 	};
+
+	/**
+	 * @brief Returns the data object for a virtual owner-data row.
+	 */
+	virtual DWORD_PTR GetVirtualItemData(int iItem) const { UNREFERENCED_PARAMETER(iItem); return 0; }
+
+	/**
+	 * @brief Returns the visible row count for a virtual owner-data list.
+	 */
+	virtual int GetVirtualItemCount() const { return CListCtrl::GetItemCount(); }
 
 	enum ArrowType
 	{
