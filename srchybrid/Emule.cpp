@@ -52,6 +52,7 @@
 #include "Server.h"
 #include "ED2KLink.h"
 #include "Preferences.h"
+#include "StartupConfigOverride.h"
 #include "SafeFile.h"
 #include "ShellUiHelpers.h"
 #include "LongPathSeams.h"
@@ -85,6 +86,31 @@ CString GetSkinProfileResourcePath(const CString &rstrSkinProfile, LPCTSTR pszSe
 
 	return ShellUiHelpers::ResolveSkinResourcePath(rstrSkinProfile, strSkinResource);
 }
+
+/**
+ * @brief Command-line parser which skips the `-c <base-dir>` pair before handing the rest to MFC.
+ */
+class CEmuleCommandLineInfo : public CCommandLineInfo
+{
+public:
+	void ParseParam(const TCHAR *pszParam, BOOL bFlag, BOOL bLast) override
+	{
+		if (m_bSkipNextParam) {
+			m_bSkipNextParam = false;
+			return;
+		}
+
+		if (bFlag && pszParam != NULL && _tcsicmp(pszParam, _T("c")) == 0) {
+			m_bSkipNextParam = !bLast;
+			return;
+		}
+
+		CCommandLineInfo::ParseParam(pszParam, bFlag, bLast);
+	}
+
+private:
+	bool m_bSkipNextParam = false;
+};
 }
 
 
@@ -456,6 +482,8 @@ BOOL CemuleApp::InitInstance()
 	// output all ASSERT messages to debug device
 	_CrtSetReportMode(_CRT_ASSERT, _CrtSetReportMode(_CRT_ASSERT, _CRTDBG_REPORT_MODE) | _CRTDBG_MODE_DEBUG);
 #endif
+	if (!InitializeStartupConfigBaseDirOverride())
+		return FALSE;
 	free((void*)m_pszProfileName);
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	m_pszProfileName = _tcsdup(sConfDir + _T("preferences.ini"));
@@ -745,6 +773,42 @@ int CemuleApp::ExitInstance()
 	return CWinApp::ExitInstance();
 }
 
+bool CemuleApp::InitializeStartupConfigBaseDirOverride()
+{
+	CString strStartupConfigBaseDir;
+	CString strStartupConfigError;
+	if (!StartupConfigOverride::TryParseConfigBaseDirOverride(__argc, __targv, strStartupConfigBaseDir, strStartupConfigError)) {
+		AfxMessageBox(strStartupConfigError, MB_OK | MB_ICONSTOP);
+		return false;
+	}
+
+	if (!strStartupConfigBaseDir.IsEmpty()) {
+		const CString strConfigDir(StartupConfigOverride::GetConfigDirectoryFromBaseDir(strStartupConfigBaseDir));
+		const CString strLogDir(StartupConfigOverride::GetLogDirectoryFromBaseDir(strStartupConfigBaseDir));
+		if (!LongPathSeams::CreateDirectory(strStartupConfigBaseDir, NULL) && !LongPathSeams::PathExists(strStartupConfigBaseDir)) {
+			CString strError;
+			strError.Format(_T("The -c base directory could not be created: %s"), (LPCTSTR)strStartupConfigBaseDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+		if (!LongPathSeams::CreateDirectory(strConfigDir, NULL) && !LongPathSeams::PathExists(strConfigDir)) {
+			CString strError;
+			strError.Format(_T("The -c config directory could not be created: %s"), (LPCTSTR)strConfigDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+		if (!LongPathSeams::CreateDirectory(strLogDir, NULL) && !LongPathSeams::PathExists(strLogDir)) {
+			CString strError;
+			strError.Format(_T("The -c log directory could not be created: %s"), (LPCTSTR)strLogDir);
+			AfxMessageBox(strError, MB_OK | MB_ICONSTOP);
+			return false;
+		}
+	}
+
+	m_strStartupConfigBaseDir = strStartupConfigBaseDir;
+	return true;
+}
+
 #ifdef _DEBUG
 static int CrtDebugReportCB(int reportType, char *message, int *returnValue) noexcept
 {
@@ -796,7 +860,7 @@ bool CemuleApp::ProcessCommandline()
 		}
 	}
 
-	CCommandLineInfo cmdInfo;
+	CEmuleCommandLineInfo cmdInfo;
 	ParseCommandLine(cmdInfo);
 
 	// If we create our TCP listen socket with SO_REUSEADDR, we have to ensure that there are

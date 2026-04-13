@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "ListViewWalkerPropertySheet.h"
+#include "MuleListCtrl.h"
 #include "UserMsgs.h"
 
 #ifdef _DEBUG
@@ -249,4 +250,9 @@ CObject* CListCtrlItemWalk::GetNextSelectableItem()
 		}
 	}
 	return NULL;
+}
+
+CListCtrl* CListCtrlItemWalk::GetListCtrl() const
+{
+	return m_pListCtrl;
 }

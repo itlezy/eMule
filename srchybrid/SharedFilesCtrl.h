@@ -18,6 +18,7 @@
 #include "MuleListCtrl.h"
 #include "TitledMenu.h"
 #include "ListCtrlItemWalk.h"
+#include <vector>
 
 class CSharedFileList;
 class CKnownFile;
@@ -68,12 +69,32 @@ public:
 	void	AddFile(const CShareableFile *file);
 	void	RemoveFile(const CShareableFile *file, bool bDeletedFromDisk);
 	void	UpdateFile(const CShareableFile *file, bool bUpdateFileSummary = true);
+	virtual DWORD_PTR GetVirtualItemData(int iItem) const override;
+	virtual int GetVirtualItemCount() const override;
 	void	Localize();
 	void	ShowFilesCount();
 	void	ShowComments(CShareableFile *file);
 	void	SetAICHHashing(INT_PTR nVal)				{ nAICHHashing = nVal; }
 	void	ApplyAICHHashingCount(INT_PTR nVal);
 	void	SetDirectoryFilter(CDirectoryItem *pNewFilter, bool bRefresh = true);
+	bool	IsSelectionRestoreInProgress() const		{ return m_bSelectionRestoreInProgress; }
+	void	SetSelectionRestoreInProgress(bool bInProgress)	{ m_bSelectionRestoreInProgress = bInProgress; }
+	/**
+	 * @brief Resolves one visible Shared Files row back to its backing file object.
+	 */
+	CShareableFile* GetFileByIndex(int iItem) const;
+	/**
+	 * @brief Resolves one backing file object to its current visible row index, or `-1` when hidden.
+	 */
+	int FindFile(const CShareableFile *pFile);
+	/**
+	 * @brief Collects the currently selected Shared Files backing objects in visible-row order.
+	 */
+	void CollectSelectedFiles(CTypedPtrList<CPtrList, CShareableFile*> &rSelectedFiles) const;
+	/**
+	 * @brief Returns the single selected Shared Files object, or `NULL` when the selection is not singular.
+	 */
+	CShareableFile* GetSingleSelectedFile() const;
 
 protected:
 	CTitledMenu		m_SharedFilesMenu;
@@ -88,12 +109,24 @@ protected:
 	CTypedPtrList<CPtrList, CShareableFile*>	liTempShareableFilesInDir;
 	CShareableFile	*m_pHighlightedItem;
 	CShareDropTarget m_ShareDropTarget;
+	std::vector<CShareableFile*> m_aVisibleFiles;
+	CMap<const CShareableFile*, const CShareableFile*, int, int> m_mapVisibleFileIndex;
+	bool			m_bSelectionRestoreInProgress;
 
 	static int CALLBACK SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 	void OpenFile(const CShareableFile *file);
 	void ShowFileDialog(CTypedPtrList<CPtrList, CShareableFile*> &aFiles, UINT uInvokePage = 0);
 	void SetAllIcons();
-	int FindFile(const CShareableFile *pFile);
+	void RebuildVisibleFileIndex();
+	void ClearVisibleFiles();
+	void ApplyVisibleFileCount();
+	bool ShouldPreserveVirtualListState() const;
+	bool ShouldDisplayFile(const CShareableFile *file) const;
+	void SortVisibleFiles();
+	void AppendVisibleFile(CShareableFile *file);
+	bool HasActiveSortOrder() const;
+	bool NeedsSortReposition(int iIndex) const;
+	bool RepositionFileByCurrentSort(CShareableFile *file, int iIndex);
 	CString GetItemDisplayText(const CShareableFile *file, int iSubItem) const;
 	bool IsFilteredOut(const CShareableFile *pKnownFile) const;
 	bool IsSharedInKad(const CKnownFile *file) const;

@@ -1,16 +1,18 @@
 #pragma once
 
+class CMuleListCtrl;
+
 class CListCtrlItemWalk
 {
 public:
-	explicit CListCtrlItemWalk(CListCtrl *pListCtrl)	{ m_pListCtrl = pListCtrl; }
+	explicit CListCtrlItemWalk(CMuleListCtrl *pListCtrl)	{ m_pListCtrl = pListCtrl; }
 
 	virtual CObject* GetNextSelectableItem();
 	virtual CObject* GetPrevSelectableItem();
 
-	CListCtrl* GetListCtrl() const						{ return m_pListCtrl; }
+	CListCtrl* GetListCtrl() const;
 
 protected:
 	virtual	~CListCtrlItemWalk() = default;
-	CListCtrl *m_pListCtrl;
+	CMuleListCtrl *m_pListCtrl;
 };

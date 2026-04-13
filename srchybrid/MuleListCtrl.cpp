@@ -566,6 +566,9 @@ int CMuleListCtrl::MoveItem(int iOldIndex, int iNewIndex)
 
 int CMuleListCtrl::UpdateLocation(int iItem)
 {
+	if (GetStyle() & LVS_OWNERDATA)
+		return iItem;
+
 	int iItemCount = GetItemCount();
 	if (iItem >= iItemCount || iItem < 0)
 		return iItem;
@@ -639,6 +642,9 @@ int CMuleListCtrl::UpdateLocation(int iItem)
 
 DWORD_PTR CMuleListCtrl::GetItemData(int iItem)
 {
+	if (GetStyle() & LVS_OWNERDATA)
+		return GetVirtualItemData(iItem);
+
 	POSITION pos = m_Params.FindIndex(iItem);
 	if (pos == NULL)
 		return 0;

@@ -108,6 +108,18 @@ BOOL CSharedFilesWnd::OnInitDialog()
 	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd::OnInitDialog sharedfilesctrl.Init"), ::GetTickCount64() - ullPhaseStart);
 #endif
 
+#if EMULE_COMPILED_STARTUP_PROFILING
+	ullPhaseStart = ::GetTickCount64();
+#endif
+	sharedfilesctrl.EnsureModelBound();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	{
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesWnd::OnInitDialog eager shared-files bind (%d visible rows)"), sharedfilesctrl.GetItemCount());
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+	}
+#endif
+
 	m_ctlSharedListHeader.Attach(sharedfilesctrl.GetHeaderCtrl()->Detach());
 	CArray<int, int> aIgnore; // ignored no-text columns for filter edit
 	aIgnore.Add(8); // shared parts
@@ -145,6 +157,18 @@ BOOL CSharedFilesWnd::OnInitDialog()
 	GetDlgItem(IDC_SF_HIDESHOWDETAILS)->BringWindowToTop();
 	ShowDetailsPanel(thePrefs.GetShowSharedFilesDetails());
 
+#if EMULE_COMPILED_STARTUP_PROFILING
+	ullPhaseStart = ::GetTickCount64();
+#endif
+	EnsureSharedTreeInitialized();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	{
+		CString strPhase;
+		strPhase.Format(_T("CSharedFilesWnd::OnInitDialog eager shared tree init (%d visible rows)"), sharedfilesctrl.GetItemCount());
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+	}
+#endif
+
 	Localize();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd::OnInitDialog total"), ::GetTickCount64() - ullInitStart);
@@ -157,7 +181,6 @@ void CSharedFilesWnd::EnsureSharedTreeInitialized()
 	if (m_bSharedTreeInitialized)
 		return;
 
-	sharedfilesctrl.EnsureModelBound();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	const ULONGLONG ullPhaseStart = ::GetTickCount64();
 #endif
@@ -167,7 +190,14 @@ void CSharedFilesWnd::EnsureSharedTreeInitialized()
 	m_bSharedTreeInitialized = true;
 	sharedfilesctrl.SetDirectoryFilter(m_ctlSharedDirTree.GetSelectedFilter(), !m_ctlSharedDirTree.IsCreatingTree());
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd lazy shared dir tree Initialize"), ::GetTickCount64() - ullPhaseStart);
+	{
+		CString strPhase;
+		const CDirectoryItem *pSelectedFilter = m_ctlSharedDirTree.GetSelectedFilter();
+		strPhase.Format(_T("CSharedFilesWnd shared dir tree Initialize (filter=%d rows=%d)"),
+			pSelectedFilter != NULL ? static_cast<int>(pSelectedFilter->m_eItemType) : -1,
+			sharedfilesctrl.GetItemCount());
+		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+	}
 #endif
 }
 
@@ -302,7 +332,7 @@ BOOL CSharedFilesWnd::PreTranslateMessage(MSG *pMsg)
 			sharedfilesctrl.SetItemState(-1, 0, LVIS_SELECTED);
 			sharedfilesctrl.SetItemState(it, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 			sharedfilesctrl.SetSelectionMark(it);   // display selection mark correctly!
-			sharedfilesctrl.ShowComments(reinterpret_cast<CShareableFile*>(sharedfilesctrl.GetItemData(it)));
+			sharedfilesctrl.ShowComments(sharedfilesctrl.GetFileByIndex(it));
 			return TRUE;
 		}
 	}
@@ -435,29 +465,15 @@ void CSharedFilesWnd::ShowSelectedFilesDetails(bool bForce)
 	CTypedPtrList<CPtrList, CShareableFile*> selectedList;
 	UINT nItems = m_dlgDetails.GetItems().GetSize();
 	if (m_bDetailsVisible) {
+		sharedfilesctrl.CollectSelectedFiles(selectedList);
 		int i = 0;
-		for (POSITION pos = sharedfilesctrl.GetFirstSelectedItemPosition(); pos != NULL;) {
-			int index = sharedfilesctrl.GetNextSelectedItem(pos);
-			if (index >= 0) {
-				CShareableFile *file = reinterpret_cast<CShareableFile*>(sharedfilesctrl.GetItemData(index));
-				if (file != NULL) {
-					selectedList.AddTail(file);
-					if (nItems <= (UINT)i || m_dlgDetails.GetItems()[i] != file)
-						bForce = true;
-					++i;
-				}
-			}
+		for (POSITION pos = selectedList.GetHeadPosition(); pos != NULL; ++i) {
+			CShareableFile *file = selectedList.GetNext(pos);
+			if (nItems <= (UINT)i || m_dlgDetails.GetItems()[i] != file)
+				bForce = true;
 		}
 	} else if (GetDlgItem(IDC_SF_FNAME)->IsWindowVisible()) {
-		CShareableFile *pFile = NULL;
-		if (sharedfilesctrl.GetSelectedCount() == 1) {
-			POSITION pos = sharedfilesctrl.GetFirstSelectedItemPosition();
-			if (pos) {
-				int index = sharedfilesctrl.GetNextSelectedItem(pos);
-				if (index >= 0)
-					pFile = reinterpret_cast<CShareableFile*>(sharedfilesctrl.GetItemData(index));
-			}
-		}
+		CShareableFile *pFile = sharedfilesctrl.GetSingleSelectedFile();
 		static_cast<CStatic*>(GetDlgItem(IDC_SF_FICON))->SetIcon(pFile ? icon_files : NULL);
 		const CString &sName(pFile ? pFile->GetFileName() : _T(""));
 		SetDlgItemText(IDC_SF_FNAME, sName);
@@ -517,15 +533,23 @@ void CSharedFilesWnd::OnBnClickedSfHideshowdetails()
 
 void CSharedFilesWnd::OnLvnItemchangedSflist(LPNMHDR, LRESULT *pResult)
 {
-	ShowSelectedFilesDetails();
+	if (!sharedfilesctrl.IsSelectionRestoreInProgress())
+		ShowSelectedFilesDetails();
 	*pResult = 0;
 }
 
 void CSharedFilesWnd::OnShowWindow(BOOL bShow, UINT)
 {
 	if (bShow) {
-		sharedfilesctrl.EnsureModelBound();
-		EnsureSharedTreeInitialized();
+#if EMULE_COMPILED_STARTUP_PROFILING
+		CString strPhase;
+		const CDirectoryItem *pSelectedFilter = m_ctlSharedDirTree.GetSelectedFilter();
+		strPhase.Format(_T("CSharedFilesWnd::OnShowWindow rows=%d filter=%d shared-count=%u"),
+			sharedfilesctrl.GetItemCount(),
+			pSelectedFilter != NULL ? static_cast<int>(pSelectedFilter->m_eItemType) : -1,
+			static_cast<unsigned>(theApp.sharedfiles->GetCount()));
+		theApp.AppendStartupProfileLine(strPhase, 0);
+#endif
 		ShowSelectedFilesDetails(true);
 	}
 }

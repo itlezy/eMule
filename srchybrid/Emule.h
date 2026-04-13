@@ -87,6 +87,14 @@ public:
 	 * @brief Appends one startup phase timing sample when profiling is enabled.
 	 */
 	void AppendStartupProfileLine(LPCTSTR pszPhase, ULONGLONG ullDurationMs, ULONGLONG ullAbsoluteMs = static_cast<ULONGLONG>(-1));
+	/**
+	 * @brief Reports whether startup redirected config-backed files to an alternate base directory.
+	 */
+	bool HasStartupConfigBaseDirOverride() const				{ return !m_strStartupConfigBaseDir.IsEmpty(); }
+	/**
+	 * @brief Returns the normalized override base directory selected through `-c`.
+	 */
+	const CString& GetStartupConfigBaseDirOverride() const		{ return m_strStartupConfigBaseDir; }
 
 	UploadBandwidthThrottler *uploadBandwidthThrottler;
 	CemuleDlg			*emuledlg;
@@ -217,6 +225,10 @@ public:
 	void		ResetStandbyOff()								{ m_bStandbyOff = false; }
 
 protected:
+	/**
+	 * @brief Parses and validates the optional startup config-root override before any profile-backed settings are read.
+	 */
+	bool InitializeStartupConfigBaseDirOverride();
 	bool ProcessCommandline();
 	void SetTimeOnTransfer();
 	static BOOL CALLBACK SearchEmuleWindow(HWND hWnd, LPARAM lParam) noexcept;
@@ -243,6 +255,7 @@ protected:
 
 	WSADATA		m_wsaData;
 	uint32		m_dwPublicIP;
+	CString		m_strStartupConfigBaseDir;
 	bool		m_bGuardClipboardPrompt;
 	bool		m_bAutoStart;
 
