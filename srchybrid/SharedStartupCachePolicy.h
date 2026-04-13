@@ -15,7 +15,7 @@
 namespace SharedStartupCachePolicy
 {
 constexpr std::uint32_t kMagic = 0x43484853u; // 'SHHC'
-constexpr std::uint16_t kVersion = 3;
+constexpr std::uint16_t kVersion = 4;
 
 /**
  * \brief Returns the config-directory sidecar name for the shared startup cache.
@@ -66,7 +66,7 @@ struct DirectoryRecord
 	std::int64_t utcDirectoryDate = -1;
 	ValidationMode eValidationMode = ValidationMode::GenericFileVerification;
 	VolumeRecord volumeRecord = {};
-	std::uint64_t ullDirectoryFileReferenceNumber = 0;
+	LongPathSeams::UsnFileReference directoryFileReference = {};
 	std::uint32_t uCachedFileCount = 0;
 	std::vector<FileRecord> files;
 };
@@ -113,7 +113,7 @@ inline bool IsStructurallyValid(const DirectoryRecord &rRecord) noexcept
 			&& rRecord.volumeRecord.ullVolumeSerialNumber != 0
 			&& rRecord.volumeRecord.ullUsnJournalId != 0
 			&& rRecord.volumeRecord.llJournalCheckpointUsn > 0
-			&& rRecord.ullDirectoryFileReferenceNumber != 0;
+			&& !LongPathSeams::IsZeroUsnFileReference(rRecord.directoryFileReference);
 	}
 
 	return true;

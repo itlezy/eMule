@@ -135,7 +135,7 @@ private:
 		LONGLONG utcDirectoryDate = -1;
 		bool bHasTrustedNtfsJournalState = false;
 		SharedStartupCachePolicy::VolumeRecord volumeRecord = {};
-		ULONGLONG ullDirectoryFileReferenceNumber = 0;
+		LongPathSeams::UsnFileReference directoryFileReference = {};
 	};
 
 	/**
@@ -145,10 +145,10 @@ private:
 	{
 		bool bInitialized = false;
 		bool bRescanAllDirectories = false;
-		std::unordered_set<ULONGLONG> changedDirectoryFileReferences;
+		std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> changedDirectoryFileReferences;
 	};
 
-	void	AddDirectory(const CString &strDir, CStringList &dirlist, bool bAllowStartupCache);
+	void	AddDirectory(const CString &strDir, CStringList &dirlist, std::unordered_set<std::wstring> &rAddedDirectoryKeys, bool bAllowStartupCache);
 	void	CollectSharedDirectories(CStringList &dirlist) const;
 	bool	TryLoadStartupCache();
 	void	SaveStartupCache();
@@ -171,7 +171,7 @@ private:
 	/**
 	 * @brief Collects every cached directory reference guarded by one shared NTFS volume record.
 	 */
-	void	CollectTrackedStartupCacheDirectoryRefs(const SharedStartupCachePolicy::VolumeRecord &rVolumeRecord, std::unordered_set<ULONGLONG> &rTrackedDirectoryRefs) const;
+	void	CollectTrackedStartupCacheDirectoryRefs(const SharedStartupCachePolicy::VolumeRecord &rVolumeRecord, std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> &rTrackedDirectoryRefs) const;
 	static CString GetStartupCachePath();
 	static std::wstring MakeStartupCacheKey(const CString &strDirectory);
 	static std::wstring MakeStartupCacheVolumeKey(const CString &strVolumeKey);

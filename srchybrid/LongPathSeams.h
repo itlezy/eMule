@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstring>
 #include <cstdio>
 #include <fcntl.h>
 #include <io.h>
@@ -40,6 +41,55 @@ inline bool operator==(const FileSystemObjectIdentity &rLeft, const FileSystemOb
 }
 
 /**
+ * @brief Stores one journal file reference in a version-agnostic 128-bit form.
+ */
+struct UsnFileReference
+{
+	std::array<BYTE, 16> identifier = {};
+};
+
+inline bool operator==(const UsnFileReference &rLeft, const UsnFileReference &rRight)
+{
+	return rLeft.identifier == rRight.identifier;
+}
+
+struct UsnFileReferenceHasher
+{
+	size_t operator()(const UsnFileReference &rReference) const noexcept
+	{
+		size_t uHash = 1469598103934665603ull;
+		for (const BYTE value : rReference.identifier) {
+			uHash ^= value;
+			uHash *= 1099511628211ull;
+		}
+		return uHash;
+	}
+};
+
+inline bool IsZeroUsnFileReference(const UsnFileReference &rReference)
+{
+	for (const BYTE value : rReference.identifier)
+		if (value != 0)
+			return false;
+	return true;
+}
+
+inline UsnFileReference MakeUsnFileReferenceFromUInt64(const ULONGLONG ullValue)
+{
+	UsnFileReference reference = {};
+	static_assert(sizeof(ullValue) <= sizeof(reference.identifier), "USN file reference storage must fit 64-bit identifiers");
+	std::memcpy(reference.identifier.data(), &ullValue, sizeof(ullValue));
+	return reference;
+}
+
+inline UsnFileReference MakeUsnFileReferenceFromFileId128(const FILE_ID_128 &rFileId)
+{
+	UsnFileReference reference = {};
+	std::memcpy(reference.identifier.data(), rFileId.Identifier, sizeof(rFileId.Identifier));
+	return reference;
+}
+
+/**
  * @brief Captures the local NTFS USN journal guard for one volume.
  */
 struct NtfsJournalVolumeState
@@ -58,9 +108,80 @@ struct NtfsJournalVolumeState
  */
 struct NtfsDirectoryJournalState
 {
-	ULONGLONG ullFileReferenceNumber = 0;
+	UsnFileReference fileReference = {};
 	LONGLONG llUsn = 0;
 };
+
+inline bool TryParseUsnRecordIdentity(const USN_RECORD_COMMON_HEADER *pHeader, const DWORD dwBytesAvailable, UsnFileReference &rFileReference, UsnFileReference *pParentFileReference = NULL, LONGLONG *pllUsn = NULL, DWORD *pdwLastError = NULL)
+{
+	rFileReference = UsnFileReference{};
+	if (pParentFileReference != NULL)
+		*pParentFileReference = UsnFileReference{};
+	if (pllUsn != NULL)
+		*pllUsn = 0;
+	if (pdwLastError != NULL)
+		*pdwLastError = ERROR_SUCCESS;
+	if (pHeader == NULL || dwBytesAvailable < sizeof(USN_RECORD_COMMON_HEADER)) {
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_INVALID_PARAMETER;
+		return false;
+	}
+
+	switch (pHeader->MajorVersion)
+	{
+		case 2:
+		{
+			if (dwBytesAvailable < sizeof(USN_RECORD_V2)) {
+				if (pdwLastError != NULL)
+					*pdwLastError = ERROR_INVALID_DATA;
+				return false;
+			}
+			const USN_RECORD_V2 *pRecord = reinterpret_cast<const USN_RECORD_V2 *>(pHeader);
+			rFileReference = MakeUsnFileReferenceFromUInt64(pRecord->FileReferenceNumber);
+			if (pParentFileReference != NULL)
+				*pParentFileReference = MakeUsnFileReferenceFromUInt64(pRecord->ParentFileReferenceNumber);
+			if (pllUsn != NULL)
+				*pllUsn = pRecord->Usn;
+			return true;
+		}
+		case 3:
+		{
+			if (dwBytesAvailable < sizeof(USN_RECORD_V3)) {
+				if (pdwLastError != NULL)
+					*pdwLastError = ERROR_INVALID_DATA;
+				return false;
+			}
+			const USN_RECORD_V3 *pRecord = reinterpret_cast<const USN_RECORD_V3 *>(pHeader);
+			rFileReference = MakeUsnFileReferenceFromFileId128(pRecord->FileReferenceNumber);
+			if (pParentFileReference != NULL)
+				*pParentFileReference = MakeUsnFileReferenceFromFileId128(pRecord->ParentFileReferenceNumber);
+			if (pllUsn != NULL)
+				*pllUsn = pRecord->Usn;
+			return true;
+		}
+		case 4:
+		{
+			if (dwBytesAvailable < sizeof(USN_RECORD_V4)) {
+				if (pdwLastError != NULL)
+					*pdwLastError = ERROR_INVALID_DATA;
+				return false;
+			}
+			const USN_RECORD_V4 *pRecord = reinterpret_cast<const USN_RECORD_V4 *>(pHeader);
+			rFileReference = MakeUsnFileReferenceFromFileId128(pRecord->FileReferenceNumber);
+			if (pParentFileReference != NULL)
+				*pParentFileReference = MakeUsnFileReferenceFromFileId128(pRecord->ParentFileReferenceNumber);
+			if (pllUsn != NULL)
+				*pllUsn = pRecord->Usn;
+			return true;
+		}
+		default:
+		{
+			if (pdwLastError != NULL)
+				*pdwLastError = ERROR_NOT_SUPPORTED;
+			return false;
+		}
+	}
+}
 
 /**
  * @brief Describes the real local volume that owns one absolute path, including mounted-folder volumes.
@@ -300,7 +421,7 @@ inline HANDLE OpenResolvedVolumeHandleForJournalQuery(const ResolvedVolumeContex
 	while (!volumePath.empty() && IsPathSeparator(volumePath[volumePath.size() - 1]))
 		volumePath.erase(volumePath.size() - 1);
 	HANDLE hVolume = ::CreateFile(volumePath.c_str(),
-		0,
+		GENERIC_READ,
 		FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
 		NULL,
 		OPEN_EXISTING,
@@ -670,8 +791,8 @@ inline bool TryGetNtfsDirectoryJournalState(LPCTSTR pszPath, NtfsDirectoryJourna
 
 	READ_FILE_USN_DATA input = {};
 	input.MinMajorVersion = 2;
-	input.MaxMajorVersion = 2;
-	std::array<BYTE, sizeof(USN_RECORD_V2) + MAX_PATH * sizeof(WCHAR)> buffer = {};
+	input.MaxMajorVersion = 4;
+	std::array<BYTE, 4096u> buffer = {};
 	DWORD dwBytesReturned = 0;
 	const BOOL bOk = ::DeviceIoControl(
 		hDirectory,
@@ -691,15 +812,8 @@ inline bool TryGetNtfsDirectoryJournalState(LPCTSTR pszPath, NtfsDirectoryJourna
 	}
 
 	const USN_RECORD_COMMON_HEADER *pHeader = reinterpret_cast<const USN_RECORD_COMMON_HEADER *>(buffer.data());
-	if (pHeader->MajorVersion != 2 || dwBytesReturned < sizeof(USN_RECORD_V2)) {
-		if (pdwLastError != NULL)
-			*pdwLastError = ERROR_NOT_SUPPORTED;
+	if (!TryParseUsnRecordIdentity(pHeader, dwBytesReturned, rState.fileReference, NULL, &rState.llUsn, pdwLastError))
 		return false;
-	}
-
-	const USN_RECORD_V2 *pRecord = reinterpret_cast<const USN_RECORD_V2 *>(buffer.data());
-	rState.ullFileReferenceNumber = pRecord->FileReferenceNumber;
-	rState.llUsn = pRecord->Usn;
 	if (dwCloseError != ERROR_SUCCESS) {
 		if (pdwLastError != NULL)
 			*pdwLastError = dwCloseError;
@@ -711,7 +825,7 @@ inline bool TryGetNtfsDirectoryJournalState(LPCTSTR pszPath, NtfsDirectoryJourna
 /**
  * @brief Scans the local NTFS journal delta once and reports cached directories touched since the checkpoint.
  */
-inline bool TryCollectChangedDirectoryFileReferences(LPCTSTR pszPath, const ULONGLONG ullExpectedJournalId, const LONGLONG llCheckpointUsn, const std::unordered_set<ULONGLONG> &rTrackedDirectoryFileReferences, std::unordered_set<ULONGLONG> &rChangedDirectoryFileReferences, DWORD *pdwLastError = NULL)
+inline bool TryCollectChangedDirectoryFileReferences(LPCTSTR pszPath, const ULONGLONG ullExpectedJournalId, const LONGLONG llCheckpointUsn, const std::unordered_set<UsnFileReference, UsnFileReferenceHasher> &rTrackedDirectoryFileReferences, std::unordered_set<UsnFileReference, UsnFileReferenceHasher> &rChangedDirectoryFileReferences, DWORD *pdwLastError = NULL)
 {
 	rChangedDirectoryFileReferences.clear();
 	if (pdwLastError != NULL)
@@ -757,7 +871,7 @@ inline bool TryCollectChangedDirectoryFileReferences(LPCTSTR pszPath, const ULON
 	input.BytesToWaitFor = 0;
 	input.UsnJournalID = ullExpectedJournalId;
 	input.MinMajorVersion = 2;
-	input.MaxMajorVersion = 2;
+	input.MaxMajorVersion = 4;
 
 	bool bOk = true;
 	DWORD dwError = ERROR_SUCCESS;
@@ -789,17 +903,17 @@ inline bool TryCollectChangedDirectoryFileReferences(LPCTSTR pszPath, const ULON
 				dwError = ERROR_INVALID_DATA;
 				break;
 			}
-			if (pHeader->MajorVersion != 2) {
+			UsnFileReference fileReference = {};
+			UsnFileReference parentFileReference = {};
+			if (!TryParseUsnRecordIdentity(pHeader, pHeader->RecordLength, fileReference, &parentFileReference, NULL, &dwError)) {
 				bOk = false;
-				dwError = ERROR_NOT_SUPPORTED;
 				break;
 			}
 
-			const USN_RECORD_V2 *pRecord = reinterpret_cast<const USN_RECORD_V2 *>(pCursor);
-			const auto itFileReference = rTrackedDirectoryFileReferences.find(pRecord->FileReferenceNumber);
+			const auto itFileReference = rTrackedDirectoryFileReferences.find(fileReference);
 			if (itFileReference != rTrackedDirectoryFileReferences.end())
 				rChangedDirectoryFileReferences.insert(*itFileReference);
-			const auto itParentReference = rTrackedDirectoryFileReferences.find(pRecord->ParentFileReferenceNumber);
+			const auto itParentReference = rTrackedDirectoryFileReferences.find(parentFileReference);
 			if (itParentReference != rTrackedDirectoryFileReferences.end())
 				rChangedDirectoryFileReferences.insert(*itParentReference);
 
