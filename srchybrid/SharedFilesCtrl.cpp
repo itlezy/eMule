@@ -810,6 +810,7 @@ void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromD
 			}
 			if (GetFirstSelectedItemPosition() == NULL)
 				AutoSelectItem();
+			theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails(false);
 			Invalidate(FALSE);
 		}
 		ShowFilesCount();
@@ -837,7 +838,9 @@ void CSharedFilesCtrl::UpdateFile(const CShareableFile *file, bool bUpdateFileSu
 				bItemMoved = RepositionFileByCurrentSort(const_cast<CShareableFile*>(file), iItem);
 			if (!bItemMoved)
 				RedrawItems(iItem, iItem);
-			if (bUpdateFileSummary && GetItemState(iItem, LVIS_SELECTED))
+			else
+				iItem = FindFile(file);
+			if (bUpdateFileSummary && iItem >= 0 && GetItemState(iItem, LVIS_SELECTED))
 				theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails(true); //force update
 		}
 	}
@@ -924,6 +927,7 @@ void CSharedFilesCtrl::ReloadFileList()
 	}
 	SetRedraw(true);
 	Invalidate(FALSE);
+	theApp.emuledlg->sharedfileswnd->ShowSelectedFilesDetails(false);
 	ShowFilesCount();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	{

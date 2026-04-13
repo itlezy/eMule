@@ -14,15 +14,34 @@ namespace StartupConfigOverride
 	}
 
 	/**
-	 * @brief Reports whether the supplied path is an absolute Win32 drive or UNC path.
+	 * @brief Reports whether the supplied path is a canonical absolute Win32 drive path.
 	 */
 	inline bool IsAbsoluteBaseDirPath(const CString &strPath)
 	{
-		return (strPath.GetLength() >= 3
-				&& ((strPath[0] >= _T('A') && strPath[0] <= _T('Z')) || (strPath[0] >= _T('a') && strPath[0] <= _T('z')))
-				&& strPath[1] == _T(':')
-				&& (strPath[2] == _T('\\') || strPath[2] == _T('/')))
-			|| (strPath.GetLength() >= 2 && strPath[0] == _T('\\') && strPath[1] == _T('\\'));
+		if (strPath.Find(_T('/')) >= 0)
+			return false;
+
+		if (strPath.GetLength() < 3
+				|| !((strPath[0] >= _T('A') && strPath[0] <= _T('Z')) || (strPath[0] >= _T('a') && strPath[0] <= _T('z')))
+				|| strPath[1] != _T(':')
+				|| strPath[2] != _T('\\'))
+			return false;
+
+		int iSegmentStart = 3;
+		while (iSegmentStart < strPath.GetLength()) {
+			const int iSegmentEnd = strPath.Find(_T('\\'), iSegmentStart);
+			const int iCurrentEnd = iSegmentEnd >= 0 ? iSegmentEnd : strPath.GetLength();
+			if (iCurrentEnd == iSegmentStart)
+				return false;
+
+			const CString strSegment(strPath.Mid(iSegmentStart, iCurrentEnd - iSegmentStart));
+			if (strSegment == _T(".") || strSegment == _T(".."))
+				return false;
+
+			iSegmentStart = iCurrentEnd + 1;
+		}
+
+		return true;
 	}
 
 	/**
@@ -31,8 +50,6 @@ namespace StartupConfigOverride
 	inline CString NormalizeBaseDir(const CString &strBaseDir)
 	{
 		CString strNormalized(strBaseDir);
-		strNormalized.Trim();
-		strNormalized.Replace(_T('/'), _T('\\'));
 		while (strNormalized.GetLength() > 3 && strNormalized.Right(1) == _T("\\"))
 			strNormalized.Truncate(strNormalized.GetLength() - 1);
 		if (!strNormalized.IsEmpty() && strNormalized.Right(1) != _T("\\"))
@@ -67,7 +84,7 @@ namespace StartupConfigOverride
 	/**
 	 * @brief Parses the supported `-c <base-dir>` override from the raw command line.
 	 *
-	 * The option may be specified at most once and requires an absolute base directory.
+	 * The option may be specified at most once and requires a canonical absolute drive path.
 	 */
 	inline bool TryParseConfigBaseDirOverride(int argc, TCHAR *argv[], CString &rstrBaseDir, CString &rstrError)
 	{
@@ -84,14 +101,13 @@ namespace StartupConfigOverride
 				return false;
 			}
 			if (++i >= argc) {
-				rstrError = _T("The -c option requires an absolute eMule base directory.");
+				rstrError = _T("The -c option requires a canonical absolute eMule base directory like C:\\path.");
 				return false;
 			}
 
 			CString strCandidate(argv[i]);
-			strCandidate.Trim();
 			if (strCandidate.IsEmpty() || !IsAbsoluteBaseDirPath(strCandidate)) {
-				rstrError = _T("The -c option requires an absolute eMule base directory.");
+				rstrError = _T("The -c option requires a canonical absolute eMule base directory like C:\\path.");
 				return false;
 			}
 
