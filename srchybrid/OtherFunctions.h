@@ -154,6 +154,7 @@ CString EncodeURLQueryParam(const CString &rstrQuery);
 void DupAmpersand(CString &rstr);
 //CString RemoveAmpersand(const CString &rstr);
 CString	StripInvalidFilenameChars(const CString &strText);
+CString NormalizeDownloadFilename(const CString &strText);
 
 
 ///////////////////////////////////////////////////////////////////////////////

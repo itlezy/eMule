@@ -157,7 +157,7 @@ CPartFile::CPartFile(CSearchFile *searchresult, UINT cat)
 		case FT_FILENAME:
 			ASSERT(pTag->IsStr());
 			if (pTag->IsStr() && GetFileName().IsEmpty())
-				CPartFile::SetFileName(pTag->GetStr(), true, true);
+				CPartFile::SetFileName(NormalizeDownloadFilename(pTag->GetStr()));
 			break;
 		case FT_FILESIZE:
 			ASSERT(pTag->IsInt64(true));
@@ -234,7 +234,7 @@ void CPartFile::InitializeFromLink(const CED2KFileLink &fileLink, UINT cat)
 {
 	Init();
 
-	CPartFile::SetFileName(fileLink.GetName(), true, true);
+	CPartFile::SetFileName(NormalizeDownloadFilename(fileLink.GetName()));
 	CPartFile::SetFileSize(fileLink.GetSize());
 	m_FileIdentifier.SetMD4Hash(fileLink.GetHashKey());
 	if (fileLink.HasValidAICHHash()) {
@@ -539,7 +539,7 @@ void CPartFile::CreatePartFile(UINT cat)
 	m_paused = false;
 
 	if (thePrefs.AutoFilenameCleanup())
-		SetFileName(CleanupFilename(GetFileName()));
+		SetFileName(NormalizeDownloadFilename(CleanupFilename(GetFileName())));
 
 	SavePartFile();
 	m_CorruptionBlackBox.Init(m_nFileSize);
@@ -612,7 +612,7 @@ EPartFileLoadResult CPartFile::ImportShareazaTempfile(LPCTSTR in_directory, LPCT
 		// Get the File Name
 		CString sRemoteName;
 		ar >> sRemoteName;
-		SetFileName(sRemoteName);
+		SetFileName(NormalizeDownloadFilename(sRemoteName));
 
 		// Get the File Size
 		unsigned __int64 lSize;
@@ -2959,12 +2959,12 @@ BOOL CPartFile::PerformFileComplete()
 	// If that function is invoked from within the file completion thread, it's OK if we wait (and block) the thread.
 	CSingleLock sLock(&m_FileCompleteMutex, TRUE);
 
-	TCHAR *newfilename = _tcsdup(GetFileName());
+	const CString strCompletedFileName(NormalizeDownloadFilename(GetFileName()));
+	TCHAR *newfilename = _tcsdup(strCompletedFileName);
 	if (!newfilename)
 		return FALSE;
 
 	const CString &strPartfilename(RemoveFileExtension(m_fullname));
-	_tcscpy(newfilename, (LPCTSTR)StripInvalidFilenameChars(newfilename));
 
 	CString indir;
 	if (LongPathSeams::PathExists(thePrefs.GetCategory(GetCategory())->strIncomingPath))

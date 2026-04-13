@@ -38,6 +38,7 @@
 #include "RarFile.h"
 #include "shahashset.h"
 #include "collection.h"
+#include "FilenameNormalizationPolicy.h"
 #include "LongPathSeams.h"
 #include "OtherFunctionsSeams.h"
 #include "PathHelpers.h"
@@ -90,7 +91,7 @@ static const byte base16Lookup[BASE16_LOOKUP_MAX][2] = {
 	{ 'E', 0xE },
 	{ 'F', 0xF }
 };
-LPCTSTR const sBadFileNameChar(_T("\"*<>?|\\/:")); // lots of invalid chars for filenames in Windows :=)
+LPCTSTR const sBadFileNameChar(FilenameNormalizationPolicy::kInvalidFilenameChars); // lots of invalid chars for filenames in Windows :=)
 LPCTSTR const sHiddenPassword = _T("\012\010\011\015\033"); //tough to enter from the keyboard
 const struct LinkScheme s_apszSchemes[] =
 {
@@ -2930,36 +2931,12 @@ time_t safe_mktime(struct tm *ptm)
 
 CString StripInvalidFilenameChars(const CString &strText)
 {
-	CString strDest;
+	return FilenameNormalizationPolicy::StripInvalidFilenameChars(strText);
+}
 
-	for (LPCTSTR pszSource = strText; *pszSource; ++pszSource)
-		if (*pszSource >= _T('\x20') && !_tcschr(sBadFileNameChar, *pszSource))
-			strDest += *pszSource;
-
-	static LPCTSTR const apszReservedFilenames[] = {
-		_T("NUL"), _T("CON"), _T("PRN"), _T("AUX"), _T("CLOCK$"),
-		_T("COM1"),_T("COM2"),_T("COM3"),_T("COM4"),_T("COM5"),_T("COM6"),_T("COM7"),_T("COM8"),_T("COM9"),
-		_T("LPT1"),_T("LPT2"),_T("LPT3"),_T("LPT4"),_T("LPT5"),_T("LPT6"),_T("LPT7"),_T("LPT8"),_T("LPT9")
-	};
-	for (unsigned i = 0; i < _countof(apszReservedFilenames); ++i) {
-		int nPrefixLen = (uint32)_tcslen(apszReservedFilenames[i]);
-		if (_tcsnicmp(strDest, apszReservedFilenames[i], nPrefixLen) == 0) {
-			if (strDest.GetLength() == nPrefixLen) {
-				// Filename is a reserved file name:
-				// Append an underscore character
-				strDest += _T('_');
-				break;
-			}
-			if (strDest[nPrefixLen] == _T('.')) {
-				// Filename starts with a reserved file name followed by a '.' character:
-				// Replace that ',' character with an '_' character.
-				strDest.SetAt(nPrefixLen, _T('_'));
-				break;
-			}
-		}
-	}
-
-	return strDest;
+CString NormalizeDownloadFilename(const CString &strText)
+{
+	return FilenameNormalizationPolicy::NormalizeDownloadFilename(strText);
 }
 
 bool operator==(const CCKey &k1, const CCKey &k2)
