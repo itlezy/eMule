@@ -55,6 +55,7 @@ class CUpDownClient;
 class CUPnPImplWrapper;
 class CUploadDiskIOThread;
 class CPartFileWriteThread;
+class CGeoLocation;
 
 struct SLogItem;
 
@@ -155,6 +156,7 @@ public:
 	CUPnPImplWrapper	*m_pUPnPFinder;
 	CUploadDiskIOThread	*m_pUploadDiskIOThread;
 	CPartFileWriteThread *m_pPartFileWriteThread;
+	CGeoLocation		*geolocation;
 
 
 	static const UINT	m_nVersionMjr;

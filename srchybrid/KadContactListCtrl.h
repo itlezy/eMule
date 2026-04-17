@@ -33,7 +33,8 @@ private:
 	{
 		colID = 0,
 		colType,
-		colDistance
+		colDistance,
+		colLocation
 	};
 
 protected:

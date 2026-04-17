@@ -646,6 +646,10 @@ public:
 	static BOOL		m_bIsRunningAeroGlass;
 	static bool		m_bPreventStandby;
 	static bool		m_bStoreSearches;
+	static bool		m_bGeoLocationEnabled;
+	static UINT		m_uGeoLocationCheckDays;
+	static __time64_t m_tGeoLocationLastCheckTime;
+	static CString	m_strGeoLocationUpdateUrl;
 
 
 	enum Table
@@ -1186,6 +1190,30 @@ public:
 	static const CString& GetFilenameCleanups()			{ return filenameCleanups; }
 
 	static bool		ShowRatesOnTitle()					{ return showRatesInTitle; }
+	/**
+	 * @brief Returns whether the UI should resolve and display IP geolocation data.
+	 */
+	static bool		IsGeoLocationEnabled()				{ return m_bGeoLocationEnabled; }
+	/**
+	 * @brief Returns the configured automatic geolocation DB check interval in days.
+	 */
+	static UINT		GetGeoLocationCheckDays()			{ return m_uGeoLocationCheckDays; }
+	/**
+	 * @brief Returns the last attempted automatic or manual geolocation DB refresh time.
+	 */
+	static __time64_t GetGeoLocationLastCheckTime()		{ return m_tGeoLocationLastCheckTime; }
+	/**
+	 * @brief Returns the configured geolocation DB update URL template.
+	 */
+	static const CString& GetGeoLocationUpdateUrlTemplate()	{ return m_strGeoLocationUpdateUrl; }
+	/**
+	 * @brief Stores the automatic geolocation DB check interval in days.
+	 */
+	static void		SetGeoLocationCheckDays(UINT uDays);
+	/**
+	 * @brief Stores the last attempted geolocation DB refresh time and optionally persists it immediately.
+	 */
+	static void		SetGeoLocationLastCheckTime(__time64_t tTimestamp, bool bPersist = false);
 	static void		LoadCats();
 	static const CString& GetDateTimeFormat()			{ return m_strDateTimeFormat; }
 	static const CString& GetDateTimeFormat4Log()		{ return m_strDateTimeFormat4Log; }

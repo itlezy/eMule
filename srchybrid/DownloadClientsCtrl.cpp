@@ -21,6 +21,7 @@
 #include "ClientDetailDialog.h"
 #include "MemDC.h"
 #include "MenuCmds.h"
+#include "GeoLocation.h"
 #include "TransferDlg.h"
 #include "UpDownClient.h"
 #include "ClientCredits.h"
@@ -34,6 +35,16 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+	uint32 GetClientGeoIP(const CUpDownClient* client)
+	{
+		if (client == NULL)
+			return 0;
+		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+}
 
 
 IMPLEMENT_DYNAMIC(CDownloadClientsCtrl, CMuleListCtrl)
@@ -66,6 +77,7 @@ void CDownloadClientsCtrl::Init()
 	InsertColumn(5,	_T(""),	LVCFMT_RIGHT,	DFLT_SIZE_COL_WIDTH);		//IDS_CL_TRANSFDOWN
 	InsertColumn(6,	_T(""),	LVCFMT_RIGHT,	DFLT_SIZE_COL_WIDTH);		//IDS_CL_TRANSFUP
 	InsertColumn(7,	_T(""),	LVCFMT_LEFT,	100);						//IDS_META_SRCTYPE
+	InsertColumn(8,	_T(""),	LVCFMT_LEFT,	140);						//IDS_GEOLOCATION
 
 	SetAllIcons();
 	Localize();
@@ -76,10 +88,10 @@ void CDownloadClientsCtrl::Init()
 
 void CDownloadClientsCtrl::Localize()
 {
-	static const UINT uids[8] =
+	static const UINT uids[9] =
 	{
 		IDS_QL_USERNAME, IDS_CD_CSOFT, IDS_FILE, IDS_DL_SPEED, IDS_AVAILABLEPARTS
-		, IDS_CL_TRANSFDOWN, IDS_CL_TRANSFUP, IDS_META_SRCTYPE
+		, IDS_CL_TRANSFDOWN, IDS_CL_TRANSFUP, IDS_META_SRCTYPE, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -140,7 +152,21 @@ void CDownloadClientsCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 					const POINT point{rcItem.left, rcItem.top + iIconY};
 					m_pImageList->Draw(dc, iImage, point, ILD_NORMAL | INDEXTOOVERLAYMASK(uOverlayImage));
 					rcItem.left += 16 + sm_iLabelOffset - sm_iSubItemInset;
+					rcItem.left += sm_iSubItemInset;
+					rcItem.right -= sm_iSubItemInset;
+					dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+					break;
 				}
+			case 8: //geo location
+				if (theApp.geolocation != NULL) {
+					const POINT point{itemLeft + sm_iIconOffset, rcItem.top + iIconY};
+					if (theApp.geolocation->DrawFlag(dc, GetClientGeoIP(client), point))
+						rcItem.left = itemLeft + sm_iIconOffset + 18 + sm_iLabelOffset - sm_iSubItemInset;
+				}
+				rcItem.left += sm_iSubItemInset;
+				rcItem.right -= sm_iSubItemInset;
+				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
 			default: //any text column
 				rcItem.left += sm_iSubItemInset;
 				rcItem.right -= sm_iSubItemInset;
@@ -218,6 +244,10 @@ CString CDownloadClientsCtrl::GetItemDisplayText(const CUpDownClient *client, in
 			}
 			sText = GetResString(uid);
 		}
+		break;
+	case 8:
+		if (theApp.geolocation != NULL)
+			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(client));
 	}
 	return sText;
 }
@@ -319,6 +349,10 @@ int CALLBACK CDownloadClientsCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPAR
 		break;
 	case 7: //source origin
 		iResult = item1->GetSourceFrom() - item2->GetSourceFrom();
+		break;
+	case 8:
+		if (theApp.geolocation != NULL)
+			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(item1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(item2)));
 	}
 
 	if (HIWORD(lParamSort))

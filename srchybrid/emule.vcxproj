@@ -201,6 +201,7 @@
     <ClCompile Include="FriendList.cpp" />
     <ClCompile Include="FriendListCtrl.cpp" />
     <ClCompile Include="GDIThread.cpp" />
+    <ClCompile Include="GeoLocation.cpp" />
     <ClCompile Include="GradientStatic.cpp" />
     <ClCompile Include="GZipFile.cpp" />
     <ClCompile Include="HTRichEditCtrl.cpp" />
@@ -477,6 +478,7 @@
     <ClInclude Include="FriendList.h" />
     <ClInclude Include="FriendListCtrl.h" />
     <ClInclude Include="GDIThread.h" />
+    <ClInclude Include="GeoLocation.h" />
     <ClInclude Include="GradientStatic.h" />
     <ClInclude Include="GZipFile.h" />
     <ClInclude Include="HelpIDs.h" />

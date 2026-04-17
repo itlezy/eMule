@@ -25,6 +25,7 @@
 #include "emuledlg.h"
 #include "friendlist.h"
 #include "MemDC.h"
+#include "GeoLocation.h"
 #include "KnownFile.h"
 #include "SharedFileList.h"
 #include "ChatWnd.h"
@@ -39,6 +40,13 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+	uint32 GetClientGeoIP(const CUpDownClient* client)
+	{
+		if (client == NULL)
+			return 0;
+		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+
 	CString FormatUploadRatio(float fRatio)
 	{
 		CString str;
@@ -120,6 +128,7 @@ void CUploadListCtrl::Init()
 	InsertColumn(9,	_T(""),	LVCFMT_RIGHT,70);							//IDS_COOLDOWN
 	InsertColumn(10,_T(""),	LVCFMT_LEFT, 145);							//IDS_EFFECTIVE_SCORE
 	InsertColumn(11,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
+	InsertColumn(12,_T(""),	LVCFMT_LEFT, 140);							//IDS_GEOLOCATION
 
 	SetAllIcons();
 	Localize();
@@ -130,10 +139,10 @@ void CUploadListCtrl::Init()
 
 void CUploadListCtrl::Localize()
 {
-	static const UINT uids[12] =
+	static const UINT uids[13] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_DL_SPEED, IDS_DL_TRANSF, IDS_WAITED
-		, IDS_UPLOADTIME, IDS_STATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_EFFECTIVE_SCORE, IDS_UPSTATUS
+		, IDS_UPLOADTIME, IDS_STATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_EFFECTIVE_SCORE, IDS_UPSTATUS, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -196,7 +205,21 @@ void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 					const POINT point{rcItem.left, rcItem.top + iIconY};
 					m_pImageList->Draw(dc, iImage, point, ILD_NORMAL | INDEXTOOVERLAYMASK(uOverlayImage));
 					rcItem.left += 16 + sm_iLabelOffset - sm_iSubItemInset;
+					rcItem.left += sm_iSubItemInset;
+					rcItem.right -= sm_iSubItemInset;
+					dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+					break;
 				}
+			case 12: //geo location
+				if (theApp.geolocation != NULL) {
+					const POINT point{itemLeft + sm_iIconOffset, rcItem.top + iIconY};
+					if (theApp.geolocation->DrawFlag(dc, GetClientGeoIP(client), point))
+						rcItem.left = itemLeft + sm_iIconOffset + 18 + sm_iLabelOffset - sm_iSubItemInset;
+				}
+				rcItem.left += sm_iSubItemInset;
+				rcItem.right -= sm_iSubItemInset;
+				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
 			default: //any text column
 				rcItem.left += sm_iSubItemInset;
 				rcItem.right -= sm_iSubItemInset;
@@ -274,6 +297,10 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 	case 11:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+	case 12:
+		if (theApp.geolocation != NULL)
+			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(client));
 	}
 	return sText;
 }
@@ -349,7 +376,7 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 8: // Session ratio
 		case 9: // Cooldown
 		case 10: // Effective score
-		case 11: // Part Count
+	case 11: // Part Count
 			sortAscending = false;
 			break;
 		default:
@@ -438,6 +465,10 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 11:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 12:
+		if (theApp.geolocation != NULL)
+			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(item1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(item2)));
 	}
 
 	if (HIWORD(lParamSort))

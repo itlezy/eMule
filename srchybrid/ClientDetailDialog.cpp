@@ -26,6 +26,7 @@
 #include "HighColorTab.hpp"
 #include "UserMsgs.h"
 #include "ListenSocket.h"
+#include "GeoLocation.h"
 #include "preferences.h"
 
 #ifdef _DEBUG
@@ -33,6 +34,16 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+namespace
+{
+	uint32 GetClientGeoIP(const CUpDownClient* client)
+	{
+		if (client == NULL)
+			return 0;
+		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // CClientDetailPage
@@ -85,7 +96,13 @@ BOOL CClientDetailPage::OnSetActive()
 	if (m_bDataChanged) {
 		CUpDownClient *client = static_cast<CUpDownClient*>((*m_paClients)[0]);
 
-		SetDlgItemText(IDC_DNAME, (client->GetUserName() ? client->GetUserName() : _T("?")));
+		CString strClientName(client->GetUserName() ? client->GetUserName() : _T("?"));
+		if (theApp.geolocation != NULL) {
+			const CString strGeo(theApp.geolocation->GetDisplayText(GetClientGeoIP(client)));
+			if (!strGeo.IsEmpty() && strGeo != _T("N/A"))
+				strClientName.AppendFormat(_T(" [%s]"), (LPCTSTR)strGeo);
+		}
+		SetDlgItemText(IDC_DNAME, strClientName);
 		SetDlgItemText(IDC_DHASH, (client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?")));
 		SetDlgItemText(IDC_DSOFT, client->GetClientSoftVer());
 
@@ -110,7 +127,13 @@ BOOL CClientDetailPage::OnSetActive()
 		if (client->GetServerIP()) {
 			SetDlgItemText(IDC_DSIP, ipstr(client->GetServerIP()));
 			const CServer *cserver = theApp.serverlist->GetServerByIPTCP(client->GetServerIP(), client->GetServerPort());
-			SetDlgItemText(IDC_DSNAME, cserver ? (LPCTSTR)cserver->GetListName() : _T("?"));
+			CString strServerName(cserver ? cserver->GetListName() : _T("?"));
+			if (theApp.geolocation != NULL) {
+				const CString strGeo(theApp.geolocation->GetDisplayText(client->GetServerIP()));
+				if (!strGeo.IsEmpty() && strGeo != _T("N/A"))
+					strServerName.AppendFormat(_T(" [%s]"), (LPCTSTR)strGeo);
+			}
+			SetDlgItemText(IDC_DSNAME, strServerName);
 		} else {
 			SetDlgItemText(IDC_DSIP, _T("?"));
 			SetDlgItemText(IDC_DSNAME, _T("?"));

@@ -23,6 +23,7 @@ protected:
 		sfLog
 	} m_eSelectFont;
 	void LoadSettings();
+	void UpdateGeoLocationControls();
 
 	void DrawPreview();		//Cax2 - aqua bar
 	C3DPreviewControl	m_3DPreview;
@@ -37,6 +38,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar);
 	afx_msg void OnSettingsChange()				{ SetModified(); }
+	afx_msg void OnGeoLocationSettingsChange();
 	afx_msg void OnBnClickedSelectHypertextFont();
 	afx_msg void OnBtnClickedResetHist();
 	afx_msg void OnHelp();
