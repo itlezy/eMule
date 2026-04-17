@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "TitledMenu.h"
+#include <vector>
 
 enum ESpecialDirectoryItems
 {
@@ -85,6 +86,14 @@ protected:
 	void			RemoveAllSharedDirectories();
 	int				AddSystemIcon(HICON hIcon, int nSystemListPos);
 	void			FetchSharedDirsList();
+	/**
+	 * @brief Rebuilds the exact and prefix lookup caches for the current shared-directory list.
+	 */
+	void			RebuildSharedDirectoryLookup();
+	/**
+	 * @brief Returns true when the filesystem tree directory has a shared directory below it.
+	 */
+	bool			HasSharedDirectoryDescendant(const CString &strDir) const;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void	OnSysColorChange();
@@ -130,4 +139,6 @@ private:
 	bool	m_bCreatingTree;
 	bool	m_bUseIcons;
 	CMap<int, int, int, int> m_mapSystemIcons;
+	CMapStringToPtr m_mapSharedDirectoryKeys;
+	std::vector<CString> m_aSortedSharedDirectoryKeys;
 };

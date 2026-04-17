@@ -64,6 +64,9 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+	constexpr UINT_PTR kStartupDeferredReloadTimerId = 0x5346;
+	constexpr UINT kStartupDeferredReloadDelayMs = 75;
+
 	CString FormatUploadRatio(float fRatio)
 	{
 		CString str;
@@ -407,6 +410,7 @@ BEGIN_MESSAGE_MAP(CSharedFilesCtrl, CMuleListCtrl)
 	ON_WM_KEYDOWN()
 	ON_WM_SYSCOLORCHANGE()
 	ON_WM_MOUSEMOVE()
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 CSharedFilesCtrl::CSharedFilesCtrl()
@@ -417,6 +421,7 @@ CSharedFilesCtrl::CSharedFilesCtrl()
 	, nAICHHashing()
 	, m_pHighlightedItem()
 	, m_bSelectionRestoreInProgress(false)
+	, m_bStartupDeferredReloadPending(false)
 {
 	SetGeneralPurposeFind(true);
 	m_pToolTip = new CToolTipCtrlX;
@@ -887,10 +892,39 @@ void CSharedFilesCtrl::EnsureModelBound()
 	NotifyStartupSharedFilesModelChanged();
 }
 
+void CSharedFilesCtrl::ScheduleStartupDeferredReload()
+{
+	if (!m_bModelBound || theApp.IsClosing() || GetSafeHwnd() == NULL)
+		return;
+	if (m_bStartupDeferredReloadPending)
+		return;
+
+	if (SetTimer(kStartupDeferredReloadTimerId, kStartupDeferredReloadDelayMs, NULL) != 0)
+		m_bStartupDeferredReloadPending = true;
+	else
+		ReloadFileList();
+}
+
+void CSharedFilesCtrl::FlushStartupDeferredReload()
+{
+	if (!m_bModelBound || theApp.IsClosing())
+		return;
+	if (!m_bStartupDeferredReloadPending)
+		return;
+
+	KillTimer(kStartupDeferredReloadTimerId);
+	m_bStartupDeferredReloadPending = false;
+	ReloadFileList();
+}
+
 void CSharedFilesCtrl::ReloadFileList()
 {
 	if (!m_bModelBound)
 		return;
+	if (m_bStartupDeferredReloadPending) {
+		KillTimer(kStartupDeferredReloadTimerId);
+		m_bStartupDeferredReloadPending = false;
+	}
 #if EMULE_COMPILED_STARTUP_PROFILING
 	const ULONGLONG ullReloadStart = theApp.GetStartupProfileTimestampUs();
 	ULONGLONG ullPhaseStart = ullReloadStart;
@@ -960,6 +994,18 @@ void CSharedFilesCtrl::ReloadFileList()
 	}
 #endif
 	NotifyStartupSharedFilesModelChanged();
+}
+
+void CSharedFilesCtrl::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == kStartupDeferredReloadTimerId) {
+		KillTimer(kStartupDeferredReloadTimerId);
+		m_bStartupDeferredReloadPending = false;
+		ReloadFileList();
+		return;
+	}
+
+	CMuleListCtrl::OnTimer(nIDEvent);
 }
 
 void CSharedFilesCtrl::ShowFilesCount()
