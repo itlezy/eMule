@@ -56,7 +56,13 @@ CUploadDiskIOThread::CUploadDiskIOThread()
 	, m_bSignalThrottler()
 {
 	ASSERT(theApp.uploadqueue != NULL);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 	AfxBeginThread(RunProc, (LPVOID)this);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("broadband.upload_disk_io.launch_thread"), theApp.GetStartupProfileElapsedUs(ullPhaseStart), ullPhaseStart);
+#endif
 }
 
 CUploadDiskIOThread::~CUploadDiskIOThread()
@@ -66,6 +72,10 @@ CUploadDiskIOThread::~CUploadDiskIOThread()
 
 UINT AFX_CDECL CUploadDiskIOThread::RunProc(LPVOID pParam)
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled())
+		theApp.AppendStartupProfileLine(_T("broadband.upload_disk_io.thread_enter"), 0);
+#endif
 	DbgSetThreadName("UploadDiskIOThread");
 	InitThreadLocale();
 	return pParam ? static_cast<CUploadDiskIOThread*>(pParam)->RunInternal() : 1;
@@ -80,6 +90,9 @@ void CUploadDiskIOThread::EndThread()
 
 UINT CUploadDiskIOThread::RunInternal()
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullThreadStartUs = theApp.GetStartupProfileTimestampUs();
+#endif
 	m_hPort = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 1);
 	if (!m_hPort)
 		return ::GetLastError();
@@ -88,6 +101,9 @@ UINT CUploadDiskIOThread::RunInternal()
 	ULONG_PTR completionKey = 0;
 	OverlappedRead_Struct *pCurIO = NULL;
 	m_Run = RUN_IDLE;
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("broadband.upload_disk_io.thread_ready"), theApp.GetStartupProfileElapsedUs(ullThreadStartUs), ullThreadStartUs);
+#endif
 	while (m_Run
 			&& ::GetQueuedCompletionStatus(m_hPort, &dwRead, &completionKey, (LPOVERLAPPED*)&pCurIO, INFINITE)
 			&& completionKey)

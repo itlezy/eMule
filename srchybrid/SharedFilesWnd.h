@@ -76,6 +76,8 @@ public:
 	void OnSingleFileShareStatusChanged();
 	void ShowSelectedFilesDetails(bool bForce = false);
 	void ShowDetailsPanel(bool bShow);
+	void OnStartupSharedFilesModelChanged();
+	void OnStartupProfileStartupComplete();
 
 	CSharedFilesCtrl sharedfilesctrl;
 	CStringArray m_astrFilter;
@@ -90,12 +92,16 @@ private:
 	uint32			m_nFilterColumn;
 	bool			m_bDetailsVisible;
 	bool			m_bSharedTreeInitialized;
+	bool			m_bStartupSharedTreePopulatedReported;
+	bool			m_bStartupSharedModelPopulatedReported;
+	bool			m_bStartupSharedFilesReadyReported;
 	CSharedFileDetailsModelessSheet	m_dlgDetails;
 
 protected:
 	void SetAllIcons();
 	void DoResize(int iDelta);
 	void EnsureSharedTreeInitialized();
+	void ReportStartupSharedFilesReadinessIfReady();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL PreTranslateMessage(MSG *pMsg);

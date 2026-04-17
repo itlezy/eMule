@@ -19,7 +19,9 @@
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif */
+#include <atlconv.h>
 #include <atlimage.h>
+#include <string>
 #include <sockimpl.h> //for *m_pfnSockTerm()
 #include <timeapi.h>
 #include <uxtheme.h>
@@ -85,6 +87,298 @@ CString GetSkinProfileResourcePath(const CString &rstrSkinProfile, LPCTSTR pszSe
 		return CString();
 
 	return ShellUiHelpers::ResolveSkinResourcePath(rstrSkinProfile, strSkinResource);
+}
+
+constexpr ULONGLONG kStartupTraceMicrosPerSecond = 1000000ui64;
+constexpr LPCTSTR kStartupProfileTraceFileName = _T("startup-profile.trace.json");
+constexpr LPCTSTR kLegacyStartupProfileFileName = _T("startup-profile.txt");
+
+struct SStartupTraceDescriptor
+{
+	CString strCategory;
+	CString strStableId;
+	bool bFinalizeTrace = false;
+};
+
+bool StartsWithNoCase(const CString &rstrText, LPCTSTR pszPrefix)
+{
+	if (pszPrefix == NULL)
+		return false;
+
+	const int iPrefixLength = static_cast<int>(_tcslen(pszPrefix));
+	return rstrText.GetLength() >= iPrefixLength && rstrText.Left(iPrefixLength).CompareNoCase(pszPrefix) == 0;
+}
+
+CString NormalizeStartupTracePhaseName(LPCTSTR pszPhase)
+{
+	CString strNormalized(pszPhase != NULL ? pszPhase : _T(""));
+	if (StartsWithNoCase(strNormalized, _T("BuildSharedDirectoryTree item "))) {
+		const int iColonPos = strNormalized.Find(_T(':'));
+		const int iEqualsPos = strNormalized.Find(_T('='));
+		if (iColonPos >= 0)
+			strNormalized = strNormalized.Left(iColonPos);
+		else if (iEqualsPos >= 0)
+			strNormalized = strNormalized.Left(iEqualsPos);
+	}
+
+	const int iParenPos = strNormalized.Find(_T(" ("));
+	if (iParenPos >= 0 && strNormalized.Right(1) == _T(")"))
+		strNormalized = strNormalized.Left(iParenPos);
+
+	return strNormalized.Trim();
+}
+
+CString BuildStableTraceIdFromPhaseName(const CString &rstrPhaseName)
+{
+	CString strId(rstrPhaseName);
+	strId.MakeLower();
+
+	CString strSanitized;
+	bool bPendingSeparator = false;
+	for (int i = 0; i < strId.GetLength(); ++i) {
+		const TCHAR ch = strId[i];
+		if ((ch >= _T('a') && ch <= _T('z')) || (ch >= _T('0') && ch <= _T('9'))) {
+			if (bPendingSeparator && !strSanitized.IsEmpty() && strSanitized.Right(1) != _T("."))
+				strSanitized.AppendChar(_T('.'));
+			strSanitized.AppendChar(ch);
+			bPendingSeparator = false;
+		} else {
+			bPendingSeparator = !strSanitized.IsEmpty();
+		}
+	}
+
+	while (!strSanitized.IsEmpty() && strSanitized.Right(1) == _T("."))
+		strSanitized.Truncate(strSanitized.GetLength() - 1);
+	if (strSanitized.IsEmpty())
+		strSanitized = _T("startup.phase");
+	return strSanitized;
+}
+
+SStartupTraceDescriptor DescribeStartupTracePhase(LPCTSTR pszPhase)
+{
+	const CString strNormalized(NormalizeStartupTracePhaseName(pszPhase));
+	SStartupTraceDescriptor descriptor;
+	descriptor.strStableId = BuildStableTraceIdFromPhaseName(strNormalized);
+	descriptor.strCategory = _T("startup.phase");
+
+	if (strNormalized == _T("InitInstance: logging and profile setup")) {
+		descriptor.strStableId = _T("startup.logging_profile_setup");
+		descriptor.strCategory = _T("startup.init");
+	} else if (strNormalized == _T("StartupTimer complete")) {
+		descriptor.strStableId = _T("startup.complete");
+		descriptor.strCategory = _T("startup.lifecycle");
+	} else if (strNormalized == _T("StartupTimer finalize: start deferred shared hashing")) {
+		descriptor.strStableId = _T("shared.hashing.deferred_start");
+		descriptor.strCategory = _T("startup.lifecycle");
+	} else if (strNormalized == _T("Construct CSharedFileList")) {
+		descriptor.strStableId = _T("shared.scan.construct");
+		descriptor.strCategory = _T("shared.scan");
+	} else if (strNormalized == _T("shared.scan.complete")) {
+		descriptor.strStableId = _T("shared.scan.complete");
+		descriptor.strCategory = _T("shared.scan");
+	} else if (strNormalized == _T("shared.model.populated")) {
+		descriptor.strStableId = _T("shared.model.populated");
+		descriptor.strCategory = _T("shared.model");
+	} else if (strNormalized == _T("shared.tree.populated")) {
+		descriptor.strStableId = _T("shared.tree.populated");
+		descriptor.strCategory = _T("shared.tree");
+	} else if (strNormalized == _T("ui.shared_files_ready")) {
+		descriptor.strStableId = _T("ui.shared_files_ready");
+		descriptor.strCategory = _T("ui.readiness");
+		descriptor.bFinalizeTrace = true;
+	} else if (strNormalized == _T("BuildSharedDirectoryTree done")) {
+		descriptor.strStableId = _T("shared.tree.build");
+		descriptor.strCategory = _T("shared.tree");
+	} else if (strNormalized == _T("Construct CUploadQueue")) {
+		descriptor.strStableId = _T("broadband.upload_queue.ready");
+		descriptor.strCategory = _T("broadband.lifecycle");
+	} else if (strNormalized == _T("Construct UploadBandwidthThrottler")) {
+		descriptor.strStableId = _T("broadband.throttler.ready");
+		descriptor.strCategory = _T("broadband.lifecycle");
+	} else if (strNormalized == _T("Construct CUploadDiskIOThread")) {
+		descriptor.strStableId = _T("broadband.upload_disk_io.ready");
+		descriptor.strCategory = _T("broadband.lifecycle");
+	} else if (strNormalized == _T("Construct CPartFileWriteThread")) {
+		descriptor.strStableId = _T("broadband.partfile_write.ready");
+		descriptor.strCategory = _T("broadband.lifecycle");
+	} else if (strNormalized == _T("PerfLog startup")) {
+		descriptor.strStableId = _T("startup.perflog.start");
+		descriptor.strCategory = _T("startup.init");
+	} else if (StartsWithNoCase(strNormalized, _T("shared.hash.file."))) {
+		descriptor.strStableId = strNormalized;
+		descriptor.strCategory = _T("shared.hash");
+	} else if (StartsWithNoCase(strNormalized, _T("broadband."))) {
+		descriptor.strStableId = strNormalized;
+		descriptor.strCategory = _T("broadband.lifecycle");
+	} else if (StartsWithNoCase(strNormalized, _T("Construct "))) {
+		descriptor.strCategory = _T("startup.construct");
+	} else if (StartsWithNoCase(strNormalized, _T("StartupTimer stage "))) {
+		descriptor.strCategory = _T("startup.timer");
+	} else if (StartsWithNoCase(strNormalized, _T("StartupTimer "))) {
+		descriptor.strCategory = _T("startup.lifecycle");
+	} else if (StartsWithNoCase(strNormalized, _T("CStatisticsDlg::OnInitDialog "))) {
+		descriptor.strCategory = _T("ui.statistics");
+	} else if (StartsWithNoCase(strNormalized, _T("CemuleDlg::OnInitDialog "))) {
+		descriptor.strCategory = _T("ui.init");
+	} else if (StartsWithNoCase(strNormalized, _T("CemuleDlg::ShowSplash")) || StartsWithNoCase(strNormalized, _T("CemuleDlg::DestroySplash"))) {
+		descriptor.strCategory = _T("ui.splash");
+	} else if (StartsWithNoCase(strNormalized, _T("CemuleDlg::OnKickIdle "))) {
+		descriptor.strCategory = _T("startup.idle");
+	} else if (StartsWithNoCase(strNormalized, _T("BuildSharedDirectoryTree "))) {
+		descriptor.strCategory = _T("shared.tree");
+	} else if (StartsWithNoCase(strNormalized, _T("CSharedDirsTreeCtrl::"))) {
+		descriptor.strCategory = _T("shared.tree.control");
+	} else if (StartsWithNoCase(strNormalized, _T("CSharedFilesWnd::"))) {
+		descriptor.strCategory = _T("shared.window");
+	} else if (StartsWithNoCase(strNormalized, _T("CSharedFilesCtrl::"))) {
+		descriptor.strCategory = _T("shared.list");
+	} else if (StartsWithNoCase(strNormalized, _T("CemuleDlg::DoModal lifetime"))) {
+		descriptor.strCategory = _T("ui.lifecycle");
+	}
+
+	return descriptor;
+}
+
+CString GetStartupCounterCategory(LPCTSTR pszCounterName)
+{
+	const CString strCounterName(pszCounterName != NULL ? pszCounterName : _T(""));
+	if (StartsWithNoCase(strCounterName, _T("shared.hash.")))
+		return _T("shared.hash.counter");
+	if (StartsWithNoCase(strCounterName, _T("shared.")))
+		return _T("shared.counter");
+	if (StartsWithNoCase(strCounterName, _T("broadband.")))
+		return _T("broadband.config");
+	return _T("startup.counter");
+}
+
+ULONGLONG QueryPerformanceCounterValue()
+{
+	LARGE_INTEGER nCounter;
+	return ::QueryPerformanceCounter(&nCounter) ? static_cast<ULONGLONG>(nCounter.QuadPart) : 0ui64;
+}
+
+ULONGLONG QueryPerformanceFrequencyValue()
+{
+	LARGE_INTEGER nFrequency;
+	return ::QueryPerformanceFrequency(&nFrequency) ? static_cast<ULONGLONG>(nFrequency.QuadPart) : 0ui64;
+}
+
+ULONGLONG ConvertQpcTicksToMicroseconds(const ULONGLONG ullTicks, const ULONGLONG ullFrequency)
+{
+	if (ullFrequency == 0)
+		return 0;
+	return (ullTicks * kStartupTraceMicrosPerSecond) / ullFrequency;
+}
+
+std::string EscapeJsonUtf8(LPCTSTR pszText)
+{
+	CStringA strUtf8(CT2A(pszText != NULL ? pszText : _T(""), CP_UTF8));
+	std::string strEscaped;
+	strEscaped.reserve(strUtf8.GetLength() + 8);
+	for (int i = 0; i < strUtf8.GetLength(); ++i) {
+		const unsigned char ch = static_cast<unsigned char>(strUtf8[i]);
+		switch (ch) {
+		case '\\':
+			strEscaped += "\\\\";
+			break;
+		case '"':
+			strEscaped += "\\\"";
+			break;
+		case '\b':
+			strEscaped += "\\b";
+			break;
+		case '\f':
+			strEscaped += "\\f";
+			break;
+		case '\n':
+			strEscaped += "\\n";
+			break;
+		case '\r':
+			strEscaped += "\\r";
+			break;
+		case '\t':
+			strEscaped += "\\t";
+			break;
+		default:
+			if (ch < 0x20) {
+				char szBuffer[7];
+				sprintf_s(szBuffer, "\\u%04x", ch);
+				strEscaped += szBuffer;
+			} else {
+				strEscaped.push_back(static_cast<char>(ch));
+			}
+		}
+	}
+	return strEscaped;
+}
+
+void AppendTraceField(std::string *pstrJson, const char *pszKey, LPCTSTR pszValue)
+{
+	if (pstrJson == NULL || pszKey == NULL)
+		return;
+
+	*pstrJson += "\"";
+	*pstrJson += pszKey;
+	*pstrJson += "\":\"";
+	*pstrJson += EscapeJsonUtf8(pszValue);
+	*pstrJson += "\"";
+}
+
+void AppendTraceMetadataEvent(std::string *pstrJson, const char *pszName, DWORD dwProcessId, DWORD dwThreadId, LPCTSTR pszValue)
+{
+	if (pstrJson == NULL || pszName == NULL)
+		return;
+
+	*pstrJson += "{\"ph\":\"M\",\"pid\":";
+	*pstrJson += std::to_string(dwProcessId);
+	*pstrJson += ",\"tid\":";
+	*pstrJson += std::to_string(dwThreadId);
+	*pstrJson += ",\"name\":\"";
+	*pstrJson += pszName;
+	*pstrJson += "\",\"args\":{\"name\":\"";
+	*pstrJson += EscapeJsonUtf8(pszValue);
+	*pstrJson += "\"}}";
+}
+
+std::string BuildStartupTraceEventJson(const SStartupProfileTraceEvent &rEvent, DWORD dwProcessId, DWORD dwThreadId)
+{
+	std::string strJson("{");
+	strJson += "\"pid\":";
+	strJson += std::to_string(dwProcessId);
+	strJson += ",\"tid\":";
+	strJson += std::to_string(dwThreadId);
+	strJson += ",\"cat\":\"";
+	strJson += EscapeJsonUtf8(rEvent.strCategory);
+	strJson += "\",\"name\":\"";
+	strJson += EscapeJsonUtf8(rEvent.strName);
+	strJson += "\",\"ts\":";
+	strJson += std::to_string(rEvent.ullTimestampUs);
+
+	switch (rEvent.eType) {
+	case SStartupProfileTraceEvent::EType::Complete:
+		strJson += ",\"ph\":\"X\",\"dur\":";
+		strJson += std::to_string(rEvent.ullDurationUs);
+		strJson += ",\"args\":{";
+		AppendTraceField(&strJson, "phase_id", rEvent.strStableId);
+		strJson += "}}";
+		break;
+	case SStartupProfileTraceEvent::EType::Counter:
+		strJson += ",\"ph\":\"C\",\"args\":{";
+		AppendTraceField(&strJson, "counter_id", rEvent.strStableId);
+		strJson += ",\"";
+		strJson += EscapeJsonUtf8(rEvent.strCounterValueKey);
+		strJson += "\":";
+		strJson += std::to_string(rEvent.ullCounterValue);
+		strJson += "}}";
+		break;
+	default:
+		strJson += ",\"ph\":\"i\",\"s\":\"p\",\"args\":{";
+		AppendTraceField(&strJson, "phase_id", rEvent.strStableId);
+		strJson += "}}";
+		break;
+	}
+
+	return strJson;
 }
 
 /**
@@ -325,7 +619,10 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bAutoStart()
 	, m_bStandbyOff()
 	, m_bStartupProfilingEnabled(EMULE_COMPILED_STARTUP_PROFILING != 0 && ::GetEnvironmentVariable(_T("EMULE_STARTUP_PROFILE"), NULL, 0) > 0)
-	, m_ullStartupProfileBeginTick()
+	, m_bStartupProfileStartupComplete()
+	, m_bStartupProfileCompleted()
+	, m_ullStartupProfileBeginQpc()
+	, m_ullStartupProfileFrequency()
 {
 	// Initialize Windows security features.
 	InitDEP();
@@ -385,40 +682,153 @@ void CemuleApp::ResetStartupProfile()
 	if (!m_bStartupProfilingEnabled)
 		return;
 
-	m_ullStartupProfileBeginTick = ::GetTickCount64();
-	m_strStartupProfilePath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("startup-profile.txt");
-	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strStartupProfilePath, _T("wt"));
-	if (fp != NULL) {
-		_ftprintf(fp, _T("Startup profile for %s\r\n"), (LPCTSTR)m_strCurVersionLong);
-		_ftprintf(fp, _T("StartTickMs=%I64u\r\n"), m_ullStartupProfileBeginTick);
-		fclose(fp);
-	}
+	CSingleLock lock(&m_startupProfileLock, TRUE);
+	m_bStartupProfileStartupComplete = false;
+	m_bStartupProfileCompleted = false;
+	m_aStartupProfileTraceEvents.clear();
+	m_ullStartupProfileFrequency = QueryPerformanceFrequencyValue();
+	m_ullStartupProfileBeginQpc = QueryPerformanceCounterValue();
+	m_strStartupProfilePath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + kStartupProfileTraceFileName;
+	(void)LongPathSeams::DeleteFile(m_strStartupProfilePath);
+	const CString strLegacyStartupProfilePath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + kLegacyStartupProfileFileName);
+	(void)LongPathSeams::DeleteFile(strLegacyStartupProfilePath);
 #endif
 }
 
-void CemuleApp::AppendStartupProfileLine(LPCTSTR pszPhase, const ULONGLONG ullDurationMs, ULONGLONG ullAbsoluteMs)
+ULONGLONG CemuleApp::GetStartupProfileTimestampUs() const
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	return 0;
+#else
+	if (!m_bStartupProfilingEnabled || m_ullStartupProfileFrequency == 0 || m_ullStartupProfileBeginQpc == 0)
+		return 0;
+
+	const ULONGLONG ullNowQpc = QueryPerformanceCounterValue();
+	if (ullNowQpc <= m_ullStartupProfileBeginQpc)
+		return 0;
+
+	return ConvertQpcTicksToMicroseconds(ullNowQpc - m_ullStartupProfileBeginQpc, m_ullStartupProfileFrequency);
+#endif
+}
+
+ULONGLONG CemuleApp::GetStartupProfileElapsedUs(const ULONGLONG ullStartTimestampUs) const
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	UNREFERENCED_PARAMETER(ullStartTimestampUs);
+	return 0;
+#else
+	const ULONGLONG ullNowUs = GetStartupProfileTimestampUs();
+	return (ullNowUs >= ullStartTimestampUs) ? (ullNowUs - ullStartTimestampUs) : 0;
+#endif
+}
+
+void CemuleApp::FinalizeStartupProfileTrace()
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	return;
+#else
+	if (!m_bStartupProfilingEnabled)
+		return;
+
+	CSingleLock lock(&m_startupProfileLock, TRUE);
+	if (m_bStartupProfileCompleted)
+		return;
+
+	m_bStartupProfileCompleted = true;
+	(void)WriteStartupProfileTrace();
+#endif
+}
+
+bool CemuleApp::WriteStartupProfileTrace() const
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	return false;
+#else
+	if (m_strStartupProfilePath.IsEmpty())
+		return false;
+
+	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strStartupProfilePath, _T("wb"));
+	if (fp == NULL)
+		return false;
+
+	std::string strJson;
+	strJson.reserve(32768);
+	strJson += "{\n  \"displayTimeUnit\": \"ms\",\n  \"traceEvents\": [\n    ";
+	AppendTraceMetadataEvent(&strJson, "process_name", ::GetCurrentProcessId(), ::GetCurrentThreadId(), _T("eMule startup"));
+	strJson += ",\n    ";
+	AppendTraceMetadataEvent(&strJson, "thread_name", ::GetCurrentProcessId(), ::GetCurrentThreadId(), _T("main"));
+	for (size_t i = 0; i < m_aStartupProfileTraceEvents.size(); ++i) {
+		strJson += ",\n    ";
+		strJson += BuildStartupTraceEventJson(m_aStartupProfileTraceEvents[i], ::GetCurrentProcessId(), ::GetCurrentThreadId());
+	}
+	strJson += "\n  ]\n}\n";
+
+	const size_t uWritten = fwrite(strJson.data(), 1, strJson.size(), fp);
+	fclose(fp);
+	return uWritten == strJson.size();
+#endif
+}
+
+void CemuleApp::AppendStartupProfileLine(LPCTSTR pszPhase, const ULONGLONG ullDurationUs, ULONGLONG ullAbsoluteUs)
 {
 #if !EMULE_COMPILED_STARTUP_PROFILING
 	UNREFERENCED_PARAMETER(pszPhase);
-	UNREFERENCED_PARAMETER(ullDurationMs);
-	UNREFERENCED_PARAMETER(ullAbsoluteMs);
+	UNREFERENCED_PARAMETER(ullDurationUs);
+	UNREFERENCED_PARAMETER(ullAbsoluteUs);
 	return;
 #else
 	if (!m_bStartupProfilingEnabled || pszPhase == NULL || pszPhase[0] == _T('\0'))
 		return;
 
-	if (m_strStartupProfilePath.IsEmpty())
-		m_strStartupProfilePath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("startup-profile.txt");
-	if (ullAbsoluteMs == static_cast<ULONGLONG>(-1)) {
-		const ULONGLONG ullNow = ::GetTickCount64();
-		ullAbsoluteMs = (ullNow >= m_ullStartupProfileBeginTick) ? (ullNow - m_ullStartupProfileBeginTick) : 0;
-	}
+	const SStartupTraceDescriptor descriptor(DescribeStartupTracePhase(pszPhase));
+	if (ullAbsoluteUs == static_cast<ULONGLONG>(-1))
+		ullAbsoluteUs = GetStartupProfileTimestampUs();
 
-	FILE *fp = LongPathSeams::OpenFileStreamDenyWriteLongPath(m_strStartupProfilePath, _T("at"));
-	if (fp != NULL) {
-		_ftprintf(fp, _T("%I64u ms | %I64u ms | %s\r\n"), ullAbsoluteMs, ullDurationMs, pszPhase);
-		fclose(fp);
-	}
+	CSingleLock lock(&m_startupProfileLock, TRUE);
+	if (m_bStartupProfileCompleted)
+		return;
+
+	SStartupProfileTraceEvent event;
+	event.strName = pszPhase;
+	event.strCategory = descriptor.strCategory;
+	event.strStableId = descriptor.strStableId;
+	event.eType = (ullDurationUs == 0) ? SStartupProfileTraceEvent::EType::Instant : SStartupProfileTraceEvent::EType::Complete;
+	event.ullTimestampUs = ullAbsoluteUs;
+	event.ullDurationUs = ullDurationUs;
+	m_aStartupProfileTraceEvents.emplace_back(event);
+	if (descriptor.strStableId == _T("startup.complete"))
+		m_bStartupProfileStartupComplete = true;
+	lock.Unlock();
+
+	if (descriptor.bFinalizeTrace)
+		FinalizeStartupProfileTrace();
+#endif
+}
+
+void CemuleApp::AppendStartupProfileCounter(LPCTSTR pszCounterName, const ULONGLONG ullValue, LPCTSTR pszValueKey)
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	UNREFERENCED_PARAMETER(pszCounterName);
+	UNREFERENCED_PARAMETER(ullValue);
+	UNREFERENCED_PARAMETER(pszValueKey);
+	return;
+#else
+	if (!m_bStartupProfilingEnabled || pszCounterName == NULL || pszCounterName[0] == _T('\0'))
+		return;
+
+	CSingleLock lock(&m_startupProfileLock, TRUE);
+	if (m_bStartupProfileCompleted)
+		return;
+
+	SStartupProfileTraceEvent event;
+	event.strName = pszCounterName;
+	event.strCategory = GetStartupCounterCategory(pszCounterName);
+	event.strStableId = pszCounterName;
+	event.strCounterValueKey = (pszValueKey != NULL && pszValueKey[0] != _T('\0')) ? pszValueKey : _T("value");
+	event.eType = SStartupProfileTraceEvent::EType::Counter;
+	event.ullTimestampUs = GetStartupProfileTimestampUs();
+	event.ullCounterValue = ullValue;
+	m_aStartupProfileTraceEvents.emplace_back(event);
 #endif
 }
 
@@ -587,11 +997,11 @@ BOOL CemuleApp::InitInstance()
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ULONGLONG ullPhaseStart = ::GetTickCount64();
+	ULONGLONG ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	emuledlg = new CemuleDlg;
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CemuleDlg"), ::GetTickCount64() - ullPhaseStart);
+	AppendStartupProfileLine(_T("Construct CemuleDlg"), GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 	m_pMainWnd = emuledlg;
 	// Barry - Auto-take ed2k links
@@ -602,11 +1012,11 @@ BOOL CemuleApp::InitInstance()
 
 	// UPnP Port forwarding
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	m_pUPnPFinder = new CUPnPImplWrapper();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct UPnP wrapper"), ::GetTickCount64() - ullPhaseStart);
+	AppendStartupProfileLine(_T("Construct UPnP wrapper"), GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 
 	// Highres scheduling gives better resolution for Sleep(...) calls, and timeGetTime() calls
@@ -631,108 +1041,111 @@ BOOL CemuleApp::InitInstance()
 	}
 
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	clientlist = new CClientList();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CClientList"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CClientList"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	friendlist = new CFriendList();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CFriendList"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CFriendList"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	searchlist = new CSearchList();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CSearchList"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CSearchList"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	knownfiles = new CKnownFileList();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CKnownFileList (known.met/cancelled.met)"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CKnownFileList (known.met/cancelled.met)"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	serverlist = new CServerList();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CServerList"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CServerList"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	serverconnect = new CServerConnect();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CServerConnect"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CServerConnect"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	sharedfiles = new CSharedFileList(serverconnect);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CSharedFileList (share cache/scan)"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CSharedFileList (share cache/scan)"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	listensocket = new CListenSocket();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CListenSocket"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CListenSocket"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	clientudp = new CClientUDPSocket();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CClientUDPSocket"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CClientUDPSocket"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	clientcredits = new CClientCreditsList();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CClientCreditsList"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CClientCreditsList"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	downloadqueue = new CDownloadQueue();	// bugfix - do this before creating the upload queue
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CDownloadQueue"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CDownloadQueue"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	uploadqueue = new CUploadQueue();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CUploadQueue"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CUploadQueue"), GetStartupProfileElapsedUs(ullPhaseStart));
+	AppendStartupProfileCounter(_T("broadband.configured_upload_budget_bytes_per_sec"), uploadqueue->GetConfiguredUploadBudgetBytesPerSec(), _T("bytes_per_sec"));
+	AppendStartupProfileCounter(_T("broadband.slot_cap"), static_cast<ULONGLONG>(uploadqueue->GetBroadbandSlotCap()), _T("slots"));
+	AppendStartupProfileCounter(_T("broadband.target_client_rate_bytes_per_sec"), uploadqueue->GetTargetClientDataRateBroadband(), _T("bytes_per_sec"));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	ipfilter = new CIPFilter();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CIPFilter"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CIPFilter"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	webserver = new CWebServer(); // Web Server [kuchin]
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CWebServer"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CWebServer"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	scheduler = new CScheduler();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CScheduler"), ::GetTickCount64() - ullPhaseStart);
+	AppendStartupProfileLine(_T("Construct CScheduler"), GetStartupProfileElapsedUs(ullPhaseStart));
 
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct UploadBandwidthThrottler"), ::GetTickCount64() - ullPhaseStart);
+	AppendStartupProfileLine(_T("Construct UploadBandwidthThrottler"), GetStartupProfileElapsedUs(ullPhaseStart));
 
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	m_pUploadDiskIOThread = new CUploadDiskIOThread();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CUploadDiskIOThread"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	AppendStartupProfileLine(_T("Construct CUploadDiskIOThread"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	m_pPartFileWriteThread = new CPartFileWriteThread();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("Construct CPartFileWriteThread"), ::GetTickCount64() - ullPhaseStart);
+	AppendStartupProfileLine(_T("Construct CPartFileWriteThread"), GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 
 	thePerfLog.Startup();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	AppendStartupProfileLine(_T("PerfLog startup"), 0);
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	emuledlg->DoModal();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	AppendStartupProfileLine(_T("CemuleDlg::DoModal lifetime"), ::GetTickCount64() - ullPhaseStart);
+	AppendStartupProfileLine(_T("CemuleDlg::DoModal lifetime"), GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 
 	DisableRTLWindowsLayout();

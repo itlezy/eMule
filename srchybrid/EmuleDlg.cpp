@@ -369,7 +369,7 @@ static void DialogCreateIndirect(CDialog *pWnd, UINT uID)
 BOOL CemuleDlg::OnInitDialog()
 {
 #if EMULE_COMPILED_STARTUP_PROFILING
-	const ULONGLONG ullDialogInitStart = ::GetTickCount64();
+	const ULONGLONG ullDialogInitStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	theStats.starttime = ::GetTickCount64();
 #ifdef HAVE_WIN7_SDK_H
@@ -399,7 +399,7 @@ BOOL CemuleDlg::OnInitDialog()
 
 	// Create global GUI objects
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ULONGLONG ullPhaseStart = ::GetTickCount64();
+	ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	theApp.CreateAllFonts();
 	theApp.CreateBackwardDiagonalBrush();
@@ -408,7 +408,7 @@ BOOL CemuleDlg::OnInitDialog()
 	InitWindowStyles(this);
 	CreateToolbarCmdIconMap();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog base window/font init"), ::GetTickCount64() - ullPhaseStart);
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog base window/font init"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 
 	CMenu *pSysMenu = GetSystemMenu(FALSE);
@@ -469,47 +469,47 @@ BOOL CemuleDlg::OnInitDialog()
 
 	// create main window dialog pages
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	DialogCreateIndirect(serverwnd, IDD_SERVER);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create server window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create server window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	DialogCreateIndirect(sharedfileswnd, IDD_FILES);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create shared files window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create shared files window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	searchwnd->CreateWnd(this); // can not use 'DialogCreateIndirect' for the SearchWnd, grrr...
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create search window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create search window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	DialogCreateIndirect(chatwnd, IDD_CHAT);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create chat window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create chat window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	transferwnd->CreateWnd(this);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create transfer window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create transfer window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	DialogCreateIndirect(statisticswnd, IDD_STATISTICS);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create statistics window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create statistics window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	DialogCreateIndirect(kademliawnd, IDD_KADEMLIAWND);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create kad window"), ::GetTickCount64() - ullPhaseStart);
-	ullPhaseStart = ::GetTickCount64();
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create kad window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	DialogCreateIndirect(ircwnd, IDD_IRC);
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create IRC window"), ::GetTickCount64() - ullPhaseStart);
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog child page creation total"), ::GetTickCount64() - ullDialogInitStart);
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog create IRC window"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog child page creation total"), theApp.GetStartupProfileElapsedUs(ullDialogInitStart));
 #endif
 
 	// with the top rebar control, some XP themes look better with additional lite borders, some not.
@@ -676,7 +676,7 @@ BOOL CemuleDlg::OnInitDialog()
 
 	VERIFY(m_pDropTarget->Register(this));
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog complete"), ::GetTickCount64() - ullDialogInitStart);
+	theApp.AppendStartupProfileLine(_T("CemuleDlg::OnInitDialog complete"), theApp.GetStartupProfileElapsedUs(ullDialogInitStart));
 #endif
 
 	// start aichsyncthread
@@ -725,7 +725,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 	// NOTE: Always handle all type of MFC exceptions in TimerProcs - otherwise we'll get mem leaks
 	try {
 #if EMULE_COMPILED_STARTUP_PROFILING
-		const ULONGLONG ullPhaseStart = ::GetTickCount64();
+		const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 		if (theApp.IsStartupProfilingEnabled()) {
 			CString strPhase;
 			strPhase.Format(_T("StartupTimer enter status=%u"), static_cast<unsigned>(status));
@@ -737,7 +737,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 			status = 2;
 #if EMULE_COMPILED_STARTUP_PROFILING
 			theApp.sharedfiles->SetOutputCtrl(&sharedfileswnd->sharedfilesctrl);
-			theApp.AppendStartupProfileLine(_T("StartupTimer stage 0: attach shared-files output control"), ::GetTickCount64() - ullPhaseStart);
+			theApp.AppendStartupProfileLine(_T("StartupTimer stage 0: attach shared-files output control"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 #else
 			theApp.sharedfiles->SetOutputCtrl(&sharedfileswnd->sharedfilesctrl);
 #endif
@@ -746,7 +746,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 			status = 4;
 			{
 #if EMULE_COMPILED_STARTUP_PROFILING
-				const ULONGLONG ullServerInitStart = ::GetTickCount64();
+				const ULONGLONG ullServerInitStart = theApp.GetStartupProfileTimestampUs();
 #endif
 			try {
 				theApp.serverlist->Init();
@@ -755,7 +755,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 				LogError(LOG_STATUSBAR, _T("Failed to initialize server list - Unknown exception"));
 			}
 #if EMULE_COMPILED_STARTUP_PROFILING
-				theApp.AppendStartupProfileLine(_T("StartupTimer stage 2: serverlist->Init"), ::GetTickCount64() - ullServerInitStart);
+				theApp.AppendStartupProfileLine(_T("StartupTimer stage 2: serverlist->Init"), theApp.GetStartupProfileElapsedUs(ullServerInitStart));
 #endif
 			}
 			break;
@@ -764,7 +764,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 				status = 5;
 				bool bError = false;
 #if EMULE_COMPILED_STARTUP_PROFILING
-				const ULONGLONG ullDownloadInitStart = ::GetTickCount64();
+				const ULONGLONG ullDownloadInitStart = theApp.GetStartupProfileTimestampUs();
 #endif
 
 				// NOTE: If we have an unhandled exception in CDownloadQueue::Init, MFC will silently catch it
@@ -777,8 +777,8 @@ void CemuleDlg::OnStartupTimer() noexcept
 					bError = true;
 				}
 #if EMULE_COMPILED_STARTUP_PROFILING
-				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: downloadqueue->Init"), ::GetTickCount64() - ullDownloadInitStart);
-				const ULONGLONG ullSocketInitStart = ::GetTickCount64();
+				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: downloadqueue->Init"), theApp.GetStartupProfileElapsedUs(ullDownloadInitStart));
+				const ULONGLONG ullSocketInitStart = theApp.GetStartupProfileTimestampUs();
 #endif
 				if (!theApp.listensocket->StartListening()) {
 					CString strError;
@@ -796,7 +796,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 						theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
 				}
 #if EMULE_COMPILED_STARTUP_PROFILING
-				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: socket startup"), ::GetTickCount64() - ullSocketInitStart);
+				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: socket startup"), theApp.GetStartupProfileElapsedUs(ullSocketInitStart));
 #endif
 
 				if (!bError) // show the success msg, only if we had no serious error
@@ -815,7 +815,7 @@ void CemuleDlg::OnStartupTimer() noexcept
 				UpdateStatusBarProgress();
 #endif
 #if EMULE_COMPILED_STARTUP_PROFILING
-				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: finalize running state"), ::GetTickCount64() - ullPhaseStart);
+				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: finalize running state"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 			}
 			break;
@@ -823,12 +823,12 @@ void CemuleDlg::OnStartupTimer() noexcept
 			status = 6;
 			{
 #if EMULE_COMPILED_STARTUP_PROFILING
-				const ULONGLONG ullStoredSearchesStart = ::GetTickCount64();
+				const ULONGLONG ullStoredSearchesStart = theApp.GetStartupProfileTimestampUs();
 #endif
 			if (thePrefs.IsStoringSearchesEnabled())
 				theApp.searchlist->LoadSearches();
 #if EMULE_COMPILED_STARTUP_PROFILING
-				theApp.AppendStartupProfileLine(_T("StartupTimer stage 5: stored searches"), ::GetTickCount64() - ullStoredSearchesStart);
+				theApp.AppendStartupProfileLine(_T("StartupTimer stage 5: stored searches"), theApp.GetStartupProfileElapsedUs(ullStoredSearchesStart));
 #endif
 			}
 			break;
@@ -837,7 +837,9 @@ void CemuleDlg::OnStartupTimer() noexcept
 			theApp.sharedfiles->StartDeferredHashing();
 #if EMULE_COMPILED_STARTUP_PROFILING
 			theApp.AppendStartupProfileLine(_T("StartupTimer finalize: start deferred shared hashing"), 0);
-			theApp.AppendStartupProfileLine(_T("StartupTimer complete"), ::GetTickCount64() - ullPhaseStart);
+			theApp.AppendStartupProfileLine(_T("StartupTimer complete"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+			if (sharedfileswnd != NULL)
+				sharedfileswnd->OnStartupProfileStartupComplete();
 #endif
 			StopTimer();
 			return;
@@ -2903,13 +2905,13 @@ void CemuleDlg::DestroySplash()
 {
 	if (m_pSplashWnd != NULL) {
 #if EMULE_COMPILED_STARTUP_PROFILING
-		const ULONGLONG ullPhaseStart = ::GetTickCount64();
+		const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 		m_pSplashWnd->EndDialog(IDOK); //deletes the dialog
 		delete m_pSplashWnd;
 		m_pSplashWnd = NULL;
 #if EMULE_COMPILED_STARTUP_PROFILING
-		theApp.AppendStartupProfileLine(_T("CemuleDlg::DestroySplash"), ::GetTickCount64() - ullPhaseStart);
+		theApp.AppendStartupProfileLine(_T("CemuleDlg::DestroySplash"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 	}
 #ifdef _BETA
@@ -2964,7 +2966,7 @@ LRESULT CemuleDlg::OnKickIdle(WPARAM, LPARAM lIdleCount)
 {
 	LRESULT lResult = 0;
 #if EMULE_COMPILED_STARTUP_PROFILING
-	const ULONGLONG ullPhaseStart = theApp.IsStartupProfilingEnabled() ? ::GetTickCount64() : 0;
+	const ULONGLONG ullPhaseStart = theApp.IsStartupProfilingEnabled() ? theApp.GetStartupProfileTimestampUs() : 0;
 	static bool s_bLoggedFirstKickIdle = false;
 #endif
 
@@ -3007,11 +3009,11 @@ LRESULT CemuleDlg::OnKickIdle(WPARAM, LPARAM lIdleCount)
 
 	#if EMULE_COMPILED_STARTUP_PROFILING
 	if (theApp.IsStartupProfilingEnabled()) {
-		const ULONGLONG ullDuration = ::GetTickCount64() - ullPhaseStart;
+		const ULONGLONG ullDuration = theApp.GetStartupProfileElapsedUs(ullPhaseStart);
 		if (!s_bLoggedFirstKickIdle) {
 			s_bLoggedFirstKickIdle = true;
 			theApp.AppendStartupProfileLine(_T("CemuleDlg::OnKickIdle first"), ullDuration);
-		} else if (ullDuration >= 250) {
+		} else if (ullDuration >= 250000) {
 			CString strPhase;
 			strPhase.Format(_T("CemuleDlg::OnKickIdle long (idle=%Id)"), lIdleCount);
 			theApp.AppendStartupProfileLine(strPhase, ullDuration);

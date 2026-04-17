@@ -40,7 +40,13 @@ CPartFileWriteThread::CPartFileWriteThread()
 	, m_Run(RUN_STOP)
 	, m_bNewData()
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 	AfxBeginThread(RunProc, (LPVOID)this, THREAD_PRIORITY_BELOW_NORMAL);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("broadband.partfile_write.launch_thread"), theApp.GetStartupProfileElapsedUs(ullPhaseStart), ullPhaseStart);
+#endif
 }
 
 CPartFileWriteThread::~CPartFileWriteThread()
@@ -50,6 +56,10 @@ CPartFileWriteThread::~CPartFileWriteThread()
 
 UINT AFX_CDECL CPartFileWriteThread::RunProc(LPVOID pParam)
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled())
+		theApp.AppendStartupProfileLine(_T("broadband.partfile_write.thread_enter"), 0);
+#endif
 	DbgSetThreadName("PartWriteThread");
 	InitThreadLocale();
 	return pParam ? static_cast<CPartFileWriteThread*>(pParam)->RunInternal() : 1;
@@ -64,6 +74,9 @@ void CPartFileWriteThread::EndThread()
 
 UINT CPartFileWriteThread::RunInternal()
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullThreadStartUs = theApp.GetStartupProfileTimestampUs();
+#endif
 	m_hPort = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 1);
 	if (!m_hPort)
 		return ::GetLastError();
@@ -72,6 +85,9 @@ UINT CPartFileWriteThread::RunInternal()
 	ULONG_PTR completionKey = 0;
 	OverlappedWrite_Struct *pCurIO = NULL;
 	m_Run = RUN_IDLE;
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("broadband.partfile_write.thread_ready"), theApp.GetStartupProfileElapsedUs(ullThreadStartUs), ullThreadStartUs);
+#endif
 	while (m_Run
 		&& ::GetQueuedCompletionStatus(m_hPort, &dwWrite, &completionKey, (LPOVERLAPPED*)&pCurIO, INFINITE)
 		&& completionKey)

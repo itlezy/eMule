@@ -74,6 +74,9 @@ CSharedFilesWnd::CSharedFilesWnd(CWnd *pParent /*=NULL*/)
 	, m_nFilterColumn()
 	, m_bDetailsVisible(true)
 	, m_bSharedTreeInitialized(false)
+	, m_bStartupSharedTreePopulatedReported(false)
+	, m_bStartupSharedModelPopulatedReported(false)
+	, m_bStartupSharedFilesReadyReported(false)
 {
 }
 
@@ -95,28 +98,29 @@ void CSharedFilesWnd::DoDataExchange(CDataExchange *pDX)
 BOOL CSharedFilesWnd::OnInitDialog()
 {
 #if EMULE_COMPILED_STARTUP_PROFILING
-	const ULONGLONG ullInitStart = ::GetTickCount64();
+	const ULONGLONG ullInitStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	CResizableDialog::OnInitDialog();
 	InitWindowStyles(this);
 	SetAllIcons();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ULONGLONG ullPhaseStart = ::GetTickCount64();
+	ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	sharedfilesctrl.Init();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd::OnInitDialog sharedfilesctrl.Init"), ::GetTickCount64() - ullPhaseStart);
+	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd::OnInitDialog sharedfilesctrl.Init"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	sharedfilesctrl.EnsureModelBound();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	{
 		CString strPhase;
 		strPhase.Format(_T("CSharedFilesWnd::OnInitDialog eager shared-files bind (%d visible rows)"), sharedfilesctrl.GetItemCount());
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(_T("shared.visible_rows"), static_cast<ULONGLONG>(sharedfilesctrl.GetItemCount()), _T("rows"));
 	}
 #endif
 
@@ -158,20 +162,21 @@ BOOL CSharedFilesWnd::OnInitDialog()
 	ShowDetailsPanel(thePrefs.GetShowSharedFilesDetails());
 
 #if EMULE_COMPILED_STARTUP_PROFILING
-	ullPhaseStart = ::GetTickCount64();
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	EnsureSharedTreeInitialized();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	{
 		CString strPhase;
 		strPhase.Format(_T("CSharedFilesWnd::OnInitDialog eager shared tree init (%d visible rows)"), sharedfilesctrl.GetItemCount());
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(_T("shared.visible_rows_after_tree_init"), static_cast<ULONGLONG>(sharedfilesctrl.GetItemCount()), _T("rows"));
 	}
 #endif
 
 	Localize();
 #if EMULE_COMPILED_STARTUP_PROFILING
-	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd::OnInitDialog total"), ::GetTickCount64() - ullInitStart);
+	theApp.AppendStartupProfileLine(_T("CSharedFilesWnd::OnInitDialog total"), theApp.GetStartupProfileElapsedUs(ullInitStart));
 #endif
 	return TRUE;
 }
@@ -182,7 +187,7 @@ void CSharedFilesWnd::EnsureSharedTreeInitialized()
 		return;
 
 #if EMULE_COMPILED_STARTUP_PROFILING
-	const ULONGLONG ullPhaseStart = ::GetTickCount64();
+	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	m_ctlSharedDirTree.Initialize(&sharedfilesctrl);
 	if (thePrefs.GetUseSystemFontForMainControls())
@@ -196,8 +201,68 @@ void CSharedFilesWnd::EnsureSharedTreeInitialized()
 		strPhase.Format(_T("CSharedFilesWnd shared dir tree Initialize (filter=%d rows=%d)"),
 			pSelectedFilter != NULL ? static_cast<int>(pSelectedFilter->m_eItemType) : -1,
 			sharedfilesctrl.GetItemCount());
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(
+			_T("shared.tree.selected_filter"),
+			pSelectedFilter != NULL ? static_cast<ULONGLONG>(static_cast<unsigned>(pSelectedFilter->m_eItemType)) : 0ui64,
+			_T("filter"));
 	}
+#endif
+
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled() && !m_bStartupSharedTreePopulatedReported) {
+		theApp.AppendStartupProfileLine(_T("shared.tree.populated"), 0);
+		theApp.AppendStartupProfileCounter(_T("shared.tree.visible_rows"), static_cast<ULONGLONG>(sharedfilesctrl.GetItemCount()), _T("rows"));
+		m_bStartupSharedTreePopulatedReported = true;
+	}
+#endif
+	ReportStartupSharedFilesReadinessIfReady();
+}
+
+void CSharedFilesWnd::OnStartupSharedFilesModelChanged()
+{
+	ReportStartupSharedFilesReadinessIfReady();
+}
+
+void CSharedFilesWnd::OnStartupProfileStartupComplete()
+{
+	ReportStartupSharedFilesReadinessIfReady();
+}
+
+void CSharedFilesWnd::ReportStartupSharedFilesReadinessIfReady()
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	return;
+#else
+	if (!theApp.IsStartupProfilingEnabled() || m_bStartupSharedFilesReadyReported)
+		return;
+	if (!theApp.HasStartupProfileReachedStartupComplete())
+		return;
+	if (!m_bSharedTreeInitialized || !sharedfilesctrl.IsModelBound() || theApp.sharedfiles == NULL)
+		return;
+
+	const ULONGLONG ullPendingHashes = static_cast<ULONGLONG>(theApp.sharedfiles->GetHashingCount());
+	theApp.AppendStartupProfileCounter(_T("shared.model.pending_hashes"), ullPendingHashes, _T("files"));
+	if (ullPendingHashes != 0)
+		return;
+
+	const ULONGLONG ullSharedFileCount = static_cast<ULONGLONG>(theApp.sharedfiles->GetCount());
+	const ULONGLONG ullVisibleRowCount = static_cast<ULONGLONG>(sharedfilesctrl.GetItemCount());
+	const ULONGLONG ullHiddenSharedFileCount = (ullSharedFileCount >= ullVisibleRowCount) ? (ullSharedFileCount - ullVisibleRowCount) : 0ui64;
+	const CDirectoryItem *pSelectedFilter = m_ctlSharedDirTree.GetSelectedFilter();
+	if (!m_bStartupSharedModelPopulatedReported) {
+		theApp.AppendStartupProfileLine(_T("shared.model.populated"), 0);
+		m_bStartupSharedModelPopulatedReported = true;
+	}
+	theApp.AppendStartupProfileCounter(_T("shared.model.shared_files"), ullSharedFileCount, _T("files"));
+	theApp.AppendStartupProfileCounter(_T("shared.model.visible_rows"), ullVisibleRowCount, _T("rows"));
+	theApp.AppendStartupProfileCounter(_T("shared.model.hidden_shared_files"), ullHiddenSharedFileCount, _T("files"));
+	theApp.AppendStartupProfileCounter(
+		_T("shared.model.active_filter"),
+		pSelectedFilter != NULL ? static_cast<ULONGLONG>(static_cast<unsigned>(pSelectedFilter->m_eItemType)) : 0ui64,
+		_T("filter"));
+	theApp.AppendStartupProfileLine(_T("ui.shared_files_ready"), 0);
+	m_bStartupSharedFilesReadyReported = true;
 #endif
 }
 
@@ -265,6 +330,7 @@ void CSharedFilesWnd::Reload(bool bForceTreeReload)
 	theApp.sharedfiles->Reload();
 
 	ShowSelectedFilesDetails();
+	ReportStartupSharedFilesReadinessIfReady();
 }
 
 void CSharedFilesWnd::OnStnDblClickFilesIco()
@@ -551,6 +617,7 @@ void CSharedFilesWnd::OnShowWindow(BOOL bShow, UINT)
 		theApp.AppendStartupProfileLine(strPhase, 0);
 #endif
 		ShowSelectedFilesDetails(true);
+		ReportStartupSharedFilesReadinessIfReady();
 	}
 }
 

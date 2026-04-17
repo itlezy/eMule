@@ -141,6 +141,10 @@ void CStatisticsDlg::SetAllIcons()
 
 BOOL CStatisticsDlg::OnInitDialog()
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullInitStart = theApp.GetStartupProfileTimestampUs();
+	ULONGLONG ullPhaseStart = ullInitStart;
+#endif
 	CResizableDialog::OnInitDialog();
 	EnableWindow(FALSE);
 	SetAllIcons();
@@ -155,6 +159,10 @@ BOOL CStatisticsDlg::OnInitDialog()
 	if (thePrefs.GetUseSystemFontForMainControls())
 		m_stattree.SendMessage(WM_SETFONT, NULL, FALSE);
 	CreateMyTree();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog base init"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	// Setup download-scope
 	CRect rcDown;
@@ -164,6 +172,10 @@ BOOL CStatisticsDlg::OnInitDialog()
 	m_DownloadOMeter.CreateWnd(WS_VISIBLE | WS_CHILD, rcDown, this, IDC_SCOPE_D);
 	SetARange(true, thePrefs.GetMaxGraphDownloadRate());
 	m_DownloadOMeter.SetYUnits(GetResString(IDS_KBYTESPERSEC));
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog create download meter"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	// Setup upload-scope
 	CRect rcUp;
@@ -176,6 +188,10 @@ BOOL CStatisticsDlg::OnInitDialog()
 	m_UploadOMeter.CreateWnd(WS_VISIBLE | WS_CHILD, rcUp, this, IDC_SCOPE_U);
 	SetARange(false, thePrefs.GetMaxUpload());
 	m_UploadOMeter.SetYUnits(GetResString(IDS_KBYTESPERSEC));
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog create upload meter"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	// Setup additional graph scope
 	CRect rcConn;
@@ -193,6 +209,10 @@ BOOL CStatisticsDlg::OnInitDialog()
 
 	m_Statistics.SetYUnits(_T(""));
 	m_Statistics.SetXUnits(GetResString(IDS_TIME));
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog create connection meter"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	RepaintMeters();
 	m_Statistics.SetBackgroundColor(thePrefs.GetStatsColor(0));
@@ -208,6 +228,10 @@ BOOL CStatisticsDlg::OnInitDialog()
 	UpdateData(FALSE);
 
 	EnableWindow(TRUE);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog repaint graphs"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	m_ilastMaxConnReached = 0;
 	CRect rcW;
@@ -268,9 +292,17 @@ BOOL CStatisticsDlg::OnInitDialog()
 	DoResize_V(PosStatVnewX - PosStatVinitX);
 	DoResize_HL(PosStatVnewY - PosStatVinitY);
 	DoResize_HR(PosStatVnewZ - PosStatVinitZ);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog splitter setup"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	Localize();
 	ShowStatistics(true);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog Localize/ShowStatistics"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 
 	m_TimeToolTips = new CToolTipCtrl();
 	m_TimeToolTips->Create(this);
@@ -282,6 +314,10 @@ BOOL CStatisticsDlg::OnInitDialog()
 	m_TimeToolTips->SetDelayTime(TTDT_INITIAL, SEC2MS(30));
 	m_TimeToolTips->SetDelayTime(TTDT_RESHOW, SEC2MS(30));
 	EnableToolTips(TRUE);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog tooltips"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+	theApp.AppendStartupProfileLine(_T("CStatisticsDlg::OnInitDialog total"), theApp.GetStartupProfileElapsedUs(ullInitStart));
+#endif
 
 	return TRUE;
 }

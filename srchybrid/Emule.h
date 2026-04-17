@@ -18,6 +18,7 @@
 #ifndef __AFXWIN_H__
 #error include 'stdafx.h' before including this file for PCH
 #endif
+#include <vector>
 #include "resource.h"
 
 #define	DEFAULT_NICK			thePrefs.GetHomepageBaseURL()
@@ -66,6 +67,28 @@ enum AppState : uint8
 	APP_STATE_DONE			//shutdown has completed
 };
 
+/**
+ * @brief One Chrome Trace Event row captured for startup profiling.
+ */
+struct SStartupProfileTraceEvent
+{
+	enum class EType : uint8
+	{
+		Complete = 0,
+		Instant,
+		Counter
+	};
+
+	CString		strName;
+	CString		strCategory;
+	CString		strStableId;
+	CString		strCounterValueKey;
+	EType		eType = EType::Instant;
+	ULONGLONG	ullTimestampUs = 0;
+	ULONGLONG	ullDurationUs = 0;
+	ULONGLONG	ullCounterValue = 0;
+};
+
 class CemuleApp : public CWinApp
 {
 public:
@@ -80,13 +103,29 @@ public:
 	 */
 	bool IsStartupProfilingEnabled() const						{ return m_bStartupProfilingEnabled; }
 	/**
+	 * @brief Reports whether the startup timer already emitted the canonical startup-complete milestone.
+	 */
+	bool HasStartupProfileReachedStartupComplete() const		{ return m_bStartupProfileStartupComplete; }
+	/**
 	 * @brief Resets the startup phase profiler output and timing baseline.
 	 */
 	void ResetStartupProfile();
 	/**
+	 * @brief Returns one startup-profile timestamp in microseconds derived from QueryPerformanceCounter.
+	 */
+	ULONGLONG GetStartupProfileTimestampUs() const;
+	/**
+	 * @brief Returns one startup-profile elapsed duration in microseconds from a previously captured timestamp.
+	 */
+	ULONGLONG GetStartupProfileElapsedUs(ULONGLONG ullStartTimestampUs) const;
+	/**
 	 * @brief Appends one startup phase timing sample when profiling is enabled.
 	 */
-	void AppendStartupProfileLine(LPCTSTR pszPhase, ULONGLONG ullDurationMs, ULONGLONG ullAbsoluteMs = static_cast<ULONGLONG>(-1));
+	void AppendStartupProfileLine(LPCTSTR pszPhase, ULONGLONG ullDurationUs, ULONGLONG ullAbsoluteUs = static_cast<ULONGLONG>(-1));
+	/**
+	 * @brief Appends one numeric startup profiling counter sample when profiling is enabled.
+	 */
+	void AppendStartupProfileCounter(LPCTSTR pszCounterName, ULONGLONG ullValue, LPCTSTR pszValueKey = _T("value"));
 	/**
 	 * @brief Reports whether startup redirected config-backed files to an alternate base directory.
 	 */
@@ -263,11 +302,18 @@ protected:
 	afx_msg void OnHelp();
 
 private:
+	bool WriteStartupProfileTrace() const;
+	void FinalizeStartupProfileTrace();
 	UINT		m_wTimerRes;
 	bool		m_bStandbyOff;
 	bool		m_bStartupProfilingEnabled;
-	ULONGLONG	m_ullStartupProfileBeginTick;
+	bool		m_bStartupProfileStartupComplete;
+	bool		m_bStartupProfileCompleted;
+	CCriticalSection m_startupProfileLock;
+	ULONGLONG	m_ullStartupProfileBeginQpc;
+	ULONGLONG	m_ullStartupProfileFrequency;
 	CString		m_strStartupProfilePath;
+	std::vector<SStartupProfileTraceEvent> m_aStartupProfileTraceEvents;
 };
 
 extern CemuleApp theApp;

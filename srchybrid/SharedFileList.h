@@ -37,6 +37,7 @@ struct UnknownFile_Struct
 	CString strName;
 	CString strDirectory;
 	CString strSharedDirectory;
+	ULONGLONG ullQueuedTimestampUs = 0;
 };
 
 class CSharedFileList
@@ -152,6 +153,24 @@ private:
 		std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> changedDirectoryFileReferences;
 	};
 
+	/**
+	 * @brief Aggregates one shared-directory scan pass into stable machine-readable counters.
+	 */
+	struct StartupScanStats
+	{
+		ULONGLONG uRequestedDirectories = 0;
+		ULONGLONG uDedupedDirectories = 0;
+		ULONGLONG uDuplicateDirectories = 0;
+		ULONGLONG uDirectoriesFromCache = 0;
+		ULONGLONG uDirectoriesRescanned = 0;
+		ULONGLONG uInaccessibleDirectories = 0;
+		ULONGLONG uDirectoriesOver248Chars = 0;
+		ULONGLONG uPathsOver260Chars = 0;
+		ULONGLONG uKnownFilesAccepted = 0;
+		ULONGLONG uFilesQueuedForHash = 0;
+		ULONGLONG uFilesIgnored = 0;
+	};
+
 	void	AddDirectory(const CString &strDir, CStringList &dirlist, std::unordered_set<std::wstring> &rAddedDirectoryKeys, bool bAllowStartupCache);
 	void	CollectSharedDirectories(CStringList &dirlist) const;
 	bool	TryLoadStartupCache();
@@ -205,6 +224,9 @@ private:
 	bool	bHaveSingleSharedFiles;
 	bool	m_bStartupCacheDirty;
 	ULONGLONG m_nLastStartupCacheSave;
+	ULONGLONG m_uStartupHashCompletedFiles;
+	ULONGLONG m_uStartupHashFailedFiles;
+	StartupScanStats m_startupScanStats;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
 	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;
 	std::unordered_map<std::wstring, StartupCacheVolumeValidationState> m_startupCacheVolumeValidation;

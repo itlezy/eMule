@@ -44,7 +44,13 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 	, m_nNeedsMoreBandwidthSlots()
 	, m_bRun(true)
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
+#endif
 	AfxBeginThread(RunProc, (LPVOID)this);
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("broadband.throttler.launch_thread"), theApp.GetStartupProfileElapsedUs(ullPhaseStart), ullPhaseStart);
+#endif
 }
 
 /**
@@ -286,6 +292,10 @@ uint32 UploadBandwidthThrottler::CalculateChangeDelta(uint32 numberOfConsecutive
  */
 UINT AFX_CDECL UploadBandwidthThrottler::RunProc(LPVOID pParam)
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled())
+		theApp.AppendStartupProfileLine(_T("broadband.throttler.thread_enter"), 0);
+#endif
 	DbgSetThreadName("UploadBandwidthThrottler");
 	InitThreadLocale();
 	UploadBandwidthThrottler *uploadBandwidthThrottler = static_cast<UploadBandwidthThrottler*>(pParam);
@@ -304,6 +314,9 @@ UINT AFX_CDECL UploadBandwidthThrottler::RunProc(LPVOID pParam)
  */
 UINT UploadBandwidthThrottler::RunInternal()
 {
+#if EMULE_COMPILED_STARTUP_PROFILING
+	const ULONGLONG ullThreadStartUs = theApp.GetStartupProfileTimestampUs();
+#endif
 	static const bool estimateChangedLog = false;
 	static const bool lotsOfLog = false;
 
@@ -319,6 +332,9 @@ UINT UploadBandwidthThrottler::RunInternal()
 	int nSlotsBusyLevel = 0;
 
 	lastTickReachedBandwidth = lastLoopTick = timeGetTime();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	theApp.AppendStartupProfileLine(_T("broadband.throttler.thread_ready"), theApp.GetStartupProfileElapsedUs(ullThreadStartUs), ullThreadStartUs);
+#endif
 	while (m_bRun) {
 //		m_eventPaused.Lock();
 

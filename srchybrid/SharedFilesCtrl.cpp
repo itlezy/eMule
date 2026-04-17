@@ -224,6 +224,14 @@ namespace
 	private:
 		CSharedFilesCtrl &m_listCtrl;
 	};
+
+	void NotifyStartupSharedFilesModelChanged()
+	{
+#if EMULE_COMPILED_STARTUP_PROFILING
+		if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL)
+			theApp.emuledlg->sharedfileswnd->OnStartupSharedFilesModelChanged();
+#endif
+	}
 }
 
 bool NeedArchiveInfoPage(const CSimpleArray<CObject*> *paItems);
@@ -759,6 +767,7 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 					RebuildVisibleFileIndex();
 					RedrawItems(iOldFile, iOldFile);
 					ShowFilesCount();
+					NotifyStartupSharedFilesModelChanged();
 					return;
 				}
 			}
@@ -783,6 +792,7 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 			EnsureVisible(iItem, FALSE);
 	}
 	ShowFilesCount();
+	NotifyStartupSharedFilesModelChanged();
 }
 
 void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromDisk)
@@ -814,6 +824,7 @@ void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromD
 			Invalidate(FALSE);
 		}
 		ShowFilesCount();
+		NotifyStartupSharedFilesModelChanged();
 	}
 }
 
@@ -858,7 +869,7 @@ void CSharedFilesCtrl::EnsureModelBound()
 		return;
 
 #if EMULE_COMPILED_STARTUP_PROFILING
-	const ULONGLONG ullPhaseStart = ::GetTickCount64();
+	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
 	m_bModelBound = true;
 	ReloadFileList();
@@ -868,9 +879,12 @@ void CSharedFilesCtrl::EnsureModelBound()
 		strPhase.Format(_T("CSharedFilesCtrl model bind (%u shared, %d visible)"),
 			static_cast<unsigned>(theApp.sharedfiles->GetCount()),
 			static_cast<int>(m_aVisibleFiles.size()));
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(_T("shared.list.model_shared_files"), static_cast<ULONGLONG>(theApp.sharedfiles->GetCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.list.model_visible_rows"), static_cast<ULONGLONG>(m_aVisibleFiles.size()), _T("rows"));
 	}
 #endif
+	NotifyStartupSharedFilesModelChanged();
 }
 
 void CSharedFilesCtrl::ReloadFileList()
@@ -878,7 +892,7 @@ void CSharedFilesCtrl::ReloadFileList()
 	if (!m_bModelBound)
 		return;
 #if EMULE_COMPILED_STARTUP_PROFILING
-	const ULONGLONG ullReloadStart = ::GetTickCount64();
+	const ULONGLONG ullReloadStart = theApp.GetStartupProfileTimestampUs();
 	ULONGLONG ullPhaseStart = ullReloadStart;
 #endif
 	SetRedraw(false);
@@ -898,8 +912,10 @@ void CSharedFilesCtrl::ReloadFileList()
 		strPhase.Format(_T("CSharedFilesCtrl::ReloadFileList shared map append (%u shared -> %d visible pre-extra)"),
 			static_cast<unsigned>(theApp.sharedfiles->GetCount()),
 			static_cast<int>(m_aVisibleFiles.size()));
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
-		ullPhaseStart = ::GetTickCount64();
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(_T("shared.list.shared_map_files"), static_cast<ULONGLONG>(theApp.sharedfiles->GetCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.list.visible_rows_pre_extra"), static_cast<ULONGLONG>(m_aVisibleFiles.size()), _T("rows"));
+		ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 	}
 #endif
 
@@ -914,8 +930,10 @@ void CSharedFilesCtrl::ReloadFileList()
 		strPhase.Format(_T("CSharedFilesCtrl::ReloadFileList extra view append (filter=%d rows=%d)"),
 			m_pDirectoryFilter != NULL ? static_cast<int>(m_pDirectoryFilter->m_eItemType) : -1,
 			static_cast<int>(m_aVisibleFiles.size()));
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
-		ullPhaseStart = ::GetTickCount64();
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(_T("shared.list.active_filter"), m_pDirectoryFilter != NULL ? static_cast<ULONGLONG>(static_cast<unsigned>(m_pDirectoryFilter->m_eItemType)) : 0ui64, _T("filter"));
+		theApp.AppendStartupProfileCounter(_T("shared.list.visible_rows_post_extra"), static_cast<ULONGLONG>(m_aVisibleFiles.size()), _T("rows"));
+		ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 	}
 #endif
 
@@ -933,10 +951,15 @@ void CSharedFilesCtrl::ReloadFileList()
 	{
 		CString strPhase;
 		strPhase.Format(_T("CSharedFilesCtrl::ReloadFileList sort/apply complete (%d rows)"), static_cast<int>(m_aVisibleFiles.size()));
-		theApp.AppendStartupProfileLine(strPhase, ::GetTickCount64() - ullPhaseStart);
-		theApp.AppendStartupProfileLine(_T("CSharedFilesCtrl::ReloadFileList total"), ::GetTickCount64() - ullReloadStart);
+		const ULONGLONG ullVisibleRows = static_cast<ULONGLONG>(m_aVisibleFiles.size());
+		const ULONGLONG ullSharedFileCount = static_cast<ULONGLONG>(theApp.sharedfiles->GetCount());
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullPhaseStart));
+		theApp.AppendStartupProfileCounter(_T("shared.list.visible_rows"), ullVisibleRows, _T("rows"));
+		theApp.AppendStartupProfileCounter(_T("shared.list.hidden_shared_files"), ullSharedFileCount >= ullVisibleRows ? (ullSharedFileCount - ullVisibleRows) : 0ui64, _T("files"));
+		theApp.AppendStartupProfileLine(_T("CSharedFilesCtrl::ReloadFileList total"), theApp.GetStartupProfileElapsedUs(ullReloadStart));
 	}
 #endif
+	NotifyStartupSharedFilesModelChanged();
 }
 
 void CSharedFilesCtrl::ShowFilesCount()

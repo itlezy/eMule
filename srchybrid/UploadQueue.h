@@ -86,7 +86,11 @@ public:
 	uint32	GetWaitingUserForFileCount(const CSimpleArray<CObject*> &raFiles, bool bOnlyIfChanged);
 	uint32	GetDatarateForFile(const CSimpleArray<CObject*> &raFiles) const;
 	uint32	GetTargetClientDataRate(bool bMinDatarate) const;
+	/** Returns the configured broadband upload budget used to size the startup slot policy. */
+	uint32	GetConfiguredUploadBudgetBytesPerSec() const;
 	INT_PTR	GetBroadbandSlotCap() const						{ return GetSoftMaxUploadSlots(); }
+	/** Returns the fixed broadband per-slot target derived from the configured upload budget. */
+	uint32	GetTargetClientDataRateBroadband() const;
 	/** Returns the preferred queued block count for a client at the given upload rate. */
 	uint32	GetUploadBufferBlockCount(uint32 uClientDatarate) const;
 	/** Returns whether a client at the given upload rate should use the large send buffer. */
@@ -132,10 +136,7 @@ private:
 	{
 		UploadingToClient_Struct *pUploadClientStruct;
 	};
-	uint32	GetConfiguredUploadBudgetBytesPerSec() const;
 	INT_PTR	GetSoftMaxUploadSlots() const;
-	/** Returns the broadband per-slot target derived from the configured upload budget and fixed cap. */
-	uint32	GetTargetClientDataRateBroadband() const;
 	/** Returns the minimum headroom required before underfill may recycle a weak slot. */
 	uint32	GetBroadbandUnderfillMarginBytesPerSec() const;
 	/** Returns whether the current upload rate is materially below the configured upload budget. */
