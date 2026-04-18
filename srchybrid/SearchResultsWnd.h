@@ -59,6 +59,8 @@ class CSearchResultsWnd : public CResizableFormView
 	{
 		IDD = IDD_SEARCH
 	};
+	/** Detaches the currently visible results list before its backing search files are freed. */
+	void	DetachActiveResultView(uint32 uSearchID);
 	void	NoTabItems();
 
 public:

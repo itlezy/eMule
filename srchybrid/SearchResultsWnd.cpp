@@ -1390,6 +1390,21 @@ void CSearchResultsWnd::DeleteSelectedSearch()
 
 #pragma warning(push)
 #pragma warning(disable:4701) //local variable 'ti'
+void CSearchResultsWnd::DetachActiveResultView(uint32 uSearchID)
+{
+	int iCurSel = searchselect.GetCurSel();
+	if (iCurSel < 0)
+		return;
+
+	TCITEM ti;
+	ti.mask = TCIF_PARAM;
+	if (!searchselect.GetItem(iCurSel, &ti) || ti.lParam == NULL)
+		return;
+
+	if (reinterpret_cast<SSearchParams*>(ti.lParam)->dwSearchID == uSearchID)
+		searchlistctrl.DeleteAllItems();
+}
+
 void CSearchResultsWnd::DeleteSearch(uint32 uSearchID)
 {
 	Kademlia::CSearchManager::StopSearch(uSearchID, false);
@@ -1407,15 +1422,16 @@ void CSearchResultsWnd::DeleteSearch(uint32 uSearchID)
 			CancelEd2kSearch();
 		m_pwndParams->m_ctlMore.EnableWindow(FALSE);
 	}
+	DetachActiveResultView(uSearchID);
 	theApp.searchlist->RemoveResults(uSearchID);
 
 	// clean up stored states (scrolling pos. etc) for this search
 	searchlistctrl.ClearResultViewState(uSearchID);
 
 	// delete search tab
+	SSearchParams *pClosedParams = reinterpret_cast<SSearchParams*>(ti.lParam);
 	int iCurSel = searchselect.GetCurSel();
 	searchselect.DeleteItem(i);
-	delete reinterpret_cast<SSearchParams*>(ti.lParam);
 
 	int iTabItems = searchselect.GetItemCount();
 	if (iTabItems > 0) {
@@ -1437,6 +1453,8 @@ void CSearchResultsWnd::DeleteSearch(uint32 uSearchID)
 		}
 	} else
 		NoTabItems();
+
+	delete pClosedParams;
 }
 #pragma warning(pop)
 
@@ -1444,25 +1462,29 @@ void CSearchResultsWnd::DeleteAllSearches()
 {
 	CancelEd2kSearch();
 
+	CTypedPtrList<CPtrList, SSearchParams*> listSearchParamsToDelete;
 	TCITEM ti;
 	ti.mask = TCIF_PARAM;
 	for (int i = searchselect.GetItemCount(); --i >= 0;)
 		if (searchselect.GetItem(i, &ti) && ti.lParam != NULL) {
-			const SSearchParams *params = reinterpret_cast<SSearchParams*>(ti.lParam);
+			SSearchParams *params = reinterpret_cast<SSearchParams*>(ti.lParam);
 			Kademlia::CSearchManager::StopSearch(params->dwSearchID, false);
-			delete params;
+			listSearchParamsToDelete.AddTail(params);
 		}
 
 	NoTabItems();
+
+	while (!listSearchParamsToDelete.IsEmpty())
+		delete listSearchParamsToDelete.RemoveHead();
 }
 
 void CSearchResultsWnd::NoTabItems()
 {
-	theApp.searchlist->Clear();
 	searchlistctrl.DeleteAllItems();
 	ShowSearchSelector(false);
 	searchselect.DeleteAllItems();
 	searchlistctrl.NoTabs();
+	theApp.searchlist->Clear();
 
 	const CWnd *pWndFocus = GetFocus();
 	m_pwndParams->m_ctlMore.EnableWindow(FALSE);
