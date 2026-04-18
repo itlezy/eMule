@@ -2410,6 +2410,9 @@
 #define IDS_GEOLOCATION_CHECK_DAYS_SUFFIX 1691
 #define IDS_GEOLOCATION_DOWNLOAD_DB     1692
 #define IDS_PERCENTAGE                  1693
+#define IDS_CLIENT_UPLOADED             1694
+#define IDS_CLIENT_HASH                 1695
+#define IDS_FILE_SIZE                   1696
 #define IDD_SHUTDOWNPROGRESS            3054
 #define IDC_ENABLE_GEOLOCATION          3049
 #define IDC_GEOLOCATION_CHECKDAYS_LBL   3050
@@ -2427,6 +2430,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3057
-#define _APS_NEXT_SYMED_VALUE           1694
+#define _APS_NEXT_SYMED_VALUE           1697
 #endif
 #endif
