@@ -2761,16 +2761,206 @@ bool GetWMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsWM, bool bFullI
 
 #endif//HAVE_WMSDK_H
 
+/** \brief Describes one MIME magic probe entry. */
+struct SMimeMagicEntry
+{
+	UINT uOffset;
+	const BYTE *pMagic;
+	UINT uMagicSize;
+	LPCTSTR pszMimeType;
+	enum EMatchType
+	{
+		MMT_Exact,
+		MMT_BZip,
+		MMT_Ebml
+	} eMatchType;
+};
+
+/** \brief Matches a fixed byte sequence at a given offset. */
+static bool MatchMimeMagicExact(const BYTE *pBuffer, UINT uBufferSize, const SMimeMagicEntry &rEntry)
+{
+	return uBufferSize >= rEntry.uOffset + rEntry.uMagicSize
+		&& memcmp(pBuffer + rEntry.uOffset, rEntry.pMagic, rEntry.uMagicSize) == 0;
+}
+
+/** \brief Validates a BZip2 stream header with any legal block-size digit. */
+static bool MatchMimeMagicBZip(const BYTE *pBuffer, UINT uBufferSize, const SMimeMagicEntry &rEntry)
+{
+	return MatchMimeMagicExact(pBuffer, uBufferSize, rEntry)
+		&& uBufferSize > rEntry.uMagicSize
+		&& pBuffer[rEntry.uMagicSize] >= '1'
+		&& pBuffer[rEntry.uMagicSize] <= '9';
+}
+
+/** \brief Reads an EBML variable-length integer. */
+static bool TryReadEbmlVInt(const BYTE *pBuffer, UINT uBufferSize, UINT &ruEncodedSize, ULONGLONG &ruValue)
+{
+	if (uBufferSize == 0)
+		return false;
+
+	BYTE byLead = pBuffer[0];
+	BYTE byMask = 0x80;
+	ruEncodedSize = 1;
+	while ((byLead & byMask) == 0) {
+		byMask >>= 1;
+		++ruEncodedSize;
+		if (ruEncodedSize > 8 || byMask == 0)
+			return false;
+	}
+
+	if (ruEncodedSize > uBufferSize)
+		return false;
+
+	ruValue = byLead & (byMask - 1);
+	for (UINT i = 1; i < ruEncodedSize; ++i)
+		ruValue = (ruValue << 8) | pBuffer[i];
+	return true;
+}
+
+/** \brief Resolves an EBML container to WebM or Matroska when possible. */
+static LPCTSTR GetEbmlMimeType(const BYTE *pBuffer, UINT uBufferSize, LPCTSTR pszDefaultMimeType)
+{
+	static const char _cDocTypeWebM[] = "webm";
+	static const char _cDocTypeMatroska[] = "matroska";
+
+	for (UINT uIndex = 4; uIndex + 2 < uBufferSize; ++uIndex) {
+		if (pBuffer[uIndex] != 0x42 || pBuffer[uIndex + 1] != 0x82)
+			continue;
+
+		UINT uEncodedSize = 0;
+		ULONGLONG ullDocTypeSize = 0;
+		if (!TryReadEbmlVInt(&pBuffer[uIndex + 2], uBufferSize - (uIndex + 2), uEncodedSize, ullDocTypeSize))
+			break;
+		if (ullDocTypeSize == 0 || ullDocTypeSize > 32)
+			break;
+
+		UINT uDocTypeOffset = uIndex + 2 + uEncodedSize;
+		if (uDocTypeOffset + (UINT)ullDocTypeSize > uBufferSize)
+			break;
+
+		if (ullDocTypeSize == _countof(_cDocTypeWebM) - 1
+			&& memcmp(&pBuffer[uDocTypeOffset], _cDocTypeWebM, _countof(_cDocTypeWebM) - 1) == 0)
+		{
+			return _T("video/webm");
+		}
+		if (ullDocTypeSize == _countof(_cDocTypeMatroska) - 1
+			&& memcmp(&pBuffer[uDocTypeOffset], _cDocTypeMatroska, _countof(_cDocTypeMatroska) - 1) == 0)
+		{
+			return _T("video/x-matroska");
+		}
+		break;
+	}
+	return pszDefaultMimeType;
+}
+
+/** \brief Matches one MIME probe entry and returns its MIME type when it succeeds. */
+static LPCTSTR MatchMimeMagicEntry(const BYTE *pBuffer, UINT uBufferSize, const SMimeMagicEntry &rEntry)
+{
+	switch (rEntry.eMatchType) {
+		case SMimeMagicEntry::MMT_Exact:
+			if (MatchMimeMagicExact(pBuffer, uBufferSize, rEntry))
+				return rEntry.pszMimeType;
+			break;
+		case SMimeMagicEntry::MMT_BZip:
+			if (MatchMimeMagicBZip(pBuffer, uBufferSize, rEntry))
+				return rEntry.pszMimeType;
+			break;
+		case SMimeMagicEntry::MMT_Ebml:
+			if (MatchMimeMagicExact(pBuffer, uBufferSize, rEntry))
+				return GetEbmlMimeType(pBuffer, uBufferSize, rEntry.pszMimeType);
+			break;
+	}
+	return NULL;
+}
+
+/** \brief Probes the initial file header for known MIME signatures. */
+static bool TryGetMimeTypeFromMagic(const BYTE *pBuffer, UINT uBufferSize, CString &rstrMimeType)
+{
+	static const BYTE _aucRarLegacy[] = { 0x52, 0x45, 0x7e, 0x5e };
+	static const BYTE _aucRar4[] = { 0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00 };
+	static const BYTE _aucRar5[] = { 0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x01, 0x00 };
+	static const BYTE _auc7Zip[] = { 0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c };
+	static const BYTE _aucBZip[] = { 0x42, 0x5a, 0x68 };
+	static const BYTE _aucXZip[] = { 0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00 };
+	static const BYTE _aucGZip[] = { 0x1f, 0x8b };
+	static const BYTE _aucZip[] = { 0x50, 0x4b, 0x03, 0x04 };
+	static const BYTE _aucAce[] = { 0x2a, 0x2a, 0x41, 0x43, 0x45, 0x2a, 0x2a };
+	static const BYTE _aucLzh[] = { 0x2d, 0x6c, 0x68, 0x35, 0x2d };
+	static const BYTE _aucEbml[] = { 0x1a, 0x45, 0xdf, 0xa3 };
+	static const BYTE _aucOgg[] = { 0x4f, 0x67, 0x67, 0x53 };
+	static const BYTE _aucFlac[] = { 0x66, 0x4c, 0x61, 0x43 };
+	static const BYTE _aucMp4[] = { 0x66, 0x74, 0x79, 0x70 };
+	static const BYTE _aucFlv[] = { 0x46, 0x4c, 0x56 };
+	static const BYTE _aucAsf[] = { 0x30, 0x26, 0xb2, 0x75, 0x8e, 0x66, 0xcf, 0x11 };
+	static const BYTE _aucTorrent[] = { 0x64, 0x38, 0x3a, 0x61, 0x6e, 0x6e, 0x6f, 0x75, 0x6e, 0x63, 0x65 };
+	static const SMimeMagicEntry _aMagicEntries[] =
+	{
+		{ 0, _aucRarLegacy, _countof(_aucRarLegacy), _T("application/x-rar-compressed"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucRar4, _countof(_aucRar4), _T("application/x-rar-compressed"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucRar5, _countof(_aucRar5), _T("application/x-rar-compressed"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _auc7Zip, _countof(_auc7Zip), _T("application/x-7z-compressed"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucBZip, _countof(_aucBZip), _T("application/x-bzip2"), SMimeMagicEntry::MMT_BZip },
+		{ 0, _aucXZip, _countof(_aucXZip), _T("application/x-xz"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucGZip, _countof(_aucGZip), _T("application/gzip"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucZip, _countof(_aucZip), _T("application/zip"), SMimeMagicEntry::MMT_Exact },
+		{ 7, _aucAce, _countof(_aucAce), _T("application/x-ace-compressed"), SMimeMagicEntry::MMT_Exact },
+		{ 2, _aucLzh, _countof(_aucLzh), _T("application/x-lha-compressed"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucEbml, _countof(_aucEbml), _T("video/x-matroska"), SMimeMagicEntry::MMT_Ebml },
+		{ 0, _aucOgg, _countof(_aucOgg), _T("audio/ogg"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucFlac, _countof(_aucFlac), _T("audio/flac"), SMimeMagicEntry::MMT_Exact },
+		{ 4, _aucMp4, _countof(_aucMp4), _T("video/mp4"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucFlv, _countof(_aucFlv), _T("video/x-flv"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucAsf, _countof(_aucAsf), _T("video/x-ms-asf"), SMimeMagicEntry::MMT_Exact },
+		{ 0, _aucTorrent, _countof(_aucTorrent), _T("application/x-bittorrent"), SMimeMagicEntry::MMT_Exact }
+	};
+
+	for (UINT i = 0; i < _countof(_aMagicEntries); ++i) {
+		LPCTSTR pszMimeType = MatchMimeMagicEntry(pBuffer, uBufferSize, _aMagicEntries[i]);
+		if (pszMimeType != NULL) {
+			rstrMimeType = pszMimeType;
+			return true;
+		}
+	}
+	return false;
+}
+
+/** \brief Performs the ISO 9660 signature probe from its fixed on-disk offset. */
+static bool TryGetIsoMimeType(int fd, CString &rstrMimeType)
+{
+	static const char _cIsoMagic[] = "CD001";
+	BYTE buffer[_countof(_cIsoMagic) - 1];
+	if (_lseeki64(fd, 0x8001, SEEK_SET) == -1)
+		return false;
+	if (_read(fd, buffer, sizeof buffer) != sizeof buffer)
+		return false;
+	if (memcmp(buffer, _cIsoMagic, sizeof buffer) != 0)
+		return false;
+
+	rstrMimeType = _T("application/x-iso9660-image");
+	return true;
+}
+
 bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType)
 {
-	int fd = _topen(pszFilePath, O_RDONLY | O_BINARY);
+	int fd = OpenCrtReadOnlyLongPath(pszFilePath);
 	if (fd != -1) {
-		BYTE buffer[8192];
+		enum { MIMETYPE_PROBE_SIZE = 512 };
+		BYTE buffer[MIMETYPE_PROBE_SIZE];
 		int iRead = _read(fd, buffer, sizeof buffer);
 
-		_close(fd);
-
 		if (iRead > 0) {
+			if (TryGetMimeTypeFromMagic(buffer, iRead, rstrMimeType)) {
+				_close(fd);
+				return true;
+			}
+
+			if (TryGetIsoMimeType(fd, rstrMimeType)) {
+				_close(fd);
+				return true;
+			}
+
+			_close(fd);
+
 			// Supports only 26 hardcoded types - and some more (undocumented)
 			// ---------------------------------------------------------------
 			// x text/richtext					.rtf
@@ -2821,38 +3011,8 @@ bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType)
 				return true;
 			}
 			::CoTaskMemFree(pwszMime);
-
-			// RAR file type
-			if (iRead >= 7 && buffer[0] == 0x52) {
-				if ((buffer[1] == 0x45 && buffer[2] == 0x7e && buffer[3] == 0x5e)
-					|| (buffer[1] == 0x61 && buffer[2] == 0x72 && buffer[3] == 0x21 && buffer[4] == 0x1a && buffer[5] == 0x07 && buffer[6] == 0x00))
-				{
-					rstrMimeType = _T("application/x-rar-compressed");
-					return true;
-				}
-			}
-
-			// bzip (BZ2) file type
-			static const char _cBZipheader[] = "BZh19";
-			if (iRead >= (int)_countof(_cBZipheader) - 1 && memcmp(buffer, _cBZipheader, _countof(_cBZipheader) - 1) == 0) {
-				rstrMimeType = _T("application/x-bzip-compressed");
-				return true;
-			}
-
-			// ACE file type
-			static const char _cACEheader[] = "**ACE**";
-			if (iRead >= 7 + (int)_countof(_cACEheader) - 1 && memcmp(&buffer[7], _cACEheader, _countof(_cACEheader) - 1) == 0) {
-				rstrMimeType = _T("application/x-ace-compressed");
-				return true;
-			}
-
-			// LHA/LZH file type
-			static const char _cLZHheader[] = "-lh5-";
-			if (iRead >= 2 + (int)_countof(_cLZHheader) - 1 && memcmp(&buffer[2], _cLZHheader, _countof(_cLZHheader) - 1) == 0) {
-				rstrMimeType = _T("application/x-lha-compressed");
-				return true;
-			}
-		}
+		} else
+			_close(fd);
 	}
 	return false;
 }

@@ -1687,7 +1687,9 @@ struct SED2KFileType
 	{ _T(".mpa"),   ED2KFT_AUDIO },		// MPEG Audio File
 	{ _T(".mpc"),   ED2KFT_AUDIO },		// Musepack Compressed Audio File
 	{ _T(".mtm"),   ED2KFT_AUDIO },		// MultiTracker Module
+	{ _T(".oga"),   ED2KFT_AUDIO },		// Ogg Audio File
 	{ _T(".ogg"),   ED2KFT_AUDIO },		// Ogg Vorbis Compressed Audio File
+	{ _T(".opus"),  ED2KFT_AUDIO },		// Opus Audio File
 	{ _T(".psm"),   ED2KFT_AUDIO },		// Protracker Studio Module
 	{ _T(".ptm"),   ED2KFT_AUDIO },		// PolyTracker Module
 	{ _T(".ra"),    ED2KFT_AUDIO },		// Real Audio File
@@ -1697,6 +1699,7 @@ struct SED2KFileType
 	{ _T(".stm"),   ED2KFT_AUDIO },		// Scream Tracker 2 Module
 	{ _T(".umx"),   ED2KFT_AUDIO },		// Unreal Music Package
 	{ _T(".wav"),   ED2KFT_AUDIO },		// WAVE Audio File
+	{ _T(".weba"),  ED2KFT_AUDIO },		// WebM Audio File
 	{ _T(".wma"),   ED2KFT_AUDIO },		// Windows Media Audio File
 	{ _T(".xm"),    ED2KFT_AUDIO },		// Fasttracker 2 Extended Module
 
@@ -1735,6 +1738,7 @@ struct SED2KFileType
 	{ _T(".mpv1"),  ED2KFT_VIDEO },		// MPEG-1 Video File
 	{ _T(".mpv2"),  ED2KFT_VIDEO },		// MPEG-2 Video File
 	{ _T(".ogm"),   ED2KFT_VIDEO },		// Ogg Media File
+	{ _T(".ogv"),   ED2KFT_VIDEO },		// Ogg Video File
 	{ _T(".pva"),   ED2KFT_VIDEO },		// MPEG Video File
 	{ _T(".qt"),    ED2KFT_VIDEO },		// QuickTime Movie
 	{ _T(".ram"),   ED2KFT_VIDEO },		// Real Audio Media
@@ -1752,6 +1756,7 @@ struct SED2KFileType
 	{ _T(".video"), ED2KFT_VIDEO },		// General Video File
 	{ _T(".vob"),   ED2KFT_VIDEO },		// DVD Video Object File
 	{ _T(".vp6"),   ED2KFT_VIDEO },		// TrueMotion VP6 Video File
+	{ _T(".webm"),  ED2KFT_VIDEO },		// WebM Video File
 	{ _T(".wm"),    ED2KFT_VIDEO },		// Windows Media Video File
 	{ _T(".wmv"),   ED2KFT_VIDEO },		// Windows Media Video File
 	{ _T(".xvid"),  ED2KFT_VIDEO },		// Xvid-Encoded Video File
