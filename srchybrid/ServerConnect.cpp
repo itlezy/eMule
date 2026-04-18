@@ -186,10 +186,13 @@ void CServerConnect::ConnectionEstablished(CServerSocket *sender)
 		uint32 dwCryptFlags = 0;
 		if (thePrefs.IsCryptLayerEnabled())
 			dwCryptFlags |= SRVCAP_SUPPORTCRYPT;
-		if (thePrefs.IsCryptLayerPreferred())
-			dwCryptFlags |= SRVCAP_REQUESTCRYPT;
-		if (thePrefs.IsCryptLayerRequired())
-			dwCryptFlags |= SRVCAP_REQUIRECRYPT;
+		// Keep callback negotiation conservative when the main server socket is already obfuscated.
+		if (!sender->IsServerCryptEnabledConnection()) {
+			if (thePrefs.IsCryptLayerPreferred())
+				dwCryptFlags |= SRVCAP_REQUESTCRYPT;
+			if (thePrefs.IsCryptLayerRequired())
+				dwCryptFlags |= SRVCAP_REQUIRECRYPT;
+		}
 
 		CTag tagFlags(CT_SERVER_FLAGS, SRVCAP_ZLIB | SRVCAP_NEWTAGS | SRVCAP_LARGEFILES | SRVCAP_UNICODE | dwCryptFlags);
 		tagFlags.WriteTagToFile(data);
