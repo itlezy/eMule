@@ -741,6 +741,12 @@ bool CSharedFileList::CheckAndAddSingleFile(const CString &rstrFilePath)
 		return false;
 	}
 	ff.FindNextFile();
+	if (theApp.IsParityHarnessMode()) {
+		Log(
+			_T("Parity harness queued shared file for hashing: %s (%I64u bytes)"),
+			(LPCTSTR)rstrFilePath,
+			(static_cast<ULONGLONG>(ff.GetLength())));
+	}
 	CheckAndAddSingleFile(ff);
 	ff.Close();
 	HashNextFile();
@@ -825,6 +831,18 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 
 void CSharedFileList::FileHashingFinished(CKnownFile *file)
 {
+	if (theApp.IsParityHarnessMode()) {
+		const CString strAichRoot = file->GetFileIdentifierC().HasAICHHash()
+			? file->GetFileIdentifierC().GetAICHHash().GetString()
+			: _T("<missing>");
+		Log(
+			_T("Parity harness shared file hashing finished: %s (size=%I64u md4=%s aich=%s)"),
+			(LPCTSTR)file->GetFilePath(),
+			file->GetFileSize(),
+			(LPCTSTR)md4str(file->GetFileHash()),
+			(LPCTSTR)strAichRoot);
+	}
+
 	// File hashing finished for a shared file (none partfile)
 	//	- reading shared directories at startup and hashing files which were not found in known.met
 	//	- reading shared directories during runtime (user hit Reload button, added a shared directory, ...)
