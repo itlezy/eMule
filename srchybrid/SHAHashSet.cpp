@@ -729,8 +729,7 @@ bool CAICHRecoveryHashSet::SaveHashSet()
 		return false;
 	}
 	CSingleLock lockKnown2Met(&m_mutKnown2File);
-	if (!lockKnown2Met.Lock(SEC2MS(5)))
-		return false;
+	lockKnown2Met.Lock();
 
 	CSafeFile file;
 	CFileException fex;
