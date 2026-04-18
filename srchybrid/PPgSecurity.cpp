@@ -52,18 +52,36 @@ namespace
 	}
 
 	/**
-	 * @brief Promotes a downloaded or unpacked IP-filter file into place through long-path-safe move/delete helpers.
+	 * @brief Reports a failed IP-filter promotion using the real Win32 replacement error.
 	 */
-	bool PromoteIpFilterFile(LPCTSTR pszSourcePath, LPCTSTR pszDownloadedArchivePath = NULL)
+	void ReportIpFilterPromotionFailure(LPCTSTR pszSourcePath, DWORD dwError)
 	{
 		const CString &strTargetPath = theApp.ipfilter->GetDefaultFilePath();
-		if (!LongPathSeams::DeleteFileIfExists(strTargetPath))
-			TRACE(_T("*** Error: Failed to remove default IP filter file \"%s\" - %s\n"), (LPCTSTR)strTargetPath, _tcserror(errno));
-		if (!LongPathSeams::MoveFileEx(pszSourcePath, strTargetPath, MOVEFILE_REPLACE_EXISTING))
-			TRACE(_T("*** Error: Failed to move IP filter file \"%s\" to default IP filter file \"%s\" - %s\n"), pszSourcePath, (LPCTSTR)strTargetPath, _tcserror(errno));
-		if (pszDownloadedArchivePath != NULL && !LongPathSeams::DeleteFileIfExists(pszDownloadedArchivePath))
-			TRACE(_T("*** Error: Failed to remove temporary IP filter file \"%s\" - %s\n"), pszDownloadedArchivePath, _tcserror(errno));
-		return LongPathSeams::PathExists(strTargetPath);
+		CString strError(GetResString(IDS_DWLIPFILTERFAILED));
+		strError.AppendFormat(_T("\r\n\r\nFailed to replace \"%s\" with \"%s\".\r\n\r\n%s"),
+			(LPCTSTR)strTargetPath,
+			pszSourcePath != NULL ? pszSourcePath : _T(""),
+			(LPCTSTR)GetErrorMessage(dwError));
+		AfxMessageBox(strError, MB_ICONERROR);
+	}
+
+	/**
+	 * @brief Promotes a downloaded or unpacked IP-filter file into place through the shared atomic replace helper.
+	 */
+	bool PromoteIpFilterFile(LPCTSTR pszSourcePath, LPCTSTR pszDownloadedArchivePath = NULL, DWORD *pdwLastError = NULL)
+	{
+		const CString &strTargetPath = theApp.ipfilter->GetDefaultFilePath();
+		DWORD dwReplaceError = ERROR_SUCCESS;
+		const bool bPromoted = ReplaceFileAtomically(pszSourcePath, strTargetPath, &dwReplaceError);
+		if (!bPromoted)
+			TRACE(_T("*** Error: Failed to replace default IP filter file \"%s\" with \"%s\" - %s\n"), (LPCTSTR)strTargetPath, pszSourcePath, (LPCTSTR)GetErrorMessage(dwReplaceError));
+		if (pszDownloadedArchivePath != NULL && !LongPathSeams::DeleteFileIfExists(pszDownloadedArchivePath)) {
+			const DWORD dwCleanupError = ::GetLastError();
+			TRACE(_T("*** Error: Failed to remove temporary IP filter file \"%s\" - %s\n"), pszDownloadedArchivePath, (LPCTSTR)GetErrorMessage(dwCleanupError));
+		}
+		if (pdwLastError != NULL)
+			*pdwLastError = dwReplaceError;
+		return bPromoted;
 	}
 }
 
@@ -267,9 +285,12 @@ void CPPgSecurity::OnLoadIPFFromURL()
 				if (zfile->Extract(strTempUnzipFilePath)) {
 					zip.Close();
 
-					(void)PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath);
-					bUncompressed = true;
-					bHaveNewFilterFile = true;
+					DWORD dwPromoteError = ERROR_SUCCESS;
+					if (PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath, &dwPromoteError)) {
+						bUncompressed = true;
+						bHaveNewFilterFile = true;
+					} else
+						ReportIpFilterPromotionFailure(strTempUnzipFilePath, dwPromoteError);
 				} else {
 					CString strError;
 					strError.Format(GetResString(IDS_ERR_IPFILTERZIPEXTR), (LPCTSTR)strTempFilePath);
@@ -297,9 +318,12 @@ void CPPgSecurity::OnLoadIPFFromURL()
 					if (rar.Extract(strTempUnzipFilePath)) {
 						rar.Close();
 
-						(void)PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath);
-						bUncompressed = true;
-						bHaveNewFilterFile = true;
+						DWORD dwPromoteError = ERROR_SUCCESS;
+						if (PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath, &dwPromoteError)) {
+							bUncompressed = true;
+							bHaveNewFilterFile = true;
+						} else
+							ReportIpFilterPromotionFailure(strTempUnzipFilePath, dwPromoteError);
 					} else {
 						CString strError;
 						strError.Format(_T("Failed to extract IP filter file from RAR file \"%s\"."), (LPCTSTR)strTempFilePath);
@@ -331,9 +355,12 @@ void CPPgSecurity::OnLoadIPFFromURL()
 				if (gz.Extract(strTempUnzipFilePath)) {
 					gz.Close();
 
-					(void)PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath);
-					bUncompressed = true;
-					bHaveNewFilterFile = true;
+					DWORD dwPromoteError = ERROR_SUCCESS;
+					if (PromoteIpFilterFile(strTempUnzipFilePath, strTempFilePath, &dwPromoteError)) {
+						bUncompressed = true;
+						bHaveNewFilterFile = true;
+					} else
+						ReportIpFilterPromotionFailure(strTempUnzipFilePath, dwPromoteError);
 				} else {
 					CString strError;
 					strError.Format(GetResString(IDS_ERR_IPFILTERZIPEXTR), (LPCTSTR)strTempFilePath);
@@ -365,8 +392,11 @@ void CPPgSecurity::OnLoadIPFFromURL()
 			}
 
 			if (bValidIPFilterFile) {
-				VERIFY(PromoteIpFilterFile(strTempFilePath));
-				bHaveNewFilterFile = true;
+				DWORD dwPromoteError = ERROR_SUCCESS;
+				if (PromoteIpFilterFile(strTempFilePath, NULL, &dwPromoteError))
+					bHaveNewFilterFile = true;
+				else
+					ReportIpFilterPromotionFailure(strTempFilePath, dwPromoteError);
 			} else
 				LocMessageBox(IDS_DWLIPFILTERFAILED, MB_ICONERROR, 0);
 		}
