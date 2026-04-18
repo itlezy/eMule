@@ -430,6 +430,9 @@ TEMPLATE INT CDialogMinTrayBtn<BASE>::GetVisualStylesXPColor() const
 	if (IsWindowsClassicStyle())
 		return -1;
 
+	// Intentional UI limitation: theme-name probing stays on the legacy MAX_PATH-based
+	// UX path here. Min-tray button color detection is not a target for broader
+	// namespace-only or overlong-path support.
 	WCHAR szwThemeFile[MAX_PATH];
 	WCHAR szwThemeColor[256];
 	if (::GetCurrentThemeName(szwThemeFile, MAX_PATH, szwThemeColor, _countof(szwThemeColor), NULL, 0) != S_OK)
