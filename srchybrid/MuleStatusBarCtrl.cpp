@@ -18,6 +18,8 @@
 #include "emule.h"
 #include "MuleStatusBarCtrl.h"
 #include "OtherFunctions.h"
+#include "Preferences.h"
+#include "StatusBarInfo.h"
 #include "emuledlg.h"
 #include "ServerWnd.h"
 #include "StatisticsDlg.h"
@@ -57,6 +59,7 @@ void CMuleStatusBarCtrl::OnLButtonDblClk(UINT /*nFlags*/, CPoint point)
 			AfxMessageBox(sBar);
 		}
 		break;
+	case SBarIP:
 	case SBarUsers:
 	case SBarConnected:
 		theApp.emuledlg->serverwnd->ShowNetworkInfo();
@@ -84,6 +87,12 @@ int CMuleStatusBarCtrl::GetPaneAtPosition(CPoint &point) const
 CString CMuleStatusBarCtrl::GetPaneToolTipText(EStatusBarPane iPane) const
 {
 	CString strText;
+	if (iPane == SBarIP) {
+		CString strBindAddress;
+		if (thePrefs.GetBindAddr() != NULL)
+			strBindAddress = thePrefs.GetBindAddr();
+		return StatusBarInfo::FormatNetworkAddressPaneToolTip(strBindAddress, theApp.GetPublicIP());
+	}
 	if (iPane == SBarConnected && theApp.serverconnect && theApp.serverconnect->IsConnected()) {
 		const CServer *cur_server = theApp.serverconnect->GetCurrentServer();
 		if (cur_server) {

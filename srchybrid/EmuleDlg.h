@@ -77,6 +77,7 @@ public:
 
 	CImageList& GetClientIconList()				{ return m_IconList; }
 	void ShowConnectionState();
+	void ShowNetworkAddressState();
 	void ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink = NULL, bool bForceSoundOFF = false);
 	void SendNotificationMail(TbnMsg nMsgType, LPCTSTR pszText);
 	void ShowUserCount();
@@ -117,6 +118,7 @@ public:
 	CString GetServerInfoText();
 
 	CString	GetConnectionStateString();
+	CString	GetNetworkAddressStateString() const;
 	UINT GetConnectionStateIconIndex() const;
 	CString	GetTransferRateString();
 	CString	GetUpDatarateString(UINT uUpDatarate = UINT_MAX);
