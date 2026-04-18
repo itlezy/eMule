@@ -18,6 +18,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
+#include <vector>
 #include "SharedStartupCachePolicy.h"
 #include "MapKey.h"
 #include "FileIdentifier.h"
@@ -46,6 +47,30 @@ class CSharedFileList
 	friend class CClientReqSocket;
 
 public:
+	/**
+	 * @brief Exposes the current background startup-cache saver phase for shutdown UI and diagnostics.
+	 */
+	enum class StartupCacheSavePhase : uint8
+	{
+		Idle,
+		BuildingRecords,
+		WritingFile,
+		ApplyingResult
+	};
+
+	/**
+	 * @brief Reports the latest background startup-cache save progress snapshot.
+	 */
+	struct StartupCacheSaveProgress
+	{
+		StartupCacheSavePhase ePhase = StartupCacheSavePhase::Idle;
+		ULONGLONG uCompletedDirectories = 0;
+		ULONGLONG uTotalDirectories = 0;
+		bool bRunning = false;
+		bool bDirty = false;
+		bool bWaitingForFollowUp = false;
+	};
+
 	explicit CSharedFileList(CServerConnect *in_server);
 	~CSharedFileList();
 	CSharedFileList(const CSharedFileList&) = delete;
@@ -70,7 +95,31 @@ public:
 	/**
 	 * @brief Starts deferred shared-file hashing after startup UI initialization finishes.
 	 */
-	void	StartDeferredHashing()					{ HashNextFile(); }
+	void	StartDeferredHashing();
+	/**
+	 * @brief Reports whether the initial startup-only deferred shared hash queue is still draining.
+	 */
+	bool	IsStartupDeferredHashingActive() const	{ return m_bStartupDeferredHashingActive; }
+	/**
+	 * @brief Starts one background startup-cache save when the cache is dirty and no worker is active.
+	 */
+	bool	RequestStartupCacheSave(bool bImmediate = false);
+	/**
+	 * @brief Reports whether startup-cache persistence still has dirty or in-flight work left.
+	 */
+	bool	HasPendingStartupCacheSaveWork() const;
+	/**
+	 * @brief Reports whether the background startup-cache saver is currently running.
+	 */
+	bool	IsStartupCacheSaveRunning() const;
+	/**
+	 * @brief Copies the latest startup-cache save progress snapshot for shutdown UI polling.
+	 */
+	void	GetStartupCacheSaveProgress(StartupCacheSaveProgress &rProgress) const;
+	/**
+	 * @brief Applies one worker-produced startup-cache save result on the UI thread.
+	 */
+	void	HandleStartupCacheSaveCompletion(void *pResult);
 	bool	RemoveFile(CKnownFile *pFile, bool bDeleted = false);	// removes a specific shared file from the list
 	void	UpdateFile(const CKnownFile *toupdate);
 	void	AddFileFromNewlyCreatedCollection(const CString &rstrFilePath)	{ CheckAndAddSingleFile(rstrFilePath); }
@@ -171,10 +220,48 @@ private:
 		ULONGLONG uFilesIgnored = 0;
 	};
 
+	/**
+	 * @brief Captures one shared directory block for worker-side startup-cache persistence.
+	 */
+	struct StartupCacheSaveDirectorySnapshot
+	{
+		CString strDirectoryPath;
+		std::vector<SharedStartupCachePolicy::FileRecord> files;
+		bool bHasPendingHash = false;
+	};
+
+	/**
+	 * @brief Owns one immutable worker-side startup-cache persistence request.
+	 */
+	struct StartupCacheSaveSnapshot
+	{
+		CString strCachePath;
+		std::vector<StartupCacheSaveDirectorySnapshot> directories;
+	};
+
+	/**
+	 * @brief Owns one completed worker-side startup-cache save result until the UI thread applies it.
+	 */
+	struct StartupCacheSaveResult
+	{
+		bool bWriteSucceeded = false;
+		ULONGLONG ullCompletedTick = 0;
+		SharedStartupCacheRecordMap records;
+		SharedStartupCacheVolumeRecordMap volumeRecords;
+	};
+
+	/**
+	 * @brief Carries one owner pointer plus immutable snapshot into the background save worker.
+	 */
+	struct StartupCacheSaveThreadRequest
+	{
+		CSharedFileList *pOwner = NULL;
+		StartupCacheSaveSnapshot snapshot;
+	};
+
 	void	AddDirectory(const CString &strDir, CStringList &dirlist, std::unordered_set<std::wstring> &rAddedDirectoryKeys, bool bAllowStartupCache);
 	void	CollectSharedDirectories(CStringList &dirlist) const;
 	bool	TryLoadStartupCache();
-	void	SaveStartupCache();
 	void	MarkStartupCacheDirty();
 	bool	TryRehydrateSharedDirectoryFromCache(const CString &strDirectory);
 	/**
@@ -200,6 +287,12 @@ private:
 	static std::wstring MakeStartupCacheVolumeKey(const CString &strVolumeKey);
 	static bool ReadStartupCacheString(CSafeBufferedFile &file, CString &rValue);
 	static void WriteStartupCacheString(CSafeBufferedFile &file, const CString &strValue);
+	static UINT AFX_CDECL StartupCacheSaveThreadProc(LPVOID pParam);
+	bool	CaptureStartupCacheSaveSnapshot(StartupCacheSaveSnapshot &rSnapshot) const;
+	bool	BuildStartupCacheRecordFromSnapshot(const StartupCacheSaveDirectorySnapshot &rDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord, SharedStartupCacheVolumeRecordMap &rVolumeRecords) const;
+	void	RunStartupCacheSaveWorker(const StartupCacheSaveSnapshot &rSnapshot, StartupCacheSaveResult &rResult);
+	static bool	WriteStartupCacheFile(const CString &strFullPath, const SharedStartupCacheVolumeRecordMap &rVolumeRecords, const std::vector<SharedStartupCachePolicy::DirectoryRecord> &rRecords);
+	void	UpdateStartupCacheSaveProgress(StartupCacheSavePhase ePhase, ULONGLONG uCompletedDirectories, ULONGLONG uTotalDirectories);
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
@@ -223,13 +316,21 @@ private:
 	bool	m_lastPublishED2KFlag;
 	bool	bHaveSingleSharedFiles;
 	bool	m_bStartupCacheDirty;
+	bool	m_bStartupDeferredHashingActive;
 	ULONGLONG m_nLastStartupCacheSave;
+	ULONGLONG m_nStartupCacheDirtyTick;
 	ULONGLONG m_uStartupHashCompletedFiles;
 	ULONGLONG m_uStartupHashFailedFiles;
 	StartupScanStats m_startupScanStats;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
 	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;
 	std::unordered_map<std::wstring, StartupCacheVolumeValidationState> m_startupCacheVolumeValidation;
+	mutable CCriticalSection m_mutStartupCacheSave;
+	bool	m_bStartupCacheSaveRunning;
+	bool	m_bStartupCacheSaveRunAfterCurrent;
+	StartupCacheSavePhase m_eStartupCacheSavePhase;
+	ULONGLONG m_uStartupCacheSaveDirectoriesDone;
+	ULONGLONG m_uStartupCacheSaveDirectoriesTotal;
 };
 
 class CAddFileThread : public CWinThread

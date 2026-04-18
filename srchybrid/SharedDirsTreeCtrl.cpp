@@ -70,6 +70,17 @@ CString BuildSharedTreePathKey(const CString &rstrPath)
 	return strKey;
 }
 
+bool SharedDirectoryKeyLess(const CString &rstrLeft, const CString &rstrRight)
+{
+	return rstrLeft.Compare(rstrRight) < 0;
+}
+
+bool HasSharedDirectoryKeyPrefix(const CString &rstrPrefix, const CString &rstrCandidate)
+{
+	return rstrCandidate.GetLength() > rstrPrefix.GetLength()
+		&& _tcsncmp(rstrCandidate, rstrPrefix, rstrPrefix.GetLength()) == 0;
+}
+
 CDirectoryItem* InsertSharedDirectoryItem(CSharedDirsTreeCtrl *pTreeCtrl, CDirectoryItem *pParentItem, const CString &rstrPath, bool bTopFolder, bool bAccessible, bool &rbShowWarning)
 {
 	const CString strName(GetFolderLabel(rstrPath, bTopFolder, bAccessible));
@@ -342,6 +353,41 @@ void CSharedDirsTreeCtrl::Initialize(CSharedFilesCtrl *pSharedFilesCtrl)
 	theApp.AppendStartupProfileLine(_T("CSharedDirsTreeCtrl::Initialize Localize"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 	theApp.AppendStartupProfileLine(_T("CSharedDirsTreeCtrl::Initialize total"), theApp.GetStartupProfileElapsedUs(ullInitStart));
 #endif
+}
+
+void CSharedDirsTreeCtrl::RebuildSharedDirectoryLookup()
+{
+	m_mapSharedDirectoryKeys.RemoveAll();
+	m_aSortedSharedDirectoryKeys.clear();
+	m_aSortedSharedDirectoryKeys.reserve(static_cast<size_t>(m_strliSharedDirs.GetCount()));
+
+	for (POSITION pos = m_strliSharedDirs.GetHeadPosition(); pos != NULL;) {
+		const CString strKey(BuildSharedTreePathKey(m_strliSharedDirs.GetNext(pos)));
+		void *pvExisting = NULL;
+		if (m_mapSharedDirectoryKeys.Lookup(strKey, pvExisting))
+			continue;
+
+		m_mapSharedDirectoryKeys.SetAt(strKey, reinterpret_cast<void*>(1));
+		m_aSortedSharedDirectoryKeys.push_back(strKey);
+	}
+
+	std::sort(m_aSortedSharedDirectoryKeys.begin(), m_aSortedSharedDirectoryKeys.end(), SharedDirectoryKeyLess);
+}
+
+bool CSharedDirsTreeCtrl::HasSharedDirectoryDescendant(const CString &strDir) const
+{
+	if (m_aSortedSharedDirectoryKeys.empty())
+		return false;
+
+	const CString strKey(BuildSharedTreePathKey(strDir));
+	const std::vector<CString>::const_iterator it = std::upper_bound(
+		m_aSortedSharedDirectoryKeys.begin(),
+		m_aSortedSharedDirectoryKeys.end(),
+		strKey,
+		[](const CString &rstrLeft, const CString &rstrRight) {
+			return SharedDirectoryKeyLess(rstrLeft, rstrRight);
+		});
+	return it != m_aSortedSharedDirectoryKeys.end() && HasSharedDirectoryKeyPrefix(strKey, *it);
 }
 
 void CSharedDirsTreeCtrl::OnSysColorChange()
@@ -1016,6 +1062,8 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 		strPath = PathHelpers::EnsureTrailingSeparator(strPath);
 	CString strDir(strPath + strText);
 	strDir = PathHelpers::EnsureTrailingSeparator(strDir);
+	const bool bIsShared = FileSystemTreeIsShared(strDir);
+	const bool bHasSharedDescendantOrFiles = FileSystemTreeHasSharedSubdirectory(strDir, true);
 	TVINSERTSTRUCT itInsert = {};
 
 	if (m_bUseIcons) {
@@ -1026,11 +1074,12 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 		itInsert.item.stateMask = TVIS_BOLD;
 	}
 
-	if (FileSystemTreeHasSharedSubdirectory(strDir, true) || FileSystemTreeIsShared(strDir))
+	if (bHasSharedDescendantOrFiles || bIsShared)
 		itInsert.item.state = TVIS_BOLD;
 	else
 		itInsert.item.state = 0;
-	itInsert.item.cChildren = FileSystemTreeHasSubdirectories(strDir) ? I_CHILDRENCALLBACK : 0;	// used to display the '+' symbol next to each item
+	// Avoid probing every listed child directory for descendants before the user expands it.
+	itInsert.item.cChildren = I_CHILDRENCALLBACK;
 
 	CDirectoryItem *pti = new CDirectoryItem(strDir, 0, SDI_UNSHAREDDIRECTORY);
 
@@ -1041,7 +1090,7 @@ void CSharedDirsTreeCtrl::FileSystemTreeAddChildItem(CDirectoryItem *pRoot, cons
 	itInsert.item.lParam = (LPARAM)pti;
 
 	if (m_bUseIcons) {
-		if (FileSystemTreeIsShared(strDir)) {
+		if (bIsShared) {
 			itInsert.item.stateMask |= TVIS_OVERLAYMASK;
 			itInsert.item.state |= INDEXTOOVERLAYMASK(1);
 		}
@@ -1080,7 +1129,7 @@ bool CSharedDirsTreeCtrl::FileSystemTreeHasSubdirectories(const CString &strDir)
 
 bool CSharedDirsTreeCtrl::FileSystemTreeHasSharedSubdirectory(const CString &strDir, bool bOrFiles)
 {
-	return SharedDirectoryOps::HasSharedSubdirectory(m_strliSharedDirs, strDir)
+	return HasSharedDirectoryDescendant(strDir)
 		|| (bOrFiles && theApp.sharedfiles->ContainsSingleSharedFiles(strDir));
 }
 
@@ -1115,14 +1164,21 @@ void CSharedDirsTreeCtrl::OnTvnItemexpanding(LPNMHDR pNMHDR, LRESULT *pResult)
 	LPNMTREEVIEW pNMTreeView = reinterpret_cast<LPNMTREEVIEW>(pNMHDR);
 	CDirectoryItem *pExpanded = reinterpret_cast<CDirectoryItem*>(pNMTreeView->itemNew.lParam);
 	if (pExpanded != NULL) {
+		const bool bCollapse = pNMTreeView->action == TVE_COLLAPSE || pNMTreeView->action == TVE_COLLAPSERESET;
 		if (pExpanded->m_eItemType == SDI_UNSHAREDDIRECTORY && !pExpanded->m_strFullPath.IsEmpty()) {
-			// remove all sub-items
 			DeleteChildItems(pExpanded);
-			// fetch all subdirectories and add them to the node
-			FileSystemTreeAddSubdirectories(pExpanded);
+			if (!bCollapse)
+				FileSystemTreeAddSubdirectories(pExpanded);
+
+			TVITEM tvi = {};
+			tvi.mask = TVIF_CHILDREN;
+			tvi.hItem = pExpanded->m_htItem;
+			tvi.cChildren = bCollapse ? 1 : (pExpanded->liSubDirectories.IsEmpty() ? 0 : 1);
+			SetItem(&tvi);
 		} else if (pExpanded->m_eItemType == SDI_FILESYSTEMPARENT) {
 			DeleteChildItems(pExpanded);
-			FileSystemTreeCreateTree();
+			if (!bCollapse)
+				FileSystemTreeCreateTree();
 		}
 	} else
 		ASSERT(0);
@@ -1144,7 +1200,8 @@ void CSharedDirsTreeCtrl::DeleteChildItems(CDirectoryItem *pParent)
 
 bool CSharedDirsTreeCtrl::FileSystemTreeIsShared(const CString &strDir)
 {
-	return SharedDirectoryOps::IsSharedDirectoryListed(m_strliSharedDirs, strDir);
+	void *pvShared = NULL;
+	return m_mapSharedDirectoryKeys.Lookup(BuildSharedTreePathKey(strDir), pvShared) != FALSE;
 }
 
 void CSharedDirsTreeCtrl::OnTvnGetdispinfo(LPNMHDR pNMHDR, LRESULT *pResult)
@@ -1158,16 +1215,19 @@ void CSharedDirsTreeCtrl::AddSharedDirectory(const CString &strDir, bool bSubDir
 	(void)SharedDirectoryOps::AddSharedDirectory(m_strliSharedDirs, strDir, bSubDirectories, [](const CString &rstrDirectory) -> bool {
 		return thePrefs.IsShareableDirectory(rstrDirectory);
 	});
+	RebuildSharedDirectoryLookup();
 }
 
 void CSharedDirsTreeCtrl::RemoveSharedDirectory(const CString &strDir, bool bSubDirectories)
 {
 	(void)SharedDirectoryOps::RemoveSharedDirectory(m_strliSharedDirs, strDir, bSubDirectories);
+	RebuildSharedDirectoryLookup();
 }
 
 void CSharedDirsTreeCtrl::RemoveAllSharedDirectories()
 {
 	m_strliSharedDirs.RemoveAll();
+	RebuildSharedDirectoryLookup();
 }
 
 void CSharedDirsTreeCtrl::FileSystemTreeUpdateBoldState(const CDirectoryItem *pDir)
@@ -1290,8 +1350,9 @@ void CSharedDirsTreeCtrl::Reload(bool bForce)
 
 void CSharedDirsTreeCtrl::FetchSharedDirsList()
 {
-	RemoveAllSharedDirectories();
+	m_strliSharedDirs.RemoveAll();
 	thePrefs.CopySharedDirectoryList(m_strliSharedDirs);
+	RebuildSharedDirectoryLookup();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	{
 		CString strPhase;
@@ -1442,19 +1503,23 @@ void CSharedDirsTreeCtrl::OnVolumesChanged()
 bool CSharedDirsTreeCtrl::ShowFileSystemDirectory(const CString &strDir)
 {
 	// expand directories until we find our target directory and select it
+	const CString strTargetKey(BuildSharedTreePathKey(strDir));
+	const int iTargetKeyLength = strTargetKey.GetLength();
 	const CDirectoryItem *pCurrentItem = m_pRootUnsharedDirectries;
 	for (bool bContinue = true; bContinue;) {
 		bContinue = false;
 		Expand(pCurrentItem->m_htItem, TVE_EXPAND);
 		for (POSITION pos = pCurrentItem->liSubDirectories.GetHeadPosition(); pos != NULL;) {
 			const CDirectoryItem *pTemp = pCurrentItem->liSubDirectories.GetNext(pos);
-			if (EqualPaths(strDir, pTemp->m_strFullPath)) {
+			const CString strCandidateKey(BuildSharedTreePathKey(pTemp->m_strFullPath));
+			if (strTargetKey == strCandidateKey) {
 				Select(pTemp->m_htItem, TVGN_CARET);
 				EnsureVisible(pTemp->m_htItem);
 				return true;
 			}
-			if (PathHelpers::IsPathWithinDirectory(pTemp->m_strFullPath, strDir)
-				&& !EqualPaths(strDir, pTemp->m_strFullPath))
+			const int iCandidateKeyLength = strCandidateKey.GetLength();
+			if (iCandidateKeyLength < iTargetKeyLength
+				&& _tcsncmp(strTargetKey, strCandidateKey, iCandidateKeyLength) == 0)
 			{
 				pCurrentItem = pTemp;
 				bContinue = true;

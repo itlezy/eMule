@@ -69,6 +69,14 @@ public:
 	void	AddFile(const CShareableFile *file);
 	void	RemoveFile(const CShareableFile *file, bool bDeletedFromDisk);
 	void	UpdateFile(const CShareableFile *file, bool bUpdateFileSummary = true);
+	/**
+	 * @brief Queues one coalesced Shared Files list reload for startup-deferred hash intake.
+	 */
+	void	ScheduleStartupDeferredReload();
+	/**
+	 * @brief Forces one queued startup-deferred Shared Files list reload immediately.
+	 */
+	void	FlushStartupDeferredReload();
 	virtual DWORD_PTR GetVirtualItemData(int iItem) const override;
 	virtual int GetVirtualItemCount() const override;
 	void	Localize();
@@ -112,6 +120,7 @@ protected:
 	std::vector<CShareableFile*> m_aVisibleFiles;
 	CMap<const CShareableFile*, const CShareableFile*, int, int> m_mapVisibleFileIndex;
 	bool			m_bSelectionRestoreInProgress;
+	bool			m_bStartupDeferredReloadPending;
 
 	static int CALLBACK SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 	void OpenFile(const CShareableFile *file);
@@ -147,4 +156,5 @@ protected:
 	afx_msg void OnSysColorChange();
 	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
 	afx_msg BOOL OnNMClick(LPNMHDR pNMHDR, LRESULT *pResult);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

@@ -135,6 +135,89 @@ namespace
 			return theApp.clientlist->FindClientByIP(request.connectIP);
 		return NULL;
 	}
+
+	class CShutdownProgressDlg : public CDialog
+	{
+	public:
+		explicit CShutdownProgressDlg(CWnd *pParent = NULL)
+			: CDialog(IDD_SHUTDOWNPROGRESS, pParent)
+			, m_ctrlProgress()
+		{
+		}
+
+		void SetPhase(UINT uPercent, const CString &strStep, const CString &strDetail, bool bMarquee)
+		{
+			if (GetSafeHwnd() == NULL)
+				return;
+
+			if (CWnd *pStep = GetDlgItem(IDC_SHUTDOWN_STEP))
+				pStep->SetWindowText(strStep);
+			if (CWnd *pDetail = GetDlgItem(IDC_SHUTDOWN_DETAIL))
+				pDetail->SetWindowText(strDetail);
+			if (bMarquee != IsMarqueeEnabled()) {
+				m_ctrlProgress.SetMarquee(bMarquee ? TRUE : FALSE, 40);
+				m_bMarqueeEnabled = bMarquee;
+			}
+			if (!bMarquee)
+				m_ctrlProgress.SetPos(static_cast<int>(uPercent > 100u ? 100u : uPercent));
+			UpdateWindow();
+		}
+
+	protected:
+		virtual BOOL OnInitDialog()
+		{
+			CDialog::OnInitDialog();
+			m_ctrlProgress.SubclassDlgItem(IDC_PROGRESS1, this);
+			m_ctrlProgress.SetRange32(0, 100);
+			m_ctrlProgress.SetPos(0);
+			SetWindowText(_T("Shutting down eMule"));
+			return TRUE;
+		}
+
+	private:
+		bool IsMarqueeEnabled() const
+		{
+			return m_bMarqueeEnabled;
+		}
+
+		CProgressCtrl m_ctrlProgress;
+		bool m_bMarqueeEnabled = false;
+	};
+
+	void PumpShutdownProgressMessages(CShutdownProgressDlg &rDialog)
+	{
+		MSG msg = {};
+		while (::PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+			if (rDialog.GetSafeHwnd() != NULL && rDialog.IsDialogMessage(&msg))
+				continue;
+			::TranslateMessage(&msg);
+			::DispatchMessage(&msg);
+		}
+	}
+
+	CString FormatStartupCacheShutdownDetail(const CSharedFileList::StartupCacheSaveProgress &progress)
+	{
+		CString strDetail;
+		switch (progress.ePhase) {
+		case CSharedFileList::StartupCacheSavePhase::BuildingRecords:
+			strDetail.Format(_T("Saving shared startup cache: scanning directories (%I64u/%I64u)."), progress.uCompletedDirectories, progress.uTotalDirectories);
+			break;
+		case CSharedFileList::StartupCacheSavePhase::WritingFile:
+			strDetail = _T("Saving shared startup cache: writing cache file to disk.");
+			break;
+		case CSharedFileList::StartupCacheSavePhase::ApplyingResult:
+			strDetail = _T("Saving shared startup cache: finalizing cache metadata.");
+			break;
+		default:
+			strDetail = progress.bDirty
+				? _T("Saving shared startup cache: waiting for the final dirty snapshot to start.")
+				: _T("Saving shared startup cache: waiting for the background worker to finish.");
+			break;
+		}
+		if (progress.bWaitingForFollowUp)
+			strDetail += _T(" A follow-up save is queued because shared state changed during the current run.");
+		return strDetail;
+	}
 }
 
 
@@ -210,6 +293,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(UM_PARTFILE_DISPLAY_UPDATE, OnPartFileDisplayUpdate)
 	ON_MESSAGE(UM_CLIENT_DISPLAY_UPDATE, OnClientDisplayUpdate)
 	ON_MESSAGE(UM_PARTFILE_PROGRESS_UPDATE, OnPartFileProgressUpdate)
+	ON_MESSAGE(UM_STARTUP_CACHE_SAVE_COMPLETE, OnStartupCacheSaveComplete)
 
 	///////////////////////////////////////////////////////////////////////////
 	// WM_APP messages
@@ -1748,10 +1832,27 @@ void CemuleDlg::OnClose()
 	}
 	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
 	notifierenabled = false;
+
+	CShutdownProgressDlg shutdownProgress(this);
+	if (shutdownProgress.Create(IDD_SHUTDOWNPROGRESS, this)) {
+		shutdownProgress.CenterWindow();
+		shutdownProgress.ShowWindow(SW_SHOW);
+		shutdownProgress.SetPhase(2, _T("Closing eMule"), _T("Preparing shutdown."), false);
+		PumpShutdownProgressMessages(shutdownProgress);
+	}
+
+	const auto updateShutdownPhase = [&shutdownProgress](UINT uPercent, LPCTSTR pszStep, LPCTSTR pszDetail, bool bMarquee = false) {
+		if (shutdownProgress.GetSafeHwnd() == NULL)
+			return;
+		shutdownProgress.SetPhase(uPercent, CString(pszStep), CString(pszDetail), bMarquee);
+		PumpShutdownProgressMessages(shutdownProgress);
+	};
+
 	//flush queued messages
 	theApp.HandleDebugLogQueue();
 	theApp.HandleLogQueue();
 
+	updateShutdownPhase(6, _T("Closing eMule"), _T("Disconnecting network services and revoking shell integration."));
 	Log(_T("Closing eMule"));
 	CloseTTS();
 	m_pDropTarget->Revoke();
@@ -1793,24 +1894,45 @@ void CemuleDlg::OnClose()
 		}
 	}
 
+	updateShutdownPhase(14, _T("Closing eMule"), _T("Starting background shared startup-cache save."));
+	if (theApp.sharedfiles != NULL)
+		(void)theApp.sharedfiles->RequestStartupCacheSave(true);
+
+	updateShutdownPhase(22, _T("Closing eMule"), _T("Stopping Kad and waiting for the hashing thread to acknowledge shutdown."));
 	Kademlia::CKademlia::Stop();	// couple of data files are written
 
 	// try to wait until the hashing thread notices that we are shutting down
 	CSingleLock sLock1(&theApp.hashing_mut); // only one file hash at a time
 	sLock1.Lock(SEC2MS(2));
 
+	updateShutdownPhase(30, _T("Closing eMule"), _T("Stopping upload disk and part-file write threads."));
 	theApp.m_pUploadDiskIOThread->EndThread();
 	theApp.m_pPartFileWriteThread->EndThread();
 
 	// saving data & stuff
+	updateShutdownPhase(42, _T("Closing eMule"), _T("Saving known-file state and user interface settings."));
 	theApp.emuledlg->preferenceswnd->m_wndSecurity.DeleteDDB();
 
 	theApp.knownfiles->Save();
-	theApp.sharedfiles->Save();
+	if (theApp.sharedfiles != NULL) {
+		while (theApp.sharedfiles->HasPendingStartupCacheSaveWork()) {
+			if (!theApp.sharedfiles->IsStartupCacheSaveRunning())
+				(void)theApp.sharedfiles->RequestStartupCacheSave(true);
+
+			CSharedFileList::StartupCacheSaveProgress progress = {};
+			theApp.sharedfiles->GetStartupCacheSaveProgress(progress);
+			updateShutdownPhase(54, _T("Closing eMule"), FormatStartupCacheShutdownDetail(progress), true);
+			::Sleep(15);
+			PumpShutdownProgressMessages(shutdownProgress);
+		}
+		updateShutdownPhase(62, _T("Closing eMule"), _T("Saving shared file list configuration."));
+		theApp.sharedfiles->Save();
+	}
 	searchwnd->SaveAllSettings();
 	serverwnd->SaveAllSettings();
 	kademliawnd->SaveAllSettings();
 
+	updateShutdownPhase(72, _T("Closing eMule"), _T("Saving preferences and tearing down service integrations."));
 	theApp.scheduler->RestoreOriginals();
 	theApp.searchlist->SaveSpamFilter();
 	if (thePrefs.IsStoringSearchesEnabled())
@@ -1826,6 +1948,7 @@ void CemuleDlg::OnClose()
 
 	// explicitly delete all listview items which may hold ptrs to objects which will get deleted
 	// by the dtors (some lines below) to avoid potential problems during application shutdown.
+	updateShutdownPhase(82, _T("Closing eMule"), _T("Clearing UI lists and pending conversion jobs."));
 	transferwnd->GetDownloadList()->DeleteAllItems();
 	chatwnd->chatselector.DeleteAllItems();
 	chatwnd->m_FriendListCtrl.DeleteAllItems();
@@ -1841,6 +1964,7 @@ void CemuleDlg::OnClose()
 	CPartFileConvert::CloseGUI();
 	CPartFileConvert::RemoveAllJobs();
 
+	updateShutdownPhase(90, _T("Closing eMule"), _T("Stopping bandwidth throttling and closing remaining child windows."));
 	theApp.uploadBandwidthThrottler->EndThread();
 
 	theApp.sharedfiles->DeletePartFileInstances();
@@ -1872,6 +1996,9 @@ void CemuleDlg::OnClose()
 	delete theApp.m_pUploadDiskIOThread;	theApp.m_pUploadDiskIOThread = NULL;
 	delete theApp.m_pPartFileWriteThread;	theApp.m_pPartFileWriteThread = NULL;
 
+	updateShutdownPhase(100, _T("Closing eMule"), _T("Finalizing shutdown."));
+	if (shutdownProgress.GetSafeHwnd() != NULL)
+		shutdownProgress.DestroyWindow();
 	thePrefs.Uninit();
 	theApp.m_app_state = APP_STATE_DONE;
 	CTrayDialog::OnCancel();
@@ -3418,6 +3545,14 @@ LRESULT CemuleDlg::OnPartFileProgressUpdate(WPARAM wParam, LPARAM)
 	}
 
 	delete pRequest;
+	return 0;
+}
+
+LRESULT CemuleDlg::OnStartupCacheSaveComplete(WPARAM wParam, LPARAM lParam)
+{
+	CSharedFileList *pSharedFiles = reinterpret_cast<CSharedFileList*>(wParam);
+	if (pSharedFiles != NULL)
+		pSharedFiles->HandleStartupCacheSaveCompletion(reinterpret_cast<void*>(lParam));
 	return 0;
 }
 
