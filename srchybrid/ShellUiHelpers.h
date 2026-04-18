@@ -179,6 +179,26 @@ inline CString PrepareFolderSelectionPathForShell(const CString &rstrFolderPath)
 }
 
 /**
+ * @brief Falls back to the nearest shell-safe ancestor when the requested initial folder requires namespace-only spelling.
+ */
+inline CString ResolveInitialFolderForShellDialog(const CString &rstrInitialFolder)
+{
+	CString strCurrentFolder(PathHelpers::NormalizePathSeparators(rstrInitialFolder));
+	while (!strCurrentFolder.IsEmpty()) {
+		const CString strShellFolder = PrepareFolderSelectionPathForShell(strCurrentFolder);
+		if (!strShellFolder.IsEmpty())
+			return strShellFolder;
+
+		const CString strParentFolder = PathHelpers::GetDirectoryPath(PathHelpers::TrimTrailingSeparatorForLeaf(strCurrentFolder));
+		if (strParentFolder.IsEmpty() || PathHelpers::ArePathsEquivalent(strParentFolder, strCurrentFolder))
+			break;
+		strCurrentFolder = strParentFolder;
+	}
+
+	return CString();
+}
+
+/**
  * @brief Expands environment variables through an injected callback before resolving a skin resource path.
  */
 template <typename ExpandEnvironmentFn>

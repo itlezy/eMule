@@ -1329,14 +1329,7 @@ void InitializeDialogPathSelection(IFileDialog &rDialog, const CString &rstrInit
 		selection.strInitialFolder = rstrInitialPath;
 
 	if (!selection.strInitialFolder.IsEmpty()) {
-		CString strInitialFolder(selection.strInitialFolder);
-		if (bFolderMode)
-			strInitialFolder = ShellUiHelpers::PrepareFolderSelectionPathForShell(strInitialFolder);
-		else {
-			strInitialFolder = PathHelpers::StripExtendedLengthPrefix(strInitialFolder);
-			if (!PathHelpers::IsShellSafePath(strInitialFolder))
-				strInitialFolder.Empty();
-		}
+		const CString strInitialFolder = ShellUiHelpers::ResolveInitialFolderForShellDialog(selection.strInitialFolder);
 		if (!strInitialFolder.IsEmpty()) {
 			CComPtr<IShellItem> pFolder;
 			if (SUCCEEDED(::SHCreateItemFromParsingName(strInitialFolder, NULL, IID_PPV_ARGS(&pFolder)))) {
