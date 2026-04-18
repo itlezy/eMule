@@ -2031,6 +2031,7 @@ bool IsLANIP(uint32 nIP)
 	// LAN IP's
 	// -------------------------------------------
 	//	0.*								"This" Network
+	//	127.0.0.0 - 127.255.255.255	Loopback (private harness LAN mode)
 	//	10.0.0.0 - 10.255.255.255		Class A
 	//	172.16.0.0 - 172.31.255.255		Class B
 	//	192.168.0.0 - 192.168.255.255	Class C
@@ -2044,7 +2045,7 @@ bool IsLANIP(uint32 nIP)
 	if (nFirst == 172 && nSecond >= 16 && nSecond <= 31)
 		return true;
 
-	return nFirst == 0 || nFirst == 10;
+	return nFirst == 0 || nFirst == 10 || nFirst == 127;
 }
 
 bool IsGoodIPPort(uint32 nIP, uint16 nPort)

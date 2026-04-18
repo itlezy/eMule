@@ -59,6 +59,7 @@
 #include "Preferences.h"
 #include "secrunasuser.h"
 #include "SafeFile.h"
+#include "EmuleSHA.h"
 #include "emuleDlg.h"
 #include "enbitmap.h"
 #include "FirewallOpener.h"
@@ -334,6 +335,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bParityHarnessReadyFileWritten()
 	, m_bParityHarnessShareIssued()
 	, m_bParityHarnessLinkWritten()
+	, m_bParityHarnessAichWritten()
 	, m_bParityHarnessDownloadIssued()
 	, m_bParityHarnessSearchStarted()
 	, m_bParityHarnessSearchDownloadQueued()
@@ -492,6 +494,11 @@ static CStringA EscapeJsonUtf8(const CString &strValue)
 	}
 
 	return strEscaped;
+}
+
+static CStringA AichHashToHexUtf8(const CAICHHash &Hash)
+{
+	return CStringA(CSHA::HashToHexString(reinterpret_cast<const SHA1*>(Hash.GetRawHashC())));
 }
 
 static bool AppendParityHarnessSearchJsonLine(const CString &strPath, const CStringA &strLine)
@@ -771,6 +778,7 @@ bool CemuleApp::HasPendingParityHarnessScenario() const
 {
 	return !m_strParityHarnessShareFile.IsEmpty()
 		|| !m_strParityHarnessExportLinkFile.IsEmpty()
+		|| !m_strParityHarnessExportAichFile.IsEmpty()
 		|| !m_strParityHarnessDownloadLinkFile.IsEmpty()
 		|| HasPendingParityHarnessSearch();
 }
@@ -819,21 +827,56 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 		}
 	}
 
-	if (!m_bParityHarnessLinkWritten && sharedFile != NULL && !m_strParityHarnessExportLinkFile.IsEmpty()) {
+	if (sharedFile != NULL
+		&& ((!m_bParityHarnessLinkWritten && !m_strParityHarnessExportLinkFile.IsEmpty())
+			|| (!m_bParityHarnessAichWritten && !m_strParityHarnessExportAichFile.IsEmpty())))
+	{
 		if (!sharedFile->GetFileIdentifierC().HasAICHHash())
 			return false;
 
-		uint32 sourceIpValue = 0;
-		if (!m_strParityHarnessExportSourceIp.IsEmpty())
-			sourceIpValue = inet_addr(CT2A(m_strParityHarnessExportSourceIp));
+		if (!m_bParityHarnessLinkWritten && !m_strParityHarnessExportLinkFile.IsEmpty()) {
+			uint32 sourceIpValue = 0;
+			if (!m_strParityHarnessExportSourceIp.IsEmpty())
+				sourceIpValue = inet_addr(CT2A(m_strParityHarnessExportSourceIp));
 
-		const CString ed2kLink = sharedFile->GetED2kLink(false, false, false, sourceIpValue != INADDR_NONE && sourceIpValue != 0, sourceIpValue);
-		FILE *pFile = _tfsopen(m_strParityHarnessExportLinkFile, _T("wt"), _SH_DENYWR);
-		if (pFile != NULL) {
-			_ftprintf(pFile, _T("%s\n"), (LPCTSTR)ed2kLink);
-			fclose(pFile);
-			Log(_T("Parity harness exported ED2K link: %s"), (LPCTSTR)m_strParityHarnessExportLinkFile);
-			m_bParityHarnessLinkWritten = true;
+			const CString ed2kLink = sharedFile->GetED2kLink(false, false, false, sourceIpValue != INADDR_NONE && sourceIpValue != 0, sourceIpValue);
+			FILE *pFile = _tfsopen(m_strParityHarnessExportLinkFile, _T("wt"), _SH_DENYWR);
+			if (pFile != NULL) {
+				_ftprintf(pFile, _T("%s\n"), (LPCTSTR)ed2kLink);
+				fclose(pFile);
+				Log(_T("Parity harness exported ED2K link: %s"), (LPCTSTR)m_strParityHarnessExportLinkFile);
+				m_bParityHarnessLinkWritten = true;
+			}
+		}
+
+		if (!m_bParityHarnessAichWritten && !m_strParityHarnessExportAichFile.IsEmpty()) {
+			const CFileIdentifier &fileIdentifier = sharedFile->GetFileIdentifierC();
+			const CArray<CAICHHash> &aichHashSet = sharedFile->GetFileIdentifier().GetRawAICHHashSet();
+			FILE *pFile = _tfsopen(m_strParityHarnessExportAichFile, _T("wt"), _SH_DENYWR);
+			if (pFile != NULL) {
+				const CStringA strFileName = EscapeJsonUtf8(sharedFile->GetFileName());
+				const CStringA strEd2kHash = CStringA(md4str(sharedFile->GetFileHash()));
+				const CStringA strAichRootBase32 = CStringA(fileIdentifier.GetAICHHash().GetString());
+				const CStringA strAichRootHex = AichHashToHexUtf8(fileIdentifier.GetAICHHash());
+				fprintf(pFile, "{\n");
+				fprintf(pFile, "  \"fileName\": \"%s\",\n", (LPCSTR)strFileName);
+				fprintf(pFile, "  \"fileSize\": %llu,\n", (unsigned long long)sharedFile->GetFileSize());
+				fprintf(pFile, "  \"ed2kHash\": \"%s\",\n", (LPCSTR)strEd2kHash);
+				fprintf(pFile, "  \"aichRootBase32\": \"%s\",\n", (LPCSTR)strAichRootBase32);
+				fprintf(pFile, "  \"aichRootHex\": \"%s\",\n", (LPCSTR)strAichRootHex);
+				fprintf(pFile, "  \"aichHashset\": [\n");
+				for (INT_PTR i = 0; i < aichHashSet.GetCount(); ++i) {
+					const CStringA strPartHashHex = AichHashToHexUtf8(aichHashSet[i]);
+					fprintf(
+						pFile,
+						(i + 1 < aichHashSet.GetCount()) ? "    \"%s\",\n" : "    \"%s\"\n",
+						(LPCSTR)strPartHashHex);
+				}
+				fprintf(pFile, "  ]\n}\n");
+				fclose(pFile);
+				Log(_T("Parity harness exported AICH sidecar: %s"), (LPCTSTR)m_strParityHarnessExportAichFile);
+				m_bParityHarnessAichWritten = true;
+			}
 		}
 	}
 
@@ -853,7 +896,9 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 		}
 	}
 
-	const bool exportDone = m_strParityHarnessExportLinkFile.IsEmpty() || m_bParityHarnessLinkWritten;
+	const bool exportDone =
+		(m_strParityHarnessExportLinkFile.IsEmpty() || m_bParityHarnessLinkWritten)
+		&& (m_strParityHarnessExportAichFile.IsEmpty() || m_bParityHarnessAichWritten);
 	const bool downloadDone = m_strParityHarnessDownloadLinkFile.IsEmpty() || m_bParityHarnessDownloadIssued;
 	if (!HasPendingParityHarnessSearch())
 		return exportDone && downloadDone;
@@ -862,7 +907,9 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 		return false;
 
 	if (!m_bParityHarnessSearchStarted) {
-		if (!Kademlia::CKademlia::IsRunning() || !Kademlia::CKademlia::IsConnected())
+		if (!Kademlia::CKademlia::IsRunning()
+			|| !Kademlia::CKademlia::IsConnected()
+			|| !Kademlia::CKademlia::GetPublish())
 			return false;
 
 		SSearchParams *pParams = new SSearchParams;
@@ -1352,6 +1399,11 @@ bool CemuleApp::ProcessCommandline()
 		CString strExportLinkFile;
 		if (TryParseNamedArgument(i, _T("exportlinkfile"), _T("elf"), strExportLinkFile)) {
 			m_strParityHarnessExportLinkFile = strExportLinkFile;
+			continue;
+		}
+		CString strExportAichFile;
+		if (TryParseNamedArgument(i, _T("exportaichfile"), _T("eaf"), strExportAichFile)) {
+			m_strParityHarnessExportAichFile = strExportAichFile;
 			continue;
 		}
 		CString strExportSourceIp;

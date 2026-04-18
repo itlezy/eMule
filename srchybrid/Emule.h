@@ -247,6 +247,7 @@ protected:
 	bool		m_bParityHarnessReadyFileWritten;
 	bool		m_bParityHarnessShareIssued;
 	bool		m_bParityHarnessLinkWritten;
+	bool		m_bParityHarnessAichWritten;
 	bool		m_bParityHarnessDownloadIssued;
 	bool		m_bParityHarnessSearchStarted;
 	bool		m_bParityHarnessSearchDownloadQueued;
@@ -257,6 +258,7 @@ protected:
 	CString		m_strParityHarnessReadyFile;
 	CString		m_strParityHarnessShareFile;
 	CString		m_strParityHarnessExportLinkFile;
+	CString		m_strParityHarnessExportAichFile;
 	CString		m_strParityHarnessExportSourceIp;
 	CString		m_strParityHarnessDownloadLinkFile;
 	CString		m_strParityHarnessSearchTerm;

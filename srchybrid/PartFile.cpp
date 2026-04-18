@@ -33,6 +33,7 @@
 #include "kademlia/kademlia/search.h"
 #include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/kademlia/Entry.h"
+#include "kademlia/utils/OracleTrace.h"
 #include "DownloadQueue.h"
 #include "IPFilter.h"
 #include "Packets.h"
@@ -231,6 +232,7 @@ void CPartFile::Init()
 	m_iWrites = 0;
 	m_LastSearchTime = 0;
 	m_LastSearchTimeKad = 0;
+	m_dwParityHarnessLastKadGateTrace = 0;
 	memset(src_stats, 0, sizeof src_stats);
 	memset(net_stats, 0, sizeof net_stats);
 	m_TotalSearchesKad = 0;
@@ -2362,19 +2364,80 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 			NotifyStatusChange();
 
 		if (GetMaxSourcePerFileUDP() > GetSourceCount()) {
-			if (theApp.downloadqueue->DoKademliaFileRequest() && (Kademlia::CKademlia::GetTotalFile() < KADEMLIATOTALFILE) && (curTick >= m_LastSearchTimeKad) && Kademlia::CKademlia::IsConnected() && theApp.IsConnected() && !m_stopped) { //Once we can handle lowID users in Kad, we remove the second IsConnected
+			const bool bDoKademliaFileRequest = theApp.downloadqueue->DoKademliaFileRequest();
+			const bool bKadBelowSearchCap = Kademlia::CKademlia::GetTotalFile() < KADEMLIATOTALFILE;
+			const bool bKadSearchTimeReady = curTick >= m_LastSearchTimeKad;
+			const bool bKadConnected = Kademlia::CKademlia::IsConnected();
+			const bool bAppConnected = theApp.IsConnected();
+			const bool bKadSearchEligible = bDoKademliaFileRequest
+				&& bKadBelowSearchCap
+				&& bKadSearchTimeReady
+				&& bKadConnected
+				&& bAppConnected
+				&& !m_stopped;
+
+			if (theApp.IsParityHarnessMode() && GetSourceCount() == 0 && !GetKadFileSearchID()) {
+				const bool bShouldTraceKadGate = (m_dwParityHarnessLastKadGateTrace == 0)
+					|| (curTick - m_dwParityHarnessLastKadGateTrace >= 5000)
+					|| bKadSearchEligible;
+				if (bShouldTraceKadGate) {
+					CStringA sFields;
+					sFields.Format(
+						"file=%s hash=%s sources=%u max_udp=%u do_request=%u below_cap=%u time_ready=%u kad_connected=%u app_connected=%u stopped=%u search_id=%lu total_file=%u last_search_tick=%lu status=%u paused=%u",
+						(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(GetFileName())),
+						(LPCSTR)CStringA(md4str(GetFileHash())),
+						GetSourceCount(),
+						GetMaxSourcePerFileUDP(),
+						bDoKademliaFileRequest ? 1 : 0,
+						bKadBelowSearchCap ? 1 : 0,
+						bKadSearchTimeReady ? 1 : 0,
+						bKadConnected ? 1 : 0,
+						bAppConnected ? 1 : 0,
+						m_stopped ? 1 : 0,
+						(unsigned long)GetKadFileSearchID(),
+						Kademlia::CKademlia::GetTotalFile(),
+						(unsigned long)m_LastSearchTimeKad,
+						(unsigned)GetStatus(),
+						m_paused ? 1 : 0);
+					Kademlia::OracleTrace::Append("partfile_kad_gate", sFields);
+					m_dwParityHarnessLastKadGateTrace = curTick;
+				}
+			}
+
+			if (bKadSearchEligible) { //Once we can handle lowID users in Kad, we remove the second IsConnected
 				//Kademlia
 				theApp.downloadqueue->SetLastKademliaFileRequest();
 				if (!GetKadFileSearchID()) {
 					Kademlia::CSearch *pSearch = Kademlia::CSearchManager::PrepareLookup(Kademlia::CSearch::FILE, true, Kademlia::CUInt128(GetFileHash()));
 					if (pSearch) {
+						if (theApp.IsParityHarnessMode()) {
+							CStringA sFields;
+							sFields.Format(
+								"file=%s hash=%s search_id=%lu total_file=%u search_count=%u",
+								(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(GetFileName())),
+								(LPCSTR)CStringA(md4str(GetFileHash())),
+								(unsigned long)pSearch->GetSearchID(),
+								Kademlia::CKademlia::GetTotalFile(),
+								m_TotalSearchesKad + 1);
+							Kademlia::OracleTrace::Append("partfile_kad_lookup_prepare", sFields);
+						}
 						if (m_TotalSearchesKad < 7)
 							++m_TotalSearchesKad;
 						m_LastSearchTimeKad = curTick + (KADEMLIAREASKTIME * m_TotalSearchesKad);
 						pSearch->SetGUIName((CStringW)GetFileName());
 						SetKadFileSearchID(pSearch->GetSearchID());
-					} else
+					} else {
+						if (theApp.IsParityHarnessMode()) {
+							CStringA sFields;
+							sFields.Format(
+								"file=%s hash=%s total_file=%u",
+								(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(GetFileName())),
+								(LPCSTR)CStringA(md4str(GetFileHash())),
+								Kademlia::CKademlia::GetTotalFile());
+							Kademlia::OracleTrace::Append("partfile_kad_lookup_prepare_failed", sFields);
+						}
 						SetKadFileSearchID(0);
+					}
 				}
 			}
 		} else if (GetKadFileSearchID())
