@@ -28,6 +28,7 @@
 #include "GeoLocation.h"
 #include "KnownFile.h"
 #include "SharedFileList.h"
+#include "ClientCredits.h"
 #include "ChatWnd.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "UploadQueue.h"
@@ -45,6 +46,11 @@ namespace
 		if (client == NULL)
 			return 0;
 		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+
+	const CKnownFile* GetUploadClientFile(const CUpDownClient* client)
+	{
+		return client != NULL ? theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) : NULL;
 	}
 
 	CString FormatUploadRatio(float fRatio)
@@ -129,6 +135,15 @@ void CUploadListCtrl::Init()
 	InsertColumn(10,_T(""),	LVCFMT_LEFT, 145);							//IDS_EFFECTIVE_SCORE
 	InsertColumn(11,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
 	InsertColumn(12,_T(""),	LVCFMT_LEFT, 140);							//IDS_GEOLOCATION
+	InsertColumn(13,_T(""),	LVCFMT_LEFT, 100);							//IDS_CD_CSOFT
+	InsertColumn(14,_T(""),	LVCFMT_LEFT, 100);							//IDS_CLIENT_UPLOADED
+	InsertColumn(15,_T(""),	LVCFMT_LEFT, 100);							//IDS_IP
+	InsertColumn(16,_T(""),	LVCFMT_LEFT, 70);							//IDS_IDLOW
+	InsertColumn(17,_T(""),	LVCFMT_LEFT, 100);							//IDS_CLIENT_HASH
+	InsertColumn(18,_T(""),	LVCFMT_RIGHT, 70);							//IDS_UPLOAD_PCT
+	InsertColumn(19,_T(""),	LVCFMT_RIGHT, 85);							//IDS_FILE_SIZE
+	InsertColumn(20,_T(""),	LVCFMT_RIGHT, 70);							//IDS_ETA
+	InsertColumn(21,_T(""),	LVCFMT_LEFT, 120);							//IDS_FOLDER
 
 	SetAllIcons();
 	Localize();
@@ -139,10 +154,11 @@ void CUploadListCtrl::Init()
 
 void CUploadListCtrl::Localize()
 {
-	static const UINT uids[13] =
+	static const UINT uids[22] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_DL_SPEED, IDS_DL_TRANSF, IDS_WAITED
 		, IDS_UPLOADTIME, IDS_STATUS, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_EFFECTIVE_SCORE, IDS_UPSTATUS, IDS_GEOLOCATION
+		, IDS_CD_CSOFT, IDS_CLIENT_UPLOADED, IDS_IP, IDS_IDLOW, IDS_CLIENT_HASH, IDS_UPLOAD_PCT, IDS_FILE_SIZE, IDS_ETA, IDS_FOLDER
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -251,7 +267,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 	case 1:
 		{
-			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			const CKnownFile *file = GetUploadClientFile(client);
 			if (file)
 				sText = file->GetFileName();
 		}
@@ -279,13 +295,13 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 		break;
 	case 7:
 		{
-			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			const CKnownFile *file = GetUploadClientFile(client);
 			sText = file ? FormatUploadRatio(file->GetAllTimeUploadRatio()) : _T("-");
 		}
 		break;
 	case 8:
 		{
-			const CKnownFile *file = theApp.sharedfiles->GetFileByID(client->GetUploadFileID());
+			const CKnownFile *file = GetUploadClientFile(client);
 			sText = file ? FormatUploadRatio(file->GetSessionUploadRatio()) : _T("-");
 		}
 		break;
@@ -301,6 +317,67 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 	case 12:
 		if (theApp.geolocation != NULL)
 			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(client));
+		break;
+	case 13:
+		sText = client->GetClientSoftVer();
+		break;
+	case 14:
+		if (client->Credits() != NULL)
+			sText = CastItoXBytes(client->Credits()->GetUploadedTotal(), false, false);
+		else
+			sText = _T("?");
+		break;
+	case 15:
+		sText = ipstr(GetClientGeoIP(client));
+		break;
+	case 16:
+		sText = GetResString(client->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		break;
+	case 17:
+		sText = client->HasValidHash() ? CString(md4str(client->GetUserHash())) : CString(_T("?"));
+		break;
+	case 18:
+		{
+			const CKnownFile *file = GetUploadClientFile(client);
+			const uint64 uFileSize = file != NULL ? static_cast<uint64>(file->GetFileSize()) : 0;
+			if (uFileSize > 0)
+				sText.Format(_T("%.1f%%"), static_cast<double>(client->GetSessionUp()) * 100.0 / static_cast<double>(uFileSize));
+			else
+				sText = _T("-");
+		}
+		break;
+	case 19:
+		{
+			const CKnownFile *file = GetUploadClientFile(client);
+			sText = file ? CastItoXBytes(file->GetFileSize()) : _T("-");
+		}
+		break;
+	case 20:
+		{
+			const CKnownFile *file = GetUploadClientFile(client);
+			if (file != NULL && file->GetFileSize() > client->GetSessionUp()) {
+				const uint64 uDataLeft = file->GetFileSize() - client->GetSessionUp();
+				const uint32 uDataRate = client->GetUploadDatarate();
+				if (uDataLeft > 1024 && uDataRate > 1024) {
+					const uint64 uEta = uDataLeft / uDataRate;
+					if (uEta > 0 && uEta < 60 * 60 * 10)
+						sText = CastSecondsToHM(static_cast<time_t>(uEta));
+					else
+						sText = _T("-");
+				}
+				else
+					sText = _T("-");
+			}
+			else
+				sText = _T("-");
+		}
+		break;
+	case 21:
+		{
+			const CKnownFile *file = GetUploadClientFile(client);
+			if (file != NULL)
+				sText = file->GetPath();
+		}
 	}
 	return sText;
 }
@@ -376,7 +453,11 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 8: // Session ratio
 		case 9: // Cooldown
 		case 10: // Effective score
-	case 11: // Part Count
+		case 11: // Part Count
+		case 14: // Client Uploaded
+		case 18: // Upload %
+		case 19: // File Size
+		case 20: // ETA
 			sortAscending = false;
 			break;
 		default:
@@ -407,8 +488,8 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 1:
 		{
-			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
-			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
 			if (file1 != NULL && file2 != NULL)
 				iResult = CompareLocaleStringNoCase(file1->GetFileName(), file2->GetFileName());
 			else
@@ -434,8 +515,8 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 7:
 		{
-			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
-			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
 			if (file1 != NULL && file2 != NULL)
 				iResult = CompareRatio(file1->GetAllTimeUploadRatio(), file2->GetAllTimeUploadRatio());
 			else
@@ -444,8 +525,8 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 8:
 		{
-			const CKnownFile *file1 = theApp.sharedfiles->GetFileByID(item1->GetUploadFileID());
-			const CKnownFile *file2 = theApp.sharedfiles->GetFileByID(item2->GetUploadFileID());
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
 			if (file1 != NULL && file2 != NULL)
 				iResult = CompareRatio(file1->GetSessionUploadRatio(), file2->GetSessionUploadRatio());
 			else
@@ -469,6 +550,80 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 	case 12:
 		if (theApp.geolocation != NULL)
 			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(item1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(item2)));
+		break;
+	case 13:
+		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		break;
+	case 14:
+		if (item1->Credits() != NULL && item2->Credits() != NULL)
+			iResult = CompareUnsigned(item1->Credits()->GetUploadedTotal(), item2->Credits()->GetUploadedTotal());
+		else if (item1->Credits() == NULL || item2->Credits() == NULL)
+			iResult = (item1->Credits() == NULL) ? 1 : -1;
+		break;
+	case 15:
+		iResult = CompareLocaleStringNoCase(ipstr(GetClientGeoIP(item1)), ipstr(GetClientGeoIP(item2)));
+		break;
+	case 16:
+		iResult = CompareUnsigned(item1->HasLowID(), item2->HasLowID());
+		break;
+	case 17:
+		if (item1->HasValidHash() && item2->HasValidHash())
+			iResult = CompareLocaleStringNoCase(md4str(item1->GetUserHash()), md4str(item2->GetUserHash()));
+		else if (!item1->HasValidHash() || !item2->HasValidHash())
+			iResult = item1->HasValidHash() ? -1 : 1;
+		break;
+	case 18:
+		{
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
+			const uint64 uFileSize1 = file1 != NULL ? static_cast<uint64>(file1->GetFileSize()) : 0;
+			const uint64 uFileSize2 = file2 != NULL ? static_cast<uint64>(file2->GetFileSize()) : 0;
+			if (uFileSize1 > 0 && uFileSize2 > 0) {
+				const double fPct1 = static_cast<double>(item1->GetSessionUp()) * 1000.0 / static_cast<double>(uFileSize1);
+				const double fPct2 = static_cast<double>(item2->GetSessionUp()) * 1000.0 / static_cast<double>(uFileSize2);
+				iResult = (fPct1 < fPct2) ? -1 : static_cast<int>(fPct1 > fPct2);
+			}
+			else
+				iResult = (uFileSize1 == 0) ? 1 : -1;
+		}
+		break;
+	case 19:
+		{
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareUnsigned(file1->GetFileSize(), file2->GetFileSize());
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
+		break;
+	case 20:
+		{
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
+			if (file1 != NULL && file2 != NULL && file1->GetFileSize() > item1->GetSessionUp() && file2->GetFileSize() > item2->GetSessionUp()) {
+				const uint64 uDataLeft1 = file1->GetFileSize() - item1->GetSessionUp();
+				const uint32 uDataRate1 = item1->GetUploadDatarate();
+				const uint64 uDataLeft2 = file2->GetFileSize() - item2->GetSessionUp();
+				const uint32 uDataRate2 = item2->GetUploadDatarate();
+				if (uDataLeft1 > 1024 && uDataRate1 > 1024 && uDataLeft2 > 1024 && uDataRate2 > 1024) {
+					const uint64 uEta1 = uDataLeft1 / uDataRate1;
+					const uint64 uEta2 = uDataLeft2 / uDataRate2;
+					if (uEta1 > 0 && uEta1 < 60 * 60 * 24 && uEta2 > 0 && uEta2 < 60 * 60 * 24)
+						iResult = CompareUnsigned(uEta1, uEta2);
+				}
+			}
+		}
+		break;
+	case 21:
+		{
+			const CKnownFile *file1 = GetUploadClientFile(item1);
+			const CKnownFile *file2 = GetUploadClientFile(item2);
+			if (file1 != NULL && file2 != NULL)
+				iResult = CompareLocaleStringNoCase(file1->GetPath(), file2->GetPath());
+			else
+				iResult = (file1 == NULL) ? 1 : -1;
+		}
 	}
 
 	if (HIWORD(lParamSort))
