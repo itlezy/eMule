@@ -27,6 +27,7 @@
 #include "ToolTipCtrlX.h"
 #include "MenuCmds.h"
 #include "preferences.h"
+#include "GeoLocation.h"
 //#include "log.h" //only for m_bDbgLog
 
 #ifdef _DEBUG
@@ -41,6 +42,68 @@ static char THIS_FILE[] = __FILE__;
 #define NODE_Y_BORDER			((NODE_ENTRY_HEIGHT - 16) / 2)
 
 using namespace Kademlia;
+
+namespace
+{
+CString GetLookupEntryIPString(const CLookupHistory::SLookupHistoryEntry *pEntry)
+{
+	return pEntry != NULL ? ipstr(pEntry->m_uIP) : CString();
+}
+
+CString GetLookupEntryLocationString(const CLookupHistory::SLookupHistoryEntry *pEntry)
+{
+	if (pEntry == NULL || theApp.geolocation == NULL)
+		return GetResString(IDS_UNKNOWN);
+
+	CString strLocation(theApp.geolocation->GetDisplayText(pEntry->m_uIP));
+	if (strLocation.IsEmpty())
+		strLocation = GetResString(IDS_UNKNOWN);
+	return strLocation;
+}
+
+void DrawLookupNodeMetadata(CDC &dc, const CLookupHistory::SLookupHistoryEntry *pEntry, const CRect &rcNode, const CRect &rcClient)
+{
+	if (pEntry == NULL)
+		return;
+
+	CString strIP(GetLookupEntryIPString(pEntry));
+	if (strIP.IsEmpty())
+		return;
+
+	const int iTextPadding = 3;
+	const int iSidePadding = 4;
+	const int iTextFlags = DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS;
+	CRect rcText(0, 0, 0, 0);
+	dc.DrawText(strIP, &rcText, iTextFlags | DT_CALCRECT);
+
+	const int iFlagWidth = (theApp.geolocation != NULL) ? 18 : 0;
+	const int iMetadataWidth = rcText.Width() + iFlagWidth + (iFlagWidth > 0 ? iTextPadding : 0);
+	const int iMetadataHeight = max(rcText.Height(), 16);
+	const bool bPlaceLeft = rcNode.right + iSidePadding + iMetadataWidth > rcClient.right;
+
+	CRect rcMetadata;
+	rcMetadata.top = rcNode.CenterPoint().y - iMetadataHeight / 2;
+	rcMetadata.bottom = rcMetadata.top + iMetadataHeight;
+	if (bPlaceLeft) {
+		rcMetadata.right = max(rcClient.left, rcNode.left - iSidePadding);
+		rcMetadata.left = max(rcClient.left, rcMetadata.right - iMetadataWidth);
+	} else {
+		rcMetadata.left = min(rcClient.right, rcNode.right + iSidePadding);
+		rcMetadata.right = min(rcClient.right, rcMetadata.left + iMetadataWidth);
+	}
+
+	int iTextLeft = rcMetadata.left;
+	if (theApp.geolocation != NULL) {
+		const POINT point{ rcMetadata.left, rcNode.CenterPoint().y - 8 };
+		if (theApp.geolocation->DrawFlag(dc, pEntry->m_uIP, point))
+			iTextLeft += iFlagWidth;
+	}
+
+	CRect rcLabel(rcMetadata);
+	rcLabel.left = min(rcMetadata.right, iTextLeft + (iTextLeft > rcMetadata.left ? iTextPadding : 0));
+	dc.DrawText(strIP, &rcLabel, iTextFlags);
+}
+}
 
 BEGIN_MESSAGE_MAP(CKadLookupGraph, CWnd)
 	ON_WM_PAINT()
@@ -433,6 +496,7 @@ void CKadLookupGraph::OnPaint()
 			else
 				m_iml.Draw(&dc, iIconIdx, pointNode, ILD_NORMAL);
 
+			DrawLookupNodeMetadata(dc, sEntry, m_aNodesDrawRects[i], rcClient);
 
 			if (sEntry->m_dwAskedSearchItemTime > 0) {
 				// Draw the Icon indicating that we asked this Node for results
@@ -543,11 +607,15 @@ void CKadLookupGraph::UpdateToolTip()
 			_T("%s: %s\n")
 			_T("%s: %u\n<br>\n")
 			_T("%s: %s\n")
+			_T("%s: %s\n")
+			_T("%s: %s\n")
 			_T("%s: %s\n\n")
 			_T("%s: %s\a")
 			, (LPCTSTR)sEntry->m_uContactID.ToHexString()
 			, (LPCTSTR)GetResString(IDS_KADDISTANCE), (LPCTSTR)sEntry->m_uDistance.ToHexString()
 			, (LPCTSTR)GetResString(IDS_PROTOCOLVERSION), (unsigned)sEntry->m_byContactVersion
+			, (LPCTSTR)GetResString(IDS_IP), (LPCTSTR)GetLookupEntryIPString(sEntry)
+			, (LPCTSTR)GetResString(IDS_GEOLOCATION), (LPCTSTR)GetLookupEntryLocationString(sEntry)
 			, (LPCTSTR)GetResString(IDS_DISCOVEREDBY), (LPCTSTR)strDiscovered
 			, (LPCTSTR)GetResString(IDS_FOUNDNODESUSEFUL), (LPCTSTR)strFoundNodes
 			, (LPCTSTR)GetResString(IDS_SW_RESULT), (LPCTSTR)strFoundResults

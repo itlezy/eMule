@@ -35,6 +35,7 @@ IMPLEMENT_DYNAMIC(CKadContactListCtrl, CMuleListCtrl)
 
 BEGIN_MESSAGE_MAP(CKadContactListCtrl, CMuleListCtrl)
 	ON_NOTIFY_REFLECT(LVN_COLUMNCLICK, OnLvnColumnClick)
+	ON_NOTIFY_REFLECT(NM_CUSTOMDRAW, OnNmCustomDraw)
 	ON_WM_DESTROY()
 	ON_WM_SYSCOLORCHANGE()
 END_MESSAGE_MAP()
@@ -51,8 +52,10 @@ void CKadContactListCtrl::Init()
 	SetExtendedStyle(LVS_EX_FULLROWSELECT | LVS_EX_INFOTIP);
 
 	InsertColumn(colID,		  _T(""),	LVCFMT_LEFT, 16 + DFLT_HASH_COL_WIDTH);	//IDS_ID
-	InsertColumn(colType,	  _T(""),	LVCFMT_LEFT, 50);						//IDS_TYPE
-	InsertColumn(colDistance, _T(""),	LVCFMT_LEFT, 600);						//IDS_KADDISTANCE
+	InsertColumn(colType,	  _T(""),	LVCFMT_LEFT, 55);						//IDS_TYPE
+	InsertColumn(colVersion,  _T(""),	LVCFMT_LEFT, 60);						//IDS_VERSION
+	InsertColumn(colDistance, _T(""),	LVCFMT_LEFT, 480);						//IDS_KADDISTANCE
+	InsertColumn(colIP,		  _T(""),	LVCFMT_LEFT, 105);						//IDS_IP
 	InsertColumn(colLocation, _T(""),	LVCFMT_LEFT, 180);						//IDS_GEOLOCATION
 
 	SetAllIcons();
@@ -90,12 +93,19 @@ void CKadContactListCtrl::SetAllIcons()
 
 void CKadContactListCtrl::Localize()
 {
-	static const UINT uids[4] =
+	static const UINT uids[6] =
 	{
-		IDS_ID, IDS_TYPE, IDS_KADDISTANCE, IDS_GEOLOCATION
+		IDS_ID, IDS_TYPE, IDS_VERSION, IDS_KADDISTANCE, IDS_IP, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
+}
+
+CString CKadContactListCtrl::GetContactLocationText(const Kademlia::CContact *contact) const
+{
+	if (theApp.geolocation == NULL || contact == NULL)
+		return CString();
+	return theApp.geolocation->GetDisplayText(contact->GetIPAddress());
 }
 
 void CKadContactListCtrl::UpdateContact(int iItem, const Kademlia::CContact *contact)
@@ -104,16 +114,19 @@ void CKadContactListCtrl::UpdateContact(int iItem, const Kademlia::CContact *con
 	contact->GetClientID(id);
 	SetItemText(iItem, colID, id);
 
-	id.Format(_T("%i(%u)"), contact->GetType(), contact->GetVersion());
+	id.Format(_T("%u"), static_cast<unsigned>(contact->GetType()));
 	SetItemText(iItem, colType, id);
+
+	id.Format(_T("%u"), static_cast<unsigned>(contact->GetVersion()));
+	SetItemText(iItem, colVersion, id);
 
 	contact->GetDistance(id);
 	SetItemText(iItem, colDistance, id);
 
-	if (theApp.geolocation != NULL)
-		SetItemText(iItem, colLocation, theApp.geolocation->GetDisplayText(contact->GetIPAddress()));
-	else
-		SetItemText(iItem, colLocation, _T(""));
+	contact->GetIPAddress(id);
+	SetItemText(iItem, colIP, id);
+
+	SetItemText(iItem, colLocation, GetContactLocationText(contact));
 
 	UINT nImageShown;
 	if (contact->IsBootstrapContact())
@@ -201,6 +214,65 @@ void CKadContactListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	*pResult = 0;
 }
 
+void CKadContactListCtrl::OnNmCustomDraw(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	NMLVCUSTOMDRAW *pLVCD = reinterpret_cast<NMLVCUSTOMDRAW*>(pNMHDR);
+	if (pLVCD->nmcd.dwDrawStage == CDDS_PREPAINT) {
+		*pResult = CDRF_NOTIFYITEMDRAW;
+		return;
+	}
+
+	if (pLVCD->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+		*pResult = CDRF_NOTIFYSUBITEMDRAW;
+		return;
+	}
+
+	if (pLVCD->nmcd.dwDrawStage == (CDDS_ITEMPREPAINT | CDDS_SUBITEM) && pLVCD->iSubItem == colLocation) {
+		DrawLocationSubItem(pLVCD, pResult);
+		return;
+	}
+
+	*pResult = CDRF_DODEFAULT;
+}
+
+void CKadContactListCtrl::DrawLocationSubItem(NMLVCUSTOMDRAW *pLVCD, LRESULT *pResult)
+{
+	const Kademlia::CContact *contact = reinterpret_cast<Kademlia::CContact*>(pLVCD->nmcd.lItemlParam);
+	if (contact == NULL) {
+		*pResult = CDRF_DODEFAULT;
+		return;
+	}
+
+	CDC *pDC = CDC::FromHandle(pLVCD->nmcd.hdc);
+	CRect rcSubItem;
+	if (!GetSubItemRect(static_cast<int>(pLVCD->nmcd.dwItemSpec), colLocation, LVIR_LABEL, rcSubItem)) {
+		*pResult = CDRF_DODEFAULT;
+		return;
+	}
+
+	const bool bSelected = (pLVCD->nmcd.uItemState & CDIS_SELECTED) != 0;
+	const bool bFocused = GetFocus() == this || (GetStyle() & LVS_SHOWSELALWAYS) != 0;
+	const COLORREF crBk = bSelected ? (bFocused ? m_crHighlight : m_crNoHighlight)
+		: (m_crWindowTextBk == CLR_NONE ? GetBkColor() : m_crWindowTextBk);
+	const COLORREF crText = bSelected ? m_crHighlightText : m_crWindowText;
+	pDC->FillSolidRect(&rcSubItem, crBk);
+	pDC->SetBkMode(TRANSPARENT);
+	pDC->SetTextColor(crText);
+
+	const int iIconY = max((rcSubItem.Height() - 15) / 2, 0);
+	const int iItemLeft = rcSubItem.left;
+	if (theApp.geolocation != NULL) {
+		const POINT point{ iItemLeft + sm_iIconOffset, rcSubItem.top + iIconY };
+		if (theApp.geolocation->DrawFlag(*pDC, contact->GetIPAddress(), point))
+			rcSubItem.left = iItemLeft + sm_iIconOffset + 18 + sm_iLabelOffset - sm_iSubItemInset;
+	}
+
+	rcSubItem.left += sm_iSubItemInset;
+	rcSubItem.right -= sm_iSubItemInset;
+	pDC->DrawText(GetContactLocationText(contact), &rcSubItem, MLC_DT_TEXT | DT_LEFT);
+	*pResult = CDRF_SKIPDEFAULT;
+}
+
 int CALLBACK CKadContactListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort)
 {
 	const Kademlia::CContact *item1 = reinterpret_cast<Kademlia::CContact*>(lParam1);
@@ -220,9 +292,12 @@ int CALLBACK CKadContactListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARA
 		}
 		break;
 	case colType:
-		iResult = item1->GetType() - item2->GetType();
+		iResult = static_cast<int>(item1->GetType()) - static_cast<int>(item2->GetType());
 		if (iResult == 0)
-			iResult = item1->GetVersion() - item2->GetVersion();
+			iResult = static_cast<int>(item1->GetVersion()) - static_cast<int>(item2->GetVersion());
+		break;
+	case colVersion:
+		iResult = static_cast<int>(item1->GetVersion()) - static_cast<int>(item2->GetVersion());
 		break;
 	case colDistance:
 		{
@@ -231,6 +306,9 @@ int CALLBACK CKadContactListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARA
 			item2->GetDistance(distance2);
 			iResult = distance1.CompareTo(distance2);
 		}
+		break;
+	case colIP:
+		iResult = CompareUnsigned(item1->GetIPAddress(), item2->GetIPAddress());
 		break;
 	case colLocation:
 		if (theApp.geolocation != NULL)

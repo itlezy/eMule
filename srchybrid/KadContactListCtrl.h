@@ -33,7 +33,9 @@ private:
 	{
 		colID = 0,
 		colType,
+		colVersion,
 		colDistance,
+		colIP,
 		colLocation
 	};
 
@@ -48,6 +50,8 @@ protected:
 	void UpdateKadContactCount();
 	void UpdateContact(int iItem, const Kademlia::CContact *contact);
 	void SetAllIcons();
+	CString GetContactLocationText(const Kademlia::CContact *contact) const;
+	void DrawLocationSubItem(NMLVCUSTOMDRAW *pLVCD, LRESULT *pResult);
 
 	static int CALLBACK SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
@@ -55,6 +59,7 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult);
+	afx_msg void OnNmCustomDraw(NMHDR *pNMHDR, LRESULT *pResult);
 //	afx_msg void OnNmDblClk(LPNMHDR pNMHDR, LRESULT *pResult);
 	afx_msg void OnSysColorChange();
 };
