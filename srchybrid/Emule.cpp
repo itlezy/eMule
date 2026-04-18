@@ -800,11 +800,20 @@ bool CemuleApp::ShouldKeepParityHarnessStartupTimerRunning() const
 
 bool CemuleApp::ProcessPendingParityHarnessScenario()
 {
+	static time_t s_tLastParityHarnessStartupWaitLog = 0;
 	static time_t s_tLastParityHarnessShareWaitLog = 0;
 	static time_t s_tLastParityHarnessAichWaitLog = 0;
 
-	if (!HasPendingParityHarnessScenario() || emuledlg == NULL || sharedfiles == NULL)
+	if (!HasPendingParityHarnessScenario())
 		return true;
+	if (emuledlg == NULL || sharedfiles == NULL) {
+		const time_t tNow = time(NULL);
+		if (tNow >= s_tLastParityHarnessStartupWaitLog + 10) {
+			Log(_T("Parity harness waiting for startup services before processing scenario actions"));
+			s_tLastParityHarnessStartupWaitLog = tNow;
+		}
+		return false;
+	}
 
 	if (!m_bParityHarnessShareIssued && !m_strParityHarnessShareFile.IsEmpty()) {
 		if (sharedfiles->AddSingleSharedFile(m_strParityHarnessShareFile))
