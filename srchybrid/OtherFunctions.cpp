@@ -1378,6 +1378,10 @@ bool ShowShellFolderPicker(const CString &rstrInitialPath, HWND hWnd, LPCTSTR ps
 		return false;
 
 	LPWSTR pszResultPath = NULL;
+	// Intentional shell boundary: the Windows picker only returns SIGDN_FILESYSPATH here.
+	// We keep the nearest shell-safe ancestor fallback for long paths, but we do not try to
+	// support namespace-only exact-name selections through the shell UI because the shell
+	// itself does not reliably browse or materialize those spellings.
 	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
 		return false;
 
@@ -1446,6 +1450,9 @@ bool ShowShellFileDialog(const CString &rstrInitialPath, LPCTSTR pszFilters, DWO
 		return false;
 
 	LPWSTR pszResultPath = NULL;
+	// Intentional shell boundary: file dialogs still resolve the result through
+	// SIGDN_FILESYSPATH. Advanced namespace-only exact-name paths remain a manual-entry
+	// scenario rather than a supported browse-dialog target.
 	if (FAILED(pResult->GetDisplayName(SIGDN_FILESYSPATH, &pszResultPath)) || pszResultPath == NULL)
 		return false;
 
