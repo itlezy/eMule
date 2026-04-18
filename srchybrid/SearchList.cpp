@@ -34,26 +34,13 @@
 #include "SearchDlg.h"
 #include "SearchListCtrl.h"
 #include "Log.h"
+#include "OtherFunctions.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-
-namespace
-{
-	bool CFileOpenD(CFile &file, LPCTSTR lpszFileName, UINT nOpenFlags, LPCTSTR lpszMsg)
-	{
-		CFileException ex;
-		if (!file.Open(lpszFileName, nOpenFlags, &ex)) {
-			if (ex.m_cause != CFileException::fileNotFound)
-				DebugLogError(_T("%s%s"), lpszMsg, (LPCTSTR)CExceptionStrDash(ex));
-			return false;
-		}
-		return true;
-	}
-}
 
 #define SPAMFILTER_FILENAME		_T("SearchSpam.met")
 #define STOREDSEARCHES_FILENAME	_T("StoredSearches.met")
@@ -1251,7 +1238,7 @@ void CSearchList::LoadSpamFilter()
 	m_bSpamFilterLoaded = true;
 
 	CSafeBufferedFile file;
-	if (!CFileOpenD(file
+	if (!CFileOpen(file
 		, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SPAMFILTER_FILENAME
 		, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite
 		, _T("Failed to load ") SPAMFILTER_FILENAME))
@@ -1355,7 +1342,7 @@ void CSearchList::SaveSpamFilter()
 		return;
 
 	CSafeBufferedFile file;
-	if (!CFileOpenD(file
+	if (!CFileOpen(file
 		, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SPAMFILTER_FILENAME
 		, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite
 		, _T("Failed to load ") SPAMFILTER_FILENAME))
@@ -1426,7 +1413,7 @@ void CSearchList::StoreSearches()
 {
 	// store open searches on shutdown to restore them on the next startup
 	CSafeBufferedFile file;
-	if (!CFileOpenD(file
+	if (!CFileOpen(file
 		, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + STOREDSEARCHES_FILENAME
 		, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite
 		, _T("Failed to save ") STOREDSEARCHES_FILENAME))
@@ -1476,7 +1463,7 @@ void CSearchList::LoadSearches()
 {
 	ASSERT(m_listFileLists.IsEmpty());
 	CSafeBufferedFile file;
-	if (!CFileOpenD(file
+	if (!CFileOpen(file
 		, thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + STOREDSEARCHES_FILENAME
 		, CFile::modeRead | CFile::osSequentialScan | CFile::typeBinary | CFile::shareDenyWrite
 		, _T("Failed to load ") STOREDSEARCHES_FILENAME))
