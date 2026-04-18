@@ -337,6 +337,7 @@ public:
 	int		m_iWrites;					// outstanding I/O counter - read only in the main thread
 	DWORD	m_LastSearchTime;
 	DWORD	m_LastSearchTimeKad;
+	DWORD	m_dwParityHarnessLastKadGateTrace;
 	uint16	src_stats[4];
 	uint16	net_stats[3];
 	uint8	m_TotalSearchesKad;
