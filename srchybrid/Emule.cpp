@@ -800,12 +800,17 @@ bool CemuleApp::ShouldKeepParityHarnessStartupTimerRunning() const
 
 bool CemuleApp::ProcessPendingParityHarnessScenario()
 {
+	static time_t s_tLastParityHarnessShareWaitLog = 0;
+	static time_t s_tLastParityHarnessAichWaitLog = 0;
+
 	if (!HasPendingParityHarnessScenario() || emuledlg == NULL || sharedfiles == NULL)
 		return true;
 
 	if (!m_bParityHarnessShareIssued && !m_strParityHarnessShareFile.IsEmpty()) {
 		if (sharedfiles->AddSingleSharedFile(m_strParityHarnessShareFile))
 			Log(_T("Parity harness shared file: %s"), (LPCTSTR)m_strParityHarnessShareFile);
+		else
+			LogWarning(_T("Parity harness share request did not queue a new file: %s"), (LPCTSTR)m_strParityHarnessShareFile);
 		m_bParityHarnessShareIssued = true;
 	}
 
@@ -825,14 +830,30 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 				break;
 			}
 		}
+
+		const time_t tNow = time(NULL);
+		if (sharedFile == NULL && tNow >= s_tLastParityHarnessShareWaitLog + 10) {
+			Log(_T("Parity harness waiting for shared file hashing to finish: %s"), (LPCTSTR)m_strParityHarnessShareFile);
+			s_tLastParityHarnessShareWaitLog = tNow;
+		}
 	}
 
 	if (sharedFile != NULL
 		&& ((!m_bParityHarnessLinkWritten && !m_strParityHarnessExportLinkFile.IsEmpty())
 			|| (!m_bParityHarnessAichWritten && !m_strParityHarnessExportAichFile.IsEmpty())))
 	{
-		if (!sharedFile->GetFileIdentifierC().HasAICHHash())
+		if (!sharedFile->GetFileIdentifierC().HasAICHHash()) {
+			const time_t tNow = time(NULL);
+			if (tNow >= s_tLastParityHarnessAichWaitLog + 10) {
+				Log(
+					_T("Parity harness waiting for AICH before export: %s (size=%I64u md4=%s)"),
+					(LPCTSTR)sharedFile->GetFilePath(),
+					sharedFile->GetFileSize(),
+					(LPCTSTR)md4str(sharedFile->GetFileHash()));
+				s_tLastParityHarnessAichWaitLog = tNow;
+			}
 			return false;
+		}
 
 		if (!m_bParityHarnessLinkWritten && !m_strParityHarnessExportLinkFile.IsEmpty()) {
 			uint32 sourceIpValue = 0;
