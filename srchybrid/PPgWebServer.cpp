@@ -185,6 +185,7 @@ BEGIN_MESSAGE_MAP(CPPgWebServer, CPropertyPage)
 	ON_EN_CHANGE(IDC_WSPASS, OnDataChange)
 	ON_EN_CHANGE(IDC_WSPASSLOW, OnDataChange)
 	ON_EN_CHANGE(IDC_WSPORT, OnDataChange)
+	ON_EN_CHANGE(IDC_WEBBINDADDR, OnDataChange)
 	ON_EN_CHANGE(IDC_TMPLPATH, OnDataChange)
 	ON_EN_CHANGE(IDC_CERTPATH, OnDataChange)
 	ON_EN_CHANGE(IDC_KEYPATH, OnDataChange)
@@ -213,6 +214,15 @@ CPPgWebServer::CPPgWebServer()
 {
 }
 
+bool CPPgWebServer::IsValidBindAddressOverride(const CString &strAddr)
+{
+	if (strAddr.IsEmpty())
+		return true;
+	const CStringA strAddrA(strAddr);
+	const unsigned long ulAddr = inet_addr(strAddrA);
+	return ulAddr != INADDR_NONE || strAddr == _T("255.255.255.255");
+}
+
 void CPPgWebServer::DoDataExchange(CDataExchange *pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
@@ -235,6 +245,7 @@ BOOL CPPgWebServer::OnInitDialog()
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPASS))->SetLimitText(32);
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPASSLOW))->SetLimitText(32);
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPORT))->SetLimitText(5);
+	static_cast<CEdit*>(GetDlgItem(IDC_WEBBINDADDR))->SetLimitText(15);
 
 	LoadSettings();
 	Localize();
@@ -252,6 +263,7 @@ void CPPgWebServer::LoadSettings()
 	CheckDlgButton(IDC_WSUPNP, static_cast<UINT>(thePrefs.m_bWebUseUPnP));
 	GetDlgItem(IDC_WSUPNP)->EnableWindow(thePrefs.IsUPnPEnabled() && thePrefs.GetWSIsEnabled());
 	SetDlgItemInt(IDC_WSPORT, thePrefs.GetWSPort());
+	SetDlgItemText(IDC_WEBBINDADDR, thePrefs.GetWebBindAddr());
 
 	SetDlgItemText(IDC_TMPLPATH, thePrefs.GetTemplate());
 	SetDlgItemInt(IDC_WSTIMEOUT, thePrefs.GetWebTimeoutMins());
@@ -279,6 +291,7 @@ BOOL CPPgWebServer::OnApply()
 	if (m_bModified) {
 		bool bUPnP = thePrefs.GetWSUseUPnP();
 		bool bWSIsEnabled = IsDlgButtonChecked(IDC_WSENABLED) != 0;
+		bool bRestartWebServerSockets = false;
 		// get and check template file existence...
 		CString sBuf;
 		GetDlgItemText(IDC_TMPLPATH, sBuf);
@@ -334,7 +347,20 @@ BOOL CPPgWebServer::OnApply()
 		uint16 u = (uint16)GetDlgItemInt(IDC_WSPORT, NULL, FALSE);
 		if (u > 0 && u != thePrefs.GetWSPort()) {
 			thePrefs.SetWSPort(u);
-			theApp.webserver->RestartSockets();
+			bRestartWebServerSockets = true;
+		}
+
+		CString strWebBindAddr;
+		GetDlgItemText(IDC_WEBBINDADDR, strWebBindAddr);
+		strWebBindAddr.Trim();
+		if (!IsValidBindAddressOverride(strWebBindAddr)) {
+			AfxMessageBox(GetResString(IDS_WEB_INVALID_BINDADDR), MB_OK | MB_ICONWARNING);
+			GetDlgItem(IDC_WEBBINDADDR)->SetFocus();
+			return FALSE;
+		}
+		if (strWebBindAddr != thePrefs.GetWebBindAddr()) {
+			thePrefs.SetWebBindAddr(strWebBindAddr);
+			bRestartWebServerSockets = true;
 		}
 
 		if (thePrefs.GetWebUseHttps() != bHTTPS || (bHTTPS && m_bNewCert))
@@ -345,6 +371,8 @@ BOOL CPPgWebServer::OnApply()
 		thePrefs.SetWebUseGzip(IsDlgButtonChecked(IDC_WS_GZIP) != 0);
 		thePrefs.SetWebUseHttps(bHTTPS);
 		thePrefs.SetWSIsLowUserEnabled(IsDlgButtonChecked(IDC_WSENABLEDLOW) != 0);
+		if (bRestartWebServerSockets && bWSIsEnabled)
+			theApp.webserver->RestartSockets();
 		theApp.webserver->StartServer();
 		thePrefs.m_bAllowAdminHiLevFunc = IsDlgButtonChecked(IDC_WS_ALLOWHILEVFUNC) != 0;
 
@@ -370,6 +398,7 @@ void CPPgWebServer::Localize()
 		SetDlgItemText(IDC_WS_GZIP, GetResString(IDS_WEB_GZIP_COMPRESSION));
 		SetDlgItemText(IDC_WSUPNP, GetResString(IDS_WEBUPNPINCLUDE));
 		SetDlgItemText(IDC_WSPORT_LBL, GetResString(IDS_PORT) + _T(':'));
+		SetDlgItemText(IDC_WEBBINDADDR_LBL, GetResString(IDS_WEB_BIND_ADDR) + _T(':'));
 
 		SetDlgItemText(IDC_TEMPLATE, GetResString(IDS_WS_RELOAD_TMPL) + _T(':'));
 		SetDlgItemText(IDC_WSRELOADTMPL, GetResString(IDS_SF_RELOAD));
@@ -420,6 +449,7 @@ void CPPgWebServer::OnEnChangeWSEnabled()
 	bool bIsWIEnabled = IsDlgButtonChecked(IDC_WSENABLED) != 0;
 	GetDlgItem(IDC_WS_GZIP)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSPORT)->EnableWindow(bIsWIEnabled);
+	GetDlgItem(IDC_WEBBINDADDR)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_TMPLPATH)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_TMPLBROWSE)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSTIMEOUT)->EnableWindow(bIsWIEnabled);

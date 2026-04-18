@@ -94,6 +94,7 @@
 #include "TimeTick.h"
 #include "Pinger.h"
 #include "OtherFunctions.h"
+#include "Preferences.h"
 #include "opcodes.h"
 
 #ifdef _DEBUG
@@ -107,6 +108,17 @@ static char THIS_FILE[] = __FILE__;
 #define BUFSIZE		32 //should be >= DEFAULT_LEN + 8
 #define TIMEOUT		SEC2MS(3)
 
+namespace
+{
+	unsigned long GetPingerBindAddress()
+	{
+		if (thePrefs.GetBindAddrA() == NULL)
+			return INADDR_ANY;
+		const unsigned long ulBindAddr = inet_addr(thePrefs.GetBindAddrA());
+		return ulBindAddr == INADDR_NONE ? INADDR_ANY : ulBindAddr;
+	}
+}
+
 Pinger::Pinger()
 	: us(INVALID_SOCKET)
 	, udpStarted()
@@ -116,7 +128,7 @@ Pinger::Pinger()
 
 	// ICMP must accept all responses
 	sa.sin_family = AF_INET;
-	sa.sin_addr.s_addr = INADDR_ANY;
+	sa.sin_addr.s_addr = GetPingerBindAddress();
 	sa.sin_port = 0;
 
 	// attempt to initialize raw ICMP socket (raw sockets require an Administrator)
@@ -127,11 +139,14 @@ Pinger::Pinger()
 			closesocket(is);	// ignore return value - error close anyway
 		} else {
 			// attempt to initialize ordinary UDP socket - why should this fail???
-			// NB! no need to bind this at a moment - will be bound later, implicitly at sendto
 			us = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
 			if (us == INVALID_SOCKET)
 				closesocket(is);		// ignore return value - we need to close it anyway!
-			else
+			else if (bind(us, (sockaddr*)&sa, sizeof sa) == SOCKET_ERROR) {
+				closesocket(us);		// ignore return value - error close anyway
+				closesocket(is);		// ignore return value - error close anyway
+				us = INVALID_SOCKET;
+			} else
 				udpStarted = true;
 		}
 	}

@@ -20,6 +20,7 @@ public:
 protected:
 	BOOL m_bModified;
 	HICON m_icoBrowse;
+	static bool IsValidBindAddressOverride(const CString &strAddr);
 
 	void LoadSettings();
 

@@ -760,6 +760,8 @@ BEGIN
     CONTROL         "Include port into UPnP setup",IDC_WSUPNP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,33,205,8
     RTEXT           "Port",IDC_WSPORT_LBL,11,48,72,8
     EDITTEXT        IDC_WSPORT,85,46,33,13,ES_AUTOHSCROLL | ES_NUMBER
+    RTEXT           "Bind address",IDC_WEBBINDADDR_LBL,121,48,41,8
+    EDITTEXT        IDC_WEBBINDADDR,164,46,56,13,ES_AUTOHSCROLL
     RTEXT           "Template:",IDC_TEMPLATE,11,64,72,8
     EDITTEXT        IDC_TMPLPATH,85,62,135,13,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_TMPLBROWSE,209,59,14,12
@@ -4088,6 +4090,8 @@ BEGIN
     IDS_DETECT_TCP_ERROR_FLOODER "Detect TCP error flooder"
     IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES "TCP error flooder interval (minutes)"
     IDS_TCP_ERROR_FLOODER_THRESHOLD "TCP error flooder threshold"
+    IDS_WEB_BIND_ADDR       "Bind address"
+    IDS_WEB_INVALID_BINDADDR "Invalid web bind address. Leave it empty to listen on all interfaces."
 END
 
 #endif    // English (United States) resources

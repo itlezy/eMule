@@ -438,6 +438,7 @@ bool	CPreferences::m_bAdjustNTFSDaylightFileTime = false; //'true' causes rehash
 bool	CPreferences::m_bRearrangeKadSearchKeywords;
 CString	CPreferences::m_strWebPassword;
 CString	CPreferences::m_strWebLowPassword;
+CString	CPreferences::m_strWebBindAddr;
 CUIntArray CPreferences::m_aAllowedRemoteAccessIPs;
 uint16	CPreferences::m_nWebPort;
 bool	CPreferences::m_bWebUseUPnP;
@@ -1969,6 +1970,7 @@ void CPreferences::SavePreferences()
 	//
 	ini.WriteString(_T("Password"), GetWSPass(), _T("WebServer"));
 	ini.WriteString(_T("PasswordLow"), GetWSLowPass());
+	ini.WriteString(_T("BindAddr"), m_strWebBindAddr);
 	ini.WriteInt(_T("Port"), m_nWebPort);
 	ini.WriteBool(_T("WebUseUPnP"), m_bWebUseUPnP);
 	ini.WriteBool(_T("Enabled"), m_bWebEnabled);
@@ -2540,6 +2542,7 @@ void CPreferences::LoadPreferences()
 	//
 	m_strWebPassword = ini.GetString(_T("Password"), _T(""), _T("WebServer"));
 	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
+	m_strWebBindAddr = ini.GetString(_T("BindAddr"), _T("")).Trim();
 	m_nWebPort = (uint16)ini.GetInt(_T("Port"), 4711);
 	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
 	m_bWebEnabled = ini.GetBool(_T("Enabled"), false);

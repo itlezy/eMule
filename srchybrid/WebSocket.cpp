@@ -35,6 +35,28 @@ typedef struct
 	in_addr incomingaddr;
 } SocketData;
 
+namespace
+{
+	bool TryResolveWebBindAddr(in_addr *pAddr)
+	{
+		ASSERT(pAddr != NULL);
+		pAddr->s_addr = INADDR_ANY;
+		const CString &strWebBindAddr = thePrefs.GetWebBindAddr();
+		if (strWebBindAddr.IsEmpty())
+			return true;
+
+		const CStringA strWebBindAddrA(strWebBindAddr);
+		const unsigned long ulAddr = inet_addr(strWebBindAddrA);
+		if (ulAddr == INADDR_NONE && strWebBindAddr != _T("255.255.255.255")) {
+			DebugLogError(_T("Web Interface start failed: invalid WebBindAddr '%s'"), (LPCTSTR)strWebBindAddr);
+			return false;
+		}
+
+		pAddr->s_addr = ulAddr;
+		return true;
+	}
+}
+
 void CWebSocket::OnRequestReceived(const char *pHeader, DWORD dwHeaderLen, const char *pData, DWORD dwDataLen, const in_addr inad)
 {
 	CStringA sHeader(pHeader, dwHeaderLen);
@@ -431,7 +453,10 @@ UINT AFX_CDECL WebSocketListeningFunc(LPVOID pThis)
 		SOCKADDR_IN stAddr;
 		stAddr.sin_family = AF_INET;
 		stAddr.sin_port = htons(thePrefs.GetWSPort());
-		stAddr.sin_addr.s_addr = thePrefs.GetBindAddrA() ? inet_addr(thePrefs.GetBindAddrA()) : INADDR_ANY;
+		if (!TryResolveWebBindAddr(&stAddr.sin_addr)) {
+			VERIFY(!closesocket(hSocket));
+			return 0;
+		}
 
 		if (!bind(hSocket, (LPSOCKADDR)&stAddr, sizeof stAddr) && !listen(hSocket, SOMAXCONN)) {
 			HANDLE hEvent = CreateEvent(NULL, FALSE, TRUE, NULL);
