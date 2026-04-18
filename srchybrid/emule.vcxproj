@@ -260,6 +260,7 @@
     <ClCompile Include="MD5Sum.cpp" />
     <ClCompile Include="Mdump.cpp" />
     <ClCompile Include="MediaInfo.cpp" />
+    <ClCompile Include="MediaInfo_DLL.cpp" />
     <ClCompile Include="MetaDataDlg.cpp" />
     <ClCompile Include="MeterIcon.cpp" />
     <ClCompile Include="MiniMule.cpp" />

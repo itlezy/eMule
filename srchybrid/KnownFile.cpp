@@ -1407,10 +1407,116 @@ void CKnownFile::UpdateMetaDataTags()
 	if (thePrefs.GetExtractMetaData() == 0)
 		return;
 
-	LPCTSTR pszExt = ::PathFindExtension(GetFileName());
-	pszExt += static_cast<int>(*pszExt != _T('\0'));
+	const EED2KFileType eFileType = GetED2KFileTypeID(GetFileName());
+	if (eFileType != ED2KFT_AUDIO && eFileType != ED2KFT_VIDEO)
+		return;
+
 	const CString strFullPath = KnownFileMetadataSeams::BuildMetadataFilePath(GetPath(), GetFileName());
-	if (!_tcsicmp(pszExt, _T("mp3")) || !_tcsicmp(pszExt, _T("mp2")) || !_tcsicmp(pszExt, _T("mp1")) || !_tcsicmp(pszExt, _T("mpa"))) {
+	const bool bIsMpegAudio = KnownFileMetadataSeams::IsMpegAudioMetadataExtension(GetFileName());
+	bool bMetaDataApplied = false;
+
+	auto ApplyMediaInfoTags = [&](SMediaInfo &mi)
+	{
+		mi.InitFileLength();
+		const UINT uLengthSec = (UINT)mi.fFileLengthSec;
+		CString strCodec;
+		uint32 uBitrate = 0;
+
+		if (mi.iVideoStreams > 0) {
+			strCodec = mi.strVideoFormat;
+			if (strCodec.IsEmpty())
+				strCodec = CString(GetED2KVideoCodec(mi.video.bmiHeader.biCompression));
+			if (mi.video.dwBitRate == _UI32_MAX) {
+				if (uLengthSec != 0)
+					uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
+			} else if (mi.video.dwBitRate != 0) {
+				uBitrate = (mi.video.dwBitRate + 500) / 1000;
+			}
+		} else if (mi.iAudioStreams > 0) {
+			strCodec = mi.strAudioFormat;
+			if (strCodec.IsEmpty())
+				strCodec = CString(GetED2KAudioCodec(mi.audio.wFormatTag));
+			if (mi.audio.nAvgBytesPerSec == _UI32_MAX) {
+				if (uLengthSec != 0)
+					uBitrate = (uint32)((((uint64)GetFileSize() / uLengthSec) * 8ull + 500) / 1000);
+			} else if (mi.audio.nAvgBytesPerSec != 0) {
+				uBitrate = (uint32)(((uint64)mi.audio.nAvgBytesPerSec * 8ull + 500) / 1000);
+			}
+		}
+
+		if (uLengthSec) {
+			AddTagUnique(new CTag(FT_MEDIA_LENGTH, (uint32)uLengthSec));
+			m_uMetaDataVer = META_DATA_VER;
+		}
+
+		if (!strCodec.IsEmpty()) {
+			AddTagUnique(new CTag(FT_MEDIA_CODEC, strCodec));
+			m_uMetaDataVer = META_DATA_VER;
+		}
+
+		if (uBitrate) {
+			AddTagUnique(new CTag(FT_MEDIA_BITRATE, uBitrate));
+			m_uMetaDataVer = META_DATA_VER;
+		}
+
+		TruncateED2KMetaData(mi.strTitle);
+		if (!mi.strTitle.IsEmpty()) {
+			AddTagUnique(new CTag(FT_MEDIA_TITLE, mi.strTitle));
+			m_uMetaDataVer = META_DATA_VER;
+		}
+
+		TruncateED2KMetaData(mi.strAuthor);
+		if (!mi.strAuthor.IsEmpty()) {
+			AddTagUnique(new CTag(FT_MEDIA_ARTIST, mi.strAuthor));
+			m_uMetaDataVer = META_DATA_VER;
+		}
+
+		TruncateED2KMetaData(mi.strAlbum);
+		if (!mi.strAlbum.IsEmpty()) {
+			AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi.strAlbum));
+			m_uMetaDataVer = META_DATA_VER;
+		}
+	};
+
+	try {
+		SMediaInfo mediaInfo;
+		mediaInfo.strFileName = GetFileName();
+		bool bMediaInfoAvailable = false;
+		if (GetMediaInfoDllInfo(strFullPath, GetFileSize(), &mediaInfo, false, true, &bMediaInfoAvailable)) {
+			ApplyMediaInfoTags(mediaInfo);
+			bMetaDataApplied = true;
+		}
+	} catch (...) {
+		if (thePrefs.GetVerbose())
+			AddDebugLogLine(false, _T("Unhandled exception while extracting file meta data through MediaInfo.dll from \"%s\""), (LPCTSTR)strFullPath);
+		ASSERT(0);
+	}
+
+	if (!bMetaDataApplied) {
+		SMediaInfo *mi = NULL;
+		try {
+			mi = GetRIFFMediaInfo(strFullPath);
+			if (mi == NULL) {
+				mi = GetRMMediaInfo(strFullPath);
+				if (mi == NULL)
+					mi = GetWMMediaInfo(strFullPath);
+			}
+			if (mi != NULL) {
+				ApplyMediaInfoTags(*mi);
+				bMetaDataApplied = true;
+			}
+		} catch (...) {
+			if (thePrefs.GetVerbose())
+				AddDebugLogLine(false, _T("Unhandled exception while extracting built-in file meta data from \"%s\""), (LPCTSTR)strFullPath);
+			ASSERT(0);
+		}
+		delete mi;
+	}
+
+	if (!bMetaDataApplied
+		&& bIsMpegAudio
+		&& theApp.GetProfileInt(_T("eMule"), _T("MediaInfo_ID3LIB"), 1))
+	{
 		wchar_t *pszText = NULL;
 		try {
 				// ID3LIB BUG: If there are ID3v2 _and_ ID3v1 tags available, id3lib
@@ -1493,71 +1599,6 @@ void CKnownFile::UpdateMetaDataTags()
 			delete[] pszText;
 			ASSERT(0);
 		}
-	} else {
-		SMediaInfo *mi = NULL;
-		try {
-			mi = GetRIFFMediaInfo(strFullPath);
-			if (mi == NULL) {
-				mi = GetRMMediaInfo(strFullPath);
-				if (mi == NULL)
-					mi = GetWMMediaInfo(strFullPath);
-			}
-			if (mi) {
-					mi->InitFileLength();
-					UINT uLengthSec = (UINT)mi->fFileLengthSec;
-
-					CStringA strCodec;
-					uint32 uBitrate;
-					if (mi->iVideoStreams) {
-						strCodec = GetED2KVideoCodec(mi->video.bmiHeader.biCompression);
-						uBitrate = (mi->video.dwBitRate + SEC2MS(1) / 2) / SEC2MS(1);
-					} else if (mi->iAudioStreams) {
-						strCodec = GetED2KAudioCodec(mi->audio.wFormatTag);
-						uBitrate = (uint32)((mi->audio.nAvgBytesPerSec * 16ull + SEC2MS(1)) / SEC2MS(2));
-					} else
-						uBitrate = 0;
-
-					if (uLengthSec) {
-						AddTagUnique(new CTag(FT_MEDIA_LENGTH, (uint32)uLengthSec));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					if (!strCodec.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_CODEC, CString(strCodec)));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					if (uBitrate) {
-						AddTagUnique(new CTag(FT_MEDIA_BITRATE, (uint32)uBitrate));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					TruncateED2KMetaData(mi->strTitle);
-					if (!mi->strTitle.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_TITLE, mi->strTitle));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					TruncateED2KMetaData(mi->strAuthor);
-					if (!mi->strAuthor.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_ARTIST, mi->strAuthor));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-
-					TruncateED2KMetaData(mi->strAlbum);
-					if (!mi->strAlbum.IsEmpty()) {
-						AddTagUnique(new CTag(FT_MEDIA_ALBUM, mi->strAlbum));
-						m_uMetaDataVer = META_DATA_VER;
-					}
-					delete mi;
-					mi = NULL;
-				}
-		} catch (...) {
-			if (thePrefs.GetVerbose())
-				AddDebugLogLine(false, _T("Unhandled exception while extracting file meta (AVI) data from \"%s\""), (LPCTSTR)strFullPath);
-			ASSERT(0);
-		}
-		delete mi;
 	}
 }
 

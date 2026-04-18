@@ -207,6 +207,10 @@ struct SMediaInfo
 
 bool GetMimeType(LPCTSTR pszFilePath, CString &rstrMimeType);
 bool GetDRM(LPCTSTR pszFilePath);
+/**
+ * @brief Extracts audio/video metadata through the optional MediaInfo DLL when it is available.
+ */
+bool GetMediaInfoDllInfo(LPCTSTR pszFilePath, EMFileSize ullFileSize, SMediaInfo *mi, bool bFullInfo = false, bool bSingleFile = true, bool *pbLibraryAvailable = NULL);
 bool GetRIFFHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsAVI, bool bFullInfo = false);
 bool GetRMHeaders(LPCTSTR pszFileName, SMediaInfo *mi, bool &rbIsRM, bool bFullInfo = false);
 #ifdef HAVE_WMSDK_H
