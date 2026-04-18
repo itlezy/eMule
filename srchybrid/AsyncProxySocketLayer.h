@@ -117,6 +117,14 @@ Version history
 #pragma once
 #include "AsyncSocketExLayer.h"
 
+/**
+ * @brief Legacy proxy transport layer retained for compatibility with existing settings.
+ *
+ * New privacy-sensitive features must not depend on proxy support here. For new
+ * direct-update features such as geolocation database refresh, proxy-backed
+ * transport is considered deprecated and a VPN is the preferred modern privacy
+ * path.
+ */
 class CAsyncProxySocketLayer : public CAsyncSocketExLayer
 {
 // Attribute
@@ -143,6 +151,8 @@ public:
 	//ProxyPort - The port of the proxy
 	//ProxyUser - the username for SOCKS5 proxies
 	//ProxyPass - the password for SOCKS5 proxies
+	//Proxy support remains for legacy connectivity only. Do not rely on it for
+	//new privacy-oriented feature work; use a VPN instead.
 
 	//Prepare listen
 	BOOL PrepareListen(unsigned long ip);

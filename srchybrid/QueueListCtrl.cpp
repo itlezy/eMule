@@ -25,6 +25,7 @@
 #include "FriendList.h"
 #include "UploadQueue.h"
 #include "TransferDlg.h"
+#include "GeoLocation.h"
 #include "MemDC.h"
 #include "SharedFileList.h"
 #include "PartFile.h"
@@ -40,6 +41,13 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+	uint32 GetClientGeoIP(const CUpDownClient* client)
+	{
+		if (client == NULL)
+			return 0;
+		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+
 	CString FormatUploadRatio(float fRatio)
 	{
 		CString str;
@@ -114,6 +122,7 @@ void CQueueListCtrl::Init()
 	InsertColumn(11,_T(""),	LVCFMT_RIGHT, 85);							//IDS_SESSION_RATIO
 	InsertColumn(12,_T(""),	LVCFMT_RIGHT, 70);							//IDS_COOLDOWN
 	InsertColumn(13,_T(""),	LVCFMT_LEFT, DFLT_PARTSTATUS_COL_WIDTH);	//IDS_UPSTATUS
+	InsertColumn(14,_T(""),	LVCFMT_LEFT, 140);							//IDS_GEOLOCATION
 
 	SetAllIcons();
 	Localize();
@@ -124,11 +133,11 @@ void CQueueListCtrl::Init()
 
 void CQueueListCtrl::Localize()
 {
-	static const UINT uids[14] =
+	static const UINT uids[15] =
 	{
 		IDS_QL_USERNAME, IDS_FILE, IDS_FILEPRIO, IDS_BASE_SCORE, IDS_EFFECTIVE_SCORE
 		, IDS_SCORE_MODIFIERS, IDS_ASKED, IDS_LASTSEEN, IDS_ENTERQUEUE, IDS_BANNED
-		, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS
+		, IDS_ALL_TIME_RATIO, IDS_SESSION_RATIO, IDS_COOLDOWN, IDS_UPSTATUS, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -188,7 +197,21 @@ void CQueueListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 					const POINT point{rcItem.left, rcItem.top + iIconY};
 					m_pImageList->Draw(dc, iImage, point, ILD_NORMAL | INDEXTOOVERLAYMASK(uOverlayImage));
 					rcItem.left += 16 + sm_iLabelOffset - sm_iSubItemInset;
+					rcItem.left += sm_iSubItemInset;
+					rcItem.right -= sm_iSubItemInset;
+					dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+					break;
 				}
+			case 14: //geo location
+				if (theApp.geolocation != NULL) {
+					const POINT point{itemLeft + sm_iIconOffset, rcItem.top + iIconY};
+					if (theApp.geolocation->DrawFlag(dc, GetClientGeoIP(client), point))
+						rcItem.left = itemLeft + sm_iIconOffset + 18 + sm_iLabelOffset - sm_iSubItemInset;
+				}
+				rcItem.left += sm_iSubItemInset;
+				rcItem.right -= sm_iSubItemInset;
+				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
 			default: //any text column
 				rcItem.left += sm_iSubItemInset;
 				rcItem.right -= sm_iSubItemInset;
@@ -304,6 +327,10 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 		break;
 	case 13:
 		sText = GetResString(IDS_UPSTATUS);
+		break;
+	case 14:
+		if (theApp.geolocation != NULL)
+			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(client));
 	}
 	return sText;
 }
@@ -347,7 +374,7 @@ void CQueueListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 10: // All-time ratio
 		case 11: // Session ratio
 		case 12: // Cooldown
-		case 13: // Part Count
+	case 13: // Part Count
 			sortAscending = false;
 			break;
 		default:
@@ -447,6 +474,10 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 		break;
 	case 13:
 		iResult = CompareUnsigned(item1->GetUpPartCount(), item2->GetUpPartCount());
+		break;
+	case 14:
+		if (theApp.geolocation != NULL)
+			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(item1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(item2)));
 	}
 
 	if (HIWORD(lParamSort))

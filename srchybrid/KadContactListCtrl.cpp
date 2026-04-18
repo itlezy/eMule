@@ -19,6 +19,8 @@
 #include "KademliaWnd.h"
 #include "KadContactListCtrl.h"
 #include "emuledlg.h"
+#include "GeoLocation.h"
+#include "OtherFunctions.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -51,6 +53,7 @@ void CKadContactListCtrl::Init()
 	InsertColumn(colID,		  _T(""),	LVCFMT_LEFT, 16 + DFLT_HASH_COL_WIDTH);	//IDS_ID
 	InsertColumn(colType,	  _T(""),	LVCFMT_LEFT, 50);						//IDS_TYPE
 	InsertColumn(colDistance, _T(""),	LVCFMT_LEFT, 600);						//IDS_KADDISTANCE
+	InsertColumn(colLocation, _T(""),	LVCFMT_LEFT, 180);						//IDS_GEOLOCATION
 
 	SetAllIcons();
 	Localize();
@@ -87,9 +90,9 @@ void CKadContactListCtrl::SetAllIcons()
 
 void CKadContactListCtrl::Localize()
 {
-	static const UINT uids[3] =
+	static const UINT uids[4] =
 	{
-		IDS_ID, IDS_TYPE, IDS_KADDISTANCE
+		IDS_ID, IDS_TYPE, IDS_KADDISTANCE, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -106,6 +109,11 @@ void CKadContactListCtrl::UpdateContact(int iItem, const Kademlia::CContact *con
 
 	contact->GetDistance(id);
 	SetItemText(iItem, colDistance, id);
+
+	if (theApp.geolocation != NULL)
+		SetItemText(iItem, colLocation, theApp.geolocation->GetDisplayText(contact->GetIPAddress()));
+	else
+		SetItemText(iItem, colLocation, _T(""));
 
 	UINT nImageShown;
 	if (contact->IsBootstrapContact())
@@ -223,6 +231,12 @@ int CALLBACK CKadContactListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARA
 			item2->GetDistance(distance2);
 			iResult = distance1.CompareTo(distance2);
 		}
+		break;
+	case colLocation:
+		if (theApp.geolocation != NULL)
+			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(item1->GetIPAddress()), theApp.geolocation->GetDisplayText(item2->GetIPAddress()));
+		else
+			iResult = 0;
 		break;
 	default:
 		return 0;

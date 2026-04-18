@@ -438,6 +438,10 @@ bool	CPreferences::resumeSameCat;
 bool	CPreferences::dontRecreateGraphs;
 bool	CPreferences::autofilenamecleanup;
 bool	CPreferences::m_bUseAutocompl;
+bool	CPreferences::m_bGeoLocationEnabled;
+UINT	CPreferences::m_uGeoLocationCheckDays;
+__time64_t CPreferences::m_tGeoLocationLastCheckTime;
+CString	CPreferences::m_strGeoLocationUpdateUrl;
 bool	CPreferences::m_bShowDwlPercentage;
 bool	CPreferences::m_bRemoveFinishedDownloads;
 INT_PTR	CPreferences::m_iMaxChatHistory;
@@ -593,6 +597,23 @@ CPreferences::~CPreferences()
 LPCTSTR CPreferences::GetConfigFile()
 {
 	return theApp.m_pszProfileName;
+}
+
+void CPreferences::SetGeoLocationCheckDays(UINT uDays)
+{
+	m_uGeoLocationCheckDays = min(365u, uDays);
+}
+
+void CPreferences::SetGeoLocationLastCheckTime(__time64_t tTimestamp, bool bPersist)
+{
+	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), tTimestamp);
+	if (!bPersist)
+		return;
+
+	CIni ini(GetConfigFile(), _T("eMule"));
+	CString strValue;
+	strValue.Format(_T("%I64d"), static_cast<LONGLONG>(m_tGeoLocationLastCheckTime));
+	ini.WriteString(_T("GeoLocationLastCheckTime"), strValue);
 }
 
 void CPreferences::MovePreferences(EDefaultDirectory eSrc, LPCTSTR const sFile, const CString &dst)
@@ -1657,6 +1678,14 @@ void CPreferences::SavePreferences()
 		ini.WriteBool(_T("MinToTray"), mintotray);
 	ini.WriteBool(_T("PreventStandby"), m_bPreventStandby);
 	ini.WriteBool(_T("StoreSearches"), m_bStoreSearches);
+	ini.WriteBool(_T("GeoLocationEnabled"), m_bGeoLocationEnabled);
+	ini.WriteInt(_T("GeoLocationCheckDays"), static_cast<int>(m_uGeoLocationCheckDays));
+	{
+		CString strGeoLocationLastCheckTime;
+		strGeoLocationLastCheckTime.Format(_T("%I64d"), static_cast<LONGLONG>(m_tGeoLocationLastCheckTime));
+		ini.WriteString(_T("GeoLocationLastCheckTime"), strGeoLocationLastCheckTime);
+	}
+	ini.WriteString(_T("GeoLocationUpdateUrl"), m_strGeoLocationUpdateUrl);
 	ini.WriteBool(_T("AddServersFromServer"), m_bAddServersFromServer);
 	ini.WriteBool(_T("AddServersFromClient"), m_bAddServersFromClients);
 	ini.WriteBool(_T("Splashscreen"), splashscreen);
@@ -2118,6 +2147,10 @@ void CPreferences::LoadPreferences()
 
 	m_bPreventStandby = ini.GetBool(_T("PreventStandby"), false);
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
+	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), true);
+	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(_T("GeoLocationCheckDays"), 30))));
+	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(_T("GeoLocationLastCheckTime"), _T("0")))));
+	m_strGeoLocationUpdateUrl = ini.GetString(_T("GeoLocationUpdateUrl"), _T("https://download.db-ip.com/free/dbip-city-lite-%Y-%m.mmdb.gz"));
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
 	splashscreen = ini.GetBool(_T("Splashscreen"), true);

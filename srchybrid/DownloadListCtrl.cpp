@@ -38,6 +38,7 @@
 #include "SearchDlg.h"
 #include "SharedFileList.h"
 #include "ImportParts.h"
+#include "GeoLocation.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -51,6 +52,16 @@ static char THIS_FILE[] = __FILE__;
 #define DLC_BARUPDATE (SEC2MS(1)/2)
 
 #define RATING_ICON_WIDTH	16
+
+namespace
+{
+	uint32 GetClientGeoIP(const CUpDownClient* client)
+	{
+		if (client == NULL)
+			return 0;
+		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+}
 
 
 IMPLEMENT_DYNAMIC(CtrlItem_Struct, CObject)
@@ -128,6 +139,7 @@ void CDownloadListCtrl::Init()
 	InsertColumn(11,	_T(""),	LVCFMT_LEFT,	120, -1, true);					//IDS_FD_LASTCHANGE
 	InsertColumn(12,	_T(""),	LVCFMT_LEFT,	100, -1, true);					//IDS_CAT
 	InsertColumn(13,	_T(""),	LVCFMT_LEFT,	120);							//IDS_ADDEDON
+	InsertColumn(14,	_T(""),	LVCFMT_LEFT,	140);							//IDS_GEOLOCATION
 
 	SetAllIcons();
 	Localize();
@@ -203,11 +215,11 @@ void CDownloadListCtrl::SetAllIcons()
 
 void CDownloadListCtrl::Localize()
 {
-	static const UINT uids[14] =
+	static const UINT uids[15] =
 	{
 		IDS_DL_FILENAME, IDS_DL_SIZE, IDS_DL_TRANSF, IDS_DL_TRANSFCOMPL, IDS_DL_SPEED
 		, IDS_DL_PROGRESS, IDS_DL_SOURCES, IDS_PRIORITY, IDS_STATUS, IDS_DL_REMAINS
-		, 0/*IDS_LASTSEENCOMPL*/, 0/*IDS_FD_LASTCHANGE*/, IDS_CAT, IDS_ADDEDON
+		, 0/*IDS_LASTSEENCOMPL*/, 0/*IDS_FD_LASTCHANGE*/, IDS_CAT, IDS_ADDEDON, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -536,6 +548,11 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 				sText += _T('*');
 // ZZ:DownloadManager <--
 		}
+		break;
+	case 14: // geo location
+		if (theApp.geolocation != NULL)
+			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(pClient));
+		break;
 	//	break;
 	//case 9: //remaining time & size
 	//case 10: //last seen complete
@@ -643,6 +660,18 @@ void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UIN
 				hOldBitmap = cdcStatus.SelectObject(pCtrlItem->status);
 			dc.BitBlt(lpRect->left, lpRect->top + 1, iWidth, iHeight, &cdcStatus, 0, 0, SRCCOPY);
 			cdcStatus.SelectObject(hOldBitmap);
+		}
+		break;
+	case 14: // geo location
+		{
+			CRect rcItem(*lpRect);
+			int iIconPosY = (rcItem.Height() > 16) ? ((rcItem.Height() - 15) / 2) : 0;
+			if (theApp.geolocation != NULL) {
+				const POINT point{rcItem.left, rcItem.top + iIconPosY};
+				if (theApp.geolocation->DrawFlag(dc, GetClientGeoIP(pClient), point))
+					rcItem.left += 18 + sm_iLabelOffset;
+			}
+			dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
 		}
 		break;
 	//case 9: // remaining time & size
@@ -1739,6 +1768,8 @@ int CDownloadListCtrl::Compare(const CPartFile *file1, const CPartFile *file2, L
 				  , (file2->GetCategory() != 0) ? thePrefs.GetCategory(file2->GetCategory())->strTitle : GetResString(IDS_ALL));
 	case 13: // added on
 		return sgn(file1->GetCrFileDate() - file2->GetCrFileDate());
+	case 14: // geo location
+		return 0;
 	}
 	return 0;
 }
@@ -1791,6 +1822,10 @@ int CDownloadListCtrl::Compare(const CUpDownClient *client1, const CUpDownClient
 				return -1;
 		}
 		return client1->GetDownloadState() - client2->GetDownloadState();
+	case 14: // geo location
+		if (theApp.geolocation != NULL)
+			return CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(client1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(client2)));
+		return 0;
 	}
 	return 0;
 }

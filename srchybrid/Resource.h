@@ -2404,6 +2404,16 @@
 #define IDS_EFFECTIVE_SCORE             1685
 #define IDS_SCORE_MODIFIERS             1686
 #define IDS_LOW_RATIO_BONUS             1687
+#define IDS_GEOLOCATION                 1688
+#define IDS_ENABLE_GEOLOCATION          1689
+#define IDS_GEOLOCATION_CHECK_DAYS      1690
+#define IDS_GEOLOCATION_CHECK_DAYS_SUFFIX 1691
+#define IDS_GEOLOCATION_DOWNLOAD_DB     1692
+#define IDC_ENABLE_GEOLOCATION          3049
+#define IDC_GEOLOCATION_CHECKDAYS_LBL   3050
+#define IDC_GEOLOCATION_CHECKDAYS       3051
+#define IDC_GEOLOCATION_CHECKDAYS_SPIN  3052
+#define IDC_GEOLOCATION_CHECKDAYS_SUFFIX 3053
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2412,7 +2422,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        1568
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3049
-#define _APS_NEXT_SYMED_VALUE           1687
+#define _APS_NEXT_CONTROL_VALUE         3054
+#define _APS_NEXT_SYMED_VALUE           1693
 #endif
 #endif

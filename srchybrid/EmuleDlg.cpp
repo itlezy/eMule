@@ -36,6 +36,7 @@
 #include "otherfunctions.h"
 #include "ServerWnd.h"
 #include "KademliaWnd.h"
+#include "GeoLocation.h"
 #include "DownloadListCtrl.h"
 #include "TransferDlg.h"
 #include "SearchDlg.h"
@@ -161,6 +162,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(WM_KICKIDLE, OnKickIdle)
 	ON_MESSAGE(WM_USERCHANGED, OnUserChanged)
 	ON_MESSAGE(UM_STARTUP_NEXT_STAGE, OnStartupNextStage)
+	ON_MESSAGE(UM_GEOLOCATION_UPDATED, OnGeoLocationUpdated)
 	ON_WM_SHOWWINDOW()
 	ON_WM_DESTROY()
 	ON_WM_SETTINGCHANGE()
@@ -878,6 +880,9 @@ void CemuleDlg::StopTimer()
 	if (thePrefs.UpdateNotify())
 		DoVersioncheck(false);
 
+	if (theApp.geolocation != NULL)
+		theApp.geolocation->QueueBackgroundRefresh();
+
 	if (!theApp.m_strPendingLink.IsEmpty()) {
 		OnWMData(NULL, (LPARAM)&theApp.sendstruct);
 		theApp.m_strPendingLink.Empty();
@@ -887,6 +892,13 @@ void CemuleDlg::StopTimer()
 LRESULT CemuleDlg::OnStartupNextStage(WPARAM, LPARAM)
 {
 	OnStartupTimer();
+	return 0;
+}
+
+LRESULT CemuleDlg::OnGeoLocationUpdated(WPARAM wParam, LPARAM)
+{
+	if (theApp.geolocation != NULL)
+		theApp.geolocation->HandleBackgroundRefreshResult(wParam != 0);
 	return 0;
 }
 
@@ -1854,6 +1866,7 @@ void CemuleDlg::OnClose()
 	delete theApp.scheduler;				theApp.scheduler = NULL;
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
 	delete theApp.webserver;				theApp.webserver = NULL;
+	delete theApp.geolocation;				theApp.geolocation = NULL;
 	delete theApp.uploadBandwidthThrottler;	theApp.uploadBandwidthThrottler = NULL;
 	delete theApp.m_pUPnPFinder;			theApp.m_pUPnPFinder = NULL;
 	delete theApp.m_pUploadDiskIOThread;	theApp.m_pUploadDiskIOThread = NULL;
@@ -2638,6 +2651,11 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 			CDirectDownloadDlg dlg;
 			dlg.DoModal();
 		}
+		break;
+	case MP_HM_GEOLOCATION_DOWNLOAD:
+		if (theApp.geolocation != NULL)
+			theApp.geolocation->QueueManualRefresh();
+		break;
 	}
 	if (wParam >= MP_WEBURL && wParam <= MP_WEBURL + 99)
 		theWebServices.RunURL(NULL, (UINT)wParam);
@@ -2725,6 +2743,12 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	menu.AppendMenu(MF_STRING, MP_HM_1STSWIZARD, GetResString(IDS_WIZ1) + _T("..."), _T("WIZARD"));
 	menu.AppendMenu(MF_STRING, MP_HM_IPFILTER, GetResString(IDS_IPFILTER) + _T("..."), _T("IPFILTER"));
 	menu.AppendMenu(MF_STRING, MP_HM_DIRECT_DOWNLOAD, GetResString(IDS_SW_DIRECTDOWNLOAD) + _T("..."), _T("PASTELINK"));
+	if (toolsonly) {
+		UINT uGeoLocationMenuFlags = MF_STRING;
+		if (!thePrefs.IsGeoLocationEnabled())
+			uGeoLocationMenuFlags |= MF_GRAYED;
+		menu.AppendMenu(uGeoLocationMenuFlags, MP_HM_GEOLOCATION_DOWNLOAD, GetResString(IDS_GEOLOCATION_DOWNLOAD_DB), _T("DOWNLOAD"));
+	}
 
 	menu.AppendMenu(MF_SEPARATOR);
 	menu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)Links.m_hMenu, GetResString(IDS_LINKS), _T("WEB"));

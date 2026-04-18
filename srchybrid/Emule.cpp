@@ -63,6 +63,7 @@
 #include "StringConversion.h"
 #include "Log.h"
 #include "Collection.h"
+#include "GeoLocation.h"
 #include "UPnPImplWrapper.h"
 #include "UploadDiskIOThread.h"
 #include "PartFileWriteThread.h"
@@ -91,7 +92,6 @@ CString GetSkinProfileResourcePath(const CString &rstrSkinProfile, LPCTSTR pszSe
 
 constexpr ULONGLONG kStartupTraceMicrosPerSecond = 1000000ui64;
 constexpr LPCTSTR kStartupProfileTraceFileName = _T("startup-profile.trace.json");
-constexpr LPCTSTR kLegacyStartupProfileFileName = _T("startup-profile.txt");
 
 struct SStartupTraceDescriptor
 {
@@ -609,6 +609,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_ullComCtrlVer(MAKEDLLVERULL(4, 0, 0, 0))
 	, m_iDfltImageListColorFlags(ILC_COLOR)
 	, m_app_state(APP_STATE_STARTING)
+	, geolocation()
 	, m_hSystemImageList()
 	, m_sizSmallSystemIcon(16, 16)
 	, m_hBigSystemImageList()
@@ -690,8 +691,6 @@ void CemuleApp::ResetStartupProfile()
 	m_ullStartupProfileBeginQpc = QueryPerformanceCounterValue();
 	m_strStartupProfilePath = thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + kStartupProfileTraceFileName;
 	(void)LongPathSeams::DeleteFile(m_strStartupProfilePath);
-	const CString strLegacyStartupProfilePath(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + kLegacyStartupProfileFileName);
-	(void)LongPathSeams::DeleteFile(strLegacyStartupProfilePath);
 #endif
 }
 
@@ -1120,6 +1119,12 @@ BOOL CemuleApp::InitInstance()
 #if EMULE_COMPILED_STARTUP_PROFILING
 	AppendStartupProfileLine(_T("Construct CScheduler"), GetStartupProfileElapsedUs(ullPhaseStart));
 
+	ullPhaseStart = GetStartupProfileTimestampUs();
+#endif
+	geolocation = new CGeoLocation();
+	geolocation->Load();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CGeoLocation"), GetStartupProfileElapsedUs(ullPhaseStart));
 	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	uploadBandwidthThrottler = new UploadBandwidthThrottler();

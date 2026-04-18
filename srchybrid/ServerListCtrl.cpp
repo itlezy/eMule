@@ -30,6 +30,7 @@
 #include "Log.h"
 #include "IPFilter.h"
 #include "MemDC.h"
+#include "GeoLocation.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -83,6 +84,7 @@ bool CServerListCtrl::Init()
 	InsertColumn(12, _T(""),	LVCFMT_LEFT,	50, -1, true);	//IDS_VERSION
 	InsertColumn(13, _T(""),	LVCFMT_RIGHT,	60);			//IDS_IDLOW
 	InsertColumn(14, _T(""),	LVCFMT_RIGHT,	50);			//IDS_OBFUSCATION
+	InsertColumn(15, _T(""),	LVCFMT_LEFT,	140);			//IDS_GEOLOCATION
 
 	SetAllIcons();
 	Localize();
@@ -185,6 +187,10 @@ CString CServerListCtrl::GetItemDisplayText(const CServer *server, int iSubItem)
 		break;
 	case 14: //obfuscation
 		sText = GetResString(server->SupportsObfuscationTCP() ? IDS_YES : IDS_NO);
+		break;
+	case 15: //geo location
+		if (theApp.geolocation != NULL)
+			sText = theApp.geolocation->GetDisplayText(server->GetIP());
 	}
 	return sText;
 }
@@ -236,10 +242,23 @@ void CServerListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 					const POINT point{rcItem.left, rcItem.top + iIconY};
 					m_pImageList->Draw(dc, iImage, point, ILD_NORMAL | INDEXTOOVERLAYMASK(uOverlayImage));
 					rcItem.left += 16 + sm_iLabelOffset - sm_iSubItemInset;
+					rcItem.left += sm_iSubItemInset;
+					dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+					break;
 				}
+			case 15: //geo location
+				if (theApp.geolocation != NULL) {
+					const POINT point{itemLeft + sm_iIconOffset, rcItem.top + iIconY};
+					if (theApp.geolocation->DrawFlag(dc, pServer->GetIP(), point))
+						rcItem.left = itemLeft + sm_iIconOffset + 18 + sm_iLabelOffset - sm_iSubItemInset;
+				}
+				rcItem.left += sm_iSubItemInset;
+				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
 			default: //any text column
 				rcItem.left += sm_iSubItemInset;
 				dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
+				break;
 			}
 		}
 		itemLeft += iColumnWidth;
@@ -250,11 +269,11 @@ void CServerListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 
 void CServerListCtrl::Localize()
 {
-	static const UINT uids[15] =
+	static const UINT uids[16] =
 	{
 		IDS_SL_SERVERNAME, IDS_IP, IDS_DESCRIPTION, IDS_PING, IDS_UUSERS
 		, IDS_MAXCLIENT, IDS_PW_FILES, IDS_PREFERENCE, IDS_UFAILED, IDS_STATICSERVER
-		, IDS_SOFTFILES, IDS_HARDFILES, IDS_VERSION, IDS_IDLOW, IDS_OBFUSCATION
+		, IDS_SOFTFILES, IDS_HARDFILES, IDS_VERSION, IDS_IDLOW, IDS_OBFUSCATION, IDS_GEOLOCATION
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -566,7 +585,7 @@ void CServerListCtrl::RefreshServer(const CServer *pServer)
 	if (pServer && !theApp.IsClosing()) {
 		int iItem = FindServer(pServer);
 		if (iItem >= 0) {
-			for (int i = 0; i <= 14; ++i) //column autosizing requires item text
+			for (int i = 0; i <= 15; ++i) //column autosizing requires item text
 				SetItemText(iItem, i, GetItemDisplayText(pServer, i));
 			Update(iItem);
 		}
@@ -678,6 +697,12 @@ int CALLBACK CServerListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		break;
 	case 14:
 		iResult = (int)(item1->SupportsObfuscationTCP()) - (int)(item2->SupportsObfuscationTCP());
+		break;
+	case 15:
+		if (theApp.geolocation != NULL)
+			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(item1->GetIP()), theApp.geolocation->GetDisplayText(item2->GetIP()));
+		else
+			iResult = 0;
 		break;
 	default:
 		iResult = 0;
