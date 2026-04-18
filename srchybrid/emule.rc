@@ -3234,6 +3234,7 @@ BEGIN
     IDS_GEOLOCATION_CHECK_DAYS "Auto-check interval"
     IDS_GEOLOCATION_CHECK_DAYS_SUFFIX "days (0 = manual only)"
     IDS_GEOLOCATION_DOWNLOAD_DB "Download geolocation DB now"
+    IDS_PERCENTAGE          "%"
     IDS_CL_TRANSFDOWN       "Transferred Down"
     IDS_CL_PENDING          "Pending"
     IDS_CL_LOW2LOW          "Low To Low IP"

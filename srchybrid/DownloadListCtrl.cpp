@@ -140,6 +140,9 @@ void CDownloadListCtrl::Init()
 	InsertColumn(12,	_T(""),	LVCFMT_LEFT,	100, -1, true);					//IDS_CAT
 	InsertColumn(13,	_T(""),	LVCFMT_LEFT,	120);							//IDS_ADDEDON
 	InsertColumn(14,	_T(""),	LVCFMT_LEFT,	140);							//IDS_GEOLOCATION
+	InsertColumn(15,	_T(""),	LVCFMT_RIGHT,	50);							//IDS_PERCENTAGE
+	InsertColumn(16,	_T(""),	LVCFMT_LEFT,	100);							//IDS_IP
+	InsertColumn(17,	_T(""),	LVCFMT_LEFT,	70);							//IDS_IDLOW
 
 	SetAllIcons();
 	Localize();
@@ -215,11 +218,12 @@ void CDownloadListCtrl::SetAllIcons()
 
 void CDownloadListCtrl::Localize()
 {
-	static const UINT uids[15] =
+	static const UINT uids[18] =
 	{
 		IDS_DL_FILENAME, IDS_DL_SIZE, IDS_DL_TRANSF, IDS_DL_TRANSFCOMPL, IDS_DL_SPEED
 		, IDS_DL_PROGRESS, IDS_DL_SOURCES, IDS_PRIORITY, IDS_STATUS, IDS_DL_REMAINS
 		, 0/*IDS_LASTSEENCOMPL*/, 0/*IDS_FD_LASTCHANGE*/, IDS_CAT, IDS_ADDEDON, IDS_GEOLOCATION
+		, IDS_PERCENTAGE, IDS_IP, IDS_IDLOW
 	};
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
@@ -553,6 +557,12 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 		if (theApp.geolocation != NULL)
 			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(pClient));
 		break;
+	case 16: // IP
+		sText = ipstr(GetClientGeoIP(pClient));
+		break;
+	case 17: // LowID
+		sText = GetResString(pClient->HasLowID() ? IDS_IDLOW : IDS_IDHIGH);
+		break;
 	//	break;
 	//case 9: //remaining time & size
 	//case 10: //last seen complete
@@ -673,6 +683,8 @@ void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UIN
 			}
 			dc.DrawText(sItem, &rcItem, MLC_DT_TEXT | uDrawTextAlignment);
 		}
+		break;
+	case 15: // percentage
 		break;
 	//case 9: // remaining time & size
 	//case 10: // last seen complete
@@ -1588,6 +1600,7 @@ void CDownloadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 		case 3: // Completed
 		case 4: // Download rate
 		case 5: // Progress
+		case 15: // Percentage
 		case 6: // Sources / Client Software
 			sortAscending = false;
 			break;
@@ -1770,6 +1783,8 @@ int CDownloadListCtrl::Compare(const CPartFile *file1, const CPartFile *file2, L
 		return sgn(file1->GetCrFileDate() - file2->GetCrFileDate());
 	case 14: // geo location
 		return 0;
+	case 15: // percentage
+		return sgn(file1->GetPercentCompleted() - file2->GetPercentCompleted());
 	}
 	return 0;
 }
@@ -1826,6 +1841,10 @@ int CDownloadListCtrl::Compare(const CUpDownClient *client1, const CUpDownClient
 		if (theApp.geolocation != NULL)
 			return CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(client1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(client2)));
 		return 0;
+	case 16: // IP
+		return CompareLocaleStringNoCase(ipstr(GetClientGeoIP(client1)), ipstr(GetClientGeoIP(client2)));
+	case 17: // LowID
+		return CompareUnsigned(client1->HasLowID(), client2->HasLowID());
 	}
 	return 0;
 }
@@ -2105,6 +2124,9 @@ CString CDownloadListCtrl::GetFileItemDisplayText(const CPartFile *lpPartFile, i
 			sText = lpPartFile->GetCrCFileDate().Format(thePrefs.GetDateTimeFormat4Lists());
 		else
 			sText += _T('?');
+		break;
+	case 15: // percentage
+		sText.Format(_T("%.1f%%"), lpPartFile->GetPercentCompleted());
 	}
 	return sText;
 }
