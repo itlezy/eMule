@@ -22,6 +22,7 @@
 #include "IPFilterDlg.h"
 #include "IPFilter.h"
 #include "OtherFunctions.h"
+#include "PathHelpers.h"
 #include "Preferences.h"
 #include "MenuCmds.h"
 #include "ZipFile.h"
@@ -322,10 +323,7 @@ void CIPFilterDlg::OnSelectAllIPFilter()
 void CIPFilterDlg::OnBnClickedAppend()
 {
 	// Save/Restore the current directory
-	TCHAR szCurDir[MAX_PATH];
-	DWORD dwCurDirLen = ::GetCurrentDirectory(_countof(szCurDir), szCurDir);
-	if (dwCurDirLen == 0 || dwCurDirLen >= _countof(szCurDir))
-		szCurDir[0] = _T('\0');
+	const CString strCurDir = PathHelpers::GetCurrentDirectoryPath();
 
 	CString strFilePath;  // Do NOT localize that string
 	if (DialogBrowseFile(strFilePath, _T("All IP Filter Files (*ipfilter.dat;*ip.prefix;*.p2b;*.p2p;*.p2p.txt;*.zip;*.gz;*.rar)|*ipfilter.dat;*ip.prefix;*.p2b;*.p2p;*.p2p.txt;*.zip;*.gz;*.rar|eMule IP Filter Files (*ipfilter.dat;*ip.prefix)|*ipfilter.dat;*ip.prefix|Peer Guardian Files (*.p2b;*.p2p;*.p2p.txt)|*.p2b;*.p2p;*.p2p.txt|Text Files (*.txt)|*.txt|ZIP Files (*.zip;*.gz)|*.zip;*.gz|RAR Files (*.rar)|*.rar|All Files (*.*)|*.*||"))) {
@@ -430,8 +428,8 @@ void CIPFilterDlg::OnBnClickedAppend()
 			VERIFY(LongPathSeams::DeleteFileIfExists(strTempUnzipFilePath));
 	}
 
-	if (szCurDir[0] != _T('\0'))
-		VERIFY(SetCurrentDirectory(szCurDir));
+	if (!strCurDir.IsEmpty())
+		VERIFY(PathHelpers::SetCurrentDirectoryPath(strCurDir));
 }
 
 void CIPFilterDlg::OnLvnDeleteItemIPFilter(LPNMHDR pNMHDR, LRESULT *pResult)

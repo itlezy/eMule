@@ -119,6 +119,16 @@ inline CString GetCurrentDirectoryPath()
 }
 
 /**
+ * @brief Restores the process current directory through the long-path-aware namespace when needed.
+ */
+inline bool SetCurrentDirectoryPath(const CString &rstrPath)
+{
+	if (rstrPath.IsEmpty())
+		return false;
+	return ::SetCurrentDirectory(LongPathSeams::PreparePathForLongPath(NormalizePathSeparators(rstrPath)).c_str()) != FALSE;
+}
+
+/**
  * @brief Queries a shell folder path into a dynamically sized buffer instead of a fixed `MAX_PATH` array.
  */
 template <typename GetShellFolderPathFn>

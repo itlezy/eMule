@@ -507,10 +507,7 @@ CString CStatisticsTree::GetHTMLForExport(HTREEITEM theItem, int theItemLevel, b
 void CStatisticsTree::ExportHTML()
 {
 	// Save/Restore the current directory
-	TCHAR szCurDir[MAX_PATH];
-	DWORD dwCurDirLen = ::GetCurrentDirectory(_countof(szCurDir), szCurDir);
-	if (dwCurDirLen == 0 || dwCurDirLen >= _countof(szCurDir))
-		*szCurDir = _T('\0');
+	const CString strCurDir = PathHelpers::GetCurrentDirectoryPath();
 
 	CString strSavePath(_T("eMule Statistics.html"));
 	if (DialogBrowseFile(strSavePath, _T("HTML Files (*.html)|*.html|All Files (*.*)|*.*||"), strSavePath, OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT | OFN_EXPLORER, false, GetSafeHwnd(), NULL, _T("html"))) {
@@ -562,8 +559,8 @@ void CStatisticsTree::ExportHTML()
 		CFileException ex;
 		if (!LongPathSeams::OpenFile(htmlFile, strSavePath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite, &ex)) {
 			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), (LPCTSTR)strSavePath, (LPCTSTR)CExceptionStrDash(ex));
-			if (*szCurDir)
-				VERIFY(SetCurrentDirectory(szCurDir));
+			if (!strCurDir.IsEmpty())
+				VERIFY(PathHelpers::SetCurrentDirectoryPath(strCurDir));
 			return;
 		}
 
@@ -586,8 +583,8 @@ void CStatisticsTree::ExportHTML()
 			(void)LongPathSeams::CopyFile(strSrc + s_apcFileNames[i], strDst + s_apcFileNames[i], FALSE);
 	}
 
-	if (*szCurDir)
-		VERIFY(SetCurrentDirectory(szCurDir));
+	if (!strCurDir.IsEmpty())
+		VERIFY(PathHelpers::SetCurrentDirectoryPath(strCurDir));
 }
 
 // Expand all the tree sections.  Recursive.
