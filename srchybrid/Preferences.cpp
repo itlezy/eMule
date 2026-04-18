@@ -2316,18 +2316,13 @@ void CPreferences::LoadPreferences()
 	m_bForceSpeedsToKB = ini.GetBool(_T("ForceSpeedsToKB"), false);
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);
 
-	// Get file buffer size (with backward compatibility)
-	m_uFileBufferSize = ini.GetInt(_T("FileBufferSizePref"), 0); // old setting
-	if (m_uFileBufferSize == 0)
-		m_uFileBufferSize = 64u * 1024u * 1024u;
-	else
-		m_uFileBufferSize = ((m_uFileBufferSize * 15000 + 512) / 1024) * 1024;
+	// Get file buffer size.
+	m_uFileBufferSize = 64u * 1024u * 1024u;
 	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
 	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
 
-	// Get queue size (with backward compatibility)
-	m_iQueueSize = (INT_PTR)ini.GetInt(_T("QueueSizePref"), 100) * 100; // old setting
-	m_iQueueSize = ini.GetInt(_T("QueueSize"), (int)m_iQueueSize);
+	// Get queue size.
+	m_iQueueSize = ini.GetInt(_T("QueueSize"), 10000);
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving
 	versioncheckdays = ini.GetInt(_T("Check4NewVersionDelay"), 5);

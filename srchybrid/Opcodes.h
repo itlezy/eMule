@@ -257,9 +257,6 @@
 #define OP_PREVIEWANSWER		0x91	// <HASH 16><frames 1>{frames * <len 4><frame len>}
 #define OP_MULTIPACKET			0x92	// *DEPRECATED*
 #define OP_MULTIPACKETANSWER	0x93	// *DEPRECATED*
-#define	OP_PEERCACHE_QUERY		0x94	// *DEFUNCT*
-#define	OP_PEERCACHE_ANSWER		0x95	// *DEFUNCT*
-#define	OP_PEERCACHE_ACK		0x96	// *DEFUNCT*
 #define	OP_PUBLICIP_REQ			0x97
 #define	OP_PUBLICIP_ANSWER		0x98
 #define OP_CALLBACK				0x99	// <HASH 16><HASH 16><uint 16>
@@ -549,22 +546,6 @@
 #define ET_FEATURES				0x27
 #define ET_MOD_VERSION			CT_MOD_VERSION
 
-
-#define	PCPCK_VERSION			0x01
-
-// Defunct. PeerCache packet sub objcodes
-#define	PCOP_NONE				0x00
-#define	PCOP_REQ				0x01
-#define PCOP_RES				0x02
-#define	PCOP_ACK				0x03
-
-// Defunct. PeerCache tags (NOTE: those tags are using the new eD2K tags (short tags))
-#define	PCTAG_CACHEIP			0x01
-#define	PCTAG_CACHEPORT			0x02
-#define	PCTAG_PUBLICIP			0x03
-#define	PCTAG_PUBLICPORT		0x04
-#define	PCTAG_PUSHID			0x05
-#define	PCTAG_FILEID			0x06
 
 // KADEMLIA (opcodes) (udp)
 #define KADEMLIA_BOOTSTRAP_REQ_DEPRECATED		0x00	// <PEER (sender) [25]>

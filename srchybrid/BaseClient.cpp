@@ -259,7 +259,6 @@ void CUpDownClient::Init()
 	m_fPreviewAnsPending = 0;
 	m_fIsSpammer = 0;
 	m_fMessageFiltered = 0;
-	m_fPeerCache = 0;
 	m_fQueueRankPending = 0;
 	m_fUnaskQueueRankRecv = 0;
 	m_fFailedFileIdReqs = 0;
@@ -347,7 +346,6 @@ void CUpDownClient::ClearHelloProperties()
 	m_nClientVersion = 0;
 	m_fSharedDirectories = 0;
 	m_bMultiPacket = 0;
-	m_fPeerCache = 0;
 	m_byKadVersion = 0;
 	m_fSupportsLargeFiles = 0;
 	m_fExtMultiPacket = 0;
@@ -491,7 +489,6 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 			//  4 Source Exchange - deprecated and ignored
 			//  4 Ext. Requests
 			//  4 Comments
-			//	1 PeerChache supported
 			//	1 No 'View Shared Files' supported
 			//	1 MultiPacket - deprecated with FileIdentifiers/MultipacketExt2
 			//  1 Preview
@@ -503,15 +500,14 @@ bool CUpDownClient::ProcessHelloTypePacket(CSafeMemFile &data)
 				m_bySupportSecIdent = (uint8)((temptag.GetInt() >> 16) & 0x0f);
 				m_byExtendedRequestsVer = (uint8)((temptag.GetInt() >> 8) & 0x0f);
 				m_byAcceptCommentVer = (uint8)((temptag.GetInt() >> 4) & 0x0f);
-				m_fPeerCache = (temptag.GetInt() >> 3) & 0x01;
 				m_fNoViewSharedFiles = (temptag.GetInt() >> 2) & 0x01;
 				m_bMultiPacket = (temptag.GetInt() >> 1) & 0x01;
 				m_fSupportsPreview = (temptag.GetInt() >> 0) & 0x01;
 				dwEmuleTags |= 2;
 				if (bDbgInfo) {
-					m_strHelloInfo.AppendFormat(_T("\n  PeerCache=%u  UDPVer=%u  DataComp=%u  SecIdent=%u")
+					m_strHelloInfo.AppendFormat(_T("\n  UDPVer=%u  DataComp=%u  SecIdent=%u")
 						_T("  ExtReq=%u  Commnt=%u  Preview=%u  NoViewFiles=%u  Unicode=%u")
-						, m_fPeerCache, m_byUDPVer, m_byDataCompVer, m_bySupportSecIdent
+						, m_byUDPVer, m_byDataCompVer, m_bySupportSecIdent
 						, m_byExtendedRequestsVer, m_byAcceptCommentVer, m_fSupportsPreview, m_fNoViewSharedFiles, m_bUnicodeSupport);
 				}
 			} else if (bDbgInfo)
@@ -986,7 +982,6 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 	const UINT uNoViewSharedFiles = static_cast<int>(thePrefs.CanSeeShares() == vsfaNobody); // for backward compatibility this has to be a 'negative' flag
 	const UINT uMultiPacket = 1;
 	const UINT uSupportPreview = static_cast<int>(thePrefs.CanSeeShares() != vsfaNobody); // set 'Preview supported' only if 'View Shared Files' allowed
-	const UINT uPeerCache = 0;
 	const UINT uUnicodeSupport = 1;
 	const UINT nAICHVer = 1;
 	CTag tagMisOptions1(CT_EMULE_MISCOPTIONS1,
@@ -998,7 +993,6 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 				(uDeprecatedSourceExchange1Ver << 12) |
 				(uExtendedRequestsVer <<  8) |
 				(uAcceptCommentVer	  <<  4) |
-				(uPeerCache			  <<  3) |
 				(uNoViewSharedFiles	  <<  2) |
 				(uMultiPacket		  <<  1) |
 				(uSupportPreview	  <<  0)
@@ -1514,10 +1508,6 @@ void CUpDownClient::ConnectionEstablished()
 	m_eConnectingState = CCS_NONE;
 	theApp.clientlist->RemoveConnectingClient(this);
 
-/*	// check if we should use this client to retrieve our public IP
-	if (theApp.GetPublicIP() == 0 && theApp.IsConnected() && m_fPeerCache)
-		SendPublicIPRequest();
-*/
 	switch (GetKadState()) {
 	case KS_CONNECTING_FWCHECK:
 		SetKadState(KS_CONNECTED_FWCHECK);

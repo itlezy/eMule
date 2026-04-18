@@ -1284,11 +1284,6 @@ void CClientReqSocket::ProcessExtPacket(const BYTE *packet, uint32 size, UINT op
 
 		client->ProcessPreviewAnswer(packet, size);
 		return;
-	case OP_PEERCACHE_QUERY:
-	case OP_PEERCACHE_ANSWER:
-	case OP_PEERCACHE_ACK:
-		theStats.AddDownDataOverheadFileRequest(uRawSize);
-		return;
 	case OP_PUBLICIP_ANSWER:
 		if (thePrefs.GetDebugClientTCPLevel() > 0)
 			DebugRecv("OP_PublicIPAns", client);

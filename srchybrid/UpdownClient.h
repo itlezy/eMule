@@ -135,7 +135,6 @@ public:
 	bool			ExtProtocolAvailable() const					{ return m_bEmuleProtocol; }
 	bool			SupportMultiPacket() const						{ return m_bMultiPacket; }
 	bool			SupportExtMultiPacket() const					{ return m_fExtMultiPacket; }
-	bool			SupportPeerCache() const						{ return m_fPeerCache; } //false
 	bool			SupportsLargeFiles() const						{ return m_fSupportsLargeFiles; }
 	bool			SupportsFileIdentifiers() const					{ return m_fSupportsFileIdent; }
 	bool			IsEmuleClient() const							{ return m_byEmuleVersion != 0; }
@@ -653,7 +652,6 @@ protected:
 		 m_fPreviewAnsPending : 1,
 		 m_fIsSpammer		  : 1,
 		 m_fMessageFiltered   : 1,
-		 m_fPeerCache		  : 1,
 		 m_fQueueRankPending  : 1,
 		 m_fUnaskQueueRankRecv: 2,
 		 m_fFailedFileIdReqs  : 4, // nr. of failed file-id related requests per connection
