@@ -3215,7 +3215,7 @@ int statUTC(HANDLE hFile, struct _stat64 &ft)
 		ft.st_atime = FileTimeToUnixTime(fi.ftLastAccessTime);
 		ft.st_ctime = FileTimeToUnixTime(fi.ftCreationTime);
 		ft.st_mtime = FileTimeToUnixTime(fi.ftLastWriteTime);
-		ft.st_size = ((__int64)fi.nFileSizeHigh << 32) | fi.nFileIndexLow;
+		ft.st_size = ((__int64)fi.nFileSizeHigh << 32) | fi.nFileSizeLow;
 		return 0;
 	}
 	return -1;
