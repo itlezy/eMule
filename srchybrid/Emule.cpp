@@ -820,6 +820,9 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 	}
 
 	if (!m_bParityHarnessLinkWritten && sharedFile != NULL && !m_strParityHarnessExportLinkFile.IsEmpty()) {
+		if (!sharedFile->GetFileIdentifierC().HasAICHHash())
+			return false;
+
 		uint32 sourceIpValue = 0;
 		if (!m_strParityHarnessExportSourceIp.IsEmpty())
 			sourceIpValue = inet_addr(CT2A(m_strParityHarnessExportSourceIp));
