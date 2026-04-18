@@ -1868,6 +1868,8 @@ bool CemuleApp::LoadSkinColor(LPCTSTR pszKey, COLORREF &crColor) const
 {
 	const CString &sSkinProfile(thePrefs.GetSkinProfile());
 	if (!sSkinProfile.IsEmpty()) {
+		// Intentional shell-facing limitation: legacy skin color profiles stay on shell-safe paths;
+		// exact-name or namespace-only skin profile paths are not a supported long-path target.
 		TCHAR szColor[MAX_PATH];
 		::GetPrivateProfileString(_T("Colors"), pszKey, NULL, szColor, _countof(szColor), sSkinProfile);
 		if (szColor[0] != _T('\0')) {

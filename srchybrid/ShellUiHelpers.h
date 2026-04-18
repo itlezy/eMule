@@ -46,6 +46,9 @@ inline CString GetProfileString(const CString &rstrSection, const CString &rstrK
 
 /**
  * @brief Loads an INI/profile string through the real `GetPrivateProfileString` API.
+ *
+ * This helper intentionally stays shell-profile-oriented for legacy skin assets and is not
+ * meant to generalize exact-name or namespace-only profile paths.
  */
 inline CString GetProfileString(const CString &rstrSection, const CString &rstrKey, LPCTSTR pszDefaultValue, const CString &rstrProfilePath)
 {
