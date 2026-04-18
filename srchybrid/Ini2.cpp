@@ -99,53 +99,47 @@ CString CIni::GetStringUTF8(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpsz
 
 double CIni::GetDouble(LPCTSTR lpszEntry, double fDefault, LPCTSTR lpszSection)
 {
-	TCHAR szDefault[MAX_PATH];
-	_sntprintf(szDefault, _countof(szDefault), _T("%g"), fDefault);
-	szDefault[_countof(szDefault) - 1] = _T('\0');
-	return _tstof(GetString(lpszEntry, szDefault, lpszSection));
+	CString strDefault;
+	strDefault.Format(_T("%g"), fDefault);
+	return _tstof(GetString(lpszEntry, strDefault, lpszSection));
 }
 
 float CIni::GetFloat(LPCTSTR lpszEntry, float fDefault, LPCTSTR lpszSection)
 {
-	TCHAR szDefault[MAX_PATH];
-	_sntprintf(szDefault, _countof(szDefault), _T("%g"), fDefault);
-	szDefault[_countof(szDefault) - 1] = _T('\0');
-	return (float)_tstof(GetString(lpszEntry, szDefault, lpszSection));
+	CString strDefault;
+	strDefault.Format(_T("%g"), fDefault);
+	return (float)_tstof(GetString(lpszEntry, strDefault, lpszSection));
 }
 
 int CIni::GetInt(LPCTSTR lpszEntry, int nDefault, LPCTSTR lpszSection)
 {
-	TCHAR szDefault[MAX_PATH];
-	_sntprintf(szDefault, _countof(szDefault), _T("%d"), nDefault);
-	szDefault[_countof(szDefault) - 1] = _T('\0');
-	return _tstoi(GetString(lpszEntry, szDefault, lpszSection));
+	CString strDefault;
+	strDefault.Format(_T("%d"), nDefault);
+	return _tstoi(GetString(lpszEntry, strDefault, lpszSection));
 }
 
 ULONGLONG CIni::GetUInt64(LPCTSTR lpszEntry, ULONGLONG nDefault, LPCTSTR lpszSection)
 {
-	TCHAR szDefault[MAX_PATH];
-	_sntprintf(szDefault, _countof(szDefault), _T("%I64u"), nDefault);
-	szDefault[_countof(szDefault) - 1] = _T('\0');
+	CString strDefault;
+	strDefault.Format(_T("%I64u"), nDefault);
 	ULONGLONG nResult;
-	if (_stscanf(GetString(lpszEntry, szDefault, lpszSection), _T("%I64u"), &nResult) != 1)
+	if (_stscanf(GetString(lpszEntry, strDefault, lpszSection), _T("%I64u"), &nResult) != 1)
 		return nDefault;
 	return nResult;
 }
 
 WORD CIni::GetWORD(LPCTSTR lpszEntry, WORD nDefault, LPCTSTR lpszSection)
 {
-	TCHAR szDefault[MAX_PATH];
-	_sntprintf(szDefault, _countof(szDefault), _T("%u"), nDefault);
-	szDefault[_countof(szDefault) - 1] = _T('\0');
-	return (WORD)_tstoi(GetString(lpszEntry, szDefault, lpszSection));
+	CString strDefault;
+	strDefault.Format(_T("%u"), nDefault);
+	return (WORD)_tstoi(GetString(lpszEntry, strDefault, lpszSection));
 }
 
 bool CIni::GetBool(LPCTSTR lpszEntry, bool bDefault, LPCTSTR lpszSection)
 {
-	TCHAR szDefault[MAX_PATH];
-	_sntprintf(szDefault, _countof(szDefault), _T("%d"), bDefault);
-	szDefault[_countof(szDefault) - 1] = _T('\0');
-	return _tstoi(GetString(lpszEntry, szDefault, lpszSection)) != 0;
+	CString strDefault;
+	strDefault.Format(_T("%d"), static_cast<int>(bDefault));
+	return _tstoi(GetString(lpszEntry, strDefault, lpszSection)) != 0;
 }
 
 #pragma warning(push)
@@ -215,57 +209,54 @@ void CIni::WriteDouble(LPCTSTR lpszEntry, double f, LPCTSTR lpszSection)
 {
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-	TCHAR szBuffer[MAX_PATH];
-	_sntprintf(szBuffer, _countof(szBuffer), _T("%g"), f);
-	szBuffer[_countof(szBuffer) - 1] = _T('\0');
-	Write(m_strFileName, m_strSection, lpszEntry, szBuffer);
+	CString strBuffer;
+	strBuffer.Format(_T("%g"), f);
+	Write(m_strFileName, m_strSection, lpszEntry, strBuffer);
 }
 
 void CIni::WriteFloat(LPCTSTR lpszEntry, float f, LPCTSTR lpszSection)
 {
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-	TCHAR szBuffer[MAX_PATH];
-	_sntprintf(szBuffer, _countof(szBuffer), _T("%g"), f);
-	szBuffer[_countof(szBuffer) - 1] = _T('\0');
-	Write(m_strFileName, m_strSection, lpszEntry, szBuffer);
+	CString strBuffer;
+	strBuffer.Format(_T("%g"), f);
+	Write(m_strFileName, m_strSection, lpszEntry, strBuffer);
 }
 
 void CIni::WriteInt(LPCTSTR lpszEntry, int n, LPCTSTR lpszSection)
 {
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-	TCHAR szBuffer[MAX_PATH];
-	_itot(n, szBuffer, 10);
-	Write(m_strFileName, m_strSection, lpszEntry, szBuffer);
+	CString strBuffer;
+	strBuffer.Format(_T("%d"), n);
+	Write(m_strFileName, m_strSection, lpszEntry, strBuffer);
 }
 
 void CIni::WriteUInt64(LPCTSTR lpszEntry, ULONGLONG n, LPCTSTR lpszSection)
 {
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-	TCHAR szBuffer[MAX_PATH];
-	_ui64tot(n, szBuffer, 10);
-	Write(m_strFileName, m_strSection, lpszEntry, szBuffer);
+	CString strBuffer;
+	strBuffer.Format(_T("%I64u"), n);
+	Write(m_strFileName, m_strSection, lpszEntry, strBuffer);
 }
 
 void CIni::WriteWORD(LPCTSTR lpszEntry, WORD n, LPCTSTR lpszSection)
 {
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-	TCHAR szBuffer[MAX_PATH];
-	_ultot(n, szBuffer, 10);
-	Write(m_strFileName, m_strSection, lpszEntry, szBuffer);
+	CString strBuffer;
+	strBuffer.Format(_T("%u"), n);
+	Write(m_strFileName, m_strSection, lpszEntry, strBuffer);
 }
 
 void CIni::WriteBool(LPCTSTR lpszEntry, bool b, LPCTSTR lpszSection)
 {
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
-	TCHAR szBuffer[MAX_PATH];
-	_sntprintf(szBuffer, _countof(szBuffer), _T("%d"), (int)b);
-	szBuffer[_countof(szBuffer) - 1] = _T('\0');
-	Write(m_strFileName, m_strSection, lpszEntry, szBuffer);
+	CString strBuffer;
+	strBuffer.Format(_T("%d"), static_cast<int>(b));
+	Write(m_strFileName, m_strSection, lpszEntry, strBuffer);
 }
 
 void CIni::WritePoint(LPCTSTR lpszEntry, const CPoint &pt, LPCTSTR lpszSection)
