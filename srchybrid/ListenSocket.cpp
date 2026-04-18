@@ -128,6 +128,16 @@ void OracleEd2kDumpInboundAccept(LPCTSTR pszPhase, const SOCKADDR_IN &sockAddr, 
 		pszNote);
 }
 
+void OracleEd2kDumpSocketMeta(CClientReqSocket *pSocket, const CUpDownClient *pClient, LPCTSTR pszPhase, LPCTSTR pszNote = NULL)
+{
+	OracleEd2kTcpDumpMeta(
+		GetOracleEd2kTcpFlow(pClient),
+		pszPhase,
+		GetOracleEd2kPeerLabel(pSocket, pClient),
+		GetOracleEd2kTransportMode(pSocket, pClient),
+		pszNote);
+}
+
 LPCTSTR GetOracleEd2kRecvPhase(const CUpDownClient *pClient, uint8 byProtocol, uint8 byOpcode)
 {
 	// Preserve the dedicated firewall-helper labels; everything else falls back to the
@@ -261,6 +271,7 @@ void CClientReqSocket::SetConState(SocketState val)
 void CClientReqSocket::WaitForOnConnect()
 {
 	SetConState(SS_Half);
+	OracleEd2kDumpSocketMeta(this, client, _T("socket_wait_for_connect"), NULL);
 }
 
 CClientReqSocket::~CClientReqSocket()
@@ -300,6 +311,7 @@ bool CClientReqSocket::CheckTimeOut()
 		timeout_timer = curTick;
 		CString str;
 		str.Format(_T("Timeout: State:%u = SS_Half"), m_nOnConnect);
+		OracleEd2kDumpSocketMeta(this, client, _T("socket_timeout"), str);
 		Disconnect(str);
 		return true;
 	}
@@ -319,6 +331,7 @@ bool CClientReqSocket::CheckTimeOut()
 	timeout_timer = curTick;
 	CString str;
 	str.Format(_T("Timeout: State:%u (0 = SS_Other, 1 = SS_Half, 2 = SS_Complete)"), m_nOnConnect);
+	OracleEd2kDumpSocketMeta(this, client, _T("socket_timeout"), str);
 	Disconnect(str);
 	return true;
 }
@@ -327,6 +340,9 @@ void CClientReqSocket::OnClose(int nErrorCode)
 {
 	ASSERT(theApp.listensocket->IsValidSocket(this));
 	CEMSocket::OnClose(nErrorCode);
+	CString strNote;
+	strNote.Format(_T("error=%d state=%u"), nErrorCode, m_nOnConnect);
+	OracleEd2kDumpSocketMeta(this, client, _T("socket_close"), strNote);
 
 	if (nErrorCode)
 		Disconnect(thePrefs.GetVerbose() ? GetErrorMessage(nErrorCode, 1) : NULL);
@@ -1866,6 +1882,9 @@ void CClientReqSocket::OnConnect(int nErrorCode)
 {
 	SetConState(SS_Complete);
 	CEMSocket::OnConnect(nErrorCode);
+	CString strNote;
+	strNote.Format(_T("error=%d state=%u obfuscating=%u"), nErrorCode, m_nOnConnect, IsObfusicating() ? 1 : 0);
+	OracleEd2kDumpSocketMeta(this, client, nErrorCode ? _T("socket_connect_error") : _T("socket_connect_ok"), strNote);
 	if (nErrorCode) {
 		if (thePrefs.GetVerbose()) {
 			const CString &strTCPError(GetFullErrorMessage(nErrorCode));
@@ -1901,6 +1920,7 @@ void CClientReqSocket::OnError(int nErrorCode)
 			strTCPError = GetErrorMessage(nErrorCode);
 		DebugLogWarning(_T("Client TCP socket: %s; %s"), (LPCTSTR)strTCPError, (LPCTSTR)DbgGetClientInfo());
 	}
+	OracleEd2kDumpSocketMeta(this, client, _T("socket_error"), strTCPError);
 	Disconnect(strTCPError);
 }
 
