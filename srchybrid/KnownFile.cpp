@@ -70,6 +70,16 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+/**
+ * @brief Logs a hashing open failure using the real Win32 reason from the long-path open helper.
+ */
+void LogKnownFileOpenFailure(LPCTSTR pszFilePath, DWORD dwError)
+{
+	if (dwError == ERROR_SUCCESS)
+		dwError = ERROR_OPEN_FAILED;
+	LogError(GetResString(IDS_ERR_FILEOPEN), pszFilePath, (LPCTSTR)GetErrorMessage(dwError));
+}
+
 bool QueuePartFileProgressUpdate(const CKnownFileProgressTargetSnapshot *pProgressTarget, uint32 uProgress)
 {
 	if (pProgressTarget == NULL || !pProgressTarget->isPartFile || theApp.emuledlg == NULL)
@@ -404,7 +414,8 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, const
 	SetFilePath(strFilePath);
 	FILE *file = OpenFileStreamSharedReadLongPath(strFilePath, false); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file) {
-		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)strFilePath, _T(""), _tcserror(errno));
+		const DWORD dwOpenError = ::GetLastError();
+		LogKnownFileOpenFailure(strFilePath, dwOpenError);
 		return false;
 	}
 
@@ -529,7 +540,8 @@ bool CKnownFile::CreateAICHHashSetOnly()
 
 	FILE *file = OpenFileStreamSharedReadLongPath(GetFilePath(), false); // can not use _SH_DENYWR because we may access a completing part file
 	if (!file) {
-		LogError(GetResString(IDS_ERR_FILEOPEN) + _T(" - %s"), (LPCTSTR)GetFilePath(), _T(""), _tcserror(errno));
+		const DWORD dwOpenError = ::GetLastError();
+		LogKnownFileOpenFailure(GetFilePath(), dwOpenError);
 		return false;
 	}
 	// we are reading the file data later in 8K blocks, adjust the internal file stream buffer accordingly
