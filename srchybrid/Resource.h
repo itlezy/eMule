@@ -2415,6 +2415,9 @@
 #define IDS_FILE_SIZE                   1696
 #define IDS_UPLOAD_PCT                  1697
 #define IDS_ETA                         1698
+#define IDS_COPY_HASH                   1699
+#define IDS_BAN                         1700
+#define IDS_BAN_ARBITRARY               1701
 #define IDD_SHUTDOWNPROGRESS            3054
 #define IDC_ENABLE_GEOLOCATION          3049
 #define IDC_GEOLOCATION_CHECKDAYS_LBL   3050
@@ -2432,6 +2435,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3057
-#define _APS_NEXT_SYMED_VALUE           1699
+#define _APS_NEXT_SYMED_VALUE           1702
 #endif
 #endif
