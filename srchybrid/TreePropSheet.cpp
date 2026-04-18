@@ -722,8 +722,6 @@ BOOL CTreePropSheet::OnInitDialog()
 // to the font which is used for the property pages.
 	m_pwndPageTree->SendMessage(WM_SETFONT, (WPARAM)AfxGetMainWnd()->GetFont()->m_hObject, TRUE);
 
-	m_pwndPageTree->SendMessage(CCM_SETUNICODEFORMAT, TRUE);
-
 	m_pwndPageTree->SetItemHeight(m_pwndPageTree->GetItemHeight() + 6);
 
 	if (m_bTreeImages) {

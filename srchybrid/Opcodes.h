@@ -103,7 +103,6 @@
 // MOD Note: end
 
 #define CONFIGFOLDER			_T("config\\")
-#define MAXCON5WIN9X			10
 #define	UPLOAD_CLIENT_MAXDATARATE	(8*1024*1024) // max. target upload speed per client
 #define	MIN_UP_CLIENTS_ALLOWED	2			// min. clients allowed to download regardless of any other factors. Don't set this too high
 #define	MAX_UP_CLIENTS_ALLOWED	100			// max. clients allowed regardless of any other factors; cannot be below MIN_UP_CLIENTS_ALLOWED+3

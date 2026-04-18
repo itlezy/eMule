@@ -340,8 +340,6 @@ void CSharedDirsTreeCtrl::Initialize(CSharedFilesCtrl *pSharedFilesCtrl)
 #endif
 	m_pSharedFilesCtrl = pSharedFilesCtrl;
 
-	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
-
 	m_bUseIcons = true;
 	SetAllIcons();
 #if EMULE_COMPILED_STARTUP_PROFILING

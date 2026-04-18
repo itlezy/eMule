@@ -113,7 +113,6 @@ void CMuleListCtrl::PreSubclassWindow()
 {
 	SetColors();
 	CListCtrl::PreSubclassWindow();
-	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
 	SetExtendedStyle(LVS_EX_HEADERDRAGDROP);
 
 	// Vista: Reduce flickering in header control

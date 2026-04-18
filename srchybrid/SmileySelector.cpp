@@ -125,8 +125,6 @@ BOOL CSmileySelector::CreateWnd(CWnd *pWndParent, LPCRECT pRect, CEdit *pwndEdit
 	{
 		return FALSE;
 	}
-	m_tb.SendMessage(CCM_SETUNICODEFORMAT, TRUE);
-
 	//////////////////////////////////////////////////////////////////////////
 	// Create toolbar image list with smileys
 	//

@@ -112,8 +112,6 @@ void CMuleToolbarCtrl::Init()
 {
 	m_astrToolbarPaths.RemoveAll();
 
-	SendMessage(CCM_SETUNICODEFORMAT, TRUE);
-
 	ModifyStyle(0, TBSTYLE_FLAT | TBSTYLE_ALTDRAG | CCS_ADJUSTABLE | TBSTYLE_TRANSPARENT | TBSTYLE_TOOLTIPS | CCS_NODIVIDER);
 	if (thePrefs.GetUseReBarToolbar()) {
 		ModifyStyle(0, CCS_NORESIZE);
