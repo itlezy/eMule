@@ -101,6 +101,9 @@ protected:
 	HTREEITEM m_htiKeepUnavailableFixedSharedDirs;
 	HTREEITEM m_htiPartiallyPurgeOldKnownFiles;
 	HTREEITEM m_htiAdjustNTFSDaylightFileTime;
+	HTREEITEM m_htiDetectTCPErrorFlooder;
+	HTREEITEM m_htiTCPErrorFlooderIntervalMinutes;
+	HTREEITEM m_htiTCPErrorFlooderThreshold;
 	HTREEITEM m_htiRearrangeKadSearchKeywords;
 	HTREEITEM m_htiMessageFromValidSourcesOnly;
 	HTREEITEM m_htiFileBufferTimeLimit;
@@ -133,6 +136,8 @@ protected:
 	UINT m_uKadKeywordSearchTotal;
 	UINT m_uKadFileSearchLifetimeSeconds;
 	UINT m_uKadKeywordSearchLifetimeSeconds;
+	int m_iTCPErrorFlooderIntervalMinutes;
+	int m_iTCPErrorFlooderThreshold;
 	UINT m_uServerKeepAliveTimeout;
 	int m_iCommitFiles;
 	int m_iExtractMetaData;
@@ -177,6 +182,7 @@ protected:
 	bool m_bPartiallyPurgeOldKnownFiles;
 	bool m_bPreviewCopiedArchives;
 	bool m_bPreviewOnIconDblClk;
+	bool m_bDetectTCPErrorFlooder;
 	bool m_bRearrangeKadSearchKeywords;
 	bool m_bReBarToolbar;
 	bool m_bRestoreLastLogPane;

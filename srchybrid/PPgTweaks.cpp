@@ -160,6 +160,9 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiKeepUnavailableFixedSharedDirs()
 	, m_htiPartiallyPurgeOldKnownFiles()
 	, m_htiAdjustNTFSDaylightFileTime()
+	, m_htiDetectTCPErrorFlooder()
+	, m_htiTCPErrorFlooderIntervalMinutes()
+	, m_htiTCPErrorFlooderThreshold()
 	, m_htiRearrangeKadSearchKeywords()
 	, m_htiMessageFromValidSourcesOnly()
 	, m_htiFileBufferTimeLimit()
@@ -191,6 +194,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_uKadKeywordSearchTotal()
 	, m_uKadFileSearchLifetimeSeconds()
 	, m_uKadKeywordSearchLifetimeSeconds()
+	, m_iTCPErrorFlooderIntervalMinutes()
+	, m_iTCPErrorFlooderThreshold()
 	, m_uServerKeepAliveTimeout()
 	, m_iCommitFiles()
 	, m_iExtractMetaData()
@@ -233,6 +238,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bPartiallyPurgeOldKnownFiles()
 	, m_bPreviewCopiedArchives()
 	, m_bPreviewOnIconDblClk()
+	, m_bDetectTCPErrorFlooder()
 	, m_bRearrangeKadSearchKeywords()
 	, m_bReBarToolbar()
 	, m_bRestoreLastLogPane()
@@ -415,6 +421,11 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiForceSpeedsToKB = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FORCESPEEDSTOKB), m_htiHiddenDisplay, m_bForceSpeedsToKB);
 
 		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_SECURITY), iImgConnection, TVI_ROOT);
+		m_htiDetectTCPErrorFlooder = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DETECT_TCP_ERROR_FLOODER), m_htiHiddenSecurity, m_bDetectTCPErrorFlooder);
+		m_htiTCPErrorFlooderIntervalMinutes = m_ctrlTreeOptions.InsertItem(GetResString(IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDetectTCPErrorFlooder);
+		m_ctrlTreeOptions.AddEditBox(m_htiTCPErrorFlooderIntervalMinutes, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiTCPErrorFlooderThreshold = m_ctrlTreeOptions.InsertItem(GetResString(IDS_TCP_ERROR_FLOODER_THRESHOLD), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDetectTCPErrorFlooder);
+		m_ctrlTreeOptions.AddEditBox(m_htiTCPErrorFlooderThreshold, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiRearrangeKadSearchKeywords = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REARRANGEKADSEARCHKEYWORDS), m_htiHiddenSecurity, m_bRearrangeKadSearchKeywords);
 		m_htiMessageFromValidSourcesOnly = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_MESSAGEFROMVALIDSOURCESONLY), m_htiHiddenSecurity, m_bMessageFromValidSourcesOnly);
 
@@ -596,6 +607,15 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowUpDownIconInTaskbar, m_bShowUpDownIconInTaskbar);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDetectTCPErrorFlooder, m_bDetectTCPErrorFlooder);
+	if (m_htiTCPErrorFlooderIntervalMinutes) {
+		DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiTCPErrorFlooderIntervalMinutes, m_iTCPErrorFlooderIntervalMinutes);
+		DDV_MinMaxInt(pDX, m_iTCPErrorFlooderIntervalMinutes, static_cast<int>(thePrefs.GetMinTCPErrorFlooderIntervalMinutes()), static_cast<int>(thePrefs.GetMaxTCPErrorFlooderIntervalMinutes()));
+	}
+	if (m_htiTCPErrorFlooderThreshold) {
+		DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiTCPErrorFlooderThreshold, m_iTCPErrorFlooderThreshold);
+		DDV_MinMaxInt(pDX, m_iTCPErrorFlooderThreshold, static_cast<int>(thePrefs.GetMinTCPErrorFlooderThreshold()), static_cast<int>(thePrefs.GetMaxTCPErrorFlooderThreshold()));
+	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
 
@@ -711,6 +731,9 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_uKadKeywordSearchTotal = thePrefs.GetKadKeywordSearchTotal();
 	m_uKadFileSearchLifetimeSeconds = thePrefs.GetKadFileSearchLifetimeSeconds();
 	m_uKadKeywordSearchLifetimeSeconds = thePrefs.GetKadKeywordSearchLifetimeSeconds();
+	m_bDetectTCPErrorFlooder = thePrefs.IsDetectTCPErrorFlooder();
+	m_iTCPErrorFlooderIntervalMinutes = static_cast<int>(thePrefs.GetTCPErrorFlooderIntervalMinutes());
+	m_iTCPErrorFlooderThreshold = static_cast<int>(thePrefs.GetTCPErrorFlooderThreshold());
 	m_iBBMaxUploadClients = static_cast<int>(thePrefs.GetBBMaxUploadClientsAllowed());
 	m_sBBSlowThresholdFactor.Format(_T("%.2f"), thePrefs.GetBBSlowUploadThresholdFactor());
 	m_iBBSlowGraceSeconds = static_cast<int>(thePrefs.GetBBSlowUploadGraceSeconds());
@@ -805,6 +828,9 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.SetKadKeywordSearchTotal(m_uKadKeywordSearchTotal);
 	thePrefs.SetKadFileSearchLifetimeSeconds(m_uKadFileSearchLifetimeSeconds);
 	thePrefs.SetKadKeywordSearchLifetimeSeconds(m_uKadKeywordSearchLifetimeSeconds);
+	thePrefs.m_bDetectTCPErrorFlooder = m_bDetectTCPErrorFlooder;
+	thePrefs.m_uTCPErrorFlooderIntervalMinutes = static_cast<UINT>(m_iTCPErrorFlooderIntervalMinutes);
+	thePrefs.m_uTCPErrorFlooderThreshold = static_cast<UINT>(m_iTCPErrorFlooderThreshold);
 	thePrefs.m_bConditionalTCPAccept = m_bConditionalTCPAccept;
 	thePrefs.SetBBMaxUploadClientsAllowed(static_cast<UINT>(max(1, m_iBBMaxUploadClients)));
 	thePrefs.SetBBSlowUploadThresholdFactor(static_cast<float>(_tstof(m_sBBSlowThresholdFactor)));
@@ -1020,6 +1046,9 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiHiddenDisplay, IDS_HIDDENRUNTIME_DISPLAY);
 		LocalizeItemText(m_htiHiddenFile, IDS_HIDDENRUNTIME_FILE);
 		LocalizeItemText(m_htiHiddenSecurity, IDS_HIDDENRUNTIME_SECURITY);
+		LocalizeItemText(m_htiDetectTCPErrorFlooder, IDS_DETECT_TCP_ERROR_FLOODER);
+		LocalizeEditLabel(m_htiTCPErrorFlooderIntervalMinutes, IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES);
+		LocalizeEditLabel(m_htiTCPErrorFlooderThreshold, IDS_TCP_ERROR_FLOODER_THRESHOLD);
 		LocalizeItemText(m_htiHiddenStartup, IDS_HIDDENRUNTIME_STARTUP);
 		LocalizeItemText(m_htiImportParts, IDS_ENABLEIMPORTPARTS);
 		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
@@ -1110,6 +1139,9 @@ void CPPgTweaks::OnDestroy()
 	m_htiHiddenDisplay = NULL;
 	m_htiHiddenFile = NULL;
 	m_htiHiddenSecurity = NULL;
+	m_htiDetectTCPErrorFlooder = NULL;
+	m_htiTCPErrorFlooderIntervalMinutes = NULL;
+	m_htiTCPErrorFlooderThreshold = NULL;
 	m_htiHiddenStartup = NULL;
 	m_htiLogBannedClients = NULL;
 	m_htiLogRatingDescReceived = NULL;
@@ -1199,6 +1231,8 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 				if (m_htiLogUlDlEvents)
 					m_ctrlTreeOptions.SetCheckBoxEnable(m_htiLogUlDlEvents, bCheck);
 			}
+		} else if (m_htiDetectTCPErrorFlooder && pton->hItem == m_htiDetectTCPErrorFlooder) {
+			SetModified();
 		} else if ((m_htiShareeMuleMultiUser  && pton->hItem == m_htiShareeMuleMultiUser)
 				|| (m_htiShareeMulePublicUser && pton->hItem == m_htiShareeMulePublicUser)
 				|| (m_htiShareeMuleOldStyle   && pton->hItem == m_htiShareeMuleOldStyle))

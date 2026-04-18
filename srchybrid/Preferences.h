@@ -514,6 +514,9 @@ public:
 	static UINT		m_uKadKeywordSearchTotal;
 	static UINT		m_uKadFileSearchLifetimeSeconds;
 	static UINT		m_uKadKeywordSearchLifetimeSeconds;
+	static bool		m_bDetectTCPErrorFlooder;
+	static UINT		m_uTCPErrorFlooderIntervalMinutes;
+	static UINT		m_uTCPErrorFlooderThreshold;
 	static int		m_iCommitFiles;
 	static DWORD	m_uFileBufferTimeLimit;
 
@@ -988,6 +991,9 @@ public:
 	static UINT		GetKadKeywordSearchTotal()		{ return m_uKadKeywordSearchTotal; }
 	static UINT		GetKadFileSearchLifetimeSeconds()	{ return m_uKadFileSearchLifetimeSeconds; }
 	static UINT		GetKadKeywordSearchLifetimeSeconds() { return m_uKadKeywordSearchLifetimeSeconds; }
+	static bool		IsDetectTCPErrorFlooder()			{ return m_bDetectTCPErrorFlooder; }
+	static UINT		GetTCPErrorFlooderIntervalMinutes() { return m_uTCPErrorFlooderIntervalMinutes; }
+	static UINT		GetTCPErrorFlooderThreshold()		{ return m_uTCPErrorFlooderThreshold; }
 	static bool		GetConditionalTCPAccept()			{ return m_bConditionalTCPAccept; }
 
 	static LANGID	GetLanguageID()						{ return m_wLanguageID; }
@@ -1164,10 +1170,17 @@ public:
 	static UINT		GetDefaultKadKeywordSearchTotal()	{ return 500; }
 	static UINT		GetDefaultKadFileSearchLifetimeSeconds() { return 60; }
 	static UINT		GetDefaultKadKeywordSearchLifetimeSeconds() { return 60; }
+	static bool		GetDefaultDetectTCPErrorFlooder()	{ return true; }
+	static UINT		GetDefaultTCPErrorFlooderIntervalMinutes() { return 60; }
+	static UINT		GetDefaultTCPErrorFlooderThreshold() { return 10; }
 	static UINT		GetMinKadSearchTotal()				{ return 100; }
 	static UINT		GetMaxKadSearchTotal()				{ return 5000; }
 	static UINT		GetMinKadSearchLifetimeSeconds()	{ return 30; }
 	static UINT		GetMaxKadSearchLifetimeSeconds()	{ return 180; }
+	static UINT		GetMinTCPErrorFlooderIntervalMinutes() { return 1; }
+	static UINT		GetMaxTCPErrorFlooderIntervalMinutes() { return 1440; }
+	static UINT		GetMinTCPErrorFlooderThreshold()	{ return 3; }
+	static UINT		GetMaxTCPErrorFlooderThreshold()	{ return 1000; }
 	static DWORD	NormalizeTimeoutSeconds(UINT seconds, UINT defaultSeconds);
 	static UINT		TimeoutMsToSeconds(DWORD milliseconds) { return milliseconds / SEC2MS(1); }
 

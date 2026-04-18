@@ -57,6 +57,9 @@ IMPLEMENT_DYNCREATE(CClientReqSocket, CEMSocket)
 CClientReqSocket::CClientReqSocket(CUpDownClient *in_client)
 	: deltimer()
 	, m_nOnConnect(SS_Other)
+	, m_bAcceptedIncomingSocket()
+	, m_bReceivedFirstPacket()
+	, m_bTCPErrorFloodReported()
 	, deletethis()
 	, m_bPortTestCon()
 {
@@ -158,7 +161,16 @@ bool CClientReqSocket::CheckTimeOut()
 void CClientReqSocket::OnClose(int nErrorCode)
 {
 	ASSERT(theApp.listensocket->IsValidSocket(this));
+	uint32 dwPeerIP = 0;
+	if (m_bAcceptedIncomingSocket && !m_bPortTestCon && !m_bReceivedFirstPacket && !m_bTCPErrorFloodReported && client == NULL)
+		TryGetPeerIP(dwPeerIP);
+
 	CEMSocket::OnClose(nErrorCode);
+
+	if (dwPeerIP != 0) {
+		m_bTCPErrorFloodReported = true;
+		theApp.clientlist->CheckTCPErrorFlooder(dwPeerIP);
+	}
 
 	if (nErrorCode)
 		Disconnect(thePrefs.GetVerbose() ? GetErrorMessage(nErrorCode, 1) : NULL);
@@ -1678,6 +1690,17 @@ void CClientReqSocket::DbgAppendClientInfo(CString &str)
 		str.AppendFormat(&_T("; %s")[str.IsEmpty() ? 2 : 0], (LPCTSTR)strClientInfo);
 }
 
+bool CClientReqSocket::TryGetPeerIP(uint32 &dwIP)
+{
+	SOCKADDR_IN sockAddr = {};
+	int nSockAddrLen = sizeof sockAddr;
+	dwIP = 0;
+	return GetPeerName((LPSOCKADDR)&sockAddr, &nSockAddrLen) == 0
+		&& sockAddr.sin_addr.s_addr != INADDR_ANY
+		&& sockAddr.sin_addr.s_addr != INADDR_NONE
+		&& (dwIP = sockAddr.sin_addr.s_addr, true);
+}
+
 void CClientReqSocket::OnConnect(int nErrorCode)
 {
 	SetConState(SS_Complete);
@@ -1704,6 +1727,7 @@ void CClientReqSocket::OnSend(int nErrorCode)
 void CClientReqSocket::OnError(int nErrorCode)
 {
 	CString strTCPError;
+	uint32 dwPeerIP = 0;
 	if (thePrefs.GetVerbose()) {
 		if (nErrorCode == ERR_WRONGHEADER)
 			strTCPError = _T("Error: Wrong header");
@@ -1717,11 +1741,16 @@ void CClientReqSocket::OnError(int nErrorCode)
 			strTCPError = GetErrorMessage(nErrorCode);
 		DebugLogWarning(_T("Client TCP socket: %s; %s"), (LPCTSTR)strTCPError, (LPCTSTR)DbgGetClientInfo());
 	}
+	if (m_bAcceptedIncomingSocket && !m_bPortTestCon && !m_bReceivedFirstPacket && !m_bTCPErrorFloodReported && client == NULL && TryGetPeerIP(dwPeerIP)) {
+		m_bTCPErrorFloodReported = true;
+		theApp.clientlist->CheckTCPErrorFlooder(dwPeerIP);
+	}
 	Disconnect(strTCPError);
 }
 
 bool CClientReqSocket::PacketReceived(Packet *packet)
 {
+	m_bReceivedFirstPacket = true;
 	CString *psErr;
 	const UINT uRawSize = packet->size;
 	const uint8 opcode = packet->opcode;
@@ -2054,6 +2083,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 				VERIFY(newclient->InitAsyncSocketExInstance());
 				newclient->m_SocketData.hSocket = sNew;
 				newclient->AttachHandle();
+				newclient->m_bAcceptedIncomingSocket = true;
 
 				AddConnection();
 			} else {
@@ -2082,6 +2112,7 @@ void CListenSocket::OnAccept(int nErrorCode)
 				}
 
 				AddConnection();
+				newclient->m_bAcceptedIncomingSocket = true;
 
 				if (SockAddr.sin_addr.s_addr == INADDR_ANY) { // for safety.
 					iSockAddrLen = (int)sizeof SockAddr;

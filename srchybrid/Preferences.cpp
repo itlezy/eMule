@@ -414,6 +414,9 @@ UINT	CPreferences::m_uKadFileSearchTotal;
 UINT	CPreferences::m_uKadKeywordSearchTotal;
 UINT	CPreferences::m_uKadFileSearchLifetimeSeconds;
 UINT	CPreferences::m_uKadKeywordSearchLifetimeSeconds;
+bool	CPreferences::m_bDetectTCPErrorFlooder;
+UINT	CPreferences::m_uTCPErrorFlooderIntervalMinutes;
+UINT	CPreferences::m_uTCPErrorFlooderThreshold;
 int		CPreferences::m_iCommitFiles;
 DWORD	CPreferences::m_dwConnectionTimeout;
 DWORD	CPreferences::m_dwDownloadTimeout;
@@ -1657,6 +1660,9 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("MaxConnections"), maxconnections);
 	ini.WriteInt(_T("MaxHalfConnections"), maxhalfconnections);
 	ini.WriteBool(_T("ConditionalTCPAccept"), m_bConditionalTCPAccept);
+	ini.WriteBool(_T("DetectTCPErrorFlooder"), m_bDetectTCPErrorFlooder);
+	ini.WriteInt(_T("TCPErrorFlooderIntervalMinutes"), static_cast<int>(m_uTCPErrorFlooderIntervalMinutes));
+	ini.WriteInt(_T("TCPErrorFlooderThreshold"), static_cast<int>(m_uTCPErrorFlooderThreshold));
 	ini.WriteInt(_T("Port"), port);
 	ini.WriteInt(_T("UDPPort"), udpport);
 	ini.WriteInt(_T("ServerUDPPort"), nServerUDPPort);
@@ -2100,6 +2106,9 @@ void CPreferences::LoadPreferences()
 	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
 	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), GetDefaultMaxHalfConnections());
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
+	m_bDetectTCPErrorFlooder = ini.GetBool(_T("DetectTCPErrorFlooder"), GetDefaultDetectTCPErrorFlooder());
+	m_uTCPErrorFlooderIntervalMinutes = NormalizeBoundedPreference(ini.GetInt(_T("TCPErrorFlooderIntervalMinutes"), static_cast<int>(GetDefaultTCPErrorFlooderIntervalMinutes())), GetDefaultTCPErrorFlooderIntervalMinutes(), GetMinTCPErrorFlooderIntervalMinutes(), GetMaxTCPErrorFlooderIntervalMinutes());
+	m_uTCPErrorFlooderThreshold = NormalizeBoundedPreference(ini.GetInt(_T("TCPErrorFlooderThreshold"), static_cast<int>(GetDefaultTCPErrorFlooderThreshold())), GetDefaultTCPErrorFlooderThreshold(), GetMinTCPErrorFlooderThreshold(), GetMaxTCPErrorFlooderThreshold());
 
 	m_strBindAddrW = ini.GetString(_T("BindAddr")).Trim();
 	m_pszBindAddrW = m_strBindAddrW.IsEmpty() ? NULL : (LPCWSTR)m_strBindAddrW;

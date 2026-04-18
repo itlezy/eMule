@@ -57,6 +57,7 @@ public:
 
 	void	DbgAppendClientInfo(CString &str);
 	CString DbgGetClientInfo();
+	bool	TryGetPeerIP(uint32 &dwIP);
 
 	CUpDownClient *client;
 protected:
@@ -75,6 +76,9 @@ protected:
 	ULONGLONG timeout_timer;
 	ULONGLONG deltimer;
 	uint32	m_nOnConnect;
+	bool	m_bAcceptedIncomingSocket;
+	bool	m_bReceivedFirstPacket;
+	bool	m_bTCPErrorFloodReported;
 	bool	deletethis;
 	bool	m_bPortTestCon;
 };

@@ -56,6 +56,7 @@ CClientList::CClientList()
 {
 	m_bannedList.InitHashTable(331);
 	m_trackedClientsMap.InitHashTable(2011);
+	m_tcpErrorFloodMap.InitHashTable(331);
 	m_globDeadSourceList.Init(true);
 }
 
@@ -421,6 +422,41 @@ uint32 CClientList::GetBadRequests(const CUpDownClient *upcClient) const
 	return pair ? pair->value->m_cBadRequest : 0;
 }
 
+void CClientList::CheckTCPErrorFlooder(uint32 dwIP)
+{
+	if (!thePrefs.IsDetectTCPErrorFlooder() || dwIP == 0 || dwIP == INADDR_ANY || dwIP == INADDR_NONE || IsBannedClient(dwIP))
+		return;
+
+	const ULONGLONG curTick = ::GetTickCount64();
+	const ULONGLONG uInterval = MIN2MS(thePrefs.GetTCPErrorFlooderIntervalMinutes());
+	TCPERRORFLOODERSTATE state = {};
+	if (m_tcpErrorFloodMap.Lookup(dwIP, state)) {
+		if (curTick - state.m_dwIntervalStart < uInterval)
+			++state.m_uCount;
+		else {
+			state.m_dwIntervalStart = curTick;
+			state.m_uCount = 1;
+		}
+	} else {
+		state.m_dwIntervalStart = curTick;
+		state.m_uCount = 1;
+	}
+	state.m_dwLastSeen = curTick;
+	m_tcpErrorFloodMap[dwIP] = state;
+
+	if (state.m_uCount < thePrefs.GetTCPErrorFlooderThreshold())
+		return;
+
+	AddBannedClient(dwIP);
+	m_tcpErrorFloodMap.RemoveKey(dwIP);
+	if (thePrefs.GetLogBannedClients()) {
+		AddDebugLogLine(false, _T("Banned: TCP error flooding; IP=%s (%u events in %u minute(s))")
+			, (LPCTSTR)ipstr(dwIP)
+			, state.m_uCount
+			, thePrefs.GetTCPErrorFlooderIntervalMinutes());
+	}
+}
+
 void CClientList::RemoveAllTrackedClients()
 {
 	for (POSITION pos = m_trackedClientsMap.GetStartPosition(); pos != NULL;) {
@@ -447,6 +483,16 @@ void CClientList::Process()
 			m_bannedList.GetNextAssoc(pos, nKey, dwBantime);
 			if (curTick >= dwBantime + CLIENTBANTIME)
 				RemoveBannedClient(nKey);
+		}
+
+		const ULONGLONG uIntervalKeepAlive = MIN2MS(thePrefs.GetTCPErrorFlooderIntervalMinutes());
+		const ULONGLONG uKeepAlive = (uIntervalKeepAlive > BAN_CLEANUP_TIME * 2ull) ? uIntervalKeepAlive : BAN_CLEANUP_TIME * 2ull;
+		for (POSITION pos = m_tcpErrorFloodMap.GetStartPosition(); pos != NULL;) {
+			uint32 nKey;
+			TCPERRORFLOODERSTATE state = {};
+			m_tcpErrorFloodMap.GetNextAssoc(pos, nKey, state);
+			if (curTick >= state.m_dwLastSeen + uKeepAlive)
+				m_tcpErrorFloodMap.RemoveKey(nKey);
 		}
 	}
 

@@ -4085,6 +4085,9 @@ BEGIN
     IDS_KAD_SEARCH_KEYWORD_TOTAL "Keyword search total results"
     IDS_KAD_SEARCH_FILE_LIFETIME "File search lifetime (seconds)"
     IDS_KAD_SEARCH_KEYWORD_LIFETIME "Keyword search lifetime (seconds)"
+    IDS_DETECT_TCP_ERROR_FLOODER "Detect TCP error flooder"
+    IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES "TCP error flooder interval (minutes)"
+    IDS_TCP_ERROR_FLOODER_THRESHOLD "TCP error flooder threshold"
 END
 
 #endif    // English (United States) resources

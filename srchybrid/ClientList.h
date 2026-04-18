@@ -60,6 +60,13 @@ public:
 	uint32				m_cBadRequest;
 };
 
+struct TCPERRORFLOODERSTATE
+{
+	ULONGLONG m_dwIntervalStart = 0;
+	ULONGLONG m_dwLastSeen = 0;
+	uint32 m_uCount = 0;
+};
+
 enum buddyState : uint8
 {
 	Disconnected,
@@ -113,6 +120,7 @@ public:
 	INT_PTR	GetClientsFromIP(uint32 dwIP) const;
 	void	TrackBadRequest(const CUpDownClient *upcClient, int nIncreaseCounter);
 	uint32	GetBadRequests(const CUpDownClient *upcClient) const;
+	void	CheckTCPErrorFlooder(uint32 dwIP);
 	INT_PTR	GetTrackedCount() const						{ return m_trackedClientsMap.GetCount(); }
 	void	RemoveAllTrackedClients();
 
@@ -154,6 +162,8 @@ private:
 	CMap<uint32, uint32, ULONGLONG, ULONGLONG> m_bannedList;
 	typedef CMap<uint32, uint32, CDeletedClient*, CDeletedClient*> CDeletedClientMap;
 	CDeletedClientMap m_trackedClientsMap;
+	typedef CMap<uint32, uint32, TCPERRORFLOODERSTATE, const TCPERRORFLOODERSTATE&> CTCPErrorFlooderMap;
+	CTCPErrorFlooderMap m_tcpErrorFloodMap;
 	CUpDownClient *m_pBuddy;
 	CList<IPANDTICS> listFirewallCheckRequests;
 	CList<IPANDTICS> listDirectCallbackRequests;
