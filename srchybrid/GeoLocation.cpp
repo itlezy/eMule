@@ -154,13 +154,13 @@ namespace
 
 	bool CreateTempPathInDirectory(const CString& strDirectory, LPCTSTR pszPrefix, CString& strTempPath, CString& strError)
 	{
-		TCHAR szTempPath[MAX_PATH] = {};
-		if (!::GetTempFileName(strDirectory, pszPrefix, 0, szTempPath)) {
-			strError.Format(_T("GetTempFileName failed for %s (%u)"), (LPCTSTR)strDirectory, ::GetLastError());
+		LongPathSeams::PathString strTempPathLong;
+		if (!LongPathSeams::CreateUniqueTempFilePath(strDirectory, pszPrefix, strTempPathLong)) {
+			strError.Format(_T("CreateUniqueTempFilePath failed for %s (%u)"), (LPCTSTR)strDirectory, ::GetLastError());
 			return false;
 		}
 
-		strTempPath = szTempPath;
+		strTempPath = strTempPathLong.c_str();
 		return true;
 	}
 }
@@ -188,27 +188,19 @@ public:
 		m_tBuildEpoch = 0;
 		m_strDatabaseType.Empty();
 
-		CFile file;
-		if (!file.Open(strFilePath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary)) {
+		std::vector<unsigned char> vecData;
+		if (!LongPathSeams::ReadAllBytes(strFilePath, vecData)) {
 			strError.Format(_T("GeoLocation: data file not found: %s"), (LPCTSTR)strFilePath);
 			return false;
 		}
 
-		const ULONGLONG ullSize = file.GetLength();
+		const ULONGLONG ullSize = static_cast<ULONGLONG>(vecData.size());
 		if (ullSize == 0 || ullSize > MAX_MMDB_FILE_SIZE) {
 			strError.Format(_T("GeoLocation: unsupported database file size: %I64u"), ullSize);
-			file.Close();
 			return false;
 		}
 
-		m_vecData.resize(static_cast<size_t>(ullSize));
-		if (file.Read(&m_vecData[0], static_cast<UINT>(m_vecData.size())) != static_cast<UINT>(m_vecData.size())) {
-			strError = _T("GeoLocation: could not read database file.");
-			file.Close();
-			m_vecData.clear();
-			return false;
-		}
-		file.Close();
+		m_vecData.swap(vecData);
 
 		const MMDBValue metadata = ReadMetadata();
 		if (!ParseMetadata(metadata, strError))
@@ -761,7 +753,7 @@ bool CGeoLocation::QueueRefresh(bool bForce, bool bUserInitiated)
 		return false;
 	}
 	if (!CreateTempPathInDirectory(strConfigDir, _T("gdb"), strDatabaseTempPath, strError)) {
-		(void)::DeleteFile(strArchiveTempPath);
+		(void)LongPathSeams::DeleteFileIfExists(strArchiveTempPath);
 		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strError);
 		return false;
 	}
@@ -774,12 +766,12 @@ bool CGeoLocation::QueueRefresh(bool bForce, bool bUserInitiated)
 	pContext->hNotifyWnd = hNotifyWnd;
 	pContext->bProxyEnabled = thePrefs.GetProxySettings().bUseProxy;
 
-	(void)::DeleteFile(pContext->strArchiveTempPath);
+	(void)LongPathSeams::DeleteFileIfExists(pContext->strArchiveTempPath);
 
 	CWinThread* pThread = AfxBeginThread(BackgroundRefreshThread, pContext.get(), THREAD_PRIORITY_BELOW_NORMAL, 0, 0, NULL);
 	if (pThread == NULL) {
-		(void)::DeleteFile(pContext->strArchiveTempPath);
-		(void)::DeleteFile(pContext->strDatabaseTempPath);
+		(void)LongPathSeams::DeleteFileIfExists(pContext->strArchiveTempPath);
+		(void)LongPathSeams::DeleteFileIfExists(pContext->strDatabaseTempPath);
 		AddDebugLogLine(false, _T("GeoLocation: failed to start background refresh thread."));
 		return false;
 	}
@@ -1021,7 +1013,7 @@ UINT AFX_CDECL CGeoLocation::BackgroundRefreshThread(LPVOID pParam)
 		goto cleanup;
 	}
 
-	if (!::MoveFileEx(pContext->strDatabaseTempPath, pContext->strInstallPath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+	if (!LongPathSeams::MoveFileEx(pContext->strDatabaseTempPath, pContext->strInstallPath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
 		AddDebugLogLine(false, _T("GeoLocation: failed to install %s (%u)"), (LPCTSTR)pContext->strInstallPath, ::GetLastError());
 		goto cleanup;
 	}
@@ -1030,8 +1022,8 @@ UINT AFX_CDECL CGeoLocation::BackgroundRefreshThread(LPVOID pParam)
 	bUpdated = true;
 
 cleanup:
-	(void)::DeleteFile(pContext->strArchiveTempPath);
-	(void)::DeleteFile(pContext->strDatabaseTempPath);
+	(void)LongPathSeams::DeleteFileIfExists(pContext->strArchiveTempPath);
+	(void)LongPathSeams::DeleteFileIfExists(pContext->strDatabaseTempPath);
 	if (pContext->hNotifyWnd != NULL)
 		(void)::PostMessage(pContext->hNotifyWnd, UM_GEOLOCATION_UPDATED, bUpdated ? 1u : 0u, 0);
 	return 0;
@@ -1113,8 +1105,8 @@ bool CGeoLocation::DownloadUrlToFileDirect(const CString& strUrl, const CString&
 		return false;
 	}
 
-	CFile file;
-	if (!file.Open(strTargetPath, CFile::modeCreate | CFile::modeWrite | CFile::typeBinary)) {
+	const int fdOut = LongPathSeams::OpenCrtWriteOnlyLongPath(strTargetPath, CREATE_ALWAYS, FILE_SHARE_READ);
+	if (fdOut == -1) {
 		strError.Format(_T("Could not open %s for writing"), (LPCTSTR)strTargetPath);
 		::InternetCloseHandle(hHttpFile);
 		::InternetCloseHandle(hHttpConnection);
@@ -1132,16 +1124,21 @@ bool CGeoLocation::DownloadUrlToFileDirect(const CString& strUrl, const CString&
 			break;
 		}
 
-		if (dwBytesRead > 0)
-			file.Write(buffer, dwBytesRead);
+		if (dwBytesRead > 0) {
+			if (_write(fdOut, buffer, dwBytesRead) != static_cast<int>(dwBytesRead)) {
+				strError.Format(_T("Write failed for %s (%u)"), (LPCTSTR)strTargetPath, errno);
+				bSuccess = false;
+				break;
+			}
+		}
 	} while (dwBytesRead != 0);
 
-	file.Close();
+	_close(fdOut);
 	::InternetCloseHandle(hHttpFile);
 	::InternetCloseHandle(hHttpConnection);
 	::InternetCloseHandle(hInternetSession);
 
 	if (!bSuccess)
-		(void)::DeleteFile(strTargetPath);
+		(void)LongPathSeams::DeleteFileIfExists(strTargetPath);
 	return bSuccess;
 }

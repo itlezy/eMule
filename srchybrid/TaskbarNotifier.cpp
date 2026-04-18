@@ -142,6 +142,8 @@ bool CTaskbarNotifier::LoadConfiguration(LPCTSTR pszFilePath)
 
 	Hide();
 
+	// Intentional legacy bound: notifier skin/config loading is a low-value UI-only path and is
+	// not part of the core long-path-safe shared-files or metadata pipeline.
 	TCHAR szConfigDir[MAX_PATH];
 	m_strConfigFilePath = pszFilePath;
 	CIni ini(pszFilePath, _T("Config"));

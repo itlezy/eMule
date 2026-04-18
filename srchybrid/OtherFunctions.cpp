@@ -3894,7 +3894,7 @@ static const byte FILEHEADER_ZIP_ID[] = { 0x50, 0x4b, 0x03, 0x04 };
 
 bool GetDRM(LPCTSTR pszFilePath)
 {
-	int fd = _topen(pszFilePath, O_RDONLY | O_BINARY);
+	int fd = OpenCrtReadOnlyLongPath(pszFilePath);
 	if (fd != -1) {
 		BYTE aucBuff[16384];
 		int iRead = _read(fd, aucBuff, sizeof aucBuff);

@@ -1238,6 +1238,55 @@ inline bool WriteAllBytes(LPCTSTR pszPath, const std::vector<unsigned char> &rBy
 }
 
 /**
+ * @brief Reserves a unique temp-file path inside a target directory through the shared long-path-aware Win32 wrapper.
+ */
+inline bool CreateUniqueTempFilePath(LPCTSTR pszDirectory, LPCTSTR pszPrefix, PathString &rTempPath)
+{
+	rTempPath.clear();
+	if (pszDirectory == NULL || *pszDirectory == _T('\0'))
+		return false;
+
+	PathString strDirectory = GetNormalizedPathText(pszDirectory);
+	if (strDirectory.empty())
+		return false;
+	if (!IsPathSeparator(strDirectory[strDirectory.size() - 1]))
+		strDirectory.push_back(_T('\\'));
+
+	PathString strPrefix = GetLogicalPathText((pszPrefix != NULL && *pszPrefix != _T('\0')) ? pszPrefix : _T("tmp"));
+	static std::atomic<ULONGLONG> s_ullNextTempNonce(::GetTickCount64());
+	for (UINT uAttempt = 0; uAttempt < 1024; ++uAttempt) {
+		const ULONGLONG ullNonce = s_ullNextTempNonce.fetch_add(1, std::memory_order_relaxed);
+		TCHAR szTempLeaf[64] = {};
+		_sntprintf_s(szTempLeaf, _countof(szTempLeaf), _TRUNCATE, _T("%.16s%08llX.tmp"), strPrefix.c_str(), ullNonce);
+
+		PathString strCandidate(strDirectory);
+		strCandidate += szTempLeaf;
+		HANDLE hTempFile = CreateFile(strCandidate.c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_NEW, FILE_ATTRIBUTE_TEMPORARY, NULL);
+		if (hTempFile != INVALID_HANDLE_VALUE) {
+			const DWORD dwCloseError = (::CloseHandle(hTempFile) != FALSE) ? ERROR_SUCCESS : ::GetLastError();
+			if (!DeleteFileIfExists(strCandidate.c_str())) {
+				if (dwCloseError != ERROR_SUCCESS)
+					::SetLastError(dwCloseError);
+				return false;
+			}
+			if (dwCloseError != ERROR_SUCCESS) {
+				::SetLastError(dwCloseError);
+				return false;
+			}
+			rTempPath = strCandidate;
+			return true;
+		}
+
+		const DWORD dwLastError = ::GetLastError();
+		if (dwLastError != ERROR_FILE_EXISTS && dwLastError != ERROR_ALREADY_EXISTS)
+			return false;
+	}
+
+	::SetLastError(ERROR_ALREADY_EXISTS);
+	return false;
+}
+
+/**
  * @brief Opens a CRT file descriptor through a Win32 handle for long-path-safe readers and writers.
  */
 inline int OpenCrtFileDescriptorLongPath(LPCTSTR pszPath, DWORD dwDesiredAccess, DWORD dwShareMode, DWORD dwCreationDisposition, DWORD dwFlagsAndAttributes, int nOpenFlags)

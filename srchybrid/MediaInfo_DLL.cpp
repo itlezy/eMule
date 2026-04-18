@@ -21,6 +21,7 @@
 #include "Log.h"
 #include "OtherFunctions.h"
 #include "MediaInfo.h"
+#include "PathHelpers.h"
 #include "Preferences.h"
 
 #ifdef _DEBUG
@@ -162,21 +163,12 @@ public:
 protected:
 	static CString CombinePath(LPCTSTR pszBasePath, LPCTSTR pszChildPath)
 	{
-		TCHAR szPath[MAX_PATH];
-		LPTSTR pszResult = ::PathCombine(szPath, pszBasePath, pszChildPath);
-		return pszResult != NULL ? CString(szPath) : CString();
+		return PathHelpers::AppendPathComponent(CString(pszBasePath != NULL ? pszBasePath : _T("")), pszChildPath);
 	}
 
 	static CString GetAppFolder()
 	{
-		TCHAR szModulePath[MAX_PATH];
-		DWORD dwPathLen = ::GetModuleFileName(theApp.m_hInstance, szModulePath, _countof(szModulePath));
-		if (dwPathLen == 0 || dwPathLen == _countof(szModulePath))
-			return CString();
-		CString strFolder(szModulePath);
-		::PathRemoveFileSpec(strFolder.GetBuffer(strFolder.GetLength()));
-		strFolder.ReleaseBuffer();
-		return strFolder;
+		return PathHelpers::GetDirectoryPath(PathHelpers::GetModuleFilePath(theApp.m_hInstance));
 	}
 
 	static bool IsCompatibleVersion(ULONGLONG ullVersion)
@@ -206,11 +198,12 @@ protected:
 		CRegKey key;
 		if (key.Open(hRootKey, _T("Software\\MediaInfo"), KEY_READ) != ERROR_SUCCESS)
 			return;
-		TCHAR szInstallPath[MAX_PATH];
-		ULONG ulChars = _countof(szInstallPath);
-		if (key.QueryStringValue(_T("Path"), szInstallPath, &ulChars) != ERROR_SUCCESS)
+		std::vector<TCHAR> aInstallPath(PathHelpers::kMaxDynamicPathChars, _T('\0'));
+		ULONG ulChars = static_cast<ULONG>(aInstallPath.size());
+		if (key.QueryStringValue(_T("Path"), aInstallPath.data(), &ulChars) != ERROR_SUCCESS)
 			return;
-		AddCandidatePath(raCandidatePaths, CombinePath(szInstallPath, _T("MEDIAINFO.DLL")));
+		aInstallPath[aInstallPath.size() - 1] = _T('\0');
+		AddCandidatePath(raCandidatePaths, CombinePath(aInstallPath.data(), _T("MEDIAINFO.DLL")));
 	}
 
 	void CollectCandidatePaths(const CString &strConfiguredPath, CStringArray &raCandidatePaths)
@@ -230,7 +223,7 @@ protected:
 	HMODULE LoadCompatibleLibrary(const CString &strPath, ULONGLONG &rullVersion, CString &rstrReason)
 	{
 		rullVersion = 0;
-		if (!::PathFileExists(strPath)) {
+		if (!LongPathSeams::PathExists(strPath)) {
 			rstrReason = _T("candidate path missing");
 			return NULL;
 		}
