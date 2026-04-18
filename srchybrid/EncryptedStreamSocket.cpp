@@ -144,10 +144,17 @@ CEncryptedStreamSocket::~CEncryptedStreamSocket()
 	delete m_pfiSendBuffer;
 }
 
+void CEncryptedStreamSocket::FailEncryptedStream(LPCTSTR pszReason)
+{
+	ASSERT(0);
+	DebugLogError(_T("CEncryptedStreamSocket: %s (%s)"), pszReason, (LPCTSTR)DbgGetIPString());
+	OnError(ERR_ENCRYPTION);
+}
+
 void CEncryptedStreamSocket::CryptPrepareSendData(uchar *pBuffer, uint32 nLen)
 {
 	if (!IsEncryptionLayerReady()) {
-		ASSERT(0); // must be a bug
+		FailEncryptedStream(_T("Cannot prepare encrypted send data before the encryption layer is ready"));
 		return;
 	}
 	if (m_StreamCryptState == ECS_UNKNOWN) {
@@ -165,8 +172,8 @@ void CEncryptedStreamSocket::CryptPrepareSendData(uchar *pBuffer, uint32 nLen)
 int CEncryptedStreamSocket::Send(const void *lpBuf, int nBufLen, int nFlags)
 {
 	if (!IsEncryptionLayerReady()) {
-		ASSERT(0); // must be a bug
-		return 0;
+		FailEncryptedStream(_T("Cannot send before the encryption layer is ready"));
+		return SOCKET_ERROR;
 	}
 	if (m_bServerCrypt && m_StreamCryptState == ECS_ENCRYPTING && m_pfiSendBuffer != NULL) {
 		ASSERT(m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING);
@@ -177,8 +184,10 @@ int CEncryptedStreamSocket::Send(const void *lpBuf, int nBufLen, int nFlags)
 		(void)nRes;
 		return nBufLen;	// report a full send, even if we didn't for some reason - the data is in our buffer and will be handled later
 	}
-	if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING)
-		ASSERT(0);
+	if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING) {
+		FailEncryptedStream(_T("Encountered delayed server send state without buffered negotiating data"));
+		return SOCKET_ERROR;
+	}
 
 	if (m_StreamCryptState == ECS_UNKNOWN) {
 		//this happens when the encryption option was not set on an outgoing connection
@@ -192,7 +201,7 @@ int CEncryptedStreamSocket::Send(const void *lpBuf, int nBufLen, int nFlags)
 int CEncryptedStreamSocket::SendOv(CArray<WSABUF> &aBuffer, LPWSAOVERLAPPED lpOverlapped)
 {
 	if (!IsEncryptionLayerReady()) {
-		ASSERT(0); // must be a bug
+		FailEncryptedStream(_T("Cannot issue overlapped send before the encryption layer is ready"));
 		return SOCKET_ERROR;
 	}
 	if (m_bServerCrypt && m_StreamCryptState == ECS_ENCRYPTING && m_pfiSendBuffer != NULL) {
@@ -207,8 +216,10 @@ int CEncryptedStreamSocket::SendOv(CArray<WSABUF> &aBuffer, LPWSAOVERLAPPED lpOv
 		m_NegotiatingState = ONS_COMPLETE;
 		delete m_pfiSendBuffer;
 		m_pfiSendBuffer = NULL;
-	} else
-		ASSERT(m_NegotiatingState != ONS_BASIC_SERVER_DELAYEDSENDING);
+	} else if (m_NegotiatingState == ONS_BASIC_SERVER_DELAYEDSENDING) {
+		FailEncryptedStream(_T("Encountered delayed server send state without buffered negotiating data"));
+		return SOCKET_ERROR;
+	}
 
 	if (m_StreamCryptState == ECS_UNKNOWN) {
 		//this happens when the encryption option was not set on an outgoing connection
@@ -297,10 +308,9 @@ int CEncryptedStreamSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 		break; // buffer was unchanged, we can just pass it through
 	case ECS_PENDING:
 	case ECS_PENDING_SERVER:
-		ASSERT(0);
-		DebugLogError(_T("CEncryptedStreamSocket Received data before sending on outgoing connection"));
+		FailEncryptedStream(_T("Received data before sending on an outgoing encrypted connection"));
 		m_StreamCryptState = ECS_NONE;
-		break;
+		return 0;
 	case ECS_NEGOTIATING:
 		{
 			const int nRead = Negotiate(static_cast<uchar*>(lpBuf), m_nObfuscatedBytesReceived);
@@ -322,7 +332,8 @@ int CEncryptedStreamSocket::Receive(void *lpBuf, int nBufLen, int nFlags)
 		RC4Crypt(static_cast<uchar*>(lpBuf), m_nObfuscatedBytesReceived, m_pRC4ReceiveKey);
 		break;
 	default:
-		ASSERT(0);
+		FailEncryptedStream(_T("Reached invalid stream encryption state while receiving data"));
+		return 0;
 	}
 	return m_nObfuscatedBytesReceived;
 }
@@ -429,7 +440,7 @@ void CEncryptedStreamSocket::StartNegotiation(bool bOutgoing)
 
 		SendNegotiatingData(fileRequest.GetBuffer(), (int)fileRequest.GetLength(), (int)fileRequest.GetLength());
 	} else {
-		ASSERT(0);
+		FailEncryptedStream(_T("Attempted to start negotiation from an invalid encryption state"));
 		m_StreamCryptState = ECS_NONE;
 	}
 }
@@ -441,8 +452,8 @@ int CEncryptedStreamSocket::Negotiate(const uchar *pBuffer, int nLen)
 		int nRead = 0;
 		while (m_NegotiatingState != ONS_COMPLETE && m_nReceiveBytesWanted > 0) {
 			if (m_nReceiveBytesWanted > 512) {
-				ASSERT(0);
-				return 0;
+				FailEncryptedStream(_T("Negotiation requested more than the fixed receive buffer can hold"));
+				return -1;
 			}
 
 			if (m_pfiReceiveBuffer == NULL) {
@@ -468,8 +479,8 @@ int CEncryptedStreamSocket::Negotiate(const uchar *pBuffer, int nLen)
 
 			switch (m_NegotiatingState) {
 			case ONS_NONE: // would be a bug
-				ASSERT(0);
-				return 0;
+				FailEncryptedStream(_T("Negotiation reached ONS_NONE while more handshake data was required"));
+				return -1;
 			case ONS_BASIC_CLIENTA_RANDOMPART:
 				{
 					ASSERT(m_pRC4ReceiveKey == NULL);
@@ -639,7 +650,8 @@ int CEncryptedStreamSocket::Negotiate(const uchar *pBuffer, int nLen)
 				}
 				break;
 			default:
-				ASSERT(0);
+				FailEncryptedStream(_T("Reached invalid negotiation state while processing handshake data"));
+				return -1;
 			}
 			m_pfiReceiveBuffer->SeekToBegin();
 		}
@@ -652,8 +664,7 @@ int CEncryptedStreamSocket::Negotiate(const uchar *pBuffer, int nLen)
 	} catch (CFileException *ex) {
 		// can only be caused by a bug in negotiation handling, not by the data stream
 		ex->Delete();
-		ASSERT(0);
-		OnError(ERR_ENCRYPTION);
+		FailEncryptedStream(_T("Negotiation handling triggered an internal file-buffer exception"));
 		if (m_pfiReceiveBuffer != NULL) {
 			free(m_pfiReceiveBuffer->Detach());
 			delete m_pfiReceiveBuffer;
