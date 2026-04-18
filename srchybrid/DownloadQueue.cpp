@@ -30,6 +30,7 @@
 #include "Server.h"
 #include "Packets.h"
 #include "Kademlia/Kademlia/Kademlia.h"
+#include "kademlia/utils/OracleTrace.h"
 #include "kademlia/utils/uint128.h"
 #include "ipfilter.h"
 #include "emuledlg.h"
@@ -43,6 +44,29 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
+
+static void TraceParityKadSourceEvent(LPCSTR eventName, const CPartFile *sender, const CUpDownClient *source, LPCSTR reason, uint8 byCryptOptions = 0xFF, uint8 kadType = 0xFF)
+{
+	if (!theApp.IsParityHarnessMode() || sender == NULL || source == NULL || source->GetSourceFrom() != SF_KADEMLIA)
+		return;
+
+	CStringA sFields;
+	sFields.Format(
+		"reason=%s file=%s hash=%s client=%s user_hash=%s valid_hash=%u supports=%u requests=%u requires=%u source_from=%u kad_type=%u crypt_options=%u",
+		reason != NULL ? reason : "",
+		(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(sender->GetFileName())),
+		(LPCSTR)CStringA(md4str(sender->GetFileHash())),
+		(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(source->DbgGetClientInfo())),
+		(LPCSTR)CStringA(md4str(source->GetUserHash())),
+		source->HasValidHash() ? 1 : 0,
+		source->SupportsCryptLayer() ? 1 : 0,
+		source->RequestsCryptLayer() ? 1 : 0,
+		source->RequiresCryptLayer() ? 1 : 0,
+		(unsigned)source->GetSourceFrom(),
+		(unsigned)kadType,
+		(unsigned)byCryptOptions);
+	Kademlia::OracleTrace::Append(eventName, sFields);
+}
 
 
 CDownloadQueue::CDownloadQueue()
@@ -455,6 +479,7 @@ bool CDownloadQueue::IsPartFile(const CKnownFile *file) const
 bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 {
 	if (sender->IsStopped()) {
+		TraceParityKadSourceEvent("kad_source_reject", sender, source, "sender_stopped");
 		delete source;
 		return false;
 	}
@@ -462,6 +487,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 	if (source->HasValidHash() && md4equ(source->GetUserHash(), thePrefs.GetUserHash())) {
 		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Tried to add source with a hash matching your own."));
+		TraceParityKadSourceEvent("kad_source_reject", sender, source, "self_hash");
 		delete source;
 		return false;
 	}
@@ -471,6 +497,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		//if (thePrefs.GetLogFilteredIPs())
 		//	AddDebugLogLine(DLP_DEFAULT, false, _T("Rejected source because it was found on the DeadSourcesList (%s) for file %s : %s")
 		//	,sender->m_DeadSourceList.IsDeadSource(source)? _T("Local") : _T("Global"), (LPCTSTR)sender->GetFileName(), (LPCTSTR)source->DbgGetClientInfo() );
+		TraceParityKadSourceEvent("kad_source_reject", sender, source, "dead_source");
 		delete source;
 		return false;
 	}
@@ -481,6 +508,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 		//if (thePrefs.GetDebugSourceExchange()) // TODO: Uncomment after testing
 		AddDebugLogLine(DLP_DEFAULT, false, _T("Rejected source because CryptLayer-Setting (Obfuscation) was incompatible for file %s : %s"), (LPCTSTR)sender->GetFileName(), (LPCTSTR)source->DbgGetClientInfo());
 #endif
+		TraceParityKadSourceEvent("kad_source_reject", sender, source, "crypt_incompatible");
 		delete source;
 		return false;
 	}
@@ -499,6 +527,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 					if (cur_client->GetDownloadState() != DS_CONNECTED)
 						cur_client->SwapToAnotherFile(_T("New A4AF source found. CDownloadQueue::CheckAndAddSource()"), false, false, false, NULL, true, false); // ZZ:DownloadManager
 				}
+				TraceParityKadSourceEvent("kad_source_reject", sender, source, "duplicate_source");
 				delete source;
 				return false;
 			}
@@ -508,6 +537,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 	//if yes the known client will be attached to the var "source"
 	//and the old source client will be deleted
 	if (theApp.clientlist->AttachToAlreadyKnown(&source, NULL)) {
+		TraceParityKadSourceEvent("kad_source_attach_known", sender, source, "attach_known");
 #ifdef _DEBUG
 		const CPartFile *srcfile = source->GetRequestFile();
 		if (thePrefs.GetVerbose() && srcfile) {
@@ -535,6 +565,7 @@ bool CDownloadQueue::CheckAndAddSource(CPartFile *sender, CUpDownClient *source)
 
 	sender->srclist.AddTail(source);
 	theApp.emuledlg->transferwnd->GetDownloadList()->AddSource(sender, source, false);
+	TraceParityKadSourceEvent("kad_source_accept", sender, source, "added");
 	return true;
 }
 
@@ -1534,6 +1565,19 @@ void CDownloadQueue::KademliaSearchFile(uint32 nSearchID, const Kademlia::CUInt1
 			if (!tcp) {
 				if (thePrefs.GetVerbose())
 					AddDebugLogLine(false, _T("Ignored source (IP=%s) received from Kademlia, no TCP port received"), (LPCTSTR)ipstr(ip));
+				if (theApp.IsParityHarnessMode()) {
+					CStringA sFields;
+					sFields.Format(
+						"reason=no_tcp_port file=%s hash=%s type=%u ip=%s tcp=%u udp=%u crypt_options=%u",
+						(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(temp->GetFileName())),
+						(LPCSTR)CStringA(md4str(temp->GetFileHash())),
+						(unsigned)type,
+						(LPCSTR)Kademlia::OracleTrace::HostPort(ED2Kip, udp),
+						(unsigned)tcp,
+						(unsigned)udp,
+						(unsigned)byCryptOptions);
+					Kademlia::OracleTrace::Append("kad_source_result_ignored", sFields);
+				}
 				return;
 			}
 			ctemp = new CUpDownClient(temp, tcp, ip, 0, 0, false);
@@ -1603,6 +1647,7 @@ void CDownloadQueue::KademliaSearchFile(uint32 nSearchID, const Kademlia::CUInt1
 	if (ctemp != NULL) {
 		// add encryption settings
 		ctemp->SetConnectOptions(byCryptOptions);
+		TraceParityKadSourceEvent("kad_source_candidate", temp, ctemp, "from_search_result", byCryptOptions, type);
 		CheckAndAddSource(temp, ctemp);
 	}
 }

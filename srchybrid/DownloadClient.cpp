@@ -28,6 +28,38 @@
 #include "ClientUDPSocket.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
+#include "kademlia/utils/OracleTrace.h"
+
+static void TraceParityKadDownloadClientEvent(LPCSTR eventName, const CUpDownClient *client, LPCSTR reason)
+{
+	if (!theApp.IsParityHarnessMode() || client == NULL || client->GetSourceFrom() != SF_KADEMLIA || client->GetRequestFile() == NULL)
+		return;
+
+	const CPartFile *file = client->GetRequestFile();
+	CStringA sFields;
+	sFields.Format(
+		"reason=%s file=%s hash=%s client=%s user_hash=%s state=%u kad_state=%u low_id=%u valid_hash=%u supports=%u requests=%u requires=%u time_until_reask=%lu last_tried=%lu last_asked=%lu ip=%s connect_ip=%s tcp=%u udp=%u",
+		reason != NULL ? reason : "",
+		(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(file->GetFileName())),
+		(LPCSTR)CStringA(md4str(file->GetFileHash())),
+		(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(client->DbgGetClientInfo())),
+		(LPCSTR)CStringA(md4str(client->GetUserHash())),
+		(unsigned)client->GetDownloadState(),
+		(unsigned)client->GetKadState(),
+		client->HasLowID() ? 1 : 0,
+		client->HasValidHash() ? 1 : 0,
+		client->SupportsCryptLayer() ? 1 : 0,
+		client->RequestsCryptLayer() ? 1 : 0,
+		client->RequiresCryptLayer() ? 1 : 0,
+		(unsigned long)client->GetTimeUntilReask(),
+		(unsigned long)client->GetLastTriedToConnectTime(),
+		(unsigned long)client->GetLastAskedTime(),
+		(LPCSTR)Kademlia::OracleTrace::HostPort(client->GetIP(), client->GetKadPort()),
+		(LPCSTR)Kademlia::OracleTrace::HostPort(client->GetConnectIP(), client->GetKadPort()),
+		(unsigned)client->GetUserPort(),
+		(unsigned)client->GetKadPort());
+	Kademlia::OracleTrace::Append(eventName, sFields);
+}
 #include "clientlist.h"
 #include "SHAHashSet.h"
 #include "SharedFileList.h"
@@ -172,6 +204,7 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 // true = client was not deleted!
 bool CUpDownClient::AskForDownload()
 {
+	TraceParityKadDownloadClientEvent("kad_source_ask", this, "enter");
 	if (m_bUDPPending) {
 		++m_nFailedUDPPackets;
 		theApp.downloadqueue->AddFailedUDPFileReasks();
@@ -183,6 +216,7 @@ bool CUpDownClient::AskForDownload()
 		if (theApp.listensocket->TooManySockets()) {
 			if (GetDownloadState() != DS_TOOMANYCONNS)
 				SetDownloadState(DS_TOOMANYCONNS);
+			TraceParityKadDownloadClientEvent("kad_source_ask_delay", this, "too_many_sockets");
 			return true;
 		}
 		SetLastTriedToConnectTime();
@@ -193,6 +227,7 @@ bool CUpDownClient::AskForDownload()
 			if (GetUploadState() == US_ONUPLOADQUEUE && !m_bReaskPending) {
 				SetDownloadState(DS_ONQUEUE);
 				m_bReaskPending = true;
+				TraceParityKadDownloadClientEvent("kad_source_ask_delay", this, "upload_queue_wait");
 				return true;
 			}
 			// if we are lowid <-> lowid but contacted the source before already, keep it in the hope that we might turn highid again
@@ -200,12 +235,14 @@ bool CUpDownClient::AskForDownload()
 				if (GetDownloadState() != DS_LOWTOLOWIP)
 					SetDownloadState(DS_LOWTOLOWIP);
 				m_bReaskPending = true;
+				TraceParityKadDownloadClientEvent("kad_source_ask_delay", this, "lowid_wait");
 				return true;
 			}
 		}
 	}
 	SwapToAnotherFile(_T("A4AF check before TCP file re-ask. CUpDownClient::AskForDownload()"), true, false, false, NULL, true, true);
 	SetDownloadState(DS_CONNECTING);
+	TraceParityKadDownloadClientEvent("kad_source_ask_connect", this, "try_to_connect");
 	return TryToConnect();
 }
 

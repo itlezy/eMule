@@ -47,6 +47,7 @@
 #include "Kademlia/Utils/UInt128.h"
 #include "Kademlia/Net/KademliaUDPListener.h"
 #include "Kademlia/Kademlia/Prefs.h"
+#include "kademlia/utils/OracleTrace.h"
 #include "emuledlg.h"
 #include "ServerWnd.h"
 #include "TransferDlg.h"
@@ -98,6 +99,38 @@ CString GetOracleEd2kPeerLabel(const CUpDownClient *pClient)
 	const uint32 dwPeerIP = pClient->GetConnectIP() != 0 ? pClient->GetConnectIP() : pClient->GetIP();
 	strPeer.Format(_T("%s:%u"), (LPCTSTR)ipstr(dwPeerIP), pClient->GetUserPort());
 	return strPeer;
+}
+
+void TraceParityKadBaseClientEvent(LPCSTR eventName, const CUpDownClient *pClient, LPCSTR reason)
+{
+	if (!theApp.IsParityHarnessMode() || pClient == NULL || pClient->GetSourceFrom() != SF_KADEMLIA || pClient->GetRequestFile() == NULL)
+		return;
+
+	const CPartFile *pFile = pClient->GetRequestFile();
+	CStringA sFields;
+	sFields.Format(
+		"reason=%s file=%s hash=%s client=%s user_hash=%s state=%u kad_state=%u low_id=%u valid_hash=%u supports=%u requests=%u requires=%u ip=%s connect_ip=%s ip_sock=%s connect_ip_sock=%s ip_raw=0x%08lX connect_ip_raw=0x%08lX tcp=%u udp=%u",
+		reason != NULL ? reason : "",
+		(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(pFile->GetFileName())),
+		(LPCSTR)CStringA(md4str(pFile->GetFileHash())),
+		(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(pClient->DbgGetClientInfo())),
+		(LPCSTR)CStringA(md4str(pClient->GetUserHash())),
+		(unsigned)pClient->GetDownloadState(),
+		(unsigned)pClient->GetKadState(),
+		pClient->HasLowID() ? 1 : 0,
+		pClient->HasValidHash() ? 1 : 0,
+		pClient->SupportsCryptLayer() ? 1 : 0,
+		pClient->RequestsCryptLayer() ? 1 : 0,
+		pClient->RequiresCryptLayer() ? 1 : 0,
+		(LPCSTR)Kademlia::OracleTrace::HostPort(pClient->GetIP(), pClient->GetKadPort()),
+		(LPCSTR)Kademlia::OracleTrace::HostPort(pClient->GetConnectIP(), pClient->GetKadPort()),
+		(LPCSTR)CStringA(ipstr(pClient->GetIP())),
+		(LPCSTR)CStringA(ipstr(pClient->GetConnectIP())),
+		(unsigned long)pClient->GetIP(),
+		(unsigned long)pClient->GetConnectIP(),
+		(unsigned)pClient->GetUserPort(),
+		(unsigned)pClient->GetKadPort());
+	Kademlia::OracleTrace::Append(eventName, sFields);
 }
 }
 
@@ -1276,6 +1309,7 @@ bool CUpDownClient::Disconnected(LPCTSTR pszReason, bool bFromSocket)
 //true means the client was not deleted!
 bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntimeClass *pClassSocket)
 {
+	TraceParityKadBaseClientEvent("kad_source_try_connect", this, "enter");
 	// There are 7 possible ways how we are going to connect in this function, sorted by priority:
 	// 1) Already Connected/Connecting
 	//		We are already connected or try to connect right now. Abort, no additional Disconnect() call will be done
@@ -1308,6 +1342,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	// Check for 1) Already Connected/Connecting
 	if (m_eConnectingState != CCS_NONE) {
 		//DebugLog(_T("TryToConnect: Already Connecting (%s)"), (LPCTSTR)DbgGetClientInfo());// TODO LogRemove
+		TraceParityKadBaseClientEvent("kad_source_try_connect_skip", this, "already_connecting");
 		return true;
 	}
 	if (socket != NULL) {
@@ -1317,6 +1352,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 				ConnectionEstablished();
 			} else
 				DebugLogWarning(_T("TryToConnect found connected socket, but without Handshake finished - %s"), (LPCTSTR)DbgGetClientInfo());
+			TraceParityKadBaseClientEvent("kad_source_try_connect_skip", this, "already_connected");
 			return true;
 		}
 		socket->Safe_Delete();
@@ -1339,6 +1375,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	// do not try to connect to source which are incompatible with our encryption setting (one requires it, and the other one doesn't support it)
 	if ((RequiresCryptLayer() && !thePrefs.IsCryptLayerEnabled()) || (thePrefs.IsCryptLayerRequired() && !SupportsCryptLayer())) {
 		DEBUG_ONLY(AddDebugLogLine(DLP_DEFAULT, false, _T("Rejected outgoing connection because CryptLayer-Setting (Obfuscation) was incompatible %s"), (LPCTSTR)DbgGetClientInfo()));
+		TraceParityKadBaseClientEvent("kad_source_try_connect_fail", this, "crypt_incompatible");
 		if (Disconnected(_T("CryptLayer-Settings (Obfuscation) incompatible"))) {
 			delete this;
 			return false;
@@ -1421,6 +1458,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 	// 3) Normal Outgoing TCP Connection
 	if (!HasLowID() || GetKadState() == KS_CONNECTING_FWCHECK) {
 		m_eConnectingState = CCS_DIRECTTCP;
+		TraceParityKadBaseClientEvent("kad_source_try_connect_mode", this, "direct_tcp");
 		if (pClassSocket == NULL)
 			pClassSocket = RUNTIME_CLASS(CClientReqSocket);
 		socket = static_cast<CClientReqSocket*>(pClassSocket->CreateObject());
@@ -1429,6 +1467,7 @@ bool CUpDownClient::TryToConnect(bool bIgnoreMaxCon, bool bNoCallbacks, CRuntime
 			socket->Safe_Delete();
 			// we let the timeout handle the cleanup in this case
 			DebugLogError(_T("TryToConnect: Failed to create socket for outgoing connection, %s"), (LPCTSTR)DbgGetClientInfo());
+			TraceParityKadBaseClientEvent("kad_source_try_connect_fail", this, "socket_create_failed");
 		} else
 			Connect();
 		return true;
@@ -1520,8 +1559,11 @@ void CUpDownClient::Connect()
 	if (HasValidHash() && SupportsCryptLayer() && thePrefs.IsCryptLayerEnabled() && (RequestsCryptLayer() || thePrefs.IsCryptLayerPreferred())) {
 		//DebugLog(_T("Enabling CryptLayer on outgoing connection to client %s"), (LPCTSTR)DbgGetClientInfo()); // to be removed later
 		socket->SetConnectionEncryption(true, GetUserHash(), false);
+		TraceParityKadBaseClientEvent("kad_source_connect", this, "encryption_on");
 	} else
 		socket->SetConnectionEncryption(false, NULL, false);
+	if (!(HasValidHash() && SupportsCryptLayer() && thePrefs.IsCryptLayerEnabled() && (RequestsCryptLayer() || thePrefs.IsCryptLayerPreferred())))
+		TraceParityKadBaseClientEvent("kad_source_connect", this, "encryption_off");
 
 	//Try to always tell the socket to WaitForOnConnect before you call Connect.
 	socket->WaitForOnConnect();
@@ -1529,7 +1571,21 @@ void CUpDownClient::Connect()
 	sockAddr.sin_family = AF_INET;
 	sockAddr.sin_port = htons(GetUserPort());
 	sockAddr.sin_addr.s_addr = GetConnectIP();
-	socket->Connect((LPSOCKADDR)&sockAddr, sizeof sockAddr);
+	const BOOL bConnectIssued = socket->Connect((LPSOCKADDR)&sockAddr, sizeof sockAddr);
+	if (theApp.IsParityHarnessMode() && GetSourceFrom() == SF_KADEMLIA && GetRequestFile() != NULL) {
+		CStringA sFields;
+		sFields.Format(
+			"file=%s hash=%s client=%s connect_ip=%s connect_ip_sock=%s connect_ip_raw=0x%08lX issued=%u wsa_error=%u",
+			(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(GetRequestFile()->GetFileName())),
+			(LPCSTR)CStringA(md4str(GetRequestFile()->GetFileHash())),
+			(LPCSTR)Kademlia::OracleTrace::Quote(CStringA(DbgGetClientInfo())),
+			(LPCSTR)Kademlia::OracleTrace::HostPort(GetConnectIP(), GetKadPort()),
+			(LPCSTR)CStringA(ipstr(sockAddr.sin_addr.s_addr)),
+			(unsigned long)GetConnectIP(),
+			bConnectIssued ? 1 : 0,
+			(unsigned)WSAGetLastError());
+		Kademlia::OracleTrace::Append("kad_source_socket_connect_call", sFields);
+	}
 	SendHelloPacket();
 }
 
