@@ -1016,6 +1016,23 @@ void CSearch::ProcessResultFile(const CUInt128 &uAnswer, TagList &rlistInfo)
 	case 4:
 	case 5:
 	case 6:
+		if (theApp.IsParityHarnessMode()) {
+			CStringA sFields;
+			sFields.Format(
+				"target=%s search_id=%lu answer=%s type=%u ip=%s tcp=%u udp=%u buddy_ip=%s buddy_port=%u crypt_options=%u tags=%s",
+				(LPCSTR)OracleTrace::Hex128(m_uTarget),
+				(unsigned long)m_uSearchID,
+				(LPCSTR)OracleTrace::Hex128(uAnswer),
+				(unsigned)uType,
+				(LPCSTR)OracleTrace::HostPort(uIP, uUDPPort),
+				(unsigned)uTCPPort,
+				(unsigned)uUDPPort,
+				(LPCSTR)OracleTrace::HostPort(uBuddyIP, uBuddyPort),
+				(unsigned)uBuddyPort,
+				(unsigned)byCryptOptions,
+				(LPCSTR)OracleTrace::TagSummary(rlistInfo));
+			OracleTrace::Append("search_result_file_source", sFields);
+		}
 		++m_uAnswers;
 		theApp.emuledlg->kademliawnd->searchList->SearchRef(this);
 		theApp.downloadqueue->KademliaSearchFile(m_uSearchID, &uAnswer, &uBuddy, uType, uIP, uTCPPort, uUDPPort, uBuddyIP, uBuddyPort, byCryptOptions);
