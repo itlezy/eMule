@@ -63,6 +63,18 @@ uint32 NormalizeConfiguredUploadLimitKiB(uint32 value)
 	return (value == 0 || value >= UNLIMITED) ? kDefaultConfiguredUploadLimitKiB : value;
 }
 
+UINT NormalizeNonNegativePreference(int value, UINT uDefault)
+{
+	return value < 0 ? uDefault : static_cast<UINT>(value);
+}
+
+UINT NormalizeBoundedPreference(int value, UINT uDefault, UINT uMin, UINT uMax)
+{
+	if (value < 0)
+		return uDefault;
+	return min(uMax, max(uMin, static_cast<UINT>(value)));
+}
+
 void LoadSharedIgnoreRules(const CString &rstrConfigDirectory)
 {
 	SharedFileIntakePolicy::ClearUserRules();
@@ -396,6 +408,12 @@ UINT	CPreferences::filterlevel;
 UINT	CPreferences::m_uFileBufferSize;
 DWORD	CPreferences::m_uFileBufferTimeLimit;
 INT_PTR	CPreferences::m_iQueueSize;
+UINT	CPreferences::m_uEd2kSearchMaxResults;
+UINT	CPreferences::m_uEd2kSearchMaxMoreRequests;
+UINT	CPreferences::m_uKadFileSearchTotal;
+UINT	CPreferences::m_uKadKeywordSearchTotal;
+UINT	CPreferences::m_uKadFileSearchLifetimeSeconds;
+UINT	CPreferences::m_uKadKeywordSearchLifetimeSeconds;
 int		CPreferences::m_iCommitFiles;
 DWORD	CPreferences::m_dwConnectionTimeout;
 DWORD	CPreferences::m_dwDownloadTimeout;
@@ -1653,6 +1671,12 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("ServerKeepAliveTimeout"), m_dwServerKeepAliveTimeout);
 	ini.WriteInt(_T("ConnectionTimeout"), static_cast<int>(TimeoutMsToSeconds(m_dwConnectionTimeout)));
 	ini.WriteInt(_T("DownloadTimeout"), static_cast<int>(TimeoutMsToSeconds(m_dwDownloadTimeout)));
+	ini.WriteInt(_T("Ed2kSearchMaxResults"), static_cast<int>(m_uEd2kSearchMaxResults));
+	ini.WriteInt(_T("Ed2kSearchMaxMoreRequests"), static_cast<int>(m_uEd2kSearchMaxMoreRequests));
+	ini.WriteInt(_T("KadFileSearchTotal"), static_cast<int>(m_uKadFileSearchTotal));
+	ini.WriteInt(_T("KadKeywordSearchTotal"), static_cast<int>(m_uKadKeywordSearchTotal));
+	ini.WriteInt(_T("KadFileSearchLifetime"), static_cast<int>(m_uKadFileSearchLifetimeSeconds));
+	ini.WriteInt(_T("KadKeywordSearchLifetime"), static_cast<int>(m_uKadKeywordSearchLifetimeSeconds));
 	ini.WriteInt(_T("SplitterbarPosition"), splitterbarPosition);
 	ini.WriteInt(_T("SplitterbarPositionServer"), splitterbarPositionSvr);
 	ini.WriteInt(_T("SplitterbarPositionStat"), splitterbarPositionStat + 1);
@@ -2106,6 +2130,12 @@ void CPreferences::LoadPreferences()
 	m_dwServerKeepAliveTimeout = ini.GetInt(_T("ServerKeepAliveTimeout"), 0);
 	m_dwConnectionTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("ConnectionTimeout"), GetDefaultConnectionTimeoutSeconds()), GetDefaultConnectionTimeoutSeconds());
 	m_dwDownloadTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("DownloadTimeout"), GetDefaultDownloadTimeoutSeconds()), GetDefaultDownloadTimeoutSeconds());
+	m_uEd2kSearchMaxResults = NormalizeNonNegativePreference(ini.GetInt(_T("Ed2kSearchMaxResults"), static_cast<int>(GetDefaultEd2kSearchMaxResults())), GetDefaultEd2kSearchMaxResults());
+	m_uEd2kSearchMaxMoreRequests = NormalizeNonNegativePreference(ini.GetInt(_T("Ed2kSearchMaxMoreRequests"), static_cast<int>(GetDefaultEd2kSearchMaxMoreRequests())), GetDefaultEd2kSearchMaxMoreRequests());
+	m_uKadFileSearchTotal = NormalizeBoundedPreference(ini.GetInt(_T("KadFileSearchTotal"), static_cast<int>(GetDefaultKadFileSearchTotal())), GetDefaultKadFileSearchTotal(), GetMinKadSearchTotal(), GetMaxKadSearchTotal());
+	m_uKadKeywordSearchTotal = NormalizeBoundedPreference(ini.GetInt(_T("KadKeywordSearchTotal"), static_cast<int>(GetDefaultKadKeywordSearchTotal())), GetDefaultKadKeywordSearchTotal(), GetMinKadSearchTotal(), GetMaxKadSearchTotal());
+	m_uKadFileSearchLifetimeSeconds = NormalizeBoundedPreference(ini.GetInt(_T("KadFileSearchLifetime"), static_cast<int>(GetDefaultKadFileSearchLifetimeSeconds())), GetDefaultKadFileSearchLifetimeSeconds(), GetMinKadSearchLifetimeSeconds(), GetMaxKadSearchLifetimeSeconds());
+	m_uKadKeywordSearchLifetimeSeconds = NormalizeBoundedPreference(ini.GetInt(_T("KadKeywordSearchLifetime"), static_cast<int>(GetDefaultKadKeywordSearchLifetimeSeconds())), GetDefaultKadKeywordSearchLifetimeSeconds(), GetMinKadSearchLifetimeSeconds(), GetMaxKadSearchLifetimeSeconds());
 	splitterbarPosition = ini.GetInt(_T("SplitterbarPosition"), 75);
 	if (splitterbarPosition < 9)
 		splitterbarPosition = 9;

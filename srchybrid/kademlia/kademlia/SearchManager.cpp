@@ -270,18 +270,18 @@ void CSearchManager::JumpStart()
 		bool bStop = false;
 		switch (itSearchMap->second->GetSearchType()) {
 		case CSearch::FILE:
-			if (tNow >= pSearch->m_tCreated + SEARCHFILE_LIFETIME)
+			if (tNow >= pSearch->m_tCreated + thePrefs.GetKadFileSearchLifetimeSeconds())
 				bDel = true;
-			else if (pSearch->GetAnswers() >= SEARCHFILE_TOTAL || tNow >= pSearch->m_tCreated + SEARCHFILE_LIFETIME - SEC(20))
+			else if (pSearch->GetAnswers() >= thePrefs.GetKadFileSearchTotal() || tNow >= pSearch->m_tCreated + thePrefs.GetKadFileSearchLifetimeSeconds() - SEC(20))
 				bStop = true;
 			break;
 		case CSearch::KEYWORD:
-			if (tNow >= pSearch->m_tCreated + SEARCHKEYWORD_LIFETIME) {
+			if (tNow >= pSearch->m_tCreated + thePrefs.GetKadKeywordSearchLifetimeSeconds()) {
 				bDel = true;
 				// Tell GUI that search ended
 				if (theApp.emuledlg->searchwnd)
 					theApp.emuledlg->searchwnd->CancelKadSearch(pSearch->GetSearchID());
-			} else if (pSearch->GetAnswers() >= SEARCHKEYWORD_TOTAL || tNow >= pSearch->m_tCreated + SEARCHKEYWORD_LIFETIME - SEC(20))
+			} else if (pSearch->GetAnswers() >= thePrefs.GetKadKeywordSearchTotal() || tNow >= pSearch->m_tCreated + thePrefs.GetKadKeywordSearchLifetimeSeconds() - SEC(20))
 				bStop = true;
 			break;
 		case CSearch::NOTES:

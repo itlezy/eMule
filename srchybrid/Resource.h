@@ -2418,6 +2418,14 @@
 #define IDS_COPY_HASH                   1699
 #define IDS_BAN                         1700
 #define IDS_BAN_ARBITRARY               1701
+#define IDS_SEARCHLIMITS                1702
+#define IDS_ED2K_SEARCH                 1703
+#define IDS_ED2K_SEARCH_MAX_RESULTS     1704
+#define IDS_ED2K_SEARCH_MAX_MORE        1705
+#define IDS_KAD_SEARCH_FILE_TOTAL       1706
+#define IDS_KAD_SEARCH_KEYWORD_TOTAL    1707
+#define IDS_KAD_SEARCH_FILE_LIFETIME    1708
+#define IDS_KAD_SEARCH_KEYWORD_LIFETIME 1709
 #define IDD_SHUTDOWNPROGRESS            3054
 #define IDC_ENABLE_GEOLOCATION          3049
 #define IDC_GEOLOCATION_CHECKDAYS_LBL   3050
@@ -2435,6 +2443,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3057
-#define _APS_NEXT_SYMED_VALUE           1702
+#define _APS_NEXT_SYMED_VALUE           1710
 #endif
 #endif

@@ -139,6 +139,15 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiMaxCon5Sec()
 	, m_htiMaxHalfOpen()
 	, m_htiDateTimeFormat4Lists()
+	, m_htiSearchGroup()
+	, m_htiSearchEd2kGroup()
+	, m_htiSearchEd2kMaxResults()
+	, m_htiSearchEd2kMaxMoreRequests()
+	, m_htiSearchKadGroup()
+	, m_htiSearchKadFileTotal()
+	, m_htiSearchKadKeywordTotal()
+	, m_htiSearchKadFileLifetime()
+	, m_htiSearchKadKeywordLifetime()
 	, m_htiPreviewCopiedArchives()
 	, m_htiPreviewOnIconDblClk()
 	, m_htiShowActiveDownloadsBold()
@@ -176,6 +185,12 @@ CPPgTweaks::CPPgTweaks()
 	, m_uFileBufferSize()
 	, m_uConnectionTimeoutSeconds()
 	, m_uDownloadTimeoutSeconds()
+	, m_uEd2kSearchMaxResults()
+	, m_uEd2kSearchMaxMoreRequests()
+	, m_uKadFileSearchTotal()
+	, m_uKadKeywordSearchTotal()
+	, m_uKadFileSearchLifetimeSeconds()
+	, m_uKadKeywordSearchLifetimeSeconds()
 	, m_uServerKeepAliveTimeout()
 	, m_iCommitFiles()
 	, m_iExtractMetaData()
@@ -257,6 +272,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		int iImgLog = 8;
 		int iImgDynyp = 8;
 		int iImgConnection = 8;
+		int iImgSearch = 8;
 		//	int iImgA4AF = 8;
 		int iImgMetaData = 8;
 		int iImgUPnP = 8;
@@ -267,6 +283,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			iImgLog = piml->Add(CTempIconLoader(_T("Log")));
 			iImgDynyp = piml->Add(CTempIconLoader(_T("upload")));
 			iImgConnection = piml->Add(CTempIconLoader(_T("connection")));
+			iImgSearch = piml->Add(CTempIconLoader(_T("SearchResults")));
 			//	iImgA4AF = piml->Add(CTempIconLoader(_T("Download")));
 			iImgMetaData = piml->Add(CTempIconLoader(_T("MediaInfo")));
 			iImgUPnP = piml->Add(CTempIconLoader(_T("connectedhighhigh")));
@@ -288,6 +305,25 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiConditionalTCPAccept = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_CONDTCPACCEPT), m_htiTCPGroup, m_bConditionalTCPAccept);
 		m_htiServerKeepAliveTimeout = m_ctrlTreeOptions.InsertItem(GetResString(IDS_SERVERKEEPALIVETIMEOUT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiTCPGroup);
 		m_ctrlTreeOptions.AddEditBox(m_htiServerKeepAliveTimeout, RUNTIME_CLASS(CNumTreeOptionsEdit));
+
+		/////////////////////////////////////////////////////////////////////////////
+		// Search group
+		//
+		m_htiSearchGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_SEARCHLIMITS), iImgSearch, TVI_ROOT);
+		m_htiSearchEd2kGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_ED2K_SEARCH), iImgSearch, m_htiSearchGroup);
+		m_htiSearchEd2kMaxResults = m_ctrlTreeOptions.InsertItem(GetResString(IDS_ED2K_SEARCH_MAX_RESULTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiSearchEd2kGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiSearchEd2kMaxResults, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiSearchEd2kMaxMoreRequests = m_ctrlTreeOptions.InsertItem(GetResString(IDS_ED2K_SEARCH_MAX_MORE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiSearchEd2kGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiSearchEd2kMaxMoreRequests, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiSearchKadGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_SEARCHKAD), iImgSearch, m_htiSearchGroup);
+		m_htiSearchKadFileTotal = m_ctrlTreeOptions.InsertItem(GetResString(IDS_KAD_SEARCH_FILE_TOTAL), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiSearchKadGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiSearchKadFileTotal, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiSearchKadKeywordTotal = m_ctrlTreeOptions.InsertItem(GetResString(IDS_KAD_SEARCH_KEYWORD_TOTAL), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiSearchKadGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiSearchKadKeywordTotal, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiSearchKadFileLifetime = m_ctrlTreeOptions.InsertItem(GetResString(IDS_KAD_SEARCH_FILE_LIFETIME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiSearchKadGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiSearchKadFileLifetime, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiSearchKadKeywordLifetime = m_ctrlTreeOptions.InsertItem(GetResString(IDS_KAD_SEARCH_KEYWORD_LIFETIME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiSearchKadGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiSearchKadKeywordLifetime, RUNTIME_CLASS(CNumTreeOptionsEdit));
 
 		/////////////////////////////////////////////////////////////////////////////
 		// Broadband group
@@ -421,6 +457,9 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiImportParts = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLEIMPORTPARTS), TVI_ROOT, m_bImportParts);
 
 		m_ctrlTreeOptions.Expand(m_htiTCPGroup, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiSearchGroup, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiSearchEd2kGroup, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiSearchKadGroup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBroadband, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBBLowRatioBoost, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiBBSessionTransfer, TVE_EXPAND);
@@ -455,6 +494,22 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiConnectionTimeout);
 		if (m_uDownloadTimeoutSeconds < thePrefs.GetMinTimeoutSeconds())
 			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiDownloadTimeout);
+	}
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiSearchEd2kMaxResults, m_uEd2kSearchMaxResults);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiSearchEd2kMaxMoreRequests, m_uEd2kSearchMaxMoreRequests);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiSearchKadFileTotal, m_uKadFileSearchTotal);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiSearchKadKeywordTotal, m_uKadKeywordSearchTotal);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiSearchKadFileLifetime, m_uKadFileSearchLifetimeSeconds);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiSearchKadKeywordLifetime, m_uKadKeywordSearchLifetimeSeconds);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_uKadFileSearchTotal < thePrefs.GetMinKadSearchTotal() || m_uKadFileSearchTotal > thePrefs.GetMaxKadSearchTotal())
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiSearchKadFileTotal);
+		if (m_uKadKeywordSearchTotal < thePrefs.GetMinKadSearchTotal() || m_uKadKeywordSearchTotal > thePrefs.GetMaxKadSearchTotal())
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiSearchKadKeywordTotal);
+		if (m_uKadFileSearchLifetimeSeconds < thePrefs.GetMinKadSearchLifetimeSeconds() || m_uKadFileSearchLifetimeSeconds > thePrefs.GetMaxKadSearchLifetimeSeconds())
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiSearchKadFileLifetime);
+		if (m_uKadKeywordSearchLifetimeSeconds < thePrefs.GetMinKadSearchLifetimeSeconds() || m_uKadKeywordSearchLifetimeSeconds > thePrefs.GetMaxKadSearchLifetimeSeconds())
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiSearchKadKeywordLifetime);
 	}
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBMaxUploadClients, m_iBBMaxUploadClients);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiBBSlowThreshold, m_sBBSlowThresholdFactor);
@@ -650,6 +705,12 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bRestoreLastLogPane = thePrefs.GetRestoreLastLogPane();
 	m_uConnectionTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetConnectionTimeout()));
 	m_uDownloadTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetDownloadTimeout()));
+	m_uEd2kSearchMaxResults = thePrefs.GetEd2kSearchMaxResults();
+	m_uEd2kSearchMaxMoreRequests = thePrefs.GetEd2kSearchMaxMoreRequests();
+	m_uKadFileSearchTotal = thePrefs.GetKadFileSearchTotal();
+	m_uKadKeywordSearchTotal = thePrefs.GetKadKeywordSearchTotal();
+	m_uKadFileSearchLifetimeSeconds = thePrefs.GetKadFileSearchLifetimeSeconds();
+	m_uKadKeywordSearchLifetimeSeconds = thePrefs.GetKadKeywordSearchLifetimeSeconds();
 	m_iBBMaxUploadClients = static_cast<int>(thePrefs.GetBBMaxUploadClientsAllowed());
 	m_sBBSlowThresholdFactor.Format(_T("%.2f"), thePrefs.GetBBSlowUploadThresholdFactor());
 	m_iBBSlowGraceSeconds = static_cast<int>(thePrefs.GetBBSlowUploadGraceSeconds());
@@ -738,6 +799,12 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.SetMaxHalfConnections(m_iMaxHalfOpen ? m_iMaxHalfOpen : thePrefs.GetDefaultMaxHalfConnections());
 	thePrefs.SetConnectionTimeout(thePrefs.NormalizeTimeoutSeconds(m_uConnectionTimeoutSeconds, thePrefs.GetDefaultConnectionTimeoutSeconds()));
 	thePrefs.SetDownloadTimeout(thePrefs.NormalizeTimeoutSeconds(m_uDownloadTimeoutSeconds, thePrefs.GetDefaultDownloadTimeoutSeconds()));
+	thePrefs.SetEd2kSearchMaxResults(m_uEd2kSearchMaxResults);
+	thePrefs.SetEd2kSearchMaxMoreRequests(m_uEd2kSearchMaxMoreRequests);
+	thePrefs.SetKadFileSearchTotal(m_uKadFileSearchTotal);
+	thePrefs.SetKadKeywordSearchTotal(m_uKadKeywordSearchTotal);
+	thePrefs.SetKadFileSearchLifetimeSeconds(m_uKadFileSearchLifetimeSeconds);
+	thePrefs.SetKadKeywordSearchLifetimeSeconds(m_uKadKeywordSearchLifetimeSeconds);
 	thePrefs.m_bConditionalTCPAccept = m_bConditionalTCPAccept;
 	thePrefs.SetBBMaxUploadClientsAllowed(static_cast<UINT>(max(1, m_iBBMaxUploadClients)));
 	thePrefs.SetBBSlowUploadThresholdFactor(static_cast<float>(_tstof(m_sBBSlowThresholdFactor)));
@@ -900,6 +967,15 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
 		LocalizeEditLabel(m_htiMinFreeDiskSpace, IDS_MINFREEDISKSPACE);
 		LocalizeEditLabel(m_htiServerKeepAliveTimeout, IDS_SERVERKEEPALIVETIMEOUT);
+		LocalizeItemText(m_htiSearchGroup, IDS_SEARCHLIMITS);
+		LocalizeItemText(m_htiSearchEd2kGroup, IDS_ED2K_SEARCH);
+		LocalizeEditLabel(m_htiSearchEd2kMaxResults, IDS_ED2K_SEARCH_MAX_RESULTS);
+		LocalizeEditLabel(m_htiSearchEd2kMaxMoreRequests, IDS_ED2K_SEARCH_MAX_MORE);
+		LocalizeItemText(m_htiSearchKadGroup, IDS_SEARCHKAD);
+		LocalizeEditLabel(m_htiSearchKadFileTotal, IDS_KAD_SEARCH_FILE_TOTAL);
+		LocalizeEditLabel(m_htiSearchKadKeywordTotal, IDS_KAD_SEARCH_KEYWORD_TOTAL);
+		LocalizeEditLabel(m_htiSearchKadFileLifetime, IDS_KAD_SEARCH_FILE_LIFETIME);
+		LocalizeEditLabel(m_htiSearchKadKeywordLifetime, IDS_KAD_SEARCH_KEYWORD_LIFETIME);
 		LocalizeItemText(m_htiBroadband, IDS_BROADBAND);
 		LocalizeEditLabel(m_htiBBMaxUploadClients, IDS_BB_MAX_UPLOAD_CLIENTS);
 		LocalizeEditLabel(m_htiBBSlowThreshold, IDS_BB_SLOW_THRESHOLD_FACTOR);
@@ -997,6 +1073,15 @@ void CPPgTweaks::OnDestroy()
 	m_ctrlTreeOptions.DestroyWindow();
 	m_bInitializedTreeOpts = false;
 	m_htiTCPGroup = NULL;
+	m_htiSearchGroup = NULL;
+	m_htiSearchEd2kGroup = NULL;
+	m_htiSearchEd2kMaxResults = NULL;
+	m_htiSearchEd2kMaxMoreRequests = NULL;
+	m_htiSearchKadGroup = NULL;
+	m_htiSearchKadFileTotal = NULL;
+	m_htiSearchKadKeywordTotal = NULL;
+	m_htiSearchKadFileLifetime = NULL;
+	m_htiSearchKadKeywordLifetime = NULL;
 	m_htiBroadband = NULL;
 	m_htiBBMaxUploadClients = NULL;
 	m_htiBBSlowThreshold = NULL;

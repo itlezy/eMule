@@ -4077,6 +4077,14 @@ BEGIN
     IDS_PROTOCOLVERSION     "Protocol Version"
     IDS_FOUNDNODESUSEFUL    "Found Nodes (useful)"
     IDS_NORESPONSE          "No Response"
+    IDS_SEARCHLIMITS        "Search Limits"
+    IDS_ED2K_SEARCH         "eD2K Search"
+    IDS_ED2K_SEARCH_MAX_RESULTS "Max results (0 = unlimited)"
+    IDS_ED2K_SEARCH_MAX_MORE "Max ""More"" requests (0 = unlimited)"
+    IDS_KAD_SEARCH_FILE_TOTAL "File search total results"
+    IDS_KAD_SEARCH_KEYWORD_TOTAL "Keyword search total results"
+    IDS_KAD_SEARCH_FILE_LIFETIME "File search lifetime (seconds)"
+    IDS_KAD_SEARCH_KEYWORD_LIFETIME "Keyword search lifetime (seconds)"
 END
 
 #endif    // English (United States) resources

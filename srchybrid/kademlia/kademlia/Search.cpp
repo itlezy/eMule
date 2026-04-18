@@ -218,10 +218,10 @@ void CSearch::PrepareToStop()
 		uBaseTime = SEARCHNODE_LIFETIME;
 		break;
 	case FILE:
-		uBaseTime = SEARCHFILE_LIFETIME;
+		uBaseTime = thePrefs.GetKadFileSearchLifetimeSeconds();
 		break;
 	case KEYWORD:
-		uBaseTime = SEARCHKEYWORD_LIFETIME;
+		uBaseTime = thePrefs.GetKadKeywordSearchLifetimeSeconds();
 		break;
 	case NOTES:
 		uBaseTime = SEARCHNOTES_LIFETIME;

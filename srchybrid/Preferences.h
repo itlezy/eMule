@@ -508,6 +508,12 @@ public:
 	static UINT		filterlevel;
 	static UINT		m_uFileBufferSize;
 	static INT_PTR	m_iQueueSize;
+	static UINT		m_uEd2kSearchMaxResults;
+	static UINT		m_uEd2kSearchMaxMoreRequests;
+	static UINT		m_uKadFileSearchTotal;
+	static UINT		m_uKadKeywordSearchTotal;
+	static UINT		m_uKadFileSearchLifetimeSeconds;
+	static UINT		m_uKadKeywordSearchLifetimeSeconds;
 	static int		m_iCommitFiles;
 	static DWORD	m_uFileBufferTimeLimit;
 
@@ -976,6 +982,12 @@ public:
 	static DWORD	GetServerKeepAliveTimeout()			{ return m_dwServerKeepAliveTimeout; }
 	static DWORD	GetConnectionTimeout()				{ return m_dwConnectionTimeout; }
 	static DWORD	GetDownloadTimeout()				{ return m_dwDownloadTimeout; }
+	static UINT		GetEd2kSearchMaxResults()			{ return m_uEd2kSearchMaxResults; }
+	static UINT		GetEd2kSearchMaxMoreRequests()		{ return m_uEd2kSearchMaxMoreRequests; }
+	static UINT		GetKadFileSearchTotal()			{ return m_uKadFileSearchTotal; }
+	static UINT		GetKadKeywordSearchTotal()		{ return m_uKadKeywordSearchTotal; }
+	static UINT		GetKadFileSearchLifetimeSeconds()	{ return m_uKadFileSearchLifetimeSeconds; }
+	static UINT		GetKadKeywordSearchLifetimeSeconds() { return m_uKadKeywordSearchLifetimeSeconds; }
 	static bool		GetConditionalTCPAccept()			{ return m_bConditionalTCPAccept; }
 
 	static LANGID	GetLanguageID()						{ return m_wLanguageID; }
@@ -1146,6 +1158,16 @@ public:
 	static UINT		GetMinTimeoutSeconds()				{ return 5; }
 	static UINT		GetDefaultConnectionTimeoutSeconds()	{ return 30; }
 	static UINT		GetDefaultDownloadTimeoutSeconds()	{ return 75; }
+	static UINT		GetDefaultEd2kSearchMaxResults()	{ return 0; }
+	static UINT		GetDefaultEd2kSearchMaxMoreRequests() { return 0; }
+	static UINT		GetDefaultKadFileSearchTotal()		{ return 500; }
+	static UINT		GetDefaultKadKeywordSearchTotal()	{ return 500; }
+	static UINT		GetDefaultKadFileSearchLifetimeSeconds() { return 60; }
+	static UINT		GetDefaultKadKeywordSearchLifetimeSeconds() { return 60; }
+	static UINT		GetMinKadSearchTotal()				{ return 100; }
+	static UINT		GetMaxKadSearchTotal()				{ return 5000; }
+	static UINT		GetMinKadSearchLifetimeSeconds()	{ return 30; }
+	static UINT		GetMaxKadSearchLifetimeSeconds()	{ return 180; }
 	static DWORD	NormalizeTimeoutSeconds(UINT seconds, UINT defaultSeconds);
 	static UINT		TimeoutMsToSeconds(DWORD milliseconds) { return milliseconds / SEC2MS(1); }
 
@@ -1303,6 +1325,12 @@ public:
 	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
 	static void		SetConnectionTimeout(DWORD in)		{ m_dwConnectionTimeout = in; }
 	static void		SetDownloadTimeout(DWORD in)		{ m_dwDownloadTimeout = in; }
+	static void		SetEd2kSearchMaxResults(UINT in)	{ m_uEd2kSearchMaxResults = in; }
+	static void		SetEd2kSearchMaxMoreRequests(UINT in) { m_uEd2kSearchMaxMoreRequests = in; }
+	static void		SetKadFileSearchTotal(UINT in)		{ m_uKadFileSearchTotal = in; }
+	static void		SetKadKeywordSearchTotal(UINT in)	{ m_uKadKeywordSearchTotal = in; }
+	static void		SetKadFileSearchLifetimeSeconds(UINT in) { m_uKadFileSearchLifetimeSeconds = in; }
+	static void		SetKadKeywordSearchLifetimeSeconds(UINT in) { m_uKadKeywordSearchLifetimeSeconds = in; }
 	static bool		IsSchedulerEnabled()				{ return scheduler; }
 	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
 	static bool		GetDontCompressAvi()				{ return dontcompressavi; }

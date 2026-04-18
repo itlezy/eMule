@@ -80,6 +80,15 @@ protected:
 	HTREEITEM m_htiMaxCon5Sec;
 	HTREEITEM m_htiMaxHalfOpen;
 	HTREEITEM m_htiDateTimeFormat4Lists;
+	HTREEITEM m_htiSearchGroup;
+	HTREEITEM m_htiSearchEd2kGroup;
+	HTREEITEM m_htiSearchEd2kMaxResults;
+	HTREEITEM m_htiSearchEd2kMaxMoreRequests;
+	HTREEITEM m_htiSearchKadGroup;
+	HTREEITEM m_htiSearchKadFileTotal;
+	HTREEITEM m_htiSearchKadKeywordTotal;
+	HTREEITEM m_htiSearchKadFileLifetime;
+	HTREEITEM m_htiSearchKadKeywordLifetime;
 	HTREEITEM m_htiPreviewCopiedArchives;
 	HTREEITEM m_htiPreviewOnIconDblClk;
 	HTREEITEM m_htiShowActiveDownloadsBold;
@@ -118,6 +127,12 @@ protected:
 	UINT m_uFileBufferSize;
 	UINT m_uConnectionTimeoutSeconds;
 	UINT m_uDownloadTimeoutSeconds;
+	UINT m_uEd2kSearchMaxResults;
+	UINT m_uEd2kSearchMaxMoreRequests;
+	UINT m_uKadFileSearchTotal;
+	UINT m_uKadKeywordSearchTotal;
+	UINT m_uKadFileSearchLifetimeSeconds;
+	UINT m_uKadKeywordSearchLifetimeSeconds;
 	UINT m_uServerKeepAliveTimeout;
 	int m_iCommitFiles;
 	int m_iExtractMetaData;

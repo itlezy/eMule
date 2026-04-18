@@ -460,12 +460,14 @@ void CSearchResultsWnd::LocalEd2kSearchEnd(UINT count, bool bMoreResultsAvailabl
 		else if (!global_search_timer)
 			VERIFY((global_search_timer = SetTimer(TimerGlobalSearch, SEC2MS(3) / 4, NULL)) != 0);
 	}
-	m_pwndParams->m_ctlMore.EnableWindow(bMoreResultsAvailable && m_iSentMoreReq < MAX_MORE_SEARCH_REQ);
+	const UINT uMaxMoreRequests = thePrefs.GetEd2kSearchMaxMoreRequests();
+	m_pwndParams->m_ctlMore.EnableWindow(bMoreResultsAvailable && (uMaxMoreRequests == 0 || static_cast<UINT>(m_iSentMoreReq) < uMaxMoreRequests));
 }
 
 void CSearchResultsWnd::AddEd2kSearchResults(UINT count)
 {
-	if (!m_cancelled && count > MAX_RESULTS)
+	const UINT uMaxResults = thePrefs.GetEd2kSearchMaxResults();
+	if (!m_cancelled && uMaxResults != 0 && count > uMaxResults)
 		CancelEd2kSearch();
 }
 
