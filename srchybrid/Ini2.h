@@ -115,7 +115,10 @@ public:
 
 private:
 	static CString	Read(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault);
+	static CString	ReadUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault);
 	static void		Write(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue);
+	static void		WriteUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue);
+	static void		Delete(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry);
 
 	//true: Filenames without path take the Modulepath
 	//false: Filenames without path take the CurrentDirectory
