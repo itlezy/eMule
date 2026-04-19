@@ -432,7 +432,8 @@ bool CAICHSyncThread::ConvertKnown2ToKnown264(CSafeFile &TargetFile)
 	}
 	theApp.QueueLogLine(false, GetResString(IDS_CONVERTINGKNOWN2DONE));
 
-	// FIXME LARGE FILES (uncomment)
+	// Preserve the legacy source file after conversion; cleanup can be handled separately
+	// once we decide whether rollback/manual inspection of the old file is still useful.
 	//::DeleteFile(oldfullpath);
 	TargetFile.SeekToBegin();
 	return true;

@@ -687,7 +687,6 @@ void CSearchList::AddResultCount(uint32 nSearchID, const uchar *hash, UINT nCoun
 	m_foundSourcesCount[nSearchID] = tempValue + ((bSpam && thePrefs.IsSearchSpamFilterEnabled()) ? min(nCount, 5) : nCount);
 }
 
-// FIXME LARGE FILES
 void CSearchList::KademliaSearchKeyword(uint32 nSearchID, const Kademlia::CUInt128 *pFileID
 					, LPCTSTR name, uint64 size, LPCTSTR type, UINT uKadPublishInfo
 					, CArray<CAICHHash> &raAICHHashes, CArray<uint8, uint8> &raAICHHashPopularity

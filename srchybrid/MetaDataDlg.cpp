@@ -342,7 +342,7 @@ CString GetValue(const CTag *pTag)
 	return strValue;
 }
 
-CString GetValue(const Kademlia::CKadTag *pTag) // FIXME LARGE FILES
+CString GetValue(const Kademlia::CKadTag *pTag)
 {
 	CString strValue;
 	if (pTag->IsStr()) {
@@ -357,7 +357,7 @@ CString GetValue(const Kademlia::CKadTag *pTag) // FIXME LARGE FILES
 		else if (pTag->m_name == TAG_IP_ADDRESS || (pTag->m_name.GetLength() == 1 && (byte)pTag->m_name[0] >= FT_SERVERPORT))
 			strValue.Format(_T("%I64u"), pTag->GetInt());
 		else
-			strValue = GetFormatedUInt((UINT)pTag->GetInt());
+			strValue = GetFormatedUInt64(pTag->GetInt());
 	} else if (pTag->m_type == TAGTYPE_FLOAT32)
 		strValue.Format(_T("%f"), pTag->GetFloat());
 	else if (pTag->m_type == TAGTYPE_BOOL)
