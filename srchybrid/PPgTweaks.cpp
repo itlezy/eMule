@@ -913,14 +913,13 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bAdjustNTFSDaylightFileTime = thePrefs.GetAdjustNTFSDaylightFileTime();
 	m_bRearrangeKadSearchKeywords = thePrefs.GetRearrangeKadSearchKeywords();
 	m_bMessageFromValidSourcesOnly = thePrefs.MsgOnlySecure();
+	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
+	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
 
 	m_ctrlTreeOptions.SetImageListColorFlags(theApp.m_iDfltImageListColorFlags);
 	CPropertyPage::OnInitDialog();
 	InitWindowStyles(this);
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
-
-	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
-	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
 
 	CaptureBaseLayout();
 	Localize();
