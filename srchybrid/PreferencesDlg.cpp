@@ -47,6 +47,15 @@ namespace
 	}
 }
 
+void CPreferencesDlg::RemoveHelpButtons()
+{
+	static const UINT aHelpIds[] = { ID_HELP, IDHELP };
+	for (int i = 0; i < _countof(aHelpIds); ++i) {
+		if (CWnd *pHelpButton = GetDlgItem(aHelpIds[i]))
+			pHelpButton->DestroyWindow();
+	}
+}
+
 CPreferencesDlg::CPreferencesDlg()
 	: m_bNormalLayoutCaptured(false)
 	, m_szExtendedGrowth(kExtendedExtraWidth, kExtendedExtraHeight)
@@ -133,8 +142,7 @@ BOOL CPreferencesDlg::OnInitDialog()
 	BOOL bResult = CTreePropSheet::OnInitDialog();
 	InitWindowStyles(this);
 
-	if (CWnd *pHelpButton = GetDlgItem(ID_HELP))
-		pHelpButton->DestroyWindow();
+	RemoveHelpButtons();
 
 	for (int i = (int)m_pages.GetCount(); --i >= 0;)
 		if (GetPage(i)->m_psp.pszTemplate == m_pPshStartPage) {
@@ -198,6 +206,7 @@ void CPreferencesDlg::ApplyExtendedLayout()
 	const bool bExtendedActive = (GetActivePage() == &m_wndTweaks);
 	const int dx = bExtendedActive ? m_szExtendedGrowth.cx : 0;
 	const int dy = bExtendedActive ? m_szExtendedGrowth.cy : 0;
+	CWnd *const pFrameWnd = GetDlgItem(0xFFFF);
 
 	SetRedraw(FALSE);
 
@@ -213,7 +222,7 @@ void CPreferencesDlg::ApplyExtendedLayout()
 	CRect rectFrame(m_rcNormalFrame);
 	rectFrame.right += dx;
 	rectFrame.bottom += dy;
-	MoveChildWindow(GetDlgItem(0xFFFF), rectFrame);
+	MoveChildWindow(pFrameWnd, rectFrame);
 
 	HWND hActivePage = PropSheet_GetCurrentPageHwnd(m_hWnd);
 	if (hActivePage != NULL) {
@@ -243,8 +252,13 @@ void CPreferencesDlg::ApplyExtendedLayout()
 		}
 	}
 
+	RemoveHelpButtons();
 	SetRedraw(TRUE);
-	RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+	if (pFrameWnd != NULL)
+		pFrameWnd->RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
+	if (hActivePage != NULL)
+		::RedrawWindow(hActivePage, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
+	RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
 }
 
 BOOL CPreferencesDlg::OnEraseBkgnd(CDC *pDC)
@@ -327,6 +341,7 @@ BOOL CPreferencesDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 {
 	switch (wParam) {
 	case ID_HELP:
+	case IDHELP:
 		return OnHelpInfo(NULL);
 	case IDOK:
 	case ID_APPLY_NOW:

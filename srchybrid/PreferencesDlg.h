@@ -56,6 +56,8 @@ protected:
 	void CaptureNormalLayout();
 	/** Applies the normal or expanded layout for the currently active page. */
 	void ApplyExtendedLayout();
+	/** Removes any property-sheet Help button variants created by the common dialog shell. */
+	void RemoveHelpButtons();
 
 	LPCTSTR m_pPshStartPage;
 	bool m_bSaveIniFile;
