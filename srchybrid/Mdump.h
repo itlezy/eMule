@@ -11,7 +11,6 @@ private:
 	static CString m_strAppName;
 	static CString m_strDumpDir;
 
-	static HMODULE GetDebugHelperDll(FARPROC *ppfnMiniDumpWriteDump, bool bShowErrors);
 	static LONG WINAPI TopLevelFilter(struct _EXCEPTION_POINTERS *pExceptionInfo) noexcept;
 };
 

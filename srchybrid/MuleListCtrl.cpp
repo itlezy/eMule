@@ -356,7 +356,6 @@ void CMuleListCtrl::LoadSettings()
 
 HBITMAP LoadImageAsPARGB(LPCTSTR pszPath)
 {
-	// NOTE: Do *NOT* forget to specify /DELAYLOAD:gdiplus.dll as link parameter.
 	HBITMAP hbmPARGB = NULL;
 	ULONG_PTR gdiplusToken = 0;
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;

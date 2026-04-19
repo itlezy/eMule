@@ -448,41 +448,6 @@ static bool TryGetVolumeRootPath(const CString &strPath, CString *pstrVolumeRoot
 	return true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// DEP - Data Execution Prevention
-//
-// Enables DEP dynamically when the process policy is not already permanent.
-//
-#ifndef PROCESS_DEP_ENABLE
-#define	PROCESS_DEP_ENABLE						0x00000001
-#define	PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION	0x00000002
-#endif//!PROCESS_DEP_ENABLE
-
-static void InitDEP()
-{
-	BOOL(WINAPI *pfnGetProcessDEPPolicy)(HANDLE hProcess, LPDWORD lpFlags, PBOOL lpPermanent);
-	BOOL(WINAPI *pfnSetProcessDEPPolicy)(DWORD dwFlags);
-	(FARPROC&)pfnGetProcessDEPPolicy = ::GetProcAddress(::GetModuleHandle(_T("kernel32")), "GetProcessDEPPolicy");
-	(FARPROC&)pfnSetProcessDEPPolicy = ::GetProcAddress(::GetModuleHandle(_T("kernel32")), "SetProcessDEPPolicy");
-	if (pfnGetProcessDEPPolicy && pfnSetProcessDEPPolicy) {
-		DWORD dwFlags;
-		BOOL bPermanent;
-		if ((*pfnGetProcessDEPPolicy)(::GetCurrentProcess(), &dwFlags, &bPermanent)) {
-			if (((dwFlags & PROCESS_DEP_ENABLE) == 0 || !bPermanent)
-#if _ATL_VER>0x0710
-				|| (dwFlags & PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION) == 0
-#endif
-
-				)
-			{
-				dwFlags = PROCESS_DEP_ENABLE;
-				dwFlags |= PROCESS_DEP_DISABLE_ATL_THUNK_EMULATION;
-				(*pfnSetProcessDEPPolicy)(dwFlags);
-			}
-		}
-	}
-}
-
 bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
 {
 	if (pszPath == NULL || pszPath[0] == _T('\0'))
@@ -549,10 +514,7 @@ void CemuleApp::InvalidatePartMetWriteGuardCache(LPCTSTR pszPath)
 
 static void InitHeapCorruptionDetection()
 {
-	BOOL(WINAPI *pfnHeapSetInformation)(HANDLE HeapHandle, HEAP_INFORMATION_CLASS HeapInformationClass, PVOID HeapInformation, SIZE_T HeapInformationLength);
-	(FARPROC &)pfnHeapSetInformation = ::GetProcAddress(::GetModuleHandle(_T("kernel32")), "HeapSetInformation");
-	if (pfnHeapSetInformation)
-		(*pfnHeapSetInformation)(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
+	::HeapSetInformation(NULL, HeapEnableTerminationOnCorruption, NULL, 0);
 }
 
 
@@ -616,7 +578,6 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_ullStartupProfileFrequency()
 {
 	// Initialize Windows security features.
-	InitDEP();
 	InitHeapCorruptionDetection();
 
 	// This does not seem to work well with multithreading, although there is no reason why it should not.
@@ -1807,7 +1768,6 @@ HICON CemuleApp::LoadIcon(LPCTSTR lpszResourceName, int cx, int cy, UINT uFlags)
 				// if LR_DEFAULTSIZE is specified! -> always specify the requested size!
 				hIcon = (HICON)::LoadImage(NULL, strFullResPath, IMAGE_ICON, cx, cy, uFlags | LR_LOADFROMFILE);
 				if (hIcon == NULL && ::GetLastError() != ERROR_PATH_NOT_FOUND/* && g_bGdiPlusInstalled*/) {
-					// NOTE: Do *NOT* forget to specify /DELAYLOAD:gdiplus.dll as link parameter.
 					ULONG_PTR gdiplusToken = 0;
 					Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 					if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok) {

@@ -401,7 +401,6 @@ void CKadLookupGraph::OnPaint()
 		}
 		// start drawing, beginning with the arrow lines connecting the nodes
 		// if possible use GDI+ for Anti Aliasing
-		// NOTE: Do *NOT* forget to specify /DELAYLOAD:gdiplus.dll as link parameter.
 		ULONG_PTR gdiplusToken = 0;
 		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 		if (Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, NULL) == Gdiplus::Ok) {

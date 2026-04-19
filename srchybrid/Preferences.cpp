@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
+#include <ShlObj.h>
 #include <share.h>
 #include <iphlpapi.h>
 #include "emule.h"
@@ -3066,92 +3067,65 @@ CString CPreferences::GetDefaultDirectory(EDefaultDirectory eDirectory, bool bCr
 		if (nRegistrySetting > 2)
 			nRegistrySetting = _UI32_MAX;
 
-		// Do we need to get SystemFolders, or do we use our old Default anyway? (Executable Dir)
-		bool bVista = (GetWindowsVersion() >= _WINVER_VISTA_);
+		// On the supported Win10+ baseline, known folders are always available.
 		if (nRegistrySetting == 0
-			|| (nRegistrySetting == 1 && bVista)
-			|| (nRegistrySetting == _UI32_MAX && (!bConfigAvailableExecutable || bVista)))
+			|| nRegistrySetting == 1
+			|| (nRegistrySetting == _UI32_MAX && !bConfigAvailableExecutable))
 		{
-			if (bVista) {
-				// function unavailable before WinVista
-				HRESULT(WINAPI *pfnSHGetKnownFolderPath)(REFKNOWNFOLDERID, DWORD, HANDLE, PWSTR*);
-				HMODULE hShell32 = ::GetModuleHandle(_T("shell32.dll"));
-				(FARPROC&)pfnSHGetKnownFolderPath = hShell32 ? ::GetProcAddress(hShell32, "SHGetKnownFolderPath") : NULL;
-				if (pfnSHGetKnownFolderPath) {
-					PWSTR pszLocalAppData = NULL;
-					PWSTR pszPersonalDownloads = NULL;
-					PWSTR pszPublicDownloads = NULL;
-					PWSTR pszProgramData = NULL;
-					if (   (*pfnSHGetKnownFolderPath)(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
-						&& (*pfnSHGetKnownFolderPath)(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
-					{
-						CString strLocalAppData(pszLocalAppData);
-						CString strPersonalDownloads(pszPersonalDownloads);
-						CString strPublicDownloads(pszPublicDownloads);
-						CString strProgramData(pszProgramData);
-						strLocalAppData = PathHelpers::EnsureTrailingSeparator(strLocalAppData);
-						strPersonalDownloads = PathHelpers::EnsureTrailingSeparator(strPersonalDownloads);
-						strPublicDownloads = PathHelpers::EnsureTrailingSeparator(strPublicDownloads);
-						strProgramData = PathHelpers::EnsureTrailingSeparator(strProgramData);
+			PWSTR pszLocalAppData = NULL;
+			PWSTR pszPersonalDownloads = NULL;
+			PWSTR pszPublicDownloads = NULL;
+			PWSTR pszProgramData = NULL;
+			if (   ::SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, NULL, &pszLocalAppData) == S_OK
+				&& ::SHGetKnownFolderPath(FOLDERID_Downloads, 0, NULL, &pszPersonalDownloads) == S_OK
+				&& ::SHGetKnownFolderPath(FOLDERID_PublicDownloads, 0, NULL, &pszPublicDownloads) == S_OK
+				&& ::SHGetKnownFolderPath(FOLDERID_ProgramData, 0, NULL, &pszProgramData) == S_OK)
+			{
+				CString strLocalAppData(pszLocalAppData);
+				CString strPersonalDownloads(pszPersonalDownloads);
+				CString strPublicDownloads(pszPublicDownloads);
+				CString strProgramData(pszProgramData);
+				strLocalAppData = PathHelpers::EnsureTrailingSeparator(strLocalAppData);
+				strPersonalDownloads = PathHelpers::EnsureTrailingSeparator(strPersonalDownloads);
+				strPublicDownloads = PathHelpers::EnsureTrailingSeparator(strPublicDownloads);
+				strProgramData = PathHelpers::EnsureTrailingSeparator(strProgramData);
 
-						if (nRegistrySetting == _UI32_MAX) {
-							// no registry default, check if we find a preferences.ini to use
-							if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-								m_nCurrentUserDirMode = 0;
-							else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
-								m_nCurrentUserDirMode = 1;
-							else if (bConfigAvailableExecutable)
-								m_nCurrentUserDirMode = 2;
-							else
-								m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
-						} else
-							m_nCurrentUserDirMode = nRegistrySetting;
+				if (nRegistrySetting == _UI32_MAX) {
+					// no registry default, check if we find a preferences.ini to use
+					if (LongPathSeams::PathExists(strLocalAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+						m_nCurrentUserDirMode = 0;
+					else if (LongPathSeams::PathExists(strProgramData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini")))
+						m_nCurrentUserDirMode = 1;
+					else if (bConfigAvailableExecutable)
+						m_nCurrentUserDirMode = 2;
+					else
+						m_nCurrentUserDirMode = 0; // no preferences.ini found, use the default
+				} else
+					m_nCurrentUserDirMode = nRegistrySetting;
 
-						switch (m_nCurrentUserDirMode) {
-						case 0: //multiuser
-							strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
-							strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
-							strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-							break;
-						case 1: //public user
-							strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
-							strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
-							strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
-						case 2: //program directory
-							break;
-						default:
-							ASSERT(0);
-						}
-					}
-					::CoTaskMemFree(pszLocalAppData);
-					::CoTaskMemFree(pszPersonalDownloads);
-					::CoTaskMemFree(pszPublicDownloads);
-					::CoTaskMemFree(pszProgramData);
-				} else {
-					DebugLogError(_T("Unable to retrieve system folders' location with shell32.dll; using fallbacks"));
+				switch (m_nCurrentUserDirMode) {
+				case 0: //multiuser
+					strSelectedDataBaseDirectory = strPersonalDownloads + _T("eMule\\");
+					strSelectedConfigBaseDirectory = strLocalAppData + _T("eMule\\");
+					strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+					break;
+				case 1: //public user
+					strSelectedDataBaseDirectory = strPublicDownloads + _T("eMule\\");
+					strSelectedConfigBaseDirectory = strProgramData + _T("eMule\\");
+					strSelectedExpansionBaseDirectory = strProgramData + _T("eMule\\");
+				case 2: //program directory
+					break;
+				default:
 					ASSERT(0);
 				}
-			} else { //pre-Vista
-				const CString &strAppData(ShellGetFolderPath(CSIDL_APPDATA));
-				const CString &strPersonal(ShellGetFolderPath(CSIDL_PERSONAL));
-				if (!strAppData.IsEmpty() && !strPersonal.IsEmpty()) {
-					if (nRegistrySetting == 0	// registry setting overwrites, use these folders
-						|| (nRegistrySetting == _UI32_MAX
-							&& !bConfigAvailableExecutable
-							&& LongPathSeams::PathExists(strAppData + _T("eMule\\") CONFIGFOLDER _T("preferences.ini"))))
-					{
-						const CString strAppDataDir(PathHelpers::EnsureTrailingSeparator(strAppData));
-						const CString strPersonalDir(PathHelpers::EnsureTrailingSeparator(strPersonal));
-						strSelectedDataBaseDirectory = strPersonalDir + _T("eMule Downloads\\");
-						strSelectedConfigBaseDirectory = strAppDataDir + _T("eMule\\");
-						// strSelectedExpansionBaseDirectory stays unchanged
-						m_nCurrentUserDirMode = 0;
-					} else
-						ASSERT(0);
-				}
+			} else {
+				DebugLogError(_T("Unable to retrieve known folders; using fallbacks"));
+				ASSERT(0);
 			}
+			::CoTaskMemFree(pszLocalAppData);
+			::CoTaskMemFree(pszPersonalDownloads);
+			::CoTaskMemFree(pszPublicDownloads);
+			::CoTaskMemFree(pszProgramData);
 		}
 
 		if (theApp.HasStartupConfigBaseDirOverride())
@@ -3279,17 +3253,7 @@ bool CPreferences::IsRunningAeroGlassTheme()
 	static bool bAeroAlreadyDetected = false;
 	if (!bAeroAlreadyDetected) {
 		bAeroAlreadyDetected = true;
-		m_bIsRunningAeroGlass = FALSE;
-		if (GetWindowsVersion() >= _WINVER_VISTA_) {
-			HMODULE hDWMAPI = ::LoadLibrary(_T("dwmapi.dll"));
-			if (hDWMAPI) {
-				HRESULT(WINAPI *pfnDwmIsCompositionEnabled)(BOOL*);
-				(FARPROC&)pfnDwmIsCompositionEnabled = ::GetProcAddress(hDWMAPI, "DwmIsCompositionEnabled");
-				if (pfnDwmIsCompositionEnabled != NULL)
-					pfnDwmIsCompositionEnabled(&m_bIsRunningAeroGlass);
-				::FreeLibrary(hDWMAPI);
-			}
-		}
+		m_bIsRunningAeroGlass = TRUE;
 	}
 	return m_bIsRunningAeroGlass != FALSE;
 }
