@@ -1134,12 +1134,14 @@ public:
 	static UINT		GetMinFileBufferSizeBytes()			{ return 16u * 1024u; }
 	static UINT		GetMaxFileBufferSizeBytes();
 	static UINT		NormalizeFileBufferSizeBytes(UINT bytes);
+	static void		SetFileBufferSize(UINT bytes)		{ m_uFileBufferSize = NormalizeFileBufferSizeBytes(bytes); }
 	static DWORD	GetFileBufferTimeLimit()			{ return m_uFileBufferTimeLimit; }
 	static INT_PTR	GetQueueSize()						{ return m_iQueueSize; }
 	static INT_PTR	GetDefaultQueueSize()				{ return 10000; }
 	static INT_PTR	GetMinQueueSize()					{ return 2000; }
 	static INT_PTR	GetMaxQueueSize()					{ return 10000; }
 	static INT_PTR	NormalizeQueueSize(INT_PTR size);
+	static void		SetQueueSize(INT_PTR size)			{ m_iQueueSize = NormalizeQueueSize(size); }
 	static int		GetCommitFiles()					{ return m_iCommitFiles; }
 	static bool		GetShowCopyEd2kLinkCmd()			{ return m_bShowCopyEd2kLinkCmd; }
 

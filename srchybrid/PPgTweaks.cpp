@@ -919,8 +919,8 @@ BOOL CPPgTweaks::OnInitDialog()
 	InitWindowStyles(this);
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
 
-	m_iQueueSize = static_cast<int>(thePrefs.NormalizeQueueSize(thePrefs.GetQueueSize()));
-	m_uFileBufferSizeKiB = thePrefs.NormalizeFileBufferSizeBytes(thePrefs.GetFileBufferSize()) / 1024u;
+	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
+	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
 
 	CaptureBaseLayout();
 	Localize();
@@ -1046,10 +1046,10 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_iCommitFiles = m_iCommitFiles;
 	thePrefs.m_iExtractMetaData = m_iExtractMetaData;
 	thePrefs.filterLANIPs = m_bFilterLANIPs;
-	m_uFileBufferSizeKiB = thePrefs.NormalizeFileBufferSizeBytes(m_uFileBufferSizeKiB * 1024u) / 1024u;
-	m_iQueueSize = static_cast<int>(thePrefs.NormalizeQueueSize(m_iQueueSize));
-	thePrefs.m_uFileBufferSize = m_uFileBufferSizeKiB * 1024u;
-	thePrefs.m_iQueueSize = m_iQueueSize;
+	thePrefs.SetFileBufferSize(m_uFileBufferSizeKiB * 1024u);
+	thePrefs.SetQueueSize(m_iQueueSize);
+	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
+	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
 
 	bool bUpdateDLmenu = (thePrefs.m_bImportParts != m_bImportParts);
 	thePrefs.m_bImportParts = m_bImportParts;

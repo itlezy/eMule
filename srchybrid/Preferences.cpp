@@ -38,7 +38,6 @@
 #include "StatisticsDlg.h"
 #include "Log.h"
 #include "MuleToolbarCtrl.h"
-#include "FileBufferSlider.h"
 #include "VistaDefines.h"
 #include <osrng.h>
 
@@ -647,12 +646,16 @@ INT_PTR CPreferences::NormalizeQueueSize(INT_PTR size)
 
 UINT CPreferences::GetMaxFileBufferSizeBytes()
 {
-	return FileBufferSlider::kMaxFileBufferSizeBytes;
+	return 512u * 1024u * 1024u;
 }
 
 UINT CPreferences::NormalizeFileBufferSizeBytes(UINT bytes)
 {
-	return FileBufferSlider::PositionToBytes(FileBufferSlider::BytesToPosition(bytes));
+	if (bytes < GetMinFileBufferSizeBytes())
+		return GetMinFileBufferSizeBytes();
+	if (bytes > GetMaxFileBufferSizeBytes())
+		return GetMaxFileBufferSizeBytes();
+	return bytes;
 }
 
 void CPreferences::SetGeoLocationLastCheckTime(__time64_t tTimestamp, bool bPersist)
@@ -2387,11 +2390,11 @@ void CPreferences::LoadPreferences()
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);
 
 	// Get file buffer size.
-	m_uFileBufferSize = NormalizeFileBufferSizeBytes(static_cast<UINT>(max(0, ini.GetInt(_T("FileBufferSize"), static_cast<int>(GetDefaultFileBufferSizeBytes())))));
+	SetFileBufferSize(static_cast<UINT>(max(0, ini.GetInt(_T("FileBufferSize"), static_cast<int>(GetDefaultFileBufferSizeBytes())))));
 	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
 
 	// Get queue size.
-	m_iQueueSize = NormalizeQueueSize(ini.GetInt(_T("QueueSize"), static_cast<int>(GetDefaultQueueSize())));
+	SetQueueSize(ini.GetInt(_T("QueueSize"), static_cast<int>(GetDefaultQueueSize())));
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving
 	versioncheckdays = ini.GetInt(_T("Check4NewVersionDelay"), 5);
