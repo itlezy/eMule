@@ -1095,7 +1095,21 @@ void CemuleDlg::ResetDebugLog()
 	serverwnd->debuglog->Reset();
 }
 
-void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText)
+namespace
+{
+constexpr int kMaxUiLogLineChars = 1000;
+
+CString BuildUiLogLine(const CTime &timestamp, LPCTSTR pszText)
+{
+	CString strLogLine;
+	strLogLine.Format(_T("%s: %s\r\n"), (LPCTSTR)timestamp.Format(thePrefs.GetDateTimeFormat4Log()), pszText != NULL ? pszText : _T(""));
+	if (strLogLine.GetLength() > kMaxUiLogLineChars)
+		strLogLine.Truncate(kMaxUiLogLineChars);
+	return strLogLine;
+}
+}
+
+void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText, const CTime *pTimestamp)
 {
 	if (GetCurrentThreadId() != g_uMainThreadId) {
 		theApp.QueueLogLineEx(uFlags, _T("%s"), pszText);
@@ -1116,26 +1130,27 @@ void CemuleDlg::AddLogText(UINT uFlags, LPCTSTR pszText)
 	if ((uFlags & LOG_DEBUG) && !thePrefs.GetVerbose())
 		return;
 
-	TCHAR temp[1060];
-	int iLen = _sntprintf(temp, _countof(temp), _T("%s: %s\r\n"), (LPCTSTR)CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), pszText);
-	if (iLen >= 0) {
+	const CTime timestamp = (pTimestamp != NULL) ? *pTimestamp : CTime::GetCurrentTime();
+	const CString strLogLine(BuildUiLogLine(timestamp, pszText));
+	const int iLen = strLogLine.GetLength();
+	if (iLen > 0) {
 		if (!(uFlags & LOG_DEBUG)) {
-			serverwnd->logbox->AddTyped(temp, iLen, uFlags & LOGMSGTYPEMASK);
+			serverwnd->logbox->AddTyped(strLogLine, iLen, uFlags & LOGMSGTYPEMASK);
 			if (::IsWindow(serverwnd->StatusSelector) && serverwnd->StatusSelector.GetCurSel() != CServerWnd::PaneLog)
 				serverwnd->StatusSelector.HighlightItem(CServerWnd::PaneLog, TRUE);
 			if (!(uFlags & LOG_DONTNOTIFY) && status) //status!=0 means this dialog has been created
 				ShowNotifier(pszText, TBN_LOG);
 			if (thePrefs.GetLog2Disk())
-				theLog.Log(temp, iLen);
+				theLog.Log(strLogLine, iLen);
 		}
 
 		if (thePrefs.GetVerbose() && ((uFlags & LOG_DEBUG) || thePrefs.GetFullVerbose())) {
-			serverwnd->debuglog->AddTyped(temp, iLen, uFlags & LOGMSGTYPEMASK);
+			serverwnd->debuglog->AddTyped(strLogLine, iLen, uFlags & LOGMSGTYPEMASK);
 			if (::IsWindow(serverwnd->StatusSelector) && serverwnd->StatusSelector.GetCurSel() != CServerWnd::PaneVerboseLog)
 				serverwnd->StatusSelector.HighlightItem(CServerWnd::PaneVerboseLog, TRUE);
 
 			if (thePrefs.GetDebug2Disk())
-				theVerboseLog.Log(temp, iLen);
+				theVerboseLog.Log(strLogLine, iLen);
 		}
 	}
 }

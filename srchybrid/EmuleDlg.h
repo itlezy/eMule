@@ -106,7 +106,10 @@ public:
 #endif
 
 	// Logging
-	void AddLogText(UINT uFlags, LPCTSTR pszText);
+	/**
+	 * @brief Routes one already-formatted log message into the visible UI and disk sinks.
+	 */
+	void AddLogText(UINT uFlags, LPCTSTR pszText, const CTime *pTimestamp = NULL);
 	void AddServerMessageLine(UINT uFlags, LPCTSTR pszLine);
 	void ResetLog();
 	void ResetDebugLog();

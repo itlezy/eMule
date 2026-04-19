@@ -31,6 +31,32 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+constexpr int kMaxFileLogLineChars = 64 * 1024;
+
+CString TruncateLogLine(const CString &rstrLine, const int iMaxChars)
+{
+	if (iMaxChars <= 0 || rstrLine.GetLength() <= iMaxChars)
+		return rstrLine;
+
+	CString strLine(rstrLine);
+	CString strLineEnding;
+	if (strLine.GetLength() >= 2 && strLine.Right(2) == _T("\r\n")) {
+		strLineEnding = _T("\r\n");
+		strLine.Truncate(strLine.GetLength() - 2);
+	} else if (!strLine.IsEmpty() && (strLine.Right(1) == _T("\r") || strLine.Right(1) == _T("\n"))) {
+		strLineEnding = strLine.Right(1);
+		strLine.Truncate(strLine.GetLength() - 1);
+	}
+
+	const int iMaxPayloadChars = max(0, iMaxChars - strLineEnding.GetLength());
+	if (strLine.GetLength() > iMaxPayloadChars)
+		strLine.Truncate(iMaxPayloadChars);
+	return strLine + strLineEnding;
+}
+}
+
 
 void LogV(UINT uFlags, LPCTSTR pszFmt, va_list argp)
 {
@@ -200,24 +226,23 @@ void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va
 	if ((uFlags & LOG_DEBUG) && !(thePrefs.GetVerbose() && dlpPriority >= thePrefs.GetVerboseLogPriority()))
 		return;
 
-	TCHAR szLogLine[1000];
-	_vsntprintf(szLogLine, _countof(szLogLine), pszLine, argptr);
-	szLogLine[_countof(szLogLine) - 1] = _T('\0');
+	CString strLogLine;
+	strLogLine.FormatV(pszLine, argptr);
 
 	if (theApp.emuledlg)
-		theApp.emuledlg->AddLogText(uFlags, szLogLine);
+		theApp.emuledlg->AddLogText(uFlags, strLogLine);
 	else {
-		TRACE(_T("App Log: %s\n"), szLogLine);
+		TRACE(_T("App Log: %s\n"), (LPCTSTR)strLogLine);
 
-		TCHAR szFullLogLine[1060];
-		int iLen = _sntprintf(szFullLogLine, _countof(szFullLogLine), _T("%s: %s\r\n"), (LPCTSTR)CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szLogLine);
-		if (iLen > 0) {
+		CString strFullLogLine;
+		strFullLogLine.Format(_T("%s: %s\r\n"), (LPCTSTR)CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), (LPCTSTR)strLogLine);
+		if (!strFullLogLine.IsEmpty()) {
 			if (!(uFlags & LOG_DEBUG) && thePrefs.GetLog2Disk())
-				theLog.Log(szFullLogLine, iLen);
+				theLog.Log(strFullLogLine, strFullLogLine.GetLength());
 
 			if (thePrefs.GetVerbose() && ((uFlags & LOG_DEBUG) || thePrefs.GetFullVerbose()))
 				if (thePrefs.GetDebug2Disk())
-					theVerboseLog.Log(szFullLogLine, iLen);
+					theVerboseLog.Log(strFullLogLine, strFullLogLine.GetLength());
 		}
 	}
 }
@@ -339,13 +364,22 @@ bool CLogFile::Log(LPCTSTR pszMsg, int iLen)
 	if (m_fp == NULL)
 		return false;
 
+	CString strOwnedLine;
+	const TCHAR *pszWrite = pszMsg;
+	size_t uToWriteChars = (iLen == -1) ? _tcslen(pszMsg) : static_cast<size_t>(iLen);
+	if (uToWriteChars > static_cast<size_t>(kMaxFileLogLineChars)) {
+		strOwnedLine = TruncateLogLine(CString(pszMsg, static_cast<int>(uToWriteChars)), kMaxFileLogLineChars);
+		pszWrite = strOwnedLine;
+		uToWriteChars = static_cast<size_t>(strOwnedLine.GetLength());
+	}
+
 	size_t uWritten;
 	if (m_eFileFormat == Unicode) {
 		// don't use 'fputs' + '_filelength' -- gives poor performance
-		size_t uToWrite = ((iLen == -1) ? _tcslen(pszMsg) : (size_t)iLen) * sizeof(TCHAR);
-		uWritten = fwrite(pszMsg, 1, uToWrite, m_fp);
+		const size_t uToWriteBytes = uToWriteChars * sizeof(TCHAR);
+		uWritten = fwrite(pszWrite, 1, uToWriteBytes, m_fp);
 	} else {
-		TUnicodeToUTF8<2048> utf8(pszMsg, iLen);
+		TUnicodeToUTF8<2048> utf8(pszWrite, static_cast<int>(uToWriteChars));
 		uWritten = fwrite((LPCSTR)utf8, 1, utf8.GetLength(), m_fp);
 	}
 	bool bResult = !ferror(m_fp);
@@ -367,15 +401,14 @@ bool CLogFile::Logf(LPCTSTR pszFmt, ...)
 	va_list argp;
 	va_start(argp, pszFmt);
 
-	TCHAR szMsg[1024];
-	_vsntprintf(szMsg, _countof(szMsg), pszFmt, argp);
-	szMsg[_countof(szMsg) - 1] = _T('\0');
+	CString strMsg;
+	strMsg.FormatV(pszFmt, argp);
 	va_end(argp);
 
-	TCHAR szFullMsg[1060];
-	int iLen = _sntprintf(szFullMsg, _countof(szFullMsg), _T("%s: %s\r\n"), (LPCTSTR)CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), szMsg);
+	CString strFullMsg;
+	strFullMsg.Format(_T("%s: %s\r\n"), (LPCTSTR)CTime::GetCurrentTime().Format(thePrefs.GetDateTimeFormat4Log()), (LPCTSTR)strMsg);
 
-	return (iLen > 0) && Log(szFullMsg, iLen);
+	return !strFullMsg.IsEmpty() && Log(strFullMsg, strFullMsg.GetLength());
 }
 
 void CLogFile::StartNewLogFile()

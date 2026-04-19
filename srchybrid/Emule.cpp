@@ -521,8 +521,12 @@ static void InitHeapCorruptionDetection()
 struct SLogItem
 {
 	UINT uFlags;
+	CTime timestamp;
 	CString line;
 };
+
+constexpr size_t kMaxQueuedDebugLogEntries = 4096;
+constexpr size_t kMaxQueuedLogEntries = 2048;
 
 static void CALLBACK myErrHandler(const Kademlia::CKademliaError *error)
 {
@@ -570,6 +574,8 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_dwPublicIP()
 	, m_bGuardClipboardPrompt()
 	, m_bAutoStart()
+	, m_uDroppedDebugLogEntries()
+	, m_uDroppedLogEntries()
 	, m_bStandbyOff()
 	, m_bStartupProfilingEnabled(EMULE_COMPILED_STARTUP_PROFILING != 0 && ::GetEnvironmentVariable(_T("EMULE_STARTUP_PROFILE"), NULL, 0) > 0)
 	, m_bStartupProfileStartupComplete()
@@ -1980,9 +1986,14 @@ void CemuleApp::QueueDebugLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 	if (!bufferline.IsEmpty()) {
 		SLogItem *newItem = new SLogItem;
 		newItem->uFlags = LOG_DEBUG | (bAddToStatusbar ? LOG_STATUSBAR : 0);
+		newItem->timestamp = CTime::GetCurrentTime();
 		newItem->line = bufferline;
 
 		m_queueLock.Lock();
+		if (m_QueueDebugLog.GetCount() >= kMaxQueuedDebugLogEntries) {
+			delete m_QueueDebugLog.RemoveHead();
+			++m_uDroppedDebugLogEntries;
+		}
 		m_QueueDebugLog.AddTail(newItem);
 		m_queueLock.Unlock();
 	}
@@ -1998,9 +2009,14 @@ void CemuleApp::QueueLogLine(bool bAddToStatusbar, LPCTSTR line, ...)
 	if (!bufferline.IsEmpty()) {
 		SLogItem *newItem = new SLogItem;
 		newItem->uFlags = bAddToStatusbar ? LOG_STATUSBAR : 0;
+		newItem->timestamp = CTime::GetCurrentTime();
 		newItem->line = bufferline;
 
 		m_queueLock.Lock();
+		if (m_QueueLog.GetCount() >= kMaxQueuedLogEntries) {
+			delete m_QueueLog.RemoveHead();
+			++m_uDroppedLogEntries;
+		}
 		m_QueueLog.AddTail(newItem);
 		m_queueLock.Unlock();
 	}
@@ -2019,9 +2035,14 @@ void CemuleApp::QueueDebugLogLineEx(UINT uFlags, LPCTSTR line, ...)
 	if (!bufferline.IsEmpty()) {
 		SLogItem *newItem = new SLogItem;
 		newItem->uFlags = uFlags | LOG_DEBUG;
+		newItem->timestamp = CTime::GetCurrentTime();
 		newItem->line = bufferline;
 
 		m_queueLock.Lock();
+		if (m_QueueDebugLog.GetCount() >= kMaxQueuedDebugLogEntries) {
+			delete m_QueueDebugLog.RemoveHead();
+			++m_uDroppedDebugLogEntries;
+		}
 		m_QueueDebugLog.AddTail(newItem);
 		m_queueLock.Unlock();
 	}
@@ -2037,9 +2058,14 @@ void CemuleApp::QueueLogLineEx(UINT uFlags, LPCTSTR line, ...)
 	if (!bufferline.IsEmpty()) {
 		SLogItem *newItem = new SLogItem;
 		newItem->uFlags = uFlags;
+		newItem->timestamp = CTime::GetCurrentTime();
 		newItem->line = bufferline;
 
 		m_queueLock.Lock();
+		if (m_QueueLog.GetCount() >= kMaxQueuedLogEntries) {
+			delete m_QueueLog.RemoveHead();
+			++m_uDroppedLogEntries;
+		}
 		m_QueueLog.AddTail(newItem);
 		m_queueLock.Unlock();
 	}
@@ -2047,25 +2073,52 @@ void CemuleApp::QueueLogLineEx(UINT uFlags, LPCTSTR line, ...)
 
 void CemuleApp::HandleDebugLogQueue()
 {
+	CTypedPtrList<CPtrList, SLogItem*> aPendingItems;
+	UINT uDroppedEntries = 0;
 	m_queueLock.Lock();
-	while (!m_QueueDebugLog.IsEmpty()) {
-		const SLogItem *newItem = m_QueueDebugLog.RemoveHead();
-		if (thePrefs.GetVerbose())
-			Log(newItem->uFlags, _T("%s"), (LPCTSTR)newItem->line);
+	while (!m_QueueDebugLog.IsEmpty())
+		aPendingItems.AddTail(m_QueueDebugLog.RemoveHead());
+	uDroppedEntries = m_uDroppedDebugLogEntries;
+	m_uDroppedDebugLogEntries = 0;
+	m_queueLock.Unlock();
+
+	while (!aPendingItems.IsEmpty()) {
+		const SLogItem *newItem = aPendingItems.RemoveHead();
+		if (thePrefs.GetVerbose()) {
+			if (emuledlg != NULL)
+				emuledlg->AddLogText(newItem->uFlags, newItem->line, &newItem->timestamp);
+			else
+				Log(newItem->uFlags, _T("%s"), (LPCTSTR)newItem->line);
+		}
 		delete newItem;
 	}
-	m_queueLock.Unlock();
+
+	if (uDroppedEntries > 0)
+		LogWarning(_T("Dropped %u queued verbose log messages due to queue overflow."), uDroppedEntries);
 }
 
 void CemuleApp::HandleLogQueue()
 {
+	CTypedPtrList<CPtrList, SLogItem*> aPendingItems;
+	UINT uDroppedEntries = 0;
 	m_queueLock.Lock();
-	while (!m_QueueLog.IsEmpty()) {
-		const SLogItem *newItem = m_QueueLog.RemoveHead();
-		Log(newItem->uFlags, _T("%s"), (LPCTSTR)newItem->line);
+	while (!m_QueueLog.IsEmpty())
+		aPendingItems.AddTail(m_QueueLog.RemoveHead());
+	uDroppedEntries = m_uDroppedLogEntries;
+	m_uDroppedLogEntries = 0;
+	m_queueLock.Unlock();
+
+	while (!aPendingItems.IsEmpty()) {
+		const SLogItem *newItem = aPendingItems.RemoveHead();
+		if (emuledlg != NULL)
+			emuledlg->AddLogText(newItem->uFlags, newItem->line, &newItem->timestamp);
+		else
+			Log(newItem->uFlags, _T("%s"), (LPCTSTR)newItem->line);
 		delete newItem;
 	}
-	m_queueLock.Unlock();
+
+	if (uDroppedEntries > 0)
+		LogWarning(_T("Dropped %u queued log messages due to queue overflow."), uDroppedEntries);
 }
 
 void CemuleApp::ClearDebugLogQueue(bool bDebugPendingMsgs)

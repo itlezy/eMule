@@ -290,6 +290,8 @@ protected:
 	CCriticalSection m_queueLock;
 	CTypedPtrList<CPtrList, SLogItem*> m_QueueDebugLog;
 	CTypedPtrList<CPtrList, SLogItem*> m_QueueLog;
+	UINT m_uDroppedDebugLogEntries;
+	UINT m_uDroppedLogEntries;
 	// Elandal:ThreadSafeLogging <--
 	CCriticalSection m_partMetWriteGuardLock;
 	CMapStringToPtr m_aPartMetWriteGuardByVolume;
