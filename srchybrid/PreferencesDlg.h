@@ -76,6 +76,7 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
+	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
 	afx_msg LRESULT OnSetCurSel(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnSetCurSelId(WPARAM wParam, LPARAM lParam);
 };

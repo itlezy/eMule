@@ -29,6 +29,7 @@ IMPLEMENT_DYNAMIC(CPreferencesDlg, CTreePropSheet)
 
 BEGIN_MESSAGE_MAP(CPreferencesDlg, CTreePropSheet)
 	ON_WM_DESTROY()
+	ON_WM_ERASEBKGND()
 	ON_WM_HELPINFO()
 	ON_MESSAGE(PSM_SETCURSEL, OnSetCurSel)
 	ON_MESSAGE(PSM_SETCURSELID, OnSetCurSelId)
@@ -36,8 +37,8 @@ END_MESSAGE_MAP()
 
 namespace
 {
-	static const int kExtendedExtraWidth = 96;
-	static const int kExtendedExtraHeight = 88;
+	static const int kExtendedExtraWidth = 144;
+	static const int kExtendedExtraHeight = 132;
 
 	static void MoveChildWindow(CWnd *pWnd, const CRect &rect)
 	{
@@ -132,6 +133,9 @@ BOOL CPreferencesDlg::OnInitDialog()
 	BOOL bResult = CTreePropSheet::OnInitDialog();
 	InitWindowStyles(this);
 
+	if (CWnd *pHelpButton = GetDlgItem(ID_HELP))
+		pHelpButton->DestroyWindow();
+
 	for (int i = (int)m_pages.GetCount(); --i >= 0;)
 		if (GetPage(i)->m_psp.pszTemplate == m_pPshStartPage) {
 			SetActivePage(i);
@@ -141,8 +145,6 @@ BOOL CPreferencesDlg::OnInitDialog()
 	Localize();
 	CaptureNormalLayout();
 	ApplyExtendedLayout();
-	if (CWnd *pHelpButton = GetDlgItem(ID_HELP))
-		pHelpButton->ShowWindow(SW_HIDE);
 	return bResult;
 }
 
@@ -243,6 +245,18 @@ void CPreferencesDlg::ApplyExtendedLayout()
 
 	SetRedraw(TRUE);
 	RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_UPDATENOW | RDW_ALLCHILDREN);
+}
+
+BOOL CPreferencesDlg::OnEraseBkgnd(CDC *pDC)
+{
+	if (pDC != NULL) {
+		CRect rectClient;
+		GetClientRect(&rectClient);
+		pDC->FillSolidRect(&rectClient, ::GetSysColor(COLOR_3DFACE));
+		return TRUE;
+	}
+
+	return __super::OnEraseBkgnd(pDC);
 }
 
 void CPreferencesDlg::LocalizeItemText(int i, UINT strid)
