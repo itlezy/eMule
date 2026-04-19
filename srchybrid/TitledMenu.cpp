@@ -287,56 +287,28 @@ void CTitledMenu::SetMenuBitmap(UINT nFlags, UINT nIDNewItem, LPCTSTR /*lpszNewI
 	CString strIconLower(lpszIconName);
 	if (strIconLower.MakeLower().IsEmpty())
 		return;
-	if (thePrefs.GetWindowsVersion() >= _WINVER_VISTA_) {
-		// Vista+: Use the Windows built-in feature for 32-bit menu item bitmaps.
-		// 'MeasureItem', 'DrawItem' will not get called any longer and Vista
-		// cares properly about grayed/selected menu item bitmaps.
-		HBITMAP hBmp;
-		void *pvBmp;
-		if (m_mapIconNameToBitmap.Lookup(strIconLower, pvBmp))
-			hBmp = (HBITMAP)pvBmp;
-		else {
-			HICON hIcon = theApp.LoadIcon(strIconLower);
-			if (hIcon) {
-				hBmp = IconToBitmap32(hIcon, ICONSIZE, ICONSIZE);
-				VERIFY(::DestroyIcon(hIcon));
-			} else
-				hBmp = NULL;
-		}
-
-		if (hBmp) {
-			MENUITEMINFO info = {};
-			info.cbSize = (UINT)sizeof info;
-			info.fMask = MIIM_BITMAP;
-			info.hbmpItem = hBmp;
-			VERIFY(SetMenuItemInfo(nIDNewItem, &info, FALSE));
-			m_mapIconNameToBitmap[strIconLower] = hBmp;
-		}
-	} else {
-		// pre-Vista: Use owner drawn menu items which are handled in 'MeasureItem' and 'DrawItem'
-		int nPos;
-		void *pvIndex;
-		if (m_mapIconNameToIconIdx.Lookup(strIconLower, pvIndex)) {
-			nPos = (int)pvIndex;
-			m_mapMenuIdToIconIdx[nIDNewItem] = nPos;
-		} else {
-			HICON hIcon = theApp.LoadIcon(strIconLower);
-			if (!hIcon)
-				return;
-			nPos = m_ImageList.Add(hIcon);
-			if (nPos >= 0) {
-				m_mapIconNameToIconIdx[strIconLower] = (void*)nPos;
-				m_mapMenuIdToIconIdx[nIDNewItem] = nPos;
-			}
+	// Use the Windows built-in feature for 32-bit menu item bitmaps.
+	// 'MeasureItem' and 'DrawItem' no longer get called for this path.
+	HBITMAP hBmp;
+	void *pvBmp;
+	if (m_mapIconNameToBitmap.Lookup(strIconLower, pvBmp))
+		hBmp = (HBITMAP)pvBmp;
+	else {
+		HICON hIcon = theApp.LoadIcon(strIconLower);
+		if (hIcon) {
+			hBmp = IconToBitmap32(hIcon, ICONSIZE, ICONSIZE);
 			VERIFY(::DestroyIcon(hIcon));
-		}
-		if (nPos != -1) {
-			MENUITEMINFO info = {};
-			info.cbSize = (UINT)sizeof info;
-			info.fMask = MIIM_BITMAP;
-			info.hbmpItem = HBMMENU_CALLBACK;
-			VERIFY(SetMenuItemInfo(nIDNewItem, &info, FALSE));
-		}
+		} else
+			hBmp = NULL;
+	}
+
+	if (hBmp) {
+		MENUITEMINFO info = {};
+		info.cbSize = (UINT)sizeof info;
+		info.fMask = MIIM_BITMAP;
+		info.hbmpItem = hBmp;
+		VERIFY(SetMenuItemInfo(nIDNewItem, &info, FALSE));
+		m_mapIconNameToBitmap[strIconLower] = hBmp;
 	}
 }
 

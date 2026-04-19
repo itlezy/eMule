@@ -905,11 +905,6 @@ UINT GetMaxWindowsTCPConnections()
 	return UNLIMITED;
 }
 
-WORD DetectWinVersion()
-{
-	return _WINVER_10_;
-}
-
 uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
 {
 	ULARGE_INTEGER nFreeDiskSpace;

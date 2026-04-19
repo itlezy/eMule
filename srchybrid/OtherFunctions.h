@@ -311,14 +311,6 @@ ULONGLONG GetModuleVersion(HMODULE hModule);
 
 UINT GetMaxWindowsTCPConnections();
 
-#define _WINVER_VISTA_	0x0600	// 6.0
-#define _WINVER_7_		0x0601	// 6.1
-#define	_WINVER_S2008_	0x0601	// 6.1
-#define _WINVER_8_		0x0602	// 6.2
-#define _WINVER_8_1_	0x0603	// 6.3
-#define _WINVER_10_		0x0a00	// 10.0
-
-WORD		DetectWinVersion();
 uint64		GetFreeDiskSpaceX(LPCTSTR pDirectory);
 bool		ReplaceFileAtomically(const CString &strSrc, const CString &strDst, DWORD *pdwLastError = NULL);
 bool		CopyFileToTempAndReplace(const CString &strSrc, const CString &strDst, const CString &strTmp, bool bDontOverride, DWORD *pdwLastError = NULL);

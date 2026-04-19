@@ -174,8 +174,7 @@ protected:
 	static bool IsCompatibleVersion(ULONGLONG ullVersion)
 	{
 		return ullVersion >= MAKEDLLVERULL(0, 7, 13, 0)
-			&& ((thePrefs.GetWindowsVersion() >= _WINVER_VISTA_ && ullVersion < MAKEDLLVERULL(25, 11, 0, 0))
-				|| ullVersion < MAKEDLLVERULL(21, 4, 0, 0));
+			&& ullVersion < MAKEDLLVERULL(25, 11, 0, 0);
 	}
 
 	void AddCandidatePath(CStringArray &raCandidatePaths, const CString &strCandidatePath)

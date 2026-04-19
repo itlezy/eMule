@@ -500,7 +500,6 @@ CStringList CPreferences::shareddir_list;
 CStringList CPreferences::addresses_list;
 CString CPreferences::m_strFileCommentsFilePath;
 Preferences_Ext_Struct *CPreferences::prefsExt;
-WORD	CPreferences::m_wWinVer;
 CArray<Category_Struct*, Category_Struct*> CPreferences::catArr;
 UINT	CPreferences::m_nWebMirrorAlertLevel;
 bool	CPreferences::m_bUseOldTimeRemaining;
@@ -2615,16 +2614,6 @@ void CPreferences::LoadPreferences()
 	SetLanguage();
 }
 
-WORD CPreferences::GetWindowsVersion()
-{
-	static bool bWinVerAlreadyDetected = false;
-	if (!bWinVerAlreadyDetected) {
-		bWinVerAlreadyDetected = true;
-		m_wWinVer = DetectWinVersion();
-	}
-	return m_wWinVer;
-}
-
 UINT CPreferences::GetDefaultMaxConperFive()
 {
 	return 50;
@@ -3236,12 +3225,7 @@ bool CPreferences::GetSparsePartFiles()
 	// a FILE_SYSTEM_LIMITATION error and deny any writing to this file.
 	// It was suggested that Vista might limit the data runs, which would lead to such behaviour,
 	// but wouldn't make much sense for a sparse file implementation nevertheless.
-	// Due to the fact that eMule writes a lot of small blocks into sparse files and flushes them
-	// every 6 seconds, this problem pops up sooner or later for all big files.
-	// I don't see any way to walk around this for now
-	// Update: This problem seems to be fixed on Win7, possibly on earlier Vista ServicePacks too
-	//		   In any case, we allow sparse files for versions earlier and later than Vista
-	return m_bSparsePartFiles && (GetWindowsVersion() != _WINVER_VISTA_);
+	return m_bSparsePartFiles;
 }
 
 bool CPreferences::IsRunningAeroGlassTheme()
