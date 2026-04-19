@@ -38,6 +38,7 @@
 #include "StatisticsDlg.h"
 #include "Log.h"
 #include "MuleToolbarCtrl.h"
+#include "FileBufferSlider.h"
 #include "VistaDefines.h"
 #include <osrng.h>
 
@@ -623,7 +624,35 @@ LPCTSTR CPreferences::GetConfigFile()
 
 void CPreferences::SetGeoLocationCheckDays(UINT uDays)
 {
-	m_uGeoLocationCheckDays = min(365u, uDays);
+	m_uGeoLocationCheckDays = NormalizeGeoLocationCheckDays(uDays);
+}
+
+UINT CPreferences::NormalizeGeoLocationCheckDays(UINT uDays)
+{
+	if (uDays < GetMinGeoLocationCheckDays())
+		return GetMinGeoLocationCheckDays();
+	if (uDays > GetMaxGeoLocationCheckDays())
+		return GetMaxGeoLocationCheckDays();
+	return uDays;
+}
+
+INT_PTR CPreferences::NormalizeQueueSize(INT_PTR size)
+{
+	if (size < GetMinQueueSize())
+		return GetMinQueueSize();
+	if (size > GetMaxQueueSize())
+		return GetMaxQueueSize();
+	return size;
+}
+
+UINT CPreferences::GetMaxFileBufferSizeBytes()
+{
+	return FileBufferSlider::kMaxFileBufferSizeBytes;
+}
+
+UINT CPreferences::NormalizeFileBufferSizeBytes(UINT bytes)
+{
+	return FileBufferSlider::PositionToBytes(FileBufferSlider::BytesToPosition(bytes));
 }
 
 void CPreferences::SetGeoLocationLastCheckTime(__time64_t tTimestamp, bool bPersist)
@@ -2189,7 +2218,7 @@ void CPreferences::LoadPreferences()
 	m_bPreventStandby = ini.GetBool(_T("PreventStandby"), false);
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
 	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), true);
-	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(_T("GeoLocationCheckDays"), 30))));
+	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(_T("GeoLocationCheckDays"), static_cast<int>(GetDefaultGeoLocationCheckDays())))));
 	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(_T("GeoLocationLastCheckTime"), _T("0")))));
 	m_strGeoLocationUpdateUrl = ini.GetString(_T("GeoLocationUpdateUrl"), _T("https://download.db-ip.com/free/dbip-city-lite-%Y-%m.mmdb.gz"));
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
@@ -2358,12 +2387,11 @@ void CPreferences::LoadPreferences()
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);
 
 	// Get file buffer size.
-	m_uFileBufferSize = 64u * 1024u * 1024u;
-	m_uFileBufferSize = ini.GetInt(_T("FileBufferSize"), m_uFileBufferSize);
+	m_uFileBufferSize = NormalizeFileBufferSizeBytes(static_cast<UINT>(max(0, ini.GetInt(_T("FileBufferSize"), static_cast<int>(GetDefaultFileBufferSizeBytes())))));
 	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
 
 	// Get queue size.
-	m_iQueueSize = ini.GetInt(_T("QueueSize"), 10000);
+	m_iQueueSize = NormalizeQueueSize(ini.GetInt(_T("QueueSize"), static_cast<int>(GetDefaultQueueSize())));
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving
 	versioncheckdays = ini.GetInt(_T("Check4NewVersionDelay"), 5);

@@ -1130,8 +1130,16 @@ public:
 	static const CString& GetVideoPlayerArgs()			{ return m_strVideoPlayerArgs; }
 
 	static UINT		GetFileBufferSize()					{ return m_uFileBufferSize; }
+	static UINT		GetDefaultFileBufferSizeBytes()		{ return 64u * 1024u * 1024u; }
+	static UINT		GetMinFileBufferSizeBytes()			{ return 16u * 1024u; }
+	static UINT		GetMaxFileBufferSizeBytes();
+	static UINT		NormalizeFileBufferSizeBytes(UINT bytes);
 	static DWORD	GetFileBufferTimeLimit()			{ return m_uFileBufferTimeLimit; }
 	static INT_PTR	GetQueueSize()						{ return m_iQueueSize; }
+	static INT_PTR	GetDefaultQueueSize()				{ return 10000; }
+	static INT_PTR	GetMinQueueSize()					{ return 2000; }
+	static INT_PTR	GetMaxQueueSize()					{ return 10000; }
+	static INT_PTR	NormalizeQueueSize(INT_PTR size);
 	static int		GetCommitFiles()					{ return m_iCommitFiles; }
 	static bool		GetShowCopyEd2kLinkCmd()			{ return m_bShowCopyEd2kLinkCmd; }
 
@@ -1234,6 +1242,10 @@ public:
 	 * @brief Returns the configured automatic geolocation DB check interval in days.
 	 */
 	static UINT		GetGeoLocationCheckDays()			{ return m_uGeoLocationCheckDays; }
+	static UINT		GetDefaultGeoLocationCheckDays()	{ return 30; }
+	static UINT		GetMinGeoLocationCheckDays()		{ return 7; }
+	static UINT		GetMaxGeoLocationCheckDays()		{ return 365; }
+	static UINT		NormalizeGeoLocationCheckDays(UINT uDays);
 	/**
 	 * @brief Returns the last attempted automatic or manual geolocation DB refresh time.
 	 */

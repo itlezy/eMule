@@ -49,6 +49,91 @@ namespace
 		UNREFERENCED_PARAMETER(hItem);
 	}
 
+	static CString GetTreeItemLabel(CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem)
+	{
+		CString label(ctrl.GetItemText(hItem));
+		const int nSeparator = label.Find(ctrl.GetTextSeparator());
+		if (nSeparator >= 0)
+			label = label.Left(nSeparator);
+		label.Trim();
+		return label;
+	}
+
+	static void RevealTreeItem(CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem)
+	{
+		for (HTREEITEM hParent = ctrl.GetParentItem(hItem); hParent != NULL; hParent = ctrl.GetParentItem(hParent))
+			ctrl.Expand(hParent, TVE_EXPAND);
+		ctrl.SelectItem(hItem);
+		ctrl.EnsureVisible(hItem);
+	}
+
+	static void FailTreeValidation(CDataExchange *pDX, CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem, const CString &detail)
+	{
+		RevealTreeItem(ctrl, hItem);
+		const CString label = GetTreeItemLabel(ctrl, hItem);
+		CString message;
+		message.Format(_T("Invalid value for \"%s\".\n\n%s"), static_cast<LPCTSTR>(label), static_cast<LPCTSTR>(detail));
+		AfxMessageBox(message);
+		pDX->PrepareEditCtrl(IDC_EXT_OPTS);
+		pDX->Fail();
+	}
+
+	static bool TryParseTreeInt(const CString &text, int &outValue)
+	{
+		CString trimmed(text);
+		trimmed.Trim();
+		if (trimmed.IsEmpty())
+			return false;
+
+		LPTSTR pEnd = NULL;
+		errno = 0;
+		const long value = _tcstol(trimmed, &pEnd, 10);
+		if (pEnd == (LPCTSTR)trimmed || *pEnd != _T('\0') || errno == ERANGE || value < INT_MIN || value > INT_MAX)
+			return false;
+		outValue = static_cast<int>(value);
+		return true;
+	}
+
+	static bool TryParseTreeUInt(const CString &text, UINT &outValue)
+	{
+		CString trimmed(text);
+		trimmed.Trim();
+		if (trimmed.IsEmpty() || trimmed[0] == _T('-'))
+			return false;
+
+		LPTSTR pEnd = NULL;
+		errno = 0;
+		const unsigned long value = _tcstoul(trimmed, &pEnd, 10);
+		if (pEnd == (LPCTSTR)trimmed || *pEnd != _T('\0') || errno == ERANGE || value > UINT_MAX)
+			return false;
+		outValue = static_cast<UINT>(value);
+		return true;
+	}
+
+	static void ExchangeTreeInt(CDataExchange *pDX, CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem, int &value)
+	{
+		if (pDX->m_bSaveAndValidate) {
+			if (!TryParseTreeInt(ctrl.GetEditText(hItem), value))
+				FailTreeValidation(pDX, ctrl, hItem, _T("Please enter an integer."));
+		} else {
+			CString text;
+			text.Format(_T("%d"), value);
+			ctrl.SetEditText(hItem, text);
+		}
+	}
+
+	static void ExchangeTreeUInt(CDataExchange *pDX, CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem, UINT &value)
+	{
+		if (pDX->m_bSaveAndValidate) {
+			if (!TryParseTreeUInt(ctrl.GetEditText(hItem), value))
+				FailTreeValidation(pDX, ctrl, hItem, _T("Please enter an integer."));
+		} else {
+			CString text;
+			text.Format(_T("%u"), value);
+			ctrl.SetEditText(hItem, text);
+		}
+	}
+
 	/**
 	 * Parses a floating-point value from a tree-edit string and rejects trailing junk.
 	 */
@@ -642,9 +727,14 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiGeoLocationEnabled, m_bGeoLocationEnabled);
-	DDX_Text(pDX, IDC_EXT_OPTS, m_htiGeoLocationCheckDays, m_uGeoLocationCheckDays);
-	if (pDX->m_bSaveAndValidate && m_uGeoLocationCheckDays > 365u)
-		FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiGeoLocationCheckDays);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiGeoLocationCheckDays, m_uGeoLocationCheckDays);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_uGeoLocationCheckDays < thePrefs.GetMinGeoLocationCheckDays() || m_uGeoLocationCheckDays > thePrefs.GetMaxGeoLocationCheckDays()) {
+			CString detail;
+			detail.Format(_T("Expected range: %u..%u."), thePrefs.GetMinGeoLocationCheckDays(), thePrefs.GetMaxGeoLocationCheckDays());
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiGeoLocationCheckDays, detail);
+		}
+	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDetectTCPErrorFlooder, m_bDetectTCPErrorFlooder);
 	if (m_htiTCPErrorFlooderIntervalMinutes) {
 		DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiTCPErrorFlooderIntervalMinutes, m_iTCPErrorFlooderIntervalMinutes);
@@ -656,14 +746,24 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
-	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferSize, m_uFileBufferSizeKiB);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiFileBufferSize, m_uFileBufferSizeKiB);
 	if (pDX->m_bSaveAndValidate) {
-		const UINT uMaxFileBufferSizeKiB = FileBufferSlider::kMaxFileBufferSizeBytes / 1024u;
-		if (m_uFileBufferSizeKiB < static_cast<UINT>(FileBufferSlider::kMinPosition) || m_uFileBufferSizeKiB > uMaxFileBufferSizeKiB)
-			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiFileBufferSize);
+		const UINT uMinFileBufferSizeKiB = thePrefs.GetMinFileBufferSizeBytes() / 1024u;
+		const UINT uMaxFileBufferSizeKiB = thePrefs.GetMaxFileBufferSizeBytes() / 1024u;
+		if (m_uFileBufferSizeKiB < uMinFileBufferSizeKiB || m_uFileBufferSizeKiB > uMaxFileBufferSizeKiB) {
+			CString detail;
+			detail.Format(_T("Expected range: %u..%u KiB."), uMinFileBufferSizeKiB, uMaxFileBufferSizeKiB);
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiFileBufferSize, detail);
+		}
 	}
-	DDX_Text(pDX, IDC_EXT_OPTS, m_htiQueueSize, m_iQueueSize);
-	DDV_MinMaxInt(pDX, m_iQueueSize, 2000, 10000);
+	ExchangeTreeInt(pDX, m_ctrlTreeOptions, m_htiQueueSize, m_iQueueSize);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_iQueueSize < static_cast<int>(thePrefs.GetMinQueueSize()) || m_iQueueSize > static_cast<int>(thePrefs.GetMaxQueueSize())) {
+			CString detail;
+			detail.Format(_T("Expected range: %d..%d."), static_cast<int>(thePrefs.GetMinQueueSize()), static_cast<int>(thePrefs.GetMaxQueueSize()));
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiQueueSize, detail);
+		}
+	}
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Logging group
@@ -806,7 +906,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bShowVerticalHourMarkers = thePrefs.m_bShowVerticalHourMarkers;
 	m_bForceSpeedsToKB = thePrefs.GetForceSpeedsToKB();
 	m_bGeoLocationEnabled = thePrefs.IsGeoLocationEnabled();
-	m_uGeoLocationCheckDays = thePrefs.GetGeoLocationCheckDays();
+	m_uGeoLocationCheckDays = thePrefs.NormalizeGeoLocationCheckDays(thePrefs.GetGeoLocationCheckDays());
 	m_bExtraPreviewWithMenu = thePrefs.GetExtraPreviewWithMenu();
 	m_bKeepUnavailableFixedSharedDirs = thePrefs.m_bKeepUnavailableFixedSharedDirs;
 	m_bPartiallyPurgeOldKnownFiles = thePrefs.DoPartiallyPurgeOldKnownFiles();
@@ -819,8 +919,8 @@ BOOL CPPgTweaks::OnInitDialog()
 	InitWindowStyles(this);
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
 
-	m_iQueueSize = thePrefs.m_iQueueSize;
-	m_uFileBufferSizeKiB = maxi(static_cast<UINT>(FileBufferSlider::kMinPosition), mini(thePrefs.m_uFileBufferSize / 1024u, FileBufferSlider::kMaxFileBufferSizeBytes / 1024u));
+	m_iQueueSize = static_cast<int>(thePrefs.NormalizeQueueSize(thePrefs.GetQueueSize()));
+	m_uFileBufferSizeKiB = thePrefs.NormalizeFileBufferSizeBytes(thePrefs.GetFileBufferSize()) / 1024u;
 
 	CaptureBaseLayout();
 	Localize();
@@ -905,6 +1005,7 @@ BOOL CPPgTweaks::OnApply()
 	const bool bGeoLocationEnabledOld = thePrefs.IsGeoLocationEnabled();
 	const UINT uGeoLocationCheckDaysOld = thePrefs.GetGeoLocationCheckDays();
 	thePrefs.m_bGeoLocationEnabled = m_bGeoLocationEnabled;
+	m_uGeoLocationCheckDays = thePrefs.NormalizeGeoLocationCheckDays(m_uGeoLocationCheckDays);
 	thePrefs.SetGeoLocationCheckDays(m_uGeoLocationCheckDays);
 
 	if (thePrefs.AutoTakeED2KLinks() != m_bAutoTakeEd2kLinks) {
@@ -945,6 +1046,8 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_iCommitFiles = m_iCommitFiles;
 	thePrefs.m_iExtractMetaData = m_iExtractMetaData;
 	thePrefs.filterLANIPs = m_bFilterLANIPs;
+	m_uFileBufferSizeKiB = thePrefs.NormalizeFileBufferSizeBytes(m_uFileBufferSizeKiB * 1024u) / 1024u;
+	m_iQueueSize = static_cast<int>(thePrefs.NormalizeQueueSize(m_iQueueSize));
 	thePrefs.m_uFileBufferSize = m_uFileBufferSizeKiB * 1024u;
 	thePrefs.m_iQueueSize = m_iQueueSize;
 
