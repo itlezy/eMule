@@ -183,6 +183,7 @@ IMPLEMENT_DYNAMIC(CPPgWebServer, CPropertyPage)
 
 BEGIN_MESSAGE_MAP(CPPgWebServer, CPropertyPage)
 	ON_EN_CHANGE(IDC_WSPASS, OnDataChange)
+	ON_EN_CHANGE(IDC_WSAPIKEY, OnDataChange)
 	ON_EN_CHANGE(IDC_WSPASSLOW, OnDataChange)
 	ON_EN_CHANGE(IDC_WSPORT, OnDataChange)
 	ON_EN_CHANGE(IDC_WEBBINDADDR, OnDataChange)
@@ -244,6 +245,7 @@ BOOL CPPgWebServer::OnInitDialog()
 
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPASS))->SetLimitText(32);
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPASSLOW))->SetLimitText(32);
+	static_cast<CEdit*>(GetDlgItem(IDC_WSAPIKEY))->SetLimitText(64);
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPORT))->SetLimitText(5);
 	static_cast<CEdit*>(GetDlgItem(IDC_WEBBINDADDR))->SetLimitText(15);
 
@@ -273,6 +275,7 @@ void CPPgWebServer::LoadSettings()
 	SetDlgItemText(IDC_KEYPATH, thePrefs.GetWebKeyPath());
 
 	SetDlgItemText(IDC_WSPASS, sHiddenPassword);
+	SetDlgItemText(IDC_WSAPIKEY, thePrefs.GetWSApiKey().IsEmpty() ? _T("") : sHiddenPassword);
 	CheckDlgButton(IDC_WS_ALLOWHILEVFUNC, static_cast<UINT>(thePrefs.GetWebAdminAllowedHiLevFunc()));
 	CheckDlgButton(IDC_WSENABLEDLOW, static_cast<UINT>(thePrefs.GetWSIsLowUserEnabled()));
 	SetDlgItemText(IDC_WSPASSLOW, sHiddenPassword);
@@ -334,6 +337,12 @@ BOOL CPPgWebServer::OnApply()
 		if (sBuf != sHiddenPassword) {
 			thePrefs.SetWSPass(sBuf);
 			SetDlgItemText(IDC_WSPASS, sHiddenPassword);
+		}
+
+		GetDlgItemText(IDC_WSAPIKEY, sBuf);
+		if (sBuf != sHiddenPassword) {
+			thePrefs.SetWSApiKey(sBuf);
+			SetDlgItemText(IDC_WSAPIKEY, sHiddenPassword);
 		}
 
 		GetDlgItemText(IDC_WSPASSLOW, sBuf);
@@ -415,6 +424,7 @@ void CPPgWebServer::Localize()
 
 		SetDlgItemText(IDC_STATIC_ADMIN, GetResString(IDS_ADMIN));
 		SetDlgItemText(IDC_WSPASS_LBL, GetResString(IDS_WS_PASS) + _T(':'));
+		SetDlgItemText(IDC_WSAPIKEY_LBL, GetResString(IDS_WS_APIKEY) + _T(':'));
 		SetDlgItemText(IDC_WS_ALLOWHILEVFUNC, GetResString(IDS_WEB_ALLOWHILEVFUNC));
 
 		SetDlgItemText(IDC_STATIC_LOWUSER, GetResString(IDS_WEB_LOWUSER));
@@ -455,6 +465,7 @@ void CPPgWebServer::OnEnChangeWSEnabled()
 	GetDlgItem(IDC_WSTIMEOUT)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WEB_HTTPS)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSPASS)->EnableWindow(bIsWIEnabled);
+	GetDlgItem(IDC_WSAPIKEY)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WS_ALLOWHILEVFUNC)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSENABLEDLOW)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSPASSLOW)->EnableWindow(bIsWIEnabled && IsDlgButtonChecked(IDC_WSENABLEDLOW));

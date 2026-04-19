@@ -634,6 +634,21 @@ bool CSearchList::AddToList(CSearchFile *toadd, bool bClientResponse, uint32 dwF
 	return true;
 }
 
+bool CSearchList::GetVisibleResults(uint32 nSearchID, CArray<const CSearchFile*, const CSearchFile*> &rResults) const
+{
+	rResults.RemoveAll();
+	const SearchList *const pList = FindSearchListForID(nSearchID);
+	if (pList == NULL)
+		return false;
+
+	for (POSITION pos = pList->GetHeadPosition(); pos != NULL;) {
+		const CSearchFile *const pSearchFile = pList->GetNext(pos);
+		if (pSearchFile != NULL && pSearchFile->GetListParent() == NULL && !pSearchFile->m_flags.noshow)
+			rResults.Add(pSearchFile);
+	}
+	return true;
+}
+
 CSearchFile* CSearchList::GetSearchFileByHash(const uchar *hash) const
 {
 	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
@@ -1162,6 +1177,16 @@ SearchList* CSearchList::GetSearchListForID(uint32 nSearchID)
 	list->m_nSearchID = nSearchID;
 	m_listFileLists.AddTail(list);
 	return &list->m_listSearchFiles;
+}
+
+const SearchList* CSearchList::FindSearchListForID(uint32 nSearchID) const
+{
+	for (POSITION pos = m_listFileLists.GetHeadPosition(); pos != NULL;) {
+		const SearchListsStruct *const pList = m_listFileLists.GetNext(pos);
+		if (pList->m_nSearchID == nSearchID)
+			return &pList->m_listSearchFiles;
+	}
+	return NULL;
 }
 
 void CSearchList::SentUDPRequestNotification(uint32 nSearchID, uint32 dwServerIP)

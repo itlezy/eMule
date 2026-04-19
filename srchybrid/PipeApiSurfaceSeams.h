@@ -111,10 +111,6 @@ inline EMutablePreference ParseMutablePreferenceName(const char *pszPreferenceNa
 		return EMutablePreference::MaxConPerFive;
 	if (strcmp(pszPreferenceName, "maxSourcesPerFile") == 0)
 		return EMutablePreference::MaxSourcesPerFile;
-	if (strcmp(pszPreferenceName, "uploadClientDataRate") == 0)
-		return EMutablePreference::UploadClientDataRate;
-	if (strcmp(pszPreferenceName, "maxUploadSlots") == 0)
-		return EMutablePreference::MaxUploadSlots;
 	if (strcmp(pszPreferenceName, "queueSize") == 0)
 		return EMutablePreference::QueueSize;
 	if (strcmp(pszPreferenceName, "autoConnect") == 0)

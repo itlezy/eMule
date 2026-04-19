@@ -25,6 +25,8 @@
 #include "emuledlg.h"
 #include "StringConversion.h"
 
+#include <deque>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -34,6 +36,9 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 constexpr int kMaxFileLogLineChars = 64 * 1024;
+constexpr size_t kMaxRecentLogEntries = 200;
+CCriticalSection g_recentLogLock;
+std::deque<SRecentLogEntry> g_recentLogEntries;
 
 CString TruncateLogLine(const CString &rstrLine, const int iMaxChars)
 {
@@ -55,6 +60,27 @@ CString TruncateLogLine(const CString &rstrLine, const int iMaxChars)
 		strLine.Truncate(iMaxPayloadChars);
 	return strLine + strLineEnding;
 }
+
+void AddRecentLogEntry(UINT uFlags, LPCTSTR pszText)
+{
+	CSingleLock lock(&g_recentLogLock, TRUE);
+	g_recentLogEntries.push_back(SRecentLogEntry{CTime::GetCurrentTime(), uFlags, pszText});
+	while (g_recentLogEntries.size() > kMaxRecentLogEntries)
+		g_recentLogEntries.pop_front();
+}
+}
+
+std::vector<SRecentLogEntry> GetRecentLogEntries(size_t maxEntries)
+{
+	CSingleLock lock(&g_recentLogLock, TRUE);
+	if (maxEntries == 0 || maxEntries > g_recentLogEntries.size())
+		maxEntries = g_recentLogEntries.size();
+
+	std::vector<SRecentLogEntry> entries;
+	entries.reserve(maxEntries);
+	for (size_t i = g_recentLogEntries.size() - maxEntries; i < g_recentLogEntries.size(); ++i)
+		entries.push_back(g_recentLogEntries[i]);
+	return entries;
 }
 
 
@@ -228,6 +254,7 @@ void AddLogTextV(UINT uFlags, EDebugLogPriority dlpPriority, LPCTSTR pszLine, va
 
 	CString strLogLine;
 	strLogLine.FormatV(pszLine, argptr);
+	AddRecentLogEntry(uFlags, strLogLine);
 
 	if (theApp.emuledlg)
 		theApp.emuledlg->AddLogText(uFlags, strLogLine);

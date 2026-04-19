@@ -438,6 +438,7 @@ bool	CPreferences::m_bAdjustNTFSDaylightFileTime = false; //'true' causes rehash
 bool	CPreferences::m_bRearrangeKadSearchKeywords;
 CString	CPreferences::m_strWebPassword;
 CString	CPreferences::m_strWebLowPassword;
+CString	CPreferences::m_strWebApiKey;
 CString	CPreferences::m_strWebBindAddr;
 CUIntArray CPreferences::m_aAllowedRemoteAccessIPs;
 uint16	CPreferences::m_nWebPort;
@@ -2003,6 +2004,7 @@ void CPreferences::SavePreferences()
 	//
 	ini.WriteString(_T("Password"), GetWSPass(), _T("WebServer"));
 	ini.WriteString(_T("PasswordLow"), GetWSLowPass());
+	ini.WriteString(_T("ApiKey"), GetWSApiKey());
 	ini.WriteString(_T("BindAddr"), m_strWebBindAddr);
 	ini.WriteInt(_T("Port"), m_nWebPort);
 	ini.WriteBool(_T("WebUseUPnP"), m_bWebUseUPnP);
@@ -2572,6 +2574,7 @@ void CPreferences::LoadPreferences()
 	//
 	m_strWebPassword = ini.GetString(_T("Password"), _T(""), _T("WebServer"));
 	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
+	m_strWebApiKey = ini.GetString(_T("ApiKey"), _T(""));
 	m_strWebBindAddr = ini.GetString(_T("BindAddr"), _T("")).Trim();
 	m_nWebPort = (uint16)ini.GetInt(_T("Port"), 4711);
 	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
@@ -2805,6 +2808,11 @@ void CPreferences::SetWSPass(const CString &strNewPass)
 void CPreferences::SetWSLowPass(const CString &strNewPass)
 {
 	m_strWebLowPassword = MD5Sum(strNewPass).GetHashString();
+}
+
+void CPreferences::SetWSApiKey(const CString &strNewKey)
+{
+	m_strWebApiKey = strNewKey.IsEmpty() ? CString() : MD5Sum(strNewKey).GetHashString();
 }
 
 void CPreferences::SetMaxUpload(uint32 val)

@@ -1515,6 +1515,7 @@
 #define IDS_POPULARITY                  1589
 #define IDS_SHOWWIN7TASKBARGOODIES      1590
 #define IDS_WEB_HTTPS                   1591
+#define IDS_WS_APIKEY                  1716
 #define IDS_CERTIFICATE                 1592
 #define IDS_CERT_NOT_FOUND              1593
 #define IDS_KEY_NOT_FOUND               1594
@@ -2440,6 +2441,8 @@
 #define IDC_GEOLOCATION_CHECKDAYS_SUFFIX 3053
 #define IDC_SHUTDOWN_STEP               3055
 #define IDC_SHUTDOWN_DETAIL             3056
+#define IDC_WSAPIKEY                    3057
+#define IDC_WSAPIKEY_LBL                3058
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2448,7 +2451,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3057
-#define _APS_NEXT_SYMED_VALUE           1716
+#define _APS_NEXT_CONTROL_VALUE         3059
+#define _APS_NEXT_SYMED_VALUE           1717
 #endif
 #endif

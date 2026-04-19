@@ -546,6 +546,7 @@ public:
 	// Web Server [kuchin]
 	static CString	m_strWebPassword;
 	static CString	m_strWebLowPassword;
+	static CString	m_strWebApiKey;
 	static CString	m_strWebBindAddr;
 	static uint16	m_nWebPort;
 	static bool		m_bWebUseUPnP;
@@ -1326,6 +1327,8 @@ public:
 	static void		SetWebBindAddr(const CString &strAddr)	{ m_strWebBindAddr = strAddr; }
 	static const CString& GetWSPass()					{ return m_strWebPassword; }
 	static void		SetWSPass(const CString &strNewPass);
+	static const CString& GetWSApiKey()				{ return m_strWebApiKey; }
+	static void		SetWSApiKey(const CString &strNewKey);
 	static bool		GetWSIsEnabled()					{ return m_bWebEnabled; }
 	static void		SetWSIsEnabled(bool bEnable)		{ m_bWebEnabled = bEnable; }
 	static bool		GetWebUseGzip()						{ return m_bWebUseGzip; }

@@ -4,6 +4,7 @@
 #include "emule.h"
 #include "StringConversion.h"
 #include "WebServer.h"
+#include "WebServerJson.h"
 #include "ClientCredits.h"
 #include "ClientList.h"
 #include "DownloadQueue.h"
@@ -367,6 +368,12 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 #ifndef _DEBUG
 	try {
 #endif
+		if (WebServerJson::IsApiRequest(Data)) {
+			WebServerJson::ProcessRequest(Data);
+			::CoUninitialize();
+			return;
+		}
+
 		bool isUseGzip = thePrefs.GetWebUseGzip();
 
 		srand((unsigned)time(NULL));

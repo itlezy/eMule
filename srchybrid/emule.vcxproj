@@ -375,6 +375,7 @@
     <ClCompile Include="URLClient.cpp" />
     <ClCompile Include="Version.cpp" />
     <ClCompile Include="WebServer.cpp" />
+    <ClCompile Include="WebServerJson.cpp" />
     <ClCompile Include="WebSocket.cpp" />
     <ClCompile Include="Wizard.cpp" />
     <ClCompile Include="ZIPFile.cpp" />
@@ -663,10 +664,12 @@
     <ClInclude Include="Version.h" />
     <ClInclude Include="VistaDefines.h" />
     <ClInclude Include="WebServer.h" />
+    <ClInclude Include="WebServerJson.h" />
     <ClInclude Include="WebServices.h" />
     <ClInclude Include="WebSocket.h" />
     <ClInclude Include="Wizard.h" />
     <ClInclude Include="ZIPFile.h" />
+    <ClInclude Include="nlohmann\json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\all.ico" />

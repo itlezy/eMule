@@ -3,6 +3,8 @@
 #include "WebSocket.h"
 #include "zlib.h"
 
+class CUpDownClient;
+
 #define WEB_GRAPH_HEIGHT		120
 #define WEB_GRAPH_WIDTH			500
 
@@ -239,6 +241,10 @@ typedef struct
 typedef struct
 {
 	CString			sURL;
+	CStringA		strMethod;
+	CStringA		strRequestTarget;
+	CStringA		strRequestBody;
+	CStringA		strApiKey;
 	void			*pThis;
 	CWebSocket		*pSocket;
 	in_addr			inadr;

@@ -77,8 +77,13 @@ public:
 	void	Localize();
 
 	void	StartSearch(SSearchParams *pParams);
+	/**
+	 * @brief Starts a search without interactive message boxes so REST callers receive structured errors.
+	 */
+	bool	StartSearchFromApi(SSearchParams *pParams, CString &rError);
 	bool	SearchMore();
 	void	CancelSearch(uint32 uSearchID = 0);
+	bool	IsSearchRunning(uint32 uSearchID) const;
 
 	bool	DoNewEd2kSearch(SSearchParams *pParams);
 	void	CancelEd2kSearch();

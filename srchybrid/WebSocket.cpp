@@ -37,6 +37,41 @@ typedef struct
 
 namespace
 {
+	CStringA GetHttpHeaderValue(const CStringA &strHeader, LPCSTR pszHeaderName)
+	{
+		ASSERT(pszHeaderName != NULL);
+		if (pszHeaderName == NULL)
+			return CStringA();
+
+		const CStringA strHeaderName(pszHeaderName);
+		int iPos = 0;
+		while (iPos >= 0 && iPos < strHeader.GetLength()) {
+			const int iLineEnd = strHeader.Find('\n', iPos);
+			const int iLineLength = (iLineEnd >= 0 ? iLineEnd : strHeader.GetLength()) - iPos;
+			CStringA strLine(strHeader.Mid(iPos, iLineLength));
+			strLine.Trim("\r");
+			if (strLine.IsEmpty())
+				break;
+
+			const int iColon = strLine.Find(':');
+			if (iColon > 0) {
+				CStringA strName(strLine.Left(iColon));
+				strName.Trim();
+				if (strName.CompareNoCase(strHeaderName) == 0) {
+					CStringA strValue(strLine.Mid(iColon + 1));
+					strValue.Trim();
+					return strValue;
+				}
+			}
+
+			if (iLineEnd < 0)
+				break;
+			iPos = iLineEnd + 1;
+		}
+
+		return CStringA();
+	}
+
 	bool TryResolveWebBindAddr(in_addr *pAddr)
 	{
 		ASSERT(pAddr != NULL);
@@ -60,14 +95,25 @@ namespace
 void CWebSocket::OnRequestReceived(const char *pHeader, DWORD dwHeaderLen, const char *pData, DWORD dwDataLen, const in_addr inad)
 {
 	CStringA sHeader(pHeader, dwHeaderLen);
+	CStringA sMethod;
+	CStringA sRequestTarget;
 	CStringA sURL;
 
-	if (strncmp(sHeader, "GET", 3) == 0)
+	if (strncmp(sHeader, "GET", 3) == 0) {
+		sMethod = "GET";
 		sURL = sHeader.Trim();
-	else if (strncmp(sHeader, "POST", 4) == 0) {
+	} else if (strncmp(sHeader, "POST", 4) == 0) {
+		sMethod = "POST";
 		CStringA sData(pData, dwDataLen);
 		sURL = '?' + sData.Trim();	// '?' to imitate GET syntax for ParseURL
 	}
+	int iFirstSpace = sHeader.Find(' ');
+	if (iFirstSpace >= 0) {
+		int iSecondSpace = sHeader.Find(' ', iFirstSpace + 1);
+		if (iSecondSpace > iFirstSpace)
+			sRequestTarget = sHeader.Mid(iFirstSpace + 1, iSecondSpace - iFirstSpace - 1);
+	}
+
 	sURL.Delete(0, sURL.Find(' ') + 1);
 	int i = sURL.Find(' ');
 	if (i >= 0)
@@ -82,6 +128,10 @@ void CWebSocket::OnRequestReceived(const char *pHeader, DWORD dwHeaderLen, const
 	}
 	ThreadData Data;
 	Data.sURL = sURL;
+	Data.strMethod = sMethod;
+	Data.strRequestTarget = sRequestTarget;
+	Data.strRequestBody = CStringA(pData, dwDataLen);
+	Data.strApiKey = GetHttpHeaderValue(sHeader, "X-API-Key");
 	Data.pThis = (void*)m_pParent;
 	Data.inadr = inad;
 	Data.pSocket = this;
