@@ -89,6 +89,14 @@ namespace Kademlia
 			void Init(CRoutingZone *pSuper_zone, int iLevel, const CUInt128 &uZone_index);
 			static void ReadBootstrapNodesDat(CFileDataIO &file);
 
+			/**
+			 * Returns the Fast Kad sidecar path stored next to the regular Kad contact snapshot.
+			 */
+			CString GetFastKadFilename() const;
+			/**
+			 * Seeds the startup bootstrap queue from the best currently loaded routing contacts.
+			 */
+			void SeedFastKadBootstrapContacts();
 			void WriteFile();
 			bool IsLeaf() const					{ return m_pBin != NULL; }
 			bool CanSplit() const;

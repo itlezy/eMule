@@ -31,6 +31,7 @@
 #include "log.h"
 #include "HttpDownloadDlg.h"
 #include "Kademlia/routing/RoutingZone.h"
+#include "kademlia/utils/NodesDatSupport.h"
 #include "HelpIDs.h"
 #include "DropDownButton.h"
 #include "MenuCmds.h"
@@ -442,24 +443,48 @@ void CKademliaWnd::UpdateNodesDatFromURL(const CString &strURL)
 {
 	CString strTempFilename(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	strTempFilename.AppendFormat(_T("temp-%I64u-nodes.dat"), ::GetTickCount64());
+	CString strTrimmedUrl(strURL);
+	strTrimmedUrl.Trim();
+	const CString strTargetFilename(GetNodesDatFilename());
 
 	// try to download nodes.dat
-	Log(GetResString(IDS_DOWNLOADING_NODESDAT_FROM), (LPCTSTR)strURL);
+	Log(GetResString(IDS_DOWNLOADING_NODESDAT_FROM), (LPCTSTR)strTrimmedUrl);
 	CHttpDownloadDlg dlgDownload;
 	dlgDownload.m_strTitle = GetResString(IDS_DOWNLOADING_NODESDAT);
-	dlgDownload.m_sURLToDownload = strURL;
+	dlgDownload.m_sURLToDownload = strTrimmedUrl;
 	dlgDownload.m_sFileToDownloadInto = strTempFilename;
 	if (dlgDownload.DoModal() != IDOK) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FAILEDDOWNLOADNODES), (LPCTSTR)strURL);
+		(void)LongPathSeams::DeleteFileIfExists(strTempFilename);
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FAILEDDOWNLOADNODES), (LPCTSTR)strTrimmedUrl);
 		return;
 	}
 
-	if (!Kademlia::CKademlia::IsRunning()) {
+	Kademlia::NodesDatFileInfo fileInfo;
+	if (!Kademlia::InspectNodesDatFile(strTempFilename, fileInfo) || fileInfo.m_uUsableContacts == 0) {
+		(void)LongPathSeams::DeleteFileIfExists(strTempFilename);
+		LogError(LOG_STATUSBAR, _T("Downloaded nodes.dat from %s is invalid"), (LPCTSTR)strTrimmedUrl);
+		return;
+	}
+
+	if (!Kademlia::ReplaceNodesDatFile(strTempFilename, strTargetFilename)) {
+		const DWORD dwError = ::GetLastError();
+		(void)LongPathSeams::DeleteFileIfExists(strTempFilename);
+		LogError(LOG_STATUSBAR, _T("Failed to store nodes.dat from %s: %s"), (LPCTSTR)strTrimmedUrl, (LPCTSTR)GetErrorMessage(dwError));
+		return;
+	}
+
+	const bool bKadWasRunning = Kademlia::CKademlia::IsRunning();
+	if (!bKadWasRunning) {
 		Kademlia::CKademlia::Start();
 		theApp.emuledlg->ShowConnectionState();
+	} else if (!fileInfo.m_bBootstrapOnly || Kademlia::CKademlia::GetRoutingZone()->GetNumContacts() == 0) {
+		if (fileInfo.m_bBootstrapOnly)
+			ClearBootstrapList();
+		Kademlia::CKademlia::GetRoutingZone()->ReadFile(strTargetFilename);
 	}
-	Kademlia::CKademlia::GetRoutingZone()->ReadFile(strTempFilename);
-	(void)LongPathSeams::DeleteFileIfExists(strTempFilename);
+
+	Log(_T("Updated nodes.dat from %s with %u usable contact%s"), (LPCTSTR)strTrimmedUrl, fileInfo.m_uUsableContacts
+		, fileInfo.m_uUsableContacts == 1 ? _T("") : _T("s"));
 }
 
 BOOL CKademliaWnd::OnHelpInfo(HELPINFO*)
@@ -578,6 +603,13 @@ void CKademliaWnd::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)
 	m_btnsetsize = true;
 }
 
+CString CKademliaWnd::GetNodesDatFilename() const
+{
+	CString strNodesDatFilename(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
+	strNodesDatFilename.Append(_T("nodes.dat"));
+	return strNodesDatFilename;
+}
+
 void CKademliaWnd::SetBootstrapListMode()
 {
 	// rather than normal contacts we show contacts only used to bootstrap in this mode
@@ -586,4 +618,16 @@ void CKademliaWnd::SetBootstrapListMode()
 		m_bBootstrapListMode = true;
 	else
 		ASSERT(0);
+}
+
+void CKademliaWnd::ClearBootstrapList()
+{
+	while (!Kademlia::CKademlia::s_liBootstrapList.IsEmpty())
+		delete Kademlia::CKademlia::s_liBootstrapList.RemoveHead();
+
+	if (m_bBootstrapListMode) {
+		m_contactListCtrl->DeleteAllItems();
+		m_bBootstrapListMode = false;
+		UpdateContactCount();
+	}
 }

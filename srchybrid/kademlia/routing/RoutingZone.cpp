@@ -46,6 +46,7 @@ their client on the eMule forum.
  */
 
 #include "stdafx.h"
+#include <algorithm>
 #include "emule.h"
 #include "emuledlg.h"
 #include "ipfilter.h"
@@ -60,6 +61,7 @@ their client on the eMule forum.
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "kademlia/net/KademliaUDPListener.h"
 #include "LongPathSeams.h"
+#include "kademlia/utils/FastKad.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/routing/RoutingBin.h"
 #include "kademlia/utils/KadUDPKey.h"
@@ -73,6 +75,22 @@ static char THIS_FILE[] = __FILE__;
 using namespace Kademlia;
 
 //void DebugSend(LPCTSTR pszMsg, uint32 uIP, uint16 uUDPPort);
+
+namespace
+{
+	/**
+	 * @brief Builds a standalone bootstrap queue contact from a live routing entry without copying GUI ownership flags.
+	 */
+	Kademlia::CContact *CreateBootstrapQueueContact(const Kademlia::CContact &contact)
+	{
+		Kademlia::CContact *pBootstrapContact = new Kademlia::CContact(contact.GetClientID(), contact.GetIPAddress(), contact.GetUDPPort()
+			, contact.GetTCPPort(), contact.GetVersion(), contact.GetUDPKey(), contact.IsIpVerified());
+		pBootstrapContact->SetBootstrapContact();
+		if (contact.GetReceivedHelloPacket())
+			pBootstrapContact->SetReceivedHelloPacket();
+		return pBootstrapContact;
+	}
+}
 
 CString CRoutingZone::m_sFilename;
 CUInt128 CRoutingZone::uMe(0ul);
@@ -250,6 +268,10 @@ void CRoutingZone::ReadFile(const CString &strSpecialNodesdate)
 		ex->Delete();
 		DebugLogError(_T("CFileException in CRoutingZone::readFile"));
 	}
+	if (strSpecialNodesdate.IsEmpty()) {
+		fastKad.LoadNodesMetadata(GetFastKadFilename());
+		SeedFastKadBootstrapContacts();
+	}
 	// Show contact list in GUI
 	theApp.emuledlg->kademliawnd->StartUpdateContacts();
 }
@@ -356,6 +378,8 @@ void CRoutingZone::WriteFile()
 		file.WriteUInt32(2);
 		// file.WriteUInt32(0) // if we would use version >=3, this would mean that this is a normal nodes.dat
 		file.WriteUInt32((uint32)listContacts.size());
+		std::vector<CFastKad::NodeKey> fastKadNodes;
+		fastKadNodes.reserve(listContacts.size());
 		for (ContactArray::const_iterator itContact = listContacts.begin(); itContact != listContacts.end(); ++itContact) {
 			const CContact &contact(**itContact);
 			file.WriteUInt128(contact.GetClientID());
@@ -365,13 +389,40 @@ void CRoutingZone::WriteFile()
 			file.WriteUInt8(contact.GetVersion());
 			contact.GetUDPKey().StoreToFile(file);
 			file.WriteUInt8(static_cast<uint8>(contact.IsIpVerified()));
+			fastKadNodes.push_back(CFastKad::NodeKey(contact.GetClientID(), contact.GetUDPPort()));
 		}
 		file.Close();
+		fastKad.SaveNodesMetadata(GetFastKadFilename(), fastKadNodes);
 		AddDebugLogLine(false, _T("Wrote %ld contact%s to file."), listContacts.size(), ((listContacts.size() == 1) ? _T("") : _T("s")));
 	} catch (CFileException *ex) {
 		ex->Delete();
 		AddDebugLogLine(false, _T("CFileException in CRoutingZone::writeFile"));
 	}
+}
+
+CString CRoutingZone::GetFastKadFilename() const
+{
+	CString strFilename(m_sFilename);
+	const int iLastSlash = strFilename.ReverseFind(_T('\\'));
+	if (iLastSlash >= 0)
+		strFilename = strFilename.Left(iLastSlash + 1) + _T("nodes.fastkad.dat");
+	else
+		strFilename = _T("nodes.fastkad.dat");
+	return strFilename;
+}
+
+void CRoutingZone::SeedFastKadBootstrapContacts()
+{
+	while (!CKademlia::s_liBootstrapList.IsEmpty())
+		delete CKademlia::s_liBootstrapList.RemoveHead();
+
+	if (GetNumContacts() == 0)
+		return;
+
+	ContactArray listContacts;
+	GetBootstrapContacts(listContacts, 20);
+	for (ContactArray::const_iterator itContact = listContacts.begin(); itContact != listContacts.end(); ++itContact)
+		CKademlia::s_liBootstrapList.AddTail(CreateBootstrapQueueContact(**itContact));
 }
 
 bool CRoutingZone::CanSplit() const
@@ -826,11 +877,18 @@ uint32 CRoutingZone::GetBootstrapContacts(ContactArray &rlistResult, uint32 uMax
 	try {
 		ContactArray top;
 		TopDepth(LOG_BASE_EXPONENT, top);
-		if (!top.empty())
+		if (!top.empty()) {
+			std::stable_sort(top.begin(), top.end(),
+				[](const CContact *pLeft, const CContact *pRight) -> bool
+				{
+					return fastKad.GetBootstrapPriority(pLeft->GetClientID(), pLeft->GetUDPPort())
+						> fastKad.GetBootstrapPriority(pRight->GetClientID(), pRight->GetUDPPort());
+				});
 			for (ContactArray::const_iterator itContact = top.begin(); uRetVal < uMaxRequired && itContact != top.end(); ++itContact) {
 				rlistResult.push_back(*itContact);
 				++uRetVal;
 			}
+		}
 	} catch (...) {
 		AddDebugLogLine(false, _T("Exception in CRoutingZone::getBoostStrapContacts"));
 	}
@@ -843,6 +901,7 @@ bool CRoutingZone::VerifyContact(const CUInt128 &uID, uint32 uIP) const
 	if (pContact == NULL || uIP != pContact->GetIPAddress())
 		return false;
 
+	fastKad.TrackNodeReachable(uID, pContact->GetUDPPort());
 	if (pContact->IsIpVerified())
 		DebugLogWarning(_T("Kad: VerifyContact: Sender already verified (sender: %s)"), (LPCTSTR)ipstr(htonl(uIP)));
 	else {

@@ -63,8 +63,10 @@ protected:
 
 	bool						m_bBootstrapListMode;
 
+	CString		GetNodesDatFilename() const;
 	void		SetAllIcons();
 	void		UpdateButtonTitle(bool bLookupGraph);
+	void		ClearBootstrapList();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();

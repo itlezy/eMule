@@ -64,6 +64,7 @@ namespace Kademlia
 		static uint32 GetTotalFile();
 		static bool	GetPublish();
 		static uint32 GetIPAddress();
+		static void NoteBootstrapResponse(const CUInt128 &uID, uint16 uUDPPort);
 		static void	Bootstrap(uint32 uIP, uint16 uPort);
 		static void	Bootstrap(LPCTSTR szHost, uint16 uPort);
 		static void	ProcessPacket(const byte *pbyData, uint32 uLenData, uint32 uIP, uint16 uPort, bool bValidReceiverKey, const CKadUDPKey &senderUDPKey);

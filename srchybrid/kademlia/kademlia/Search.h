@@ -108,6 +108,7 @@ namespace Kademlia
 		WordList m_listWords;
 		UIntList m_listFileIDs;
 		std::map<Kademlia::CUInt128, bool> m_mapResponded;
+		std::map<Kademlia::CUInt128, clock_t> m_mapPendingResponses;
 		ContactMap m_mapPossible;
 		ContactMap m_mapTried;
 		ContactMap m_mapBest;

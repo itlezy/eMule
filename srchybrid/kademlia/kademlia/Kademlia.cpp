@@ -46,6 +46,7 @@ their client on the eMule forum.
 #include "kademlia/net/KademliaUDPListener.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/routing/contact.h"
+#include "kademlia/utils/FastKad.h"
 #include "kademlia/utils/KadUDPKey.h"
 #include "kademlia/utils/KadClientSearcher.h"
 #include "kademlia/kademlia/tag.h"
@@ -172,6 +173,8 @@ void CKademlia::Stop()
 
 	delete m_pInstance->m_pRoutingZone;
 	m_pInstance->m_pRoutingZone = NULL;
+
+	fastKad.ShutdownCleanup();
 
 	delete m_pInstance->m_pIndexed;
 	m_pInstance->m_pIndexed = NULL;
@@ -366,6 +369,11 @@ uint32 CKademlia::GetIPAddress()
 	if (m_pInstance && m_pInstance->m_pPrefs)
 		return m_pInstance->m_pPrefs->GetIPAddress();
 	return 0;
+}
+
+void CKademlia::NoteBootstrapResponse(const CUInt128 &uID, uint16 uUDPPort)
+{
+	fastKad.TrackNodeReachable(uID, uUDPPort);
 }
 
 void CKademlia::ProcessPacket(const byte *pbyData, uint32 uLenData, uint32 uIP, uint16 uPort, bool bValidReceiverKey, const CKadUDPKey &senderUDPKey)

@@ -541,6 +541,7 @@ void CKademliaUDPListener::Process_KADEMLIA2_BOOTSTRAP_RES(const byte *pbyPacket
 	// with no major effects, so that's a good trade-off
 	bool bAssumeVerified = CKademlia::GetRoutingZone()->GetNumContacts() == 0;
 
+	CKademlia::NoteBootstrapResponse(uContactID, uUDPPort);
 	if (CKademlia::s_liBootstrapList.IsEmpty())
 		pRoutingZone->Add(uContactID, uIP, uUDPPort, uTCPPort, uVersion, senderUDPKey, bValidReceiverKey, true, false, false);
 
