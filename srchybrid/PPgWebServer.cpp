@@ -36,6 +36,30 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+const CString kDefaultWebBindAddr(_T("0.0.0.0"));
+
+/**
+ * Returns the effective WebServer bind address text shown in the options page.
+ */
+CString GetEffectiveWebBindAddrForUi()
+{
+	const CString &strStoredBindAddr = thePrefs.GetWebBindAddr();
+	return strStoredBindAddr.IsEmpty() ? kDefaultWebBindAddr : strStoredBindAddr;
+}
+
+/**
+ * Converts the UI bind-address text back to the persisted override semantics.
+ */
+CString NormalizeWebBindAddrOverrideForPrefs(const CString &strUiBindAddr)
+{
+	CString strBindAddr(strUiBindAddr);
+	strBindAddr.Trim();
+	return strBindAddr == kDefaultWebBindAddr ? CString() : strBindAddr;
+}
+}
+
 struct options
 {
 	LPCTSTR	issuer_key;		//filename of the issuer key file
@@ -184,6 +208,7 @@ IMPLEMENT_DYNAMIC(CPPgWebServer, CPropertyPage)
 BEGIN_MESSAGE_MAP(CPPgWebServer, CPropertyPage)
 	ON_EN_CHANGE(IDC_WSPASS, OnDataChange)
 	ON_EN_CHANGE(IDC_WSAPIKEY, OnDataChange)
+	ON_EN_SETFOCUS(IDC_WSAPIKEY, OnEnSetfocusWsApiKey)
 	ON_EN_CHANGE(IDC_WSPASSLOW, OnDataChange)
 	ON_EN_CHANGE(IDC_WSPORT, OnDataChange)
 	ON_EN_CHANGE(IDC_WEBBINDADDR, OnDataChange)
@@ -265,7 +290,7 @@ void CPPgWebServer::LoadSettings()
 	CheckDlgButton(IDC_WSUPNP, static_cast<UINT>(thePrefs.m_bWebUseUPnP));
 	GetDlgItem(IDC_WSUPNP)->EnableWindow(thePrefs.IsUPnPEnabled() && thePrefs.GetWSIsEnabled());
 	SetDlgItemInt(IDC_WSPORT, thePrefs.GetWSPort());
-	SetDlgItemText(IDC_WEBBINDADDR, thePrefs.GetWebBindAddr());
+	SetDlgItemText(IDC_WEBBINDADDR, GetEffectiveWebBindAddrForUi());
 
 	SetDlgItemText(IDC_TMPLPATH, thePrefs.GetTemplate());
 	SetDlgItemInt(IDC_WSTIMEOUT, thePrefs.GetWebTimeoutMins());
@@ -275,7 +300,7 @@ void CPPgWebServer::LoadSettings()
 	SetDlgItemText(IDC_KEYPATH, thePrefs.GetWebKeyPath());
 
 	SetDlgItemText(IDC_WSPASS, sHiddenPassword);
-	SetDlgItemText(IDC_WSAPIKEY, thePrefs.GetWSApiKey().IsEmpty() ? _T("") : sHiddenPassword);
+	SetDlgItemText(IDC_WSAPIKEY, thePrefs.GetWSApiKey());
 	CheckDlgButton(IDC_WS_ALLOWHILEVFUNC, static_cast<UINT>(thePrefs.GetWebAdminAllowedHiLevFunc()));
 	CheckDlgButton(IDC_WSENABLEDLOW, static_cast<UINT>(thePrefs.GetWSIsLowUserEnabled()));
 	SetDlgItemText(IDC_WSPASSLOW, sHiddenPassword);
@@ -340,9 +365,10 @@ BOOL CPPgWebServer::OnApply()
 		}
 
 		GetDlgItemText(IDC_WSAPIKEY, sBuf);
-		if (sBuf != sHiddenPassword) {
+		sBuf.Trim();
+		if (sBuf != thePrefs.GetWSApiKey()) {
 			thePrefs.SetWSApiKey(sBuf);
-			SetDlgItemText(IDC_WSAPIKEY, sHiddenPassword);
+			SetDlgItemText(IDC_WSAPIKEY, thePrefs.GetWSApiKey());
 		}
 
 		GetDlgItemText(IDC_WSPASSLOW, sBuf);
@@ -367,6 +393,7 @@ BOOL CPPgWebServer::OnApply()
 			GetDlgItem(IDC_WEBBINDADDR)->SetFocus();
 			return FALSE;
 		}
+		strWebBindAddr = NormalizeWebBindAddrOverrideForPrefs(strWebBindAddr);
 		if (strWebBindAddr != thePrefs.GetWebBindAddr()) {
 			thePrefs.SetWebBindAddr(strWebBindAddr);
 			bRestartWebServerSockets = true;
@@ -579,6 +606,24 @@ BOOL CPPgWebServer::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+/**
+ * Copies the visible REST API key as soon as the user focuses the textbox.
+ */
+void CPPgWebServer::OnEnSetfocusWsApiKey()
+{
+	CEdit *const pApiKeyEdit = static_cast<CEdit*>(GetDlgItem(IDC_WSAPIKEY));
+	if (pApiKeyEdit == NULL)
+		return;
+
+	CString strApiKey;
+	pApiKeyEdit->GetWindowText(strApiKey);
+	if (strApiKey.IsEmpty())
+		return;
+
+	pApiKeyEdit->SetSel(0, -1);
+	theApp.CopyTextToClipboard(strApiKey);
 }
 
 void CPPgWebServer::OnDestroy()

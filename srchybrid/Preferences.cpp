@@ -58,6 +58,7 @@ namespace
 {
 constexpr uint32 kDefaultConfiguredUploadLimitKiB = 6100;
 constexpr uint32 kDefaultBroadbandDownloadLimitKiB = 12207;
+constexpr size_t kWebApiKeyBytes = 16;
 
 uint32 NormalizeConfiguredUploadLimitKiB(uint32 value)
 {
@@ -74,6 +75,26 @@ UINT NormalizeBoundedPreference(int value, UINT uDefault, UINT uMin, UINT uMax)
 	if (value < 0)
 		return uDefault;
 	return min(uMax, max(uMin, static_cast<UINT>(value)));
+}
+
+/**
+ * Generates the visible WebServer REST API key token shown in the options UI.
+ */
+CString GenerateRandomWebApiKey()
+{
+	static const TCHAR s_szHexDigits[] = _T("0123456789abcdef");
+	byte abyRandom[kWebApiKeyBytes];
+	CryptoPP::AutoSeededRandomPool rng;
+	rng.GenerateBlock(abyRandom, sizeof abyRandom);
+
+	CString strKey;
+	LPTSTR pszKey = strKey.GetBufferSetLength(static_cast<int>(kWebApiKeyBytes * 2));
+	for (size_t i = 0; i < kWebApiKeyBytes; ++i) {
+		pszKey[i * 2] = s_szHexDigits[abyRandom[i] >> 4];
+		pszKey[i * 2 + 1] = s_szHexDigits[abyRandom[i] & 0x0F];
+	}
+	strKey.ReleaseBuffer(static_cast<int>(kWebApiKeyBytes * 2));
+	return strKey;
 }
 
 void LoadSharedIgnoreRules(const CString &rstrConfigDirectory)
@@ -2574,7 +2595,7 @@ void CPreferences::LoadPreferences()
 	//
 	m_strWebPassword = ini.GetString(_T("Password"), _T(""), _T("WebServer"));
 	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
-	m_strWebApiKey = ini.GetString(_T("ApiKey"), _T(""));
+	SetWSApiKey(ini.GetString(_T("ApiKey"), _T("")));
 	m_strWebBindAddr = ini.GetString(_T("BindAddr"), _T("")).Trim();
 	m_nWebPort = (uint16)ini.GetInt(_T("Port"), 4711);
 	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
@@ -2812,7 +2833,10 @@ void CPreferences::SetWSLowPass(const CString &strNewPass)
 
 void CPreferences::SetWSApiKey(const CString &strNewKey)
 {
-	m_strWebApiKey = strNewKey.IsEmpty() ? CString() : MD5Sum(strNewKey).GetHashString();
+	m_strWebApiKey = strNewKey;
+	m_strWebApiKey.Trim();
+	if (m_strWebApiKey.IsEmpty())
+		m_strWebApiKey = GenerateRandomWebApiKey();
 }
 
 void CPreferences::SetMaxUpload(uint32 val)

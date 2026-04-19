@@ -59,7 +59,6 @@
 #include "WebServer.h"
 #include "DownloadQueue.h"
 #include "Opcodes.h"
-#include "MD5Sum.h"
 #include "kademlia/kademlia/Kademlia.h"
 
 #pragma warning(push, 0)
@@ -1746,7 +1745,7 @@ bool HasValidApiKey(const ThreadData &rData)
 {
 	if (thePrefs.GetWSApiKey().IsEmpty() || rData.strApiKey.IsEmpty())
 		return false;
-	return MD5Sum(OptUtf8ToStr(rData.strApiKey)).GetHashString() == thePrefs.GetWSApiKey();
+	return OptUtf8ToStr(rData.strApiKey) == thePrefs.GetWSApiKey();
 }
 
 void SendJsonResponse(CWebSocket *pSocket, const int iStatusCode, LPCSTR pszReason, const json &rPayload)

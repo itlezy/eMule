@@ -47,4 +47,5 @@ protected:
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
 	afx_msg void OnDataChange();
 	afx_msg void OnDestroy();
+	afx_msg void OnEnSetfocusWsApiKey();
 };
