@@ -34,8 +34,8 @@
 #include "Log.h"
 #include "OtherFunctions.h"
 #include "PartFile.h"
-#include "PipeApiCommandSeams.h"
-#include "PipeApiSurfaceSeams.h"
+#include "WebApiCommandSeams.h"
+#include "WebApiSurfaceSeams.h"
 #include "Preferences.h"
 #include "SearchDlg.h"
 #include "SearchFile.h"
@@ -229,7 +229,7 @@ CString GetUploadPriorityName(const CKnownFile &rKnownFile)
  */
 CString GetUploadStateName(const CUpDownClient &rClient)
 {
-	return CString(PipeApiSurfaceSeams::GetUploadStateName(static_cast<uint8_t>(rClient.GetUploadState())));
+	return CString(WebApiSurfaceSeams::GetUploadStateName(static_cast<uint8_t>(rClient.GetUploadState())));
 }
 
 /**
@@ -272,7 +272,7 @@ json BuildServerJson(const CServer &rServer)
 		{"hardFiles", rServer.GetHardFiles()},
 		{"ping", rServer.GetPing()},
 		{"failedCount", rServer.GetFailedCount()},
-		{"priority", PipeApiSurfaceSeams::GetServerPriorityName(rServer.GetPreference())},
+		{"priority", WebApiSurfaceSeams::GetServerPriorityName(rServer.GetPreference())},
 		{"static", rServer.IsStaticMember()},
 		{"current", bIsCurrent},
 		{"connected", bConnected},
@@ -487,7 +487,7 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 	}
 
 	for (json::const_iterator it = rPrefs.begin(); it != rPrefs.end(); ++it) {
-		if (PipeApiSurfaceSeams::ParseMutablePreferenceName(it.key().c_str()) == PipeApiSurfaceSeams::EMutablePreference::Invalid) {
+		if (WebApiSurfaceSeams::ParseMutablePreferenceName(it.key().c_str()) == WebApiSurfaceSeams::EMutablePreference::Invalid) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage.Format(_T("unsupported preference key: %hs"), it.key().c_str());
 			return false;
@@ -541,7 +541,7 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 
 	if (rPrefs.contains("uploadClientDataRate")) {
 		uint64_t ullRequestedRate = 0;
-		if (!PipeApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["uploadClientDataRate"], ullRequestedRate) || ullRequestedRate == 0 || ullRequestedRate > UINT_MAX) {
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["uploadClientDataRate"], ullRequestedRate) || ullRequestedRate == 0 || ullRequestedRate > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("uploadClientDataRate must be an unsigned number in the range 1..4294967295");
 			return false;
@@ -555,7 +555,7 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 
 	if (rPrefs.contains("maxUploadSlots")) {
 		uint64_t ullRequestedSlots = 0;
-		if (!PipeApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["maxUploadSlots"], ullRequestedSlots) || ullRequestedSlots == 0 || ullRequestedSlots > 32u) {
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["maxUploadSlots"], ullRequestedSlots) || ullRequestedSlots == 0 || ullRequestedSlots > 32u) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("maxUploadSlots must be an unsigned number in the range 1..32");
 			return false;
@@ -658,7 +658,7 @@ bool TryGetSearchId(const json &rValue, uint32 &ruSearchID, SPipeApiError &rErro
 {
 	std::string strError;
 	uint32_t uSearchID = 0;
-	if (!PipeApiCommandSeams::TryParseSearchId(rValue, uSearchID, strError)) {
+	if (!WebApiCommandSeams::TryParseSearchId(rValue, uSearchID, strError)) {
 		rError.strCode = "INVALID_ARGUMENT";
 		rError.strMessage = CStringFromStdUtf8(strError);
 		return false;
@@ -1231,7 +1231,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			rError.strMessage = _T("part files cannot be unshared individually");
 			return json();
 		}
-		if (!PipeApiSurfaceSeams::CanRemoveSharedFile(bIsShared, bMustRemainShared)) {
+	if (!WebApiSurfaceSeams::CanRemoveSharedFile(bIsShared, bMustRemainShared)) {
 			rError.strCode = bMustRemainShared ? "INVALID_ARGUMENT" : "NOT_FOUND";
 			rError.strMessage = bMustRemainShared ? _T("file belongs to a mandatory shared directory") : _T("shared file not found");
 			return json();
@@ -1298,9 +1298,9 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "transfers/list") {
-		PipeApiCommandSeams::STransfersListRequest request;
+		WebApiCommandSeams::STransfersListRequest request;
 		std::string strError;
-		if (!PipeApiCommandSeams::TryParseTransfersListRequest(params, request, strError)) {
+		if (!WebApiCommandSeams::TryParseTransfersListRequest(params, request, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
@@ -1353,7 +1353,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	if (strCommand == "transfers/add") {
 		std::string strLinkUtf8;
 		std::string strError;
-		if (!PipeApiCommandSeams::TryParseTransferAddLink(params, strLinkUtf8, strError)) {
+		if (!WebApiCommandSeams::TryParseTransferAddLink(params, strLinkUtf8, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
@@ -1388,9 +1388,9 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	auto handleTransferBulkMutation = [&](LPCTSTR pszAction) -> json
 	{
-		PipeApiCommandSeams::STransferBulkMutationRequest request;
+		WebApiCommandSeams::STransferBulkMutationRequest request;
 		std::string strError;
-		if (!PipeApiCommandSeams::TryParseTransferBulkMutationRequest(params, request, strError)) {
+		if (!WebApiCommandSeams::TryParseTransferBulkMutationRequest(params, request, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
@@ -1495,31 +1495,31 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 		}
 
-		switch (PipeApiSurfaceSeams::ParseTransferPriorityName(params["priority"].get_ref<const std::string&>().c_str())) {
-		case PipeApiSurfaceSeams::ETransferPriority::Auto:
+		switch (WebApiSurfaceSeams::ParseTransferPriorityName(params["priority"].get_ref<const std::string&>().c_str())) {
+		case WebApiSurfaceSeams::ETransferPriority::Auto:
 			pPartFile->SetAutoDownPriority(true);
 			break;
-		case PipeApiSurfaceSeams::ETransferPriority::VeryLow:
+		case WebApiSurfaceSeams::ETransferPriority::VeryLow:
 			pPartFile->SetAutoDownPriority(false);
 			pPartFile->SetDownPriority(PR_VERYLOW);
 			break;
-		case PipeApiSurfaceSeams::ETransferPriority::Low:
+		case WebApiSurfaceSeams::ETransferPriority::Low:
 			pPartFile->SetAutoDownPriority(false);
 			pPartFile->SetDownPriority(PR_LOW);
 			break;
-		case PipeApiSurfaceSeams::ETransferPriority::Normal:
+		case WebApiSurfaceSeams::ETransferPriority::Normal:
 			pPartFile->SetAutoDownPriority(false);
 			pPartFile->SetDownPriority(PR_NORMAL);
 			break;
-		case PipeApiSurfaceSeams::ETransferPriority::High:
+		case WebApiSurfaceSeams::ETransferPriority::High:
 			pPartFile->SetAutoDownPriority(false);
 			pPartFile->SetDownPriority(PR_HIGH);
 			break;
-		case PipeApiSurfaceSeams::ETransferPriority::VeryHigh:
+		case WebApiSurfaceSeams::ETransferPriority::VeryHigh:
 			pPartFile->SetAutoDownPriority(false);
 			pPartFile->SetDownPriority(PR_VERYHIGH);
 			break;
-		case PipeApiSurfaceSeams::ETransferPriority::Invalid:
+		case WebApiSurfaceSeams::ETransferPriority::Invalid:
 		default:
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("priority must be one of auto, very_low, low, normal, high, very_high");
@@ -1535,7 +1535,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		if (pPartFile == NULL)
 			return json();
 		uint64_t uRequestedCategory = 0;
-		if (!params.contains("category") || !PipeApiCommandSeams::TryParseNonNegativeUInt64(params["category"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
+		if (!params.contains("category") || !WebApiCommandSeams::TryParseNonNegativeUInt64(params["category"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("category must be an unsigned number");
 			return json();
@@ -1561,9 +1561,9 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			rError.strMessage = _T("search window is not available");
 			return json();
 		}
-		PipeApiCommandSeams::SSearchStartRequest request;
+		WebApiCommandSeams::SSearchStartRequest request;
 		std::string strError;
-		if (!PipeApiCommandSeams::TryParseSearchStartRequest(params, request, strError)) {
+		if (!WebApiCommandSeams::TryParseSearchStartRequest(params, request, strError)) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = CStringFromStdUtf8(strError);
 			return json();
@@ -1572,19 +1572,19 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		SSearchParams *const pSearchParams = new SSearchParams;
 		pSearchParams->strExpression = CStringFromStdUtf8(request.strQuery);
 		switch (request.eMethod) {
-		case PipeApiCommandSeams::ESearchMethod::Automatic:
+		case WebApiCommandSeams::ESearchMethod::Automatic:
 			pSearchParams->eType = SearchTypeAutomatic;
 			break;
-		case PipeApiCommandSeams::ESearchMethod::Server:
+		case WebApiCommandSeams::ESearchMethod::Server:
 			pSearchParams->eType = SearchTypeEd2kServer;
 			break;
-		case PipeApiCommandSeams::ESearchMethod::Global:
+		case WebApiCommandSeams::ESearchMethod::Global:
 			pSearchParams->eType = SearchTypeEd2kGlobal;
 			break;
-		case PipeApiCommandSeams::ESearchMethod::Kad:
+		case WebApiCommandSeams::ESearchMethod::Kad:
 			pSearchParams->eType = SearchTypeKademlia;
 			break;
-		case PipeApiCommandSeams::ESearchMethod::Invalid:
+		case WebApiCommandSeams::ESearchMethod::Invalid:
 		default:
 			delete pSearchParams;
 			rError.strCode = "INVALID_ARGUMENT";
@@ -1593,34 +1593,34 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		}
 
 		switch (request.eFileType) {
-		case PipeApiCommandSeams::ESearchFileType::Any:
+		case WebApiCommandSeams::ESearchFileType::Any:
 			pSearchParams->strFileType = _T(ED2KFTSTR_ANY);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Archive:
+		case WebApiCommandSeams::ESearchFileType::Archive:
 			pSearchParams->strFileType = _T(ED2KFTSTR_ARCHIVE);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Audio:
+		case WebApiCommandSeams::ESearchFileType::Audio:
 			pSearchParams->strFileType = _T(ED2KFTSTR_AUDIO);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::CdImage:
+		case WebApiCommandSeams::ESearchFileType::CdImage:
 			pSearchParams->strFileType = _T(ED2KFTSTR_CDIMAGE);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Image:
+		case WebApiCommandSeams::ESearchFileType::Image:
 			pSearchParams->strFileType = _T(ED2KFTSTR_IMAGE);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Program:
+		case WebApiCommandSeams::ESearchFileType::Program:
 			pSearchParams->strFileType = _T(ED2KFTSTR_PROGRAM);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Video:
+		case WebApiCommandSeams::ESearchFileType::Video:
 			pSearchParams->strFileType = _T(ED2KFTSTR_VIDEO);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Document:
+		case WebApiCommandSeams::ESearchFileType::Document:
 			pSearchParams->strFileType = _T(ED2KFTSTR_DOCUMENT);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::EmuleCollection:
+		case WebApiCommandSeams::ESearchFileType::EmuleCollection:
 			pSearchParams->strFileType = _T(ED2KFTSTR_EMULECOLLECTION);
 			break;
-		case PipeApiCommandSeams::ESearchFileType::Invalid:
+		case WebApiCommandSeams::ESearchFileType::Invalid:
 		default:
 			delete pSearchParams;
 			rError.strCode = "INVALID_ARGUMENT";

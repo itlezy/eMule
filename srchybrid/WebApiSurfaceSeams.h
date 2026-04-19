@@ -3,7 +3,7 @@
 #include <cstring>
 #include <cstdint>
 
-namespace PipeApiSurfaceSeams
+namespace WebApiSurfaceSeams
 {
 enum class ETransferPriority : uint8_t
 {

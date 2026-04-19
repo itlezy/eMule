@@ -10,7 +10,7 @@
 
 #include "nlohmann/json.hpp"
 
-namespace PipeApiCommandSeams
+namespace WebApiCommandSeams
 {
 using json = nlohmann::json;
 
