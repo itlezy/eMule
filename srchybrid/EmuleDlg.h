@@ -33,7 +33,6 @@ class CIrcWnd;
 class CKademliaWnd;
 class CKnownFileList;
 class CMainFrameDropTarget;
-class CMiniMule;
 class CMuleStatusBarCtrl;
 class CMuleSystrayDlg;
 class CMuleToolbarCtrl;
@@ -59,7 +58,6 @@ extern UINT g_uMainThreadId;
 class CemuleDlg : public CTrayDialog
 {
 	friend class CMuleToolbarCtrl;
-	friend class CMiniMule;
 
 	enum
 	{
@@ -207,10 +205,6 @@ protected:
 	void ShowSplash();
 	void DestroySplash();
 
-	// Mini Mule
-	CMiniMule	*m_pMiniMule;
-	void DestroyMiniMule();
-
 	CMap<UINT, UINT, LPCTSTR, LPCTSTR> m_mapTbarCmdToIcon;
 	void CreateToolbarCmdIconMap();
 	LPCTSTR GetIconFromCmdId(UINT uId);
@@ -309,8 +303,6 @@ protected:
 	afx_msg LRESULT OnAddRemoveFriend(WPARAM wParam, LPARAM lParam);
 	// VersionCheck DNS
 	afx_msg LRESULT OnVersionCheckResponse(WPARAM, LPARAM lParam);
-	// MiniMule
-	afx_msg LRESULT OnCloseMiniMule(WPARAM wParam, LPARAM);
 	// Terminal Services
 	afx_msg LRESULT OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam);
 	// UPnP

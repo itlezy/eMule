@@ -183,7 +183,6 @@ public:
 	static bool		autotakeed2klinks;	   // Barry
 	static bool		addnewfilespaused;	   // Barry
 	static UINT		depth3D;			   // Barry
-	static bool		m_bEnableMiniMule;
 	static int		m_iStraightWindowStyles;
 	static bool		m_bUseSystemFontForMainControls;
 	static bool		m_bRTLWindowsLayout;
@@ -1059,7 +1058,6 @@ public:
 	static ENotifierSoundType GetNotifierSoundType()	{ return notifierSoundType; }
 	static const CString& GetNotifierSoundFile()		{ return notifierSoundFile; }
 
-	static bool		GetEnableMiniMule()					{ return m_bEnableMiniMule; }
 	static bool		GetRTLWindowsLayout()				{ return m_bRTLWindowsLayout; }
 
 	static const CString& GetIRCNick()					{ return m_strIRCNick; }

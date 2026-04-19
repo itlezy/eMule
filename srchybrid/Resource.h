@@ -1434,7 +1434,6 @@
 #define IDS_UNVERIFIED                  1509
 #define IDS_INVALIDFILEEXT              1510
 #define IDS_UNKNOWNFILEEXT              1511
-#define IDS_ENABLEMINIMULE              1512
 #define IDS_DISABLE_AUTOARCHPREV        1513
 #define IDS_US_STALLEDW4BR              1514
 #define IDS_US_STALLEDREADINGFDISK      1515
@@ -1846,7 +1845,6 @@
 #define IDC_SERVMSG                     2446
 #define IDC_ONLINESIG                   2447
 #define IDC_SEARCHLST_ICO               2448
-#define IDC_MINIMULE                    2448
 #define IDC_SERVLST_ICO                 2449
 #define IDC_PREVENTSTANDBY              2449
 #define IDC_DOWNLOAD_ICO                2452

@@ -10,7 +10,6 @@ enum EUserWndMessages
 	// Taskbar
 	, UM_TASKBARNOTIFIERCLICKED //+2
 	, UM_TRAY_ICON_NOTIFY_MESSAGE
-	, UM_CLOSE_MINIMULE
 
 	// Web Server
 	, WEB_GUI_INTERACTION //+5
