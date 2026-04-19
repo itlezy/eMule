@@ -3256,6 +3256,7 @@ BEGIN
     IDS_KAD_SEARCH_KEYWORD_TOO_SHORT
                             "Keyword too short.\r\n\r\nThe keyword(s) used in a Kad search expression must have a minimum length of 3 characters."
     IDS_LOG2DISK            "Save log to disk"
+    IDS_ENABLE_PERFLOG      "Enable performance bandwidth log"
     IDS_KAD_SEARCH_KEYWORD_ALREADY_SEARCHING
                             "There is already a Kad search ongoing for the keyword ""%s"".\r\n\r\nTo search again for that keyword, either wait until this keyword search is finished or close the according search results pane."
     IDS_KAD_SEARCH_KEYWORD_INVALID

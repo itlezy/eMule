@@ -31,6 +31,7 @@
 #include "GeoLocation.h"
 #include "HelpIDs.h"
 #include "Log.h"
+#include "PerfLog.h"
 #include "UserMsgs.h"
 
 #ifdef _DEBUG
@@ -234,6 +235,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiImportParts()
 	, m_htiInspectAllFileTypes()
 	, m_htiLog2Disk()
+	, m_htiPerfLog()
 	, m_htiLogA4AF()
 	, m_htiLogBannedClients()
 	, m_htiLogFileSaving()
@@ -339,6 +341,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bInitializedTreeOpts()
 	, m_bKeepUnavailableFixedSharedDirs()
 	, m_bLog2Disk()
+	, m_bPerfLogEnabled()
 	, m_bLogA4AF()
 	, m_bLogBannedClients()
 	, m_bLogFileSaving()
@@ -551,6 +554,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		// Logging group
 		//
 		m_htiLog2Disk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_LOG2DISK), TVI_ROOT, m_bLog2Disk);
+		m_htiPerfLog = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLE_PERFLOG), TVI_ROOT, m_bPerfLogEnabled);
 		if (thePrefs.GetEnableVerboseOptions()) {
 			m_htiVerboseGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_VERBOSE), iImgLog, TVI_ROOT);
 			m_htiVerbose = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLED), m_htiVerboseGroup, m_bVerbose);
@@ -769,6 +773,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// Logging group
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiLog2Disk, m_bLog2Disk);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPerfLog, m_bPerfLogEnabled);
 	if (m_htiLogLevel) {
 		DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiLogLevel, m_iLogLevel);
 		DDV_MinMaxInt(pDX, m_iLogLevel, 1, 5);
@@ -845,6 +850,7 @@ BOOL CPPgTweaks::OnInitDialog()
 		m_iLogLevel = 5 - thePrefs.m_byLogLevel;
 	}
 	m_bLog2Disk = thePrefs.log2disk;
+	m_bPerfLogEnabled = thePerfLog.IsEnabled();
 	m_bCreditSystem = thePrefs.m_bCreditSystem;
 	m_iCommitFiles = thePrefs.m_iCommitFiles;
 	m_iExtractMetaData = thePrefs.m_iExtractMetaData;
@@ -1019,6 +1025,9 @@ BOOL CPPgTweaks::OnApply()
 	else if (thePrefs.log2disk && !m_bLog2Disk)
 		theLog.Close();
 	thePrefs.log2disk = m_bLog2Disk;
+
+	if (thePerfLog.IsEnabled() != m_bPerfLogEnabled)
+		thePerfLog.SetEnabled(m_bPerfLogEnabled);
 
 	if (thePrefs.GetEnableVerboseOptions()) {
 		if (!thePrefs.GetDebug2Disk() && m_bVerbose && m_bDebug2Disk)
@@ -1207,6 +1216,7 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiImportParts, IDS_ENABLEIMPORTPARTS);
 		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
+		LocalizeItemText(m_htiPerfLog, IDS_ENABLE_PERFLOG);
 		LocalizeItemText(m_htiLogA4AF, IDS_LOG_A4AF);
 		LocalizeItemText(m_htiLogBannedClients, IDS_LOG_BANNED_CLIENTS);
 		LocalizeItemText(m_htiLogFileSaving, IDS_LOG_FILE_SAVING);
@@ -1330,6 +1340,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiRestoreLastMainWndDlg = NULL;
 	m_htiInspectAllFileTypes = NULL;
 	m_htiLog2Disk = NULL;
+	m_htiPerfLog = NULL;
 	m_htiDebug2Disk = NULL;
 	m_htiCommit = NULL;
 	m_htiCommitNever = NULL;

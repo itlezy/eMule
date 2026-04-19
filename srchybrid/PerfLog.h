@@ -8,10 +8,22 @@ public:
 	void Startup();
 	void Shutdown();
 	void LogSamples();
+	/**
+	 * Reloads the hidden PerfLog settings from preferences.ini.
+	 */
+	void ReloadSettings();
+	/**
+	 * Persists the hidden PerfLog mode and applies it immediately.
+	 */
+	void SetEnabled(bool bEnable);
+	/**
+	 * Returns whether PerfLog is currently active.
+	 */
+	bool IsEnabled() const;
 
 protected:
 	DWORD	m_dwInterval;
-	DWORD	m_dwLastSampled;
+	ULONGLONG m_dwLastSampled;
 	CString	m_strFilePath;
 	CString	m_strMRTGDataFilePath;
 	CString	m_strMRTGOverheadFilePath;
@@ -35,6 +47,14 @@ protected:
 
 	bool m_bInitialized;
 
+	/**
+	 * Loads the hidden PerfLog settings from preferences.ini into runtime state.
+	 */
+	void LoadSettings();
+	/**
+	 * Resets the sampling baseline so logging starts from the current session counters.
+	 */
+	void ResetSampleBaseline();
 	void WriteSamples(UINT nCurDn, UINT nCurUp, UINT nCurDnOH, UINT nCurUpOH);
 };
 

@@ -72,6 +72,7 @@ protected:
 	HTREEITEM m_htiImportParts;
 	HTREEITEM m_htiInspectAllFileTypes;
 	HTREEITEM m_htiLog2Disk;
+	HTREEITEM m_htiPerfLog;
 	HTREEITEM m_htiLogA4AF;
 	HTREEITEM m_htiLogBannedClients;
 	HTREEITEM m_htiLogFileSaving;
@@ -180,6 +181,7 @@ protected:
 	bool m_bInitializedTreeOpts;
 	bool m_bKeepUnavailableFixedSharedDirs;
 	bool m_bLog2Disk;
+	bool m_bPerfLogEnabled;
 	bool m_bLogA4AF;
 	bool m_bLogBannedClients;
 	bool m_bLogFileSaving;

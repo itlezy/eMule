@@ -48,18 +48,35 @@ CPerfLog::CPerfLog()
 {
 }
 
+bool CPerfLog::IsEnabled() const
+{
+	return m_eMode != None;
+}
+
 void CPerfLog::Startup()
 {
 	if (m_bInitialized)
 		return;
 
+	ReloadSettings();
+}
+
+void CPerfLog::LoadSettings()
+{
 	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
 
-	m_eMode = (ELogMode)ini.GetInt(_T("Mode"), None);
+	m_eMode = static_cast<ELogMode>(ini.GetInt(_T("Mode"), None));
 	if (m_eMode != None && m_eMode != OneSample && m_eMode != AllSamples)
 		m_eMode = None;
+	m_eFileFormat = CSV;
+	m_dwInterval = MIN2MS(5);
+	m_strFilePath.Empty();
+	m_strMRTGDataFilePath.Empty();
+	m_strMRTGOverheadFilePath.Empty();
 	if (m_eMode != None) {
-		m_eFileFormat = (ELogFileFormat)ini.GetInt(_T("FileFormat"), CSV);
+		m_eFileFormat = static_cast<ELogFileFormat>(ini.GetInt(_T("FileFormat"), CSV));
+		if (m_eFileFormat != CSV && m_eFileFormat != MRTG)
+			m_eFileFormat = CSV;
 
 		// set default log file path
 		CString strDefFilePath(thePrefs.GetMuleDirectory(EMULE_CONFIGBASEDIR));
@@ -78,15 +95,70 @@ void CPerfLog::Startup()
 			m_strFilePath.Empty();
 		}
 
-		m_dwInterval = MIN2MS(ini.GetInt(_T("Interval"), 5));
-		if ((int)m_dwInterval <= 0)
+		const int iIntervalMinutes = ini.GetInt(_T("Interval"), 5);
+		if (iIntervalMinutes > 0)
+			m_dwInterval = MIN2MS(iIntervalMinutes);
+		else
 			m_dwInterval = MIN2MS(5);
 	}
+}
 
+void CPerfLog::ResetSampleBaseline()
+{
+	m_nLastSessionRecvBytes = theStats.sessionReceivedBytes;
+	m_nLastSessionSentBytes = theStats.sessionSentBytes;
+	m_nLastDnOH = theStats.GetDownDataOverheadFileRequest()
+				+ theStats.GetDownDataOverheadSourceExchange()
+				+ theStats.GetDownDataOverheadServer()
+				+ theStats.GetDownDataOverheadKad()
+				+ theStats.GetDownDataOverheadOther();
+	m_nLastUpOH = theStats.GetUpDataOverheadFileRequest()
+				+ theStats.GetUpDataOverheadSourceExchange()
+				+ theStats.GetUpDataOverheadServer()
+				+ theStats.GetUpDataOverheadKad()
+				+ theStats.GetUpDataOverheadOther();
+	m_dwLastSampled = ::GetTickCount64();
+}
+
+void CPerfLog::ReloadSettings()
+{
+	const bool bWasInitialized = m_bInitialized;
+	const ELogMode ePreviousMode = m_eMode;
+
+	LoadSettings();
 	m_bInitialized = true;
 
-	if (m_eMode == OneSample)
+	if (m_eMode == None)
+		return;
+
+	if (!bWasInitialized || ePreviousMode == None) {
+		if (m_eMode == OneSample) {
+			m_nLastSessionRecvBytes = 0;
+			m_nLastSessionSentBytes = 0;
+			m_nLastDnOH = 0;
+			m_nLastUpOH = 0;
+			m_dwLastSampled = 0;
+		} else {
+			ResetSampleBaseline();
+		}
+	}
+
+	if ((m_eMode == OneSample) && (!bWasInitialized || ePreviousMode == None))
 		LogSamples();
+}
+
+void CPerfLog::SetEnabled(bool bEnable)
+{
+	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
+	int iCurrentMode = ini.GetInt(_T("Mode"), None);
+	if (iCurrentMode != OneSample && iCurrentMode != AllSamples)
+		iCurrentMode = None;
+
+	const int iNewMode = bEnable ? ((iCurrentMode != None) ? iCurrentMode : static_cast<int>(AllSamples)) : static_cast<int>(None);
+	if (iCurrentMode != iNewMode)
+		ini.WriteInt(_T("Mode"), iNewMode);
+
+	ReloadSettings();
 }
 
 void CPerfLog::WriteSamples(UINT nCurDn, UINT nCurUp, UINT nCurDnOH, UINT nCurUpOH)
@@ -134,7 +206,7 @@ void CPerfLog::LogSamples()
 		return;
 
 	const ULONGLONG curTick = ::GetTickCount64();
-	if (curTick < m_dwLastSampled + m_dwInterval)
+	if (curTick < m_dwLastSampled + static_cast<ULONGLONG>(m_dwInterval))
 		return;
 
 	// 'data counters' amount of transferred file data
