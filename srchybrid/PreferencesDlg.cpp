@@ -141,6 +141,8 @@ BOOL CPreferencesDlg::OnInitDialog()
 	Localize();
 	CaptureNormalLayout();
 	ApplyExtendedLayout();
+	if (CWnd *pHelpButton = GetDlgItem(ID_HELP))
+		pHelpButton->ShowWindow(SW_HIDE);
 	return bResult;
 }
 
@@ -171,8 +173,8 @@ void CPreferencesDlg::CaptureNormalLayout()
 		ScreenToClient(&m_rcNormalPage);
 	}
 
-	static const UINT aButtonIds[] = { IDOK, IDCANCEL, ID_APPLY_NOW, ID_HELP };
-	CRect *apRects[] = { &m_rcNormalOk, &m_rcNormalCancel, &m_rcNormalApply, &m_rcNormalHelp };
+	static const UINT aButtonIds[] = { IDOK, IDCANCEL, ID_APPLY_NOW };
+	CRect *apRects[] = { &m_rcNormalOk, &m_rcNormalCancel, &m_rcNormalApply };
 	for (int i = 0; i < _countof(aButtonIds); ++i) {
 		CWnd *pButton = GetDlgItem(aButtonIds[i]);
 		if (pButton != NULL) {
@@ -181,6 +183,7 @@ void CPreferencesDlg::CaptureNormalLayout()
 		} else
 			apRects[i]->SetRectEmpty();
 	}
+	m_rcNormalHelp.SetRectEmpty();
 
 	m_bNormalLayoutCaptured = true;
 }
@@ -227,8 +230,7 @@ void CPreferencesDlg::ApplyExtendedLayout()
 	{
 		{ IDOK, &m_rcNormalOk },
 		{ IDCANCEL, &m_rcNormalCancel },
-		{ ID_APPLY_NOW, &m_rcNormalApply },
-		{ ID_HELP, &m_rcNormalHelp }
+		{ ID_APPLY_NOW, &m_rcNormalApply }
 	};
 
 	for (int i = 0; i < _countof(aButtons); ++i) {

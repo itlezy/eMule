@@ -77,6 +77,13 @@ namespace
 		label.Append(_T(")"));
 		return label;
 	}
+
+	static CString GetFileBufferSizeLabel()
+	{
+		CString label(GetResString(IDS_FILEBUFFERSIZE));
+		label.Append(_T(" [KiB]"));
+		return label;
+	}
 }
 
 
@@ -86,12 +93,10 @@ namespace
 IMPLEMENT_DYNAMIC(CPPgTweaks, CPropertyPage)
 
 BEGIN_MESSAGE_MAP(CPPgTweaks, CPropertyPage)
-	ON_WM_HSCROLL()
 	ON_WM_DESTROY()
 	ON_WM_SIZE()
 	ON_MESSAGE(UM_TREEOPTSCTRL_NOTIFY, OnTreeOptsCtrlNotify)
 	ON_WM_HELPINFO()
-	ON_BN_CLICKED(IDC_OPENPREFINI, OnBnClickedOpenprefini)
 END_MESSAGE_MAP()
 
 CPPgTweaks::CPPgTweaks()
@@ -100,12 +105,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_szBaseClient()
 	, m_rcWarning()
 	, m_rcTree()
-	, m_rcFileBufferLabel()
-	, m_rcFileBufferSlider()
-	, m_rcQueueLabel()
-	, m_rcQueueSlider()
-	, m_rcPrefIniLabel()
-	, m_rcOpenPrefIniButton()
 	, m_htiA4AFSaveCpu()
 	, m_htiAutoArch()
 	, m_htiAutoTakeEd2kLinks()
@@ -191,6 +190,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiRearrangeKadSearchKeywords()
 	, m_htiMessageFromValidSourcesOnly()
 	, m_htiFileBufferTimeLimit()
+	, m_htiFileBufferSize()
+	, m_htiQueueSize()
 	, m_htiDownloadTimeout()
 	, m_htiRestoreLastLogPane()
 	, m_htiRestoreLastMainWndDlg()
@@ -210,7 +211,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiYourHostname()
 	, m_iMinFreeDiskSpaceGB()
 	, m_iQueueSize()
-	, m_uFileBufferSize()
+	, m_uFileBufferSizeKiB()
 	, m_uConnectionTimeoutSeconds()
 	, m_uDownloadTimeoutSeconds()
 	, m_uEd2kSearchMaxResults()
@@ -297,8 +298,6 @@ CPPgTweaks::CPPgTweaks()
 void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_FILEBUFFERSIZE, m_ctlFileBuffSize);
-	DDX_Control(pDX, IDC_QUEUESIZE, m_ctlQueueSize);
 	DDX_Control(pDX, IDC_EXT_OPTS, m_ctrlTreeOptions);
 	if (!m_bInitializedTreeOpts) {
 		int iImgBackup = 8; // default icon
@@ -428,6 +427,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiHiddenFile = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_FILE), iImgBackup, TVI_ROOT);
 		m_htiFileBufferTimeLimit = m_ctrlTreeOptions.InsertItem(GetResString(IDS_FILEBUFFERTIMELIMIT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
 		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferTimeLimit, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiFileBufferSize = m_ctrlTreeOptions.InsertItem(GetFileBufferSizeLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
+		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiQueueSize = m_ctrlTreeOptions.InsertItem(GetResString(IDS_QUEUESIZE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
+		m_ctrlTreeOptions.AddEditBox(m_htiQueueSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiDateTimeFormat4Lists = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DATETIMEFORMAT4LISTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
 		m_ctrlTreeOptions.AddEditBox(m_htiDateTimeFormat4Lists, RUNTIME_CLASS(CTreeOptionsEditEx));
 		m_htiPreviewCopiedArchives = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWCOPIEDARCHIVES), m_htiHiddenFile, m_bPreviewCopiedArchives);
@@ -653,6 +656,14 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferSize, m_uFileBufferSizeKiB);
+	if (pDX->m_bSaveAndValidate) {
+		const UINT uMaxFileBufferSizeKiB = FileBufferSlider::kMaxFileBufferSizeBytes / 1024u;
+		if (m_uFileBufferSizeKiB < static_cast<UINT>(FileBufferSlider::kMinPosition) || m_uFileBufferSizeKiB > uMaxFileBufferSizeKiB)
+			FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiFileBufferSize);
+	}
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiQueueSize, m_iQueueSize);
+	DDV_MinMaxInt(pDX, m_iQueueSize, 2000, 10000);
 
 	/////////////////////////////////////////////////////////////////////////////
 	// Logging group
@@ -808,28 +819,8 @@ BOOL CPPgTweaks::OnInitDialog()
 	InitWindowStyles(this);
 	m_ctrlTreeOptions.SetItemHeight(m_ctrlTreeOptions.GetItemHeight() + 2);
 
-	m_uFileBufferSize = thePrefs.m_uFileBufferSize;
-	m_ctlFileBuffSize.SetRange(FileBufferSlider::kMinPosition, FileBufferSlider::kMaxPosition, TRUE);
-	m_ctlFileBuffSize.SetPos(FileBufferSlider::BytesToPosition(m_uFileBufferSize));
-	m_uFileBufferSize = FileBufferSlider::PositionToBytes(m_ctlFileBuffSize.GetPos());
-	static const int aiFileBufferTics[] = {
-		16, 64, 256, 1024,
-		FileBufferSlider::BytesToPosition(8u * 1024u * 1024u),
-		FileBufferSlider::BytesToPosition(32u * 1024u * 1024u),
-		FileBufferSlider::BytesToPosition(64u * 1024u * 1024u),
-		FileBufferSlider::BytesToPosition(128u * 1024u * 1024u),
-		FileBufferSlider::BytesToPosition(256u * 1024u * 1024u),
-		FileBufferSlider::BytesToPosition(FileBufferSlider::kMaxFileBufferSizeBytes)
-	};
-	for (size_t i = 0; i < _countof(aiFileBufferTics); ++i)
-		m_ctlFileBuffSize.SetTic(aiFileBufferTics[i]);
-	m_ctlFileBuffSize.SetPageSize(32);
-
 	m_iQueueSize = thePrefs.m_iQueueSize;
-	m_ctlQueueSize.SetRange(20, 100, TRUE);
-	m_ctlQueueSize.SetPos((int)(m_iQueueSize / 100));
-	m_ctlQueueSize.SetTicFreq(10);
-	m_ctlQueueSize.SetPageSize(10);
+	m_uFileBufferSizeKiB = maxi(static_cast<UINT>(FileBufferSlider::kMinPosition), mini(thePrefs.m_uFileBufferSize / 1024u, FileBufferSlider::kMaxFileBufferSizeBytes / 1024u));
 
 	CaptureBaseLayout();
 	Localize();
@@ -846,23 +837,11 @@ void CPPgTweaks::CaptureBaseLayout()
 
 	static const UINT aControlIds[] = {
 		IDC_WARNING,
-		IDC_EXT_OPTS,
-		IDC_FILEBUFFERSIZE_STATIC,
-		IDC_FILEBUFFERSIZE,
-		IDC_QUEUESIZE_STATIC,
-		IDC_QUEUESIZE,
-		IDC_PREFINI_STATIC,
-		IDC_OPENPREFINI
+		IDC_EXT_OPTS
 	};
 	CRect *apRects[] = {
 		&m_rcWarning,
-		&m_rcTree,
-		&m_rcFileBufferLabel,
-		&m_rcFileBufferSlider,
-		&m_rcQueueLabel,
-		&m_rcQueueSlider,
-		&m_rcPrefIniLabel,
-		&m_rcOpenPrefIniButton
+		&m_rcTree
 	};
 	for (int i = 0; i < _countof(aControlIds); ++i) {
 		CWnd *pWnd = GetDlgItem(aControlIds[i]);
@@ -966,7 +945,7 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_iCommitFiles = m_iCommitFiles;
 	thePrefs.m_iExtractMetaData = m_iExtractMetaData;
 	thePrefs.filterLANIPs = m_bFilterLANIPs;
-	thePrefs.m_uFileBufferSize = m_uFileBufferSize;
+	thePrefs.m_uFileBufferSize = m_uFileBufferSizeKiB * 1024u;
 	thePrefs.m_iQueueSize = m_iQueueSize;
 
 	bool bUpdateDLmenu = (thePrefs.m_bImportParts != m_bImportParts);
@@ -1042,23 +1021,6 @@ BOOL CPPgTweaks::OnApply()
 	return CPropertyPage::OnApply();
 }
 
-void CPPgTweaks::OnHScroll(UINT /*nSBCode*/, UINT /*nPos*/, CScrollBar *pScrollBar)
-{
-	if (pScrollBar->GetSafeHwnd() == m_ctlFileBuffSize.m_hWnd) {
-		m_uFileBufferSize = FileBufferSlider::PositionToBytes(m_ctlFileBuffSize.GetPos());
-		CString temp(GetResString(IDS_FILEBUFFERSIZE));
-		temp.AppendFormat(_T(": %s"), (LPCTSTR)CastItoXBytes(m_uFileBufferSize));
-		SetDlgItemText(IDC_FILEBUFFERSIZE_STATIC, temp);
-		SetModified(TRUE);
-	} else if (pScrollBar->GetSafeHwnd() == m_ctlQueueSize.m_hWnd) {
-		m_iQueueSize = reinterpret_cast<CSliderCtrl*>(pScrollBar)->GetPos() * 100;
-		CString temp(GetResString(IDS_QUEUESIZE));
-		temp.AppendFormat(_T(": %s"), (LPCTSTR)GetFormatedUInt((ULONG)m_iQueueSize));
-		SetDlgItemText(IDC_QUEUESIZE_STATIC, temp);
-		SetModified(TRUE);
-	}
-}
-
 void CPPgTweaks::LocalizeItemText(HTREEITEM item, UINT strid)
 {
 	if (item)
@@ -1076,8 +1038,6 @@ void CPPgTweaks::Localize()
 	if (m_hWnd) {
 		SetWindowText(GetResString(IDS_PW_TWEAK));
 		SetDlgItemText(IDC_WARNING, GetResString(IDS_TWEAKS_WARNING));
-		SetDlgItemText(IDC_PREFINI_STATIC, GetResString(IDS_PW_TWEAK));
-		SetDlgItemText(IDC_OPENPREFINI, GetResString(IDS_OPENPREFINI));
 
 		LocalizeEditLabel(m_htiLogLevel, IDS_LOG_LEVEL);
 		LocalizeEditLabel(m_htiConnectionTimeout, IDS_CONNECTIONTIMEOUT);
@@ -1180,14 +1140,10 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiAdjustNTFSDaylightFileTime, IDS_ADJUSTNTFSDAYLIGHTFILETIME);
 		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
 		LocalizeEditLabel(m_htiFileBufferTimeLimit, IDS_FILEBUFFERTIMELIMIT);
+		m_ctrlTreeOptions.SetEditLabel(m_htiFileBufferSize, GetFileBufferSizeLabel());
+		LocalizeEditLabel(m_htiQueueSize, IDS_QUEUESIZE);
 		m_ctrlTreeOptions.SetEditLabel(m_htiGeoLocationCheckDays, GetGeoLocationIntervalLabel());
 		LocalizeEditLabel(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
-
-		CString temp;
-		temp.Format(_T("%s: %s"), (LPCTSTR)GetResString(IDS_FILEBUFFERSIZE), (LPCTSTR)CastItoXBytes(m_uFileBufferSize));
-		SetDlgItemText(IDC_FILEBUFFERSIZE_STATIC, temp);
-		temp.Format(_T("%s: %s"), (LPCTSTR)GetResString(IDS_QUEUESIZE), (LPCTSTR)GetFormatedUInt((ULONG)m_iQueueSize));
-		SetDlgItemText(IDC_QUEUESIZE_STATIC, temp);
 	}
 }
 
@@ -1266,6 +1222,8 @@ void CPPgTweaks::OnDestroy()
 	m_htiRearrangeKadSearchKeywords = NULL;
 	m_htiMessageFromValidSourcesOnly = NULL;
 	m_htiFileBufferTimeLimit = NULL;
+	m_htiFileBufferSize = NULL;
+	m_htiQueueSize = NULL;
 	m_htiDownloadTimeout = NULL;
 	m_htiRestoreLastLogPane = NULL;
 	m_htiRestoreLastMainWndDlg = NULL;
@@ -1375,39 +1333,6 @@ void CPPgTweaks::OnSize(UINT nType, int cx, int cy)
 	if (CWnd *pTree = GetDlgItem(IDC_EXT_OPTS))
 		pTree->MoveWindow(rectTree);
 
-	CRect rectFileBufferLabel(m_rcFileBufferLabel);
-	rectFileBufferLabel.OffsetRect(0, dy);
-	rectFileBufferLabel.right += dx;
-	if (CWnd *pFileBufferLabel = GetDlgItem(IDC_FILEBUFFERSIZE_STATIC))
-		pFileBufferLabel->MoveWindow(rectFileBufferLabel);
-
-	CRect rectFileBufferSlider(m_rcFileBufferSlider);
-	rectFileBufferSlider.OffsetRect(0, dy);
-	rectFileBufferSlider.right += dx;
-	if (CWnd *pFileBufferSlider = GetDlgItem(IDC_FILEBUFFERSIZE))
-		pFileBufferSlider->MoveWindow(rectFileBufferSlider);
-
-	CRect rectQueueLabel(m_rcQueueLabel);
-	rectQueueLabel.OffsetRect(0, dy);
-	if (CWnd *pQueueLabel = GetDlgItem(IDC_QUEUESIZE_STATIC))
-		pQueueLabel->MoveWindow(rectQueueLabel);
-
-	CRect rectQueueSlider(m_rcQueueSlider);
-	rectQueueSlider.OffsetRect(0, dy);
-	rectQueueSlider.right += dx;
-	if (CWnd *pQueueSlider = GetDlgItem(IDC_QUEUESIZE))
-		pQueueSlider->MoveWindow(rectQueueSlider);
-
-	CRect rectPrefIniLabel(m_rcPrefIniLabel);
-	rectPrefIniLabel.OffsetRect(dx, dy);
-	if (CWnd *pPrefIniLabel = GetDlgItem(IDC_PREFINI_STATIC))
-		pPrefIniLabel->MoveWindow(rectPrefIniLabel);
-
-	CRect rectOpenPrefIni(m_rcOpenPrefIniButton);
-	rectOpenPrefIni.OffsetRect(dx, dy);
-	if (CWnd *pOpenPrefIni = GetDlgItem(IDC_OPENPREFINI))
-		pOpenPrefIni->MoveWindow(rectOpenPrefIni);
-
 	UNREFERENCED_PARAMETER(nType);
 }
 
@@ -1425,9 +1350,4 @@ BOOL CPPgTweaks::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
-}
-
-void CPPgTweaks::OnBnClickedOpenprefini()
-{
-	ShellOpenFile(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + _T("preferences.ini"));
 }

@@ -21,19 +21,11 @@ protected:
 	/** Captures the baseline layout used for the Extended page controls. */
 	void CaptureBaseLayout();
 
-	CSliderCtrl m_ctlFileBuffSize;
-	CSliderCtrl m_ctlQueueSize;
 	CTreeOptionsCtrlEx m_ctrlTreeOptions;
 	CString m_sYourHostname;
 	CSize m_szBaseClient;
 	CRect m_rcWarning;
 	CRect m_rcTree;
-	CRect m_rcFileBufferLabel;
-	CRect m_rcFileBufferSlider;
-	CRect m_rcQueueLabel;
-	CRect m_rcQueueSlider;
-	CRect m_rcPrefIniLabel;
-	CRect m_rcOpenPrefIniButton;
 
 	HTREEITEM m_htiA4AFSaveCpu;
 	HTREEITEM m_htiAutoArch;
@@ -121,6 +113,8 @@ protected:
 	HTREEITEM m_htiRearrangeKadSearchKeywords;
 	HTREEITEM m_htiMessageFromValidSourcesOnly;
 	HTREEITEM m_htiFileBufferTimeLimit;
+	HTREEITEM m_htiFileBufferSize;
+	HTREEITEM m_htiQueueSize;
 	HTREEITEM m_htiDownloadTimeout;
 	HTREEITEM m_htiRestoreLastLogPane;
 	HTREEITEM m_htiRestoreLastMainWndDlg;
@@ -140,8 +134,8 @@ protected:
 	HTREEITEM m_htiYourHostname;
 
 	int m_iMinFreeDiskSpaceGB;
-	INT_PTR m_iQueueSize;
-	UINT m_uFileBufferSize;
+	int m_iQueueSize;
+	UINT m_uFileBufferSizeKiB;
 	UINT m_uConnectionTimeoutSeconds;
 	UINT m_uDownloadTimeoutSeconds;
 	UINT m_uEd2kSearchMaxResults;
@@ -233,11 +227,9 @@ protected:
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
-	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar);
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
-	afx_msg void OnBnClickedOpenprefini();
 };
