@@ -36,6 +36,7 @@
 #include "PartFile.h"
 #include "WebApiCommandSeams.h"
 #include "WebApiSurfaceSeams.h"
+#include "WebServerJsonSeams.h"
 #include "Preferences.h"
 #include "SearchDlg.h"
 #include "SearchFile.h"
@@ -970,10 +971,10 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	const std::string strCommand = rRequest.value("cmd", std::string());
 	const json params = rRequest.value("params", json::object());
 #ifdef _DEBUG
-	/** Reports the compile-time build flavor for the Pipe API version response. */
+	/** Reports the compile-time build flavor for the REST version response. */
 	const char *const pszBuildFlavor = "debug";
 #else
-	/** Reports the compile-time build flavor for the Pipe API version response. */
+	/** Reports the compile-time build flavor for the REST version response. */
 	const char *const pszBuildFlavor = "release";
 #endif
 
@@ -1735,97 +1736,10 @@ rError.strCode = "INVALID_ARGUMENT";
 
 namespace
 {
-struct SApiRoute
-{
-	std::string strCommand;
-	json params;
-};
-
 CStringA JsonDump(const json &rJson)
 {
 	const std::string strSerialized = rJson.dump(-1, ' ', false, json::error_handler_t::replace);
 	return CStringA(strSerialized.c_str(), static_cast<int>(strSerialized.size()));
-}
-
-CStringA GetRequestPath(const CStringA &strRequestTarget)
-{
-	int iQuery = strRequestTarget.Find('?');
-	return iQuery >= 0 ? strRequestTarget.Left(iQuery) : strRequestTarget;
-}
-
-std::map<std::string, std::string> ParseQueryString(const CStringA &strRequestTarget)
-{
-	std::map<std::string, std::string> query;
-	const int iQuery = strRequestTarget.Find('?');
-	if (iQuery < 0 || iQuery + 1 >= strRequestTarget.GetLength())
-		return query;
-
-	const CString strQuery(OptUtf8ToStr(strRequestTarget.Mid(iQuery + 1)));
-	int iPos = 0;
-	while (iPos >= 0) {
-		CString strToken(strQuery.Tokenize(_T("&"), iPos));
-		if (strToken.IsEmpty())
-			continue;
-
-		int iEquals = strToken.Find(_T('='));
-		CString strName;
-		CString strValue;
-		if (iEquals >= 0) {
-			strName = strToken.Left(iEquals);
-			strValue = strToken.Mid(iEquals + 1);
-		} else
-			strName = strToken;
-
-		strName = URLDecode(strName, true);
-		strValue = URLDecode(strValue, true);
-		query[StdUtf8FromCString(strName)] = StdUtf8FromCString(strValue);
-	}
-
-	return query;
-}
-
-std::vector<std::string> SplitPathSegments(const CStringA &strPath)
-{
-	std::vector<std::string> segments;
-	const CString strPathWide(OptUtf8ToStr(strPath));
-	int iPos = 0;
-	while (iPos >= 0) {
-		CString strToken(strPathWide.Tokenize(_T("/"), iPos));
-		if (!strToken.IsEmpty())
-			segments.push_back(StdUtf8FromCString(URLDecode(strToken, true)));
-	}
-	return segments;
-}
-
-bool TryParseUnsignedQueryValue(const std::map<std::string, std::string> &rQuery, const char *pszName, uint64_t &ruValue)
-{
-	const auto it = rQuery.find(pszName);
-	if (it == rQuery.end())
-		return false;
-
-	char *pEnd = NULL;
-	errno = 0;
-	const unsigned long long ullValue = std::strtoull(it->second.c_str(), &pEnd, 10);
-	if (errno != 0 || pEnd == NULL || *pEnd != '\0')
-		return false;
-
-	ruValue = static_cast<uint64_t>(ullValue);
-	return true;
-}
-
-bool TryParseRequestBody(const ThreadData &rData, json &rBody, CString &rError)
-{
-	rBody = json::object();
-	if (rData.strRequestBody.IsEmpty())
-		return true;
-
-	try {
-		rBody = json::parse(StdStringFromCStringA(rData.strRequestBody));
-		return true;
-	} catch (const json::exception &rJsonError) {
-		rError.Format(_T("invalid JSON body: %hs"), rJsonError.what());
-		return false;
-	}
 }
 
 bool HasValidApiKey(const ThreadData &rData)
@@ -1863,21 +1777,6 @@ void SendJsonError(CWebSocket *pSocket, const int iStatusCode, LPCSTR pszReason,
 	});
 }
 
-int GetHttpStatusForError(const CStringA &strCode)
-{
-	if (strCode == "INVALID_ARGUMENT")
-		return 400;
-	if (strCode == "UNAUTHORIZED")
-		return 401;
-	if (strCode == "NOT_FOUND")
-		return 404;
-	if (strCode == "INVALID_STATE")
-		return 409;
-	if (strCode == "EMULE_UNAVAILABLE")
-		return 503;
-	return 500;
-}
-
 LPCSTR GetHttpReasonPhrase(const int iStatusCode)
 {
 	switch (iStatusCode) {
@@ -1899,207 +1798,11 @@ LPCSTR GetHttpReasonPhrase(const int iStatusCode)
 		return "Error";
 	}
 }
-
-bool TryBuildRoute(const ThreadData &rData, SApiRoute &rRoute, CStringA &rErrorCode, CString &rErrorMessage)
-{
-	rRoute.params = json::object();
-	rErrorCode.Empty();
-	rErrorMessage.Empty();
-
-	const CStringA strPath = GetRequestPath(rData.strRequestTarget);
-	const std::vector<std::string> segments = SplitPathSegments(strPath);
-	if (segments.size() < 2 || segments[0] != "api" || segments[1] != "v1") {
-		rErrorCode = "NOT_FOUND";
-		rErrorMessage = _T("API route not found");
-		return false;
-	}
-
-	const std::vector<std::string> route(segments.begin() + 2, segments.end());
-	const std::map<std::string, std::string> query = ParseQueryString(rData.strRequestTarget);
-	json body;
-	if (!TryParseRequestBody(rData, body, rErrorMessage)) {
-		rErrorCode = "INVALID_ARGUMENT";
-		return false;
-	}
-	if (!body.is_object()) {
-		if (!rData.strRequestBody.IsEmpty()) {
-			rErrorCode = "INVALID_ARGUMENT";
-			rErrorMessage = _T("JSON body must be an object");
-			return false;
-		}
-		body = json::object();
-	}
-
-	const bool bGet = rData.strMethod.CompareNoCase("GET") == 0;
-	const bool bPost = rData.strMethod.CompareNoCase("POST") == 0;
-	if (!bGet && !bPost) {
-		rErrorCode = "INVALID_ARGUMENT";
-		rErrorMessage = _T("only GET and POST are supported");
-		return false;
-	}
-
-	if (route.size() == 2 && route[0] == "app" && route[1] == "version" && bGet) {
-		rRoute.strCommand = "app/version";
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "app" && route[1] == "preferences") {
-		if (bGet) {
-			rRoute.strCommand = "app/preferences/get";
-			return true;
-		}
-		if (bPost) {
-			rRoute.strCommand = "app/preferences/set";
-			rRoute.params["prefs"] = body;
-			return true;
-		}
-	}
-	if (route.size() == 2 && route[0] == "app" && route[1] == "shutdown" && bPost) {
-		rRoute.strCommand = "app/shutdown";
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "stats" && route[1] == "global" && bGet) {
-		rRoute.strCommand = "stats/global";
-		return true;
-	}
-	if (route.size() == 1 && route[0] == "transfers" && bGet) {
-		rRoute.strCommand = "transfers/list";
-		const auto itFilter = query.find("filter");
-		if (itFilter != query.end())
-			rRoute.params["filter"] = itFilter->second;
-		uint64_t ullCategory = 0;
-		if (TryParseUnsignedQueryValue(query, "category", ullCategory))
-			rRoute.params["category"] = ullCategory;
-		return true;
-	}
-	if (route.size() == 1 && route[0] == "uploads" && bGet) {
-		rErrorCode = "NOT_FOUND";
-		rErrorMessage = _T("API route not found");
-		return false;
-	}
-	if (route.size() == 2 && route[0] == "transfers" && route[1] == "add" && bPost) {
-		rRoute.strCommand = "transfers/add";
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "transfers"
-		&& (route[1] == "pause" || route[1] == "resume" || route[1] == "stop" || route[1] == "delete")
-		&& bPost)
-	{
-		rRoute.strCommand = "transfers/" + route[1];
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "transfers" && bGet) {
-		rRoute.strCommand = "transfers/get";
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "sources" && bGet) {
-		rRoute.strCommand = "transfers/sources";
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "recheck" && bPost) {
-		rRoute.strCommand = "transfers/recheck";
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "priority" && bPost) {
-		rRoute.strCommand = "transfers/set_priority";
-		rRoute.params = body;
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "category" && bPost) {
-		rRoute.strCommand = "transfers/set_category";
-		rRoute.params = body;
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "uploads" && route[1] == "list" && bGet) {
-		rRoute.strCommand = "uploads/list";
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "uploads" && route[1] == "queue" && bGet) {
-		rRoute.strCommand = "uploads/queue";
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "uploads" && (route[1] == "remove" || route[1] == "release_slot") && bPost) {
-		rRoute.strCommand = "uploads/" + route[1];
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "servers" && (route[1] == "list" || route[1] == "status") && bGet) {
-		rRoute.strCommand = "servers/" + route[1];
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "servers" && (route[1] == "connect" || route[1] == "disconnect" || route[1] == "add" || route[1] == "remove") && bPost) {
-		rRoute.strCommand = "servers/" + route[1];
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "kad" && route[1] == "status" && bGet) {
-		rRoute.strCommand = "kad/status";
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "kad" && (route[1] == "connect" || route[1] == "disconnect" || route[1] == "recheck_firewall") && bPost) {
-		rRoute.strCommand = "kad/" + route[1];
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "shared" && route[1] == "list" && bGet) {
-		rRoute.strCommand = "shared/list";
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "shared" && route[1] == "add" && bPost) {
-		rRoute.strCommand = "shared/add";
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "shared" && route[1] == "remove" && bPost) {
-		rRoute.strCommand = "shared/remove";
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "shared" && bGet) {
-		rRoute.strCommand = "shared/get";
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "search" && route[1] == "start" && bPost) {
-		rRoute.strCommand = "search/start";
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "search" && route[1] == "results" && bGet) {
-		rRoute.strCommand = "search/results";
-		const auto it = query.find("search_id");
-		if (it != query.end())
-			rRoute.params["search_id"] = it->second;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "search" && route[1] == "stop" && bPost) {
-		rRoute.strCommand = "search/stop";
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 1 && route[0] == "log" && bGet) {
-		rRoute.strCommand = "log/get";
-		uint64_t ullLimit = 0;
-		if (TryParseUnsignedQueryValue(query, "limit", ullLimit))
-			rRoute.params["limit"] = ullLimit > INT_MAX ? INT_MAX : static_cast<int>(ullLimit);
-		return true;
-	}
-
-	rErrorCode = "NOT_FOUND";
-	rErrorMessage = _T("API route not found");
-	return false;
-}
 }
 
 bool WebServerJson::IsApiRequest(const ThreadData &rData)
 {
-	const CStringA strPath = GetRequestPath(rData.strRequestTarget);
-	return strPath.Left(8).CompareNoCase("/api/v1/") == 0 || strPath.CompareNoCase("/api/v1") == 0;
+	return WebServerJsonSeams::IsApiRequestTarget(StdStringFromCStringA(rData.strRequestTarget));
 }
 
 void WebServerJson::ProcessRequest(const ThreadData &rData)
@@ -2117,12 +1820,24 @@ void WebServerJson::ProcessRequest(const ThreadData &rData)
 		return;
 	}
 
-	SApiRoute route;
-	CStringA strRouteErrorCode;
-	CString strRouteErrorMessage;
-	if (!TryBuildRoute(rData, route, strRouteErrorCode, strRouteErrorMessage)) {
-		const int iStatus = GetHttpStatusForError(strRouteErrorCode);
-		SendJsonError(rData.pSocket, iStatus, GetHttpReasonPhrase(iStatus), strRouteErrorCode, strRouteErrorMessage);
+	WebServerJsonSeams::SApiRoute route;
+	std::string strRouteErrorCode;
+	std::string strRouteErrorMessage;
+	if (!WebServerJsonSeams::TryBuildRoute(
+		StdStringFromCStringA(rData.strMethod),
+		StdStringFromCStringA(rData.strRequestTarget),
+		StdStringFromCStringA(rData.strRequestBody),
+		route,
+		strRouteErrorCode,
+		strRouteErrorMessage))
+	{
+		const int iStatus = WebServerJsonSeams::GetHttpStatusForError(strRouteErrorCode);
+		SendJsonError(
+			rData.pSocket,
+			iStatus,
+			GetHttpReasonPhrase(iStatus),
+			strRouteErrorCode.c_str(),
+			CStringFromStdUtf8(strRouteErrorMessage));
 		return;
 	}
 
@@ -2137,7 +1852,7 @@ void WebServerJson::ProcessRequest(const ThreadData &rData)
 		if (error.strCode.IsEmpty())
 			SendJsonResponse(rData.pSocket, 200, "OK", result);
 		else {
-			const int iStatus = GetHttpStatusForError(error.strCode);
+			const int iStatus = WebServerJsonSeams::GetHttpStatusForError(StdStringFromCStringA(error.strCode));
 			SendJsonError(rData.pSocket, iStatus, GetHttpReasonPhrase(iStatus), error.strCode, error.strMessage);
 		}
 	} catch (const json::exception &rJsonError) {
