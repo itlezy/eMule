@@ -628,6 +628,8 @@ void CPreferences::SetGeoLocationCheckDays(UINT uDays)
 
 UINT CPreferences::NormalizeGeoLocationCheckDays(UINT uDays)
 {
+	if (uDays == 0)
+		return 0;
 	if (uDays < GetMinGeoLocationCheckDays())
 		return GetMinGeoLocationCheckDays();
 	if (uDays > GetMaxGeoLocationCheckDays())
