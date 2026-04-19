@@ -40,7 +40,7 @@ namespace Kademlia
 		struct TrackedRequestIn_Struct
 		{
 			ULONGLONG m_dwLatest;
-			int		m_tokens; //tokens are equal to milliseconds in this Token Bucket algorithm implementation
+			LONGLONG	m_tokens; //tokens are equal to milliseconds in this Token Bucket algorithm implementation
 			uint8	m_byOpcode;
 			bool	m_bDbgLogged;
 		};

@@ -1147,7 +1147,10 @@ inline BOOL CopyFile(LPCTSTR pszExistingPath, LPCTSTR pszNewPath, BOOL bFailIfEx
  */
 inline BOOL MoveFileWithProgress(LPCTSTR pszExistingPath, LPCTSTR pszNewPath, LPPROGRESS_ROUTINE pProgressRoutine, LPVOID pData, DWORD dwFlags)
 {
+#pragma warning(push)
+#pragma warning(disable:5039)
 	return ::MoveFileWithProgress(PreparePathForLongPath(pszExistingPath).c_str(), PreparePathForLongPath(pszNewPath).c_str(), pProgressRoutine, pData, dwFlags);
+#pragma warning(pop)
 }
 
 /**

@@ -1511,6 +1511,7 @@ void CemuleDlg::ProcessED2KLink(LPCTSTR pszData)
 				SetActiveDialog(searchwnd);
 				searchwnd->ProcessEd2kSearchLinkRequest(pListLink->GetSearchTerm());
 			}
+			[[fallthrough]];
 		default:
 			break;
 		}

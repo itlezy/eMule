@@ -804,7 +804,9 @@ bool CUploadQueue::RemoveFromUploadQueue(CUpDownClient *client, LPCTSTR pszReaso
 
 			if (client->GetSessionUp() > 0) {
 				++successfullupcount;
-				totaluploadtime += client->GetUpStartTimeDelay() / SEC2MS(1);
+				const ULONGLONG ullSessionUpTimeSeconds = client->GetUpStartTimeDelay() / SEC2MS(1);
+				const ULONGLONG ullRemainingUploadTimeBudget = static_cast<ULONGLONG>(UINT_MAX - totaluploadtime);
+				totaluploadtime += static_cast<uint32>(ullSessionUpTimeSeconds < ullRemainingUploadTimeBudget ? ullSessionUpTimeSeconds : ullRemainingUploadTimeBudget);
 			} else
 				failedupcount += static_cast<uint32>(!earlyabort);
 

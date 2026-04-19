@@ -137,6 +137,7 @@ int CPacketTracking::InTrackListIsAllowedPacket(uint32 uIP, uint8 byOpcode, bool
 		break;
 	case KADEMLIA_FIREWALLED2_REQ:
 		byOpcode = KADEMLIA_FIREWALLED_REQ;
+		[[fallthrough]];
 	case KADEMLIA_FIREWALLED_REQ:
 	case KADEMLIA_FINDBUDDY_REQ:
 		token = MIN2MS(1) / 2;
@@ -172,13 +173,14 @@ int CPacketTracking::InTrackListIsAllowedPacket(uint32 uIP, uint8 byOpcode, bool
 	if (i >= 0) {
 		// already tracking requests with this opcode
 		TrackPacketsIn_Struct::TrackedRequestIn_Struct &TrackedRequest = pTrackEntry->m_aTrackedRequests[i];
-		TrackedRequest.m_tokens += curTick - TrackedRequest.m_dwLatest;
+		TrackedRequest.m_tokens += static_cast<LONGLONG>(curTick - TrackedRequest.m_dwLatest);
 		if (TrackedRequest.m_tokens > MIN2MS(1))
 			TrackedRequest.m_tokens = MIN2MS(1);
 		TrackedRequest.m_tokens -= token;
 		TrackedRequest.m_dwLatest = curTick;
 		// remember only for easier cleanup
-		pTrackEntry->m_dwLastExpire = max(pTrackEntry->m_dwLastExpire, curTick + abs(TrackedRequest.m_tokens) + token);
+		const ULONGLONG uTrackedRequestDeficit = TrackedRequest.m_tokens < 0 ? static_cast<ULONGLONG>(-TrackedRequest.m_tokens) : static_cast<ULONGLONG>(TrackedRequest.m_tokens);
+		pTrackEntry->m_dwLastExpire = max(pTrackEntry->m_dwLastExpire, curTick + uTrackedRequestDeficit + static_cast<ULONGLONG>(token));
 
 		if (CKademlia::IsRunningInLANMode() && IsLANIP(ntohl(uIP))) // no flood detection in LanMode
 			return 0;
