@@ -1204,7 +1204,10 @@ CString CWebServer::_GetServerList(const ThreadData &Data)
 	}
 
 	SortParams prm{(int)pThis->m_Params.ServerSort, pThis->m_Params.bServerSortReverse};
+#pragma warning(push)
+#pragma warning(disable:5039)
 	qsort_s(ServerArray.GetData(), ServerArray.GetCount(), sizeof(ServerEntry), &_ServerCmp, &prm);
+#pragma warning(pop)
 
 	// Displaying
 	CString OutE(pThis->m_Templates.sServerLine); // List Entry Templates
@@ -1922,7 +1925,10 @@ CString CWebServer::_GetTransferList(const ThreadData &Data)
 	}
 
 	SortParams dprm{(int)pThis->m_Params.DownloadSort, pThis->m_Params.bDownloadSortReverse};
+#pragma warning(push)
+#pragma warning(disable:5039)
 	qsort_s(FilesArray.GetData(), FilesArray.GetCount(), sizeof(DownloadFiles), &_DownloadCmp, &dprm);
+#pragma warning(pop)
 
 	CArray<UploadUsers> UploadArray;
 
@@ -1972,7 +1978,10 @@ CString CWebServer::_GetTransferList(const ThreadData &Data)
 	}
 
 	SortParams uprm{(int)pThis->m_Params.UploadSort, pThis->m_Params.bUploadSortReverse};
+#pragma warning(push)
+#pragma warning(disable:5039)
 	qsort_s(UploadArray.GetData(), UploadArray.GetCount(), sizeof(UploadUsers), &_UploadCmp, &uprm);
+#pragma warning(pop)
 
 	_MakeTransferList(Out, pThis, Data, &FilesArray, &UploadArray, bAdmin);
 
@@ -2884,7 +2893,10 @@ CString CWebServer::_GetSharedFilesList(const ThreadData &Data)
 	} //for
 
 	SortParams prm{(int)pThis->m_Params.SharedSort, pThis->m_Params.bSharedSortReverse};
+#pragma warning(push)
+#pragma warning(disable:5039)
 	qsort_s(SharedArray.GetData(), SharedArray.GetCount(), sizeof(SharedFiles), &_SharedCmp, &prm);
+#pragma warning(pop)
 
 	// Displaying
 	CString sSharedList;

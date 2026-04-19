@@ -180,8 +180,8 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 		RECT r{0, 0, (LETTERSIZE), (LETTERSIZE) };
 		::DrawText(hdcMem.Get(), wT, 1, &r, DT_TOP | DT_LEFT | DT_CALCRECT);
 		::DrawText(hdcMem.Get(), wT, 1, &r, DT_TOP | DT_LEFT);
-		float scale = (nFontSize - (rand() % 10)) / (float)nFontSize;
-		float angle = (35 - (rand() % 71)) * (float)M_PI / 180;
+		const float scale = static_cast<float>(nFontSize - (rand() % 10)) / static_cast<float>(nFontSize);
+		const float angle = static_cast<float>(35 - (rand() % 71)) * static_cast<float>(M_PI) / 180.0f;
 		float co = cosf(angle);
 		float si = sinf(angle);
 		LONG x2 = (r.right - r.left) / 2;
@@ -190,12 +190,14 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 		POINT ap[3];
 		x2 += xOff;
 		y2 += rand() & 8;
-		ap[0].x = (LONG)(x2 + scale * (r2.left * co - r2.top * si));
-		ap[0].y = (LONG)(y2 + scale * (r2.left * si + r2.top * co));
-		ap[1].x = (LONG)(x2 + scale * (r2.right * co - r2.top * si));
-		ap[1].y = (LONG)(y2 + scale * (r2.right * si + r2.top * co));
-		ap[2].x = (LONG)(x2 + scale * (r2.left * co - r2.bottom * si));
-		ap[2].y = (LONG)(y2 + scale * (r2.left * si + r2.bottom * co));
+		const float fX2 = static_cast<float>(x2);
+		const float fY2 = static_cast<float>(y2);
+		ap[0].x = static_cast<LONG>(fX2 + scale * (static_cast<float>(r2.left) * co - static_cast<float>(r2.top) * si));
+		ap[0].y = static_cast<LONG>(fY2 + scale * (static_cast<float>(r2.left) * si + static_cast<float>(r2.top) * co));
+		ap[1].x = static_cast<LONG>(fX2 + scale * (static_cast<float>(r2.right) * co - static_cast<float>(r2.top) * si));
+		ap[1].y = static_cast<LONG>(fY2 + scale * (static_cast<float>(r2.right) * si + static_cast<float>(r2.top) * co));
+		ap[2].x = static_cast<LONG>(fX2 + scale * (static_cast<float>(r2.left) * co - static_cast<float>(r2.bottom) * si));
+		ap[2].y = static_cast<LONG>(fY2 + scale * (static_cast<float>(r2.left) * si + static_cast<float>(r2.bottom) * co));
 		::PlgBlt(hdc.Get(), ap, hdcMem.Get(), 0, 0, r.right - r.left, r.bottom - r.top, NULL, 0, 0);
 		xOff += CROWDEDSIZE;
 	}

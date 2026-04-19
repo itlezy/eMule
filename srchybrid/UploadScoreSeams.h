@@ -53,7 +53,8 @@ inline UploadScoreBreakdown BuildUploadScoreBreakdown(const UploadScoreInputs &r
 	breakdown.uLowRatioBonus = rInputs.uLowRatioBonus;
 	breakdown.uLowIdDivisor = rInputs.uLowIdDivisor;
 
-	float fWorkingScore = static_cast<float>(rInputs.uBaseValueMs / 1000.0);
+	const float fBaseValueSeconds = static_cast<float>(static_cast<double>(rInputs.uBaseValueMs) / 1000.0);
+	float fWorkingScore = fBaseValueSeconds;
 	if (rInputs.bUseCreditSystem)
 		fWorkingScore *= rInputs.fCreditRatio;
 	if (rInputs.bApplyPriority)

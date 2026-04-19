@@ -465,7 +465,10 @@ void CKadLookupGraph::OnPaint()
 						aptPoly[0] = pointTo;
 
 						// build the line vector
-						const float vecLine[2] = { (float)aptPoly[0].x - pFrom.x, (float)aptPoly[0].y - pFrom.y };
+						const float vecLine[2] = {
+							static_cast<float>(aptPoly[0].x) - static_cast<float>(pFrom.x),
+							static_cast<float>(aptPoly[0].y) - static_cast<float>(pFrom.y)
+						};
 
 						// build the arrow base vector - normal to the line
 						const float vecLeft[2] = { -vecLine[1], vecLine[0] };
@@ -477,14 +480,14 @@ void CKadLookupGraph::OnPaint()
 
 						// find the base of the arrow
 						POINT pBase;
-						pBase.x = (LONG)(aptPoly[0].x - ta * vecLine[0]);
-						pBase.y = (LONG)(aptPoly[0].y - ta * vecLine[1]);
+						pBase.x = static_cast<LONG>(static_cast<float>(aptPoly[0].x) - ta * vecLine[0]);
+						pBase.y = static_cast<LONG>(static_cast<float>(aptPoly[0].y) - ta * vecLine[1]);
 
 						// build the points on the sides of the arrow
-						aptPoly[1].x = (LONG)(pBase.x + th * vecLeft[0]);
-						aptPoly[1].y = (LONG)(pBase.y + th * vecLeft[1]);
-						aptPoly[2].x = (LONG)(pBase.x + -th * vecLeft[0]);
-						aptPoly[2].y = (LONG)(pBase.y + -th * vecLeft[1]);
+						aptPoly[1].x = static_cast<LONG>(static_cast<float>(pBase.x) + th * vecLeft[0]);
+						aptPoly[1].y = static_cast<LONG>(static_cast<float>(pBase.y) + th * vecLeft[1]);
+						aptPoly[2].x = static_cast<LONG>(static_cast<float>(pBase.x) - th * vecLeft[0]);
+						aptPoly[2].y = static_cast<LONG>(static_cast<float>(pBase.y) - th * vecLeft[1]);
 						dc.MoveTo(pFrom);
 						dc.LineTo(aptPoly[0].x, aptPoly[0].y);
 						dc.Polygon(aptPoly, 3);

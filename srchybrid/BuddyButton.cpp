@@ -34,6 +34,8 @@ struct SBuddyData
 	HWND m_hwndButton;
 };
 
+#pragma warning(push)
+#pragma warning(disable:5039)
 static LRESULT CALLBACK BuddyButtonSubClassedProc(HWND hWnd, UINT uMessage, WPARAM wParam, LPARAM lParam)
 {
 	WNDPROC	pfnOldWndProc = (WNDPROC)::GetProp(hWnd, s_szPropOldWndProc);
@@ -95,6 +97,7 @@ void AddBuddyButton(HWND hwndEdit, HWND hwndButton)
 
 	::SetWindowPos(hwndEdit, NULL, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED);
 }
+#pragma warning(pop)
 
 void DestroyIconsArr(HICON *pIcon, size_t cnt)
 {

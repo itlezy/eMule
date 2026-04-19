@@ -121,9 +121,9 @@ void CProgressCtrlX::OnPaint()
 	int range = max(info.nUpper - info.nLower, 1);
 	CRect rcBar, rcMax;
 	rcMax.right = fVert ? info.rcClient.Height() : info.rcClient.Width();
-	rcBar.right = (LONG)((float)(info.nCurPos - info.nLower) * rcMax.right / range);
+	rcBar.right = static_cast<LONG>(static_cast<float>(info.nCurPos - info.nLower) * static_cast<float>(rcMax.right) / static_cast<float>(range));
 	if (fSnake)
-		rcBar.left = (LONG)((float)(m_nTail - info.nLower) * rcMax.right / range);
+		rcBar.left = static_cast<LONG>(static_cast<float>(m_nTail - info.nLower) * static_cast<float>(rcMax.right) / static_cast<float>(range));
 
 	// draw bar
 	DrawMultiGradient(info, fRubberBar ? rcBar : rcMax, rcBar);
@@ -137,12 +137,12 @@ void CProgressCtrlX::OnPaint()
 void CProgressCtrlX::DrawMultiGradient(const CDrawInfo &info, const CRect &rcGrad, const CRect &rcClip)
 {
 	INT_PTR nSteps = m_ardwGradColors.GetCount() - 1;
-	float nWidthPerStep = (float)rcGrad.Width() / nSteps;
+	float nWidthPerStep = static_cast<float>(rcGrad.Width()) / static_cast<float>(nSteps);
 	RECT rcGradBand(rcGrad);
 	for (INT_PTR i = 0; i < nSteps; ++i) {
-		rcGradBand.left = rcGrad.left + (LONG)(nWidthPerStep * i);
+		rcGradBand.left = rcGrad.left + static_cast<LONG>(nWidthPerStep * static_cast<float>(i));
 		if (i < nSteps - 1)
-			rcGradBand.right = rcGrad.left + (LONG)(nWidthPerStep * (i + 1));
+			rcGradBand.right = rcGrad.left + static_cast<LONG>(nWidthPerStep * static_cast<float>(i + 1));
 		else //last step may have rounding errors
 			rcGradBand.right = rcGrad.right;
 
@@ -178,22 +178,22 @@ void CProgressCtrlX::DrawGradient(const CDrawInfo &info, const CRect &rcGrad, co
 	if (nSteps == 0)
 		nSteps = 1;
 
-	float rStep = (float)r / nSteps;
-	float gStep = (float)g / nSteps;
-	float bStep = (float)b / nSteps;
+	float rStep = static_cast<float>(r) / static_cast<float>(nSteps);
+	float gStep = static_cast<float>(g) / static_cast<float>(nSteps);
+	float bStep = static_cast<float>(b) / static_cast<float>(nSteps);
 
 	r = GetRValue(clrStart);
 	g = GetGValue(clrStart);
 	b = GetBValue(clrStart);
 
-	float nWidthPerStep = (float)rcGrad.Width() / nSteps;
+	float nWidthPerStep = static_cast<float>(rcGrad.Width()) / static_cast<float>(nSteps);
 	RECT rcFill(rcGrad);
 	//CBrush br;
 	// Start filling
 	for (int i = 0; i < nSteps; ++i) {
-		rcFill.left = rcGrad.left + (LONG)(nWidthPerStep * i);
+		rcFill.left = rcGrad.left + static_cast<LONG>(nWidthPerStep * static_cast<float>(i));
 		if (i < nSteps - 1)
-			rcFill.right = rcGrad.left + (LONG)(nWidthPerStep * (i + 1));
+			rcFill.right = rcGrad.left + static_cast<LONG>(nWidthPerStep * static_cast<float>(i + 1));
 		else //last step may have rounding error
 			rcFill.right = rcGrad.right;
 
@@ -229,7 +229,7 @@ void CProgressCtrlX::DrawText(const CDrawInfo &info, const CRect &rcMax, const C
 			sFormat = _T("%d%%");
 		// retrieve current position and range
 		nValue = info.nUpper - info.nLower;
-		nValue = (int)((info.nCurPos - info.nLower) * 100.0f / (nValue > 0 ? nValue : 1));
+		nValue = static_cast<int>(static_cast<float>(info.nCurPos - info.nLower) * 100.0f / static_cast<float>(nValue > 0 ? nValue : 1));
 		break;
 	case PBS_SHOW_POSITION:
 		if (sFormat.IsEmpty())

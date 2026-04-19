@@ -1780,64 +1780,73 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 			// This section is completely scalable.  Might add "Week" to it in the future.
 			// For each time period that we are calculating a projected average for...
 			for (int mx = 0; mx < 3; ++mx) {
+				const double fAvgModifier = avgModifier[mx];
+				const auto ScaleProjectedU64 = [fAvgModifier](const auto value) -> uint64 {
+					return static_cast<uint64>(static_cast<double>(value) * fAvgModifier);
+				};
+				const auto ScaleProjectedU32 = [fAvgModifier](const auto value) -> uint32 {
+					return static_cast<uint32>(static_cast<double>(value) * fAvgModifier);
+				};
+				const auto PercentProjectedU64 = [](const uint64 uPart, const uint64 uTotal) -> double {
+					return uTotal != 0 ? (100.0 * static_cast<double>(uPart) / static_cast<double>(uTotal)) : 0.0;
+				};
 				if (forceUpdate || m_stattree.IsExpanded(time_aaph[mx])) {
 					// TIME STATISTICS -> PROJECTED AVERAGES -> TIME PERIOD -> UPLOADS SECTION
 					if (forceUpdate || m_stattree.IsExpanded(time_aap_hup[mx])) {
 						// Uploaded Data
 						sText.Format(GetResString(IDS_STATS_UDATA)
-							, (LPCTSTR)CastItoXBytes(((double)(theStats.sessionSentBytes + thePrefs.GetTotalUploaded())) * avgModifier[mx]));
+							, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.sessionSentBytes + thePrefs.GetTotalUploaded())));
 						m_stattree.SetItemText(time_aap_up[mx][0], sText);
 						if (forceUpdate || m_stattree.IsExpanded(time_aap_up[mx][0])) {
 							// Uploaded Data By Client
 							if (forceUpdate || m_stattree.IsExpanded(time_aap_up_hd[mx][0])) {
 								int i = 0;
-								uint64 UpDataTotal = (uint64)(thePrefs.GetUpTotalClientData() * avgModifier[mx]);
-								uint64 UpDataClient = (uint64)(thePrefs.GetCumUpData_EMULE() * avgModifier[mx]);
-								double percentClientTransferred;
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								uint64 UpDataTotal = ScaleProjectedU64(thePrefs.GetUpTotalClientData());
+								uint64 UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_EMULE());
+								double percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("eMule: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 								++i;
-								UpDataClient = (uint64)(thePrefs.GetCumUpData_EDONKEYHYBRID() * avgModifier[mx]);
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_EDONKEYHYBRID());
+								percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("eD Hybrid: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 								++i;
-								UpDataClient = (uint64)(thePrefs.GetCumUpData_EDONKEY() * avgModifier[mx]);
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_EDONKEY());
+								percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("eDonkey: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 								++i;
-								UpDataClient = (uint64)(thePrefs.GetCumUpData_AMULE() * avgModifier[mx]);
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_AMULE());
+								percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("aMule: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 								++i;
-								UpDataClient = (uint64)(thePrefs.GetCumUpData_MLDONKEY() * avgModifier[mx]);
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_MLDONKEY());
+								percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("MLdonkey: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 								++i;
-								UpDataClient = (uint64)(thePrefs.GetCumUpData_SHAREAZA() * avgModifier[mx]);
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_SHAREAZA());
+								percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("Shareaza: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 								++i;
-								UpDataClient = (uint64)(thePrefs.GetCumUpData_EMULECOMPAT() * avgModifier[mx]);
-								percentClientTransferred = !UpDataTotal ? 0 : 100.0 * UpDataClient / UpDataTotal;
+								UpDataClient = ScaleProjectedU64(thePrefs.GetCumUpData_EMULECOMPAT());
+								percentClientTransferred = PercentProjectedU64(UpDataClient, UpDataTotal);
 								sText.Format(_T("eM Compat: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(UpDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_up_dc[mx][i], sText);
 							}
 							// Uploaded Data By Port
 							if (forceUpdate || m_stattree.IsExpanded(time_aap_up_hd[mx][1])) {
 								int i = 0;
-								uint64	PortDataDefault = (uint64)(thePrefs.GetCumUpDataPort_4662() * avgModifier[mx]);
-								uint64	PortDataOther = (uint64)(thePrefs.GetCumUpDataPort_OTHER() * avgModifier[mx]);
-								uint64	PortDataTotal = (uint64)(thePrefs.GetUpTotalPortData() * avgModifier[mx]);
+								uint64	PortDataDefault = ScaleProjectedU64(thePrefs.GetCumUpDataPort_4662());
+								uint64	PortDataOther = ScaleProjectedU64(thePrefs.GetCumUpDataPort_OTHER());
+								uint64	PortDataTotal = ScaleProjectedU64(thePrefs.GetUpTotalPortData());
 								double	percentPortTransferred = 0;
 
 								if (PortDataTotal != 0 && PortDataDefault != 0)
-									percentPortTransferred = 100.0 * PortDataDefault / PortDataTotal;
+									percentPortTransferred = PercentProjectedU64(PortDataDefault, PortDataTotal);
 								sText.Format(_T("%s: %s (%1.1f%%)")
 									, (LPCTSTR)GetResString(IDS_STATS_PRTDEF)
 									, (LPCTSTR)CastItoXBytes(PortDataDefault)
@@ -1845,7 +1854,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 								m_stattree.SetItemText(time_aap_up_dp[mx][i], sText);
 								++i;
 								if (PortDataTotal != 0 && PortDataOther != 0)
-									percentPortTransferred = 100.0 * PortDataOther / PortDataTotal;
+									percentPortTransferred = PercentProjectedU64(PortDataOther, PortDataTotal);
 								else
 									percentPortTransferred = 0;
 								sText.Format(_T("%s: %s (%1.1f%%)")
@@ -1857,18 +1866,18 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 							// Uploaded Data By Source
 							if (forceUpdate || m_stattree.IsExpanded(time_aap_up_hd[mx][2])) {
 								int i = 0;
-								uint64	DataSourceTotal = (uint64)(thePrefs.GetUpTotalDataFile() * avgModifier[mx]);
+								uint64	DataSourceTotal = ScaleProjectedU64(thePrefs.GetUpTotalDataFile());
 
-								uint64	DataSourceFile = (uint64)(thePrefs.GetCumUpData_File() * avgModifier[mx]);
-								double	percentFileTransferred = !DataSourceTotal ? 0 : 100.0 * DataSourceFile / DataSourceTotal;
+								uint64	DataSourceFile = ScaleProjectedU64(thePrefs.GetCumUpData_File());
+								double	percentFileTransferred = PercentProjectedU64(DataSourceFile, DataSourceTotal);
 								sText.Format(_T("%s: %s (%1.1f%%)")
 									, (LPCTSTR)GetResString(IDS_STATS_DSFILE)
 									, (LPCTSTR)CastItoXBytes(DataSourceFile)
 									, percentFileTransferred);
 								m_stattree.SetItemText(time_aap_up_ds[mx][i], sText);
 								++i;
-								uint64	DataSourcePF = (uint64)(thePrefs.GetCumUpData_Partfile() * avgModifier[mx]);
-								percentFileTransferred = !DataSourceTotal ? 0 : 100.0 * DataSourcePF / DataSourceTotal;
+								uint64	DataSourcePF = ScaleProjectedU64(thePrefs.GetCumUpData_Partfile());
+								percentFileTransferred = PercentProjectedU64(DataSourcePF, DataSourceTotal);
 								sText.Format(_T("%s: %s (%1.1f%%)")
 									, (LPCTSTR)GetResString(IDS_STATS_DSPF)
 									, (LPCTSTR)CastItoXBytes(DataSourcePF)
@@ -1877,11 +1886,11 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 							}
 						}
 						// Upload Sessions
-						uint32 statGoodSessions = (uint32)((theApp.uploadqueue->GetSuccessfullUpCount()
+						uint32 statGoodSessions = ScaleProjectedU32(theApp.uploadqueue->GetSuccessfullUpCount()
 							+ thePrefs.GetUpSuccessfulSessions()
 							+ theApp.uploadqueue->GetUploadQueueLength()
-							) * avgModifier[mx]);
-						uint32 statBadSessions = (uint32)((theApp.uploadqueue->GetFailedUpCount() + thePrefs.GetUpFailedSessions()) * avgModifier[mx]);
+							);
+						uint32 statBadSessions = ScaleProjectedU32(theApp.uploadqueue->GetFailedUpCount() + thePrefs.GetUpFailedSessions());
 						sText.Format(_T("%s: %u"), (LPCTSTR)GetResString(IDS_STATS_ULSES), statGoodSessions + statBadSessions);
 						m_stattree.SetItemText(time_aap_up[mx][1], sText);
 						if (forceUpdate || m_stattree.IsExpanded(time_aap_up[mx][1])) {
@@ -1903,48 +1912,48 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 						}
 
 						// Calculate Upload OH Totals
-						uint64 UpOHTotal = (uint64)((theStats.GetUpDataOverheadFileRequest()
+						uint64 UpOHTotal = ScaleProjectedU64(theStats.GetUpDataOverheadFileRequest()
 							+ theStats.GetUpDataOverheadSourceExchange()
 							+ theStats.GetUpDataOverheadServer()
 							+ theStats.GetUpDataOverheadKad()
 							+ theStats.GetUpDataOverheadOther()
-							) * avgModifier[mx]);
-						uint64 UpOHTotalPackets = (uint64)((theStats.GetUpDataOverheadFileRequestPackets()
+							);
+						uint64 UpOHTotalPackets = ScaleProjectedU64(theStats.GetUpDataOverheadFileRequestPackets()
 							+ theStats.GetUpDataOverheadSourceExchangePackets()
 							+ theStats.GetUpDataOverheadServerPackets()
 							+ theStats.GetUpDataOverheadKadPackets()
 							+ theStats.GetUpDataOverheadOtherPackets()
-							) * avgModifier[mx]);
+							);
 
 						// Set Cumulative Total Overhead
 						sText.Format(GetResString(IDS_TOVERHEAD)
-							, (LPCTSTR)CastItoXBytes(UpOHTotal + ((uint64)thePrefs.GetUpOverheadTotal() * avgModifier[mx]))
-							, (LPCTSTR)CastItoIShort((uint64)(UpOHTotalPackets + ((uint64)thePrefs.GetUpOverheadTotalPackets() * avgModifier[mx]))));
+							, (LPCTSTR)CastItoXBytes(UpOHTotal + ScaleProjectedU64(thePrefs.GetUpOverheadTotal()))
+							, (LPCTSTR)CastItoIShort(UpOHTotalPackets + ScaleProjectedU64(thePrefs.GetUpOverheadTotalPackets())));
 						m_stattree.SetItemText(time_aap_up[mx][2], sText);
 						if (forceUpdate || m_stattree.IsExpanded(time_aap_up[mx][2])) {
 							int i = 0;
 							// Set up total file req OH
 							sText.Format(GetResString(IDS_FROVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetUpDataOverheadFileRequest() + thePrefs.GetUpOverheadFileReq()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetUpDataOverheadFileRequestPackets() + thePrefs.GetUpOverheadFileReqPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetUpDataOverheadFileRequest() + thePrefs.GetUpOverheadFileReq()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetUpDataOverheadFileRequestPackets() + thePrefs.GetUpOverheadFileReqPackets())));
 							m_stattree.SetItemText(time_aap_up_oh[mx][i], sText);
 							++i;
 							// Set up total source exch OH
 							sText.Format(GetResString(IDS_SSOVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetUpDataOverheadSourceExchange() + thePrefs.GetUpOverheadSrcEx()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetUpDataOverheadSourceExchangePackets() + thePrefs.GetUpOverheadSrcExPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetUpDataOverheadSourceExchange() + thePrefs.GetUpOverheadSrcEx()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetUpDataOverheadSourceExchangePackets() + thePrefs.GetUpOverheadSrcExPackets())));
 							m_stattree.SetItemText(time_aap_up_oh[mx][i], sText);
 							++i;
 							// Set up total server OH
 							sText.Format(GetResString(IDS_SOVERHEAD)
-								, (LPCTSTR)CastItoXBytes((theStats.GetUpDataOverheadServer() + thePrefs.GetUpOverheadServer()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetUpDataOverheadServerPackets() + thePrefs.GetUpOverheadServerPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetUpDataOverheadServer() + thePrefs.GetUpOverheadServer()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetUpDataOverheadServerPackets() + thePrefs.GetUpOverheadServerPackets())));
 							m_stattree.SetItemText(time_aap_up_oh[mx][i], sText);
 							++i;
 							// Set up total Kad OH
 							sText.Format(GetResString(IDS_KADOVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetUpDataOverheadKad() + thePrefs.GetUpOverheadKad()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetUpDataOverheadKadPackets() + thePrefs.GetUpOverheadKadPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetUpDataOverheadKad() + thePrefs.GetUpOverheadKad()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetUpDataOverheadKadPackets() + thePrefs.GetUpOverheadKadPackets())));
 							m_stattree.SetItemText(time_aap_up_oh[mx][i], sText);
 						}
 					} // - End Time Statistics -> Projected Averages -> Time Period -> Uploads Section
@@ -1954,88 +1963,63 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 						theApp.downloadqueue->GetDownloadSourcesStats(myStats);
 						// Downloaded Data
 						sText.Format(GetResString(IDS_STATS_DDATA)
-							, (LPCTSTR)CastItoXBytes((uint64)(theStats.sessionReceivedBytes + thePrefs.GetTotalDownloaded()) * avgModifier[mx]));
+							, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.sessionReceivedBytes + thePrefs.GetTotalDownloaded())));
 						m_stattree.SetItemText(time_aap_down[mx][0], sText);
 						if (forceUpdate || m_stattree.IsExpanded(time_aap_down[mx][0])) {
 							// Downloaded Data By Client
 							if (forceUpdate || m_stattree.IsExpanded(time_aap_down_hd[mx][0])) {
 								int i = 0;
-								uint64 DownDataTotal = (uint64)(thePrefs.GetDownTotalClientData() * avgModifier[mx]);
-								uint64 DownDataClient = (uint64)(thePrefs.GetCumDownData_EMULE() * avgModifier[mx]);
-								double percentClientTransferred;
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								uint64 DownDataTotal = ScaleProjectedU64(thePrefs.GetDownTotalClientData());
+								uint64 DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_EMULE());
+								double percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("eMule: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_EDONKEYHYBRID() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_EDONKEYHYBRID());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("eD Hybrid: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_EDONKEY() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_EDONKEY());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("eDonkey: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_AMULE() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_AMULE());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("aMule: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_MLDONKEY() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_MLDONKEY());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("MLdonkey: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_SHAREAZA() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_SHAREAZA());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("Shareaza: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_EMULECOMPAT() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_EMULECOMPAT());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("eM Compat: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 								++i;
-								DownDataClient = (uint64)(thePrefs.GetCumDownData_URL() * avgModifier[mx]);
-								if (DownDataTotal != 0 && DownDataClient != 0)
-									percentClientTransferred = 100.0 * DownDataClient / DownDataTotal;
-								else
-									percentClientTransferred = 0;
+								DownDataClient = ScaleProjectedU64(thePrefs.GetCumDownData_URL());
+								percentClientTransferred = PercentProjectedU64(DownDataClient, DownDataTotal);
 								sText.Format(_T("URL: %s (%1.1f%%)"), (LPCTSTR)CastItoXBytes(DownDataClient), percentClientTransferred);
 								m_stattree.SetItemText(time_aap_down_dc[mx][i], sText);
 							}
 							// Downloaded Data By Port
 							if (forceUpdate || m_stattree.IsExpanded(time_aap_down_hd[mx][1])) {
 								int i = 0;
-								uint64	PortDataDefault = (uint64)(thePrefs.GetCumDownDataPort_4662() * avgModifier[mx]);
-								uint64	PortDataOther = (uint64)(thePrefs.GetCumDownDataPort_OTHER() * avgModifier[mx]);
-								uint64	PortDataTotal = (uint64)(thePrefs.GetDownTotalPortData() * avgModifier[mx]);
+								uint64	PortDataDefault = ScaleProjectedU64(thePrefs.GetCumDownDataPort_4662());
+								uint64	PortDataOther = ScaleProjectedU64(thePrefs.GetCumDownDataPort_OTHER());
+								uint64	PortDataTotal = ScaleProjectedU64(thePrefs.GetDownTotalPortData());
 								double	percentPortTransferred;
 
 								if (PortDataTotal != 0 && PortDataDefault != 0)
-									percentPortTransferred = 100.0 * PortDataDefault / PortDataTotal;
+									percentPortTransferred = PercentProjectedU64(PortDataDefault, PortDataTotal);
 								else
 									percentPortTransferred = 0;
 								sText.Format(_T("%s: %s (%1.1f%%)")
@@ -2045,7 +2029,7 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 								m_stattree.SetItemText(time_aap_down_dp[mx][i], sText);
 								++i;
 								if (PortDataTotal != 0 && PortDataOther != 0)
-									percentPortTransferred = 100.0 * PortDataOther / PortDataTotal;
+									percentPortTransferred = PercentProjectedU64(PortDataOther, PortDataTotal);
 								else
 									percentPortTransferred = 0;
 								sText.Format(_T("%s: %s (%1.1f%%)")
@@ -2056,11 +2040,11 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 							}
 						}
 						// Set Cum Completed Downloads
-						sText.Format(_T("%s: %I64u"), (LPCTSTR)GetResString(IDS_STATS_COMPDL), (uint64)(thePrefs.GetDownCompletedFiles() * avgModifier[mx]));
+						sText.Format(_T("%s: %I64u"), (LPCTSTR)GetResString(IDS_STATS_COMPDL), ScaleProjectedU64(thePrefs.GetDownCompletedFiles()));
 						m_stattree.SetItemText(time_aap_down[mx][1], sText);
 						// Set Cum Download Sessions
-						uint32 statGoodSessions = (uint32)((thePrefs.GetDownC_SuccessfulSessions() + myStats.a[1]) * avgModifier[mx]);
-						uint32 statBadSessions = (uint32)(thePrefs.GetDownC_FailedSessions() * avgModifier[mx]);
+						uint32 statGoodSessions = ScaleProjectedU32(thePrefs.GetDownC_SuccessfulSessions() + myStats.a[1]);
+						uint32 statBadSessions = ScaleProjectedU32(thePrefs.GetDownC_FailedSessions());
 						sText.Format(_T("%s: %u"), (LPCTSTR)GetResString(IDS_STATS_DLSES), statGoodSessions + statBadSessions);
 						m_stattree.SetItemText(time_aap_down[mx][2], sText);
 						if (forceUpdate || m_stattree.IsExpanded(time_aap_down[mx][2])) {
@@ -2084,15 +2068,15 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 						}
 						// Set Cumulative Gained Due To Compression
 						sText.Format(GetResString(IDS_STATS_GAINCOMP)
-							, (LPCTSTR)CastItoXBytes((uint64)(thePrefs.GetSesSavedFromCompression() + thePrefs.GetCumSavedFromCompression()) * avgModifier[mx]));
+							, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(thePrefs.GetSesSavedFromCompression() + thePrefs.GetCumSavedFromCompression())));
 						m_stattree.SetItemText(time_aap_down[mx][3], sText);
 						// Set Cumulative Lost Due To Corruption
 						sText.Format(GetResString(IDS_STATS_LOSTCORRUPT)
-							, (LPCTSTR)CastItoXBytes((uint64)(thePrefs.GetSesLostFromCorruption() + thePrefs.GetCumLostFromCorruption()) * avgModifier[mx]));
+							, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(thePrefs.GetSesLostFromCorruption() + thePrefs.GetCumLostFromCorruption())));
 						m_stattree.SetItemText(time_aap_down[mx][4], sText);
 						// Set Cumulative Saved Due To ICH
 						sText.Format(GetResString(IDS_STATS_ICHSAVED)
-							, (uint32)((thePrefs.GetSesPartsSavedByICH() + thePrefs.GetCumPartsSavedByICH()) * avgModifier[mx]));
+							, ScaleProjectedU32(thePrefs.GetSesPartsSavedByICH() + thePrefs.GetCumPartsSavedByICH()));
 						m_stattree.SetItemText(time_aap_down[mx][5], sText);
 
 						uint64 DownOHTotal = theStats.GetDownDataOverheadFileRequest()
@@ -2107,33 +2091,33 @@ void CStatisticsDlg::ShowStatistics(bool forceUpdate)
 							+ theStats.GetDownDataOverheadOtherPackets();
 						// Total Overhead
 						sText.Format(GetResString(IDS_TOVERHEAD)
-							, (LPCTSTR)CastItoXBytes((uint64)(DownOHTotal + thePrefs.GetDownOverheadTotal()) * avgModifier[mx])
-							, (LPCTSTR)CastItoIShort((uint64)(DownOHTotalPackets + thePrefs.GetDownOverheadTotalPackets()) * avgModifier[mx]));
+							, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(DownOHTotal + thePrefs.GetDownOverheadTotal()))
+							, (LPCTSTR)CastItoIShort(ScaleProjectedU64(DownOHTotalPackets + thePrefs.GetDownOverheadTotalPackets())));
 						m_stattree.SetItemText(time_aap_down[mx][6], sText);
 						if (forceUpdate || m_stattree.IsExpanded(time_aap_down[mx][6])) {
 							int i = 0;
 							// File Request Overhead
 							sText.Format(GetResString(IDS_FROVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetDownDataOverheadFileRequest() + thePrefs.GetDownOverheadFileReq()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetDownDataOverheadFileRequestPackets() + thePrefs.GetDownOverheadFileReqPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetDownDataOverheadFileRequest() + thePrefs.GetDownOverheadFileReq()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetDownDataOverheadFileRequestPackets() + thePrefs.GetDownOverheadFileReqPackets())));
 							m_stattree.SetItemText(time_aap_down_oh[mx][i], sText);
 							++i;
 							// Source Exchange Overhead
 							sText.Format(GetResString(IDS_SSOVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetDownDataOverheadSourceExchange() + thePrefs.GetDownOverheadSrcEx()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetDownDataOverheadSourceExchangePackets() + thePrefs.GetDownOverheadSrcExPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetDownDataOverheadSourceExchange() + thePrefs.GetDownOverheadSrcEx()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetDownDataOverheadSourceExchangePackets() + thePrefs.GetDownOverheadSrcExPackets())));
 							m_stattree.SetItemText(time_aap_down_oh[mx][i], sText);
 							++i;
 							// Server Overhead
 							sText.Format(GetResString(IDS_SOVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetDownDataOverheadServer() + thePrefs.GetDownOverheadServer()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetDownDataOverheadServerPackets() + thePrefs.GetDownOverheadServerPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetDownDataOverheadServer() + thePrefs.GetDownOverheadServer()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetDownDataOverheadServerPackets() + thePrefs.GetDownOverheadServerPackets())));
 							m_stattree.SetItemText(time_aap_down_oh[mx][i], sText);
 							++i;
 							// Kad Overhead
 							sText.Format(GetResString(IDS_KADOVERHEAD)
-								, (LPCTSTR)CastItoXBytes((uint64)(theStats.GetDownDataOverheadKad() + thePrefs.GetDownOverheadKad()) * avgModifier[mx])
-								, (LPCTSTR)CastItoIShort((uint64)(theStats.GetDownDataOverheadKadPackets() + thePrefs.GetDownOverheadKadPackets()) * avgModifier[mx]));
+								, (LPCTSTR)CastItoXBytes(ScaleProjectedU64(theStats.GetDownDataOverheadKad() + thePrefs.GetDownOverheadKad()))
+								, (LPCTSTR)CastItoIShort(ScaleProjectedU64(theStats.GetDownDataOverheadKadPackets() + thePrefs.GetDownOverheadKadPackets())));
 							m_stattree.SetItemText(time_aap_down_oh[mx][i], sText);
 						}
 					} // - End Time Statistics -> Projected Averages -> Time Period -> Downloads Section
