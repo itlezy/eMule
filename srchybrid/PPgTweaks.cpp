@@ -28,6 +28,7 @@
 #include "emuledlg.h"
 #include "SharedFilesWnd.h"
 #include "ServerWnd.h"
+#include "GeoLocation.h"
 #include "HelpIDs.h"
 #include "Log.h"
 #include "UserMsgs.h"
@@ -64,6 +65,18 @@ namespace
 		}
 		return true;
 	}
+
+	/**
+	 * Builds the Extended-tree label for the geolocation refresh interval.
+	 */
+	static CString GetGeoLocationIntervalLabel()
+	{
+		CString label(GetResString(IDS_GEOLOCATION_CHECK_DAYS));
+		label.Append(_T(" ("));
+		label.Append(GetResString(IDS_GEOLOCATION_CHECK_DAYS_SUFFIX));
+		label.Append(_T(")"));
+		return label;
+	}
 }
 
 
@@ -75,6 +88,7 @@ IMPLEMENT_DYNAMIC(CPPgTweaks, CPropertyPage)
 BEGIN_MESSAGE_MAP(CPPgTweaks, CPropertyPage)
 	ON_WM_HSCROLL()
 	ON_WM_DESTROY()
+	ON_WM_SIZE()
 	ON_MESSAGE(UM_TREEOPTSCTRL_NOTIFY, OnTreeOptsCtrlNotify)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_OPENPREFINI, OnBnClickedOpenprefini)
@@ -83,6 +97,15 @@ END_MESSAGE_MAP()
 CPPgTweaks::CPPgTweaks()
 	: CPropertyPage(CPPgTweaks::IDD)
 	, m_ctrlTreeOptions(theApp.m_iDfltImageListColorFlags)
+	, m_szBaseClient()
+	, m_rcWarning()
+	, m_rcTree()
+	, m_rcFileBufferLabel()
+	, m_rcFileBufferSlider()
+	, m_rcQueueLabel()
+	, m_rcQueueSlider()
+	, m_rcPrefIniLabel()
+	, m_rcOpenPrefIniButton()
 	, m_htiA4AFSaveCpu()
 	, m_htiAutoArch()
 	, m_htiAutoTakeEd2kLinks()
@@ -156,6 +179,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiShowUpDownIconInTaskbar()
 	, m_htiShowVerticalHourMarkers()
 	, m_htiForceSpeedsToKB()
+	, m_htiGeoLocationEnabled()
+	, m_htiGeoLocationCheckDays()
 	, m_htiExtraPreviewWithMenu()
 	, m_htiKeepUnavailableFixedSharedDirs()
 	, m_htiPartiallyPurgeOldKnownFiles()
@@ -223,6 +248,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bExtraPreviewWithMenu()
 	, m_bFilterLANIPs()
 	, m_bFullAlloc()
+	, m_bGeoLocationEnabled()
 	, m_bImportParts()
 	, m_bInitializedTreeOpts()
 	, m_bKeepUnavailableFixedSharedDirs()
@@ -254,6 +280,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bUseSystemFontForMainControls()
 	, m_bForceSpeedsToKB()
 	, m_uFileBufferTimeLimitSeconds()
+	, m_uGeoLocationCheckDays()
 	, m_iBBMaxUploadClients()
 	, m_iBBSlowGraceSeconds()
 	, m_iBBSlowWarmupSeconds()
@@ -419,6 +446,9 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiShowUpDownIconInTaskbar = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWUPDOWNICONINTASKBAR), m_htiHiddenDisplay, m_bShowUpDownIconInTaskbar);
 		m_htiShowVerticalHourMarkers = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWVERTICALHOURMARKERS), m_htiHiddenDisplay, m_bShowVerticalHourMarkers);
 		m_htiForceSpeedsToKB = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FORCESPEEDSTOKB), m_htiHiddenDisplay, m_bForceSpeedsToKB);
+		m_htiGeoLocationEnabled = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLE_GEOLOCATION), m_htiHiddenDisplay, m_bGeoLocationEnabled);
+		m_htiGeoLocationCheckDays = m_ctrlTreeOptions.InsertItem(GetGeoLocationIntervalLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiGeoLocationEnabled);
+		m_ctrlTreeOptions.AddEditBox(m_htiGeoLocationCheckDays, RUNTIME_CLASS(CNumTreeOptionsEdit));
 
 		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_SECURITY), iImgConnection, TVI_ROOT);
 		m_htiDetectTCPErrorFlooder = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DETECT_TCP_ERROR_FLOODER), m_htiHiddenSecurity, m_bDetectTCPErrorFlooder);
@@ -477,6 +507,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.Expand(m_htiHiddenStartup, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiHiddenFile, TVE_EXPAND);
 		m_ctrlTreeOptions.Expand(m_htiHiddenDisplay, TVE_EXPAND);
+		m_ctrlTreeOptions.Expand(m_htiGeoLocationEnabled, m_bGeoLocationEnabled ? TVE_EXPAND : TVE_COLLAPSE);
 		m_ctrlTreeOptions.Expand(m_htiHiddenSecurity, TVE_EXPAND);
 		if (m_htiVerboseGroup)
 			m_ctrlTreeOptions.Expand(m_htiVerboseGroup, TVE_EXPAND);
@@ -607,6 +638,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowUpDownIconInTaskbar, m_bShowUpDownIconInTaskbar);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiGeoLocationEnabled, m_bGeoLocationEnabled);
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiGeoLocationCheckDays, m_uGeoLocationCheckDays);
+	if (pDX->m_bSaveAndValidate && m_uGeoLocationCheckDays > 365u)
+		FailTreeValidation(pDX, AFX_IDP_PARSE_INT, m_htiGeoLocationCheckDays);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDetectTCPErrorFlooder, m_bDetectTCPErrorFlooder);
 	if (m_htiTCPErrorFlooderIntervalMinutes) {
 		DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiTCPErrorFlooderIntervalMinutes, m_iTCPErrorFlooderIntervalMinutes);
@@ -759,6 +794,8 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bShowUpDownIconInTaskbar = thePrefs.IsShowUpDownIconInTaskbar();
 	m_bShowVerticalHourMarkers = thePrefs.m_bShowVerticalHourMarkers;
 	m_bForceSpeedsToKB = thePrefs.GetForceSpeedsToKB();
+	m_bGeoLocationEnabled = thePrefs.IsGeoLocationEnabled();
+	m_uGeoLocationCheckDays = thePrefs.GetGeoLocationCheckDays();
 	m_bExtraPreviewWithMenu = thePrefs.GetExtraPreviewWithMenu();
 	m_bKeepUnavailableFixedSharedDirs = thePrefs.m_bKeepUnavailableFixedSharedDirs;
 	m_bPartiallyPurgeOldKnownFiles = thePrefs.DoPartiallyPurgeOldKnownFiles();
@@ -794,10 +831,47 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_ctlQueueSize.SetTicFreq(10);
 	m_ctlQueueSize.SetPageSize(10);
 
+	CaptureBaseLayout();
 	Localize();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgTweaks::CaptureBaseLayout()
+{
+	CRect rectClient;
+	GetClientRect(&rectClient);
+	m_szBaseClient = rectClient.Size();
+
+	static const UINT aControlIds[] = {
+		IDC_WARNING,
+		IDC_EXT_OPTS,
+		IDC_FILEBUFFERSIZE_STATIC,
+		IDC_FILEBUFFERSIZE,
+		IDC_QUEUESIZE_STATIC,
+		IDC_QUEUESIZE,
+		IDC_PREFINI_STATIC,
+		IDC_OPENPREFINI
+	};
+	CRect *apRects[] = {
+		&m_rcWarning,
+		&m_rcTree,
+		&m_rcFileBufferLabel,
+		&m_rcFileBufferSlider,
+		&m_rcQueueLabel,
+		&m_rcQueueSlider,
+		&m_rcPrefIniLabel,
+		&m_rcOpenPrefIniButton
+	};
+	for (int i = 0; i < _countof(aControlIds); ++i) {
+		CWnd *pWnd = GetDlgItem(aControlIds[i]);
+		if (pWnd != NULL) {
+			pWnd->GetWindowRect(apRects[i]);
+			ScreenToClient(apRects[i]);
+		} else
+			apRects[i]->SetRectEmpty();
+	}
 }
 
 BOOL CPPgTweaks::OnKillActive()
@@ -848,6 +922,11 @@ BOOL CPPgTweaks::OnApply()
 	else
 		thePrefs.SetBBSessionTransferValue(static_cast<UINT>(max(1, m_iBBSessionTransferPercent)));
 	thePrefs.SetBBSessionTimeLimitSeconds(static_cast<UINT>(max(0, m_iBBSessionTimeLimitSeconds)));
+
+	const bool bGeoLocationEnabledOld = thePrefs.IsGeoLocationEnabled();
+	const UINT uGeoLocationCheckDaysOld = thePrefs.GetGeoLocationCheckDays();
+	thePrefs.m_bGeoLocationEnabled = m_bGeoLocationEnabled;
+	thePrefs.SetGeoLocationCheckDays(m_uGeoLocationCheckDays);
 
 	if (thePrefs.AutoTakeED2KLinks() != m_bAutoTakeEd2kLinks) {
 		thePrefs.autotakeed2klinks = m_bAutoTakeEd2kLinks;
@@ -938,6 +1017,20 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bAdjustNTFSDaylightFileTime = m_bAdjustNTFSDaylightFileTime;
 	thePrefs.m_bRearrangeKadSearchKeywords = m_bRearrangeKadSearchKeywords;
 	thePrefs.msgsecure = m_bMessageFromValidSourcesOnly;
+
+	if (theApp.geolocation != NULL && bGeoLocationEnabledOld != thePrefs.IsGeoLocationEnabled()) {
+		if (thePrefs.IsGeoLocationEnabled()) {
+			theApp.geolocation->Load();
+			theApp.geolocation->QueueBackgroundRefresh();
+		} else
+			theApp.geolocation->Unload();
+		theApp.geolocation->RefreshVisibleWindows();
+	} else if (theApp.geolocation != NULL
+		&& thePrefs.IsGeoLocationEnabled()
+		&& uGeoLocationCheckDaysOld != thePrefs.GetGeoLocationCheckDays())
+	{
+		theApp.geolocation->QueueBackgroundRefresh();
+	}
 
 	if (thePrefs.GetEnableVerboseOptions()) {
 		theApp.emuledlg->serverwnd->ToggleDebugWindow();
@@ -1075,6 +1168,7 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiShowActiveDownloadsBold, IDS_SHOWACTIVEDOWNLOADSBOLD);
 		LocalizeItemText(m_htiShowUpDownIconInTaskbar, IDS_SHOWUPDOWNICONINTASKBAR);
 		LocalizeItemText(m_htiShowVerticalHourMarkers, IDS_SHOWVERTICALHOURMARKERS);
+		LocalizeItemText(m_htiGeoLocationEnabled, IDS_ENABLE_GEOLOCATION);
 		LocalizeItemText(m_htiSkipWANIPSetup, IDS_UPNPSKIPWANIP);
 		LocalizeItemText(m_htiSkipWANPPPSetup, IDS_UPNPSKIPWANPPP);
 		LocalizeItemText(m_htiSparsePartFiles, IDS_SPARSEPARTFILES);
@@ -1086,6 +1180,7 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiAdjustNTFSDaylightFileTime, IDS_ADJUSTNTFSDAYLIGHTFILETIME);
 		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
 		LocalizeEditLabel(m_htiFileBufferTimeLimit, IDS_FILEBUFFERTIMELIMIT);
+		m_ctrlTreeOptions.SetEditLabel(m_htiGeoLocationCheckDays, GetGeoLocationIntervalLabel());
 		LocalizeEditLabel(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
 
 		CString temp;
@@ -1162,6 +1257,8 @@ void CPPgTweaks::OnDestroy()
 	m_htiShowUpDownIconInTaskbar = NULL;
 	m_htiShowVerticalHourMarkers = NULL;
 	m_htiForceSpeedsToKB = NULL;
+	m_htiGeoLocationEnabled = NULL;
+	m_htiGeoLocationCheckDays = NULL;
 	m_htiExtraPreviewWithMenu = NULL;
 	m_htiKeepUnavailableFixedSharedDirs = NULL;
 	m_htiPartiallyPurgeOldKnownFiles = NULL;
@@ -1233,6 +1330,10 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 			}
 		} else if (m_htiDetectTCPErrorFlooder && pton->hItem == m_htiDetectTCPErrorFlooder) {
 			SetModified();
+		} else if (m_htiGeoLocationEnabled && pton->hItem == m_htiGeoLocationEnabled) {
+			BOOL bCheck = FALSE;
+			if (m_ctrlTreeOptions.GetCheckBox(m_htiGeoLocationEnabled, bCheck))
+				m_ctrlTreeOptions.Expand(m_htiGeoLocationEnabled, bCheck ? TVE_EXPAND : TVE_COLLAPSE);
 		} else if ((m_htiShareeMuleMultiUser  && pton->hItem == m_htiShareeMuleMultiUser)
 				|| (m_htiShareeMulePublicUser && pton->hItem == m_htiShareeMulePublicUser)
 				|| (m_htiShareeMuleOldStyle   && pton->hItem == m_htiShareeMuleOldStyle))
@@ -1251,6 +1352,63 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 		SetModified();
 	}
 	return 0;
+}
+
+void CPPgTweaks::OnSize(UINT nType, int cx, int cy)
+{
+	CPropertyPage::OnSize(nType, cx, cy);
+
+	if (m_szBaseClient.cx == 0 || m_szBaseClient.cy == 0 || !::IsWindow(m_hWnd))
+		return;
+
+	const int dx = cx - m_szBaseClient.cx;
+	const int dy = cy - m_szBaseClient.cy;
+
+	CRect rectWarning(m_rcWarning);
+	rectWarning.right += dx;
+	if (CWnd *pWarning = GetDlgItem(IDC_WARNING))
+		pWarning->MoveWindow(rectWarning);
+
+	CRect rectTree(m_rcTree);
+	rectTree.right += dx;
+	rectTree.bottom += dy;
+	if (CWnd *pTree = GetDlgItem(IDC_EXT_OPTS))
+		pTree->MoveWindow(rectTree);
+
+	CRect rectFileBufferLabel(m_rcFileBufferLabel);
+	rectFileBufferLabel.OffsetRect(0, dy);
+	rectFileBufferLabel.right += dx;
+	if (CWnd *pFileBufferLabel = GetDlgItem(IDC_FILEBUFFERSIZE_STATIC))
+		pFileBufferLabel->MoveWindow(rectFileBufferLabel);
+
+	CRect rectFileBufferSlider(m_rcFileBufferSlider);
+	rectFileBufferSlider.OffsetRect(0, dy);
+	rectFileBufferSlider.right += dx;
+	if (CWnd *pFileBufferSlider = GetDlgItem(IDC_FILEBUFFERSIZE))
+		pFileBufferSlider->MoveWindow(rectFileBufferSlider);
+
+	CRect rectQueueLabel(m_rcQueueLabel);
+	rectQueueLabel.OffsetRect(0, dy);
+	if (CWnd *pQueueLabel = GetDlgItem(IDC_QUEUESIZE_STATIC))
+		pQueueLabel->MoveWindow(rectQueueLabel);
+
+	CRect rectQueueSlider(m_rcQueueSlider);
+	rectQueueSlider.OffsetRect(0, dy);
+	rectQueueSlider.right += dx;
+	if (CWnd *pQueueSlider = GetDlgItem(IDC_QUEUESIZE))
+		pQueueSlider->MoveWindow(rectQueueSlider);
+
+	CRect rectPrefIniLabel(m_rcPrefIniLabel);
+	rectPrefIniLabel.OffsetRect(dx, dy);
+	if (CWnd *pPrefIniLabel = GetDlgItem(IDC_PREFINI_STATIC))
+		pPrefIniLabel->MoveWindow(rectPrefIniLabel);
+
+	CRect rectOpenPrefIni(m_rcOpenPrefIniButton);
+	rectOpenPrefIni.OffsetRect(dx, dy);
+	if (CWnd *pOpenPrefIni = GetDlgItem(IDC_OPENPREFINI))
+		pOpenPrefIni->MoveWindow(rectOpenPrefIni);
+
+	UNREFERENCED_PARAMETER(nType);
 }
 
 void CPPgTweaks::OnHelp()

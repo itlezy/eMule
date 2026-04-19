@@ -52,8 +52,23 @@ public:
 	void SetStartPage(UINT uStartPageID)	{ m_pPshStartPage = MAKEINTRESOURCE(uStartPageID); }
 
 protected:
+	/** Captures the normal Options dialog layout used by non-Extended pages. */
+	void CaptureNormalLayout();
+	/** Applies the normal or expanded layout for the currently active page. */
+	void ApplyExtendedLayout();
+
 	LPCTSTR m_pPshStartPage;
 	bool m_bSaveIniFile;
+	bool m_bNormalLayoutCaptured;
+	CSize m_szNormalWindow;
+	CSize m_szExtendedGrowth;
+	CRect m_rcNormalTree;
+	CRect m_rcNormalFrame;
+	CRect m_rcNormalPage;
+	CRect m_rcNormalOk;
+	CRect m_rcNormalCancel;
+	CRect m_rcNormalApply;
+	CRect m_rcNormalHelp;
 
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
@@ -61,4 +76,6 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
+	afx_msg LRESULT OnSetCurSel(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnSetCurSelId(WPARAM wParam, LPARAM lParam);
 };

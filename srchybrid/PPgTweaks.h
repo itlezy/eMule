@@ -18,10 +18,22 @@ public:
 	void Localize();
 
 protected:
+	/** Captures the baseline layout used for the Extended page controls. */
+	void CaptureBaseLayout();
+
 	CSliderCtrl m_ctlFileBuffSize;
 	CSliderCtrl m_ctlQueueSize;
 	CTreeOptionsCtrlEx m_ctrlTreeOptions;
 	CString m_sYourHostname;
+	CSize m_szBaseClient;
+	CRect m_rcWarning;
+	CRect m_rcTree;
+	CRect m_rcFileBufferLabel;
+	CRect m_rcFileBufferSlider;
+	CRect m_rcQueueLabel;
+	CRect m_rcQueueSlider;
+	CRect m_rcPrefIniLabel;
+	CRect m_rcOpenPrefIniButton;
 
 	HTREEITEM m_htiA4AFSaveCpu;
 	HTREEITEM m_htiAutoArch;
@@ -97,6 +109,8 @@ protected:
 	HTREEITEM m_htiShowUpDownIconInTaskbar;
 	HTREEITEM m_htiShowVerticalHourMarkers;
 	HTREEITEM m_htiForceSpeedsToKB;
+	HTREEITEM m_htiGeoLocationEnabled;
+	HTREEITEM m_htiGeoLocationCheckDays;
 	HTREEITEM m_htiExtraPreviewWithMenu;
 	HTREEITEM m_htiKeepUnavailableFixedSharedDirs;
 	HTREEITEM m_htiPartiallyPurgeOldKnownFiles;
@@ -167,6 +181,7 @@ protected:
 	bool m_bExtraPreviewWithMenu;
 	bool m_bFilterLANIPs;
 	bool m_bFullAlloc;
+	bool m_bGeoLocationEnabled;
 	bool m_bImportParts;
 	bool m_bInitializedTreeOpts;
 	bool m_bKeepUnavailableFixedSharedDirs;
@@ -199,6 +214,7 @@ protected:
 	bool m_bForceSpeedsToKB;
 
 	UINT m_uFileBufferTimeLimitSeconds;
+	UINT m_uGeoLocationCheckDays;
 	int m_iBBMaxUploadClients;
 	int m_iBBSlowGraceSeconds;
 	int m_iBBSlowWarmupSeconds;
@@ -220,6 +236,7 @@ protected:
 	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar);
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
 	afx_msg void OnBnClickedOpenprefini();

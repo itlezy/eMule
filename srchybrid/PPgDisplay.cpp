@@ -24,7 +24,6 @@
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "ServerWnd.h"
-#include "GeoLocation.h"
 #include "HelpIDs.h"
 #include "opcodes.h"
 
@@ -54,8 +53,6 @@ BEGIN_MESSAGE_MAP(CPPgDisplay, CPropertyPage)
 	ON_BN_CLICKED(IDC_CLEARCOMPL, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWTRANSTOOLBAR, OnSettingsChange)
 	ON_BN_CLICKED(IDC_STORESEARCHES, OnSettingsChange)
-	ON_BN_CLICKED(IDC_ENABLE_GEOLOCATION, OnGeoLocationSettingsChange)
-	ON_EN_CHANGE(IDC_GEOLOCATION_CHECKDAYS, OnGeoLocationSettingsChange)
 	ON_BN_CLICKED(IDC_WIN7TASKBARGOODIES, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RESETHIST, OnBtnClickedResetHist)
 	ON_WM_HELPINFO()
@@ -86,9 +83,6 @@ void CPPgDisplay::LoadSettings()
 	CheckDlgButton(IDC_CLEARCOMPL, static_cast<UINT>(thePrefs.GetRemoveFinishedDownloads()));
 	CheckDlgButton(IDC_SHOWTRANSTOOLBAR, static_cast<UINT>(thePrefs.IsTransToolbarEnabled()));
 	CheckDlgButton(IDC_DISABLEHIST, static_cast<UINT>(thePrefs.GetUseAutocompletion()));
-	CheckDlgButton(IDC_ENABLE_GEOLOCATION, static_cast<UINT>(thePrefs.IsGeoLocationEnabled()));
-	SetDlgItemInt(IDC_GEOLOCATION_CHECKDAYS, thePrefs.GetGeoLocationCheckDays(), FALSE);
-	UpdateGeoLocationControls();
 
 #ifdef HAVE_WIN7_SDK_H
 	if (thePrefs.GetWindowsVersion() >= _WINVER_7_)
@@ -116,10 +110,6 @@ BOOL CPPgDisplay::OnInitDialog()
 	if (pSpinCtrl)
 		pSpinCtrl->SetRange(0, MAX_TOOLTIP_DELAY_SEC);
 
-	CSpinButtonCtrl *pGeoLocationSpinCtrl = static_cast<CSpinButtonCtrl*>(GetDlgItem(IDC_GEOLOCATION_CHECKDAYS_SPIN));
-	if (pGeoLocationSpinCtrl)
-		pGeoLocationSpinCtrl->SetRange(0, 365);
-
 	LoadSettings();
 	Localize();
 
@@ -130,13 +120,6 @@ BOOL CPPgDisplay::OnInitDialog()
 BOOL CPPgDisplay::OnApply()
 {
 	bool mintotray_old = thePrefs.mintotray;
-	const bool bGeoLocationEnabledOld = thePrefs.IsGeoLocationEnabled();
-	const UINT uGeoLocationCheckDaysOld = thePrefs.GetGeoLocationCheckDays();
-	BOOL bTranslated = FALSE;
-	UINT uGeoLocationCheckDaysNew = GetDlgItemInt(IDC_GEOLOCATION_CHECKDAYS, &bTranslated, FALSE);
-	if (!bTranslated)
-		uGeoLocationCheckDaysNew = 0;
-	uGeoLocationCheckDaysNew = min(365u, uGeoLocationCheckDaysNew);
 	thePrefs.mintotray = IsDlgButtonChecked(IDC_MINTRAY) != 0;
 	thePrefs.transferDoubleclick = IsDlgButtonChecked(IDC_DBLCLICK) != 0;
 	thePrefs.depth3D = static_cast<CSliderCtrl*>(GetDlgItem(IDC_3DDEPTH))->GetPos();
@@ -144,8 +127,6 @@ BOOL CPPgDisplay::OnApply()
 	thePrefs.m_bRemoveFinishedDownloads = IsDlgButtonChecked(IDC_CLEARCOMPL) != 0;
 	thePrefs.m_bUseAutocompl = IsDlgButtonChecked(IDC_DISABLEHIST) != 0;
 	thePrefs.m_bStoreSearches = IsDlgButtonChecked(IDC_STORESEARCHES) != 0;
-	thePrefs.m_bGeoLocationEnabled = IsDlgButtonChecked(IDC_ENABLE_GEOLOCATION) != 0;
-	thePrefs.SetGeoLocationCheckDays(uGeoLocationCheckDaysNew);
 
 #ifdef HAVE_WIN7_SDK_H
 	thePrefs.m_bShowWin7TaskbarGoodies = IsDlgButtonChecked(IDC_WIN7TASKBARGOODIES) != 0;
@@ -192,20 +173,6 @@ BOOL CPPgDisplay::OnApply()
 	} else if (IsDlgButtonChecked(IDC_SHOWTRANSTOOLBAR) && bResetToolbar)
 		theApp.emuledlg->transferwnd->ResetTransToolbar(thePrefs.m_bWinaTransToolbar);
 
-	if (theApp.geolocation != NULL && bGeoLocationEnabledOld != thePrefs.IsGeoLocationEnabled()) {
-		if (thePrefs.IsGeoLocationEnabled()) {
-			theApp.geolocation->Load();
-			theApp.geolocation->QueueBackgroundRefresh();
-		} else
-			theApp.geolocation->Unload();
-		theApp.geolocation->RefreshVisibleWindows();
-	} else if (theApp.geolocation != NULL
-		&& thePrefs.IsGeoLocationEnabled()
-		&& uGeoLocationCheckDaysOld != thePrefs.GetGeoLocationCheckDays())
-	{
-		theApp.geolocation->QueueBackgroundRefresh();
-	}
-
 	LoadSettings();
 
 	if (mintotray_old != thePrefs.mintotray)
@@ -237,9 +204,6 @@ void CPPgDisplay::Localize()
 		SetDlgItemText(IDC_SHOWDWLPERCENT, GetResString(IDS_SHOWDWLPERCENTAGE));
 		SetDlgItemText(IDC_CLEARCOMPL, GetResString(IDS_AUTOREMOVEFD));
 		SetDlgItemText(IDC_STORESEARCHES, GetResString(IDS_STORESEARCHES));
-		SetDlgItemText(IDC_ENABLE_GEOLOCATION, GetResString(IDS_ENABLE_GEOLOCATION));
-		SetDlgItemText(IDC_GEOLOCATION_CHECKDAYS_LBL, GetResString(IDS_GEOLOCATION_CHECK_DAYS));
-		SetDlgItemText(IDC_GEOLOCATION_CHECKDAYS_SUFFIX, GetResString(IDS_GEOLOCATION_CHECK_DAYS_SUFFIX));
 
 		SetDlgItemText(IDC_RESETLABEL, GetResString(IDS_RESETLABEL));
 		SetDlgItemText(IDC_RESETHIST, GetResString(IDS_PW_RESET));
@@ -248,30 +212,6 @@ void CPPgDisplay::Localize()
 		SetDlgItemText(IDC_SHOWTRANSTOOLBAR, GetResString(IDS_PW_SHOWTRANSTOOLBAR));
 		SetDlgItemText(IDC_WIN7TASKBARGOODIES, GetResString(IDS_SHOWWIN7TASKBARGOODIES));
 	}
-}
-
-void CPPgDisplay::UpdateGeoLocationControls()
-{
-	const BOOL bGeoLocationEnabled = IsDlgButtonChecked(IDC_ENABLE_GEOLOCATION) != 0;
-	static const int aiGeoLocationControlIds[] = {
-		IDC_GEOLOCATION_CHECKDAYS_LBL,
-		IDC_GEOLOCATION_CHECKDAYS,
-		IDC_GEOLOCATION_CHECKDAYS_SPIN,
-		IDC_GEOLOCATION_CHECKDAYS_SUFFIX
-	};
-	for (int i = 0; i < _countof(aiGeoLocationControlIds); ++i) {
-		CWnd *pWnd = GetDlgItem(aiGeoLocationControlIds[i]);
-		if (pWnd != NULL) {
-			pWnd->ShowWindow(bGeoLocationEnabled ? SW_SHOW : SW_HIDE);
-			pWnd->EnableWindow(bGeoLocationEnabled);
-		}
-	}
-}
-
-void CPPgDisplay::OnGeoLocationSettingsChange()
-{
-	UpdateGeoLocationControls();
-	SetModified();
 }
 
 void CPPgDisplay::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
