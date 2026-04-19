@@ -147,7 +147,7 @@ void CTransferWnd::OnInitialUpdate()
 	// show & cat-tabs
 	m_dlTab.ModifyStyle(0, TCS_OWNERDRAWFIXED);
 	m_dlTab.SetPadding(CSize(6, 4));
-	if (theApp.IsVistaThemeActive())
+	if (theApp.IsModernThemedControlsActive())
 		m_dlTab.ModifyStyle(0, WS_CLIPCHILDREN);
 	Category_Struct *cat0 = thePrefs.GetCategory(0);
 	cat0->strTitle = GetCatTitle(cat0->filter);

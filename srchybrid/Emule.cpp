@@ -2348,14 +2348,14 @@ void CemuleApp::ResetStandByIdleTimer()
 		m_bStandbyOff = false;
 }
 
-bool CemuleApp::IsXPThemeActive() const
+bool CemuleApp::IsLegacyThemedControlsActive() const
 {
-	// TRUE: If an XP style (and only an XP style) is active
+	// TRUE when themed common controls are active in the pre-6.16 visual style bucket.
 	return theApp.m_ullComCtrlVer < MAKEDLLVERULL(6, 16, 0, 0) && ::IsThemeActive() && ::IsAppThemed();
 }
 
-bool CemuleApp::IsVistaThemeActive() const
+bool CemuleApp::IsModernThemedControlsActive() const
 {
-	// Return true if Vista (or better) style is active
+	// TRUE when themed common controls are active in the 6.16+ visual style bucket.
 	return theApp.m_ullComCtrlVer >= MAKEDLLVERULL(6, 16, 0, 0) && ::IsThemeActive() && ::IsAppThemed();
 }

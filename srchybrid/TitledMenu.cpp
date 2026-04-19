@@ -85,7 +85,7 @@ void CTitledMenu::AddMenuTitle(LPCTSTR lpszTitle, bool bIsIconMenu)
 	// and it would be quite expensive to get the native Vista menu styles back. We would need to draw
 	// the entire menu with the Vista theme API -- no way. Thus, there is no title for context menus
 	// under Vista - the title doesn't fit to the native Vista menu style anyway.
-	if (lpszTitle != NULL && !theApp.IsVistaThemeActive()) {
+	if (lpszTitle != NULL && !theApp.IsModernThemedControlsActive()) {
 		m_strTitle = lpszTitle;
 		m_strTitle.Remove(_T('&'));
 		CMenu::InsertMenu(0, MF_BYPOSITION | MF_OWNERDRAW | MF_STRING | MF_DISABLED, MP_TITLE);

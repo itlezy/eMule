@@ -137,7 +137,7 @@ void CToolTipCtrlX::CustomPaint(LPNMTTCUSTOMDRAW pNMCD)
 	//
 	bool bUseEmbeddedThemeFonts = false;
 	HTHEME hTheme = NULL;
-	if (theApp.IsVistaThemeActive()) {
+	if (theApp.IsModernThemedControlsActive()) {
 		hTheme = ::OpenThemeData(*pwnd, L"TOOLTIP");
 		// Using the theme's fonts works only under Vista without SP1. When SP1
 		// is installed the fonts which are used for TTP_STANDARDTITLE and TTP_STANDARD

@@ -241,8 +241,8 @@ public:
 	void		DisableRTLWindowsLayout();
 	void		UpdateDesktopColorDepth();
 	void		UpdateLargeIconSize();
-	bool		IsXPThemeActive() const;
-	bool		IsVistaThemeActive() const;
+	bool		IsLegacyThemedControlsActive() const;
+	bool		IsModernThemedControlsActive() const;
 
 	bool		GetLangHelpFilePath(CString &strResult);
 	void		SetHelpFilePath(LPCTSTR pszHelpFilePath);

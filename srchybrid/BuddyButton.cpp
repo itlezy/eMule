@@ -105,7 +105,7 @@ void DestroyIconsArr(HICON *pIcon, size_t cnt)
 
 bool InitAttachedBrowseButton(HWND hwndButton, HICON &ricoBrowse)
 {
-	if (theApp.IsXPThemeActive())
+	if (theApp.IsLegacyThemedControlsActive())
 		return false;
 
 	if (ricoBrowse == NULL) {

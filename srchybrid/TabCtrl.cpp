@@ -380,7 +380,7 @@ void TabControl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 
 	HTHEME hTheme = NULL;
 	bool bVistaHotTracked = false;
-	bool bVistaThemeActive = theApp.IsVistaThemeActive();
+	bool bVistaThemeActive = theApp.IsModernThemedControlsActive();
 	if (bVistaThemeActive) {
 		// To determine if the current item is in 'hot tracking' mode, we need to evaluate
 		// the current foreground color - there is no flag which would indicate this state

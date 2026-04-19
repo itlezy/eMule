@@ -63,23 +63,23 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 		return;
 
 	///////////////////////////////////////////////////////////////////////////////////////
-	// Adding support for XP Styles (Vista Themes) for owner drawn tab controls simply
-	// does *not* work under Vista. Maybe it works under XP (did not try), but that is
-	// meaningless because under XP an owner drawn tab control is already rendered *with*
-	// the proper XP Styles. So, for XP there is no need to care about the theme API at all.
+	// Making owner-drawn tab controls blend cleanly with themed common controls still
+	// does not work well with the modern visual-style path. Older themed controls do not
+	// need special handling here because they already render owner-drawn tabs acceptably.
 	//
-	// However, under Vista, a tab control which has the TCS_OWNERDRAWFIXED
-	// style gets additional 3D-borders which are applied by Vista *after* WM_DRAWITEM
-	// was processed. Thus, there is no known workaround available to prevent Vista from
-	// adding those old fashioned 3D-borders. We can render the tab control items within
-	// the WM_DRAWITEM handler in whatever style we want, but Vista will in each case
+	// With the modern themed control path, a tab control which has the TCS_OWNERDRAWFIXED
+	// style gets additional 3D-borders which are applied after WM_DRAWITEM
+	// was processed. Thus, there is no known workaround available to prevent the modern
+	// themed control path from adding those old fashioned 3D-borders. We can render the
+	// tab control items within the WM_DRAWITEM handler in whatever style we want, but the
+	// themed control path will in each case
 	// overwrite the borders of each tab control item with old fashioned 3D-borders...
 	//
 	// To complete this experience, tab controls also do not support NMCUSTOMDRAW. So, the
 	// only known way to customize a tab control is by using TCS_OWNERDRAWFIXED which does
-	// however not work properly under Vista.
+	// however not work properly with the modern themed-control path.
 	//
-	// The "solution" which is currently implemented to prevent Vista from drawing those
+	// The current workaround prevents the themed control path from drawing those
 	// 3D-borders is by using "ExcludeClipRect" to reduce the drawing area which is used
 	// by Windows after WM_DRAWITEM was processed. This "solution" is very sensitive to
 	// the used rectangles and offsets in general. Incrementing/Decrementing one of the
@@ -93,11 +93,11 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 	int iPartId = BP_PUSHBUTTON;
 	int iStateId = PBS_NORMAL;
 	bool bVistaHotTracked;
-	bool bVistaThemeActive = theApp.IsVistaThemeActive();
-	if (bVistaThemeActive) {
+	bool bModernThemedControlsActive = theApp.IsModernThemedControlsActive();
+	if (bModernThemedControlsActive) {
 		// To determine if the current item is in 'hot tracking' mode, we need to evaluate
 		// the current foreground color - there is no flag which would indicate this state
-		// more safely. This applies only for Vista and for tab controls which have the
+		// more safely. This applies only for the modern themed-control path and for tab controls which have the
 		// TCS_OWNERDRAWFIXED style.
 		bVistaHotTracked = pDC->GetTextColor() == ::GetSysColor(COLOR_HOTLIGHT);
 
@@ -125,7 +125,7 @@ void CButtonsTabCtrl::DrawItem(LPDRAWITEMSTRUCT lpDIS)
 
 	// Following background clearing is needed for:
 	//	Vista (when used with an application theme but without a theme for the tab control)
-	if (!::IsThemeActive() || !::IsAppThemed() || (hTheme == NULL && bVistaThemeActive))
+	if (!::IsThemeActive() || !::IsAppThemed() || (hTheme == NULL && bModernThemedControlsActive))
 		pDC->FillSolidRect(&lpDIS->rcItem, ::GetSysColor(COLOR_BTNFACE));
 
 	int iOldBkMode = pDC->SetBkMode(TRANSPARENT);
@@ -168,7 +168,7 @@ int CButtonsTabCtrl::OnCreate(LPCREATESTRUCT lpCreateStruct)
 
 void CButtonsTabCtrl::InternalInit()
 {
-	if (theApp.IsVistaThemeActive()) {
+	if (theApp.IsModernThemedControlsActive()) {
 		ModifyStyle(0, TCS_OWNERDRAWFIXED);
 		ModifyStyle(0, TCS_HOTTRACK);
 	}
