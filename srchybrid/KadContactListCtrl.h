@@ -51,7 +51,10 @@ protected:
 	void UpdateContact(int iItem, const Kademlia::CContact *contact);
 	void SetAllIcons();
 	CString GetContactLocationText(const Kademlia::CContact *contact) const;
-	void DrawLocationSubItem(NMLVCUSTOMDRAW *pLVCD, LRESULT *pResult);
+	CString GetContactTypeText(const Kademlia::CContact *contact) const;
+	CString GetContactVersionText(const Kademlia::CContact *contact) const;
+	CString GetContactDistanceText(const Kademlia::CContact *contact) const;
+	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 
 	static int CALLBACK SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
@@ -59,7 +62,6 @@ protected:
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult);
-	afx_msg void OnNmCustomDraw(NMHDR *pNMHDR, LRESULT *pResult);
 //	afx_msg void OnNmDblClk(LPNMHDR pNMHDR, LRESULT *pResult);
 	afx_msg void OnSysColorChange();
 };

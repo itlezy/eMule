@@ -72,28 +72,48 @@ void DrawLookupNodeMetadata(CDC &dc, const CLookupHistory::SLookupHistoryEntry *
 
 	const int iTextPadding = 3;
 	const int iSidePadding = 4;
-	const int iTextFlags = DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS;
+	const int iTextFlags = DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX;
 	CRect rcText(0, 0, 0, 0);
 	dc.DrawText(strIP, &rcText, iTextFlags | DT_CALCRECT);
 
-	const int iFlagWidth = (theApp.geolocation != NULL) ? 18 : 0;
-	const int iMetadataWidth = rcText.Width() + iFlagWidth + (iFlagWidth > 0 ? iTextPadding : 0);
+	bool bDrawFlag = theApp.geolocation != NULL;
+	const int iFlagWidth = bDrawFlag ? 18 : 0;
+	const int iTextWidth = rcText.Width();
+	int iMetadataWidth = iTextWidth + (bDrawFlag ? iFlagWidth + iTextPadding : 0);
 	const int iMetadataHeight = max(rcText.Height(), 16);
-	const bool bPlaceLeft = rcNode.right + iSidePadding + iMetadataWidth > rcClient.right;
-
 	CRect rcMetadata;
+
+	const int iAvailableRight = max(0, rcClient.right - (rcNode.right + iSidePadding));
+	const int iAvailableLeft = max(0, (rcNode.left - iSidePadding) - rcClient.left);
+	const int iAvailableHorizontal = max(0, rcClient.Width() - (2 * iSidePadding));
+	if (iMetadataWidth > iAvailableHorizontal && iTextWidth <= iAvailableHorizontal) {
+		bDrawFlag = false;
+		iMetadataWidth = iTextWidth;
+	}
+
 	rcMetadata.top = rcNode.CenterPoint().y - iMetadataHeight / 2;
 	rcMetadata.bottom = rcMetadata.top + iMetadataHeight;
-	if (bPlaceLeft) {
-		rcMetadata.right = max(rcClient.left, rcNode.left - iSidePadding);
-		rcMetadata.left = max(rcClient.left, rcMetadata.right - iMetadataWidth);
+	if (iMetadataWidth <= iAvailableRight) {
+		rcMetadata.left = rcNode.right + iSidePadding;
+		rcMetadata.right = rcMetadata.left + iMetadataWidth;
+	} else if (iMetadataWidth <= iAvailableLeft) {
+		rcMetadata.right = rcNode.left - iSidePadding;
+		rcMetadata.left = rcMetadata.right - iMetadataWidth;
 	} else {
-		rcMetadata.left = min(rcClient.right, rcNode.right + iSidePadding);
-		rcMetadata.right = min(rcClient.right, rcMetadata.left + iMetadataWidth);
+		const int iFallbackWidth = min(iMetadataWidth, iAvailableHorizontal);
+		rcMetadata.left = rcClient.left + max(iSidePadding, (rcClient.Width() - iFallbackWidth) / 2);
+		rcMetadata.right = rcMetadata.left + iFallbackWidth;
+		if (rcNode.top - iSidePadding - iMetadataHeight >= rcClient.top) {
+			rcMetadata.bottom = rcNode.top - iSidePadding;
+			rcMetadata.top = rcMetadata.bottom - iMetadataHeight;
+		} else {
+			rcMetadata.top = min(rcClient.bottom - iMetadataHeight, rcNode.bottom + iSidePadding);
+			rcMetadata.bottom = rcMetadata.top + iMetadataHeight;
+		}
 	}
 
 	int iTextLeft = rcMetadata.left;
-	if (theApp.geolocation != NULL) {
+	if (bDrawFlag) {
 		const POINT point{ rcMetadata.left, rcNode.CenterPoint().y - 8 };
 		if (theApp.geolocation->DrawFlag(dc, pEntry->m_uIP, point))
 			iTextLeft += iFlagWidth;
