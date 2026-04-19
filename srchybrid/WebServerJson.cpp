@@ -461,6 +461,8 @@ json BuildPreferencesJson()
 		{"maxConnections", thePrefs.GetMaxConnections()},
 		{"maxConPerFive", thePrefs.GetMaxConperFive()},
 		{"maxSourcesPerFile", thePrefs.GetMaxSourcePerFileDefault()},
+		{"uploadClientDataRate", theApp.uploadqueue->GetTargetClientDataRateBroadband()},
+		{"maxUploadSlots", thePrefs.GetBBMaxUploadClientsAllowed()},
 		{"queueSize", static_cast<int64_t>(thePrefs.GetQueueSize())},
 		{"autoConnect", thePrefs.DoAutoConnect()},
 		{"newAutoUp", thePrefs.GetNewAutoUp()},
@@ -535,6 +537,30 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 			return false;
 		}
 		thePrefs.SetMaxSourcesPerFile(static_cast<UINT>(rPrefs["maxSourcesPerFile"].get<unsigned>()));
+	}
+
+	if (rPrefs.contains("uploadClientDataRate")) {
+		uint64_t ullRequestedRate = 0;
+		if (!PipeApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["uploadClientDataRate"], ullRequestedRate) || ullRequestedRate == 0 || ullRequestedRate > UINT_MAX) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("uploadClientDataRate must be an unsigned number in the range 1..4294967295");
+			return false;
+		}
+
+		const uint32 uBudgetBytesPerSec = max(3u * 1024u, thePrefs.GetMaxUpload() * 1024u);
+		const uint32 uRequestedRate = static_cast<uint32>(ullRequestedRate);
+		const uint32 uDerivedSlots = max(1u, min(32u, uBudgetBytesPerSec / max(1u, uRequestedRate)));
+		thePrefs.SetBBMaxUploadClientsAllowed(uDerivedSlots);
+	}
+
+	if (rPrefs.contains("maxUploadSlots")) {
+		uint64_t ullRequestedSlots = 0;
+		if (!PipeApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["maxUploadSlots"], ullRequestedSlots) || ullRequestedSlots == 0 || ullRequestedSlots > 32u) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("maxUploadSlots must be an unsigned number in the range 1..32");
+			return false;
+		}
+		thePrefs.SetBBMaxUploadClientsAllowed(static_cast<UINT>(ullRequestedSlots));
 	}
 
 	if (rPrefs.contains("queueSize")) {
