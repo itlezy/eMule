@@ -90,10 +90,14 @@ public:
 		if (!m_bInitialized) {
 			m_bInitialized = true;
 			ResetLoadedLibrary();
+			CString strSummaryReason(_T("no compatible version newer than 26.01 was found"));
 
 			const CString strConfiguredPath(theApp.GetProfileString(_T("eMule"), _T("MediaInfo_MediaInfoDllPath"), _T("MEDIAINFO.DLL")));
-			if (strConfiguredPath.CompareNoCase(_T("<noload>")) == 0)
+			if (strConfiguredPath.CompareNoCase(_T("<noload>")) == 0) {
+				strSummaryReason = _T("loading disabled by configuration");
+				AddLogLine(false, _T("MediaInfo.dll not loaded: %s"), (LPCTSTR)strSummaryReason);
 				return false;
+			}
 
 			if (!strConfiguredPath.IsEmpty() && !::PathIsRelative(strConfiguredPath)) {
 				CString strResolvedPath(strConfiguredPath);
@@ -104,25 +108,35 @@ public:
 				if (hConfiguredLib != NULL) {
 					BindLoadedLibrary(hConfiguredLib, ullVersion, strResolvedPath);
 					LogCandidate(strResolvedPath, _T("selected configured path"), ullVersion);
-					return true;
+				} else {
+					strSummaryReason = strReason;
+					LogCandidate(strResolvedPath, strReason, ullVersion);
 				}
-				LogCandidate(strResolvedPath, strReason, ullVersion);
 			}
 
-			CStringArray aCandidatePaths;
-			CollectCandidatePaths(strConfiguredPath, aCandidatePaths);
-			for (INT_PTR i = 0; i < aCandidatePaths.GetCount(); ++i) {
-				const CString &strCandidatePath = aCandidatePaths[i];
-				CString strReason;
-				ULONGLONG ullVersion = 0;
-				HMODULE hCandidateLib = LoadCompatibleLibrary(strCandidatePath, ullVersion, strReason);
-				if (hCandidateLib == NULL) {
-					LogCandidate(strCandidatePath, strReason, ullVersion);
-					continue;
+			if (m_hLib == NULL) {
+				CStringArray aCandidatePaths;
+				CollectCandidatePaths(strConfiguredPath, aCandidatePaths);
+				for (INT_PTR i = 0; i < aCandidatePaths.GetCount(); ++i) {
+					const CString &strCandidatePath = aCandidatePaths[i];
+					CString strReason;
+					ULONGLONG ullVersion = 0;
+					HMODULE hCandidateLib = LoadCompatibleLibrary(strCandidatePath, ullVersion, strReason);
+					if (hCandidateLib == NULL) {
+						strSummaryReason = strReason;
+						LogCandidate(strCandidatePath, strReason, ullVersion);
+						continue;
+					}
+					BindLoadedLibrary(hCandidateLib, ullVersion, strCandidatePath);
+					LogCandidate(strCandidatePath, _T("selected compatible candidate"), ullVersion);
+					break;
 				}
-				BindLoadedLibrary(hCandidateLib, ullVersion, strCandidatePath);
-				LogCandidate(strCandidatePath, _T("selected compatible candidate"), ullVersion);
-				break;
+			}
+
+			if (m_hLib != NULL) {
+				AddLogLine(false, _T("MediaInfo.dll loaded: %s (version %s)"), (LPCTSTR)m_strLoadedPath, (LPCTSTR)FormatVersionString(m_ullVersion));
+			} else {
+				AddLogLine(false, _T("MediaInfo.dll not loaded: %s"), (LPCTSTR)strSummaryReason);
 			}
 		}
 		return m_hLib != NULL;
@@ -161,6 +175,18 @@ public:
 	}
 
 protected:
+	/**
+	 * Formats a module version value for diagnostic logging.
+	 */
+	static CString FormatVersionString(ULONGLONG ullVersion)
+	{
+		CString strVersion;
+		strVersion.Format(_T("%u.%u.%u.%u")
+			, (UINT)HIWORD(HIDWORD(ullVersion)), (UINT)LOWORD(HIDWORD(ullVersion))
+			, (UINT)HIWORD(LODWORD(ullVersion)), (UINT)LOWORD(LODWORD(ullVersion)));
+		return strVersion;
+	}
+
 	static CString CombinePath(LPCTSTR pszBasePath, LPCTSTR pszChildPath)
 	{
 		return PathHelpers::AppendPathComponent(CString(pszBasePath != NULL ? pszBasePath : _T("")), pszChildPath);
@@ -173,8 +199,7 @@ protected:
 
 	static bool IsCompatibleVersion(ULONGLONG ullVersion)
 	{
-		return ullVersion >= MAKEDLLVERULL(0, 7, 13, 0)
-			&& ullVersion < MAKEDLLVERULL(25, 11, 0, 0);
+		return ullVersion > MAKEDLLVERULL(26, 1, 0, 0);
 	}
 
 	void AddCandidatePath(CStringArray &raCandidatePaths, const CString &strCandidatePath)
@@ -285,9 +310,8 @@ protected:
 		if (!thePrefs.GetVerbose())
 			return;
 		if (ullVersion != 0) {
-			AddDebugLogLine(false, _T("MediaInfoDLL: %s [%s] version=%u.%u.%u.%u"), (LPCTSTR)strPath, pszStatus
-				, (UINT)HIWORD(HIDWORD(ullVersion)), (UINT)LOWORD(HIDWORD(ullVersion))
-				, (UINT)HIWORD(LODWORD(ullVersion)), (UINT)LOWORD(LODWORD(ullVersion)));
+			AddDebugLogLine(false, _T("MediaInfoDLL: %s [%s] version=%s"), (LPCTSTR)strPath, pszStatus
+				, (LPCTSTR)FormatVersionString(ullVersion));
 		} else {
 			AddDebugLogLine(false, _T("MediaInfoDLL: %s [%s]"), (LPCTSTR)strPath, pszStatus);
 		}
