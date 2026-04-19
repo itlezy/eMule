@@ -138,6 +138,7 @@ BOOL CServerWnd::OnInitDialog()
 	GetDlgItem(IDC_LOGBOX)->DestroyWindow();
 	::MapWindowPoints(NULL, m_hWnd, (LPPOINT)&rect, 2);
 	if (logbox->Create(LOG_PANE_RICHEDIT_STYLES, rect, this, IDC_LOGBOX)) {
+		logbox->EnableRollingLogWindow(5000, 1000);
 		logbox->SetProfileSkinKey(_T("Log"));
 		logbox->ModifyStyleEx(0, WS_EX_STATICEDGE, SWP_FRAMECHANGED);
 		logbox->SendMessage(EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELONG(3, 3));
@@ -152,6 +153,7 @@ BOOL CServerWnd::OnInitDialog()
 	GetDlgItem(IDC_DEBUG_LOG)->DestroyWindow();
 	::MapWindowPoints(NULL, m_hWnd, (LPPOINT)&rect, 2);
 	if (debuglog->Create(LOG_PANE_RICHEDIT_STYLES, rect, this, IDC_DEBUG_LOG)) {
+		debuglog->EnableRollingLogWindow(10000, 1000);
 		debuglog->SetProfileSkinKey(_T("VerboseLog"));
 		debuglog->ModifyStyleEx(0, WS_EX_STATICEDGE, SWP_FRAMECHANGED);
 		debuglog->SendMessage(EM_SETMARGINS, EC_LEFTMARGIN | EC_RIGHTMARGIN, MAKELONG(3, 3));

@@ -65,6 +65,9 @@ CHTRichEditCtrl::CHTRichEditCtrl()
 	, m_bRestoreFormat()
 	, m_bDfltForeground()
 	, m_bDfltBackground()
+	, m_bRollingLogWindow()
+	, m_uRollingMaxEntries()
+	, m_iRollingMaxLineChars()
 {
 	m_cfDefault.cbSize = (UINT)sizeof(CHARFORMAT2);
 }
@@ -99,6 +102,22 @@ void CHTRichEditCtrl::Init(LPCTSTR pszTitle, LPCTSTR pszSkinKey)
 	LRESULT dwLangOpts = SendMessage(EM_GETLANGOPTIONS);
 	SendMessage(EM_SETLANGOPTIONS, 0, (WPARAM)(dwLangOpts & ~(IMF_AUTOFONT /*| IMF_AUTOFONTSIZEADJUST*/)));
 	//SendMessage(EM_SETEDITSTYLE, SES_EMULATESYSEDIT, SES_EMULATESYSEDIT);
+}
+
+void CHTRichEditCtrl::EnableRollingLogWindow(const size_t uMaxEntries, const int iMaxLineChars)
+{
+	m_bRollingLogWindow = uMaxEntries > 0;
+	m_uRollingMaxEntries = uMaxEntries;
+	m_iRollingMaxLineChars = max(0, iMaxLineChars);
+
+	if (!m_bRollingLogWindow)
+		return;
+
+	const ULONGLONG ullDesiredLimit = static_cast<ULONGLONG>(m_uRollingMaxEntries) * static_cast<ULONGLONG>(max(m_iRollingMaxLineChars, 128));
+	const ULONGLONG ullLimit = ullDesiredLimit + 4096ui64;
+	const DWORD dwLimit = static_cast<DWORD>(ullLimit > 0x7fffffffu ? 0x7fffffffu : ullLimit);
+	LimitText(dwLimit);
+	m_iLimitText = GetLimitText();
 }
 
 void CHTRichEditCtrl::EnableSmileys(bool bEnable)
@@ -189,6 +208,110 @@ COLORREF GetLogLineColor(UINT eMsgType)
 	return CLR_DEFAULT;
 }
 
+CString CHTRichEditCtrl::PrepareRollingLine(LPCTSTR pszMsg, const int iLen) const
+{
+	CString strLine((iLen == -1) ? pszMsg : CString(pszMsg, iLen));
+	if (!m_bRollingLogWindow || m_iRollingMaxLineChars <= 0 || strLine.GetLength() <= m_iRollingMaxLineChars)
+		return strLine;
+
+	CString strLineEnding;
+	if (strLine.GetLength() >= 2 && strLine.Right(2) == _T("\r\n")) {
+		strLineEnding = _T("\r\n");
+		strLine.Truncate(strLine.GetLength() - 2);
+	} else if (!strLine.IsEmpty() && (strLine.Right(1) == _T("\r") || strLine.Right(1) == _T("\n"))) {
+		strLineEnding = strLine.Right(1);
+		strLine.Truncate(strLine.GetLength() - 1);
+	}
+
+	const int iMaxPayloadChars = max(0, m_iRollingMaxLineChars - strLineEnding.GetLength());
+	if (strLine.GetLength() > iMaxPayloadChars)
+		strLine.Truncate(iMaxPayloadChars);
+	return strLine + strLineEnding;
+}
+
+void CHTRichEditCtrl::RemoveTextFromHead(const int iCharsToRemove)
+{
+	if (m_hWnd == NULL || iCharsToRemove <= 0)
+		return;
+
+	BOOL bIsVisible = IsWindowVisible();
+	if (bIsVisible)
+		SetRedraw(FALSE);
+	const bool bOldNoPaint = m_bNoPaint;
+	m_bNoPaint = true;
+
+	const int iCurrentLength = GetWindowTextLength();
+	if (iCharsToRemove >= iCurrentLength)
+		SetWindowText(_T(""));
+	else {
+		SetSel(0, iCharsToRemove);
+		ReplaceSel(_T(""));
+	}
+
+	m_bNoPaint = bOldNoPaint;
+	if (bIsVisible && !m_bNoPaint) {
+		SetRedraw();
+		Invalidate();
+	}
+}
+
+void CHTRichEditCtrl::TrimRollingEntries()
+{
+	if (!m_bRollingLogWindow || m_uRollingMaxEntries == 0)
+		return;
+
+	while (m_aRollingEntries.size() > m_uRollingMaxEntries) {
+		const SRollingLogEntry entryToRemove = m_aRollingEntries.front();
+		m_aRollingEntries.pop_front();
+		RemoveTextFromHead(entryToRemove.strText.GetLength());
+	}
+}
+
+void CHTRichEditCtrl::RebuildRollingWindow()
+{
+	if (m_hWnd == NULL)
+		return;
+
+	BOOL bIsVisible = IsWindowVisible();
+	if (bIsVisible)
+		SetRedraw(FALSE);
+	const bool bOldNoPaint = m_bNoPaint;
+	m_bNoPaint = true;
+
+	SetWindowText(_T(""));
+	for (const SRollingLogEntry &rEntry : m_aRollingEntries) {
+		if (rEntry.bTyped)
+			AddLine(rEntry.strText, rEntry.strText.GetLength(), false, GetLogLineColor(rEntry.uMsgType & LOGMSGTYPEMASK));
+		else
+			AddLine(rEntry.strText, rEntry.strText.GetLength());
+	}
+
+	m_bNoPaint = bOldNoPaint;
+	if (bIsVisible && !m_bNoPaint) {
+		SetRedraw();
+		Invalidate();
+	}
+}
+
+void CHTRichEditCtrl::AppendRollingEntry(const CString &strText, const bool bTyped, const UINT uMsgType)
+{
+	SRollingLogEntry entry;
+	entry.strText = strText;
+	entry.bTyped = bTyped;
+	entry.uMsgType = uMsgType & LOGMSGTYPEMASK;
+	m_aRollingEntries.push_back(entry);
+	TrimRollingEntries();
+
+	if (m_hWnd == NULL)
+		return;
+
+	FlushBuffer();
+	if (bTyped)
+		AddLine(strText, strText.GetLength(), false, GetLogLineColor(entry.uMsgType));
+	else
+		AddLine(strText, strText.GetLength());
+}
+
 void CHTRichEditCtrl::FlushBuffer()
 {
 	if (!m_astrBuff.IsEmpty()) { // flush buffer
@@ -209,7 +332,9 @@ void CHTRichEditCtrl::AddEntry(LPCTSTR pszMsg)
 {
 	CString strLine(pszMsg);
 	strLine += _T('\n');
-	if (m_hWnd == NULL)
+	if (m_bRollingLogWindow)
+		AppendRollingEntry(strLine, false, LOG_INFO);
+	else if (m_hWnd == NULL)
 		m_astrBuff.Add(strLine);
 	else {
 		FlushBuffer();
@@ -219,7 +344,9 @@ void CHTRichEditCtrl::AddEntry(LPCTSTR pszMsg)
 
 void CHTRichEditCtrl::Add(LPCTSTR pszMsg, int iLen)
 {
-	if (m_hWnd == NULL)
+	if (m_bRollingLogWindow)
+		AppendRollingEntry(PrepareRollingLine(pszMsg, iLen), false, LOG_INFO);
+	else if (m_hWnd == NULL)
 		m_astrBuff.Add(CString(pszMsg));
 	else {
 		FlushBuffer();
@@ -229,7 +356,9 @@ void CHTRichEditCtrl::Add(LPCTSTR pszMsg, int iLen)
 
 void CHTRichEditCtrl::AddTyped(LPCTSTR pszMsg, int iLen, UINT eMsgType)
 {
-	if (m_hWnd == NULL) {
+	if (m_bRollingLogWindow)
+		AppendRollingEntry(PrepareRollingLine(pszMsg, iLen), true, eMsgType & LOGMSGTYPEMASK);
+	else if (m_hWnd == NULL) {
 		CString strLine((TCHAR)(eMsgType & LOGMSGTYPEMASK));
 		m_astrBuff.Add(strLine + pszMsg);
 	} else {
@@ -487,6 +616,7 @@ void CHTRichEditCtrl::SafeAddLine(int nPos, LPCTSTR pszLine, int iLen, long &lSt
 void CHTRichEditCtrl::Reset()
 {
 	m_astrBuff.RemoveAll();
+	m_aRollingEntries.clear();
 	SetRedraw(FALSE);
 	SetWindowText(_T(""));
 	SetRedraw();
@@ -572,8 +702,7 @@ bool CHTRichEditCtrl::SaveLog(LPCTSTR pszDefName)
 			// write Unicode byte order mark 0xFEFF
 			fputwc(u'\xFEFF', fp);
 
-			CString strText;
-			GetWindowText(strText);
+			const CString strText(GetAllLogEntries());
 			fwrite(strText, sizeof(TCHAR), strText.GetLength(), fp);
 			if (ferror(fp)) {
 				CString strError;
@@ -594,6 +723,13 @@ bool CHTRichEditCtrl::SaveLog(LPCTSTR pszDefName)
 CString CHTRichEditCtrl::GetLastLogEntry()
 {
 	CString strLog;
+	if (m_bRollingLogWindow && !m_aRollingEntries.empty()) {
+		strLog = m_aRollingEntries.back().strText;
+		while (!strLog.IsEmpty() && (strLog.Right(1) == _T("\r") || strLog.Right(1) == _T("\n")))
+			strLog.Truncate(strLog.GetLength() - 1);
+		return strLog;
+	}
+
 	int iLastLine = GetLineCount() - 2;
 	if (iLastLine >= 0) {
 		GetLine(iLastLine, strLog.GetBuffer(1024), 1024);
@@ -604,6 +740,13 @@ CString CHTRichEditCtrl::GetLastLogEntry()
 
 CString CHTRichEditCtrl::GetAllLogEntries()
 {
+	if (m_bRollingLogWindow) {
+		CString strLog;
+		for (const SRollingLogEntry &rEntry : m_aRollingEntries)
+			strLog += rEntry.strText;
+		return strLog;
+	}
+
 	CString strLog;
 	GetWindowText(strLog);
 	return strLog;

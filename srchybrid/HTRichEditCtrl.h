@@ -1,5 +1,7 @@
 #pragma once
 
+#include <deque>
+
 #include "TitledMenu.h"
 
 class CHTRichEditCtrl : public CRichEditCtrl
@@ -17,6 +19,10 @@ public:
 	void Localize();
 	void ApplySkin();
 	void EnableSmileys(bool bEnable = true);
+	/**
+	 * @brief Enables rolling log retention for controls that should keep a bounded recent window.
+	 */
+	void EnableRollingLogWindow(size_t uMaxEntries, int iMaxLineChars);
 
 	void AddEntry(LPCTSTR pszMsg);
 	void Add(LPCTSTR pszMsg, int iLen = -1);
@@ -47,6 +53,13 @@ public:
 	CFont* GetFont() const;
 
 protected:
+	struct SRollingLogEntry
+	{
+		CString strText;
+		UINT uMsgType = 0;
+		bool bTyped = false;
+	};
+
 	CHARFORMAT2 m_cfDefault;
 	CStringArray m_astrBuff;
 	CString m_strSkinKey;
@@ -66,6 +79,10 @@ protected:
 //	bool m_bRichEdit;
 	bool m_bDfltForeground;
 	bool m_bDfltBackground;
+	bool m_bRollingLogWindow;
+	size_t m_uRollingMaxEntries;
+	int m_iRollingMaxLineChars;
+	std::deque<SRollingLogEntry> m_aRollingEntries;
 	static int sm_iSmileyClients;
 	static CComPtr<IStorage> sm_pIStorageSmileys;
 	static CMapStringToPtr sm_aSmileyBitmaps;
@@ -77,6 +94,11 @@ protected:
 	void SafeAddLine(int nPos, LPCTSTR pszLine, int iLen, long &lStartChar, long &lEndChar, bool bLink, COLORREF cr, COLORREF bk, DWORD mask);
 	void FlushBuffer();
 	void AddString(int nPos, LPCTSTR pszString, bool bLink, COLORREF cr, COLORREF bk, DWORD mask);
+	CString PrepareRollingLine(LPCTSTR pszMsg, int iLen) const;
+	void AppendRollingEntry(const CString &strText, bool bTyped, UINT uMsgType);
+	void TrimRollingEntries();
+	void RemoveTextFromHead(int iCharsToRemove);
+	void RebuildRollingWindow();
 	bool InsertSmiley(LPCTSTR pszSmileyID, COLORREF bk);
 	HBITMAP GetSmileyBitmap(LPCTSTR pszSmileyID, COLORREF bk);
 	void AddSmileys(LPCTSTR pszLine);
