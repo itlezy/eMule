@@ -39,22 +39,23 @@ CPreferencesDlg::CPreferencesDlg()
 {
 	m_psh.dwFlags &= ~PSH_HASHELP;
 	m_psh.dwFlags |= PSH_NOCONTEXTHELP;
-	m_wndGeneral.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndDisplay.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndConnection.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndServer.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndDirectories.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndFiles.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndStats.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndIRC.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndWebServer.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndTweaks.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndSecurity.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndScheduler.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndProxy.m_psp.dwFlags &= ~PSH_HASHELP;
-	m_wndMessages.m_psp.dwFlags &= ~PSH_HASHELP;
+	m_wndGeneral.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndDisplay.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndConnection.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndServer.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndDirectories.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndFiles.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndNotify.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndStats.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndIRC.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndWebServer.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndTweaks.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndSecurity.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndScheduler.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndProxy.m_psp.dwFlags &= ~PSP_HASHELP;
+	m_wndMessages.m_psp.dwFlags &= ~PSP_HASHELP;
 #if defined(_DEBUG) || defined(USE_DEBUG_DEVICE)
-	m_wndDebug.m_psp.dwFlags &= ~PSH_HASHELP;
+	m_wndDebug.m_psp.dwFlags &= ~PSP_HASHELP;
 #endif
 
 	CTreePropSheet::SetPageIcon(&m_wndGeneral, _T("Preferences"));
@@ -116,11 +117,6 @@ BOOL CPreferencesDlg::OnInitDialog()
 	ASSERT(!m_bSaveIniFile);
 	BOOL bResult = CTreePropSheet::OnInitDialog();
 	InitWindowStyles(this);
-
-	if (CWnd *pHelpButton = GetDlgItem(ID_HELP))
-		pHelpButton->DestroyWindow();
-	if (CWnd *pHelpButton = GetDlgItem(IDHELP))
-		pHelpButton->DestroyWindow();
 
 	for (int i = (int)m_pages.GetCount(); --i >= 0;)
 		if (GetPage(i)->m_psp.pszTemplate == m_pPshStartPage) {
