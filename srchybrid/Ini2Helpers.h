@@ -94,6 +94,50 @@ inline bool RequiresFileBackedProfileIo(const CString &rstrProfilePath)
 	return !PathHelpers::IsShellSafePath(PathHelpers::StripExtendedLengthPrefix(rstrProfilePath));
 }
 
+/**
+ * @brief Returns whether the logical profile path can be losslessly represented through the ANSI profile APIs.
+ */
+inline bool CanRoundTripAnsiProfilePath(const CString &rstrProfilePath)
+{
+#ifdef _UNICODE
+	const CString strLogicalPath(PathHelpers::StripExtendedLengthPrefix(rstrProfilePath));
+	if (strLogicalPath.IsEmpty())
+		return true;
+
+	BOOL bUsedDefaultChar = FALSE;
+	const int iRequiredAnsiChars = ::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, strLogicalPath, -1, NULL, 0, NULL, &bUsedDefaultChar);
+	if (iRequiredAnsiChars <= 0 || bUsedDefaultChar != FALSE)
+		return false;
+
+	std::vector<char> ansiBuffer(static_cast<size_t>(iRequiredAnsiChars), '\0');
+	if (::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, strLogicalPath, -1, &ansiBuffer[0], iRequiredAnsiChars, NULL, &bUsedDefaultChar) != iRequiredAnsiChars
+		|| bUsedDefaultChar != FALSE)
+	{
+		return false;
+	}
+
+	const int iRequiredWideChars = ::MultiByteToWideChar(CP_ACP, 0, &ansiBuffer[0], -1, NULL, 0);
+	if (iRequiredWideChars <= 0)
+		return false;
+
+	CString strRoundTrip;
+	LPWSTR pszRoundTrip = strRoundTrip.GetBuffer(iRequiredWideChars - 1);
+	const int iWrittenWideChars = ::MultiByteToWideChar(CP_ACP, 0, &ansiBuffer[0], -1, pszRoundTrip, iRequiredWideChars);
+	strRoundTrip.ReleaseBuffer(iWrittenWideChars > 0 ? iWrittenWideChars - 1 : 0);
+	return iWrittenWideChars == iRequiredWideChars && strRoundTrip == strLogicalPath;
+#else
+	return true;
+#endif
+}
+
+/**
+ * @brief Returns whether UTF-8 profile value I/O must bypass the ANSI profile APIs and use raw file access instead.
+ */
+inline bool RequiresFileBackedProfileUtf8Io(const CString &rstrProfilePath)
+{
+	return RequiresFileBackedProfileIo(rstrProfilePath) || !CanRoundTripAnsiProfilePath(rstrProfilePath);
+}
+
 inline CStringA EncodeUtf8(const CString &rstrValue)
 {
 #ifdef _UNICODE

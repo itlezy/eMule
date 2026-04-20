@@ -82,6 +82,8 @@ int utf8towc(LPCSTR pcUtf8, UINT uUtf8Size, LPWSTR pwc, UINT uWideCharSize)
 			uUtf8Size -= uProcessedBytes;
 
 			if (uWideChar < 0x10000) {
+				if (uWideChar >= 0xD800 && uWideChar <= 0xDFFF)
+					return -1; // Invalid UTF-8 string.
 				--uWideCharSize;
 				*pwc++ = (WCHAR)uWideChar;
 			} else {

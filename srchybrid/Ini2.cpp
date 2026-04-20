@@ -639,7 +639,7 @@ CString CIni::Read(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry,
 
 CString CIni::ReadUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault)
 {
-	if (Ini2Helpers::RequiresFileBackedProfileIo(lpszFileName))
+	if (Ini2Helpers::RequiresFileBackedProfileUtf8Io(lpszFileName))
 		return Ini2Helpers::ReadProfileUtf8StringLongPath(lpszSection, lpszEntry, lpszDefault, lpszFileName);
 
 	const CStringA strSectionA(lpszSection);
@@ -671,7 +671,7 @@ void CIni::Write(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, L
 
 void CIni::WriteUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue)
 {
-	if (Ini2Helpers::RequiresFileBackedProfileIo(lpszFileName)) {
+	if (Ini2Helpers::RequiresFileBackedProfileUtf8Io(lpszFileName)) {
 		(void)Ini2Helpers::WriteProfileUtf8StringLongPath(lpszSection, lpszEntry, lpszValue, lpszFileName);
 		return;
 	}
