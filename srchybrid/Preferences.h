@@ -742,9 +742,15 @@ public:
 	static bool		GetAddServersFromClients()			{ return m_bAddServersFromClients; }
 	static bool*	GetMinTrayPTR()						{ return &mintotray; }
 	static UINT		GetTrafficOMeterInterval()			{ return trafficOMeterInterval; }
-	static void		SetTrafficOMeterInterval(UINT in)	{ trafficOMeterInterval = in; }
+	static UINT		GetDefaultTrafficOMeterInterval()	{ return 3; }
+	static UINT		GetMaxTrafficOMeterInterval()		{ return 200; }
+	static UINT		NormalizeTrafficOMeterInterval(UINT in);
+	static void		SetTrafficOMeterInterval(UINT in);
 	static UINT		GetStatsInterval()					{ return statsInterval; }
-	static void		SetStatsInterval(UINT in)			{ statsInterval = in; }
+	static UINT		GetDefaultStatsInterval()			{ return 5; }
+	static UINT		GetMaxStatsInterval()				{ return 200; }
+	static UINT		NormalizeStatsInterval(UINT in);
+	static void		SetStatsInterval(UINT in);
 	static bool		GetFillGraphs()						{ return m_bFillGraphs; }
 	static void		SetFillGraphs(bool bFill)			{ m_bFillGraphs = bFill; }
 
@@ -962,8 +968,12 @@ public:
 	static UINT		GetStatsSaveInterval()				{ return statsSaveInterval; }
 
 	// Get and Set our new preferences
-	static void		SetStatsMax(UINT in)				{ statsMax = in; }
-	static void		SetStatsConnectionsGraphRatio(UINT in) { statsConnectionsGraphRatio = in; }
+	static UINT		GetDefaultStatsMax()				{ return 100; }
+	static UINT		NormalizeStatsMax(UINT in);
+	static void		SetStatsMax(UINT in);
+	static UINT		GetDefaultStatsConnectionsGraphRatio() { return 3; }
+	static UINT		NormalizeStatsConnectionsGraphRatio(UINT in);
+	static void		SetStatsConnectionsGraphRatio(UINT in);
 	static UINT		GetStatsConnectionsGraphRatio()		{ return statsConnectionsGraphRatio; }
 	static void		SetExpandedTreeItems(const CString &in)	{ m_strStatsExpandedTreeItems = in; }
 	static const CString& GetExpandedTreeItems()		{ return m_strStatsExpandedTreeItems; }
@@ -987,6 +997,7 @@ public:
 	static UINT		GetMaxHalfConnections()				{ return maxhalfconnections; }
 	static UINT		GetDefaultMaxHalfConnections()		{ return 50; }
 	static UINT		GetMaxSourcePerFileDefault()		{ return maxsourceperfile; }
+	static UINT		GetDefaultMaxSourcesPerFile()		{ return 600; }
 	static UINT		GetDeadServerRetries()				{ return m_uDeadServerRetries; }
 	static DWORD	GetServerKeepAliveTimeout()			{ return m_dwServerKeepAliveTimeout; }
 	static DWORD	GetConnectionTimeout()				{ return m_dwConnectionTimeout; }
@@ -1015,6 +1026,10 @@ public:
 	static bool		IsDoubleClickEnabled()				{ return transferDoubleclick; }
 	static EViewSharedFilesAccess CanSeeShares()		{ return m_iSeeShares; }
 	static UINT		GetToolTipDelay()					{ return m_iToolDelayTime; }
+	static UINT		GetDefaultToolTipDelaySeconds()		{ return 1; }
+	static UINT		GetMaxToolTipDelaySeconds()			{ return 32; }
+	static UINT		NormalizeToolTipDelaySeconds(UINT in);
+	static void		SetToolTipDelay(UINT in);
 	static bool		IsBringToFront()					{ return bringtoforeground; }
 
 	static UINT		GetSplitterbarPosition()			{ return splitterbarPosition; }
@@ -1050,7 +1065,10 @@ public:
 	static void		SetSkinProfile(LPCTSTR pszProfile)	{ m_strSkinProfile = pszProfile; }
 
 	static UINT		GetStatsAverageMinutes()			{ return statsAverageMinutes; }
-	static void		SetStatsAverageMinutes(UINT in)		{ statsAverageMinutes = in; }
+	static UINT		GetDefaultStatsAverageMinutes()		{ return 5; }
+	static UINT		GetMaxStatsAverageMinutes()			{ return 100; }
+	static UINT		NormalizeStatsAverageMinutes(UINT in);
+	static void		SetStatsAverageMinutes(UINT in);
 
 	static const CString& GetNotifierConfiguration()	{ return notifierConfiguration; }
 	static void		SetNotifierConfiguration(LPCTSTR pszConfigPath)	{ notifierConfiguration = pszConfigPath; }
@@ -1197,6 +1215,14 @@ public:
 	static UINT		GetMaxTCPErrorFlooderThreshold()	{ return 1000; }
 	static DWORD	NormalizeTimeoutSeconds(UINT seconds, UINT defaultSeconds);
 	static UINT		TimeoutMsToSeconds(DWORD milliseconds) { return milliseconds / SEC2MS(1); }
+	static uint16	NormalizePortValue(int value, uint16 defaultPort, bool bAllowZero = false);
+	static uint16	NormalizeServerUDPPortValue(int value);
+	static UINT		NormalizeRetryCount(UINT uValue, UINT uDefault, UINT uMin, UINT uMax);
+	static UINT		NormalizePositivePreference(UINT uValue, UINT uDefault);
+	static UINT		NormalizeServerKeepAliveTimeoutMinutes(UINT in);
+	static void		SetServerKeepAliveTimeoutMinutes(UINT in);
+	static UINT		NormalizeFileBufferTimeLimitSeconds(UINT in);
+	static void		SetFileBufferTimeLimitSeconds(UINT in);
 
 	static bool		IsSafeServerConnectEnabled()		{ return m_bSafeServerConnect; }
 	static void		SetSafeServerConnectEnabled(bool in) { m_bSafeServerConnect = in; }
@@ -1230,6 +1256,11 @@ public:
 
 	static bool		GetAutoConnectToStaticServersOnly()	{ return m_bAutoConnectToStaticServersOnly; }
 	static UINT		GetUpdateDays()						{ return versioncheckdays; }
+	static UINT		GetDefaultUpdateDays()				{ return 5; }
+	static UINT		GetMinUpdateDays()					{ return 2; }
+	static UINT		GetMaxUpdateDays()					{ return 7; }
+	static UINT		NormalizeUpdateDays(UINT in);
+	static void		SetUpdateDays(UINT in);
 	static time_t	GetLastVC()							{ return versioncheckLastAutomatic; }
 	static void		UpdateLastVC();
 	static int		GetIPFilterLevel()					{ return filterlevel; }
@@ -1327,7 +1358,8 @@ public:
 	// Web Server
 	static uint16	GetWSPort()							{ return m_nWebPort; }
 	static bool		GetWSUseUPnP()						{ return m_bWebUseUPnP && GetWSIsEnabled(); }
-	static void		SetWSPort(uint16 uPort)				{ m_nWebPort = uPort; }
+	static uint16	GetDefaultWSPort()					{ return 4711; }
+	static void		SetWSPort(uint16 uPort);
 	static const CString& GetWebBindAddr()				{ return m_strWebBindAddr; }
 	static void		SetWebBindAddr(const CString &strAddr)	{ m_strWebBindAddr = strAddr; }
 	static const CString& GetWSPass()					{ return m_strWebPassword; }
@@ -1338,16 +1370,27 @@ public:
 	static void		SetWSIsEnabled(bool bEnable)		{ m_bWebEnabled = bEnable; }
 	static bool		GetWebUseGzip()						{ return m_bWebUseGzip; }
 	static void		SetWebUseGzip(bool bUse)			{ m_bWebUseGzip = bUse; }
-	static int		GetWebPageRefresh()					{ return m_nWebPageRefresh; }
-	static void		SetWebPageRefresh(int nRefresh)		{ m_nWebPageRefresh = nRefresh; }
+	static UINT		GetWebPageRefresh()					{ return static_cast<UINT>(m_nWebPageRefresh); }
+	static UINT		GetDefaultWebPageRefresh()			{ return 120; }
+	static UINT		GetMaxWebPageRefresh()				{ return 3600; }
+	static UINT		NormalizeWebPageRefresh(UINT nRefresh);
+	static void		SetWebPageRefresh(UINT nRefresh);
 	static bool		GetWSIsLowUserEnabled()				{ return m_bWebLowEnabled; }
 	static void		SetWSIsLowUserEnabled(bool in)		{ m_bWebLowEnabled = in; }
 	static const CString& GetWSLowPass()				{ return m_strWebLowPassword; }
-	static int		GetWebTimeoutMins()					{ return m_iWebTimeoutMins; }
+	static UINT		GetWebTimeoutMins()					{ return static_cast<UINT>(m_iWebTimeoutMins); }
+	static UINT		GetDefaultWebTimeoutMins()			{ return 5; }
+	static UINT		GetMaxWebTimeoutMins()				{ return 1440; }
+	static UINT		NormalizeWebTimeoutMins(UINT nTimeoutMins);
+	static void		SetWebTimeoutMins(UINT nTimeoutMins);
 	static bool		GetWebAdminAllowedHiLevFunc()		{ return m_bAllowAdminHiLevFunc; }
 	static void		SetWSLowPass(const CString &strNewPass);
 	static const CUIntArray& GetAllowedRemoteAccessIPs() { return m_aAllowedRemoteAccessIPs; }
-	static uint32	GetMaxWebUploadFileSizeMB()			{ return m_iWebFileUploadSizeLimitMB; }
+	static uint32	GetMaxWebUploadFileSizeMB()			{ return static_cast<uint32>(m_iWebFileUploadSizeLimitMB); }
+	static uint32	GetDefaultMaxWebUploadFileSizeMB()	{ return 5; }
+	static uint32	GetMaxWebUploadFileSizeLimitMB()	{ return 65535; }
+	static uint32	NormalizeMaxWebUploadFileSizeMB(uint32 uFileSizeMB);
+	static void		SetMaxWebUploadFileSizeMB(uint32 uFileSizeMB);
 	static bool		GetWebUseHttps()					{ return m_bWebUseHttps; }
 	static void		SetWebUseHttps(bool bUse)			{ m_bWebUseHttps = bUse; }
 	static const CString& GetWebCertPath()				{ return m_sWebHttpsCertificate; }
@@ -1355,9 +1398,9 @@ public:
 	static const CString& GetWebKeyPath()				{ return m_sWebHttpsKey; }
 	static void		SetWebKeyPath(const CString &path)	{ m_sWebHttpsKey = path; }
 
-	static void		SetMaxSourcesPerFile(UINT in)		{ maxsourceperfile = in; }
-	static void		SetMaxConnections(UINT in)			{ maxconnections = in; }
-	static void		SetMaxHalfConnections(UINT in)		{ maxhalfconnections = in; }
+	static void		SetMaxSourcesPerFile(UINT in);
+	static void		SetMaxConnections(UINT in);
+	static void		SetMaxHalfConnections(UINT in);
 	static void		SetConnectionTimeout(DWORD in)		{ m_dwConnectionTimeout = in; }
 	static void		SetDownloadTimeout(DWORD in)		{ m_dwDownloadTimeout = in; }
 	static void		SetEd2kSearchMaxResults(UINT in)	{ m_uEd2kSearchMaxResults = in; }
@@ -1373,6 +1416,8 @@ public:
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }
 	static UINT		GetMsgSessionsMax()					{ return maxmsgsessions; }
+	static UINT		GetDefaultMsgSessionsMax()			{ return 50; }
+	static void		SetMsgSessionsMax(UINT in);
 	static bool		IsSecureIdentEnabled()				{ return m_bUseSecureIdent; } // use client credits->CryptoAvailable() to check if encryption is really available and not this function
 	static bool		IsAdvSpamfilterEnabled()			{ return m_bAdvancedSpamfilter; }
 	static bool		IsChatCaptchaEnabled()				{ return IsAdvSpamfilterEnabled() && m_bUseChatCaptchas; }
@@ -1385,7 +1430,7 @@ public:
 
 	// deadlake PROXYSUPPORT
 	static const ProxySettings& GetProxySettings()		{ return proxy; }
-	static void		SetProxySettings(const ProxySettings &proxysettings) { proxy = proxysettings; }
+	static void		SetProxySettings(const ProxySettings &proxysettings);
 
 	static bool		ShowCatTabInfos()					{ return showCatTabInfos; }
 	static void		ShowCatTabInfos(bool in)			{ showCatTabInfos = in; }

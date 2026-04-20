@@ -59,6 +59,8 @@ namespace
 constexpr uint32 kDefaultConfiguredUploadLimitKiB = 6100;
 constexpr uint32 kDefaultBroadbandDownloadLimitKiB = 12207;
 constexpr size_t kWebApiKeyBytes = 16;
+constexpr UINT kMaxServerKeepAliveTimeoutMinutes = 1440;
+constexpr UINT kMaxFileBufferTimeLimitSeconds = 86400;
 
 uint32 NormalizeConfiguredUploadLimitKiB(uint32 value)
 {
@@ -75,6 +77,25 @@ UINT NormalizeBoundedPreference(int value, UINT uDefault, UINT uMin, UINT uMax)
 	if (value < 0)
 		return uDefault;
 	return min(uMax, max(uMin, static_cast<UINT>(value)));
+}
+
+UINT NormalizePositivePreferenceOrDefault(int value, UINT uDefault)
+{
+	return value <= 0 ? uDefault : static_cast<UINT>(value);
+}
+
+uint16 NormalizePortPreferenceValue(int value, uint16 defaultPort, bool bAllowZero)
+{
+	if (value < 0 || value > _UI16_MAX)
+		return defaultPort;
+	if (value == 0 && !bAllowZero)
+		return defaultPort;
+	return static_cast<uint16>(value);
+}
+
+uint16 NormalizeProxyTypeValue(int value)
+{
+	return static_cast<uint16>(NormalizeBoundedPreference(value, PROXYTYPE_NOPROXY, PROXYTYPE_NOPROXY, PROXYTYPE_HTTP11));
 }
 
 /**
@@ -651,6 +672,77 @@ UINT CPreferences::NormalizeGeoLocationCheckDays(UINT uDays)
 	if (uDays > GetMaxGeoLocationCheckDays())
 		return GetMaxGeoLocationCheckDays();
 	return uDays;
+}
+
+UINT CPreferences::NormalizeTrafficOMeterInterval(UINT in)
+{
+	return min(GetMaxTrafficOMeterInterval(), in);
+}
+
+void CPreferences::SetTrafficOMeterInterval(UINT in)
+{
+	trafficOMeterInterval = NormalizeTrafficOMeterInterval(in);
+}
+
+UINT CPreferences::NormalizeStatsInterval(UINT in)
+{
+	return min(GetMaxStatsInterval(), in);
+}
+
+void CPreferences::SetStatsInterval(UINT in)
+{
+	statsInterval = NormalizeStatsInterval(in);
+}
+
+UINT CPreferences::NormalizeStatsMax(UINT in)
+{
+	return max(1u, in);
+}
+
+void CPreferences::SetStatsMax(UINT in)
+{
+	statsMax = NormalizeStatsMax(in);
+}
+
+UINT CPreferences::NormalizeStatsConnectionsGraphRatio(UINT in)
+{
+	switch (in) {
+	case 1:
+	case 2:
+	case 3:
+	case 4:
+	case 5:
+	case 10:
+	case 20:
+		return in;
+	default:
+		return GetDefaultStatsConnectionsGraphRatio();
+	}
+}
+
+void CPreferences::SetStatsConnectionsGraphRatio(UINT in)
+{
+	statsConnectionsGraphRatio = NormalizeStatsConnectionsGraphRatio(in);
+}
+
+UINT CPreferences::NormalizeToolTipDelaySeconds(UINT in)
+{
+	return min(GetMaxToolTipDelaySeconds(), in);
+}
+
+void CPreferences::SetToolTipDelay(UINT in)
+{
+	m_iToolDelayTime = NormalizeToolTipDelaySeconds(in);
+}
+
+UINT CPreferences::NormalizeStatsAverageMinutes(UINT in)
+{
+	return min(GetMaxStatsAverageMinutes(), max(1u, in));
+}
+
+void CPreferences::SetStatsAverageMinutes(UINT in)
+{
+	statsAverageMinutes = NormalizeStatsAverageMinutes(in);
 }
 
 INT_PTR CPreferences::NormalizeQueueSize(INT_PTR size)
@@ -2154,8 +2246,8 @@ void CPreferences::LoadPreferences()
 		SetMaxDownload((uint32)ini.GetInt(_T("MaxDownload"), kDefaultBroadbandDownloadLimitKiB));
 	}
 	SetMaxGraphDownloadRate(m_maxdownload);
-	maxconnections = ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections());
-	maxhalfconnections = ini.GetInt(_T("MaxHalfConnections"), GetDefaultMaxHalfConnections());
+	SetMaxConnections(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections()), GetRecommendedMaxConnections()));
+	SetMaxHalfConnections(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxHalfConnections"), GetDefaultMaxHalfConnections()), GetDefaultMaxHalfConnections()));
 	m_bConditionalTCPAccept = ini.GetBool(_T("ConditionalTCPAccept"), false);
 	m_bDetectTCPErrorFlooder = ini.GetBool(_T("DetectTCPErrorFlooder"), GetDefaultDetectTCPErrorFlooder());
 	m_uTCPErrorFlooderIntervalMinutes = NormalizeBoundedPreference(ini.GetInt(_T("TCPErrorFlooderIntervalMinutes"), static_cast<int>(GetDefaultTCPErrorFlooderIntervalMinutes())), GetDefaultTCPErrorFlooderIntervalMinutes(), GetMinTCPErrorFlooderIntervalMinutes(), GetMaxTCPErrorFlooderIntervalMinutes());
@@ -2166,28 +2258,26 @@ void CPreferences::LoadPreferences()
 	m_strBindAddrA = m_strBindAddrW;
 	m_pszBindAddrA = m_strBindAddrA.IsEmpty() ? NULL : (LPCSTR)m_strBindAddrA;
 
-	port = (uint16)ini.GetInt(_T("Port"), 0);
+	port = NormalizePortPreferenceValue(ini.GetInt(_T("Port"), 0), 0, false);
 	if (port == 0)
 		port = thePrefs.GetRandomTCPPort();
 
 	// 0 is a valid value for the UDP port setting, as it is used for disabling it.
 	int iPort = ini.GetInt(_T("UDPPort"), INT_MAX/*invalid port value*/);
-	udpport = (iPort == INT_MAX) ? thePrefs.GetRandomUDPPort() : (uint16)iPort;
+	udpport = (iPort == INT_MAX) ? thePrefs.GetRandomUDPPort() : NormalizePortPreferenceValue(iPort, thePrefs.GetRandomUDPPort(), true);
 
-	nServerUDPPort = (uint16)ini.GetInt(_T("ServerUDPPort"), -1); // 0 = Don't use UDP port for servers, -1 = use a random port (for backward compatibility)
-	maxsourceperfile = ini.GetInt(_T("MaxSourcesPerFile"), 600);
+	nServerUDPPort = NormalizeServerUDPPortValue(ini.GetInt(_T("ServerUDPPort"), -1)); // 0 = Don't use UDP port for servers, -1 = use a random port (for backward compatibility)
+	SetMaxSourcesPerFile(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxSourcesPerFile"), GetDefaultMaxSourcesPerFile()), GetDefaultMaxSourcesPerFile()));
 	m_wLanguageID = ini.GetWORD(_T("Language"), 0);
 	m_iSeeShares = (EViewSharedFilesAccess)ini.GetInt(_T("SeeShare"), vsfaNobody);
-	m_iToolDelayTime = ini.GetInt(_T("ToolTipDelay"), 1);
-	trafficOMeterInterval = ini.GetInt(_T("StatGraphsInterval"), 3);
-	statsInterval = ini.GetInt(_T("statsInterval"), 5);
+	SetToolTipDelay(NormalizeNonNegativePreference(ini.GetInt(_T("ToolTipDelay"), static_cast<int>(GetDefaultToolTipDelaySeconds())), GetDefaultToolTipDelaySeconds()));
+	SetTrafficOMeterInterval(NormalizeNonNegativePreference(ini.GetInt(_T("StatGraphsInterval"), static_cast<int>(GetDefaultTrafficOMeterInterval())), GetDefaultTrafficOMeterInterval()));
+	SetStatsInterval(NormalizeNonNegativePreference(ini.GetInt(_T("statsInterval"), static_cast<int>(GetDefaultStatsInterval())), GetDefaultStatsInterval()));
 	m_bFillGraphs = ini.GetBool(_T("StatsFillGraphs"));
 	dontcompressavi = ini.GetBool(_T("DontCompressAvi"), false);
 
-	m_uDeadServerRetries = ini.GetInt(_T("DeadServerRetry"), 1);
-	if (m_uDeadServerRetries > MAX_SERVERFAILCOUNT)
-		m_uDeadServerRetries = MAX_SERVERFAILCOUNT;
-	m_dwServerKeepAliveTimeout = ini.GetInt(_T("ServerKeepAliveTimeout"), 0);
+	m_uDeadServerRetries = NormalizeRetryCount(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("DeadServerRetry"), 1), 1), 1, 1, MAX_SERVERFAILCOUNT);
+	SetServerKeepAliveTimeoutMinutes(NormalizeNonNegativePreference(ini.GetInt(_T("ServerKeepAliveTimeout"), 0), 0) / MIN2MS(1));
 	m_dwConnectionTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("ConnectionTimeout"), GetDefaultConnectionTimeoutSeconds()), GetDefaultConnectionTimeoutSeconds());
 	m_dwDownloadTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("DownloadTimeout"), GetDefaultDownloadTimeoutSeconds()), GetDefaultDownloadTimeoutSeconds());
 	m_uEd2kSearchMaxResults = NormalizeNonNegativePreference(ini.GetInt(_T("Ed2kSearchMaxResults"), static_cast<int>(GetDefaultEd2kSearchMaxResults())), GetDefaultEd2kSearchMaxResults());
@@ -2218,9 +2308,9 @@ void CPreferences::LoadPreferences()
 	m_uTransferWnd1 = ini.GetInt(_T("TransferWnd1"), 0);
 	m_uTransferWnd2 = ini.GetInt(_T("TransferWnd2"), 1);
 
-	statsMax = ini.GetInt(_T("VariousStatisticsMaxValue"), 100);
-	statsAverageMinutes = ini.GetInt(_T("StatsAverageMinutes"), 5);
-	MaxConperFive = ini.GetInt(_T("MaxConnectionsPerFiveSeconds"), GetDefaultMaxConperFive());
+	SetStatsMax(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("VariousStatisticsMaxValue"), static_cast<int>(GetDefaultStatsMax())), GetDefaultStatsMax()));
+	SetStatsAverageMinutes(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("StatsAverageMinutes"), static_cast<int>(GetDefaultStatsAverageMinutes())), GetDefaultStatsAverageMinutes()));
+	MaxConperFive = NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxConnectionsPerFiveSeconds"), GetDefaultMaxConperFive()), GetDefaultMaxConperFive());
 
 	reconnect = ini.GetBool(_T("Reconnect"), true);
 	m_bUseServerPriorities = ini.GetBool(_T("Scoresystem"), true);
@@ -2404,13 +2494,13 @@ void CPreferences::LoadPreferences()
 
 	// Get file buffer size.
 	SetFileBufferSize(static_cast<UINT>(max(0, ini.GetInt(_T("FileBufferSize"), static_cast<int>(GetDefaultFileBufferSizeBytes())))));
-	m_uFileBufferTimeLimit = SEC2MS(ini.GetInt(_T("FileBufferTimeLimit"), 120));
+	SetFileBufferTimeLimitSeconds(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("FileBufferTimeLimit"), 120), 120));
 
 	// Get queue size.
 	SetQueueSize(ini.GetInt(_T("QueueSize"), static_cast<int>(GetDefaultQueueSize())));
 
 	m_iCommitFiles = ini.GetInt(_T("CommitFiles"), 1); // 1 = "commit" on application shutdown; 2 = "commit" on each file saving
-	versioncheckdays = ini.GetInt(_T("Check4NewVersionDelay"), 5);
+	SetUpdateDays(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("Check4NewVersionDelay"), static_cast<int>(GetDefaultUpdateDays())), GetDefaultUpdateDays()));
 	m_bDAP = ini.GetBool(_T("DAPPref"), true);
 	m_bUAP = ini.GetBool(_T("UAPPref"), true);
 	m_bPreviewOnIconDblClk = ini.GetBool(_T("PreviewOnIconDblClk"), false);
@@ -2443,7 +2533,7 @@ void CPreferences::LoadPreferences()
 	m_iMaxChatHistory = ini.GetInt(_T("MaxChatHistoryLines"), 100);
 	if (m_iMaxChatHistory < 1)
 		m_iMaxChatHistory = 100;
-	maxmsgsessions = ini.GetInt(_T("MaxMessageSessions"), 50);
+	SetMsgSessionsMax(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxMessageSessions"), static_cast<int>(GetDefaultMsgSessionsMax())), GetDefaultMsgSessionsMax()));
 	m_bShowActiveDownloadsBold = ini.GetBool(_T("ShowActiveDownloadsBold"), false);
 
 	m_strTxtEditor = ini.GetString(_T("TxtEditor"), _T("notepad.exe"));
@@ -2513,9 +2603,6 @@ void CPreferences::LoadPreferences()
 	m_crLogWarning = ini.GetColRef(_T("LogWarningColor"), m_crLogWarning);
 	m_crLogSuccess = ini.GetColRef(_T("LogSuccessColor"), m_crLogSuccess);
 
-	if (statsAverageMinutes < 1)
-		statsAverageMinutes = 5;
-
 	m_bA4AFSaveCpu = ini.GetBool(_T("A4AFSaveCpu"), false); // ZZ:DownloadManager
 	m_bHighresTimer = ini.GetBool(_T("HighresTimer"), false);
 	m_byLogLevel = ini.GetInt(_T("DebugLogLevel"), DLP_VERYLOW);
@@ -2555,15 +2642,16 @@ void CPreferences::LoadPreferences()
 	proxy.host = ini.GetString(_T("ProxyName"), _T(""));
 	proxy.user = ini.GetString(_T("ProxyUser"), _T(""));
 	proxy.password = ini.GetString(_T("ProxyPassword"), _T(""));
-	proxy.port = (uint16)ini.GetInt(_T("ProxyPort"), 1080);
-	proxy.type = (uint16)ini.GetInt(_T("ProxyType"), PROXYTYPE_NOPROXY);
+	proxy.port = NormalizePortPreferenceValue(ini.GetInt(_T("ProxyPort"), 1080), 1080, false);
+	proxy.type = NormalizeProxyTypeValue(ini.GetInt(_T("ProxyType"), PROXYTYPE_NOPROXY));
+	SetProxySettings(proxy);
 
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Statistics"
 	//
 	statsSaveInterval = ini.GetInt(_T("SaveInterval"), 60, _T("Statistics"));
-	statsConnectionsGraphRatio = ini.GetInt(_T("statsConnectionsGraphRatio"), 3);
+	SetStatsConnectionsGraphRatio(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("statsConnectionsGraphRatio"), static_cast<int>(GetDefaultStatsConnectionsGraphRatio())), GetDefaultStatsConnectionsGraphRatio()));
 	m_strStatsExpandedTreeItems = ini.GetString(_T("statsExpandedTreeItems"), _T("111000000100000110000010000011110000010010"));
 	CString buffer;
 	for (unsigned i = 0; i < _countof(m_adwStatsColors); ++i) {
@@ -2588,13 +2676,13 @@ void CPreferences::LoadPreferences()
 	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
 	SetWSApiKey(ini.GetString(_T("ApiKey"), _T("")));
 	m_strWebBindAddr = ini.GetString(_T("BindAddr"), _T("")).Trim();
-	m_nWebPort = (uint16)ini.GetInt(_T("Port"), 4711);
+	SetWSPort(NormalizePortPreferenceValue(ini.GetInt(_T("Port"), GetDefaultWSPort()), GetDefaultWSPort(), false));
 	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
 	m_bWebEnabled = ini.GetBool(_T("Enabled"), false);
 	m_bWebLowEnabled = ini.GetBool(_T("UseLowRightsUser"), false);
-	m_nWebPageRefresh = ini.GetInt(_T("PageRefreshTime"), 120);
-	m_iWebTimeoutMins = ini.GetInt(_T("WebTimeoutMins"), 5);
-	m_iWebFileUploadSizeLimitMB = ini.GetInt(_T("MaxFileUploadSizeMB"), 5);
+	SetWebPageRefresh(NormalizeNonNegativePreference(ini.GetInt(_T("PageRefreshTime"), static_cast<int>(GetDefaultWebPageRefresh())), GetDefaultWebPageRefresh()));
+	SetWebTimeoutMins(NormalizeNonNegativePreference(ini.GetInt(_T("WebTimeoutMins"), static_cast<int>(GetDefaultWebTimeoutMins())), GetDefaultWebTimeoutMins()));
+	SetMaxWebUploadFileSizeMB(NormalizeNonNegativePreference(ini.GetInt(_T("MaxFileUploadSizeMB"), static_cast<int>(GetDefaultMaxWebUploadFileSizeMB())), GetDefaultMaxWebUploadFileSizeMB()));
 	m_bAllowAdminHiLevFunc = ini.GetBool(_T("AllowAdminHiLevelFunc"), false);
 
 	buffer = ini.GetString(_T("AllowedIPs"));
@@ -2634,6 +2722,50 @@ DWORD CPreferences::NormalizeTimeoutSeconds(UINT seconds, UINT defaultSeconds)
 	if (seconds < GetMinTimeoutSeconds())
 		seconds = GetMinTimeoutSeconds();
 	return SEC2MS(seconds);
+}
+
+uint16 CPreferences::NormalizePortValue(int value, uint16 defaultPort, bool bAllowZero)
+{
+	return NormalizePortPreferenceValue(value, defaultPort, bAllowZero);
+}
+
+uint16 CPreferences::NormalizeServerUDPPortValue(int value)
+{
+	if (value == -1)
+		return _UI16_MAX;
+	return NormalizePortPreferenceValue(value, _UI16_MAX, true);
+}
+
+UINT CPreferences::NormalizeRetryCount(UINT uValue, UINT uDefault, UINT uMin, UINT uMax)
+{
+	if (uValue < uMin)
+		return uDefault;
+	return min(uMax, uValue);
+}
+
+UINT CPreferences::NormalizePositivePreference(UINT uValue, UINT uDefault)
+{
+	return uValue == 0 ? uDefault : uValue;
+}
+
+UINT CPreferences::NormalizeServerKeepAliveTimeoutMinutes(UINT in)
+{
+	return min(kMaxServerKeepAliveTimeoutMinutes, in);
+}
+
+void CPreferences::SetServerKeepAliveTimeoutMinutes(UINT in)
+{
+	m_dwServerKeepAliveTimeout = MIN2MS(NormalizeServerKeepAliveTimeoutMinutes(in));
+}
+
+UINT CPreferences::NormalizeFileBufferTimeLimitSeconds(UINT in)
+{
+	return min(kMaxFileBufferTimeLimitSeconds, max(1u, in));
+}
+
+void CPreferences::SetFileBufferTimeLimitSeconds(UINT in)
+{
+	m_uFileBufferTimeLimit = SEC2MS(NormalizeFileBufferTimeLimitSeconds(in));
 }
 
 //////////////////////////////////////////////////////////
@@ -2824,6 +2956,78 @@ void CPreferences::SetWSApiKey(const CString &strNewKey)
 	m_strWebApiKey.Trim();
 	if (m_strWebApiKey.IsEmpty())
 		m_strWebApiKey = GenerateRandomWebApiKey();
+}
+
+void CPreferences::SetWSPort(uint16 uPort)
+{
+	m_nWebPort = uPort ? uPort : GetDefaultWSPort();
+}
+
+UINT CPreferences::NormalizeWebPageRefresh(UINT nRefresh)
+{
+	return min(GetMaxWebPageRefresh(), nRefresh);
+}
+
+void CPreferences::SetWebPageRefresh(UINT nRefresh)
+{
+	m_nWebPageRefresh = static_cast<int>(NormalizeWebPageRefresh(nRefresh));
+}
+
+UINT CPreferences::NormalizeWebTimeoutMins(UINT nTimeoutMins)
+{
+	return min(GetMaxWebTimeoutMins(), nTimeoutMins);
+}
+
+void CPreferences::SetWebTimeoutMins(UINT nTimeoutMins)
+{
+	m_iWebTimeoutMins = static_cast<int>(NormalizeWebTimeoutMins(nTimeoutMins));
+}
+
+uint32 CPreferences::NormalizeMaxWebUploadFileSizeMB(uint32 uFileSizeMB)
+{
+	return min(GetMaxWebUploadFileSizeLimitMB(), uFileSizeMB);
+}
+
+void CPreferences::SetMaxWebUploadFileSizeMB(uint32 uFileSizeMB)
+{
+	m_iWebFileUploadSizeLimitMB = static_cast<int>(NormalizeMaxWebUploadFileSizeMB(uFileSizeMB));
+}
+
+void CPreferences::SetMaxSourcesPerFile(UINT in)
+{
+	maxsourceperfile = NormalizePositivePreference(in, GetDefaultMaxSourcesPerFile());
+}
+
+void CPreferences::SetMaxConnections(UINT in)
+{
+	maxconnections = NormalizePositivePreference(in, GetRecommendedMaxConnections());
+}
+
+void CPreferences::SetMaxHalfConnections(UINT in)
+{
+	maxhalfconnections = NormalizePositivePreference(in, GetDefaultMaxHalfConnections());
+}
+
+void CPreferences::SetMsgSessionsMax(UINT in)
+{
+	maxmsgsessions = NormalizePositivePreference(in, GetDefaultMsgSessionsMax());
+}
+
+void CPreferences::SetProxySettings(const ProxySettings &proxysettings)
+{
+	proxy = proxysettings;
+	proxy.type = NormalizeProxyTypeValue(proxy.type);
+	proxy.port = NormalizePortPreferenceValue(proxy.port, 1080, false);
+}
+
+UINT CPreferences::NormalizeUpdateDays(UINT in)
+{
+	return min(GetMaxUpdateDays(), max(GetMinUpdateDays(), in));
+}
+
+void CPreferences::SetUpdateDays(UINT in)
+{
+	versioncheckdays = NormalizeUpdateDays(in);
 }
 
 void CPreferences::SetMaxUpload(uint32 val)
