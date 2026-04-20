@@ -948,6 +948,11 @@ void CSharedFileList::FileHashingFinished(CKnownFile *file)
 		TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(found_file->GetFileHash()), (LPCTSTR)found_file->GetFilePath());
 		TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(file->GetFileHash()), (LPCTSTR)file->GetFilePath());
 		LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)found_file->GetFilePath(), (LPCTSTR)file->GetFilePath());
+		RememberDuplicateSharedPath(
+			file->GetFilePath(),
+			found_file->GetFileHash(),
+			static_cast<LONGLONG>(file->GetUtcFileDate()),
+			static_cast<ULONGLONG>(file->GetFileSize()));
 
 		RemoveFromHashing(file);
 		if (!IsFilePtrInList(file) && !theApp.knownfiles->IsFilePtrInList(file))
