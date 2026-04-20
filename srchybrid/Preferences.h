@@ -500,6 +500,7 @@ public:
 	static bool		watchclipboard;
 	static bool		filterserverbyip;
 	static bool		m_bFirstStart;
+	static bool		m_bDisableFirstTimeWizard;
 	static bool		m_bBetaNaggingDone;
 	static bool		m_bCreditSystem;
 
@@ -1144,6 +1145,7 @@ public:
 	static bool		IsKnownClientListDisabled()			{ return m_bDisableKnownClientList; }
 	static bool		IsQueueListDisabled()				{ return m_bDisableQueueList; }
 	static bool		IsFirstStart()						{ return m_bFirstStart; }
+	static bool		IsFirstTimeWizardDisabled()			{ return m_bDisableFirstTimeWizard; }
 	static bool		UseCreditSystem()					{ return m_bCreditSystem; }
 	static void		SetCreditSystem(bool m_bInCreditSystem) { m_bCreditSystem = m_bInCreditSystem; }
 

@@ -468,6 +468,7 @@ bool	CPreferences::indicateratings;
 bool	CPreferences::watchclipboard;
 bool	CPreferences::filterserverbyip;
 bool	CPreferences::m_bFirstStart;
+bool	CPreferences::m_bDisableFirstTimeWizard;
 bool	CPreferences::m_bBetaNaggingDone;
 bool	CPreferences::m_bCreditSystem;
 bool	CPreferences::log2disk;
@@ -1808,6 +1809,7 @@ void CPreferences::SavePreferences()
 	CIni ini(GetConfigFile(), _T("eMule"));
 	//---
 	ini.WriteString(_T("AppVersion"), theApp.m_strCurVersionLong);
+	ini.WriteBool(_T("DisableFirstTimeWizard"), m_bDisableFirstTimeWizard);
 	//---
 #ifdef _BETA
 	if (m_bBetaNaggingDone)
@@ -2222,6 +2224,7 @@ void CPreferences::LoadPreferences()
 	ini.SetSection(_T("eMule"));
 
 	m_bFirstStart = ini.GetString(_T("AppVersion")).IsEmpty();
+	m_bDisableFirstTimeWizard = ini.GetBool(_T("DisableFirstTimeWizard"), false);
 
 #ifdef _BETA
 	CString strCurrVersion(theApp.m_strCurVersionLong);
