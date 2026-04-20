@@ -996,7 +996,8 @@ public:
 	static UINT		GetMaxConnections()					{ return maxconnections; }
 	static UINT		GetMaxHalfConnections()				{ return maxhalfconnections; }
 	static UINT		GetDefaultMaxHalfConnections()		{ return 50; }
-	static UINT		GetMaxSourcePerFileDefault()		{ return maxsourceperfile; }
+	static UINT		GetMaxSourcePerFileDefault()		{ return GetDefaultMaxSourcesPerFile(); }
+	static UINT		GetConfiguredMaxSourcesPerFile()	{ return maxsourceperfile; }
 	static UINT		GetDefaultMaxSourcesPerFile()		{ return 600; }
 	static UINT		GetDeadServerRetries()				{ return m_uDeadServerRetries; }
 	static DWORD	GetServerKeepAliveTimeout()			{ return m_dwServerKeepAliveTimeout; }
@@ -1221,6 +1222,8 @@ public:
 	static UINT		NormalizePositivePreference(UINT uValue, UINT uDefault);
 	static UINT		NormalizeServerKeepAliveTimeoutMinutes(UINT in);
 	static void		SetServerKeepAliveTimeoutMinutes(UINT in);
+	static DWORD	NormalizeServerKeepAliveTimeoutMilliseconds(DWORD in);
+	static void		SetServerKeepAliveTimeoutMilliseconds(DWORD in);
 	static UINT		NormalizeFileBufferTimeLimitSeconds(UINT in);
 	static void		SetFileBufferTimeLimitSeconds(UINT in);
 

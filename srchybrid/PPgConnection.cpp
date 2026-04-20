@@ -82,12 +82,12 @@ void CPPgConnection::OnEnKillFocusUDP()
 
 void CPPgConnection::ChangePorts(uint8 iWhat)
 {
-	UINT tcp = GetDlgItemInt(IDC_PORT, NULL, FALSE);
-	UINT udp = GetDlgItemInt(IDC_UDPPORT, NULL, FALSE);
+	const uint16 tcp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_PORT, NULL, FALSE), 0, false);
+	const uint16 udp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_UDPPORT, NULL, FALSE), 0, true);
 
 	GetDlgItem(IDC_STARTTEST)->EnableWindow(
-		GetDlgItemInt(IDC_PORT, NULL, FALSE) == theApp.listensocket->GetConnectedPort()
-		&& GetDlgItemInt(IDC_UDPPORT, NULL, FALSE) == theApp.clientudp->GetConnectedPort()
+		tcp == theApp.listensocket->GetConnectedPort()
+		&& udp == theApp.clientudp->GetConnectedPort()
 	);
 
 	if (iWhat == 0) //UDP
@@ -103,7 +103,8 @@ bool CPPgConnection::ChangeUDP()
 	bool bDisabled = IsDlgButtonChecked(IDC_UDPDISABLE) != 0;
 	GetDlgItem(IDC_UDPPORT)->EnableWindow(!bDisabled);
 
-	uint16 newVal, oldVal = (uint16)GetDlgItemInt(IDC_UDPPORT, NULL, FALSE);
+	uint16 newVal;
+	const uint16 oldVal = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_UDPPORT, NULL, FALSE), 0, true);
 	if (oldVal)
 		m_lastudp = oldVal;
 	if (bDisabled)
@@ -250,7 +251,7 @@ BOOL CPPgConnection::OnApply()
 	bool bRestartApp = false;
 
 	u = GetDlgItemInt(IDC_PORT, NULL, FALSE);
-	uint16 nNewPort = (uint16)(u > _UI16_MAX ? 0 : u);
+	uint16 nNewPort = CPreferences::NormalizePortValue(u, 0, false);
 	if (nNewPort && nNewPort != thePrefs.port) {
 		thePrefs.port = nNewPort;
 		if (theApp.IsPortchangeAllowed())
@@ -260,7 +261,7 @@ BOOL CPPgConnection::OnApply()
 	}
 
 	u = GetDlgItemInt(IDC_UDPPORT, NULL, FALSE);
-	nNewPort = (uint16)(u > _UI16_MAX ? 0 : u);
+	nNewPort = CPreferences::NormalizePortValue(u, 0, true);
 	if (nNewPort != thePrefs.udpport) {
 		thePrefs.udpport = nNewPort;
 		if (theApp.IsPortchangeAllowed())
@@ -419,8 +420,8 @@ BOOL CPPgConnection::PreTranslateMessage(MSG *pMsg)
 
 void CPPgConnection::OnStartPortTest()
 {
-	uint16 tcp = (uint16)GetDlgItemInt(IDC_PORT, NULL, FALSE);
-	uint16 udp = (uint16)GetDlgItemInt(IDC_UDPPORT, NULL, FALSE);
+	const uint16 tcp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_PORT, NULL, FALSE), 0, false);
+	const uint16 udp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_UDPPORT, NULL, FALSE), 0, true);
 
 	TriggerPortTest(tcp, udp);
 }

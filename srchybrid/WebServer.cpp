@@ -3371,7 +3371,7 @@ CString CWebServer::_GetPreferences(const ThreadData &Data)
 	sRefresh.Format(_T("%d"), thePrefs.GetWebPageRefresh());
 	Out.Replace(_T("[RefreshVal]"), sRefresh);
 
-	sRefresh.Format(_T("%u"), thePrefs.GetMaxSourcePerFileDefault());
+	sRefresh.Format(_T("%u"), thePrefs.GetConfiguredMaxSourcesPerFile());
 	Out.Replace(_T("[MaxSourcesVal]"), sRefresh);
 
 	sRefresh.Format(_T("%u"), thePrefs.GetMaxConnections());

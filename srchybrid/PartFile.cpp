@@ -5462,7 +5462,7 @@ UINT CPartFile::GetMaxSources() const
 {
 	// Ignore any specified 'max sources' value if not in 'extended mode' -> don't use a parameter
 	// which was once specified in GUI but can not be seen/modified any longer.
-	return (!thePrefs.IsExtControlsEnabled() || m_uMaxSources == 0) ? thePrefs.GetMaxSourcePerFileDefault() : m_uMaxSources;
+	return (!thePrefs.IsExtControlsEnabled() || m_uMaxSources == 0) ? thePrefs.GetConfiguredMaxSourcesPerFile() : m_uMaxSources;
 }
 
 UINT CPartFile::GetMaxSourcePerFileSoft() const

@@ -2277,7 +2277,7 @@ void CPreferences::LoadPreferences()
 	dontcompressavi = ini.GetBool(_T("DontCompressAvi"), false);
 
 	m_uDeadServerRetries = NormalizeRetryCount(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("DeadServerRetry"), 1), 1), 1, 1, MAX_SERVERFAILCOUNT);
-	SetServerKeepAliveTimeoutMinutes(NormalizeNonNegativePreference(ini.GetInt(_T("ServerKeepAliveTimeout"), 0), 0) / MIN2MS(1));
+	SetServerKeepAliveTimeoutMilliseconds(static_cast<DWORD>(NormalizeNonNegativePreference(ini.GetInt(_T("ServerKeepAliveTimeout"), 0), 0)));
 	m_dwConnectionTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("ConnectionTimeout"), GetDefaultConnectionTimeoutSeconds()), GetDefaultConnectionTimeoutSeconds());
 	m_dwDownloadTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("DownloadTimeout"), GetDefaultDownloadTimeoutSeconds()), GetDefaultDownloadTimeoutSeconds());
 	m_uEd2kSearchMaxResults = NormalizeNonNegativePreference(ini.GetInt(_T("Ed2kSearchMaxResults"), static_cast<int>(GetDefaultEd2kSearchMaxResults())), GetDefaultEd2kSearchMaxResults());
@@ -2756,6 +2756,17 @@ UINT CPreferences::NormalizeServerKeepAliveTimeoutMinutes(UINT in)
 void CPreferences::SetServerKeepAliveTimeoutMinutes(UINT in)
 {
 	m_dwServerKeepAliveTimeout = MIN2MS(NormalizeServerKeepAliveTimeoutMinutes(in));
+}
+
+DWORD CPreferences::NormalizeServerKeepAliveTimeoutMilliseconds(DWORD in)
+{
+	const DWORD dwMaxKeepAliveTimeout = MIN2MS(kMaxServerKeepAliveTimeoutMinutes);
+	return in > dwMaxKeepAliveTimeout ? dwMaxKeepAliveTimeout : in;
+}
+
+void CPreferences::SetServerKeepAliveTimeoutMilliseconds(DWORD in)
+{
+	m_dwServerKeepAliveTimeout = NormalizeServerKeepAliveTimeoutMilliseconds(in);
 }
 
 UINT CPreferences::NormalizeFileBufferTimeLimitSeconds(UINT in)

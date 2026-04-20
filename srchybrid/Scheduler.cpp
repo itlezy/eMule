@@ -185,7 +185,7 @@ void CScheduler::SaveOriginals()
 	original_download = thePrefs.GetMaxDownload();
 	original_connections = thePrefs.GetMaxConnections();
 	original_cons5s = thePrefs.GetMaxConperFive();
-	original_sources = thePrefs.GetMaxSourcePerFileDefault();
+	original_sources = thePrefs.GetConfiguredMaxSourcesPerFile();
 }
 
 void CScheduler::RestoreOriginals()

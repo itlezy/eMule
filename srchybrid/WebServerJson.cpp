@@ -460,7 +460,7 @@ json BuildPreferencesJson()
 		{"maxDownloadKiB", thePrefs.GetMaxDownload()},
 		{"maxConnections", thePrefs.GetMaxConnections()},
 		{"maxConPerFive", thePrefs.GetMaxConperFive()},
-		{"maxSourcesPerFile", thePrefs.GetMaxSourcePerFileDefault()},
+		{"maxSourcesPerFile", thePrefs.GetConfiguredMaxSourcesPerFile()},
 		{"uploadClientDataRate", theApp.uploadqueue->GetTargetClientDataRateBroadband()},
 		{"maxUploadSlots", thePrefs.GetBBMaxUploadClientsAllowed()},
 		{"queueSize", static_cast<int64_t>(thePrefs.GetQueueSize())},
