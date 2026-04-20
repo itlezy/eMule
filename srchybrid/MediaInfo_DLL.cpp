@@ -90,7 +90,7 @@ public:
 		if (!m_bInitialized) {
 			m_bInitialized = true;
 			ResetLoadedLibrary();
-			CString strSummaryReason(_T("no compatible version newer than 26.01 was found"));
+			CString strSummaryReason(_T("no compatible version 26.01 or newer was found"));
 
 			const CString strConfiguredPath(theApp.GetProfileString(_T("eMule"), _T("MediaInfo_MediaInfoDllPath"), _T("MEDIAINFO.DLL")));
 			if (strConfiguredPath.CompareNoCase(_T("<noload>")) == 0) {
@@ -199,7 +199,7 @@ protected:
 
 	static bool IsCompatibleVersion(ULONGLONG ullVersion)
 	{
-		return ullVersion > MAKEDLLVERULL(26, 1, 0, 0);
+		return ullVersion >= MAKEDLLVERULL(26, 1, 0, 0);
 	}
 
 	void AddCandidatePath(CStringArray &raCandidatePaths, const CString &strCandidatePath)
@@ -254,7 +254,10 @@ protected:
 
 		rullVersion = GetModuleVersion((LPCTSTR)strPath);
 		if (!IsCompatibleVersion(rullVersion)) {
-			rstrReason = _T("candidate version outside supported range");
+			if (rullVersion != 0)
+				rstrReason.Format(_T("candidate version %s is below required 26.01"), (LPCTSTR)FormatVersionString(rullVersion));
+			else
+				rstrReason = _T("candidate version could not be determined");
 			return NULL;
 		}
 
