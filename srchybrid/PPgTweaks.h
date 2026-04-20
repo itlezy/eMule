@@ -20,7 +20,6 @@ public:
 	void Localize();
 
 protected:
-
 	CTreeOptionsCtrlEx m_ctrlTreeOptions;
 	CString m_sYourHostname;
 	std::map<HTREEITEM, CString> m_treeToolTips;

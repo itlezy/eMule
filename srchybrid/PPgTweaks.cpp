@@ -225,7 +225,7 @@ namespace
 	static CString GetConfigDiskSpaceLabel()
 	{
 		CString label(_T("Config Drive"));
-		label.Append(_T(": "));
+		label.Append(_T(" - "));
 		label.Append(GetResString(IDS_MINFREEDISKSPACE));
 		return label;
 	}
@@ -233,7 +233,7 @@ namespace
 	static CString GetTempDiskSpaceLabel()
 	{
 		CString label(_T("Temp Drives"));
-		label.Append(_T(": "));
+		label.Append(_T(" - "));
 		label.Append(GetResString(IDS_MINFREEDISKSPACE));
 		return label;
 	}
@@ -241,7 +241,7 @@ namespace
 	static CString GetIncomingDiskSpaceLabel()
 	{
 		CString label(_T("Incoming Drives"));
-		label.Append(_T(": "));
+		label.Append(_T(" - "));
 		label.Append(GetResString(IDS_MINFREEDISKSPACE));
 		return label;
 	}
@@ -884,6 +884,142 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiShareeMule,
 			_T("Controls how eMule stores and shares per-user state on this Windows machine.\r\n\r\n")
 			_T("Leave the current mode unless you are intentionally changing how multiple local users share configuration and data."));
+		SetTreeToolTip(m_htiTCPGroup,
+			_T("Advanced TCP connection burst, timeout, and keepalive controls.\r\n\r\n")
+			_T("These settings affect connection behavior rather than transfer limits. Default values are recommended unless you are diagnosing network setup issues."));
+		SetTreeToolTip(m_htiSearchGroup,
+			_T("Advanced limits for how broadly and how long eMule searches on eD2K and Kad.\r\n\r\n")
+			_T("Higher values can return more results, but they also add more network traffic and UI noise."));
+		SetTreeToolTip(m_htiSearchEd2kGroup,
+			_T("Server-based eD2K search limits.\r\n\r\n")
+			_T("Use conservative values unless you deliberately want deeper server searches."));
+		SetTreeToolTip(m_htiSearchKadGroup,
+			_T("Kad search breadth and lifetime controls.\r\n\r\n")
+			_T("Higher values keep distributed searches alive longer and can find more results, but they cost more background activity."));
+		SetTreeToolTip(m_htiBroadband,
+			_T("Advanced upload-slot recycling and queue-scoring policy for broadband-style upload behavior.\r\n\r\n")
+			_T("These settings are for deliberate tuning. Leave them at their defaults unless you are adjusting upload fairness or slot turnover."));
+		SetTreeToolTip(m_htiBBMaxUploadClients,
+			_T("Soft cap for concurrently active upload clients under the broadband scheduler.\r\n\r\n")
+			_T("Higher values spread bandwidth across more peers but make each slot thinner. Lower values keep fewer, stronger slots."));
+		SetTreeToolTip(m_htiBBSlowThreshold,
+			_T("Fraction of the target per-slot upload rate below which a slot is considered slow.\r\n\r\n")
+			_T("Lower values tolerate weaker slots longer. Higher values recycle underperforming slots more aggressively."));
+		SetTreeToolTip(m_htiBBSlowGrace,
+			_T("How long a slot may remain below the slow threshold before eMule considers recycling it.\r\n\r\n")
+			_T("Longer grace is more patient with weak peers; shorter grace turns over weak slots sooner."));
+		SetTreeToolTip(m_htiBBSlowWarmup,
+			_T("Warm-up period for a fresh upload slot before slow-slot detection starts.\r\n\r\n")
+			_T("This avoids penalizing new uploads for startup noise and ramp-up time."));
+		SetTreeToolTip(m_htiBBZeroRateGrace,
+			_T("Grace period for slots that deliver essentially no upload data at all.\r\n\r\n")
+			_T("Lower values react faster to dead or stalled slots."));
+		SetTreeToolTip(m_htiBBCooldown,
+			_T("How long a recycled slow slot stays penalized in queue scoring before it can compete normally again.\r\n\r\n")
+			_T("Longer cooldown reduces immediate re-selection of recently weak clients."));
+		SetTreeToolTip(m_htiBBLowRatioBoost,
+			_T("Adds extra queue score for clients asking for files with a low historical upload ratio.\r\n\r\n")
+			_T("Use it if you want to favor files that have received comparatively little upload so far."));
+		SetTreeToolTip(m_htiBBLowRatioThreshold,
+			_T("Upload-ratio cutoff below which the low-ratio queue-score boost applies.\r\n\r\n")
+			_T("Lower values restrict the boost to more strongly under-served files."));
+		SetTreeToolTip(m_htiBBLowRatioBonus,
+			_T("Additional effective queue score granted when the low-ratio boost triggers.\r\n\r\n")
+			_T("Higher values make the boost matter more strongly in upload ordering."));
+		SetTreeToolTip(m_htiBBLowIdDivisor,
+			_T("Penalty divisor applied to LowID clients during upload queue scoring.\r\n\r\n")
+			_T("Higher values reduce LowID priority more aggressively. Set 1 to disable the extra LowID penalty."));
+		SetTreeToolTip(m_htiBBSessionTransfer,
+			_T("Limits how much one upload session may transfer before eMule considers rotating that slot.\r\n\r\n")
+			_T("Rotation happens only when another client actually needs the slot."));
+		SetTreeToolTip(m_htiBBSessionTransferDisabled,
+			_T("Do not recycle upload sessions based on transferred payload amount."));
+		SetTreeToolTip(m_htiBBSessionTransferPercent,
+			_T("Limit each upload session to a percentage of the requested file size."));
+		SetTreeToolTip(m_htiBBSessionTransferPercentValue,
+			_T("Percentage used when the session transfer limit is configured as a share of the file size."));
+		SetTreeToolTip(m_htiBBSessionTransferMiB,
+			_T("Limit each upload session to a fixed MiB amount regardless of file size."));
+		SetTreeToolTip(m_htiBBSessionTransferMiBValue,
+			_T("Absolute MiB amount used when the session transfer limit is configured as a fixed size."));
+		SetTreeToolTip(m_htiBBSessionTimeLimit,
+			_T("Maximum duration of one upload session before eMule considers rotating the slot.\r\n\r\n")
+			_T("Set 0 to disable the time-based limit."));
+		SetTreeToolTip(m_htiA4AFSaveCpu,
+			_T("Reduces repeated A4AF (Asked For Another File) source checks to save CPU time.\r\n\r\n")
+			_T("Useful on busy clients, but it can make same-client source switching less eager."));
+		SetTreeToolTip(m_htiAutoArch,
+			_T("Prevents archive preview windows from starting their preview work automatically.\r\n\r\n")
+			_T("Enable it if you want archive preview opened in a more manual, less eager way."));
+		SetTreeToolTip(m_htiExtractMetaDataNever,
+			_T("Do not extract metadata from files.\r\n\r\n")
+			_T("Lightest option. Use it if you want no background metadata probing."));
+		SetTreeToolTip(m_htiExtractMetaDataID3Lib,
+			_T("Extract metadata only through the ID3 library path for MPEG audio files.\r\n\r\n")
+			_T("Balanced default for basic music tags without broader media inspection."));
+		SetTreeToolTip(m_htiPreviewOnIconDblClk,
+			_T("Double-clicking a file icon opens preview instead of the usual default action.\r\n\r\n")
+			_T("Purely a UI workflow preference."));
+		SetTreeToolTip(m_htiExtraPreviewWithMenu,
+			_T("Shows preview commands through a dedicated preview action menu instead of only exposing the simpler direct preview action.\r\n\r\n")
+			_T("Useful if you want more explicit preview choices in the download list context menu."));
+		SetTreeToolTip(m_htiShowActiveDownloadsBold,
+			_T("Draws actively transferring downloads in bold in the download list.\r\n\r\n")
+			_T("Purely visual. Enable it if you want active items to stand out more clearly."));
+		SetTreeToolTip(m_htiUseSystemFontForMainControls,
+			_T("Uses the normal Windows UI font for main controls and list views instead of eMule's custom font setup.\r\n\r\n")
+			_T("Useful if you prefer native-looking text or need better compatibility with your system font settings."));
+		SetTreeToolTip(m_htiFilterLANIPs,
+			_T("Ignores server and client addresses from private/LAN ranges.\r\n\r\n")
+			_T("Recommended: enabled. This avoids trying to use non-routable peer addresses from the public network."));
+		SetTreeToolTip(m_htiGeoLocationCheckDays,
+			_T("How often eMule checks for updated geolocation database content.\r\n\r\n")
+			_T("Set 0 to disable automatic update checks. Larger values reduce background refresh activity."));
+		SetTreeToolTip(m_htiVerbose,
+			_T("Master switch for the verbose logging controls below.\r\n\r\n")
+			_T("Disable it for normal use. Enable it only while investigating a specific problem."));
+		SetTreeToolTip(m_htiLogLevel,
+			_T("Verbosity threshold for diagnostic log output.\r\n\r\n")
+			_T("Higher levels record more detail but create more noise."));
+		SetTreeToolTip(m_htiDebug2Disk,
+			_T("Writes verbose diagnostic output to disk instead of keeping it transient.\r\n\r\n")
+			_T("Useful when you need a persistent debug trace, but it increases disk activity."));
+		SetTreeToolTip(m_htiDebugSourceExchange,
+			_T("Logs source-exchange related packets and decisions.\r\n\r\n")
+			_T("Specialized diagnostic option. Enable it only while debugging source discovery behavior."));
+		SetTreeToolTip(m_htiLogBannedClients,
+			_T("Records when peers are banned and why.\r\n\r\n")
+			_T("Useful for abuse or false-positive diagnosis, but too noisy for normal operation."));
+		SetTreeToolTip(m_htiLogRatingDescReceived,
+			_T("Records received file comments, descriptions, and ratings.\r\n\r\n")
+			_T("Useful for debugging metadata flow, but not generally needed."));
+		SetTreeToolTip(m_htiLogSecureIdent,
+			_T("Records secure-ident verification and related identity checks.\r\n\r\n")
+			_T("Useful for trust/authentication troubleshooting."));
+		SetTreeToolTip(m_htiLogFilteredIPs,
+			_T("Records when IP filter or ignore logic drops peer or server addresses.\r\n\r\n")
+			_T("Useful for diagnosing why some peers are rejected."));
+		SetTreeToolTip(m_htiLogFileSaving,
+			_T("Records saves of persistent data such as known files, credits, and related state.\r\n\r\n")
+			_T("Useful for persistence debugging, but unnecessary for normal use."));
+		SetTreeToolTip(m_htiLogA4AF,
+			_T("Records A4AF (Asked For Another File) source-reassignment activity.\r\n\r\n")
+			_T("Specialized download-manager diagnostic option."));
+		SetTreeToolTip(m_htiLogUlDlEvents,
+			_T("Records upload-slot and download-event lifecycle changes.\r\n\r\n")
+			_T("Useful when diagnosing queue churn, slot rotation, or transfer-state transitions."));
+		SetTreeToolTip(m_htiUPnP,
+			_T("Automatic router port-mapping settings for inbound connectivity.\r\n\r\n")
+			_T("Most users should leave this group on automatic defaults unless their router environment requires something specific."));
+		SetTreeToolTip(m_htiShareeMuleMultiUser,
+			_T("Each Windows user gets a separate eMule configuration and separate download state.\r\n\r\n")
+			_T("Best fit for shared PCs where users should not share eMule data."));
+		SetTreeToolTip(m_htiShareeMulePublicUser,
+			_T("All Windows users share the same eMule configuration and downloads.\r\n\r\n")
+			_T("Use this only if the machine is intentionally sharing one common eMule state."));
+		SetTreeToolTip(m_htiShareeMuleOldStyle,
+			_T("Keep configuration and downloads in the program directory, using the older legacy layout.\r\n\r\n")
+			_T("Legacy compatibility mode only. It is usually the least desirable choice on modern Windows."));
 
 		ExpandAllTreeItems(m_ctrlTreeOptions);
 		m_ctrlTreeOptions.SendMessage(WM_VSCROLL, SB_TOP);
@@ -1211,30 +1347,6 @@ BOOL CPPgTweaks::OnInitDialog()
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
-}
-
-void CPPgTweaks::CaptureBaseLayout()
-{
-	CRect rectClient;
-	GetClientRect(&rectClient);
-	m_szBaseClient = rectClient.Size();
-
-	static const UINT aControlIds[] = {
-		IDC_WARNING,
-		IDC_EXT_OPTS
-	};
-	CRect *apRects[] = {
-		&m_rcWarning,
-		&m_rcTree
-	};
-	for (int i = 0; i < _countof(aControlIds); ++i) {
-		CWnd *pWnd = GetDlgItem(aControlIds[i]);
-		if (pWnd != NULL) {
-			pWnd->GetWindowRect(apRects[i]);
-			ScreenToClient(apRects[i]);
-		} else
-			apRects[i]->SetRectEmpty();
-	}
 }
 
 BOOL CPPgTweaks::OnKillActive()
@@ -1728,30 +1840,6 @@ void CPPgTweaks::OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult)
 		}
 	}
 	*pResult = 0;
-}
-
-void CPPgTweaks::OnSize(UINT nType, int cx, int cy)
-{
-	CPropertyPage::OnSize(nType, cx, cy);
-
-	if (m_szBaseClient.cx == 0 || m_szBaseClient.cy == 0 || !::IsWindow(m_hWnd))
-		return;
-
-	const int dx = cx - m_szBaseClient.cx;
-	const int dy = cy - m_szBaseClient.cy;
-
-	CRect rectWarning(m_rcWarning);
-	rectWarning.right += dx;
-	if (CWnd *pWarning = GetDlgItem(IDC_WARNING))
-		pWarning->MoveWindow(rectWarning);
-
-	CRect rectTree(m_rcTree);
-	rectTree.right += dx;
-	rectTree.bottom += dy;
-	if (CWnd *pTree = GetDlgItem(IDC_EXT_OPTS))
-		pTree->MoveWindow(rectTree);
-
-	UNREFERENCED_PARAMETER(nType);
 }
 
 void CPPgTweaks::OnHelp()
