@@ -532,6 +532,7 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 							return;
 						}
 
+						// Won't do: the legacy web server still emits attachment filenames through ANSI only.
 						CStringA fname(kf->GetFileName());
 						CStringA szBuf;
 						szBuf.Format("HTTP/1.1 200 OK\r\nContent-Type: application/octet-stream\r\n"

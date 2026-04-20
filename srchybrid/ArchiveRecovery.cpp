@@ -451,6 +451,7 @@ bool CArchiveRecovery::processZipEntry(CFile *zipInput, CFile *zipOutput, uint32
 			|| !entry.lenCompressed //same
 			|| !entry.lenUncompressed //same
 			|| !entry.lenFilename
+			// Won't do: archive recovery keeps the legacy MAX_PATH member-name cap.
 			|| entry.lenFilename > MAX_PATH) // Possibly corrupt, don't allocate lots of memory
 		{
 			return false;
@@ -957,10 +958,12 @@ bool CArchiveRecovery::validateRarFileBlock(const RAR_BlockFile *block)
 
 	if (block->HEAD_FLAGS & 0x0200) {
 		// ANSI+Unicode name
+		// Won't do: keep the legacy MAX_PATH-bounded archive recovery name buffer.
 		if (block->NAME_SIZE > MAX_PATH + MAX_PATH * 2)
 			return false;
 	} else {
 		// ANSI+Unicode name
+		// Won't do: keep the legacy MAX_PATH-bounded archive recovery name buffer.
 		if (block->NAME_SIZE > MAX_PATH)
 			return false;
 	}

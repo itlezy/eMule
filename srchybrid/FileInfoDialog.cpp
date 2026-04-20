@@ -694,6 +694,7 @@ bool CGetMediaInfoThread::GetMediaInfo(HWND hWndOwner, const CShareableFile *pFi
 			// converting Unicode to ASCII and then conversion back from ASCII to Unicode.
 			// To prevent this, we force the reading of ID3v2 tags only, in case there are
 			// also ID3v1 tags available.
+			// Won't do: id3lib still takes an ANSI path here, so Unicode/long-path coverage remains limited.
 			ID3_Tag myTag;
 			CStringA strFilePathA(pFile->GetFilePath());
 			size_t id3Size = myTag.Link(strFilePathA, ID3TT_ID3V2);

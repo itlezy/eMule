@@ -689,7 +689,7 @@ int CArchivePreviewDlg::ShowRarResults(int succ, archiveScannerThreadParams_s *t
 			// read Unicode name from the name buffer and decode it
 			if (block->HEAD_FLAGS & 0x0200) {
 				unsigned asciilen = (unsigned)(strlen(buf) + 1);
-				// Preview display stays MAX_PATH-bounded on decoded member names by design.
+				// Won't do: archive preview display stays MAX_PATH-bounded on decoded member names.
 				wchar_t nameuc[MAX_PATH];
 				EncodeFileName enc;
 				enc.Decode(buf, (byte*)buf + asciilen, block->NAME_SIZE - asciilen, nameuc, _countof(nameuc));
