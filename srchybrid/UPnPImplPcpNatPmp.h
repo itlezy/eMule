@@ -15,57 +15,71 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+
 #include "UPnPImpl.h"
 
-struct UPNPUrls;
-struct IGDdatas;
+struct pcp_ctx_s;
+typedef struct pcp_ctx_s pcp_ctx_t;
+struct pcp_flow_s;
+typedef struct pcp_flow_s pcp_flow_t;
 
-class CUPnPImplMiniLib : public CUPnPImpl
+/**
+ * Maintains port mappings through the libpcpnatpmp client library.
+ */
+class CUPnPImplPcpNatPmp : public CUPnPImpl
 {
 public:
-	CUPnPImplMiniLib();
-	virtual	~CUPnPImplMiniLib();
+	CUPnPImplPcpNatPmp();
+	virtual	~CUPnPImplPcpNatPmp();
 
 	virtual void StartDiscovery(uint16 nTCPPort, uint16 nUDPPort, uint16 nTCPWebPort);
 	virtual bool CheckAndRefresh();
 	virtual void StopAsyncFind();
 	virtual void DeletePorts();
 	virtual bool IsReady();
-	virtual int GetImplementationID()				{ return UPNP_IMPL_MINIUPNPLIB; }
-	virtual LPCTSTR GetImplementationName() const	{ return _T("UPnP IGD (MiniUPnP)"); }
+	virtual int GetImplementationID()				{ return UPNP_IMPL_PCPNATPMP; }
+	virtual LPCTSTR GetImplementationName() const	{ return _T("PCP/NAT-PMP"); }
 
+	/**
+	 * Background worker which discovers the PCP/NAT-PMP gateway and maintains the active mappings.
+	 */
 	class CStartDiscoveryThread : public CWinThread
 	{
 		DECLARE_DYNCREATE(CStartDiscoveryThread)
 	protected:
 		CStartDiscoveryThread();
-		bool OpenPort(uint16 nPort, bool bTCP, char *pachLANIP, bool bCheckAndRefresh);
 
 	public:
 		virtual BOOL InitInstance();
 		virtual int Run();
-		void SetValues(CUPnPImplMiniLib *pOwner)	{ m_pOwner = pOwner; }
+		void SetValues(CUPnPImplPcpNatPmp *pOwner)	{ m_pOwner = pOwner; }
 
 	private:
-		CUPnPImplMiniLib *m_pOwner;
+		CUPnPImplPcpNatPmp *m_pOwner;
 	};
 
-protected:
-	void DeletePorts(bool bSkipLock);
-
 private:
-	void Cleanup();
-	void DeletePort(uint16 port, LPCTSTR prot);
-	void GetOldPorts();
+	/**
+	 * Resolves the LAN endpoint which should be mapped on the gateway.
+	 */
+	bool ResolveSourceAddress();
 	void StartThread();
+	void GetOldPorts();
+	void DeletePorts(bool bSkipLock);
+	void CloseFlow(pcp_flow_t *&pFlow, LPCTSTR pszLabel);
+	bool EnsureMappedPort(uint16 nPort, bool bTCP, pcp_flow_t *&pFlow, bool bOptional);
+	void CleanupContext();
 
 	static CMutex m_mutBusy;
 
-	UPNPUrls *m_pURLs;
-	IGDdatas *m_pIGDData;
+	pcp_ctx_t *m_pContext;
+	pcp_flow_t *m_pTCPFlow;
+	pcp_flow_t *m_pUDPFlow;
+	pcp_flow_t *m_pTCPWebFlow;
 	HANDLE m_hThreadHandle;
-	char m_achLanIP[40];
-	char m_achWanIP[40];
+	CStringA m_strSourceAddress;
+	sockaddr_storage m_sourceAddress;
+	int m_nSourceAddressLen;
 
 	bool m_bSucceededOnce;
 	volatile bool m_bAbortDiscovery;

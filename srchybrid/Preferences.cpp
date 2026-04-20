@@ -611,13 +611,9 @@ bool	CPreferences::m_bCryptLayerRequired;
 uint32	CPreferences::m_dwKadUDPKey;
 uint8	CPreferences::m_byCryptTCPPaddingLength;
 
-bool	CPreferences::m_bSkipWANIPSetup;
-bool	CPreferences::m_bSkipWANPPPSetup;
 bool	CPreferences::m_bEnableUPnP;
 bool	CPreferences::m_bCloseUPnPOnExit;
-bool	CPreferences::m_bIsWinServImplDisabled;
-bool	CPreferences::m_bIsMinilibImplDisabled;
-int		CPreferences::m_nLastWorkingImpl;
+uint8	CPreferences::m_uUPnPBackendMode;
 
 bool	CPreferences::m_bEnableSearchResultFilter;
 
@@ -2043,10 +2039,8 @@ void CPreferences::SavePreferences()
 	// Section: "UPnP"
 	//
 	ini.WriteBool(_T("EnableUPnP"), m_bEnableUPnP, _T("UPnP"));
-	ini.WriteBool(_T("SkipWANIPSetup"), m_bSkipWANIPSetup);
-	ini.WriteBool(_T("SkipWANPPPSetup"), m_bSkipWANPPPSetup);
 	ini.WriteBool(_T("CloseUPnPOnExit"), m_bCloseUPnPOnExit);
-	ini.WriteInt(_T("LastWorkingImplementation"), m_nLastWorkingImpl);
+	ini.WriteInt(_T("BackendMode"), m_uUPnPBackendMode);
 }
 
 void CPreferences::ResetStatsColor(int index)
@@ -2624,12 +2618,8 @@ void CPreferences::LoadPreferences()
 	// Section: "UPnP"
 	//
 	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), false, _T("UPnP"));
-	m_bSkipWANIPSetup = ini.GetBool(_T("SkipWANIPSetup"), false);
-	m_bSkipWANPPPSetup = ini.GetBool(_T("SkipWANPPPSetup"), false);
 	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true);
-	m_nLastWorkingImpl = ini.GetInt(_T("LastWorkingImplementation"), 1 /*MiniUPnPLib*/);
-	m_bIsMinilibImplDisabled = ini.GetBool(_T("DisableMiniUPNPLibImpl"), false);
-	m_bIsWinServImplDisabled = ini.GetBool(_T("DisableWinServImpl"), false);
+	m_uUPnPBackendMode = static_cast<uint8>(NormalizeBoundedPreference(ini.GetInt(_T("BackendMode"), UPNP_BACKEND_AUTOMATIC), UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_PCP_NATPMP_ONLY));
 
 	LoadCats();
 	SetLanguage();

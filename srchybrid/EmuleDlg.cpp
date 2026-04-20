@@ -3679,13 +3679,15 @@ LRESULT CemuleDlg::OnUPnPResult(WPARAM wParam, LPARAM lParam)
 			impl->StopAsyncFind();
 			impl->DeletePorts();
 		}
-		// UPnP failed, check if we can retry it with another implementation
+		DebugLogWarning(_T("NAT mapping backend '%s' did not complete successfully"), impl->GetImplementationName());
+		// NAT mapping failed, check if we can retry it with another backend
 		if (theApp.m_pUPnPFinder->SwitchImplentation()) {
+			DebugLog(_T("Trying fallback NAT mapping backend '%s'"), theApp.m_pUPnPFinder->GetImplementation()->GetImplementationName());
 			StartUPnP(false);
 			return 0;
 		}
 
-		DebugLog(_T("No more available UPnP implementations left"));
+		DebugLog(_T("No more available NAT mapping backends left"));
 	}
 
 	if (m_hUPnPTimeOutTimer != 0) {
@@ -3694,8 +3696,6 @@ LRESULT CemuleDlg::OnUPnPResult(WPARAM wParam, LPARAM lParam)
 	}
 	if (!bWasRefresh)
 		if (wParam == CUPnPImpl::UPNP_OK) {
-			// remember the last working implementation
-			thePrefs.SetLastWorkingUPnPImpl(impl->GetImplementationID());
 			Log(GetResString(IDS_UPNPSUCCESS), impl->GetUsedTCPPort(), impl->GetUsedUDPPort());
 		} else
 			LogWarning(GetResString(IDS_UPNPFAILED));
@@ -3732,12 +3732,26 @@ void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPor
 {
 	if (theApp.m_pUPnPFinder != NULL && (m_hUPnPTimeOutTimer == 0 || !bReset)) {
 		if (bReset) {
+			LPCTSTR pszBackendMode = _T("Automatic");
+			switch (thePrefs.GetUPnPBackendMode()) {
+				case UPNP_BACKEND_IGD_ONLY:
+					pszBackendMode = _T("UPnP IGD only");
+					break;
+				case UPNP_BACKEND_PCP_NATPMP_ONLY:
+					pszBackendMode = _T("PCP/NAT-PMP only");
+					break;
+				case UPNP_BACKEND_AUTOMATIC:
+				default:
+					break;
+			}
 			theApp.m_pUPnPFinder->Reset();
 			Log(GetResString(IDS_UPNPSETUP));
+			DebugLog(_T("NAT mapping backend mode: %s"), pszBackendMode);
 		}
 		try {
 			CUPnPImpl *impl = theApp.m_pUPnPFinder->GetImplementation();
 			if (impl->IsReady()) {
+				DebugLog(_T("Attempting NAT mapping backend '%s'"), impl->GetImplementationName());
 				impl->SetMessageOnResult(this, UM_UPNP_RESULT);
 				if (bReset)
 					VERIFY((m_hUPnPTimeOutTimer = ::SetTimer(NULL, 0, SEC2MS(40), (TIMERPROC)UPnPTimeOutTimer)) != 0);

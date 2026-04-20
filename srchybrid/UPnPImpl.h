@@ -26,8 +26,8 @@ enum TRISTATE
 
 enum UPNP_IMPLEMENTATION
 {
-	UPNP_IMPL_WINDOWSERVICE = 0,
-	UPNP_IMPL_MINIUPNPLIB,
+	UPNP_IMPL_MINIUPNPLIB = 0,
+	UPNP_IMPL_PCPNATPMP,
 	UPNP_IMPL_NONE	/*last*/
 };
 
@@ -54,6 +54,7 @@ public:
 	virtual void DeletePorts() = 0;
 	virtual bool IsReady() = 0;
 	virtual int GetImplementationID() = 0;
+	virtual LPCTSTR GetImplementationName() const = 0;
 
 	void LateEnableWebServerPort(uint16 nPort);	// Add Web Server port to already existing port mapping
 
@@ -86,4 +87,5 @@ public:
 	virtual void DeletePorts()							{}
 	virtual bool IsReady()								{ return false; }
 	virtual int GetImplementationID()					{ return UPNP_IMPL_NONE; }
+	virtual LPCTSTR GetImplementationName() const		{ return _T("None"); }
 };

@@ -62,6 +62,16 @@ enum EBBSessionTransferMode : uint8
 	BBSTM_ABSOLUTE_MIB = 2
 };
 
+/**
+ * Selects the NAT mapping backend policy used by the UPnP wrapper.
+ */
+enum EUPnPBackendMode : uint8
+{
+	UPNP_BACKEND_AUTOMATIC = 0,
+	UPNP_BACKEND_IGD_ONLY = 1,
+	UPNP_BACKEND_PCP_NATPMP_ONLY = 2
+};
+
 
 enum EDefaultDirectory
 {
@@ -642,13 +652,9 @@ public:
 	static uint32   m_dwKadUDPKey;
 
 	// UPnP
-	static bool		m_bSkipWANIPSetup;
-	static bool		m_bSkipWANPPPSetup;
 	static bool		m_bEnableUPnP;
 	static bool		m_bCloseUPnPOnExit;
-	static bool		m_bIsWinServImplDisabled;
-	static bool		m_bIsMinilibImplDisabled;
-	static int		m_nLastWorkingImpl;
+	static uint8	m_uUPnPBackendMode;
 
 	// Spam
 	static bool		m_bEnableSearchResultFilter;
@@ -1500,16 +1506,10 @@ public:
 	static uint8	GetCryptTCPPaddingLength()			{ return m_byCryptTCPPaddingLength; }
 
 	// UPnP
-	static bool		GetSkipWANIPSetup()					{ return m_bSkipWANIPSetup; }
-	static bool		GetSkipWANPPPSetup()				{ return m_bSkipWANPPPSetup; }
 	static bool		IsUPnPEnabled()						{ return m_bEnableUPnP; }
-	static void		SetSkipWANIPSetup(bool nv)			{ m_bSkipWANIPSetup = nv; }
-	static void		SetSkipWANPPPSetup(bool nv)			{ m_bSkipWANPPPSetup = nv; }
 	static bool		CloseUPnPOnExit()					{ return m_bCloseUPnPOnExit; }
-	static bool		IsWinServUPnPImplDisabled()			{ return m_bIsWinServImplDisabled; }
-	static bool		IsMinilibUPnPImplDisabled()			{ return m_bIsMinilibImplDisabled; }
-	static int		GetLastWorkingUPnPImpl()			{ return m_nLastWorkingImpl; }
-	static void		SetLastWorkingUPnPImpl(int val)		{ m_nLastWorkingImpl = val; }
+	static uint8	GetUPnPBackendMode()				{ return m_uUPnPBackendMode; }
+	static void		SetUPnPBackendMode(uint8 val)		{ m_uUPnPBackendMode = val; }
 
 	// Spam filter
 	static bool		IsSearchSpamFilterEnabled()			{ return m_bEnableSearchResultFilter; }

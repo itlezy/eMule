@@ -4079,6 +4079,9 @@ BEGIN
     IDS_TCP_ERROR_FLOODER_THRESHOLD "TCP error flooder threshold"
     IDS_WEB_BIND_ADDR       "Bind address"
     IDS_WEB_INVALID_BINDADDR "Invalid web bind address. Leave it empty to listen on all interfaces."
+    IDS_UPNPBACKENDMODE     "NAT mapping backend mode"
+    IDS_UPNPBACKENDMODE_IGDONLY "UPnP IGD only"
+    IDS_UPNPBACKENDMODE_PCPONLY "PCP/NAT-PMP only"
 END
 
 #endif    // English (United States) resources

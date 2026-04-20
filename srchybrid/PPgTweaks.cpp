@@ -288,11 +288,13 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiShareeMuleMultiUser()
 	, m_htiShareeMuleOldStyle()
 	, m_htiShareeMulePublicUser()
-	, m_htiSkipWANIPSetup()
-	, m_htiSkipWANPPPSetup()
 	, m_htiSparsePartFiles()
 	, m_htiTCPGroup()
 	, m_htiUPnP()
+	, m_htiUPnPBackendMode()
+	, m_htiUPnPBackendModeAutomatic()
+	, m_htiUPnPBackendModeIgdOnly()
+	, m_htiUPnPBackendModePcpNatPmpOnly()
 	, m_htiVerbose()
 	, m_htiVerboseGroup()
 	, m_htiYourHostname()
@@ -318,6 +320,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_iMaxHalfOpen()
 	, m_iShareeMule()
 	, m_iBBSessionTransferMode()
+	, m_iUPnPBackendMode(UPNP_BACKEND_AUTOMATIC)
 	, m_sDateTimeFormat4Lists()
 	, m_sBBSlowThresholdFactor()
 	, m_sBBLowRatioThreshold()
@@ -362,8 +365,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bShowActiveDownloadsBold()
 	, m_bShowUpDownIconInTaskbar()
 	, m_bShowVerticalHourMarkers()
-	, m_bSkipWANIPSetup()
-	, m_bSkipWANPPPSetup()
 	, m_bSparsePartFiles()
 	, m_bVerbose()
 	, m_bUseSystemFontForMainControls()
@@ -576,8 +577,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		//
 		m_htiUPnP = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_UPNP), iImgUPnP, TVI_ROOT);
 		m_htiCloseUPnPPorts = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_UPNPCLOSEONEXIT), m_htiUPnP, m_bCloseUPnPOnExit);
-		m_htiSkipWANIPSetup = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_UPNPSKIPWANIP), m_htiUPnP, m_bSkipWANIPSetup);
-		m_htiSkipWANPPPSetup = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_UPNPSKIPWANPPP), m_htiUPnP, m_bSkipWANPPPSetup);
+		m_htiUPnPBackendMode = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_UPNPBACKENDMODE), iImgUPnP, m_htiUPnP);
+		m_htiUPnPBackendModeAutomatic = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_AUTOMATIC), m_htiUPnPBackendMode, m_iUPnPBackendMode == UPNP_BACKEND_AUTOMATIC);
+		m_htiUPnPBackendModeIgdOnly = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_UPNPBACKENDMODE_IGDONLY), m_htiUPnPBackendMode, m_iUPnPBackendMode == UPNP_BACKEND_IGD_ONLY);
+		m_htiUPnPBackendModePcpNatPmpOnly = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_UPNPBACKENDMODE_PCPONLY), m_htiUPnPBackendMode, m_iUPnPBackendMode == UPNP_BACKEND_PCP_NATPMP_ONLY);
 
 		/////////////////////////////////////////////////////////////////////////////
 		// eMule Shared Use
@@ -821,8 +824,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// UPnP group
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCloseUPnPPorts, m_bCloseUPnPOnExit);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSkipWANIPSetup, m_bSkipWANIPSetup);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSkipWANPPPSetup, m_bSkipWANPPPSetup);
+	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiUPnPBackendMode, m_iUPnPBackendMode);
 
 	/////////////////////////////////////////////////////////////////////////////
 	// eMule Shared User
@@ -866,8 +868,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
 
 	m_bCloseUPnPOnExit = thePrefs.CloseUPnPOnExit();
-	m_bSkipWANIPSetup = thePrefs.GetSkipWANIPSetup();
-	m_bSkipWANPPPSetup = thePrefs.GetSkipWANPPPSetup();
+	m_iUPnPBackendMode = thePrefs.GetUPnPBackendMode();
 
 	m_iShareeMule = thePrefs.m_nCurrentUserDirMode;
 
@@ -1081,8 +1082,7 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bAutomaticArcPreviewStart = !m_bAutoArchDisable;
 
 	thePrefs.m_bCloseUPnPOnExit = m_bCloseUPnPOnExit;
-	thePrefs.SetSkipWANIPSetup(m_bSkipWANIPSetup);
-	thePrefs.SetSkipWANPPPSetup(m_bSkipWANPPPSetup);
+	thePrefs.SetUPnPBackendMode(static_cast<uint8>(m_iUPnPBackendMode));
 
 	thePrefs.ChangeUserDirMode(m_iShareeMule);
 
@@ -1240,11 +1240,13 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiShowUpDownIconInTaskbar, IDS_SHOWUPDOWNICONINTASKBAR);
 		LocalizeItemText(m_htiShowVerticalHourMarkers, IDS_SHOWVERTICALHOURMARKERS);
 		LocalizeItemText(m_htiGeoLocationEnabled, IDS_ENABLE_GEOLOCATION);
-		LocalizeItemText(m_htiSkipWANIPSetup, IDS_UPNPSKIPWANIP);
-		LocalizeItemText(m_htiSkipWANPPPSetup, IDS_UPNPSKIPWANPPP);
 		LocalizeItemText(m_htiSparsePartFiles, IDS_SPARSEPARTFILES);
 		LocalizeItemText(m_htiTCPGroup, IDS_TCPIP_CONNS);
 		LocalizeItemText(m_htiUPnP, IDS_UPNP);
+		LocalizeItemText(m_htiUPnPBackendMode, IDS_UPNPBACKENDMODE);
+		LocalizeItemText(m_htiUPnPBackendModeAutomatic, IDS_AUTOMATIC);
+		LocalizeItemText(m_htiUPnPBackendModeIgdOnly, IDS_UPNPBACKENDMODE_IGDONLY);
+		LocalizeItemText(m_htiUPnPBackendModePcpNatPmpOnly, IDS_UPNPBACKENDMODE_PCPONLY);
 		LocalizeItemText(m_htiUseSystemFontForMainControls, IDS_USESYSTEMFONTFORMAINCONTROLS);
 		LocalizeItemText(m_htiVerbose, IDS_ENABLED);
 		LocalizeItemText(m_htiVerboseGroup, IDS_VERBOSE);
@@ -1362,8 +1364,10 @@ void CPPgTweaks::OnDestroy()
 	m_htiAutoArch = NULL;
 	m_htiUPnP = NULL;
 	m_htiCloseUPnPPorts = NULL;
-	m_htiSkipWANIPSetup = NULL;
-	m_htiSkipWANPPPSetup = NULL;
+	m_htiUPnPBackendMode = NULL;
+	m_htiUPnPBackendModeAutomatic = NULL;
+	m_htiUPnPBackendModeIgdOnly = NULL;
+	m_htiUPnPBackendModePcpNatPmpOnly = NULL;
 	m_htiShareeMule = NULL;
 	m_htiShareeMuleMultiUser = NULL;
 	m_htiShareeMulePublicUser = NULL;

@@ -125,11 +125,13 @@ protected:
 	HTREEITEM m_htiShareeMuleMultiUser;
 	HTREEITEM m_htiShareeMuleOldStyle;
 	HTREEITEM m_htiShareeMulePublicUser;
-	HTREEITEM m_htiSkipWANIPSetup;
-	HTREEITEM m_htiSkipWANPPPSetup;
 	HTREEITEM m_htiSparsePartFiles;
 	HTREEITEM m_htiTCPGroup;
 	HTREEITEM m_htiUPnP;
+	HTREEITEM m_htiUPnPBackendMode;
+	HTREEITEM m_htiUPnPBackendModeAutomatic;
+	HTREEITEM m_htiUPnPBackendModeIgdOnly;
+	HTREEITEM m_htiUPnPBackendModePcpNatPmpOnly;
 	HTREEITEM m_htiVerbose;
 	HTREEITEM m_htiVerboseGroup;
 	HTREEITEM m_htiYourHostname;
@@ -156,6 +158,7 @@ protected:
 	int m_iMaxHalfOpen;
 	int m_iShareeMule;
 	int m_iBBSessionTransferMode;
+	int m_iUPnPBackendMode;
 
 	CString m_sDateTimeFormat4Lists;
 	CString m_sBBSlowThresholdFactor;
@@ -202,8 +205,6 @@ protected:
 	bool m_bShowActiveDownloadsBold;
 	bool m_bShowUpDownIconInTaskbar;
 	bool m_bShowVerticalHourMarkers;
-	bool m_bSkipWANIPSetup;
-	bool m_bSkipWANPPPSetup;
 	bool m_bSparsePartFiles;
 	bool m_bUseSystemFontForMainControls;
 	bool m_bVerbose;

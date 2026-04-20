@@ -50,9 +50,16 @@
     <Id3libRoot>$(ThirdPartyRoot)eMule-id3lib\</Id3libRoot>
     <MbedTlsRoot>$(ThirdPartyRoot)eMule-mbedtls\</MbedTlsRoot>
     <MiniUpnpRoot>$(ThirdPartyRoot)eMule-miniupnp\</MiniUpnpRoot>
+    <PcpNatPmpRoot>$(ThirdPartyRoot)eMule-libpcpnatpmp\</PcpNatPmpRoot>
     <ResizableLibRoot>$(ThirdPartyRoot)eMule-ResizableLib\</ResizableLibRoot>
     <CryptoPpRoot>$(ThirdPartyRoot)eMule-cryptopp\</CryptoPpRoot>
     <ZlibRoot>$(ThirdPartyRoot)eMule-zlib\</ZlibRoot>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='x64'">
+    <PcpNatPmpLibRoot Condition="'$(PcpNatPmpLibRoot)'==''">$(PcpNatPmpRoot)cmake-build-x64\lib</PcpNatPmpLibRoot>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)'=='ARM64'">
+    <PcpNatPmpLibRoot Condition="'$(PcpNatPmpLibRoot)'==''">$(PcpNatPmpRoot)cmake-build-arm64\lib</PcpNatPmpLibRoot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)'=='Debug' or '$(Configuration)'=='Release'">
     <IntDir>$(Platform)\$(Configuration)\</IntDir>
@@ -60,7 +67,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -78,7 +85,7 @@
       <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;dbghelp.lib;dwmapi.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsLibRoot)$(Configuration)\mbedtls.lib;$(MbedTlsLibRoot)$(Configuration)\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;dbghelp.lib;dwmapi.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsLibRoot)$(Configuration)\mbedtls.lib;$(MbedTlsLibRoot)$(Configuration)\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(PcpNatPmpLibRoot)\$(Configuration)\pcpnatpmp.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IncrementalLink>true</IncrementalLink>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <LinkControlFlowGuard>true</LinkControlFlowGuard>
@@ -95,7 +102,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -113,7 +120,7 @@
       <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;dbghelp.lib;dwmapi.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsLibRoot)$(Configuration)\mbedtls.lib;$(MbedTlsLibRoot)$(Configuration)\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ADSIId.lib;bcrypt.lib;crypt32.lib;dbghelp.lib;dwmapi.lib;iphlpapi.lib;version.lib;winmm.lib;ws2_32.lib;$(CryptoPpRoot)$(Platform)\Output\$(Configuration)\cryptlib.lib;$(Id3libRoot)libprj\$(Platform)\$(Configuration)\id3lib.lib;$(MbedTlsLibRoot)$(Configuration)\mbedtls.lib;$(MbedTlsLibRoot)$(Configuration)\mbedx509.lib;$(MbedTlsLibRoot)tfpsacrypto.lib;$(MiniUpnpRoot)miniupnpc\msvc\$(Platform)\$(Configuration)\miniupnpc.lib;$(PcpNatPmpLibRoot)\$(Configuration)\pcpnatpmp.lib;$(ResizableLibRoot)ResizableLib\$(Platform)\$(Configuration)\ResizableLib.lib;$(ZlibRoot)contrib\vstudio\vc\$(Platform)\$(Configuration)\zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreSpecificDefaultLibraries>mpr.lib;rasapi32.lib;secur32.lib;sensapi.lib;vfw32.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <IncrementalLink>false</IncrementalLink>
@@ -370,7 +377,7 @@
     <ClCompile Include="UploadQueue.cpp" />
     <ClCompile Include="UPnPImpl.cpp" />
     <ClCompile Include="UPnPImplMiniLib.cpp" />
-    <ClCompile Include="UPnPImplWinServ.cpp" />
+    <ClCompile Include="UPnPImplPcpNatPmp.cpp" />
     <ClCompile Include="UPnPImplWrapper.cpp" />
     <ClCompile Include="URLClient.cpp" />
     <ClCompile Include="Version.cpp" />
@@ -657,7 +664,7 @@
     <ClInclude Include="UploadQueue.h" />
     <ClInclude Include="UPnPImpl.h" />
     <ClInclude Include="UPnPImplMiniLib.h" />
-    <ClInclude Include="UPnPImplWinServ.h" />
+    <ClInclude Include="UPnPImplPcpNatPmp.h" />
     <ClInclude Include="UPnPImplWrapper.h" />
     <ClInclude Include="URLClient.h" />
     <ClInclude Include="UserMsgs.h" />

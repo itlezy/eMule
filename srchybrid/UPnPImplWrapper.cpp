@@ -17,8 +17,8 @@
 #include "StdAfx.h"
 #include "UPnPImplWrapper.h"
 #include "UPnPImpl.h"
-#include "UPnPImplWinServ.h"
 #include "UPnPImplMiniLib.h"
+#include "UPnPImplPcpNatPmp.h"
 #include "Preferences.h"
 
 #ifdef _DEBUG
@@ -29,10 +29,19 @@ static char THIS_FILE[] = __FILE__;
 
 CUPnPImplWrapper::CUPnPImplWrapper()
 {
-	if (!thePrefs.IsWinServUPnPImplDisabled())
-		m_liAvailable.AddTail(new CUPnPImplWinServ());
-	if (!thePrefs.IsMinilibUPnPImplDisabled())
-		m_liAvailable.AddTail(new CUPnPImplMiniLib());
+	switch (thePrefs.GetUPnPBackendMode()) {
+		case UPNP_BACKEND_IGD_ONLY:
+			m_liAvailable.AddTail(new CUPnPImplMiniLib());
+			break;
+		case UPNP_BACKEND_PCP_NATPMP_ONLY:
+			m_liAvailable.AddTail(new CUPnPImplPcpNatPmp());
+			break;
+		case UPNP_BACKEND_AUTOMATIC:
+		default:
+			m_liAvailable.AddTail(new CUPnPImplMiniLib());
+			m_liAvailable.AddTail(new CUPnPImplPcpNatPmp());
+			break;
+	}
 	if (m_liAvailable.IsEmpty())
 		m_liAvailable.AddTail(new CUPnPImplNone());
 	Init();
@@ -50,20 +59,7 @@ CUPnPImplWrapper::~CUPnPImplWrapper()
 void CUPnPImplWrapper::Init()
 {
 	ASSERT(!m_liAvailable.IsEmpty());
-	m_pActiveImpl = NULL;
-
-	for (POSITION pos = m_liAvailable.GetHeadPosition(); pos != NULL;) {
-		POSITION pos2 = pos;
-		CUPnPImpl *tmp = m_liAvailable.GetNext(pos);
-		if (tmp->GetImplementationID() == thePrefs.GetLastWorkingUPnPImpl()) {
-			m_pActiveImpl = tmp;
-			m_liAvailable.RemoveAt(pos2);
-			break;
-		}
-	}
-
-	if (m_pActiveImpl == NULL)
-		m_pActiveImpl = m_liAvailable.RemoveHead();
+	m_pActiveImpl = m_liAvailable.RemoveHead();
 	m_liUsed.AddTail(m_pActiveImpl);
 }
 
