@@ -507,6 +507,7 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	, m_lastPublishED2KFlag(true)
 	, bHaveSingleSharedFiles()
 	, m_bStartupCacheDirty(false)
+	, m_bStartupDuplicateReuseActive(false)
 	, m_bStartupDeferredHashingActive(false)
 	, m_nLastStartupCacheSave()
 	, m_nStartupCacheDirtyTick()
@@ -566,6 +567,7 @@ void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 	m_startupScanStats = StartupScanStats();
 	m_uStartupHashCompletedFiles = 0;
 	m_uStartupHashFailedFiles = 0;
+	m_bStartupDuplicateReuseActive = bAllowStartupCache;
 	m_bStartupDeferredHashingActive = false;
 	m_nLastStartupCacheSave = ::GetTickCount64();
 	m_nStartupCacheDirtyTick = m_nLastStartupCacheSave;
@@ -647,6 +649,7 @@ void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 		theApp.AppendStartupProfileCounter(_T("shared.scan.directories_over_248_chars"), m_startupScanStats.uDirectoriesOver248Chars, _T("directories"));
 		theApp.AppendStartupProfileCounter(_T("shared.scan.paths_over_260_chars"), m_startupScanStats.uPathsOver260Chars, _T("paths"));
 		theApp.AppendStartupProfileCounter(_T("shared.scan.known_files_accepted"), m_startupScanStats.uKnownFilesAccepted, _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.scan.duplicate_paths_reused"), m_startupScanStats.uDuplicatePathsReused, _T("files"));
 		theApp.AppendStartupProfileCounter(_T("shared.scan.files_queued_for_hash"), m_startupScanStats.uFilesQueuedForHash, _T("files"));
 		theApp.AppendStartupProfileCounter(_T("shared.scan.files_ignored"), m_startupScanStats.uFilesIgnored, _T("files"));
 		theApp.AppendStartupProfileCounter(_T("shared.scan.shared_files_after_scan"), static_cast<ULONGLONG>(m_Files_map.GetCount()), _T("files"));
@@ -654,6 +657,7 @@ void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 		theApp.AppendStartupProfileLine(_T("shared.scan.complete"), 0);
 	}
 #endif
+	m_bStartupDuplicateReuseActive = false;
 }
 
 void CSharedFileList::AddFilesFromDirectory(const CString &rstrDirectory)
@@ -774,6 +778,9 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 			++m_startupScanStats.uKnownFilesAccepted;
 		else
 			++m_startupScanStats.uFilesIgnored;
+	} else if (TryReuseRememberedDuplicateSharedPath(strFoundFilePath, static_cast<LONGLONG>(fdate), ullFoundFileSize)) {
+		++m_startupScanStats.uDuplicatePathsReused;
+		++m_startupScanStats.uFilesIgnored;
 	} else {
 		if (!IsHashing(strFoundDirectory, strFoundFileName) && !thePrefs.IsTempFile(strFoundDirectory, strFoundFileName)) {
 			UnknownFile_Struct *tohash = new UnknownFile_Struct;
@@ -2353,6 +2360,32 @@ void CSharedFileList::RememberDuplicateSharedPath(const CString &strFilePath, co
 
 	m_duplicateSharedPathRecords[strKey] = record;
 	MarkStartupCacheDirty();
+}
+
+bool CSharedFileList::TryReuseRememberedDuplicateSharedPath(const CString &strFilePath, const LONGLONG utcFileDate, const ULONGLONG ullFileSize)
+{
+	if (!m_bStartupDuplicateReuseActive || utcFileDate <= 0 || ullFileSize == 0)
+		return false;
+
+	const auto it = m_duplicateSharedPathRecords.find(MakeDuplicatePathCacheKey(strFilePath));
+	if (it == m_duplicateSharedPathRecords.end())
+		return false;
+
+	const SharedDuplicatePathCachePolicy::PathRecord &record = it->second;
+	if (record.utcFileDate != utcFileDate || record.ullFileSize != ullFileSize) {
+		m_duplicateSharedPathRecords.erase(it);
+		MarkStartupCacheDirty();
+		return false;
+	}
+
+	CKnownFile *pCanonicalKnownFile = theApp.knownfiles->FindKnownFileByID(record.canonicalFileHash.data());
+	if (pCanonicalKnownFile == NULL || PathHelpers::ArePathsEquivalent(record.strFilePath, pCanonicalKnownFile->GetFilePath())) {
+		m_duplicateSharedPathRecords.erase(it);
+		MarkStartupCacheDirty();
+		return false;
+	}
+
+	return true;
 }
 
 bool CSharedFileList::BuildStartupCacheRecordFromSnapshot(const StartupCacheSaveDirectorySnapshot &rDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord, SharedStartupCacheVolumeRecordMap &rVolumeRecords) const

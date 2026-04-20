@@ -218,6 +218,7 @@ private:
 		ULONGLONG uDirectoriesOver248Chars = 0;
 		ULONGLONG uPathsOver260Chars = 0;
 		ULONGLONG uKnownFilesAccepted = 0;
+		ULONGLONG uDuplicatePathsReused = 0;
 		ULONGLONG uFilesQueuedForHash = 0;
 		ULONGLONG uFilesIgnored = 0;
 	};
@@ -323,6 +324,10 @@ private:
 	 * @brief Remembers one duplicate shared-file path for future startup hash skipping.
 	 */
 	void	RememberDuplicateSharedPath(const CString &strFilePath, const uchar *pCanonicalFileHash, LONGLONG utcFileDate, ULONGLONG ullFileSize);
+	/**
+	 * @brief Reuses one remembered duplicate shared-file path during the startup scan when its canonical MD4 is still known.
+	 */
+	bool	TryReuseRememberedDuplicateSharedPath(const CString &strFilePath, LONGLONG utcFileDate, ULONGLONG ullFileSize);
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
@@ -346,6 +351,7 @@ private:
 	bool	m_lastPublishED2KFlag;
 	bool	bHaveSingleSharedFiles;
 	bool	m_bStartupCacheDirty;
+	bool	m_bStartupDuplicateReuseActive;
 	bool	m_bStartupDeferredHashingActive;
 	ULONGLONG m_nLastStartupCacheSave;
 	ULONGLONG m_nStartupCacheDirtyTick;
