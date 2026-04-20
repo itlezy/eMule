@@ -1013,10 +1013,10 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			_T("Most users should leave this group on automatic defaults unless their router environment requires something specific."));
 		SetTreeToolTip(m_htiShareeMuleMultiUser,
 			_T("Each Windows user gets a separate eMule configuration and separate download state.\r\n\r\n")
-			_T("Best fit for shared PCs where users should not share eMule data."));
+			_T("Config lives under Local AppData, and downloads use that user's own Downloads folder. Best fit for shared PCs where users should not share eMule data."));
 		SetTreeToolTip(m_htiShareeMulePublicUser,
 			_T("All Windows users share the same eMule configuration and downloads.\r\n\r\n")
-			_T("Use this only if the machine is intentionally sharing one common eMule state."));
+			_T("Config lives under ProgramData, and downloads use Public Downloads. Use this only if the machine is intentionally sharing one common eMule state."));
 		SetTreeToolTip(m_htiShareeMuleOldStyle,
 			_T("Keep configuration and downloads in the program directory, using the older legacy layout.\r\n\r\n")
 			_T("Legacy compatibility mode only. It is usually the least desirable choice on modern Windows."));

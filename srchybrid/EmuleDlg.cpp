@@ -2671,6 +2671,12 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	case MP_HM_OPENINC:
 		ShellOpenFile(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
 		break;
+	case MP_HM_OPENCONFIGDIR:
+		ShellOpenFile(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
+		break;
+	case MP_HM_OPENLOGDIR:
+		ShellOpenFile(thePrefs.GetMuleDirectory(EMULE_LOGDIR));
+		break;
 	case TBBTN_HELP:
 	case MP_HM_HELP:
 		if (activewnd != NULL) {
@@ -2801,6 +2807,8 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	}
 
 	menu.AppendMenu(MF_STRING, MP_HM_OPENINC, GetResString(IDS_OPENINC) + _T("..."), _T("INCOMING"));
+	menu.AppendMenu(MF_STRING, MP_HM_OPENCONFIGDIR, GetResString(IDS_OPENCONFIGDIR) + _T("..."), _T("OPENFOLDER"));
+	menu.AppendMenu(MF_STRING, MP_HM_OPENLOGDIR, GetResString(IDS_OPENLOGDIR) + _T("..."), _T("OPENFOLDER"));
 	menu.AppendMenu(MF_STRING, MP_HM_1STSWIZARD, GetResString(IDS_WIZ1) + _T("..."), _T("WIZARD"));
 	menu.AppendMenu(MF_STRING, MP_HM_IPFILTER, GetResString(IDS_IPFILTER) + _T("..."), _T("IPFILTER"));
 	menu.AppendMenu(MF_STRING, MP_HM_DIRECT_DOWNLOAD, GetResString(IDS_SW_DIRECTDOWNLOAD) + _T("..."), _T("PASTELINK"));

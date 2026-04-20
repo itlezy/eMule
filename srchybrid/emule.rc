@@ -3234,6 +3234,8 @@ BEGIN
     IDS_CL_LOW2LOW          "Low To Low IP"
     IDS_ERROR               "Error"
     IDS_OPENINC             "&Open Incoming Folder"
+    IDS_OPENCONFIGDIR       "Open &Config Directory"
+    IDS_OPENLOGDIR          "Open &Logs Directory"
     IDS_HOTMENU             "Hotmenu"
     IDS_DISABLEKNOWNLIST    "Disable Known Clients list"
 END
@@ -3948,15 +3950,15 @@ BEGIN
     IDS_UPNPCLOSEONEXIT     "Remove UPnP port forwarding on exit"
     IDS_UPNPSKIPWANIP       "Skip WAN IP setup"
     IDS_UPNPSKIPWANPPP      "Skip WAN PPP setup"
-    IDS_SHAREEMULELABEL     "Sharing eMule with other computer users"
-    IDS_SHAREEMULEMULTI     "Each user has its own configuration and downloads"
-    IDS_SHAREEMULEPUBLIC    "Everyone has the same configuration and downloads"
-    IDS_SHAREEMULEOLD       "Store config and downloads in the program directory"
+    IDS_SHAREEMULELABEL     "Configuration and download storage"
+    IDS_SHAREEMULEMULTI     "Each Windows user keeps separate configuration and downloads"
+    IDS_SHAREEMULEPUBLIC    "All Windows users share the same configuration and downloads"
+    IDS_SHAREEMULEOLD       "Store configuration and downloads in the program directory (legacy)"
 END
 
 STRINGTABLE
 BEGIN
-    IDS_SHAREEMULEWARNING   "Changing this option will let eMule use another configuration. Your current settings will be ignored and already started downloads might not be visible any more. You can switch back to your current configuration by changing this option again anytime.\n\nYou need to restart eMule for this change to take effect."
+    IDS_SHAREEMULEWARNING   "Changing this option switches eMule to a different configuration and download location. Your current settings will be ignored, and downloads already in progress might not be visible in the new mode.\n\nYou can switch back to the current mode later. You need to restart eMule for this change to take effect."
     IDS_HIDDENRUNTIME_STARTUP "Startup and session"
     IDS_HIDDENRUNTIME_FILE  "Hidden file and preview"
     IDS_HIDDENRUNTIME_DISPLAY "Hidden display and rendering"

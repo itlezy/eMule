@@ -754,6 +754,8 @@
 #define IDS_CL_LOW2LOW                  827
 #define IDS_ERROR                       828
 #define IDS_OPENINC                     829
+#define IDS_OPENCONFIGDIR               1722
+#define IDS_OPENLOGDIR                  1723
 #define IDS_HOTMENU                     830
 #define IDS_DISABLEKNOWNLIST            831
 #define IDS_DISABLEQUEUELIST            832
