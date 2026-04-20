@@ -47,6 +47,47 @@ static char THIS_FILE[] = __FILE__;
 #define CANCELLED_HEADER		MET_HEADER_I64TAGS
 #define CANCELLED_VERSION		0x01
 
+namespace
+{
+	template <typename TWriter>
+	bool SaveKnownMetadataFileAtomically(const CString &strConfigDir, LPCTSTR pszFileName, TWriter &&writeFile)
+	{
+		const CString strTargetPath(strConfigDir + pszFileName);
+		const CString strTempPath(strTargetPath + _T(".tmp"));
+		const CString strOpenErrorMessage(CString(_T("Failed to save ")) + pszFileName);
+
+		CSafeBufferedFile file;
+		if (!CFileOpen(file
+			, strTempPath
+			, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite
+			, strOpenErrorMessage))
+		{
+			return false;
+		}
+
+		::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
+		try {
+			writeFile(file);
+			CommitAndClose(file);
+		} catch (CFileException *ex) {
+			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), pszFileName, (LPCTSTR)CExceptionStrDash(*ex));
+			ex->Delete();
+			file.Abort(); // keep partial temp writes from reaching Close() asserts
+			(void)LongPathSeams::DeleteFileIfExists(strTempPath);
+			return false;
+		}
+
+		DWORD dwReplaceError = ERROR_SUCCESS;
+		if (!ReplaceFileAtomically(strTempPath, strTargetPath, &dwReplaceError)) {
+			(void)LongPathSeams::DeleteFileIfExists(strTempPath);
+			LogError(LOG_STATUSBAR, _T("%s %s - %s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), pszFileName, (LPCTSTR)GetErrorMessage(dwReplaceError));
+			return false;
+		}
+
+		return true;
+	}
+}
+
 CKnownFileList::CKnownFileList()
 	: m_nTransferredTotal()
 	, m_nRequestedTotal()
@@ -195,14 +236,8 @@ void CKnownFileList::Save()
 		AddDebugLogLine(false, _T("Saving known files list in \"%s\""), KNOWN_MET_FILENAME);
 	m_nLastSaved = ::GetTickCount64();
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
-	CSafeBufferedFile file;
-	if (CFileOpen(file
-		, sConfDir + KNOWN_MET_FILENAME
-		, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite
-		, _T("Failed to save ") KNOWN_MET_FILENAME))
-	{
-		::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
-		try {
+
+	SaveKnownMetadataFileAtomically(sConfDir, KNOWN_MET_FILENAME, [this](CSafeBufferedFile &file) {
 			file.WriteUInt8(MET_HEADER_I64TAGS);
 			file.WriteUInt32((uint32)m_Files_map.GetCount()); // the number may be rewritten
 
@@ -219,23 +254,12 @@ void CKnownFileList::Save()
 				file.Seek(1, CFile::begin);
 				file.WriteUInt32((uint32)iRecordsNumber);
 			}
-			CommitAndClose(file);
-		} catch (CFileException *ex) {
-			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), KNOWN_MET_FILENAME, (LPCTSTR)CExceptionStrDash(*ex));
-			ex->Delete();
-		}
-	}
+		});
 
 	if (thePrefs.GetLogFileSaving())
 		AddDebugLogLine(false, _T("Saving cancelled files list in \"%s\""), CANCELLED_MET_FILENAME);
-	if (CFileOpen(file
-		, sConfDir + CANCELLED_MET_FILENAME
-		, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite
-		, _T("Failed to save ") CANCELLED_MET_FILENAME))
-	{
-		::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
 
-		try {
+	SaveKnownMetadataFileAtomically(sConfDir, CANCELLED_MET_FILENAME, [this](CSafeBufferedFile &file) {
 			file.WriteUInt8(CANCELLED_HEADER);
 			file.WriteUInt8(CANCELLED_VERSION);
 			file.WriteUInt32(m_dwCancelledFilesSeed);
@@ -248,12 +272,7 @@ void CKnownFileList::Save()
 					file.WriteUInt8(0); //number of tags
 				}
 			}
-			CommitAndClose(file);
-		} catch (CFileException *ex) {
-			LogError(LOG_STATUSBAR, _T("%s %s%s"), (LPCTSTR)GetResString(IDS_ERROR_SAVEFILE), CANCELLED_MET_FILENAME, (LPCTSTR)CExceptionStrDash(*ex));
-			ex->Delete();
-		}
-	}
+		});
 }
 
 void CKnownFileList::Clear()
