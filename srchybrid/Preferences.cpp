@@ -2409,7 +2409,7 @@ void CPreferences::LoadPreferences()
 	m_strYourHostname = ini.GetString(_T("YourHostname"), _T(""));
 	// Barry - New properties...
 	m_bAutoConnectToStaticServersOnly = ini.GetBool(_T("AutoConnectStaticOnly"), false);
-	autotakeed2klinks = ini.GetBool(_T("AutoTakeED2KLinks"), true);
+	autotakeed2klinks = ini.GetBool(_T("AutoTakeED2KLinks"), false);
 	addnewfilespaused = ini.GetBool(_T("AddNewFilesPaused"), false);
 	depth3D = ini.GetInt(_T("3DDepth"), 5);
 	// Notifier
@@ -2438,7 +2438,7 @@ void CPreferences::LoadPreferences()
 	m_uIRCChannelUserFilter = ini.GetInt(_T("IRCFilterUser"), 0);
 	m_strIRCPerformString = ini.GetString(_T("IRCPerformString"));
 	m_bIRCUsePerform = ini.GetBool(_T("IRCUsePerform"), false);
-	m_bIRCGetChannelsOnConnect = ini.GetBool(_T("IRCListOnConnect"), true);
+	m_bIRCGetChannelsOnConnect = ini.GetBool(_T("IRCListOnConnect"), false);
 	m_bIRCAcceptLinks = ini.GetBool(_T("IRCAcceptLink"), true);
 	m_bIRCAcceptLinksFriendsOnly = ini.GetBool(_T("IRCAcceptLinkFriends"), true);
 	m_bIRCPlaySoundEvents = ini.GetBool(_T("IRCSoundEvents"), false);
