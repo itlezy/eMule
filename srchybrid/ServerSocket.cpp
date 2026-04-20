@@ -615,7 +615,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 		if (opcode == OP_SEARCHRESULT || opcode == OP_FOUNDSOURCES)
 			return true;
 	} catch (CMemoryException *ex) {
-		ProcessPacketError(size, opcode, _T("CMemoryException"));
+		ProcessPacketError(size, opcode, _T("CMemoryException"), true);
 		ASSERT(0);
 		ex->Delete();
 		if (opcode == OP_SEARCHRESULT || opcode == OP_FOUNDSOURCES)
@@ -625,7 +625,7 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 		ASSERT(0);
 #ifndef _DEBUG
 	} catch (...) {
-		ProcessPacketError(size, opcode, _T("Unknown exception"));
+		ProcessPacketError(size, opcode, _T("Unknown exception"), true);
 		ASSERT(0);
 #endif
 	}
@@ -634,9 +634,9 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 	return false;
 }
 
-void CServerSocket::ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError)
+void CServerSocket::ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError, bool bAlwaysLog)
 {
-	if (thePrefs.GetVerbose()) {
+	if (bAlwaysLog || thePrefs.GetVerbose()) {
 		CString strServer;
 		try {
 			if (cur_server)
@@ -644,6 +644,7 @@ void CServerSocket::ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError)
 			else
 				strServer = _T("Unknown");
 		} catch (...) {
+			strServer = _T("Unknown");
 		}
 		DebugLogWarning(LOG_DEFAULT, _T("Error: Failed to process server TCP packet from %s: opcode=0x%02x size=%u - %s"), (LPCTSTR)strServer, opcode, size, pszError);
 	}
@@ -722,9 +723,8 @@ bool CServerSocket::PacketReceived(Packet *packet)
 			DebugLogWarning(_T("Received server TCP packet with unknown protocol: protocol=0x%02x  opcode=0x%02x  size=%u"), packet->prot, packet->opcode, packet->size);
 #ifndef _DEBUG
 	} catch (...) {
-		if (thePrefs.GetVerbose())
-			DebugLogError(_T("Error: Unhandled exception while processing server TCP packet: protocol=0x%02x  opcode=0x%02x  size=%u")
-				, packet ? packet->prot : 0, packet ? packet->opcode : 0, packet ? packet->size : 0);
+		DebugLogError(_T("Error: Unhandled exception while processing server TCP packet: protocol=0x%02x  opcode=0x%02x  size=%u")
+			, packet ? packet->prot : 0, packet ? packet->opcode : 0, packet ? packet->size : 0);
 		ASSERT(0);
 		return false;
 	}

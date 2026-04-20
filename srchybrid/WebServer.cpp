@@ -601,6 +601,8 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 						gzipLen = destLen;
 					}
 				} catch (...) {
+					const CString sPageForLog(_ParseURL(Data.sURL, _T("w")));
+					AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Gzip compression failed in CWebServer::ProcessURL: page='%s'"), (LPCTSTR)(sPageForLog.IsEmpty() ? CString(_T("<root>")) : sPageForLog.Left(64)));
 					ASSERT(0);
 				}
 				if (!bOk) {
@@ -626,7 +628,8 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 
 #ifndef _DEBUG
 	} catch (...) {
-		AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Unknown exception in CWebServer::ProcessURL"));
+		const CString sPageForLog(_ParseURL(Data.sURL, _T("w")));
+		AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Unknown exception in CWebServer::ProcessURL: page='%s' from %s"), (LPCTSTR)(sPageForLog.IsEmpty() ? CString(_T("<root>")) : sPageForLog.Left(64)), (LPCTSTR)ipstr(Data.inadr));
 		ASSERT(0);
 	}
 #endif
@@ -3700,6 +3703,7 @@ CString CWebServer::_GetSearch(const ThreadData &Data)
 			&& pParams->strFileType != _T(ED2KFTSTR_EMULECOLLECTION))
 		{
 			ASSERT(0);
+			AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Ignoring unsupported web search file type '%s'"), (LPCTSTR)pParams->strFileType.Left(64));
 			pParams->strFileType.Empty();
 		}
 		pParams->ullMinSize = _tstoi64(_ParseURL(Data.sURL, _T("min"))) * 1048576ui64;
@@ -3736,9 +3740,11 @@ CString CWebServer::_GetSearch(const ThreadData &Data)
 				strResponse = _GetPlainResString(IDS_ERR_NOTCONNECTEDKAD);
 			}
 		} catch (...) {
+			AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Unexpected exception in CWebServer::_GetSearch: method='%s' query-len=%u"), (LPCTSTR)method.Left(32), pParams ? (UINT)pParams->strExpression.GetLength() : 0);
 			strResponse = _GetPlainResString(IDS_ERROR);
 			ASSERT(0);
 			delete pParams;
+			pParams = NULL;
 		}
 		Out.Replace(_T("[Message]"), strResponse);
 

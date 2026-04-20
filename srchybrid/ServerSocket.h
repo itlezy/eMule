@@ -39,7 +39,7 @@ public:
 protected:
 	virtual void OnError(int nErrorCode);
 	bool PacketReceived(Packet *packet);
-	void ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError);
+	void ProcessPacketError(UINT size, UINT opcode, LPCTSTR pszError, bool bAlwaysLog = false);
 
 private:
 	bool ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode);

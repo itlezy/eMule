@@ -26,6 +26,7 @@
 #include "Log.h"
 #include "LongPathSeams.h"
 #include "md5sum.h"
+#include "OtherFunctions.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -81,6 +82,7 @@ CCollectionFile* CCollection::AddFileToCollection(CAbstractFile *pAbstractFile, 
 	CCollectionFile *pCollectionFile;
 	if (m_CollectionFilesMap.Lookup(key, pCollectionFile)) {
 		ASSERT(0);
+		DebugLogWarning(_T("Collection '%s': ignoring duplicate file entry while adding to the collection"), (LPCTSTR)m_sCollectionName);
 		return pCollectionFile;
 	}
 
@@ -104,8 +106,10 @@ void CCollection::RemoveFileFromCollection(const CAbstractFile *pAbstractFile)
 	if (m_CollectionFilesMap.Lookup(key, pCollectionFile)) {
 		m_CollectionFilesMap.RemoveKey(key);
 		delete pCollectionFile;
-	} else
+	} else {
 		ASSERT(0);
+		DebugLogWarning(_T("Collection '%s': asked to remove a file which is not part of the collection"), (LPCTSTR)m_sCollectionName);
+	}
 }
 
 void CCollection::SetCollectionAuthorKey(const byte *abyCollectionAuthorKey, uint32 nSize)
@@ -150,6 +154,7 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 					CCollectionFile *pCollectionFile = new CCollectionFile(data);
 					AddFileToCollection(pCollectionFile, false);
 				} catch (...) {
+					DebugLogWarning(_T("Collection load: skipped one invalid binary entry in '%s'"), (LPCTSTR)sFilePath);
 					ASSERT(0);
 				}
 
@@ -190,9 +195,11 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 			m_sCollectionAuthorName.Empty();
 		data.Close();
 	} catch (CFileException *ex) {
+		DebugLogWarning(_T("Collection load: failed to read '%s' - %s"), (LPCTSTR)sFilePath, (LPCTSTR)CExceptionStr(*ex));
 		ex->Delete();
 		return false;
 	} catch (...) {
+		DebugLogWarning(_T("Collection load: unexpected exception while reading '%s'"), (LPCTSTR)sFilePath);
 		ASSERT(0);
 		return false;
 	}
@@ -213,6 +220,7 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 							else
 								delete pCollectionFile;
 						} catch (...) {
+							DebugLogWarning(_T("Collection load: unexpected exception while parsing a text entry in '%s'"), (LPCTSTR)sFilePath);
 							ASSERT(0);
 							return false;
 						}
@@ -227,8 +235,10 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 				m_bTextFormat = true;
 				return true;
 			} catch (CFileException *ex) {
+				DebugLogWarning(_T("Collection load: failed to read text collection '%s' - %s"), (LPCTSTR)sFilePath, (LPCTSTR)CExceptionStr(*ex));
 				ex->Delete();
 			} catch (...) {
+				DebugLogWarning(_T("Collection load: unexpected exception while reading text collection '%s'"), (LPCTSTR)sFilePath);
 				ASSERT(0);
 			}
 		}
@@ -253,9 +263,11 @@ void CCollection::WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSi
 
 				data.Close();
 			} catch (CFileException *ex) {
+				DebugLogWarning(_T("Collection '%s': failed to write text collection '%s' - %s"), (LPCTSTR)m_sCollectionName, (LPCTSTR)sFilePath, (LPCTSTR)CExceptionStr(*ex));
 				ex->Delete();
 				return;
 			} catch (...) {
+				DebugLogWarning(_T("Collection '%s': unexpected exception while writing text collection '%s'"), (LPCTSTR)m_sCollectionName, (LPCTSTR)sFilePath);
 				ASSERT(0);
 				return;
 			}
@@ -312,9 +324,11 @@ void CCollection::WriteToFileAddShared(CryptoPP::RSASSA_PKCS1v15_SHA_Signer *pSi
 				}
 				data.Close();
 			} catch (CFileException *ex) {
+				DebugLogWarning(_T("Collection '%s': failed to write binary collection '%s' - %s"), (LPCTSTR)m_sCollectionName, (LPCTSTR)sFilePath, (LPCTSTR)CExceptionStr(*ex));
 				ex->Delete();
 				return;
 			} catch (...) {
+				DebugLogWarning(_T("Collection '%s': unexpected exception while writing binary collection '%s'"), (LPCTSTR)m_sCollectionName, (LPCTSTR)sFilePath);
 				ASSERT(0);
 				return;
 			}
