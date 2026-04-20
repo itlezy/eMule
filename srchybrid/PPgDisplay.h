@@ -1,6 +1,7 @@
 #pragma once
 
 #include "3dpreviewcontrol.h"
+#include "PreferenceToolTipHelper.h"
 
 class CPPgDisplay : public CPropertyPage
 {
@@ -26,10 +27,13 @@ protected:
 
 	void DrawPreview();		//Cax2 - aqua bar
 	C3DPreviewControl	m_3DPreview;
+	CPreferenceToolTipHelper m_toolTip;
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	static UINT_PTR CALLBACK ChooseFontHook(HWND hdlg, UINT uiMsg, WPARAM wParam, LPARAM lParam);

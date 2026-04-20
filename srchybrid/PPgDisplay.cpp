@@ -107,9 +107,32 @@ BOOL CPPgDisplay::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgDisplay::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_MINTRAY,
+		_T("Minimizes eMule to the tray instead of leaving it on the taskbar.\r\n\r\n")
+		_T("Useful for always-on setups. Leave it off if you prefer normal taskbar behavior."));
+	m_toolTip.SetTool(this, IDC_TOOLTIPDELAY,
+		_T("Delay before UI tooltips appear.\r\n\r\n")
+		_T("Lower values feel faster, higher values reduce accidental popups. The default range is usually a good compromise."));
+	m_toolTip.SetTool(this, IDC_SHOWRATEONTITLE,
+		_T("Shows the current upload and download rates in the main window title.\r\n\r\n")
+		_T("Useful when eMule stays in the background and you still want a quick speed glance."));
+	m_toolTip.SetTool(this, IDC_STORESEARCHES,
+		_T("Keeps recent search terms so they can be reused later.\r\n\r\n")
+		_T("Recommended: enabled unless you specifically want no retained search history."));
+	m_toolTip.SetTool(this, IDC_WIN7TASKBARGOODIES,
+		_T("Enables Windows taskbar progress and related shell integration where supported.\r\n\r\n")
+		_T("Recommended: enabled on modern Windows unless you want a more minimal shell presence."));
 }
 
 BOOL CPPgDisplay::OnApply()
@@ -306,6 +329,12 @@ BOOL CPPgDisplay::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgDisplay::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 void CPPgDisplay::DrawPreview()

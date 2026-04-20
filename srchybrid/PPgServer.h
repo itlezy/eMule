@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CPPgServer : public CPropertyPage
 {
@@ -15,11 +16,14 @@ public:
 	void Localize();
 
 protected:
+	CPreferenceToolTipHelper m_toolTip;
 	void LoadSettings();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

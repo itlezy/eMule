@@ -61,9 +61,35 @@ BOOL CPPgProxy::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgProxy::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_ENABLEPROXY,
+		_T("Routes supported outbound connections through the configured proxy.\r\n\r\n")
+		_T("Enable it only if you intentionally run eMule behind a proxy. Direct connections are simpler and usually faster."));
+	m_toolTip.SetTool(this, IDC_PROXYTYPE,
+		_T("Selects the proxy protocol expected by your proxy server.\r\n\r\n")
+		_T("Use the exact type provided by the proxy operator; the wrong type usually means immediate connection failures."));
+	m_toolTip.SetTool(this, IDC_PROXYNAME,
+		_T("Hostname or IP address of the proxy server.\r\n\r\n")
+		_T("Enter exactly the endpoint provided by your proxy service. A wrong host means all proxied traffic will fail."));
+	m_toolTip.SetTool(this, IDC_PROXYPORT,
+		_T("Listening port of the proxy server.\r\n\r\n")
+		_T("Use the exact port required by the proxy. Common SOCKS defaults are not guaranteed to be correct."));
+	m_toolTip.SetTool(this, IDC_ENABLEAUTH,
+		_T("Sends proxy username and password credentials when the proxy requires authentication.\r\n\r\n")
+		_T("Enable it only if your proxy service actually uses login credentials."));
+	m_toolTip.SetTool(this, IDC_USERNAME_A,
+		_T("Proxy account username.\r\n\r\n")
+		_T("Leave it empty unless your proxy explicitly requires authenticated access."));
 }
 
 BOOL CPPgProxy::OnApply()
@@ -187,4 +213,10 @@ BOOL CPPgProxy::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgProxy::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }

@@ -136,11 +136,61 @@ BOOL CPPgConnection::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	ChangePorts(2); //"Test ports" button enable/disable
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgConnection::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_AUTOCONNECT,
+		_T("Automatically starts the enabled networks when eMule launches.\r\n\r\n")
+		_T("Recommended: enabled for normal unattended use. Disable it only if you want to connect manually every session."));
+	m_toolTip.SetTool(this, IDC_RECONN,
+		_T("Retries server connections after disconnects or failed attempts.\r\n\r\n")
+		_T("Recommended: enabled if you use the eD2K server network. It has no effect when server networking is disabled."));
+	m_toolTip.SetTool(this, IDC_SHOWOVERHEAD,
+		_T("Shows protocol overhead separately in the transfer rates and statistics.\r\n\r\n")
+		_T("Enable it if you want a more honest view of wire traffic. Leave it off if you prefer simpler payload-only numbers."));
+	m_toolTip.SetTool(this, IDC_PORT,
+		_T("Main TCP port used for incoming client connections.\r\n\r\n")
+		_T("Change it only when you intentionally reconfigure firewall or router rules. After changing it, retest connectivity."));
+	m_toolTip.SetTool(this, IDC_UDPPORT,
+		_T("UDP port used for Kad and other UDP-assisted features.\r\n\r\n")
+		_T("Recommended: keep it enabled and reachable unless you intentionally want to disable UDP-based networking."));
+	m_toolTip.SetTool(this, IDC_MAXSOURCEPERFILE,
+		_T("Hard limit for how many remote sources eMule keeps per download.\r\n\r\n")
+		_T("Higher values can improve availability for rare files but cost more memory and source-management traffic. Use moderate values unless you have a specific reason to raise it."));
+	m_toolTip.SetTool(this, IDC_MAXCON,
+		_T("Upper limit for simultaneous connections eMule may keep open.\r\n\r\n")
+		_T("Higher values are not automatically better. Leave this near the tuned default unless you are diagnosing a specific network limitation."));
+	m_toolTip.SetTool(this, IDC_DOWNLOAD_CAP,
+		_T("Your configured downstream capacity. eMule uses this as an upper reference for sliders and bandwidth decisions.\r\n\r\n")
+		_T("Set it close to your real usable line rate, not the marketing maximum."));
+	m_toolTip.SetTool(this, IDC_UPLOAD_CAP,
+		_T("Your configured upstream capacity. eMule uses this as an upper reference for upload control.\r\n\r\n")
+		_T("Set it close to the real usable sustained upload rate of your line."));
+	m_toolTip.SetTool(this, IDC_NETWORK_ED2K,
+		_T("Enables the classic eD2K server network.\r\n\r\n")
+		_T("Leave it enabled if you still use server-based source discovery. Disable it only if you intentionally want Kad-only operation."));
+	m_toolTip.SetTool(this, IDC_NETWORK_KADEMLIA,
+		_T("Enables the Kad distributed network.\r\n\r\n")
+		_T("Recommended: enabled for modern use. It requires the UDP port to stay enabled."));
+	m_toolTip.SetTool(this, IDC_PREF_UPNPONSTART,
+		_T("Attempts automatic NAT port mapping on startup for the configured TCP and UDP ports.\r\n\r\n")
+		_T("Recommended: enabled when your router supports UPnP or PCP/NAT-PMP. Disable it if you forward ports manually."));
+	m_toolTip.SetTool(this, IDC_UDPDISABLE,
+		_T("Disables eMule's UDP port and therefore disables UDP-dependent features such as Kad networking.\r\n\r\n")
+		_T("Recommended: leave this off unless you must run TCP-only for a very specific network environment."));
+	m_toolTip.SetTool(this, IDC_STARTTEST,
+		_T("Launches the external connectivity test for the currently configured TCP and UDP ports.\r\n\r\n")
+		_T("Use it after changing ports, bind settings, or router mapping rules."));
 }
 
 void CPPgConnection::LoadSettings()
@@ -377,6 +427,12 @@ BOOL CPPgConnection::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgConnection::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 void CPPgConnection::OnStartPortTest()

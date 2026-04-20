@@ -13,6 +13,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 #include "Preferences.h"
+#include "PreferenceToolTipHelper.h"
 
 class CPPgNotify : public CPropertyPage
 {
@@ -31,13 +32,16 @@ public:
 protected:
 	EmailSettings m_mail;
 	HICON m_icoBrowse;
+	CPreferenceToolTipHelper m_toolTip;
 
 	void UpdateControls();
 	void ApplyNotifierSoundType();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

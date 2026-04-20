@@ -1028,10 +1028,8 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			else
 				m_FileMenu.SetDefaultItem(UINT_MAX);
 			m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, (iSelectedItems >= 1 /*&& iFilesNotDone == 1*/) ? MF_ENABLED : MF_GRAYED);
-			if (thePrefs.m_bImportParts) {
-				m_FileMenu.RenameMenu(MP_IMPORTPARTS, MF_BYCOMMAND, GetResString(iFilesToImport > 0 ? IDS_IMPORTPARTS_STOP : IDS_IMPORTPARTS), _T("FILEIMPORTPARTS"));
-				m_FileMenu.EnableMenuItem(MP_IMPORTPARTS, (thePrefs.m_bImportParts && iSelectedItems == 1 && iFilesNotDone == 1) ? MF_ENABLED : MF_GRAYED);
-			}
+			m_FileMenu.RenameMenu(MP_IMPORTPARTS, MF_BYCOMMAND, GetResString(iFilesToImport > 0 ? IDS_IMPORTPARTS_STOP : IDS_IMPORTPARTS), _T("FILEIMPORTPARTS"));
+			m_FileMenu.EnableMenuItem(MP_IMPORTPARTS, (iSelectedItems == 1 && iFilesNotDone == 1) ? MF_ENABLED : MF_GRAYED);
 
 			int total;
 			m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
@@ -1138,8 +1136,7 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 
 		m_FileMenu.EnableMenuItem(MP_METINFO, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, MF_GRAYED);
-		if (thePrefs.m_bImportParts)
-			m_FileMenu.EnableMenuItem(MP_IMPORTPARTS, MF_GRAYED);
+		m_FileMenu.EnableMenuItem(MP_IMPORTPARTS, MF_GRAYED);
 
 		m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
 		m_FileMenu.EnableMenuItem(thePrefs.GetShowCopyEd2kLinkCmd() ? MP_GETED2KLINK : MP_SHOWED2KLINK, MF_GRAYED);
@@ -1944,8 +1941,7 @@ void CDownloadListCtrl::CreateMenus()
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_METINFO, GetResString(IDS_DL_INFO), _T("FILEINFO"));
 	m_FileMenu.AppendMenu(MF_STRING, MP_VIEWFILECOMMENTS, GetResString(IDS_CMT_SHOWALL), _T("FILECOMMENTS"));
-	if (thePrefs.m_bImportParts)
-		m_FileMenu.AppendMenu(MF_STRING | MF_GRAYED, MP_IMPORTPARTS, GetResString(IDS_IMPORTPARTS), _T("FILEIMPORTPARTS"));
+	m_FileMenu.AppendMenu(MF_STRING | MF_GRAYED, MP_IMPORTPARTS, GetResString(IDS_IMPORTPARTS), _T("FILEIMPORTPARTS"));
 	m_FileMenu.AppendMenu(MF_SEPARATOR);
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_CLEARCOMPLETED, GetResString(IDS_DL_CLEAR), _T("CLEARCOMPLETE"));

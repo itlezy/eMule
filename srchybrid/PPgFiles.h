@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CPPgFiles : public CPropertyPage
 {
@@ -17,13 +18,16 @@ public:
 protected:
 	CListBox m_uncfolders;
 	HICON m_icoBrowse;
+	CPreferenceToolTipHelper m_toolTip;
 
 	void LoadSettings();
 	void OnSettingsChangeCat(uint8 index);
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

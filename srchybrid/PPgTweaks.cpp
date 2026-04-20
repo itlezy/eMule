@@ -198,6 +198,7 @@ BEGIN_MESSAGE_MAP(CPPgTweaks, CPropertyPage)
 	ON_WM_DESTROY()
 	ON_WM_SIZE()
 	ON_MESSAGE(UM_TREEOPTSCTRL_NOTIFY, OnTreeOptsCtrlNotify)
+	ON_NOTIFY(TVN_GETINFOTIP, IDC_EXT_OPTS, OnTvnGetInfoTip)
 	ON_WM_HELPINFO()
 END_MESSAGE_MAP()
 
@@ -248,7 +249,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiExtractMetaDataNever()
 	, m_htiFilterLANIPs()
 	, m_htiFullAlloc()
-	, m_htiImportParts()
 	, m_htiInspectAllFileTypes()
 	, m_htiLog2Disk()
 	, m_htiPerfLog()
@@ -356,7 +356,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bFilterLANIPs()
 	, m_bFullAlloc()
 	, m_bGeoLocationEnabled()
-	, m_bImportParts()
 	, m_bInitializedTreeOpts()
 	, m_bKeepUnavailableFixedSharedDirs()
 	, m_bLog2Disk()
@@ -606,7 +605,60 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiShareeMulePublicUser = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_SHAREEMULEPUBLIC), m_htiShareeMule, m_iShareeMule == 1);
 		m_htiShareeMuleOldStyle = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_SHAREEMULEOLD), m_htiShareeMule, m_iShareeMule == 2);
 
-		m_htiImportParts = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLEIMPORTPARTS), TVI_ROOT, m_bImportParts);
+		SetTreeToolTip(m_htiConditionalTCPAccept,
+			_T("Prefers accepting inbound TCP connections only when they look useful.\r\n\r\n")
+			_T("Advanced traffic-shaping tweak. Leave it at the default unless you are diagnosing connection pressure."));
+		SetTreeToolTip(m_htiSearchEd2kMaxResults,
+			_T("Maximum number of results requested from an eD2K server for one search.\r\n\r\n")
+			_T("Higher values can find more files but increase server work and UI noise. Stay near the default unless you have a specific reason."));
+		SetTreeToolTip(m_htiPerfLog,
+			_T("Writes periodic payload and overhead samples for external graphing tools.\r\n\r\n")
+			_T("Operator/debug feature only. Leave it off unless you actively consume the generated files."));
+		SetTreeToolTip(m_htiCommit,
+			_T("Controls how aggressively eMule asks Windows to commit file data to disk.\r\n\r\n")
+			_T("Safer settings reduce crash-loss risk but cost more disk I/O. 'On shutdown' is a balanced default."));
+		SetTreeToolTip(m_htiExtractMetaData,
+			_T("Controls whether eMule extracts metadata such as tags and media duration from files.\r\n\r\n")
+			_T("Useful for richer file info, but it adds background file inspection. Disable it if you want the lightest scanning."));
+		SetTreeToolTip(m_htiGeoLocationEnabled,
+			_T("Resolves peer IPs to country-level location data for display.\r\n\r\n")
+			_T("Purely informational. Disable it if you do not care about country flags or want no background refreshes."));
+		SetTreeToolTip(m_htiCloseUPnPPorts,
+			_T("Closes router mappings on clean exit when automatic NAT mapping was used.\r\n\r\n")
+			_T("Recommended: enabled. Disable it only if you deliberately want the mappings left behind."));
+		SetTreeToolTip(m_htiUPnPBackendMode,
+			_T("Selects how eMule performs automatic NAT mapping.\r\n\r\n")
+			_T("Recommended: Automatic. That tries UPnP IGD first and falls back to PCP/NAT-PMP if needed."));
+		SetTreeToolTip(m_htiUPnPBackendModeAutomatic,
+			_T("Recommended mode. Try UPnP IGD first, then fall back to PCP/NAT-PMP if mapping fails."));
+		SetTreeToolTip(m_htiUPnPBackendModeIgdOnly,
+			_T("Use only UPnP IGD mapping. Choose this if you want strictly classic UPnP behavior."));
+		SetTreeToolTip(m_htiUPnPBackendModePcpNatPmpOnly,
+			_T("Use only PCP/NAT-PMP mapping. Choose this only if your router environment clearly prefers it."));
+		SetTreeToolTip(m_htiPreviewCopiedArchives,
+			_T("Allows preview helpers to inspect copied archive contents when possible.\r\n\r\n")
+			_T("Useful for archive-heavy workflows, but it adds extra inspection work. Disable it if you want less background probing."));
+		SetTreeToolTip(m_htiInspectAllFileTypes,
+			_T("Controls how aggressively eMule inspects file types when extracting preview and metadata details.\r\n\r\n")
+			_T("Higher values find more information but cost more file inspection. Conservative values are safer on slower disks."));
+		SetTreeToolTip(m_htiReBarToolbar,
+			_T("Uses the older rebar-style main toolbar container instead of the simpler plain toolbar layout.\r\n\r\n")
+			_T("Mostly a UI layout preference. Leave it enabled only if you prefer the legacy toolbar presentation."));
+		SetTreeToolTip(m_htiShowUpDownIconInTaskbar,
+			_T("Shows the combined upload/download rate icon in the taskbar notification area.\r\n\r\n")
+			_T("Purely visual. Disable it if you want a cleaner tray area."));
+		SetTreeToolTip(m_htiShowVerticalHourMarkers,
+			_T("Draws hourly guide markers in the long-term statistics graphs.\r\n\r\n")
+			_T("Useful for reading time-based traffic patterns. Disable it if you prefer less graph clutter."));
+		SetTreeToolTip(m_htiForceSpeedsToKB,
+			_T("Forces rate displays to use KB/s-style units instead of automatically scaling to larger units.\r\n\r\n")
+			_T("Enable it if you prefer fixed familiar units. Leave it off for more readable large-speed displays."));
+		SetTreeToolTip(m_htiRearrangeKadSearchKeywords,
+			_T("Reorders Kad keyword search terms to try a more useful query shape first.\r\n\r\n")
+			_T("Advanced search-behavior tweak. Leave it at the default unless you are tuning Kad search behavior deliberately."));
+		SetTreeToolTip(m_htiMessageFromValidSourcesOnly,
+			_T("Accepts messages only from peers that already look like valid sources for your transfers.\r\n\r\n")
+			_T("Stronger privacy/spam protection, but it can block unsolicited contact. Enable it if you want a stricter message policy."));
 
 		ExpandAllTreeItems(m_ctrlTreeOptions);
 		m_ctrlTreeOptions.SendMessage(WM_VSCROLL, SB_TOP);
@@ -705,7 +757,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// File related group
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSparsePartFiles, m_bSparsePartFiles);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiImportParts, m_bImportParts);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCheckDiskspace, m_bCheckDiskspace);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_iMinFreeDiskSpaceGB);
@@ -858,7 +909,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bExtControls = thePrefs.m_bExtControls;
 	m_uServerKeepAliveTimeout = thePrefs.m_dwServerKeepAliveTimeout / MIN2MS(1);
 	m_bSparsePartFiles = thePrefs.GetSparsePartFiles();
-	m_bImportParts = thePrefs.m_bImportParts;
 	m_bFullAlloc = thePrefs.m_bAllocFull;
 	m_bCheckDiskspace = true;
 	m_iMinFreeDiskSpaceGB = static_cast<int>(PartFilePersistenceSeams::ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(thePrefs.GetMinFreeDiskSpace()));
@@ -1057,8 +1107,7 @@ BOOL CPPgTweaks::OnApply()
 	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
 	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
 
-	bool bUpdateDLmenu = (thePrefs.m_bImportParts != m_bImportParts);
-	thePrefs.m_bImportParts = m_bImportParts;
+	bool bUpdateDLmenu = false;
 	if (thePrefs.m_bExtControls != m_bExtControls) {
 		bUpdateDLmenu = true;
 		thePrefs.m_bExtControls = m_bExtControls;
@@ -1141,6 +1190,12 @@ void CPPgTweaks::LocalizeEditLabel(HTREEITEM item, UINT strid)
 		m_ctrlTreeOptions.SetEditLabel(item, GetResString(strid));
 }
 
+void CPPgTweaks::SetTreeToolTip(HTREEITEM item, const CString &text)
+{
+	if (item != NULL)
+		m_treeToolTips[item] = text;
+}
+
 void CPPgTweaks::Localize()
 {
 	if (m_hWnd) {
@@ -1211,7 +1266,6 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiTCPErrorFlooderIntervalMinutes, IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES);
 		LocalizeEditLabel(m_htiTCPErrorFlooderThreshold, IDS_TCP_ERROR_FLOODER_THRESHOLD);
 		LocalizeItemText(m_htiHiddenStartup, IDS_HIDDENRUNTIME_STARTUP);
-		LocalizeItemText(m_htiImportParts, IDS_ENABLEIMPORTPARTS);
 		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiPerfLog, IDS_ENABLE_PERFLOG);
@@ -1263,6 +1317,7 @@ void CPPgTweaks::OnDestroy()
 	m_ctrlTreeOptions.DeleteAllItems();
 	m_ctrlTreeOptions.DestroyWindow();
 	m_bInitializedTreeOpts = false;
+	m_treeToolTips.clear();
 	m_htiTCPGroup = NULL;
 	m_htiSearchGroup = NULL;
 	m_htiSearchEd2kGroup = NULL;
@@ -1350,7 +1405,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiExtControls = NULL;
 	m_htiServerKeepAliveTimeout = NULL;
 	m_htiSparsePartFiles = NULL;
-	m_htiImportParts = NULL;
 	m_htiFullAlloc = NULL;
 	m_htiCheckDiskspace = NULL;
 	m_htiMinFreeDiskSpace = NULL;
@@ -1422,6 +1476,19 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 		SetModified();
 	}
 	return 0;
+}
+
+void CPPgTweaks::OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult)
+{
+	LPNMTVGETINFOTIP pGetInfoTip = reinterpret_cast<LPNMTVGETINFOTIP>(pNMHDR);
+	if (pGetInfoTip != NULL && pGetInfoTip->pszText != NULL && pGetInfoTip->cchTextMax > 0) {
+		const std::map<HTREEITEM, CString>::const_iterator it = m_treeToolTips.find(pGetInfoTip->hItem);
+		if (it != m_treeToolTips.end()) {
+			_tcsncpy(pGetInfoTip->pszText, it->second, pGetInfoTip->cchTextMax);
+			pGetInfoTip->pszText[pGetInfoTip->cchTextMax - 1] = _T('\0');
+		}
+	}
+	*pResult = 0;
 }
 
 void CPPgTweaks::OnSize(UINT nType, int cx, int cy)

@@ -276,10 +276,33 @@ BOOL CPPgWebServer::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	OnEnChangeWSEnabled();
 
 	return TRUE;
+}
+
+void CPPgWebServer::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_WEBBINDADDR,
+		_T("Local bind address for the built-in WebServer and REST API.\r\n\r\n")
+		_T("Leave it empty or as 0.0.0.0 to listen on all interfaces. Set a specific IPv4 only if you deliberately want to restrict where the service listens."));
+	m_toolTip.SetTool(this, IDC_WSAPIKEY,
+		_T("Plaintext REST API key used by clients in the X-API-Key header.\r\n\r\n")
+		_T("Recommended: keep the generated random value unless you need a specific token. Anyone with this key has full API access."));
+	m_toolTip.SetTool(this, IDC_WSUPNP,
+		_T("Includes the WebServer port in automatic NAT mapping when UPnP or PCP/NAT-PMP is enabled.\r\n\r\n")
+		_T("Enable it only if you intentionally want the Web UI or REST API reachable through your router mapping."));
+	m_toolTip.SetTool(this, IDC_WS_ALLOWHILEVFUNC,
+		_T("Allows high-level administrative Web actions that can change runtime state more aggressively.\r\n\r\n")
+		_T("Recommended: keep this off unless you explicitly need those actions from trusted admin clients."));
+	m_toolTip.SetTool(this, IDC_WEB_HTTPS,
+		_T("Serves the Web UI and REST API over HTTPS using the configured certificate and key.\r\n\r\n")
+		_T("Recommended: enabled whenever you expose the WebServer beyond the local machine."));
 }
 
 void CPPgWebServer::LoadSettings()
@@ -606,6 +629,12 @@ BOOL CPPgWebServer::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgWebServer::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 /**

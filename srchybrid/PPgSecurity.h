@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CCustomAutoComplete;
 
@@ -19,8 +20,10 @@ public:
 
 protected:
 	CCustomAutoComplete *m_pacIPFilterURL;
+	CPreferenceToolTipHelper m_toolTip;
 
 	void LoadSettings();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();

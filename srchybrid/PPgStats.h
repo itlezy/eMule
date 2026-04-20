@@ -1,5 +1,6 @@
 #pragma once
 #include "ColorButton.h"
+#include "PreferenceToolTipHelper.h"
 
 class CPPgStats : public CPropertyPage
 {
@@ -29,13 +30,16 @@ protected:
 	int m_iStatsUpdate;
 	BOOL m_bModified;
 	bool m_bFillGraphs;
+	CPreferenceToolTipHelper m_toolTip;
 
 	void ShowInterval();
 	void SetModified(BOOL bChanged = TRUE);
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

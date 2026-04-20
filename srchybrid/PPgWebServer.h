@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CPPgWebServer : public CPropertyPage
 {
@@ -20,13 +21,16 @@ public:
 protected:
 	BOOL m_bModified;
 	HICON m_icoBrowse;
+	CPreferenceToolTipHelper m_toolTip;
 	static bool IsValidBindAddressOverride(const CString &strAddr);
 
 	void LoadSettings();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 	void SetModified(BOOL bChanged = TRUE)
 	{

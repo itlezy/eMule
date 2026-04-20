@@ -1,5 +1,6 @@
 #pragma once
 #include "DirectoryTreeCtrl.h"
+#include "PreferenceToolTipHelper.h"
 
 class CPPgDirectories : public CPropertyPage
 {
@@ -18,12 +19,15 @@ public:
 protected:
 	CDirectoryTreeCtrl m_ShareSelector;
 	HICON m_icoBrowse;
+	CPreferenceToolTipHelper m_toolTip;
 
 	void LoadSettings();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

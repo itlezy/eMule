@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CPPgScheduler : public CPropertyPage
 {
@@ -20,16 +21,19 @@ protected:
 	CDateTimeCtrl m_timeTo;
 	CListCtrl m_list;
 	CListCtrl m_actions;
+	CPreferenceToolTipHelper m_toolTip;
 
 	CString GetActionLabel(int index);
 	CString GetDayLabel(int index);
 	void LoadSchedule(int index);
 	void RecheckSchedules();
 	void FillScheduleList();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

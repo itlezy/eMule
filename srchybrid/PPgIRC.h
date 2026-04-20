@@ -1,5 +1,6 @@
 #pragma once
 #include "TreeOptionsCtrlEx.h"
+#include "PreferenceToolTipHelper.h"
 
 class CPPgIRC : public CPropertyPage
 {
@@ -35,6 +36,7 @@ protected:
 	bool m_bIRCEnableUTF8;
 
 	CTreeOptionsCtrlEx m_ctrlTreeOptions;
+	CPreferenceToolTipHelper m_toolTip;
 	bool m_bInitializedTreeOpts;
 	HTREEITEM m_htiSoundEvents;
 	HTREEITEM m_htiTimeStamp;
@@ -57,11 +59,13 @@ protected:
 
 	void LoadSettings();
 	void UpdateControls();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
 	virtual BOOL OnKillActive();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

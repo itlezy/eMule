@@ -449,7 +449,6 @@ public:
 	static bool		checkDiskspace;
 	static ULONGLONG m_uMinFreeDiskSpace;
 	static bool		m_bSparsePartFiles;
-	static bool		m_bImportParts;
 	static CString	m_strYourHostname;
 	static bool		m_bEnableVerboseOptions;
 	static bool		m_bVerbose;

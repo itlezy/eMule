@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CPPgConnection : public CPropertyPage
 {
@@ -23,13 +24,16 @@ public:
 protected:
 	CSliderCtrl m_ctlMaxDown;
 	CSliderCtrl m_ctlMaxUp;
+	CPreferenceToolTipHelper m_toolTip;
 
 	void ShowLimitValues();
 	void SetRateSliderTicks(CSliderCtrl &rRate);
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

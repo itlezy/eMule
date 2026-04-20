@@ -77,9 +77,32 @@ BOOL CPPgFiles::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgFiles::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_PF_TIMECALC,
+		_T("Uses the more detailed remaining-time calculation for downloads.\r\n\r\n")
+		_T("Recommended: enabled if you want steadier ETA estimates. Disable it only if you prefer the older simpler calculation."));
+	m_toolTip.SetTool(this, IDC_PREVIEWPRIO,
+		_T("Prioritizes movie preview chunks so partially downloaded media becomes previewable earlier.\r\n\r\n")
+		_T("Useful for video downloads. Leave it off if you prefer neutral chunk ordering."));
+	m_toolTip.SetTool(this, IDC_WATCHCB,
+		_T("Watches the clipboard for ed2k links and offers to handle them.\r\n\r\n")
+		_T("Convenient if you add downloads from browsers a lot. Disable it if you do not want eMule watching the clipboard."));
+	m_toolTip.SetTool(this, IDC_FNCLEANUP,
+		_T("Cleans up downloaded file names automatically according to the configured rules.\r\n\r\n")
+		_T("Recommended: enabled if you want more consistent final filenames without manual cleanup."));
+	m_toolTip.SetTool(this, IDC_STARTNEXTFILE,
+		_T("Starts the next queued file automatically when another download finishes or pauses out.\r\n\r\n")
+		_T("Recommended: enabled if you use paused queues to control how many files run at once."));
 }
 
 void CPPgFiles::LoadSettings()
@@ -217,6 +240,12 @@ BOOL CPPgFiles::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgFiles::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 void CPPgFiles::OnSettingsChange()

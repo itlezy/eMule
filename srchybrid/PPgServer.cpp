@@ -64,9 +64,44 @@ BOOL CPPgServer::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgServer::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_AUTOSERVER,
+		_T("Automatically updates the server list from connected clients and other trusted sources.\r\n\r\n")
+		_T("Convenient, but it also lets the list drift over time. Disable it if you prefer a tightly curated static server list."));
+	m_toolTip.SetTool(this, IDC_UPDATESERVERCONNECT,
+		_T("Allows connected servers to advertise additional servers into your list.\r\n\r\n")
+		_T("Convenient, but it can grow the list with low-value entries. Disable it if you prefer stricter manual curation."));
+	m_toolTip.SetTool(this, IDC_UPDATESERVERCLIENT,
+		_T("Allows clients to contribute server addresses to your server list.\r\n\r\n")
+		_T("Most users should treat this cautiously. Disable it if you want tighter control over server-list quality."));
+	m_toolTip.SetTool(this, IDC_SAFESERVERCONNECT,
+		_T("Uses a more cautious server-connect strategy instead of rushing through many candidates.\r\n\r\n")
+		_T("Recommended: enabled for stability. Disable it only if you deliberately want a more aggressive connect approach."));
+	m_toolTip.SetTool(this, IDC_SMARTIDCHECK,
+		_T("Performs the smart LowID check before deciding that your server-side reachability is poor.\r\n\r\n")
+		_T("Recommended: enabled. It avoids some false LowID conclusions during transient network conditions."));
+	m_toolTip.SetTool(this, IDC_SCORE,
+		_T("Uses server priorities when choosing and ordering servers.\r\n\r\n")
+		_T("Recommended: enabled if you maintain a preferred subset of servers and want eMule to favor them."));
+	m_toolTip.SetTool(this, IDC_SERVERRETRIES,
+		_T("How many failed connection attempts a server may accumulate before eMule treats it as dead.\r\n\r\n")
+		_T("Lower values prune bad servers faster; higher values are more forgiving of transient outages."));
+	m_toolTip.SetTool(this, IDC_AUTOCONNECTSTATICONLY,
+		_T("Restricts automatic server connect attempts to servers marked as static.\r\n\r\n")
+		_T("Enable it if you maintain a small trusted static list and do not want automatic rotation across the full server list."));
+	m_toolTip.SetTool(this, IDC_MANUALSERVERHIGHPRIO,
+		_T("Gives manually added servers a higher priority bias than ordinary discovered entries.\r\n\r\n")
+		_T("Enable it if you maintain a hand-picked server set and want those additions favored."));
 }
 
 void CPPgServer::LoadSettings()
@@ -150,4 +185,10 @@ BOOL CPPgServer::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgServer::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }

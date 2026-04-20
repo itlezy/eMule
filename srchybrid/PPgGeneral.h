@@ -1,4 +1,5 @@
 #pragma once
+#include "PreferenceToolTipHelper.h"
 
 class CPPgGeneral : public CPropertyPage
 {
@@ -16,13 +17,16 @@ public:
 
 protected:
 	CComboBox m_language;
+	CPreferenceToolTipHelper m_toolTip;
 	void LoadSettings();
 	void UpdateEd2kLinkFixCtrl();
+	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
 	virtual BOOL OnApply();
 	virtual BOOL OnSetActive();
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()

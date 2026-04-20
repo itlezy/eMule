@@ -125,10 +125,39 @@ BOOL CPPgStats::OnInitDialog()
 	thePrefs.GetAllStatsColors(m_iStatsColors, m_pdwStatsColors);
 
 	Localize();
+	UpdateToolTips();
 	SetModified(FALSE);
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgStats::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_FILL_GRAPHS,
+		_T("Fills the graph areas instead of drawing only lines.\r\n\r\n")
+		_T("Purely visual. Disable it if you prefer a lighter, less busy statistics view."));
+	m_toolTip.SetTool(this, IDC_SLIDER,
+		_T("Refresh interval for the live traffic graph.\r\n\r\n")
+		_T("Lower values feel more responsive but cost more UI work. Moderate values are usually best."));
+	m_toolTip.SetTool(this, IDC_SLIDER2,
+		_T("Refresh interval for the statistics tree and summary values.\r\n\r\n")
+		_T("Lower values update more often but cost more UI churn. Increase it if you want calmer updates."));
+	m_toolTip.SetTool(this, IDC_SLIDER3,
+		_T("Averaging window used by the graphs.\r\n\r\n")
+		_T("Short windows show spikes clearly; longer windows smooth the display and emphasize trends."));
+	m_toolTip.SetTool(this, IDC_COLORSELECTOR,
+		_T("Selects which statistics element color you are editing.\r\n\r\n")
+		_T("Use it only if you are customizing the graph palette."));
+	m_toolTip.SetTool(this, IDC_CGRAPHSCALE,
+		_T("Manual Y-axis scale for the connection graph.\r\n\r\n")
+		_T("Raise it if the graph clips high values; lower values give more detail at modest connection counts."));
+	m_toolTip.SetTool(this, IDC_CRATIO,
+		_T("Upload/download aspect ratio used by the combined connection graph.\r\n\r\n")
+		_T("Leave it near the default unless you want the graph to emphasize one direction more strongly."));
 }
 
 BOOL CPPgStats::OnApply()
@@ -341,4 +370,10 @@ BOOL CPPgStats::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgStats::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }

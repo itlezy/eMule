@@ -75,9 +75,26 @@ BOOL CPPgDirectories::OnInitDialog()
 
 	LoadSettings();
 	Localize();
+	UpdateToolTips();
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgDirectories::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_INCFILES,
+		_T("Main incoming directory for completed downloads.\r\n\r\n")
+		_T("Use a stable local path with enough free space. Avoid temporary or removable locations unless you really want finished files there."));
+	m_toolTip.SetTool(this, IDC_TEMPFILES,
+		_T("Working directory list for part files, hashes, and transfer state.\r\n\r\n")
+		_T("These paths must stay available while downloads run. Fast local disks are recommended over removable or unreliable network paths."));
+	m_toolTip.SetTool(this, IDC_SHARESELECTOR,
+		_T("Selects which local folders eMule shares to other clients.\r\n\r\n")
+		_T("Share only the directories you intend to publish. Avoid broad roots such as an entire drive."));
 }
 
 void CPPgDirectories::LoadSettings()
@@ -308,6 +325,12 @@ BOOL CPPgDirectories::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgDirectories::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 void CPPgDirectories::OnBnClickedSeltempdiradd()

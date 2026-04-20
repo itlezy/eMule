@@ -361,7 +361,6 @@ UINT	CPreferences::MaxConperFive;
 bool	CPreferences::checkDiskspace;
 ULONGLONG CPreferences::m_uMinFreeDiskSpace;
 bool	CPreferences::m_bSparsePartFiles;
-bool	CPreferences::m_bImportParts;
 CString	CPreferences::m_strYourHostname;
 bool	CPreferences::m_bEnableVerboseOptions;
 bool	CPreferences::m_bVerbose;
@@ -2291,8 +2290,6 @@ void CPreferences::LoadPreferences()
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
 	m_bKeepUnavailableFixedSharedDirs = ini.GetBool(_T("KeepUnavailableFixedSharedDirs"), false);
 	m_strYourHostname = ini.GetString(_T("YourHostname"), _T(""));
-	m_bImportParts = false; //enable on demand for the current session only
-
 	// Barry - New properties...
 	m_bAutoConnectToStaticServersOnly = ini.GetBool(_T("AutoConnectStaticOnly"), false);
 	autotakeed2klinks = ini.GetBool(_T("AutoTakeED2KLinks"), true);

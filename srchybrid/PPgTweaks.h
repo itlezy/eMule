@@ -1,5 +1,6 @@
 #pragma once
 #include "TreeOptionsCtrlEx.h"
+#include <map>
 
 class CPPgTweaks : public CPropertyPage
 {
@@ -11,6 +12,7 @@ class CPPgTweaks : public CPropertyPage
 	};
 	void LocalizeItemText(HTREEITEM item, UINT strid);
 	void LocalizeEditLabel(HTREEITEM item, UINT strid);
+	void SetTreeToolTip(HTREEITEM item, const CString &text);
 
 public:
 	CPPgTweaks();
@@ -26,6 +28,7 @@ protected:
 	CSize m_szBaseClient;
 	CRect m_rcWarning;
 	CRect m_rcTree;
+	std::map<HTREEITEM, CString> m_treeToolTips;
 
 	HTREEITEM m_htiA4AFSaveCpu;
 	HTREEITEM m_htiAutoArch;
@@ -69,7 +72,6 @@ protected:
 	HTREEITEM m_htiExtractMetaDataNever;
 	HTREEITEM m_htiFilterLANIPs;
 	HTREEITEM m_htiFullAlloc;
-	HTREEITEM m_htiImportParts;
 	HTREEITEM m_htiInspectAllFileTypes;
 	HTREEITEM m_htiLog2Disk;
 	HTREEITEM m_htiPerfLog;
@@ -180,7 +182,6 @@ protected:
 	bool m_bFilterLANIPs;
 	bool m_bFullAlloc;
 	bool m_bGeoLocationEnabled;
-	bool m_bImportParts;
 	bool m_bInitializedTreeOpts;
 	bool m_bKeepUnavailableFixedSharedDirs;
 	bool m_bLog2Disk;
@@ -232,6 +233,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam);
+	afx_msg void OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult);
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);

@@ -110,11 +110,34 @@ BOOL CPPgNotify::OnInitDialog()
 
 	UpdateControls();
 	Localize();
+	UpdateToolTips();
 
 	GetDlgItem(IDC_CB_TBN_USESPEECH)->EnableWindow(IsSpeechEngineAvailable());
 
 	return TRUE;  // return TRUE unless you set the focus to the control
 				  // EXCEPTION: OCX Property Pages should return FALSE
+}
+
+void CPPgNotify::UpdateToolTips()
+{
+	if (!m_toolTip.Init(this))
+		return;
+
+	m_toolTip.SetTool(this, IDC_CB_TBN_USESOUND,
+		_T("Plays a custom WAV file for taskbar notifications.\r\n\r\n")
+		_T("Use this if you want an audible alert. Leave it off if silent popups or speech are enough."));
+	m_toolTip.SetTool(this, IDC_CB_TBN_USESPEECH,
+		_T("Uses text-to-speech for taskbar notifications when a speech engine is available.\r\n\r\n")
+		_T("Useful on unattended systems where spoken alerts are easier to notice than sounds."));
+	m_toolTip.SetTool(this, IDC_CB_TBN_POP_ALWAYS,
+		_T("Shows a popup for every incoming chat message instead of only the first one.\r\n\r\n")
+		_T("Enable it if you do not want follow-up chat messages to stay quiet."));
+	m_toolTip.SetTool(this, IDC_CB_ENABLENOTIFICATIONS,
+		_T("Enables outbound email notifications for the configured events.\r\n\r\n")
+		_T("Only enable it if you have already configured a working SMTP server and addresses."));
+	m_toolTip.SetTool(this, IDC_SMTPSERVER,
+		_T("Opens the SMTP server configuration used by email notifications.\r\n\r\n")
+		_T("You only need this if email notifications are enabled."));
 }
 
 void CPPgNotify::UpdateControls()
@@ -271,6 +294,12 @@ BOOL CPPgNotify::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
+}
+
+BOOL CPPgNotify::PreTranslateMessage(MSG *pMsg)
+{
+	m_toolTip.RelayEvent(pMsg);
+	return CPropertyPage::PreTranslateMessage(pMsg);
 }
 
 void CPPgNotify::OnBnClickedCbEnableNotifications()
