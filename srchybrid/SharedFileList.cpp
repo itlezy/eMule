@@ -765,8 +765,7 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 	if (fdate == (time_t)-1) {
 		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Failed to get file date of \"%s\""), (LPCTSTR)strFoundFilePath);
-	} else
-		AdjustNTFSDaylightFileTime(fdate, strFoundFilePath);
+	}
 
 	CKnownFile *toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
 	if (toadd) {
@@ -1875,8 +1874,6 @@ bool CSharedFileList::GetDirectoryStartupState(const CString &strDirectory, Dire
 	time_t tUtcDirectoryDate = (time_t)FileTimeToUnixTime(findData.ftLastWriteTime);
 	if (tUtcDirectoryDate <= 0)
 		tUtcDirectoryDate = (time_t)-1;
-	else
-		AdjustNTFSDaylightFileTime(tUtcDirectoryDate, strDirectoryPath);
 	rState.utcDirectoryDate = static_cast<LONGLONG>(tUtcDirectoryDate);
 
 	rState.bHasIdentity = LongPathSeams::TryGetResolvedDirectoryIdentity(strDirectoryPath, rState.identity, &dwError);
@@ -1910,8 +1907,6 @@ bool CSharedFileList::GetFileStartupState(const CString &strFilePath, LONGLONG &
 	time_t tUtcFileDate = (time_t)FileTimeToUnixTime(findData.ftLastWriteTime);
 	if (tUtcFileDate <= 0)
 		tUtcFileDate = (time_t)-1;
-	else
-		AdjustNTFSDaylightFileTime(tUtcFileDate, strCanonicalFilePath);
 
 	rUtcFileDate = static_cast<LONGLONG>(tUtcFileDate);
 	rullFileSize = (static_cast<ULONGLONG>(findData.nFileSizeHigh) << 32) | findData.nFileSizeLow;

@@ -2073,8 +2073,7 @@ void CSharedFilesCtrl::AddShareableFiles(const CString &strFromDir)
 		if (fdate == (time_t)-1) {
 			if (thePrefs.GetVerbose())
 				AddDebugLogLine(false, _T("Failed to get file date of \"%s\""), (LPCTSTR)strFoundFilePath);
-		} else
-			AdjustNTFSDaylightFileTime(fdate, strFoundFilePath);
+		}
 
 		CKnownFile *toadd = theApp.knownfiles->FindKnownFile(strFoundFileName, fdate, ullFoundFileSize);
 		if (toadd == NULL || theApp.sharedfiles->GetFileByID(toadd->GetFileHash()) == NULL) {

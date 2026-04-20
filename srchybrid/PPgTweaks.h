@@ -110,7 +110,6 @@ protected:
 	HTREEITEM m_htiExtraPreviewWithMenu;
 	HTREEITEM m_htiKeepUnavailableFixedSharedDirs;
 	HTREEITEM m_htiPartiallyPurgeOldKnownFiles;
-	HTREEITEM m_htiAdjustNTFSDaylightFileTime;
 	HTREEITEM m_htiDetectTCPErrorFlooder;
 	HTREEITEM m_htiTCPErrorFlooderIntervalMinutes;
 	HTREEITEM m_htiTCPErrorFlooderThreshold;
@@ -176,7 +175,6 @@ protected:
 	bool m_bAutoArchDisable;
 	bool m_bAutoTakeEd2kLinks;
 	bool m_bBBLowRatioBoost;
-	bool m_bAdjustNTFSDaylightFileTime;
 	bool m_bCloseUPnPOnExit;
 	bool m_bConditionalTCPAccept;
 	bool m_bCreditSystem;

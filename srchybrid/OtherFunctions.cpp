@@ -2978,23 +2978,9 @@ void ipstrA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
 	FormatIPv4AddressA(pszAddress, iMaxAddress, nIP);
 }
 
-static bool IsDaylightSavingTimeActive(LONG &rlDaylightBias)
-{
-	TIME_ZONE_INFORMATION tzi;
-	if (GetTimeZoneInformation(&tzi) != TIME_ZONE_ID_DAYLIGHT)
-		return false;
-	rlDaylightBias = tzi.DaylightBias;
-	return true;
-}
-
 class CVolumeInfo
 {
 public:
-	static bool IsNTFSVolume(LPCTSTR pszVolume)
-	{
-		return GetVolumeInfo(pszVolume) == _T("NTFS");
-	}
-
 	static bool IsFATVolume(LPCTSTR pszVolume)
 	{
 		return _tcsnicmp(GetVolumeInfo(pszVolume), _T("FAT"), 3) == 0;
@@ -3048,11 +3034,6 @@ protected:
 static CVolumeInfo g_VolumeInfo;
 CMapStringToString CVolumeInfo::m_mapVolumeInfo;
 
-static bool IsNTFSVolume(LPCTSTR pszVolume)
-{
-	return g_VolumeInfo.IsNTFSVolume(pszVolume);
-}
-
 static bool IsFATVolume(LPCTSTR pszVolume)
 {
 	return g_VolumeInfo.IsFATVolume(pszVolume);
@@ -3061,19 +3042,6 @@ static bool IsFATVolume(LPCTSTR pszVolume)
 void ClearVolumeInfoCache(int iDrive)
 {
 	g_VolumeInfo.ClearCache(iDrive);
-}
-
-static bool IsFileOnNTFSVolume(LPCTSTR pszFilePath)
-{
-	CString strRootPath(pszFilePath);
-	BOOL bResult = ::PathStripToRoot(strRootPath.GetBuffer());
-	strRootPath.ReleaseBuffer();
-	if (!bResult)
-		return false;
-	// Need to add a trailing backslash in case of a network share
-	if (!strRootPath.IsEmpty())
-		strRootPath = PathHelpers::EnsureTrailingSeparator(strRootPath);
-	return IsNTFSVolume(strRootPath);
 }
 
 bool IsFileOnFATVolume(LPCTSTR pszFilePath)
@@ -3118,56 +3086,6 @@ bool ShouldIgnoreSharedFileCandidate(const CString &sFilePath, const CString &sF
 		[](const CString &rstrFilePath, const CString &rstrFileName) -> bool {
 			return IsThumbsDb(rstrFilePath, rstrFileName);
 		});
-}
-
-static bool IsAutoDaylightTimeSetActive()
-{
-	CRegKey key;
-	if (key.Open(HKEY_LOCAL_MACHINE, _T("SYSTEM\\CurrentControlSet\\Control\\TimeZoneInformation"), KEY_READ) == ERROR_SUCCESS) {
-		DWORD dwDisableAutoDaylightTimeSet = 0;
-		if (key.QueryDWORDValue(_T("DisableAutoDaylightTimeSet"), dwDisableAutoDaylightTimeSet) == ERROR_SUCCESS)
-			if (dwDisableAutoDaylightTimeSet)
-				return false;
-	}
-	return true; // default to 'Automatically adjust clock for daylight saving changes'
-}
-
-bool AdjustNTFSDaylightFileTime(time_t &ruFileDate, LPCTSTR pszFilePath)
-{
-	if (!thePrefs.GetAdjustNTFSDaylightFileTime())
-		return false;
-	if (ruFileDate == 0 || ruFileDate == (time_t)-1)
-		return false;
-
-	// See also KB 129574
-	LONG lDaylightBias = 0;
-	if (IsDaylightSavingTimeActive(lDaylightBias)) {
-		if (IsAutoDaylightTimeSetActive()) {
-			if (IsFileOnNTFSVolume(pszFilePath)) {
-				ruFileDate += MIN2S(lDaylightBias);
-				return true;
-			}
-		} else {
-			// If 'Automatically adjust clock for daylight saving changes' is disabled and
-			// if the file's date is within DST period, we get again a wrong file date.
-			//
-			// If 'Automatically adjust clock for daylight saving changes' is disabled,
-			// Windows always reports 'Active DST'(!!) with a bias of '0' although there is no
-			// DST specified. This means also, that there is no chance to determine if a date is
-			// within any DST.
-
-			// Following code might be correct, but because we don't have a DST and because we don't have a bias,
-			// the code won't do anything useful.
-			/*struct tm *ptm = localtime((time_t*)&ruFileDate);
-			bool bFileDateInDST = (ptm && ptm->tm_isdst == 1);
-			if (bFileDateInDST) {
-				ruFileDate += MIN2S(lDaylightBias);
-				return true;
-			}*/
-		}
-	}
-
-	return false;
 }
 
 __time64_t FileTimeToUnixTime(const FILETIME &ft)

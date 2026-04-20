@@ -521,7 +521,6 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, const
 	struct _stat64 st;
 	if (statUTC((HANDLE)_get_osfhandle(_fileno(file)), st) == 0) {
 		m_tUtcLastModified = (time_t)st.st_mtime;
-		AdjustNTFSDaylightFileTime(m_tUtcLastModified, (LPCTSTR)strFilePath);
 	}
 
 	fclose(file);

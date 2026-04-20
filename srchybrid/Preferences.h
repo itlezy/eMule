@@ -543,7 +543,6 @@ public:
 	static COLORREF m_crLogWarning;
 	static COLORREF m_crLogSuccess;
 	static int		m_iExtractMetaData;
-	static bool		m_bAdjustNTFSDaylightFileTime;
 	static bool		m_bRearrangeKadSearchKeywords;
 	static bool		m_bAllocFull;
 	static bool		m_bShowSharedFilesDetails;
@@ -1235,7 +1234,6 @@ public:
 	static bool		GetPreviewCopiedArchives()			{ return m_bPreviewCopiedArchives; }
 	static bool		GetInspectAllFileTypes()			{ return m_bInspectAllFileTypes; }
 	static int		GetExtractMetaData()				{ return m_iExtractMetaData; }
-	static bool		GetAdjustNTFSDaylightFileTime()		{ return m_bAdjustNTFSDaylightFileTime; }
 	static bool		GetRearrangeKadSearchKeywords()		{ return m_bRearrangeKadSearchKeywords; }
 
 	static const CString& GetYourHostname()				{ return m_strYourHostname; }

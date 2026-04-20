@@ -1223,8 +1223,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 			if (fdate == (time_t)-1) {
 				if (thePrefs.GetVerbose())
 					AddDebugLogLine(false, _T("Failed to get file date of \"%s\" (%s)"), filestatus.m_szFullName, (LPCTSTR)GetFileName());
-			} else
-				AdjustNTFSDaylightFileTime(fdate, filestatus.m_szFullName);
+			}
 
 			if (m_tUtcLastModified != fdate) {
 				CString strFileInfo(GetFilePath());
@@ -1278,8 +1277,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 	if (m_tUtcLastModified == (time_t)-1) {
 		if (thePrefs.GetVerbose())
 			AddDebugLogLine(false, _T("Failed to get file date of \"%s\" (%s)"), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
-	} else
-		AdjustNTFSDaylightFileTime(m_tUtcLastModified, searchpath);
+	}
 
 	const CString &strTmpFile(m_fullname + PARTMET_TMP_EXT);
 
@@ -3072,7 +3070,6 @@ BOOL CPartFile::PerformFileComplete()
 	struct _stat64 st;
 	if (statUTC(PreparePathForLongPath(strNewname), st) == 0) {
 		m_tUtcLastModified = m_tLastModified = (time_t)st.st_mtime;
-		AdjustNTFSDaylightFileTime(m_tUtcLastModified, strNewname);
 	}
 
 	static LPCTSTR const pszErrfmt = _T(" - %s");

@@ -510,7 +510,6 @@ COLORREF CPreferences::m_crLogError = RGB(255, 0, 0);
 COLORREF CPreferences::m_crLogWarning = RGB(128, 0, 128);
 COLORREF CPreferences::m_crLogSuccess = RGB(0, 0, 255);
 int		CPreferences::m_iExtractMetaData;
-bool	CPreferences::m_bAdjustNTFSDaylightFileTime = false; //'true' causes rehashing in XP and above when DST switches on/off
 bool	CPreferences::m_bRearrangeKadSearchKeywords;
 CString	CPreferences::m_strWebPassword;
 CString	CPreferences::m_strWebLowPassword;
@@ -2058,7 +2057,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("ExtraPreviewWithMenu"), m_bExtraPreviewWithMenu);
 	ini.WriteBool(_T("KeepUnavailableFixedSharedDirs"), m_bKeepUnavailableFixedSharedDirs);
 	ini.WriteBool(_T("PartiallyPurgeOldKnownFiles"), m_bPartiallyPurgeOldKnownFiles);
-	ini.WriteBool(_T("AdjustNTFSDaylightFileTime"), m_bAdjustNTFSDaylightFileTime);
 	ini.WriteBool(_T("MessageFromValidSourcesOnly"), msgsecure);
 	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
 	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_uBBMaxUploadClientsAllowed);
@@ -2591,7 +2589,6 @@ void CPreferences::LoadPreferences()
 	m_iExtractMetaData = ini.GetInt(_T("ExtractMetaData"), 1); // 0=disable, 1=mp3, 2=MediaDet
 	if (m_iExtractMetaData > 1)
 		m_iExtractMetaData = 1;
-	m_bAdjustNTFSDaylightFileTime = ini.GetBool(_T("AdjustNTFSDaylightFileTime"), false);
 	m_bRearrangeKadSearchKeywords = ini.GetBool(_T("RearrangeKadSearchKeywords"), true);
 
 	m_bUseSecureIdent = ini.GetBool(_T("SecureIdent"), true);

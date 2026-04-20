@@ -485,7 +485,6 @@ inline CStringA ipstrA(in_addr nIP)
 // Date/Time
 //
 time_t safe_mktime(struct tm *ptm);
-bool AdjustNTFSDaylightFileTime(time_t &ruFileDate, LPCTSTR pszFilePath);
 //MS have broken stat functions in XP builds of VS 2015+, and refused to fix it properly.
 //Return UTC time and file size in _stat64 structure; all time fields are in UTC.
 __time64_t FileTimeToUnixTime(const FILETIME &ft);

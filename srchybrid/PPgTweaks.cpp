@@ -366,7 +366,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiExtraPreviewWithMenu()
 	, m_htiKeepUnavailableFixedSharedDirs()
 	, m_htiPartiallyPurgeOldKnownFiles()
-	, m_htiAdjustNTFSDaylightFileTime()
 	, m_htiDetectTCPErrorFlooder()
 	, m_htiTCPErrorFlooderIntervalMinutes()
 	, m_htiTCPErrorFlooderThreshold()
@@ -429,7 +428,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bAutoArchDisable(true)
 	, m_bAutoTakeEd2kLinks()
 	, m_bBBLowRatioBoost()
-	, m_bAdjustNTFSDaylightFileTime()
 	, m_bCloseUPnPOnExit(true)
 	, m_bConditionalTCPAccept()
 	, m_bCreditSystem()
@@ -609,7 +607,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiExtraPreviewWithMenu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_EXTRAPREVIEWWITHMENU), m_htiHiddenFile, m_bExtraPreviewWithMenu);
 		m_htiKeepUnavailableFixedSharedDirs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS), m_htiHiddenFile, m_bKeepUnavailableFixedSharedDirs);
 		m_htiPartiallyPurgeOldKnownFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PARTIALLYPURGEOLDKNOWNFILES), m_htiHiddenFile, m_bPartiallyPurgeOldKnownFiles);
-		m_htiAdjustNTFSDaylightFileTime = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ADJUSTNTFSDAYLIGHTFILETIME), m_htiHiddenFile, m_bAdjustNTFSDaylightFileTime);
 
 		/////////////////////////////////////////////////////////////////////////////
 		// Storage & persistence group
@@ -879,9 +876,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiPartiallyPurgeOldKnownFiles,
 			_T("Allows more aggressive cleanup of stale entries in the known-files history.\r\n\r\n")
 			_T("Can reduce clutter over time, but it also forgets old file history sooner. Leave the default unless you want a leaner history."));
-		SetTreeToolTip(m_htiAdjustNTFSDaylightFileTime,
-			_T("Applies a compatibility correction for NTFS daylight-saving timestamp quirks.\r\n\r\n")
-			_T("Leave it enabled unless you are deliberately working around a timestamp issue on your system."));
 		SetTreeToolTip(m_htiDetectTCPErrorFlooder,
 			_T("Detects repeated TCP error bursts that may indicate abusive or broken peers.\r\n\r\n")
 			_T("Recommended: enabled. Disable it only if you are diagnosing false positives."));
@@ -1011,7 +1005,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtraPreviewWithMenu, m_bExtraPreviewWithMenu);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiKeepUnavailableFixedSharedDirs, m_bKeepUnavailableFixedSharedDirs);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPartiallyPurgeOldKnownFiles, m_bPartiallyPurgeOldKnownFiles);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAdjustNTFSDaylightFileTime, m_bAdjustNTFSDaylightFileTime);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowActiveDownloadsBold, m_bShowActiveDownloadsBold);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiUseSystemFontForMainControls, m_bUseSystemFontForMainControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiReBarToolbar, m_bReBarToolbar);
@@ -1208,7 +1201,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bExtraPreviewWithMenu = thePrefs.GetExtraPreviewWithMenu();
 	m_bKeepUnavailableFixedSharedDirs = thePrefs.m_bKeepUnavailableFixedSharedDirs;
 	m_bPartiallyPurgeOldKnownFiles = thePrefs.DoPartiallyPurgeOldKnownFiles();
-	m_bAdjustNTFSDaylightFileTime = thePrefs.GetAdjustNTFSDaylightFileTime();
 	m_bRearrangeKadSearchKeywords = thePrefs.GetRearrangeKadSearchKeywords();
 	m_bMessageFromValidSourcesOnly = thePrefs.MsgOnlySecure();
 	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
@@ -1397,7 +1389,6 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bExtraPreviewWithMenu = m_bExtraPreviewWithMenu;
 	thePrefs.m_bKeepUnavailableFixedSharedDirs = m_bKeepUnavailableFixedSharedDirs;
 	thePrefs.m_bPartiallyPurgeOldKnownFiles = m_bPartiallyPurgeOldKnownFiles;
-	thePrefs.m_bAdjustNTFSDaylightFileTime = m_bAdjustNTFSDaylightFileTime;
 	thePrefs.m_bRearrangeKadSearchKeywords = m_bRearrangeKadSearchKeywords;
 	thePrefs.msgsecure = m_bMessageFromValidSourcesOnly;
 
@@ -1552,7 +1543,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiUseSystemFontForMainControls, IDS_USESYSTEMFONTFORMAINCONTROLS);
 		LocalizeItemText(m_htiVerbose, IDS_ENABLED);
 		LocalizeItemText(m_htiVerboseGroup, IDS_VERBOSE);
-		LocalizeItemText(m_htiAdjustNTFSDaylightFileTime, IDS_ADJUSTNTFSDAYLIGHTFILETIME);
 		m_ctrlTreeOptions.SetItemText(m_htiStoragePersistence, GetStoragePersistenceLabel());
 		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
 		LocalizeEditLabel(m_htiFileBufferTimeLimit, IDS_FILEBUFFERTIMELIMIT);
@@ -1637,7 +1627,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiExtraPreviewWithMenu = NULL;
 	m_htiKeepUnavailableFixedSharedDirs = NULL;
 	m_htiPartiallyPurgeOldKnownFiles = NULL;
-	m_htiAdjustNTFSDaylightFileTime = NULL;
 	m_htiRearrangeKadSearchKeywords = NULL;
 	m_htiMessageFromValidSourcesOnly = NULL;
 	m_htiFileBufferTimeLimit = NULL;
