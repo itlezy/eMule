@@ -36,6 +36,41 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	bool TryGetPortValue(CWnd* pWnd, int nCtrlId, bool bAllowZero, uint16& outPort)
+	{
+		CString strValue;
+		pWnd->GetDlgItemText(nCtrlId, strValue);
+		strValue.Trim();
+		if (strValue.IsEmpty())
+			return false;
+
+		LPTSTR pEnd = NULL;
+		const unsigned long value = _tcstoul(strValue, &pEnd, 10);
+		if (pEnd == strValue || *pEnd != _T('\0') || value > _UI16_MAX || (!bAllowZero && value == 0))
+			return false;
+
+		outPort = static_cast<uint16>(value);
+		return true;
+	}
+
+	bool ValidatePortControl(CWnd* pWnd, int nCtrlId, bool bAllowZero, uint16& outPort)
+	{
+		if (TryGetPortValue(pWnd, nCtrlId, bAllowZero, outPort))
+			return true;
+
+		AfxMessageBox(GetResString(IDS_ERR_BADPORT), MB_ICONWARNING | MB_OK);
+		CWnd* pEdit = pWnd->GetDlgItem(nCtrlId);
+		if (pEdit != NULL) {
+			pEdit->SetFocus();
+			if (pEdit->IsKindOf(RUNTIME_CLASS(CEdit)))
+				static_cast<CEdit*>(pEdit)->SetSel(0, -1);
+		}
+		return false;
+	}
+}
+
 
 IMPLEMENT_DYNAMIC(CPPgConnection, CPropertyPage)
 
@@ -82,18 +117,27 @@ void CPPgConnection::OnEnKillFocusUDP()
 
 void CPPgConnection::ChangePorts(uint8 iWhat)
 {
-	const uint16 tcp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_PORT, NULL, FALSE), 0, false);
-	const uint16 udp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_UDPPORT, NULL, FALSE), 0, true);
+	uint16 tcp = 0;
+	const bool bValidTcp = TryGetPortValue(this, IDC_PORT, false, tcp);
+	uint16 udp = 0;
+	const bool bAllowZeroUdp = IsDlgButtonChecked(IDC_UDPDISABLE) != 0;
+	const bool bValidUdp = TryGetPortValue(this, IDC_UDPPORT, bAllowZeroUdp, udp);
 
 	GetDlgItem(IDC_STARTTEST)->EnableWindow(
-		tcp == theApp.listensocket->GetConnectedPort()
+		bValidTcp
+		&& bValidUdp
+		&& tcp == theApp.listensocket->GetConnectedPort()
 		&& udp == theApp.clientudp->GetConnectedPort()
 	);
 
-	if (iWhat == 0) //UDP
-		ChangeUDP();
+	if (iWhat == 0) { //UDP
+		if (bValidUdp && udp != 0)
+			m_lastudp = udp;
+		if (bValidTcp && bValidUdp && (tcp != thePrefs.port || udp != thePrefs.udpport))
+			OnSettingsChange();
+	}
 	else if (iWhat == 1) //TCP
-		if (tcp != thePrefs.port || udp != thePrefs.udpport)
+		if (bValidTcp && bValidUdp && (tcp != thePrefs.port || udp != thePrefs.udpport))
 			OnSettingsChange();
 	//else if (iWhat == 2) "Test ports" button enable/disable - done already
 }
@@ -104,14 +148,15 @@ bool CPPgConnection::ChangeUDP()
 	GetDlgItem(IDC_UDPPORT)->EnableWindow(!bDisabled);
 
 	uint16 newVal;
-	const uint16 oldVal = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_UDPPORT, NULL, FALSE), 0, true);
-	if (oldVal)
+	uint16 oldVal = 0;
+	const bool bValidOldVal = TryGetPortValue(this, IDC_UDPPORT, bDisabled, oldVal);
+	if (bValidOldVal && oldVal)
 		m_lastudp = oldVal;
 	if (bDisabled)
 		newVal = 0;
 	else
 		newVal = m_lastudp ? m_lastudp : (10ui16 + thePrefs.port);
-	if (newVal != oldVal)
+	if (!bValidOldVal || newVal != oldVal)
 		SetDlgItemInt(IDC_UDPPORT, newVal, FALSE);
 	return bDisabled;
 }
@@ -249,9 +294,10 @@ BOOL CPPgConnection::OnApply()
 	thePrefs.SetMaxSourcesPerFile((u > INT_MAX) ? CPreferences::GetDefaultMaxSourcesPerFile() : u);
 
 	bool bRestartApp = false;
+	uint16 nNewPort = 0;
 
-	u = GetDlgItemInt(IDC_PORT, NULL, FALSE);
-	uint16 nNewPort = CPreferences::NormalizePortValue(u, 0, false);
+	if (!ValidatePortControl(this, IDC_PORT, false, nNewPort))
+		return FALSE;
 	if (nNewPort && nNewPort != thePrefs.port) {
 		thePrefs.port = nNewPort;
 		if (theApp.IsPortchangeAllowed())
@@ -260,8 +306,10 @@ BOOL CPPgConnection::OnApply()
 			bRestartApp = true;
 	}
 
-	u = GetDlgItemInt(IDC_UDPPORT, NULL, FALSE);
-	nNewPort = CPreferences::NormalizePortValue(u, 0, true);
+	if (IsDlgButtonChecked(IDC_UDPDISABLE) != 0)
+		nNewPort = 0;
+	else if (!ValidatePortControl(this, IDC_UDPPORT, false, nNewPort))
+		return FALSE;
 	if (nNewPort != thePrefs.udpport) {
 		thePrefs.udpport = nNewPort;
 		if (theApp.IsPortchangeAllowed())
@@ -420,8 +468,13 @@ BOOL CPPgConnection::PreTranslateMessage(MSG *pMsg)
 
 void CPPgConnection::OnStartPortTest()
 {
-	const uint16 tcp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_PORT, NULL, FALSE), 0, false);
-	const uint16 udp = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_UDPPORT, NULL, FALSE), 0, true);
+	uint16 tcp = 0;
+	if (!ValidatePortControl(this, IDC_PORT, false, tcp))
+		return;
+
+	uint16 udp = 0;
+	if (IsDlgButtonChecked(IDC_UDPDISABLE) == 0 && !ValidatePortControl(this, IDC_UDPPORT, false, udp))
+		return;
 
 	TriggerPortTest(tcp, udp);
 }

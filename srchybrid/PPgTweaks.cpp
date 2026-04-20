@@ -229,7 +229,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiBBSessionTransferPercentValue()
 	, m_htiBBSessionTransferMiBValue()
 	, m_htiBBSessionTimeLimit()
-	, m_htiCheckDiskspace()
 	, m_htiCloseUPnPPorts()
 	, m_htiCommit()
 	, m_htiCommitAlways()
@@ -345,7 +344,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bAutoTakeEd2kLinks()
 	, m_bBBLowRatioBoost()
 	, m_bAdjustNTFSDaylightFileTime()
-	, m_bCheckDiskspace()
 	, m_bCloseUPnPOnExit(true)
 	, m_bConditionalTCPAccept()
 	, m_bCreditSystem()
@@ -512,9 +510,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		//
 		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), TVI_ROOT, m_bSparsePartFiles);
 		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), TVI_ROOT, m_bFullAlloc);
-		m_htiCheckDiskspace = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_CHECKDISKSPACE), TVI_ROOT, m_bCheckDiskspace);
-		m_ctrlTreeOptions.SetCheckBoxEnable(m_htiCheckDiskspace, false);
-		m_htiMinFreeDiskSpace = m_ctrlTreeOptions.InsertItem(GetResString(IDS_MINFREEDISKSPACE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiCheckDiskspace);
+		m_htiMinFreeDiskSpace = m_ctrlTreeOptions.InsertItem(GetResString(IDS_MINFREEDISKSPACE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
 		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpace, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiCommit = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_COMMITFILES), iImgBackup, TVI_ROOT);
 		m_htiCommitNever = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_NEVER), m_htiCommit, m_iCommitFiles == 0);
@@ -608,9 +604,60 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiConditionalTCPAccept,
 			_T("Prefers accepting inbound TCP connections only when they look useful.\r\n\r\n")
 			_T("Advanced traffic-shaping tweak. Leave it at the default unless you are diagnosing connection pressure."));
+		SetTreeToolTip(m_htiMaxCon5Sec,
+			_T("Maximum number of new TCP connections eMule may open within five seconds.\r\n\r\n")
+			_T("Lower values are gentler on Windows and routers. Leave it near the default unless you are tuning connection burst behavior."));
+		SetTreeToolTip(m_htiMaxHalfOpen,
+			_T("Upper limit for half-open outbound TCP connection attempts.\r\n\r\n")
+			_T("Mostly a compatibility safeguard. The default is usually the right choice unless you are investigating TCP setup issues."));
+		SetTreeToolTip(m_htiConnectionTimeout,
+			_T("How long eMule waits for a new connection to make progress before considering it failed.\r\n\r\n")
+			_T("Shorter values recover faster from dead peers; longer values are more tolerant of slow networks. Default values are recommended."));
+		SetTreeToolTip(m_htiDownloadTimeout,
+			_T("How long a download source may stay idle before eMule drops it as stalled.\r\n\r\n")
+			_T("Lower values clean up dead sources faster, but very low values can hurt slow peers. Leave the default unless you are diagnosing stalls."));
+		SetTreeToolTip(m_htiServerKeepAliveTimeout,
+			_T("How often eMule refreshes an otherwise idle server connection.\r\n\r\n")
+			_T("Use minutes. Set 0 to disable keepalives. Leave the default unless you are solving a specific server-idle disconnect problem."));
 		SetTreeToolTip(m_htiSearchEd2kMaxResults,
 			_T("Maximum number of results requested from an eD2K server for one search.\r\n\r\n")
 			_T("Higher values can find more files but increase server work and UI noise. Stay near the default unless you have a specific reason."));
+		SetTreeToolTip(m_htiSearchEd2kMaxMoreRequests,
+			_T("Maximum number of follow-up result pages eMule requests from an eD2K search.\r\n\r\n")
+			_T("Higher values can pull in more results but cost more server traffic and time. Conservative values are recommended."));
+		SetTreeToolTip(m_htiSearchKadFileTotal,
+			_T("Target number of results for Kad file searches.\r\n\r\n")
+			_T("Higher values search more broadly but keep Kad lookups alive longer. Stay near the default unless you want deeper searches."));
+		SetTreeToolTip(m_htiSearchKadKeywordTotal,
+			_T("Target number of results for Kad keyword searches.\r\n\r\n")
+			_T("Higher values can find more matches but increase Kad query load and UI noise. The default is usually the right balance."));
+		SetTreeToolTip(m_htiSearchKadFileLifetime,
+			_T("Maximum lifetime of one Kad file search in seconds.\r\n\r\n")
+			_T("Raise it only if you deliberately want longer-running Kad searches."));
+		SetTreeToolTip(m_htiSearchKadKeywordLifetime,
+			_T("Maximum lifetime of one Kad keyword search in seconds.\r\n\r\n")
+			_T("Longer lifetimes may find later results but increase background search activity."));
+		SetTreeToolTip(m_htiAutoTakeEd2kLinks,
+			_T("Registers eMule as the default handler for ed2k:// links.\r\n\r\n")
+			_T("Enable it if this machine should open ed2k links in eMule automatically. Disable it if another tool should own that association."));
+		SetTreeToolTip(m_htiCreditSystem,
+			_T("Uses the normal eMule credit system when ranking upload clients.\r\n\r\n")
+			_T("Recommended: enabled. Disable it only for debugging or deliberate compatibility experiments."));
+		SetTreeToolTip(m_htiExtControls,
+			_T("Shows extra advanced controls and context actions in several parts of the UI.\r\n\r\n")
+			_T("Enable it if you want the additional advanced surface. Disable it for a simpler interface."));
+		SetTreeToolTip(m_htiYourHostname,
+			_T("Optional hostname label eMule reports where your local identity text is shown.\r\n\r\n")
+			_T("Leave it blank unless you intentionally want to name this instance."));
+		SetTreeToolTip(m_htiSparsePartFiles,
+			_T("Uses sparse files for part files when the filesystem supports them.\r\n\r\n")
+			_T("Recommended: enabled on NTFS to reduce upfront disk allocation. Disable only if sparse-file behavior causes a filesystem-specific problem."));
+		SetTreeToolTip(m_htiFullAlloc,
+			_T("Preallocates the full target file size on disk when downloads start.\r\n\r\n")
+			_T("Can reduce fragmentation, but it reserves space immediately and costs more disk work. Leave it off unless you prefer full preallocation."));
+		SetTreeToolTip(m_htiMinFreeDiskSpace,
+			_T("Minimum free disk space eMule tries to leave available for downloads.\r\n\r\n")
+			_T("Recommended: set a small safety floor if you want to avoid filling the disk completely. Use 0 only if you do not want a reserve."));
 		SetTreeToolTip(m_htiPerfLog,
 			_T("Writes periodic payload and overhead samples for external graphing tools.\r\n\r\n")
 			_T("Operator/debug feature only. Leave it off unless you actively consume the generated files."));
@@ -638,6 +685,18 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiPreviewCopiedArchives,
 			_T("Allows preview helpers to inspect copied archive contents when possible.\r\n\r\n")
 			_T("Useful for archive-heavy workflows, but it adds extra inspection work. Disable it if you want less background probing."));
+		SetTreeToolTip(m_htiFileBufferTimeLimit,
+			_T("Maximum age of buffered file data before eMule flushes it to disk.\r\n\r\n")
+			_T("Lower values reduce data-at-risk during crashes. Higher values can reduce disk churn. The default is usually a good compromise."));
+		SetTreeToolTip(m_htiFileBufferSize,
+			_T("Size of the per-file write buffer used before flushing download data to disk.\r\n\r\n")
+			_T("Larger buffers can reduce disk activity, but they increase memory use and delayed writes. Keep moderate values unless you are tuning for a specific storage setup."));
+		SetTreeToolTip(m_htiQueueSize,
+			_T("Target size of the upload waiting queue.\r\n\r\n")
+			_T("Higher values let more clients wait, but they add memory use and management overhead. Default values are recommended for most users."));
+		SetTreeToolTip(m_htiDateTimeFormat4Lists,
+			_T("Custom date/time format used in list views.\r\n\r\n")
+			_T("Leave it blank to use the normal default formatting. Change it only if you want a specific custom timestamp style."));
 		SetTreeToolTip(m_htiInspectAllFileTypes,
 			_T("Controls how aggressively eMule inspects file types when extracting preview and metadata details.\r\n\r\n")
 			_T("Higher values find more information but cost more file inspection. Conservative values are safer on slower disks."));
@@ -659,6 +718,39 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiMessageFromValidSourcesOnly,
 			_T("Accepts messages only from peers that already look like valid sources for your transfers.\r\n\r\n")
 			_T("Stronger privacy/spam protection, but it can block unsolicited contact. Enable it if you want a stricter message policy."));
+		SetTreeToolTip(m_htiLog2Disk,
+			_T("Writes the normal application log to disk instead of keeping it in memory only.\r\n\r\n")
+			_T("Useful for debugging and long-running unattended use, but it adds disk writes. Leave it off unless you want persistent logs."));
+		SetTreeToolTip(m_htiVerboseGroup,
+			_T("Extra diagnostic logging controls for deep troubleshooting.\r\n\r\n")
+			_T("These options are for debugging, not normal operation. Leave them off unless you are investigating a specific issue."));
+		SetTreeToolTip(m_htiRestoreLastMainWndDlg,
+			_T("Restores the last selected main-window page on startup.\r\n\r\n")
+			_T("Enable it if you want eMule to reopen where you left off."));
+		SetTreeToolTip(m_htiRestoreLastLogPane,
+			_T("Restores the last selected log pane on startup.\r\n\r\n")
+			_T("Purely a convenience option for users who spend time in the log views."));
+		SetTreeToolTip(m_htiKeepUnavailableFixedSharedDirs,
+			_T("Keeps manually configured shared directories in the list even when they are currently unavailable.\r\n\r\n")
+			_T("Useful for removable or occasionally missing storage. Disable it if you want missing folders pruned aggressively."));
+		SetTreeToolTip(m_htiPartiallyPurgeOldKnownFiles,
+			_T("Allows more aggressive cleanup of stale entries in the known-files history.\r\n\r\n")
+			_T("Can reduce clutter over time, but it also forgets old file history sooner. Leave the default unless you want a leaner history."));
+		SetTreeToolTip(m_htiAdjustNTFSDaylightFileTime,
+			_T("Applies a compatibility correction for NTFS daylight-saving timestamp quirks.\r\n\r\n")
+			_T("Leave it enabled unless you are deliberately working around a timestamp issue on your system."));
+		SetTreeToolTip(m_htiDetectTCPErrorFlooder,
+			_T("Detects repeated TCP error bursts that may indicate abusive or broken peers.\r\n\r\n")
+			_T("Recommended: enabled. Disable it only if you are diagnosing false positives."));
+		SetTreeToolTip(m_htiTCPErrorFlooderIntervalMinutes,
+			_T("Time window used for TCP error-flood detection.\r\n\r\n")
+			_T("Shorter windows react faster; longer windows are less sensitive. Default values are recommended."));
+		SetTreeToolTip(m_htiTCPErrorFlooderThreshold,
+			_T("Number of TCP errors within the interval that triggers flooder handling.\r\n\r\n")
+			_T("Lower values are stricter. Raise it only if your environment produces harmless frequent TCP errors."));
+		SetTreeToolTip(m_htiShareeMule,
+			_T("Controls how eMule stores and shares per-user state on this Windows machine.\r\n\r\n")
+			_T("Leave the current mode unless you are intentionally changing how multiple local users share configuration and data."));
 
 		ExpandAllTreeItems(m_ctrlTreeOptions);
 		m_ctrlTreeOptions.SendMessage(WM_VSCROLL, SB_TOP);
@@ -758,7 +850,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSparsePartFiles, m_bSparsePartFiles);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCheckDiskspace, m_bCheckDiskspace);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_iMinFreeDiskSpaceGB);
 	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceGB, static_cast<int>(PartFilePersistenceSeams::kMinDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
@@ -907,10 +998,11 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iExtractMetaData = thePrefs.m_iExtractMetaData;
 	m_bFilterLANIPs = thePrefs.filterLANIPs;
 	m_bExtControls = thePrefs.m_bExtControls;
-	m_uServerKeepAliveTimeout = thePrefs.m_dwServerKeepAliveTimeout / MIN2MS(1);
+	m_uServerKeepAliveTimeout = thePrefs.GetServerKeepAliveTimeout() == 0
+		? 0
+		: max(1u, static_cast<UINT>((thePrefs.GetServerKeepAliveTimeout() + MIN2MS(1) - 1) / MIN2MS(1)));
 	m_bSparsePartFiles = thePrefs.GetSparsePartFiles();
 	m_bFullAlloc = thePrefs.m_bAllocFull;
-	m_bCheckDiskspace = true;
 	m_iMinFreeDiskSpaceGB = static_cast<int>(PartFilePersistenceSeams::ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(thePrefs.GetMinFreeDiskSpace()));
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
@@ -1117,7 +1209,9 @@ BOOL CPPgTweaks::OnApply()
 	if (bUpdateDLmenu)
 		theApp.emuledlg->transferwnd->GetDownloadList()->CreateMenus();
 
-	thePrefs.SetServerKeepAliveTimeoutMinutes(m_uServerKeepAliveTimeout);
+	if (thePrefs.GetServerKeepAliveTimeout() != MIN2MS(CPreferences::NormalizeServerKeepAliveTimeoutMinutes(m_uServerKeepAliveTimeout))) {
+		thePrefs.SetServerKeepAliveTimeoutMinutes(m_uServerKeepAliveTimeout);
+	}
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
 	thePrefs.checkDiskspace = true;
@@ -1240,7 +1334,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiA4AFSaveCpu, IDS_A4AF_SAVE_CPU);
 		LocalizeItemText(m_htiAutoArch, IDS_DISABLE_AUTOARCHPREV);
 		LocalizeItemText(m_htiAutoTakeEd2kLinks, IDS_AUTOTAKEED2KLINKS);
-		LocalizeItemText(m_htiCheckDiskspace, IDS_CHECKDISKSPACE);
 		LocalizeItemText(m_htiCloseUPnPPorts, IDS_UPNPCLOSEONEXIT);
 		LocalizeItemText(m_htiCommit, IDS_COMMITFILES);
 		LocalizeItemText(m_htiCommitAlways, IDS_ALWAYS);
@@ -1406,7 +1499,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiServerKeepAliveTimeout = NULL;
 	m_htiSparsePartFiles = NULL;
 	m_htiFullAlloc = NULL;
-	m_htiCheckDiskspace = NULL;
 	m_htiMinFreeDiskSpace = NULL;
 	m_htiYourHostname = NULL;
 	m_htiA4AFSaveCpu = NULL;

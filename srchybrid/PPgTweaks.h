@@ -51,7 +51,6 @@ protected:
 	HTREEITEM m_htiBBSessionTransferPercentValue;
 	HTREEITEM m_htiBBSessionTransferMiBValue;
 	HTREEITEM m_htiBBSessionTimeLimit;
-	HTREEITEM m_htiCheckDiskspace;
 	HTREEITEM m_htiCloseUPnPPorts;
 	HTREEITEM m_htiCommit;
 	HTREEITEM m_htiCommitAlways;
@@ -171,7 +170,6 @@ protected:
 	bool m_bAutoTakeEd2kLinks;
 	bool m_bBBLowRatioBoost;
 	bool m_bAdjustNTFSDaylightFileTime;
-	bool m_bCheckDiskspace;
 	bool m_bCloseUPnPOnExit;
 	bool m_bConditionalTCPAccept;
 	bool m_bCreditSystem;
