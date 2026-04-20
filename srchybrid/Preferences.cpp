@@ -2355,22 +2355,22 @@ void CPreferences::LoadPreferences()
 	// since the minimize to tray button is not working under Aero (at least not at this point),
 	// we enable map the minimize to tray on the minimize button by default if Aero is running
 	if (IsRunningAeroGlassTheme())
-		mintotray = ini.GetBool(_T("MinToTray_Aero"), true);
+		mintotray = ini.GetBool(_T("MinToTray_Aero"), false);
 	else
 		mintotray = ini.GetBool(_T("MinToTray"), false);
 
 	m_bPreventStandby = ini.GetBool(_T("PreventStandby"), false);
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
-	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), true);
+	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), false);
 	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(_T("GeoLocationCheckDays"), static_cast<int>(GetDefaultGeoLocationCheckDays())))));
 	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(_T("GeoLocationLastCheckTime"), _T("0")))));
 	m_strGeoLocationUpdateUrl = ini.GetString(_T("GeoLocationUpdateUrl"), _T("https://download.db-ip.com/free/dbip-city-lite-%Y-%m.mmdb.gz"));
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
-	splashscreen = ini.GetBool(_T("Splashscreen"), true);
+	splashscreen = ini.GetBool(_T("Splashscreen"), false);
 	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
 	transferDoubleclick = ini.GetBool(_T("TransferDoubleClick"), true);
-	beepOnError = ini.GetBool(_T("BeepOnError"), true);
+	beepOnError = ini.GetBool(_T("BeepOnError"), false);
 	confirmExit = ini.GetBool(_T("ConfirmExit"), true);
 	filterLANIPs = ini.GetBool(_T("FilterBadIPs"), true);
 	m_bAllocLocalHostIP = ini.GetBool(_T("AllowLocalHostIP"), false);
@@ -2458,7 +2458,7 @@ void CPreferences::LoadPreferences()
 	m_bIRCIgnoreEmuleAddFriendMsgs = ini.GetBool(_T("IRCIgnoreEmuleAddFriendMsgs"), false);
 	m_bIRCAllowEmuleAddFriend = ini.GetBool(_T("IRCAllowEmuleAddFriend"), true);
 	m_bIRCIgnoreEmuleSendLinkMsgs = ini.GetBool(_T("IRCIgnoreEmuleSendLinkMsgs"), false);
-	m_bIRCJoinHelpChannel = ini.GetBool(_T("IRCHelpChannel"), true);
+	m_bIRCJoinHelpChannel = ini.GetBool(_T("IRCHelpChannel"), false);
 	m_bIRCEnableSmileys = ini.GetBool(_T("IRCEnableSmileys"), true);
 	m_bMessageEnableSmileys = ini.GetBool(_T("MessageEnableSmileys"), true);
 	m_bIRCEnableUTF8 = ini.GetBool(_T("IRCEnableUTF8"), true);
@@ -2519,7 +2519,7 @@ void CPreferences::LoadPreferences()
 	m_bPreviewCopiedArchives = ini.GetBool(_T("PreviewCopiedArchives"), true);
 	m_bInspectAllFileTypes = ini.GetBool(_T("InspectAllFileTypes"), false);
 	m_bAllocFull = ini.GetBool(_T("AllocateFullFile"), 0);
-	m_bAutomaticArcPreviewStart = ini.GetBool(_T("AutoArchivePreviewStart"), true);
+	m_bAutomaticArcPreviewStart = ini.GetBool(_T("AutoArchivePreviewStart"), false);
 	m_bShowSharedFilesDetails = ini.GetBool(_T("ShowSharedFilesDetails"), true);
 	m_bAutoShowLookups = ini.GetBool(_T("AutoShowLookups"), true);
 	m_bShowUpDownIconInTaskbar = ini.GetBool(_T("ShowUpDownIconInTaskbar"), false);
@@ -2547,7 +2547,7 @@ void CPreferences::LoadPreferences()
 	showCatTabInfos = ini.GetBool(_T("ShowInfoOnCatTabs"), false);
 	//resumeSameCat = ini.GetBool(_T("ResumeNextFromSameCat"), false);
 	dontRecreateGraphs = ini.GetBool(_T("DontRecreateStatGraphsOnResize"), false);
-	m_bExtControls = ini.GetBool(_T("ShowExtControls"), false);
+	m_bExtControls = ini.GetBool(_T("ShowExtControls"), true);
 
 	versioncheckLastAutomatic = ini.GetInt(_T("VersionCheckLastAutomatic"), 0);
 	m_bDisableKnownClientList = ini.GetBool(_T("DisableKnownClientList"), false);
@@ -2559,7 +2559,7 @@ void CPreferences::LoadPreferences()
 	m_bUseChatCaptchas = ini.GetBool(_T("MessageUseCaptchas"), true);
 	autofilenamecleanup = ini.GetBool(_T("AutoFilenameCleanup"), false);
 	m_bUseAutocompl = ini.GetBool(_T("UseAutocompletion"), true);
-	m_bShowDwlPercentage = ini.GetBool(_T("ShowDwlPercentage"), false);
+	m_bShowDwlPercentage = ini.GetBool(_T("ShowDwlPercentage"), true);
 	networkkademlia = ini.GetBool(_T("NetworkKademlia"), true);
 	networked2k = ini.GetBool(_T("NetworkED2K"), true);
 	m_bRemove2bin = ini.GetBool(_T("RemoveFilesToBin"), true);
@@ -2736,7 +2736,7 @@ void CPreferences::LoadPreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
-	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), false, _T("UPnP"));
+	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), true, _T("UPnP"));
 	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true);
 	m_uUPnPBackendMode = static_cast<uint8>(NormalizeBoundedPreference(ini.GetInt(_T("BackendMode"), UPNP_BACKEND_AUTOMATIC), UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_PCP_NATPMP_ONLY));
 
