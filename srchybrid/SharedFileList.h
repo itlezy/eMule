@@ -342,14 +342,10 @@ public:
 	virtual BOOL InitInstance();
 	virtual int	Run();
 	void	SetValues(CSharedFileList *pOwner, LPCTSTR directory, LPCTSTR filename, LPCTSTR strSharedDir, CPartFile *partfile = NULL);
-	bool	ImportParts();
-	uint16	SetPartToImport(LPCTSTR import);
 private:
 	CSharedFileList	*m_pOwner;
 	CPartFile	*m_partfile;
 	CString		m_strDirectory;
 	CString		m_strFilename;
 	CString		m_strSharedDir;
-	CString		m_strImport;
-	CArray<uint16, uint16>	m_PartsToImport;
 };

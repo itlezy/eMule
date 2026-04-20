@@ -45,7 +45,6 @@
 #define MP_ALL_A4AF_AUTO		10222
 #define MP_META_DATA			10225
 #define MP_BOOT					10226
-#define MP_HM_CONVERTPF			10227
 #define MP_RESUMEPAUSED			10228
 #define MP_HM_KAD				10229
 #define MP_HM_LINK1				10230

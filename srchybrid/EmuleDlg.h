@@ -283,7 +283,6 @@ protected:
 	afx_msg LRESULT OnFileAllocExc(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnFileCompleted(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnFileOpProgress(WPARAM wParam, LPARAM lParam);
-	afx_msg LRESULT OnImportPart(WPARAM wParam,LPARAM lParam);
 
 	//Frame grabbing
 	afx_msg LRESULT OnFrameGrabFinished(WPARAM wParam, LPARAM lParam);
@@ -330,7 +329,6 @@ enum EEMuleAppMsgs
 	//thread messages
 	TM_FINISHEDHASHING = WM_APP + 10,
 	TM_HASHFAILED,
-	TM_IMPORTPART,
 	TM_FRAMEGRABFINISHED,
 	TM_FILEALLOCEXC,
 	TM_FILECOMPLETED,

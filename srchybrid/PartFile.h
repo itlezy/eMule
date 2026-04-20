@@ -77,8 +77,7 @@ enum EPartFileOp : uint8
 	PFOP_NONE = 0,
 	PFOP_HASHING,
 	PFOP_COPYING,
-	PFOP_UNCOMPRESSING,
-	PFOP_IMPORTPARTS
+	PFOP_UNCOMPRESSING
 };
 
 class CSearchFile;
@@ -124,7 +123,6 @@ typedef CTypedPtrList<CPtrList, CUpDownClient*> CUpDownClientPtrList;
 class CPartFile : public CKnownFile
 {
 	DECLARE_DYNAMIC(CPartFile)
-	friend class CPartFileConvert;
 
 public:
 	explicit CPartFile(UINT cat = 0);
@@ -167,7 +165,7 @@ public:
 	EPartFileLoadResult	LoadPartFile(LPCTSTR in_directory, LPCTSTR in_filename, EPartFileFormat *pOutCheckFileFormat = NULL); //filename = *.part.met
 	EPartFileLoadResult	ImportShareazaTempfile(LPCTSTR in_directory, LPCTSTR in_filename, EPartFileFormat *pOutCheckFileFormat = NULL);
 
-	bool	SavePartFile(bool bDontOverrideBak = false);
+	bool	SavePartFile(bool bDontOverrideBak = false, bool bBypassDiskSpaceGuard = false);
 	void	PartFileHashFinished(CKnownFile *result);
 	bool	HashSinglePart(UINT partnumber, bool *pbAICHReportedOK = NULL); // true = OK, false = corrupted
 
@@ -366,6 +364,10 @@ private:
 	bool	HasDirtyBufferedData() const;
 	bool	FlushBufferedDataForShutdown();
 	void	NoteHashLayoutChanged();
+	/**
+	 * @brief Returns whether an insufficient-space download may resume under the current per-volume disk-space floors.
+	 */
+	bool	CanResumeInsufficientForDiskSpace(ULONGLONG *pOutFreeBytes = NULL, ULONGLONG *pOutRequiredBytes = NULL) const;
 
 	static CBarShader s_LoadBar;
 	static CBarShader s_ChunkBar;

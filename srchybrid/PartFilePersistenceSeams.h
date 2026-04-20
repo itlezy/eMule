@@ -8,8 +8,14 @@ namespace PartFilePersistenceSeams
 {
 constexpr uint64_t kDiskSpaceFloorUnitBytes = 1024ull * 1024ull * 1024ull;
 constexpr uint64_t kMinDiskSpaceFloorGiB = 1ull;
+constexpr uint64_t kMinConfigDiskSpaceFloorGiB = 1ull;
+constexpr uint64_t kMinTempDiskSpaceFloorGiB = 5ull;
+constexpr uint64_t kMinIncomingDiskSpaceFloorGiB = 5ull;
 constexpr uint64_t kMaxDiskSpaceFloorGiB = 5ull * 1024ull;
 constexpr uint64_t kMinDownloadFreeBytes = kMinDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
+constexpr uint64_t kMinConfigFreeBytes = kMinConfigDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
+constexpr uint64_t kMinTempFreeBytes = kMinTempDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
+constexpr uint64_t kMinIncomingFreeBytes = kMinIncomingDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
 constexpr uint64_t kMaxDownloadFreeBytes = kMaxDiskSpaceFloorGiB * kDiskSpaceFloorUnitBytes;
 constexpr uint64_t kMinPartMetWriteFreeBytes = kMinDownloadFreeBytes;
 constexpr uint64_t kMaxInsufficientResumeHeadroomBytes = 1ull * kDiskSpaceFloorUnitBytes;
@@ -19,22 +25,37 @@ inline uint64_t ConvertDiskSpaceFloorGiBToBytes(const uint64_t nGiB)
 	return nGiB * kDiskSpaceFloorUnitBytes;
 }
 
-inline uint64_t NormalizeDownloadFreeSpaceFloor(const uint64_t nConfiguredBytes, const uint64_t nMinimumBytes = kMinDownloadFreeBytes, const uint64_t nMaximumBytes = kMaxDownloadFreeBytes)
+inline uint64_t NormalizeDiskSpaceFloor(const uint64_t nConfiguredBytes, const uint64_t nMinimumBytes, const uint64_t nMaximumBytes = kMaxDownloadFreeBytes)
 {
 	const uint64_t nClampedToMin = nConfiguredBytes >= nMinimumBytes ? nConfiguredBytes : nMinimumBytes;
 	return nClampedToMin <= nMaximumBytes ? nClampedToMin : nMaximumBytes;
 }
 
-inline uint64_t NormalizeDownloadFreeSpaceFloorGiB(const uint64_t nConfiguredGiB, const uint64_t nMinimumGiB = kMinDiskSpaceFloorGiB, const uint64_t nMaximumGiB = kMaxDiskSpaceFloorGiB)
+inline uint64_t NormalizeDiskSpaceFloorGiB(const uint64_t nConfiguredGiB, const uint64_t nMinimumGiB, const uint64_t nMaximumGiB = kMaxDiskSpaceFloorGiB)
 {
 	const uint64_t nClampedToMin = nConfiguredGiB >= nMinimumGiB ? nConfiguredGiB : nMinimumGiB;
 	return nClampedToMin <= nMaximumGiB ? nClampedToMin : nMaximumGiB;
 }
 
+inline uint64_t NormalizeDownloadFreeSpaceFloor(const uint64_t nConfiguredBytes, const uint64_t nMinimumBytes = kMinDownloadFreeBytes, const uint64_t nMaximumBytes = kMaxDownloadFreeBytes)
+{
+	return NormalizeDiskSpaceFloor(nConfiguredBytes, nMinimumBytes, nMaximumBytes);
+}
+
+inline uint64_t NormalizeDownloadFreeSpaceFloorGiB(const uint64_t nConfiguredGiB, const uint64_t nMinimumGiB = kMinDiskSpaceFloorGiB, const uint64_t nMaximumGiB = kMaxDiskSpaceFloorGiB)
+{
+	return NormalizeDiskSpaceFloorGiB(nConfiguredGiB, nMinimumGiB, nMaximumGiB);
+}
+
+inline uint64_t ConvertDiskSpaceFloorBytesToDisplayGiB(const uint64_t nConfiguredBytes, const uint64_t nMinimumBytes, const uint64_t nMinimumGiB, const uint64_t nMaximumGiB = kMaxDiskSpaceFloorGiB)
+{
+	const uint64_t nNormalizedBytes = NormalizeDiskSpaceFloor(nConfiguredBytes, nMinimumBytes, ConvertDiskSpaceFloorGiBToBytes(nMaximumGiB));
+	return NormalizeDiskSpaceFloorGiB((nNormalizedBytes + (kDiskSpaceFloorUnitBytes - 1ull)) / kDiskSpaceFloorUnitBytes, nMinimumGiB, nMaximumGiB);
+}
+
 inline uint64_t ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(const uint64_t nConfiguredBytes)
 {
-	const uint64_t nNormalizedBytes = NormalizeDownloadFreeSpaceFloor(nConfiguredBytes);
-	return NormalizeDownloadFreeSpaceFloorGiB((nNormalizedBytes + (kDiskSpaceFloorUnitBytes - 1ull)) / kDiskSpaceFloorUnitBytes);
+	return ConvertDiskSpaceFloorBytesToDisplayGiB(nConfiguredBytes, kMinDownloadFreeBytes, kMinDiskSpaceFloorGiB);
 }
 
 inline uint64_t GetInsufficientResumeHeadroomBytes(const uint64_t nNeededBytes, const uint64_t nMaximumHeadroomBytes = kMaxInsufficientResumeHeadroomBytes)

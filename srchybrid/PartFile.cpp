@@ -475,7 +475,13 @@ void CPartFile::CreatePartFile(UINT cat)
 	}
 
 	// decide which temp folder to use
-	const CString &tempdirtouse(theApp.downloadqueue->GetOptimalTempDir(cat, m_nFileSize));
+	const CString tempdirtouse(theApp.downloadqueue->GetOptimalTempDir(cat, m_nFileSize));
+	if (tempdirtouse.IsEmpty()) {
+		LogError(LOG_STATUSBAR, _T("Cannot create part file for \"%s\" because no temp/incoming volume placement satisfies the protected disk-space thresholds.")
+			, (LPCTSTR)GetFileName());
+		SetStatus(PS_ERROR);
+		return;
+	}
 
 	// use the lowest free part file number for a file name (InterCeptor)
 	CString filename;
@@ -1250,11 +1256,11 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 	return PLR_LOADSUCCESS;
 }
 
-bool CPartFile::SavePartFile(bool bDontOverrideBak)
+bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 {
 	if (status == PS_WAITINGFORHASH || status == PS_HASHING)
 		return false;
-	if (!theApp.CanWritePartMetFiles(m_fullname))
+	if (!theApp.CanWritePartMetFiles(m_fullname, false, bBypassDiskSpaceGuard))
 		return false;
 	const CString &searchpath(RemoveFileExtension(m_fullname));
 	WIN32_FILE_ATTRIBUTE_DATA fileAttributes = {};
@@ -3507,10 +3513,27 @@ bool CPartFile::CanResumeFile() const
 	case PS_ERROR:
 		return GetCompletionError();
 	case PS_INSUFFICIENT:
+		return CanResumeInsufficientForDiskSpace();
 	case PS_PAUSED:
 		return true;
 	}
 	return false;
+}
+
+bool CPartFile::CanResumeInsufficientForDiskSpace(ULONGLONG *pOutFreeBytes, ULONGLONG *pOutRequiredBytes) const
+{
+	const CString strTmpPath(GetTmpPath());
+	const ULONGLONG uRequiredBytes = theApp.downloadqueue != NULL
+		? theApp.downloadqueue->GetRequiredFreeDiskSpaceForPath(strTmpPath)
+		: thePrefs.GetEffectiveMinFreeDiskSpaceForPath(strTmpPath);
+	const ULONGLONG uFreeBytes = GetFreeDiskSpaceX(strTmpPath);
+	if (pOutFreeBytes != NULL)
+		*pOutFreeBytes = uFreeBytes;
+	if (pOutRequiredBytes != NULL)
+		*pOutRequiredBytes = uRequiredBytes;
+	if (theApp.downloadqueue != NULL && theApp.downloadqueue->IsProtectedDiskSpaceBlocked())
+		return false;
+	return uFreeBytes >= uRequiredBytes;
 }
 
 void CPartFile::ResumeFile(bool resort)
@@ -3547,6 +3570,15 @@ void CPartFile::ResumeFile(bool resort)
 void CPartFile::ResumeFileInsufficient()
 {
 	if (status != PS_COMPLETE && status != PS_COMPLETING && m_insufficient) {
+		ULONGLONG uFreeBytes = 0;
+		ULONGLONG uRequiredBytes = 0;
+		if (!CanResumeInsufficientForDiskSpace(&uFreeBytes, &uRequiredBytes)) {
+			LogWarning(_T("Cannot resume download of \"%s\" because a protected volume is still below its required free-space threshold.")
+				, (LPCTSTR)GetFileName()
+				);
+			return;
+		}
+
 		const PartFilePauseResumeSeams::TransitionResult resumeTransition = PartFilePauseResumeSeams::ApplyInsufficientResumeTransition(
 			PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
 		AddLogLine(false, _T("Resuming download of \"%s\""), (LPCTSTR)GetFileName());
@@ -3559,9 +3591,6 @@ void CPartFile::ResumeFileInsufficient()
 
 CString CPartFile::getPartfileStatus() const
 {
-	if (GetFileOp() == PFOP_IMPORTPARTS)
-		return _T("Importing part");
-
 	UINT uid;
 	switch (GetStatus()) {
 	case PS_HASHING:
@@ -3688,7 +3717,9 @@ bool CPartFile::IsReadyForPreview() const
 			return false;
 
 		// check free disk space
-		uint64 uMinFreeDiskSpace = thePrefs.GetMinFreeDiskSpace();
+		uint64 uMinFreeDiskSpace = theApp.downloadqueue != NULL
+			? theApp.downloadqueue->GetRequiredFreeDiskSpaceForPath(GetTmpPath())
+			: thePrefs.GetEffectiveMinFreeDiskSpaceForPath(GetTmpPath());
 		if (thePrefs.GetPreviewCopiedArchives())
 			uMinFreeDiskSpace += (uint64)m_nFileSize * 2;
 		else
@@ -4147,7 +4178,9 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 
 	try {
 		ULONGLONG cursize = m_hpartfile.GetLength();
-		const ULONGLONG uMinFreeDiskSpace = thePrefs.GetMinFreeDiskSpace();
+		const ULONGLONG uMinFreeDiskSpace = theApp.downloadqueue != NULL
+			? theApp.downloadqueue->GetRequiredFreeDiskSpaceForPath(GetTmpPath())
+			: thePrefs.GetEffectiveMinFreeDiskSpaceForPath(GetTmpPath());
 		//Previously full file allocation was performed in a special thread. That thread was writing
 		// 1 byte at the end of file. Overlapped I/O is already in a separate thread, and synchronising
 		// 3 threads could be fun. This fun may be avoided by using overlapped I/O for allocation too,

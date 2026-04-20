@@ -62,6 +62,12 @@ constexpr size_t kWebApiKeyBytes = 16;
 constexpr UINT kMaxServerKeepAliveTimeoutMinutes = 1440;
 constexpr UINT kMaxFileBufferTimeLimitSeconds = 86400;
 
+struct ProtectedDiskVolumeThreshold
+{
+	CString VolumeId;
+	ULONGLONG RequiredBytes;
+};
+
 uint32 NormalizeConfiguredUploadLimitKiB(uint32 value)
 {
 	return (value == 0 || value >= UNLIMITED) ? kDefaultConfiguredUploadLimitKiB : value;
@@ -96,6 +102,34 @@ uint16 NormalizePortPreferenceValue(int value, uint16 defaultPort, bool bAllowZe
 uint16 NormalizeProxyTypeValue(int value)
 {
 	return static_cast<uint16>(NormalizeBoundedPreference(value, PROXYTYPE_NOPROXY, PROXYTYPE_NOPROXY, PROXYTYPE_HTTP11));
+}
+
+INT_PTR FindProtectedDiskVolumeThreshold(const CArray<ProtectedDiskVolumeThreshold, const ProtectedDiskVolumeThreshold&> &aThresholds, const CString &strVolumeId)
+{
+	for (INT_PTR i = 0; i < aThresholds.GetCount(); ++i) {
+		if (aThresholds[i].VolumeId == strVolumeId)
+			return i;
+	}
+	return -1;
+}
+
+void MergeProtectedDiskVolumeThreshold(CArray<ProtectedDiskVolumeThreshold, const ProtectedDiskVolumeThreshold&> *paThresholds, LPCTSTR pszPath, const ULONGLONG nRequiredBytes)
+{
+	if (paThresholds == NULL || pszPath == NULL || pszPath[0] == _T('\0'))
+		return;
+
+	CString strVolumeId;
+	if (!TryGetVolumeIdentityPath(pszPath, strVolumeId))
+		return;
+
+	const INT_PTR iExisting = FindProtectedDiskVolumeThreshold(*paThresholds, strVolumeId);
+	if (iExisting >= 0) {
+		(*paThresholds)[iExisting].RequiredBytes = max((*paThresholds)[iExisting].RequiredBytes, nRequiredBytes);
+		return;
+	}
+
+	ProtectedDiskVolumeThreshold threshold = { strVolumeId, nRequiredBytes };
+	paThresholds->Add(threshold);
 }
 
 /**
@@ -379,8 +413,9 @@ int		CPreferences::m_iLastMainWndDlgID;
 bool	CPreferences::m_bRestoreLastLogPane;
 int		CPreferences::m_iLastLogPaneID;
 UINT	CPreferences::MaxConperFive;
-bool	CPreferences::checkDiskspace;
-ULONGLONG CPreferences::m_uMinFreeDiskSpace;
+ULONGLONG CPreferences::m_uMinFreeDiskSpaceConfig;
+ULONGLONG CPreferences::m_uMinFreeDiskSpaceTemp;
+ULONGLONG CPreferences::m_uMinFreeDiskSpaceIncoming;
 bool	CPreferences::m_bSparsePartFiles;
 CString	CPreferences::m_strYourHostname;
 bool	CPreferences::m_bEnableVerboseOptions;
@@ -1877,8 +1912,9 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("IndicateRatings"), indicateratings);
 	ini.WriteBool(_T("WatchClipboard4ED2kFilelinks"), watchclipboard);
 	ini.WriteInt(_T("SearchMethod"), m_iSearchMethod);
-	ini.WriteBool(_T("CheckDiskspace"), true);
-	ini.WriteUInt64(_T("MinFreeDiskSpace"), GetMinFreeDiskSpace());
+	ini.WriteUInt64(_T("MinFreeDiskSpaceConfig"), GetMinFreeDiskSpaceConfig());
+	ini.WriteUInt64(_T("MinFreeDiskSpaceTemp"), GetMinFreeDiskSpaceTemp());
+	ini.WriteUInt64(_T("MinFreeDiskSpaceIncoming"), GetMinFreeDiskSpaceIncoming());
 	ini.WriteBool(_T("SparsePartFiles"), m_bSparsePartFiles);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
@@ -2356,7 +2392,6 @@ void CPreferences::LoadPreferences()
 	m_bTransflstRemain = ini.GetBool(_T("TransflstRemainOrder"), false);
 	filterserverbyip = ini.GetBool(_T("FilterServersByIP"), false);
 	filterlevel = ini.GetInt(_T("FilterLevel"), 127);
-	checkDiskspace = true;
 	SetBBMaxUploadClientsAllowed((UINT)max(0, ini.GetInt(_T("BBMaxUpClientsAllowed"), 8)));
 	SetBBSlowUploadThresholdFactor(ini.GetFloat(_T("BBSlowThresholdFactor"), 0.33f));
 	SetBBSlowUploadGraceSeconds((UINT)max(0, ini.GetInt(_T("BBSlowGraceSeconds"), 30)));
@@ -2376,7 +2411,9 @@ void CPreferences::LoadPreferences()
 	else if (m_eBBSessionTransferMode == BBSTM_ABSOLUTE_MIB)
 		m_uBBSessionTransferValue = min(4096u, max(1u, m_uBBSessionTransferValue));
 	SetBBSessionTimeLimitSeconds((UINT)max(0, ini.GetInt(_T("BBSessionTimeLimitSeconds"), 3600)));
-	m_uMinFreeDiskSpace = NormalizeMinFreeDiskSpace(ini.GetUInt64(_T("MinFreeDiskSpace"), GetMinFreeDiskSpaceFloor()));
+	SetMinFreeDiskSpaceConfig(ini.GetUInt64(_T("MinFreeDiskSpaceConfig"), GetMinFreeDiskSpaceConfigFloor()));
+	SetMinFreeDiskSpaceTemp(ini.GetUInt64(_T("MinFreeDiskSpaceTemp"), GetMinFreeDiskSpaceTempFloor()));
+	SetMinFreeDiskSpaceIncoming(ini.GetUInt64(_T("MinFreeDiskSpaceIncoming"), GetMinFreeDiskSpaceIncomingFloor()));
 	m_bSparsePartFiles = ini.GetBool(_T("SparsePartFiles"), false);
 	m_bKeepUnavailableFixedSharedDirs = ini.GetBool(_T("KeepUnavailableFixedSharedDirs"), false);
 	m_strYourHostname = ini.GetString(_T("YourHostname"), _T(""));
@@ -3447,6 +3484,27 @@ void CPreferences::ChangeUserDirMode(int nNewMode)
 			m_nCurrentUserDirMode = nNewMode;
 		rkEMuleRegKey.Close();
 	}
+}
+
+ULONGLONG CPreferences::GetEffectiveMinFreeDiskSpaceForPath(LPCTSTR pszPath)
+{
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return 0;
+
+	CString strPathVolumeId;
+	if (!TryGetVolumeIdentityPath(pszPath, strPathVolumeId))
+		return 0;
+
+	CArray<ProtectedDiskVolumeThreshold, const ProtectedDiskVolumeThreshold&> aThresholds;
+	MergeProtectedDiskVolumeThreshold(&aThresholds, GetMuleDirectory(EMULE_CONFIGDIR), GetMinFreeDiskSpaceConfig());
+	for (INT_PTR i = 0; i < GetTempDirCount(); ++i)
+		MergeProtectedDiskVolumeThreshold(&aThresholds, GetTempDir(i), GetMinFreeDiskSpaceTemp());
+	MergeProtectedDiskVolumeThreshold(&aThresholds, GetMuleDirectory(EMULE_INCOMINGDIR), GetMinFreeDiskSpaceIncoming());
+	for (INT_PTR i = 0; i < GetCatCount(); ++i)
+		MergeProtectedDiskVolumeThreshold(&aThresholds, GetCatPath(i), GetMinFreeDiskSpaceIncoming());
+
+	const INT_PTR iThreshold = FindProtectedDiskVolumeThreshold(aThresholds, strPathVolumeId);
+	return iThreshold >= 0 ? aThresholds[iThreshold].RequiredBytes : 0;
 }
 
 bool CPreferences::GetSparsePartFiles()

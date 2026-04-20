@@ -120,7 +120,9 @@ protected:
 	HTREEITEM m_htiDownloadTimeout;
 	HTREEITEM m_htiRestoreLastLogPane;
 	HTREEITEM m_htiRestoreLastMainWndDlg;
-	HTREEITEM m_htiMinFreeDiskSpace;
+	HTREEITEM m_htiMinFreeDiskSpaceConfig;
+	HTREEITEM m_htiMinFreeDiskSpaceTemp;
+	HTREEITEM m_htiMinFreeDiskSpaceIncoming;
 	HTREEITEM m_htiServerKeepAliveTimeout;
 	HTREEITEM m_htiShareeMule;
 	HTREEITEM m_htiShareeMuleMultiUser;
@@ -137,7 +139,9 @@ protected:
 	HTREEITEM m_htiVerboseGroup;
 	HTREEITEM m_htiYourHostname;
 
-	int m_iMinFreeDiskSpaceGB;
+	int m_iMinFreeDiskSpaceConfigGB;
+	int m_iMinFreeDiskSpaceTempGB;
+	int m_iMinFreeDiskSpaceIncomingGB;
 	int m_iQueueSize;
 	UINT m_uFileBufferSizeKiB;
 	UINT m_uConnectionTimeoutSeconds;

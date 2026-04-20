@@ -37,7 +37,6 @@
 #include "TaskbarNotifier.h"
 #include "MenuCmds.h"
 #include "Log.h"
-#include "DownloadQueueDiskSpaceSeams.h"
 #include "PathHelpers.h"
 #include "DownloadQueueOverviewSeams.h"
 
@@ -49,67 +48,37 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
-	using DownloadQueueDiskSpaceSeams::FileDiskSpaceState;
-	using DownloadQueueDiskSpaceSeams::FileDiskSpaceStatus;
-	using DownloadQueueDiskSpaceSeams::VolumeKey;
-	using DownloadQueueDiskSpaceSeams::VolumeResumeBudget;
-
-	VolumeKey ResolveDiskSpaceVolumeKey(const CString &path)
+	enum ProtectedDiskRoleMask : UINT
 	{
-		VolumeKey volumeKey = { GetPathDriveNumber(path), std::wstring() };
-		if (volumeKey.DriveNumber >= 0)
-			return volumeKey;
+		ProtectedDiskRoleConfig = 0x01,
+		ProtectedDiskRoleTemp = 0x02,
+		ProtectedDiskRoleIncoming = 0x04
+	};
 
-		CString sShare = GetShareName(path);
-		sShare.MakeLower();
-		volumeKey.ShareName = static_cast<LPCTSTR>(sShare);
-		return volumeKey;
-	}
-
-	FileDiskSpaceStatus ResolveFileDiskSpaceStatus(const CPartFile &rFile)
+	CString FormatProtectedVolumeRoles(const UINT uRoleMask)
 	{
-		switch (rFile.GetStatus()) {
-		case PS_PAUSED:
-			return FileDiskSpaceStatus::Paused;
-		case PS_INSUFFICIENT:
-			return FileDiskSpaceStatus::Insufficient;
-		case PS_ERROR:
-			return FileDiskSpaceStatus::Error;
-		case PS_COMPLETING:
-			return FileDiskSpaceStatus::Completing;
-		case PS_COMPLETE:
-			return FileDiskSpaceStatus::Complete;
-		default:
-			return FileDiskSpaceStatus::Active;
+		CString strRoles;
+		if ((uRoleMask & ProtectedDiskRoleConfig) != 0)
+			strRoles = _T("config");
+		if ((uRoleMask & ProtectedDiskRoleTemp) != 0) {
+			if (!strRoles.IsEmpty())
+				strRoles += _T(", ");
+			strRoles += _T("temp");
 		}
-	}
-
-	FileDiskSpaceState BuildFileDiskSpaceState(const CPartFile &rFile)
-	{
-		FileDiskSpaceState state = {
-			ResolveFileDiskSpaceStatus(rFile),
-			ResolveDiskSpaceVolumeKey(rFile.GetTmpPath()),
-			rFile.IsNormalFile(),
-			rFile.GetNeededSpace()
-		};
-		return state;
-	}
-
-	INT_PTR FindDiskSpaceVolumeBudget(const CArray<VolumeResumeBudget, const VolumeResumeBudget&> &aVolumeBudgets, const VolumeKey &rVolumeKey)
-	{
-		for (INT_PTR i = 0; i < aVolumeBudgets.GetCount(); ++i) {
-			if (DownloadQueueDiskSpaceSeams::IsSameVolumeKey(aVolumeBudgets[i].TempVolumeKey, rVolumeKey))
-				return i;
+		if ((uRoleMask & ProtectedDiskRoleIncoming) != 0) {
+			if (!strRoles.IsEmpty())
+				strRoles += _T(", ");
+			strRoles += _T("incoming");
 		}
-		return -1;
+		return strRoles;
 	}
 
-	uint64 GetFileDiskSpaceFreeBytes(const CString &sTmpPath, const bool bNotEnoughSpaceLeft, const uint64 nTotalAvailableSpaceMain)
+	CString GetPartFileIncomingPath(const CPartFile &partFile)
 	{
-		if (bNotEnoughSpaceLeft)
-			return 0;
-
-		return thePrefs.GetTempDirCount() == 1 ? nTotalAvailableSpaceMain : GetFreeDiskSpaceX(sTmpPath);
+		const Category_Struct *pCategory = thePrefs.GetCategory(partFile.GetCategory());
+		if (pCategory != NULL && LongPathSeams::PathExists(pCategory->strIncomingPath))
+			return pCategory->strIncomingPath;
+		return thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
 	}
 }
 
@@ -129,8 +98,159 @@ CDownloadQueue::CDownloadQueue()
 	, m_nUDPFileReasks()
 	, m_nFailedUDPFileReasks()
 	, m_datarate()
+	, m_bProtectedDiskSpaceBlocked()
+	, m_strProtectedDiskSpaceBreachSignature()
 {
 	SetLastKademliaFileRequest();
+}
+
+void CDownloadQueue::CollectProtectedVolumeStatuses(CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> *paStatuses, const bool bNotEnoughSpaceLeft) const
+{
+	if (paStatuses == NULL)
+		return;
+
+	paStatuses->RemoveAll();
+
+	auto FindProtectedVolumeStatus = [&](const CString &strVolumeId) -> INT_PTR
+	{
+		for (INT_PTR i = 0; i < paStatuses->GetCount(); ++i) {
+			if ((*paStatuses)[i].VolumeId == strVolumeId)
+				return i;
+		}
+		return -1;
+	};
+
+	auto EnsureProtectedVolumeStatus = [&](LPCTSTR pszPath) -> INT_PTR
+	{
+		if (pszPath == NULL || pszPath[0] == _T('\0'))
+			return -1;
+
+		CString strVolumeId;
+		if (!TryGetVolumeIdentityPath(pszPath, strVolumeId))
+			return -1;
+
+		const INT_PTR iExisting = FindProtectedVolumeStatus(strVolumeId);
+		if (iExisting >= 0)
+			return iExisting;
+
+		ProtectedVolumeStatus status = {
+			strVolumeId,
+			bNotEnoughSpaceLeft ? 0 : GetFreeDiskSpaceX(pszPath),
+			0,
+			0,
+			0,
+			0
+		};
+		paStatuses->Add(status);
+		return paStatuses->GetUpperBound();
+	};
+
+	auto MergeProtectedVolumeRole = [&](LPCTSTR pszPath, const uint64 nFloorBytes, const UINT uRoleMask) -> void
+	{
+		const INT_PTR iStatus = EnsureProtectedVolumeStatus(pszPath);
+		if (iStatus < 0)
+			return;
+
+		(*paStatuses)[iStatus].FloorBytes = max((*paStatuses)[iStatus].FloorBytes, nFloorBytes);
+		(*paStatuses)[iStatus].RoleMask |= uRoleMask;
+	};
+
+	auto AddProtectedVolumeCompletionDemand = [&](LPCTSTR pszPath, const uint64 nBytes) -> void
+	{
+		if (nBytes == 0)
+			return;
+
+		const INT_PTR iStatus = EnsureProtectedVolumeStatus(pszPath);
+		if (iStatus < 0)
+			return;
+
+		(*paStatuses)[iStatus].CompletionBytes += nBytes;
+	};
+
+	MergeProtectedVolumeRole(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR), thePrefs.GetMinFreeDiskSpaceConfig(), ProtectedDiskRoleConfig);
+	for (INT_PTR i = 0; i < thePrefs.GetTempDirCount(); ++i)
+		MergeProtectedVolumeRole(thePrefs.GetTempDir(i), thePrefs.GetMinFreeDiskSpaceTemp(), ProtectedDiskRoleTemp);
+	MergeProtectedVolumeRole(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR), thePrefs.GetMinFreeDiskSpaceIncoming(), ProtectedDiskRoleIncoming);
+	for (INT_PTR i = 0; i < thePrefs.GetCatCount(); ++i)
+		MergeProtectedVolumeRole(thePrefs.GetCatPath(i), thePrefs.GetMinFreeDiskSpaceIncoming(), ProtectedDiskRoleIncoming);
+
+	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
+		const CPartFile *pPartFile = filelist.GetNext(pos);
+		if (pPartFile == NULL)
+			continue;
+
+		switch (pPartFile->GetStatus(false)) {
+		case PS_READY:
+		case PS_EMPTY:
+		case PS_WAITINGFORHASH:
+		case PS_HASHING:
+		case PS_INSUFFICIENT:
+			break;
+		default:
+			continue;
+		}
+
+		uint64 uLeftToTransfer = 0;
+		uint64 uAdditionalTempNeeded = 0;
+		pPartFile->GetLeftToTransferAndAdditionalNeededSpace(uLeftToTransfer, uAdditionalTempNeeded);
+		AddProtectedVolumeCompletionDemand(pPartFile->GetTmpPath(), uAdditionalTempNeeded);
+
+		const CString strIncomingPath(GetPartFileIncomingPath(*pPartFile));
+		CString strTempVolumeId;
+		CString strIncomingVolumeId;
+		const bool bHaveTempVolume = TryGetVolumeIdentityPath(pPartFile->GetTmpPath(), strTempVolumeId);
+		const bool bHaveIncomingVolume = TryGetVolumeIdentityPath(strIncomingPath, strIncomingVolumeId);
+		if (bHaveIncomingVolume && (!bHaveTempVolume || strIncomingVolumeId != strTempVolumeId))
+			AddProtectedVolumeCompletionDemand(strIncomingPath, static_cast<uint64>(pPartFile->GetFileSize()));
+	}
+
+	for (INT_PTR i = 0; i < paStatuses->GetCount(); ++i)
+		(*paStatuses)[i].RequiredBytes = (*paStatuses)[i].FloorBytes + (*paStatuses)[i].CompletionBytes;
+}
+
+CString CDownloadQueue::BuildProtectedDiskSpaceBreachSignature(const CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> &aStatuses) const
+{
+	CString strSignature;
+	for (INT_PTR i = 0; i < aStatuses.GetCount(); ++i) {
+		const ProtectedVolumeStatus &rStatus = aStatuses[i];
+		if (rStatus.FreeBytes >= rStatus.RequiredBytes)
+			continue;
+
+		CString strItem;
+		strItem.Format(_T("%s|%I64u|%u;"), (LPCTSTR)rStatus.VolumeId, rStatus.RequiredBytes, rStatus.RoleMask);
+		strSignature += strItem;
+	}
+	return strSignature;
+}
+
+bool CDownloadQueue::IsProtectedDiskSpaceBlocked() const
+{
+	CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> aProtectedVolumes;
+	CollectProtectedVolumeStatuses(&aProtectedVolumes, false);
+	for (INT_PTR i = 0; i < aProtectedVolumes.GetCount(); ++i) {
+		if (aProtectedVolumes[i].FreeBytes < aProtectedVolumes[i].RequiredBytes)
+			return true;
+	}
+	return false;
+}
+
+ULONGLONG CDownloadQueue::GetRequiredFreeDiskSpaceForPath(LPCTSTR pszPath) const
+{
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return 0;
+
+	CString strVolumeId;
+	if (!TryGetVolumeIdentityPath(pszPath, strVolumeId))
+		return 0;
+
+	CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> aProtectedVolumes;
+	CollectProtectedVolumeStatuses(&aProtectedVolumes, false);
+	for (INT_PTR i = 0; i < aProtectedVolumes.GetCount(); ++i) {
+		if (aProtectedVolumes[i].VolumeId == strVolumeId)
+			return aProtectedVolumes[i].RequiredBytes;
+	}
+
+	return thePrefs.GetEffectiveMinFreeDiskSpaceForPath(pszPath);
 }
 
 void CDownloadQueue::AddPartFilesToShare()
@@ -1029,57 +1149,78 @@ void CDownloadQueue::CheckDiskspaceTimed()
 		CheckDiskspace();
 }
 
+void CDownloadQueue::ForceSaveAllPartMetFilesForDiskSpace()
+{
+	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;)
+		filelist.GetNext(pos)->SavePartFile(false, true);
+}
+
+void CDownloadQueue::StopAllDownloadsForDiskSpace()
+{
+	bool bResort = false;
+	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
+		CPartFile *cur_file = filelist.GetNext(pos);
+		if (cur_file == NULL)
+			continue;
+
+		switch (cur_file->GetStatus(false)) {
+		case PS_READY:
+		case PS_EMPTY:
+		case PS_WAITINGFORHASH:
+		case PS_INSUFFICIENT:
+			cur_file->PauseFile(true, false);
+			bResort = true;
+			break;
+		default:
+			break;
+		}
+	}
+
+	ForceSaveAllPartMetFilesForDiskSpace();
+	if (bResort)
+		SortByPriority();
+}
+
 void CDownloadQueue::CheckDiskspace(bool bNotEnoughSpaceLeft)
 {
 	m_lastcheckdiskspacetime = ::GetTickCount64();
 
-	// sorting the list could be done here, but I prefer to "see" that function call in the calling functions.
-	//SortByPriority();
-
-	// 'bNotEnoughSpaceLeft' - avoid worse case of having already 'disk full'
-	const uint64 nMinimumFreeBytes = thePrefs.GetMinFreeDiskSpace();
-	const uint64 nTotalAvailableSpaceMain = bNotEnoughSpaceLeft ? 0 : GetFreeDiskSpaceX(thePrefs.GetTempDir());
-
-	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
-		CPartFile *cur_file = filelist.GetNext(pos);
-		const FileDiskSpaceState state = BuildFileDiskSpaceState(*cur_file);
-		const uint64 nTotalAvailableSpace = GetFileDiskSpaceFreeBytes(cur_file->GetTmpPath(), bNotEnoughSpaceLeft, nTotalAvailableSpaceMain);
-		if (DownloadQueueDiskSpaceSeams::ShouldPauseForDiskSpace(state, nTotalAvailableSpace, nMinimumFreeBytes))
-			cur_file->PauseFile(true);
-	}
-
-	CArray<VolumeResumeBudget, const VolumeResumeBudget&> aVolumeBudgets;
-	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
-		CPartFile *cur_file = filelist.GetNext(pos);
-		const FileDiskSpaceState state = BuildFileDiskSpaceState(*cur_file);
-		if (!DownloadQueueDiskSpaceSeams::IsResumeCandidate(state.Status))
-			continue;
-
-		const CString sTmpPath(cur_file->GetTmpPath());
-		INT_PTR iBudget = FindDiskSpaceVolumeBudget(aVolumeBudgets, state.TempVolumeKey);
-		if (iBudget < 0) {
-			VolumeResumeBudget volumeBudget = {
-				state.TempVolumeKey,
-				GetFileDiskSpaceFreeBytes(sTmpPath, bNotEnoughSpaceLeft, nTotalAvailableSpaceMain),
-				0
-			};
-			aVolumeBudgets.Add(volumeBudget);
-			iBudget = aVolumeBudgets.GetUpperBound();
+	CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> aProtectedVolumes;
+	CollectProtectedVolumeStatuses(&aProtectedVolumes, bNotEnoughSpaceLeft);
+	bool bHasBreach = false;
+	for (INT_PTR i = 0; i < aProtectedVolumes.GetCount(); ++i) {
+		if (aProtectedVolumes[i].FreeBytes < aProtectedVolumes[i].RequiredBytes) {
+			bHasBreach = true;
+			break;
 		}
-
-		DownloadQueueDiskSpaceSeams::AccumulateResumeHeadroom(&aVolumeBudgets[iBudget], state);
+	}
+	if (!bHasBreach) {
+		m_bProtectedDiskSpaceBlocked = false;
+		m_strProtectedDiskSpaceBreachSignature.Empty();
+		return;
 	}
 
-	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
-		CPartFile *cur_file = filelist.GetNext(pos);
-		const FileDiskSpaceState state = BuildFileDiskSpaceState(*cur_file);
-		if (!DownloadQueueDiskSpaceSeams::IsResumeCandidate(state.Status))
+	const CString strBreachSignature(BuildProtectedDiskSpaceBreachSignature(aProtectedVolumes));
+	if (m_bProtectedDiskSpaceBlocked && m_strProtectedDiskSpaceBreachSignature == strBreachSignature)
+		return;
+
+	for (INT_PTR i = 0; i < aProtectedVolumes.GetCount(); ++i) {
+		const ProtectedVolumeStatus &rStatus = aProtectedVolumes[i];
+		if (rStatus.FreeBytes >= rStatus.RequiredBytes)
 			continue;
 
-		const INT_PTR iBudget = FindDiskSpaceVolumeBudget(aVolumeBudgets, state.TempVolumeKey);
-		if (iBudget >= 0 && DownloadQueueDiskSpaceSeams::ShouldResumeForDiskSpace(state, aVolumeBudgets[iBudget], nMinimumFreeBytes))
-			cur_file->ResumeFileInsufficient();
+		LogWarning(_T("Disk-space guard stopped all downloads because protected volume \"%s\" for %s has %I64u bytes free and requires at least %I64u (floor %I64u + completion reserve %I64u).")
+			, (LPCTSTR)rStatus.VolumeId
+			, (LPCTSTR)FormatProtectedVolumeRoles(rStatus.RoleMask)
+			, rStatus.FreeBytes
+			, rStatus.RequiredBytes
+			, rStatus.FloorBytes
+			, rStatus.CompletionBytes);
 	}
+
+	StopAllDownloadsForDiskSpace();
+	m_bProtectedDiskSpaceBlocked = true;
+	m_strProtectedDiskSpaceBreachSignature = strBreachSignature;
 }
 
 void CDownloadQueue::GetDownloadSourcesStats(SDownloadStats &results)
@@ -1727,93 +1868,97 @@ void CDownloadQueue::OnConnectionState(bool bConnected)
 CString CDownloadQueue::GetOptimalTempDir(UINT nCat, EMFileSize nFileSize)
 {
 	const INT_PTR iTempDirCnt = thePrefs.GetTempDirCount();
-	// shortcut
-	if (iTempDirCnt == 1)
-		return thePrefs.GetTempDir();
+
+	CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> aProtectedVolumes;
+	CollectProtectedVolumeStatuses(&aProtectedVolumes, false);
+	for (INT_PTR i = 0; i < aProtectedVolumes.GetCount(); ++i) {
+		if (aProtectedVolumes[i].FreeBytes < aProtectedVolumes[i].RequiredBytes)
+			return CString();
+	}
 
 	struct tmpDir
 	{
-		INT_PTR iDrive;		//-1 for UNC paths; 0 to 25 for drives from a: to z:
-							//-2 for skipping the entry
-		CString sShare;		//when iDrive is -1, this is a share name (\\server\share\)
-		sint64 llFreeSpace;	//free space - (reserved minimum) - (collected space to complete all files on the drive)
+		bool bDuplicateVolume;
+		CString sVolumeId;
+		sint64 llAvailableSpace;	// free space - effective required bytes for the current protected volume snapshot
 	};
 	CArray<tmpDir> aDrive;
 	aDrive.SetSize(iTempDirCnt);
 
-	// Step 1: collect free space on drives
+	const Category_Struct *pCategory = thePrefs.GetCategory(nCat);
+	const CString strIncomingPath((pCategory != NULL && LongPathSeams::PathExists(pCategory->strIncomingPath))
+		? pCategory->strIncomingPath
+		: thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
+	CString strIncomingVolumeId;
+	(void)TryGetVolumeIdentityPath(strIncomingPath, strIncomingVolumeId);
+
+	auto FindProtectedVolumeStatus = [&](const CString &strVolumeId) -> const ProtectedVolumeStatus*
+	{
+		for (INT_PTR i = 0; i < aProtectedVolumes.GetCount(); ++i) {
+			if (aProtectedVolumes[i].VolumeId == strVolumeId)
+				return &aProtectedVolumes[i];
+		}
+		return NULL;
+	};
+
+	auto GetAvailableBytesForVolume = [&](const CString &strVolumeId) -> sint64
+	{
+		const ProtectedVolumeStatus *pStatus = FindProtectedVolumeStatus(strVolumeId);
+		if (pStatus == NULL)
+			return 0;
+		return static_cast<sint64>(pStatus->FreeBytes) - static_cast<sint64>(pStatus->RequiredBytes);
+	};
+
+	// Step 1: collect free space on volumes
 	sint64 llHighestFreeSpace = 0;
 	INT_PTR	nHighestFreeSpaceDrive = -1;
 	for (INT_PTR i = 0; i < iTempDirCnt; ++i) {
 		const CString &sDir(thePrefs.GetTempDir(i));
-		INT_PTR iDrive = GetPathDriveNumber(sDir);
-		ASSERT(iDrive >= 0 || ::PathIsUNC(sDir));
-		if (iDrive < 0) //UNC path
-			aDrive[i].sShare = GetShareName(sDir).MakeLower();
-		//Free space is calculated per drive (or share), but several temp directories may be on one drive
+		if (!TryGetVolumeIdentityPath(sDir, aDrive[i].sVolumeId))
+			aDrive[i].sVolumeId = sDir;
+		// Free space is calculated per volume, but several temp directories may be on one volume.
 		INT_PTR j;
 		for (j = 0; j < i; ++j)
-			if (iDrive == aDrive[j].iDrive && (iDrive >= 0 || aDrive[i].sShare == aDrive[j].sShare))
+			if (aDrive[i].sVolumeId == aDrive[j].sVolumeId)
 				break;
 
 		if (i >= j) {
-			aDrive[i].iDrive = iDrive;
-			const sint64 llSpace = static_cast<sint64>(GetFreeDiskSpaceX(sDir)) - static_cast<sint64>(thePrefs.GetMinFreeDiskSpace());
+			aDrive[i].bDuplicateVolume = false;
+			const sint64 llSpace = GetAvailableBytesForVolume(aDrive[i].sVolumeId);
 			if (llSpace > llHighestFreeSpace) {
 				nHighestFreeSpaceDrive = i;
 				llHighestFreeSpace = llSpace;
 			}
-			aDrive[i].llFreeSpace = llSpace;
-		} else
-			aDrive[i].iDrive = -2; //data for this drive is already known
-	}
-
-	// Step 2: collect the space we need to download all files in the current queue
-	for (POSITION pos = filelist.GetHeadPosition(); pos != NULL;) {
-		const CPartFile *pCurFile = filelist.GetNext(pos);
-		switch (pCurFile->GetStatus(false)) {
-		case PS_READY:
-		case PS_EMPTY:
-		case PS_WAITINGFORHASH:
-		case PS_INSUFFICIENT:
-			{
-				sint64 llSpace = (uint64)pCurFile->GetFileSize() - (uint64)pCurFile->GetRealFileSize();
-				if (llSpace > 0) {
-					const CString &sPath(pCurFile->GetTmpPath());
-					INT_PTR iDrive = GetPathDriveNumber(sPath);
-					ASSERT(iDrive >= 0 || ::PathIsUNC(sPath));
-					CString sUNC;
-					if (iDrive < 0)
-						sUNC = GetShareName(sPath).MakeLower();
-
-					for (INT_PTR i = 0; i < iTempDirCnt; ++i) //look up for the same drive or share
-						if (iDrive == aDrive[i].iDrive && (iDrive >= 0 || sUNC == aDrive[i].sShare)) {
-							aDrive[i].llFreeSpace -= llSpace;
-							break;
-						}
-				}
-			}
+			aDrive[i].llAvailableSpace = llSpace;
+		} else {
+			aDrive[i].bDuplicateVolume = true; // data for this volume is already known
 		}
 	}
 
 	sint64 llHighestTotalSpace = 0;
 	INT_PTR	nHighestTotalSpaceDir = -1;
 	INT_PTR	nHighestFreeSpaceDir = -1;
-	INT_PTR	nAnyAvailableDir = -1;
-	// first round (0): on the same drive as incoming and enough space for all downloading
+	// first round (0): on the same volume as incoming and enough space for all downloading
 	// second round (1): enough space for all downloading
-	// third round (2): largest actual free space
+	// third round (2): largest actual free space among still-valid candidates
 	for (INT_PTR i = 0; i < iTempDirCnt; ++i) {
-		if (aDrive[i].iDrive == -2)
+		if (aDrive[i].bDuplicateVolume)
 			continue;
-		const sint64 llAvailableSpace = aDrive[i].llFreeSpace;
+		const sint64 llAvailableSpace = aDrive[i].llAvailableSpace;
+		const sint64 llIncomingAvailableSpace = strIncomingVolumeId.IsEmpty() ? 0 : GetAvailableBytesForVolume(strIncomingVolumeId);
+		const sint64 llTempDemandForNewFile = static_cast<sint64>(nFileSize);
+		const sint64 llIncomingDemandForNewFile = (!strIncomingVolumeId.IsEmpty() && strIncomingVolumeId != aDrive[i].sVolumeId)
+			? static_cast<sint64>(nFileSize)
+			: 0;
+		const bool bHasEnoughTempSpace = llAvailableSpace >= llTempDemandForNewFile;
+		const bool bHasEnoughIncomingSpace = llIncomingDemandForNewFile == 0 || llIncomingAvailableSpace >= llIncomingDemandForNewFile;
 
 		// no condition can be met for a large file on a FAT volume
 		if (nFileSize <= OLD_MAX_EMULE_FILE_SIZE || !IsFileOnFATVolume(thePrefs.GetTempDir(i))) {
-			if (llAvailableSpace >= (sint64)(uint64)nFileSize) {
+			if (bHasEnoughTempSpace && bHasEnoughIncomingSpace) {
 				// condition 0
-				// needs to be the same drive and enough space
-				if (GetPathDriveNumber(thePrefs.GetCatPath(nCat)) == aDrive[i].iDrive)
+				// needs to be the same volume and enough space
+				if (!strIncomingVolumeId.IsEmpty() && strIncomingVolumeId == aDrive[i].sVolumeId)
 					return thePrefs.GetTempDir(i);	//this one is perfect
 
 				// condition 1
@@ -1824,13 +1969,9 @@ CString CDownloadQueue::GetOptimalTempDir(UINT nCat, EMFileSize nFileSize)
 				}
 			}
 			// condition 2
-			// the first one with the highest actually free space (see Step 1)
-			if (i == nHighestFreeSpaceDrive && nHighestFreeSpaceDir < 0)
+			// the first valid one with the highest actually free space (see Step 1)
+			if (bHasEnoughTempSpace && bHasEnoughIncomingSpace && i == nHighestFreeSpaceDrive && nHighestFreeSpaceDir < 0)
 				nHighestFreeSpaceDir = i;
-			// condition 3
-			// any directory which can be used for this file (aka not FAT for large files)
-			if (nAnyAvailableDir < 0)
-				nAnyAvailableDir = i;
 		}
 	}
 
@@ -1840,9 +1981,7 @@ CString CDownloadQueue::GetOptimalTempDir(UINT nCat, EMFileSize nFileSize)
 	if (nHighestFreeSpaceDir >= 0) // condition 1 could not be met too, take 2
 		return thePrefs.GetTempDir(nHighestFreeSpaceDir);
 
-	// so was condition 2 and 3, take 4... wait there is no 3 - this must be a bug
-	ASSERT(nAnyAvailableDir >= 0);
-	return thePrefs.GetTempDir(max(nAnyAvailableDir, 0));
+	return CString();
 }
 
 void CDownloadQueue::RefilterAllComments()

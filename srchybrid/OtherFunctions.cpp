@@ -911,6 +911,41 @@ uint64 GetFreeDiskSpaceX(LPCTSTR pDirectory)
 	return ::GetDiskFreeSpaceEx(pDirectory, &nFreeDiskSpace, NULL, NULL) ? nFreeDiskSpace.QuadPart : 0;
 }
 
+bool TryGetVolumeIdentityPath(LPCTSTR pszPath, CString &rstrVolumeIdentity)
+{
+	rstrVolumeIdentity.Empty();
+	if (pszPath == NULL || pszPath[0] == _T('\0'))
+		return false;
+
+	TCHAR szVolumePath[MAX_PATH] = {};
+	if (!::GetVolumePathName(pszPath, szVolumePath, _countof(szVolumePath))) {
+		CString strFallback(pszPath);
+		LPTSTR pszVolumeRoot = strFallback.GetBuffer();
+		const BOOL bHasRoot = ::PathStripToRoot(pszVolumeRoot);
+		strFallback.ReleaseBuffer();
+		if (!bHasRoot || strFallback.IsEmpty())
+			return false;
+
+		strFallback = PathHelpers::EnsureTrailingSeparator(strFallback);
+		strFallback.MakeLower();
+		rstrVolumeIdentity = strFallback;
+		return true;
+	}
+
+	CString strVolumePath(PathHelpers::EnsureTrailingSeparator(szVolumePath));
+	TCHAR szVolumeName[MAX_PATH] = {};
+	if (::GetVolumeNameForVolumeMountPoint(strVolumePath, szVolumeName, _countof(szVolumeName))) {
+		CString strVolumeName(PathHelpers::EnsureTrailingSeparator(szVolumeName));
+		strVolumeName.MakeLower();
+		rstrVolumeIdentity = strVolumeName;
+		return true;
+	}
+
+	strVolumePath.MakeLower();
+	rstrVolumeIdentity = strVolumePath;
+	return true;
+}
+
 CString GetRateString(UINT rate)
 {
 	static const UINT ids[6] =
@@ -3644,21 +3679,24 @@ uint64 GetFreeTempSpace(INT_PTR tempdirindex)
 	if (tempdirindex >= 0)
 		return GetFreeDiskSpaceX(thePrefs.GetTempDir(tempdirindex));
 
-	CArray<int, int> hist;
+	CStringArray astrVolumeIds;
 	uint64 sum = 0;
 	for (INT_PTR i = 0; i < thePrefs.GetTempDirCount(); ++i) {
-		int pdn = GetPathDriveNumber(thePrefs.GetTempDir(i));
-		if (pdn >= 0)
-			for (INT_PTR j = hist.GetCount(); --j >= 0;)
-				if (hist[j] == pdn) {
-					pdn = -1;
-					break;
-				}
-
-		if (pdn >= 0) {
-			sum += GetFreeDiskSpaceX(thePrefs.GetTempDir(i));
-			hist.Add(pdn);
+		CString strVolumeId;
+		if (!TryGetVolumeIdentityPath(thePrefs.GetTempDir(i), strVolumeId))
+			continue;
+		bool bKnownVolume = false;
+		for (INT_PTR j = astrVolumeIds.GetCount(); --j >= 0;) {
+			if (astrVolumeIds[j] == strVolumeId) {
+				bKnownVolume = true;
+				break;
+			}
 		}
+		if (bKnownVolume)
+			continue;
+
+		sum += GetFreeDiskSpaceX(thePrefs.GetTempDir(i));
+		astrVolumeIds.Add(strVolumeId);
 	}
 
 	return sum;

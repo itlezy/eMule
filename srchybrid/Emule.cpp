@@ -429,32 +429,16 @@ int eMuleAllocHook(int mode, void *pUserData, size_t nSize, int nBlockUse, long 
 static TCHAR s_szCrtDebugReportFilePath[MAX_PATH] = APP_CRT_DEBUG_LOG_FILE;
 #endif //_DEBUG
 
-static bool TryGetVolumeRootPath(const CString &strPath, CString *pstrVolumeRoot)
-{
-	if (pstrVolumeRoot == NULL || strPath.IsEmpty())
-		return false;
-
-	CString strVolumeRoot(strPath);
-	LPTSTR pszVolumeRoot = strVolumeRoot.GetBuffer();
-	const BOOL bResult = ::PathStripToRoot(pszVolumeRoot);
-	strVolumeRoot.ReleaseBuffer();
-	if (!bResult)
-		return false;
-	if (strVolumeRoot.IsEmpty())
-		return false;
-
-	strVolumeRoot = PathHelpers::EnsureTrailingSeparator(strVolumeRoot);
-	*pstrVolumeRoot = strVolumeRoot;
-	return true;
-}
-
-bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
+bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh, const bool bBypassDiskSpaceFloor)
 {
 	if (pszPath == NULL || pszPath[0] == _T('\0'))
 		return true;
 
+	if (bBypassDiskSpaceFloor)
+		return true;
+
 	CString strVolumeRoot;
-	if (!TryGetVolumeRootPath(pszPath, &strVolumeRoot))
+	if (!TryGetVolumeIdentityPath(pszPath, strVolumeRoot))
 		return true;
 
 	{
@@ -471,7 +455,9 @@ bool CemuleApp::CanWritePartMetFiles(LPCTSTR pszPath, const bool bForceRefresh)
 	}
 
 	const uint64 nFreeBytes = GetFreeDiskSpaceX(strVolumeRoot);
-	const uint64 nRequiredBytes = thePrefs.GetMinFreeDiskSpace();
+	const uint64 nRequiredBytes = theApp.downloadqueue != NULL
+		? theApp.downloadqueue->GetRequiredFreeDiskSpaceForPath(pszPath)
+		: thePrefs.GetEffectiveMinFreeDiskSpaceForPath(pszPath);
 	const PartFilePersistenceSeams::PartMetWriteGuardDecision refreshedDecision = PartFilePersistenceSeams::ResolvePartMetWriteGuard(false, false, bForceRefresh, nFreeBytes, nRequiredBytes);
 	const bool bCanWrite = refreshedDecision.CanWrite;
 	{
@@ -498,7 +484,7 @@ void CemuleApp::InvalidatePartMetWriteGuardCache(LPCTSTR pszPath)
 	}
 
 	CString strVolumeRoot;
-	if (TryGetVolumeRootPath(pszPath, &strVolumeRoot))
+	if (TryGetVolumeIdentityPath(pszPath, strVolumeRoot))
 		m_aPartMetWriteGuardByVolume.RemoveKey(strVolumeRoot);
 }
 

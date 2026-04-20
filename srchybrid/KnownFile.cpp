@@ -1692,42 +1692,6 @@ void CKnownFile::GrabbingFinished(HBITMAP *imgResults, uint8 nFramesGrabbed, voi
 	delete[] imgResults;
 }
 
-bool CKnownFile::ImportParts()
-{
-	// General idea from xmrb's CKnownFile::ImportParts()
-	// Unlike xmrb's version which scans entire file designated for import and then tries
-	// to match each PARTSIZE bytes with all parts of partfile, my version assumes that
-	// in file you're importing all parts stay on same place as they should be in partfile
-	// (for example you're importing damaged version of file to recover some parts from ED2K)
-	// That way it works much faster and almost always it is what expected from this
-	// function. --Rowaa[SR13].
-	// CHANGE BY SIROB, Only compute missing full chunk part
-	if (!IsPartFile()) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_IMPORTPARTS_ERR_ALREADYCOMPLETE));
-		return false;
-	}
-
-	CPartFile *partfile = static_cast<CPartFile*>(this);
-	if (partfile->GetFileOp() == PFOP_IMPORTPARTS) {
-		partfile->SetFileOp(PFOP_NONE); //cancel import
-		return false;
-	}
-
-	CString strImportPath;
-	if (!DialogBrowseFile(strImportPath, _T("All Files (*.*)|*.*||"), NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY))
-		return false;
-
-	CAddFileThread *addfilethread = (CAddFileThread*)AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_LOWEST, 0, CREATE_SUSPENDED);
-	if (addfilethread) {
-		const CString &pathName = strImportPath;
-		partfile->SetFileOpProgress(0);
-		addfilethread->SetValues(theApp.sharedfiles, partfile->GetPath(), partfile->m_hpartfile.GetFileName(), _T(""), partfile);
-		partfile->SetFileOp(addfilethread->SetPartToImport(pathName) ? PFOP_IMPORTPARTS : PFOP_HASHING);
-		addfilethread->ResumeThread();
-	}
-	return true;
-}
-
 CString CKnownFile::GetInfoSummary(bool bNoFormatCommands) const
 {
 	CString strFolder(PathHelpers::TrimTrailingSeparator(GetPath()));

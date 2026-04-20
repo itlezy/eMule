@@ -186,6 +186,30 @@ namespace
 		label.Append(_T(" [KiB]"));
 		return label;
 	}
+
+	static CString GetConfigDiskSpaceLabel()
+	{
+		CString label(_T("Config Drive"));
+		label.Append(_T(": "));
+		label.Append(GetResString(IDS_MINFREEDISKSPACE));
+		return label;
+	}
+
+	static CString GetTempDiskSpaceLabel()
+	{
+		CString label(_T("Temp Drives"));
+		label.Append(_T(": "));
+		label.Append(GetResString(IDS_MINFREEDISKSPACE));
+		return label;
+	}
+
+	static CString GetIncomingDiskSpaceLabel()
+	{
+		CString label(_T("Incoming Drives"));
+		label.Append(_T(": "));
+		label.Append(GetResString(IDS_MINFREEDISKSPACE));
+		return label;
+	}
 }
 
 
@@ -297,7 +321,9 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiDownloadTimeout()
 	, m_htiRestoreLastLogPane()
 	, m_htiRestoreLastMainWndDlg()
-	, m_htiMinFreeDiskSpace()
+	, m_htiMinFreeDiskSpaceConfig()
+	, m_htiMinFreeDiskSpaceTemp()
+	, m_htiMinFreeDiskSpaceIncoming()
 	, m_htiServerKeepAliveTimeout()
 	, m_htiShareeMule()
 	, m_htiShareeMuleMultiUser()
@@ -313,7 +339,9 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiVerbose()
 	, m_htiVerboseGroup()
 	, m_htiYourHostname()
-	, m_iMinFreeDiskSpaceGB()
+	, m_iMinFreeDiskSpaceConfigGB()
+	, m_iMinFreeDiskSpaceTempGB()
+	, m_iMinFreeDiskSpaceIncomingGB()
 	, m_iQueueSize()
 	, m_uFileBufferSizeKiB()
 	, m_uConnectionTimeoutSeconds()
@@ -510,8 +538,12 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		//
 		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), TVI_ROOT, m_bSparsePartFiles);
 		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), TVI_ROOT, m_bFullAlloc);
-		m_htiMinFreeDiskSpace = m_ctrlTreeOptions.InsertItem(GetResString(IDS_MINFREEDISKSPACE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
-		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpace, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMinFreeDiskSpaceConfig = m_ctrlTreeOptions.InsertItem(GetConfigDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
+		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceConfig, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMinFreeDiskSpaceTemp = m_ctrlTreeOptions.InsertItem(GetTempDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
+		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceTemp, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMinFreeDiskSpaceIncoming = m_ctrlTreeOptions.InsertItem(GetIncomingDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
+		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceIncoming, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiCommit = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_COMMITFILES), iImgBackup, TVI_ROOT);
 		m_htiCommitNever = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_NEVER), m_htiCommit, m_iCommitFiles == 0);
 		m_htiCommitOnShutdown = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_ONSHUTDOWN), m_htiCommit, m_iCommitFiles == 1);
@@ -655,9 +687,17 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiFullAlloc,
 			_T("Preallocates the full target file size on disk when downloads start.\r\n\r\n")
 			_T("Can reduce fragmentation, but it reserves space immediately and costs more disk work. Leave it off unless you prefer full preallocation."));
-		SetTreeToolTip(m_htiMinFreeDiskSpace,
-			_T("Minimum free disk space eMule tries to leave available for downloads.\r\n\r\n")
-			_T("Recommended: set a small safety floor if you want to avoid filling the disk completely. Use 0 only if you do not want a reserve."));
+		SetTreeToolTip(m_htiMinFreeDiskSpaceConfig,
+			_T("Minimum free space reserved on the volume hosting eMule's config files.\r\n\r\n")
+			_T("Hard minimum: 1 GiB. If this volume falls below the effective limit, eMule stops all downloads and immediately saves .part.met files.\r\n")
+			_T("If config shares a volume with temp or incoming, the largest limit on that volume wins."));
+		SetTreeToolTip(m_htiMinFreeDiskSpaceTemp,
+			_T("Minimum free space reserved on every volume hosting temp files.\r\n\r\n")
+			_T("Hard minimum: 5 GiB. If any protected volume falls below its effective limit, eMule stops all downloads and immediately saves .part.met files.\r\n")
+			_T("If temp shares a volume with config or incoming, the largest limit on that volume wins."));
+		SetTreeToolTip(m_htiMinFreeDiskSpaceIncoming,
+			_T("Minimum free space reserved on every volume hosting incoming files, including category-specific incoming directories.\r\n\r\n")
+			_T("Hard minimum: 5 GiB. If incoming shares a volume with config or temp, the largest limit on that volume wins and all downloads are stopped when it is breached."));
 		SetTreeToolTip(m_htiPerfLog,
 			_T("Writes periodic payload and overhead samples for external graphing tools.\r\n\r\n")
 			_T("Operator/debug feature only. Leave it off unless you actively consume the generated files."));
@@ -850,8 +890,12 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSparsePartFiles, m_bSparsePartFiles);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
-	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpace, m_iMinFreeDiskSpaceGB);
-	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceGB, static_cast<int>(PartFilePersistenceSeams::kMinDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpaceConfig, m_iMinFreeDiskSpaceConfigGB);
+	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceConfigGB, static_cast<int>(PartFilePersistenceSeams::kMinConfigDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpaceTemp, m_iMinFreeDiskSpaceTempGB);
+	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceTempGB, static_cast<int>(PartFilePersistenceSeams::kMinTempDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
+	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpaceIncoming, m_iMinFreeDiskSpaceIncomingGB);
+	DDV_MinMaxInt(pDX, m_iMinFreeDiskSpaceIncomingGB, static_cast<int>(PartFilePersistenceSeams::kMinIncomingDiskSpaceFloorGiB), static_cast<int>(PartFilePersistenceSeams::kMaxDiskSpaceFloorGiB));
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCommit, m_iCommitFiles);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiExtractMetaData, m_iExtractMetaData);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRestoreLastMainWndDlg, m_bRestoreLastMainWndDlg);
@@ -1003,7 +1047,12 @@ BOOL CPPgTweaks::OnInitDialog()
 		: max(1u, static_cast<UINT>((thePrefs.GetServerKeepAliveTimeout() + MIN2MS(1) - 1) / MIN2MS(1)));
 	m_bSparsePartFiles = thePrefs.GetSparsePartFiles();
 	m_bFullAlloc = thePrefs.m_bAllocFull;
-	m_iMinFreeDiskSpaceGB = static_cast<int>(PartFilePersistenceSeams::ConvertDownloadFreeSpaceFloorBytesToDisplayGiB(thePrefs.GetMinFreeDiskSpace()));
+	m_iMinFreeDiskSpaceConfigGB = static_cast<int>(PartFilePersistenceSeams::ConvertDiskSpaceFloorBytesToDisplayGiB(
+		thePrefs.GetMinFreeDiskSpaceConfig(), thePrefs.GetMinFreeDiskSpaceConfigFloor(), PartFilePersistenceSeams::kMinConfigDiskSpaceFloorGiB));
+	m_iMinFreeDiskSpaceTempGB = static_cast<int>(PartFilePersistenceSeams::ConvertDiskSpaceFloorBytesToDisplayGiB(
+		thePrefs.GetMinFreeDiskSpaceTemp(), thePrefs.GetMinFreeDiskSpaceTempFloor(), PartFilePersistenceSeams::kMinTempDiskSpaceFloorGiB));
+	m_iMinFreeDiskSpaceIncomingGB = static_cast<int>(PartFilePersistenceSeams::ConvertDiskSpaceFloorBytesToDisplayGiB(
+		thePrefs.GetMinFreeDiskSpaceIncoming(), thePrefs.GetMinFreeDiskSpaceIncomingFloor(), PartFilePersistenceSeams::kMinIncomingDiskSpaceFloorGiB));
 	m_sYourHostname = thePrefs.GetYourHostname();
 	m_bAutoArchDisable = !thePrefs.m_bAutomaticArcPreviewStart;
 
@@ -1214,8 +1263,9 @@ BOOL CPPgTweaks::OnApply()
 	}
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
-	thePrefs.checkDiskspace = true;
-	thePrefs.m_uMinFreeDiskSpace = thePrefs.NormalizeMinFreeDiskSpace(PartFilePersistenceSeams::ConvertDiskSpaceFloorGiBToBytes(thePrefs.NormalizeMinFreeDiskSpaceGiB(static_cast<UINT>(m_iMinFreeDiskSpaceGB))));
+	thePrefs.SetMinFreeDiskSpaceConfigGiB(static_cast<UINT>(m_iMinFreeDiskSpaceConfigGB));
+	thePrefs.SetMinFreeDiskSpaceTempGiB(static_cast<UINT>(m_iMinFreeDiskSpaceTempGB));
+	thePrefs.SetMinFreeDiskSpaceIncomingGiB(static_cast<UINT>(m_iMinFreeDiskSpaceIncomingGB));
 	if (thePrefs.GetYourHostname() != m_sYourHostname) {
 		thePrefs.SetYourHostname(m_sYourHostname);
 		theApp.emuledlg->serverwnd->UpdateMyInfo();
@@ -1301,7 +1351,9 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiDownloadTimeout, IDS_DOWNLOADTIMEOUT);
 		LocalizeEditLabel(m_htiMaxCon5Sec, IDS_MAXCON5SECLABEL);
 		LocalizeEditLabel(m_htiMaxHalfOpen, IDS_MAXHALFOPENCONS);
-		LocalizeEditLabel(m_htiMinFreeDiskSpace, IDS_MINFREEDISKSPACE);
+		m_ctrlTreeOptions.SetEditLabel(m_htiMinFreeDiskSpaceConfig, GetConfigDiskSpaceLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiMinFreeDiskSpaceTemp, GetTempDiskSpaceLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiMinFreeDiskSpaceIncoming, GetIncomingDiskSpaceLabel());
 		LocalizeEditLabel(m_htiServerKeepAliveTimeout, IDS_SERVERKEEPALIVETIMEOUT);
 		LocalizeItemText(m_htiSearchGroup, IDS_SEARCHLIMITS);
 		LocalizeItemText(m_htiSearchEd2kGroup, IDS_ED2K_SEARCH);
@@ -1499,7 +1551,9 @@ void CPPgTweaks::OnDestroy()
 	m_htiServerKeepAliveTimeout = NULL;
 	m_htiSparsePartFiles = NULL;
 	m_htiFullAlloc = NULL;
-	m_htiMinFreeDiskSpace = NULL;
+	m_htiMinFreeDiskSpaceConfig = NULL;
+	m_htiMinFreeDiskSpaceTemp = NULL;
+	m_htiMinFreeDiskSpaceIncoming = NULL;
 	m_htiYourHostname = NULL;
 	m_htiA4AFSaveCpu = NULL;
 	m_htiExtractMetaData = NULL;

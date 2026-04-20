@@ -56,7 +56,6 @@
 #include "SharedFileList.h"
 #include "ED2KLink.h"
 #include "Splashscreen.h"
-#include "PartFileConvert.h"
 #include "Exceptions.h"
 #include "SearchList.h"
 #include "HTRichEditCtrl.h"
@@ -98,7 +97,6 @@
 #include "ExitBox.h"
 #include "UploadDiskIOThread.h"
 #include "PartFileWriteThread.h"
-#include "ImportParts.h"
 #include "ClientCredits.h"
 
 #ifdef _DEBUG
@@ -301,7 +299,6 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(TM_FINISHEDHASHING, OnFileHashed)
 	ON_MESSAGE(TM_FILEOPPROGRESS, OnFileOpProgress)
 	ON_MESSAGE(TM_HASHFAILED, OnHashFailed)
-	ON_MESSAGE(TM_IMPORTPART, OnImportPart)
 	ON_MESSAGE(TM_FRAMEGRABFINISHED, OnFrameGrabFinished)
 	ON_MESSAGE(TM_FILEALLOCEXC, OnFileAllocExc)
 	ON_MESSAGE(TM_FILECOMPLETED, OnFileCompleted)
@@ -1692,19 +1689,6 @@ LRESULT CemuleDlg::OnFileCompleted(WPARAM wParam, LPARAM lParam)
 	return 0;
 }
 
-LRESULT CemuleDlg::OnImportPart(WPARAM wParam, LPARAM lParam)
-{
-	CPartFile *partfile = reinterpret_cast<CPartFile*>(lParam);
-	ImportPart_Struct *imp = reinterpret_cast<ImportPart_Struct*>(wParam);
-	if (theApp.downloadqueue->IsPartFile(partfile) && !theApp.IsClosing()) // could have been cancelled
-		if (partfile->WriteToBuffer(imp->end - imp->start + 1, imp->data, imp->start, imp->end, NULL, NULL, false))
-			imp->data = NULL; //do not delete the buffer
-
-	delete[] imp->data;
-	delete imp;
-	return 0;
-}
-
 #ifdef _DEBUG
 static void BeBusy(UINT uSeconds, LPCSTR pszCaller)
 {
@@ -1983,9 +1967,6 @@ void CemuleDlg::OnClose()
 	transferwnd->GetUploadList()->DeleteAllItems();
 	transferwnd->GetDownloadClientsList()->DeleteAllItems();
 	serverwnd->serverlistctrl.DeleteAllItems();
-
-	CPartFileConvert::CloseGUI();
-	CPartFileConvert::RemoveAllJobs();
 
 	updateShutdownPhase(90, _T("Closing eMule"), _T("Stopping bandwidth throttling and closing remaining child windows."));
 	theApp.uploadBandwidthThrottler->EndThread();
@@ -2525,7 +2506,6 @@ void CemuleDlg::Localize()
 	ShowConnectionState();
 	ShowTransferRate(true);
 	ShowUserCount();
-	CPartFileConvert::Localize();
 }
 
 void CemuleDlg::ShowUserStateIcon()
@@ -2715,9 +2695,6 @@ BOOL CemuleDlg::OnCommand(WPARAM wParam, LPARAM lParam)
 	case MP_WEBSVC_EDIT:
 		theWebServices.Edit();
 		break;
-	case MP_HM_CONVERTPF:
-		CPartFileConvert::ShowGUI();
-		break;
 	case MP_HM_SCHEDONOFF:
 		thePrefs.SetSchedulerEnabled(!thePrefs.IsSchedulerEnabled());
 		theApp.scheduler->Check(true);
@@ -2824,7 +2801,6 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 	}
 
 	menu.AppendMenu(MF_STRING, MP_HM_OPENINC, GetResString(IDS_OPENINC) + _T("..."), _T("INCOMING"));
-	menu.AppendMenu(MF_STRING, MP_HM_CONVERTPF, GetResString(IDS_IMPORTSPLPF) + _T("..."), _T("CONVERT"));
 	menu.AppendMenu(MF_STRING, MP_HM_1STSWIZARD, GetResString(IDS_WIZ1) + _T("..."), _T("WIZARD"));
 	menu.AppendMenu(MF_STRING, MP_HM_IPFILTER, GetResString(IDS_IPFILTER) + _T("..."), _T("IPFILTER"));
 	menu.AppendMenu(MF_STRING, MP_HM_DIRECT_DOWNLOAD, GetResString(IDS_SW_DIRECTDOWNLOAD) + _T("..."), _T("PASTELINK"));

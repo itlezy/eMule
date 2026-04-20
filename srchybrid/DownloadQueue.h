@@ -142,12 +142,23 @@ public:
 	void	SortByPriority();
 	void	CheckDiskspace(bool bNotEnoughSpaceLeft = false);
 	void	CheckDiskspaceTimed();
+	/**
+	 * @brief Returns whether any protected volume is currently below its effective disk-space threshold.
+	 */
+	bool	IsProtectedDiskSpaceBlocked() const;
+	/**
+	 * @brief Returns the effective required free bytes for the protected volume hosting the given path.
+	 */
+	ULONGLONG GetRequiredFreeDiskSpaceForPath(LPCTSTR pszPath) const;
 
 	void	ExportPartMetFilesOverview() const;
 	void	OnConnectionState(bool bConnected);
 
 	void	AddToResolved(const CPartFile *pFile, SUnresolvedHostname *pUH);
 
+	/**
+	 * @brief Returns the best valid temp directory for a new part file, or an empty string if no placement satisfies the protected-volume policy.
+	 */
 	CString	GetOptimalTempDir(UINT nCat, EMFileSize nFileSize);
 
 	CServer	*cur_udpserver;
@@ -159,9 +170,23 @@ protected:
 	bool	SendGlobGetSourcesUDPPacket(CSafeMemFile &data, bool bExt2Packet, uint32 nFiles, uint32 nIncludedLargeFiles);
 
 private:
+	struct ProtectedVolumeStatus
+	{
+		CString VolumeId;
+		uint64 FreeBytes;
+		uint64 FloorBytes;
+		uint64 CompletionBytes;
+		uint64 RequiredBytes;
+		UINT RoleMask;
+	};
+
 	bool	CompareParts(POSITION pos1, POSITION pos2);
 	void	SwapParts(POSITION pos1, POSITION pos2);
 	void	HeapSort(UINT first, UINT last);
+	void	CollectProtectedVolumeStatuses(CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> *paStatuses, bool bNotEnoughSpaceLeft) const;
+	CString	BuildProtectedDiskSpaceBreachSignature(const CArray<ProtectedVolumeStatus, const ProtectedVolumeStatus&> &aStatuses) const;
+	void	ForceSaveAllPartMetFilesForDiskSpace();
+	void	StopAllDownloadsForDiskSpace();
 	CTypedPtrList<CPtrList, CPartFile*> filelist;
 	CTypedPtrList<CPtrList, CPartFile*> m_localServerReqQueue;
 
@@ -185,4 +210,6 @@ private:
 	uint32	m_nUDPFileReasks;
 	uint32	m_nFailedUDPFileReasks;
 	uint32	m_datarate;
+	bool	m_bProtectedDiskSpaceBlocked;
+	CString	m_strProtectedDiskSpaceBreachSignature;
 };

@@ -43,7 +43,6 @@
 #include "PathHelpers.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
 #include "LongPathSeams.h"
-#include "ImportParts.h"
 #include "MD5Sum.h"
 #include "UserMsgs.h"
 
@@ -385,103 +384,6 @@ void CAddFileThread::SetValues(CSharedFileList *pOwner, LPCTSTR directory, LPCTS
 	m_strSharedDir = strSharedDir;
 }
 
-// Special case for SR13-ImportParts
-uint16 CAddFileThread::SetPartToImport(LPCTSTR import)
-{
-	if (m_partfile->GetFilePath() == import)
-		return 0;
-
-	m_strImport = import;
-
-	for (UINT i = 0; i < m_partfile->GetPartCount(); ++i)
-		if (!m_partfile->IsComplete(i))
-			m_PartsToImport.Add((uint16)i);
-
-	return (uint16)m_PartsToImport.GetSize();
-}
-
-bool CAddFileThread::ImportParts()
-{
-	CSafeFile f;
-	if (!LongPathSeams::OpenFile(f, m_strImport, CFile::modeRead | CFile::shareDenyNone)) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_IMPORTPARTS_ERR_CANTOPENFILE), (LPCTSTR)m_strImport);
-		return false;
-	}
-
-	CString strFilePath;
-	strFilePath = m_strDirectory;
-	if (!strFilePath.IsEmpty() && strFilePath[strFilePath.GetLength() - 1] != _T('\\'))
-		strFilePath += _T('\\');
-	strFilePath += m_strFilename;
-
-	Log(LOG_STATUSBAR, GetResString(IDS_IMPORTPARTS_IMPORTSTART), m_PartsToImport.GetSize(), (LPCTSTR)strFilePath);
-
-	uint64 fileSize = f.GetLength();
-	BYTE *partData = NULL;
-	unsigned partsuccess = 0;
-	CKnownFile kfimport;
-	const CKnownFileProgressTargetSnapshot progressTarget = MakePartFileProgressTargetSnapshot(*m_partfile);
-	for (INT_PTR i = 0; i < m_PartsToImport.GetSize(); ++i) {
-		const uint16 partnumber = m_PartsToImport[i];
-		const uint64 uStart = PARTSIZE * partnumber;
-		if (uStart > fileSize)
-			break;
-
-		try {
-			uint32 partSize;
-			try {
-				if (partData == NULL)
-					partData = new BYTE[PARTSIZE];
-				*(uint64*)partData = 0; //quick check for zero
-				CSingleLock sLock1(&theApp.hashing_mut, TRUE);	//SafeHash - wait for the current hashing process end before reading a chunk
-				f.Seek((LONGLONG)uStart, CFile::begin);
-				partSize = f.Read(partData, PARTSIZE);
-				if (*(uint64*)partData == 0 && (partSize <= sizeof(uint64) || !memcmp(partData, partData + sizeof(uint64), partSize - sizeof(uint64))))
-					continue;
-			} catch (...) {
-				LogWarning(LOG_STATUSBAR, _T("Part %i: Not accessible (You may have a bad cluster on your hard disk)."), (int)partnumber);
-				continue;
-			}
-			uchar hash[MDX_DIGEST_SIZE];
-			kfimport.CreateHash(partData, partSize, hash);
-			ImportPart_Struct *importpart = new ImportPart_Struct;
-			importpart->start = uStart;
-			importpart->end = importpart->start + partSize - 1;
-			importpart->data = partData;
-			if (!theApp.emuledlg->PostMessage(TM_IMPORTPART, (WPARAM)importpart, (LPARAM)m_partfile))
-				break;
-			partData = NULL; //Will be deleted in async write thread
-			//Log(LOG_STATUSBAR, GetResString(IDS_IMPORTPARTS_PARTIMPORTEDGOOD), partnumber);
-			++partsuccess;
-
-			if (theApp.IsRunning()) {
-				const uint32 uProgress = static_cast<uint32>(CalculateProgressPercent(static_cast<uint64>(i), static_cast<uint64>(m_PartsToImport.GetSize())));
-				QueuePartFileProgressUpdate(progressTarget, uProgress);
-				::Sleep(100); // sleep very shortly to give time to write (or else mem grows!)
-			}
-
-			if (!theApp.IsRunning() || partSize != PARTSIZE || m_partfile->GetFileOp() != PFOP_IMPORTPARTS)
-				break;
-		} catch (...) {
-		}
-	}
-	f.Close();
-	delete[] partData;
-
-	try {
-		bool importaborted = !theApp.IsRunning() || m_partfile->GetFileOp() == PFOP_NONE;
-		if (m_partfile->GetFileOp() == PFOP_IMPORTPARTS)
-			m_partfile->SetFileOp(PFOP_NONE);
-		Log(LOG_STATUSBAR, _T("Import %s. %u parts imported to %s.")
-			, importaborted ? _T("aborted") : _T("completed")
-			, partsuccess
-			, (LPCTSTR)m_strFilename);
-	} catch (...) {
-		//This could happen if we deleted the part file instance
-	}
-	return true;
-}
-
 BOOL CAddFileThread::InitInstance()
 {
 	InitThreadLocale();
@@ -490,17 +392,11 @@ BOOL CAddFileThread::InitInstance()
 
 int CAddFileThread::Run()
 {
-	DbgSetThreadName(m_partfile && m_partfile->GetFileOp() == PFOP_IMPORTPARTS ? "ImportingParts %s" : "Hashing %s", (LPCTSTR)m_strFilename);
+	DbgSetThreadName("Hashing %s", (LPCTSTR)m_strFilename);
 	if (!(m_pOwner || m_partfile) || m_strFilename.IsEmpty() || theApp.IsClosing())
 		return 0;
 
 	(void)::CoInitialize(NULL);
-
-	if (m_partfile && m_partfile->GetFileOp() == PFOP_IMPORTPARTS) {
-		ImportParts();
-		::CoUninitialize();
-		return 0;
-	}
 
 	// Locking this hashing thread is needed because we may create a few of those threads
 	// at startup when rehashing potentially corrupted downloading part files.

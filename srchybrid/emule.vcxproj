@@ -281,7 +281,6 @@
       <PrecompiledHeader />
     </ClCompile>
     <ClCompile Include="PartFile.cpp" />
-    <ClCompile Include="PartFileConvert.cpp" />
     <ClCompile Include="PartFileWriteThread.cpp" />
     <ClCompile Include="PerfLog.cpp" />
     <ClCompile Include="Pinger.cpp" />
@@ -491,7 +490,6 @@
     <ClInclude Include="HttpClientReqSocket.h" />
     <ClInclude Include="HttpDownloadDlg.h" />
     <ClInclude Include="IconStatic.h" />
-    <ClInclude Include="ImportParts.h" />
     <ClInclude Include="Ini2.h" />
     <ClInclude Include="InputBox.h" />
     <ClInclude Include="IPFilter.h" />
@@ -569,7 +567,6 @@
     <ClInclude Include="Packets.h" />
     <ClInclude Include="Parser.hpp" />
     <ClInclude Include="PartFile.h" />
-    <ClInclude Include="PartFileConvert.h" />
     <ClInclude Include="PartFileWriteThread.h" />
     <ClInclude Include="PerfLog.h" />
     <ClInclude Include="Pinger.h" />
@@ -773,7 +770,6 @@
     <Image Include="res\FileComments.ico" />
     <Image Include="res\FileCommentsOvl.ico" />
     <Image Include="res\FileDonkey.ico" />
-    <Image Include="res\FileImportParts.ico" />
     <Image Include="res\FileInfo.gif" />
     <Image Include="res\FileInfo.ico" />
     <Image Include="res\FileOpen.ico" />

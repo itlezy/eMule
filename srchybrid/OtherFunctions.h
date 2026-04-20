@@ -189,6 +189,14 @@ void		Sort(CSimpleArray<const CString*> &apstr, int(__cdecl *pfnCompare)(const v
 void		HeapSort(CArray<uint16, uint16> &count, UINT first, UINT last);
 void		StripTrailingColon(CString &rstr);
 bool		IsUnicodeFile(LPCTSTR pszFilePath);
+/**
+ * @brief Resolves a path to a canonical volume identity string.
+ *
+ * Uses the Windows volume GUID path when available and falls back to the
+ * normalized volume mount path when the GUID path is unavailable, so callers
+ * can group drive-letter and mount-point paths which target the same volume.
+ */
+bool		TryGetVolumeIdentityPath(LPCTSTR pszPath, CString &rstrVolumeIdentity);
 uint64		GetFreeTempSpace(INT_PTR tempdirindex);
 int			GetPathDriveNumber(const CString &path);
 CString		GetShareName(const CString &path);

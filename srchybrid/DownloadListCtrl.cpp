@@ -37,7 +37,6 @@
 #include "AddSourceDlg.h"
 #include "SearchDlg.h"
 #include "SharedFileList.h"
-#include "ImportParts.h"
 #include "GeoLocation.h"
 
 #ifdef _DEBUG
@@ -930,7 +929,6 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			int iFilesCanPauseOnPreview = 0;
 			int iFilesDoPauseOnPreview = 0;
 			int iFilesInCats = 0;
-			int iFilesToImport = 0;
 			UINT uPrioMenuItem = 0;
 			const CPartFile *file1 = NULL;
 
@@ -954,8 +952,6 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 				iFilesCanPauseOnPreview += static_cast<int>(pFile->IsPreviewableFileType() && !pFile->IsReadyForPreview() && pFile->CanPauseFile());
 				iFilesDoPauseOnPreview += static_cast<int>(pFile->IsPausingOnPreview());
 				iFilesInCats += static_cast<int>(!pFile->HasDefaultCategory());
-				iFilesToImport += static_cast<int>(pFile->GetFileOp() == PFOP_IMPORTPARTS);
-
 				UINT uCurPrioMenuItem;
 				if (pFile->IsAutoDownPriority())
 					uCurPrioMenuItem = MP_PRIOAUTO;
@@ -1028,9 +1024,6 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			else
 				m_FileMenu.SetDefaultItem(UINT_MAX);
 			m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, (iSelectedItems >= 1 /*&& iFilesNotDone == 1*/) ? MF_ENABLED : MF_GRAYED);
-			m_FileMenu.RenameMenu(MP_IMPORTPARTS, MF_BYCOMMAND, GetResString(iFilesToImport > 0 ? IDS_IMPORTPARTS_STOP : IDS_IMPORTPARTS), _T("FILEIMPORTPARTS"));
-			m_FileMenu.EnableMenuItem(MP_IMPORTPARTS, (iSelectedItems == 1 && iFilesNotDone == 1) ? MF_ENABLED : MF_GRAYED);
-
 			int total;
 			m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
 			if (thePrefs.IsExtControlsEnabled()) {
@@ -1136,8 +1129,6 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 
 		m_FileMenu.EnableMenuItem(MP_METINFO, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, MF_GRAYED);
-		m_FileMenu.EnableMenuItem(MP_IMPORTPARTS, MF_GRAYED);
-
 		m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
 		m_FileMenu.EnableMenuItem(thePrefs.GetShowCopyEd2kLinkCmd() ? MP_GETED2KLINK : MP_SHOWED2KLINK, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_PASTE, theApp.IsEd2kFileLinkInClipboard() ? MF_ENABLED : MF_GRAYED);
@@ -1485,10 +1476,6 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				break;
 			case MP_VIEWFILECOMMENTS:
 				ShowFileDialog(IDD_COMMENTLST);
-				break;
-			case MP_IMPORTPARTS:
-				if (!file->m_bMD4HashsetNeeded) //log "no hashset"?
-					file->ImportParts();
 				break;
 			case MP_SHOWED2KLINK:
 				ShowFileDialog(IDD_ED2KLINK);
@@ -1941,7 +1928,6 @@ void CDownloadListCtrl::CreateMenus()
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_METINFO, GetResString(IDS_DL_INFO), _T("FILEINFO"));
 	m_FileMenu.AppendMenu(MF_STRING, MP_VIEWFILECOMMENTS, GetResString(IDS_CMT_SHOWALL), _T("FILECOMMENTS"));
-	m_FileMenu.AppendMenu(MF_STRING | MF_GRAYED, MP_IMPORTPARTS, GetResString(IDS_IMPORTPARTS), _T("FILEIMPORTPARTS"));
 	m_FileMenu.AppendMenu(MF_SEPARATOR);
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_CLEARCOMPLETED, GetResString(IDS_DL_CLEAR), _T("CLEARCOMPLETE"));

@@ -97,7 +97,7 @@ public:
 	// Barry - To find out if app is running or shutting/shut down
 	bool IsRunning() const	{ return m_app_state == APP_STATE_RUNNING || m_app_state == APP_STATE_ASKCLOSE; }
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
-	bool CanWritePartMetFiles(LPCTSTR pszPath, bool bForceRefresh = false);
+	bool CanWritePartMetFiles(LPCTSTR pszPath, bool bForceRefresh = false, bool bBypassDiskSpaceFloor = false);
 	void InvalidatePartMetWriteGuardCache(LPCTSTR pszPath = NULL);
 	/**
 	 * @brief Returns whether env-gated startup phase profiling is enabled for this process.

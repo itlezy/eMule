@@ -446,8 +446,9 @@ public:
 	static bool		m_bRestoreLastLogPane;
 	static int		m_iLastLogPaneID;
 	static UINT		MaxConperFive;
-	static bool		checkDiskspace;
-	static ULONGLONG m_uMinFreeDiskSpace;
+	static ULONGLONG m_uMinFreeDiskSpaceConfig;
+	static ULONGLONG m_uMinFreeDiskSpaceTemp;
+	static ULONGLONG m_uMinFreeDiskSpaceIncoming;
 	static bool		m_bSparsePartFiles;
 	static CString	m_strYourHostname;
 	static bool		m_bEnableVerboseOptions;
@@ -1239,12 +1240,26 @@ public:
 
 	static const CString& GetYourHostname()				{ return m_strYourHostname; }
 	static void		SetYourHostname(LPCTSTR pszHostname) { m_strYourHostname = pszHostname; }
-	static bool		IsCheckDiskspaceEnabled()			{ return true; }
-	static ULONGLONG GetMinFreeDiskSpaceFloor()			{ return PartFilePersistenceSeams::kMinDownloadFreeBytes; }
+	static ULONGLONG GetMinFreeDiskSpaceConfigFloor()	{ return PartFilePersistenceSeams::kMinConfigFreeBytes; }
+	static ULONGLONG GetMinFreeDiskSpaceTempFloor()		{ return PartFilePersistenceSeams::kMinTempFreeBytes; }
+	static ULONGLONG GetMinFreeDiskSpaceIncomingFloor()	{ return PartFilePersistenceSeams::kMinIncomingFreeBytes; }
 	static ULONGLONG GetMaxFreeDiskSpaceFloor()			{ return PartFilePersistenceSeams::kMaxDownloadFreeBytes; }
-	static ULONGLONG NormalizeMinFreeDiskSpace(ULONGLONG nBytes) { return PartFilePersistenceSeams::NormalizeDownloadFreeSpaceFloor(nBytes); }
-	static UINT		NormalizeMinFreeDiskSpaceGiB(UINT nGiB) { return static_cast<UINT>(PartFilePersistenceSeams::NormalizeDownloadFreeSpaceFloorGiB(nGiB)); }
-	static ULONGLONG GetMinFreeDiskSpace()				{ return NormalizeMinFreeDiskSpace(m_uMinFreeDiskSpace); }
+	static ULONGLONG NormalizeMinFreeDiskSpaceConfig(ULONGLONG nBytes) { return PartFilePersistenceSeams::NormalizeDiskSpaceFloor(nBytes, GetMinFreeDiskSpaceConfigFloor(), GetMaxFreeDiskSpaceFloor()); }
+	static ULONGLONG NormalizeMinFreeDiskSpaceTemp(ULONGLONG nBytes) { return PartFilePersistenceSeams::NormalizeDiskSpaceFloor(nBytes, GetMinFreeDiskSpaceTempFloor(), GetMaxFreeDiskSpaceFloor()); }
+	static ULONGLONG NormalizeMinFreeDiskSpaceIncoming(ULONGLONG nBytes) { return PartFilePersistenceSeams::NormalizeDiskSpaceFloor(nBytes, GetMinFreeDiskSpaceIncomingFloor(), GetMaxFreeDiskSpaceFloor()); }
+	static UINT		NormalizeMinFreeDiskSpaceConfigGiB(UINT nGiB) { return static_cast<UINT>(PartFilePersistenceSeams::NormalizeDiskSpaceFloorGiB(nGiB, PartFilePersistenceSeams::kMinConfigDiskSpaceFloorGiB)); }
+	static UINT		NormalizeMinFreeDiskSpaceTempGiB(UINT nGiB) { return static_cast<UINT>(PartFilePersistenceSeams::NormalizeDiskSpaceFloorGiB(nGiB, PartFilePersistenceSeams::kMinTempDiskSpaceFloorGiB)); }
+	static UINT		NormalizeMinFreeDiskSpaceIncomingGiB(UINT nGiB) { return static_cast<UINT>(PartFilePersistenceSeams::NormalizeDiskSpaceFloorGiB(nGiB, PartFilePersistenceSeams::kMinIncomingDiskSpaceFloorGiB)); }
+	static ULONGLONG GetMinFreeDiskSpaceConfig()		{ return NormalizeMinFreeDiskSpaceConfig(m_uMinFreeDiskSpaceConfig); }
+	static ULONGLONG GetMinFreeDiskSpaceTemp()			{ return NormalizeMinFreeDiskSpaceTemp(m_uMinFreeDiskSpaceTemp); }
+	static ULONGLONG GetMinFreeDiskSpaceIncoming()		{ return NormalizeMinFreeDiskSpaceIncoming(m_uMinFreeDiskSpaceIncoming); }
+	static void		SetMinFreeDiskSpaceConfig(ULONGLONG nBytes) { m_uMinFreeDiskSpaceConfig = NormalizeMinFreeDiskSpaceConfig(nBytes); }
+	static void		SetMinFreeDiskSpaceTemp(ULONGLONG nBytes) { m_uMinFreeDiskSpaceTemp = NormalizeMinFreeDiskSpaceTemp(nBytes); }
+	static void		SetMinFreeDiskSpaceIncoming(ULONGLONG nBytes) { m_uMinFreeDiskSpaceIncoming = NormalizeMinFreeDiskSpaceIncoming(nBytes); }
+	static void		SetMinFreeDiskSpaceConfigGiB(UINT nGiB) { SetMinFreeDiskSpaceConfig(PartFilePersistenceSeams::ConvertDiskSpaceFloorGiBToBytes(NormalizeMinFreeDiskSpaceConfigGiB(nGiB))); }
+	static void		SetMinFreeDiskSpaceTempGiB(UINT nGiB) { SetMinFreeDiskSpaceTemp(PartFilePersistenceSeams::ConvertDiskSpaceFloorGiBToBytes(NormalizeMinFreeDiskSpaceTempGiB(nGiB))); }
+	static void		SetMinFreeDiskSpaceIncomingGiB(UINT nGiB) { SetMinFreeDiskSpaceIncoming(PartFilePersistenceSeams::ConvertDiskSpaceFloorGiBToBytes(NormalizeMinFreeDiskSpaceIncomingGiB(nGiB))); }
+	static ULONGLONG GetEffectiveMinFreeDiskSpaceForPath(LPCTSTR pszPath);
 	static bool		GetSparsePartFiles();
 	static void		SetSparsePartFiles(bool bEnable)	{ m_bSparsePartFiles = bEnable; }
 	static bool		IsShowUpDownIconInTaskbar()			{ return m_bShowUpDownIconInTaskbar; }
