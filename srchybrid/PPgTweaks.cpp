@@ -68,6 +68,22 @@ namespace
 		ctrl.EnsureVisible(hItem);
 	}
 
+	static void ExpandTreeRecursively(CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem)
+	{
+		if (hItem == NULL)
+			return;
+
+		ctrl.Expand(hItem, TVE_EXPAND);
+		for (HTREEITEM hChild = ctrl.GetChildItem(hItem); hChild != NULL; hChild = ctrl.GetNextSiblingItem(hChild))
+			ExpandTreeRecursively(ctrl, hChild);
+	}
+
+	static void ExpandAllTreeItems(CTreeOptionsCtrlEx &ctrl)
+	{
+		for (HTREEITEM hItem = ctrl.GetRootItem(); hItem != NULL; hItem = ctrl.GetNextSiblingItem(hItem))
+			ExpandTreeRecursively(ctrl, hItem);
+	}
+
 	static void FailTreeValidation(CDataExchange *pDX, CTreeOptionsCtrlEx &ctrl, HTREEITEM hItem, const CString &detail)
 	{
 		RevealTreeItem(ctrl, hItem);
@@ -592,25 +608,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 
 		m_htiImportParts = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLEIMPORTPARTS), TVI_ROOT, m_bImportParts);
 
-		m_ctrlTreeOptions.Expand(m_htiTCPGroup, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiSearchGroup, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiSearchEd2kGroup, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiSearchKadGroup, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiBroadband, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiBBLowRatioBoost, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiBBSessionTransfer, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiHiddenStartup, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiHiddenFile, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiHiddenDisplay, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiGeoLocationEnabled, m_bGeoLocationEnabled ? TVE_EXPAND : TVE_COLLAPSE);
-		m_ctrlTreeOptions.Expand(m_htiHiddenSecurity, TVE_EXPAND);
-		if (m_htiVerboseGroup)
-			m_ctrlTreeOptions.Expand(m_htiVerboseGroup, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiCommit, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiCheckDiskspace, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiExtractMetaData, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiUPnP, TVE_EXPAND);
-		m_ctrlTreeOptions.Expand(m_htiShareeMule, TVE_EXPAND);
+		ExpandAllTreeItems(m_ctrlTreeOptions);
 		m_ctrlTreeOptions.SendMessage(WM_VSCROLL, SB_TOP);
 		m_bInitializedTreeOpts = true;
 	}
@@ -1405,9 +1403,7 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 		} else if (m_htiDetectTCPErrorFlooder && pton->hItem == m_htiDetectTCPErrorFlooder) {
 			SetModified();
 		} else if (m_htiGeoLocationEnabled && pton->hItem == m_htiGeoLocationEnabled) {
-			BOOL bCheck = FALSE;
-			if (m_ctrlTreeOptions.GetCheckBox(m_htiGeoLocationEnabled, bCheck))
-				m_ctrlTreeOptions.Expand(m_htiGeoLocationEnabled, bCheck ? TVE_EXPAND : TVE_COLLAPSE);
+			m_ctrlTreeOptions.Expand(m_htiGeoLocationEnabled, TVE_EXPAND);
 		} else if ((m_htiShareeMuleMultiUser  && pton->hItem == m_htiShareeMuleMultiUser)
 				|| (m_htiShareeMulePublicUser && pton->hItem == m_htiShareeMulePublicUser)
 				|| (m_htiShareeMuleOldStyle   && pton->hItem == m_htiShareeMuleOldStyle))
