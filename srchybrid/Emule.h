@@ -90,6 +90,18 @@ struct SStartupProfileTraceEvent
 	ULONGLONG	ullCounterValue = 0;
 };
 
+/**
+ * @brief One background monitored-share refresh batch posted back to the Shared Files UI.
+ */
+struct SMonitoredSharedDirectoryUpdate
+{
+	SMonitoredSharedDirectoryUpdate() = default;
+	CStringList liNewDirectories;
+	CStringList liDowngradedRoots;
+	bool bForceTreeReload = false;
+	bool bReloadSharedFiles = false;
+};
+
 class CemuleApp : public CWinApp
 {
 public:
@@ -201,6 +213,9 @@ public:
 	LPCTSTR		GetProfileFile()								{ return m_pszProfileName; }
 
 	CString		CreateKadSourceLink(const CAbstractFile *f);
+	void		StartSharedDirectoryMonitor();
+	void		StopSharedDirectoryMonitor();
+	void		WakeSharedDirectoryMonitor();
 
 	// clipboard (text)
 	bool		CopyTextToClipboard(const CString &strText);
@@ -308,6 +323,9 @@ protected:
 private:
 	bool WriteStartupProfileTrace() const;
 	void FinalizeStartupProfileTrace();
+	static UINT AFX_CDECL SharedDirectoryMonitorThreadProc(LPVOID pParam);
+	void RunSharedDirectoryMonitorLoop();
+	bool BuildMonitoredSharedDirectoryUpdate(SMonitoredSharedDirectoryUpdate &rUpdate) const;
 	UINT		m_wTimerRes;
 	bool		m_bStandbyOff;
 	bool		m_bStartupProfilingEnabled;
@@ -318,6 +336,9 @@ private:
 	ULONGLONG	m_ullStartupProfileFrequency;
 	CString		m_strStartupProfilePath;
 	std::vector<SStartupProfileTraceEvent> m_aStartupProfileTraceEvents;
+	CWinThread	*m_pSharedDirectoryMonitorThread;
+	HANDLE		m_hSharedDirectoryMonitorStopEvent;
+	HANDLE		m_hSharedDirectoryMonitorWakeEvent;
 };
 
 extern CemuleApp theApp;

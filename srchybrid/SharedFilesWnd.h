@@ -121,4 +121,5 @@ protected:
 	afx_msg void OnBnClickedSfHideshowdetails();
 	afx_msg void OnLvnItemchangedSflist(LPNMHDR, LRESULT *pResult);
 	afx_msg LRESULT OnAICHHashingCountChanged(WPARAM, LPARAM);
+	afx_msg LRESULT OnMonitoredSharedDirectoryUpdate(WPARAM, LPARAM);
 };

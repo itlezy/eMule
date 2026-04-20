@@ -84,6 +84,8 @@ protected:
 	void			AddSharedDirectory(const CString &strDir, bool bSubDirectories);
 	void			RemoveSharedDirectory(const CString &strDir, bool bSubDirectories);
 	void			RemoveAllSharedDirectories();
+	void			AddMonitoredSharedDirectory(const CString &strDir);
+	void			RemoveMonitoredSharedDirectory(const CString &strDir);
 	int				AddSystemIcon(HICON hIcon, int nSystemListPos);
 	void			FetchSharedDirsList();
 	/**
@@ -94,6 +96,10 @@ protected:
 	 * @brief Returns true when the filesystem tree directory has a shared directory below it.
 	 */
 	bool			HasSharedDirectoryDescendant(const CString &strDir) const;
+	bool			IsMonitoredRoot(const CString &strDir) const;
+	CString			FindContainingMonitoredRoot(const CString &strDir, bool bAllowExactMatch) const;
+	bool			HasManagedSharedAncestor(const CString &strDir) const;
+	CString			BuildFileSystemTreeLabel(const CString &strDir, LPCTSTR pszBaseLabel) const;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void	OnSysColorChange();
@@ -114,6 +120,8 @@ protected:
 	CDirectoryItem	*m_pDraggingItem;
 	CSharedFilesCtrl *m_pSharedFilesCtrl;
 	CStringList		m_strliSharedDirs;
+	CStringList		m_strliMonitoredRoots;
+	CStringList		m_strliMonitorOwnedDirs;
 	CStringList		m_strliCatIncomingDirs;
 	CImageList		m_imlTree;
 	bool			m_bFileSystemRootDirty;
@@ -127,7 +135,7 @@ private:
 	static bool FileSystemTreeHasSubdirectories(const CString &strDir);
 	bool	FileSystemTreeHasSharedSubdirectory(const CString &strDir, bool bOrFiles);
 	void	FileSystemTreeAddSubdirectories(CDirectoryItem *pRoot);
-	bool	FileSystemTreeIsShared(const CString &strDir);
+	bool	FileSystemTreeIsShared(const CString &strDir) const;
 
 	void	FileSystemTreeUpdateShareState(const CDirectoryItem *pDir = NULL);
 	void	FileSystemTreeSetShareState(const CDirectoryItem *pDir, bool bSubDirectories);

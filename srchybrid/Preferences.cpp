@@ -49,6 +49,8 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 #define SHAREDDIRS	_T("shareddir.dat")
+#define MONITOREDSHAREDDIRS _T("shareddir.monitored.dat")
+#define MONITOROWNSHAREDDIRS _T("shareddir.monitor-owned.dat")
 #define SHAREIGNORE	_T("shareignore.dat")
 LPCTSTR const strPreferencesDat = _T("preferences.dat");
 LPCTSTR const strDefaultToolbar = _T("0099010203040506070899091011");
@@ -61,6 +63,155 @@ constexpr uint32 kDefaultBroadbandDownloadLimitKiB = 12207;
 constexpr size_t kWebApiKeyBytes = 16;
 constexpr UINT kMaxServerKeepAliveTimeoutMinutes = 1440;
 constexpr UINT kMaxFileBufferTimeLimitSeconds = 86400;
+
+bool LoadPathListFromFile(const CString &rstrFullPath, CStringList &rOutList)
+{
+	rOutList.RemoveAll();
+	const bool bIsUnicodeFile = IsUnicodeFile(rstrFullPath);
+	CSafeBufferedFile sdirfile;
+	if (!LongPathSeams::OpenFile(sdirfile, rstrFullPath, CFile::modeRead | CFile::shareDenyWrite | (bIsUnicodeFile ? CFile::typeBinary : 0)))
+		return false;
+
+	try {
+		if (bIsUnicodeFile)
+			sdirfile.Seek(sizeof(WORD), CFile::begin);
+
+		CString strPath;
+		while (sdirfile.CStdioFile::ReadString(strPath)) {
+			strPath.Trim(_T(" \t\r\n"));
+			if (!strPath.IsEmpty())
+				rOutList.AddTail(PathHelpers::CanonicalizeDirectoryPath(strPath));
+		}
+	} catch (CFileException *ex) {
+		ASSERT(0);
+		ex->Delete();
+	}
+	sdirfile.Close();
+	return true;
+}
+
+bool SavePathListToFile(const CString &rstrFullPath, const CStringList &rPaths)
+{
+	const CString strTempPath(rstrFullPath + _T(".tmp"));
+	CSafeBufferedFile file;
+	if (!LongPathSeams::OpenFile(file, strTempPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary))
+		return false;
+
+	try {
+		static const WORD wBOM = u'\xFEFF';
+		file.Write(&wBOM, sizeof wBOM);
+		for (POSITION pos = rPaths.GetHeadPosition(); pos != NULL;) {
+			file.CStdioFile::WriteString(rPaths.GetNext(pos));
+			file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
+		}
+		file.Close();
+		return LongPathSeams::MoveFileEx(strTempPath, rstrFullPath, MOVEFILE_REPLACE_EXISTING) != 0;
+	} catch (CFileException *ex) {
+		if (thePrefs.GetVerbose())
+			AddDebugLogLine(true, _T("Failed to save %s%s"), (LPCTSTR)rstrFullPath, (LPCTSTR)CExceptionStrDash(*ex));
+		ex->Delete();
+	}
+	return false;
+}
+
+void ReplaceCanonicalDirectoryListLocked(CStringList &rTargetList, const CStringList &rInputList)
+{
+	rTargetList.RemoveAll();
+	for (POSITION pos = rInputList.GetHeadPosition(); pos != NULL;) {
+		const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(rInputList.GetNext(pos)));
+		bool bDuplicate = false;
+		for (POSITION posExisting = rTargetList.GetHeadPosition(); posExisting != NULL;) {
+			if (EqualPaths(rTargetList.GetNext(posExisting), strCanonicalDir)) {
+				bDuplicate = true;
+				break;
+			}
+		}
+		if (!bDuplicate)
+			rTargetList.AddTail(strCanonicalDir);
+	}
+}
+
+bool AddCanonicalDirectoryIfAbsentLocked(CStringList &rTargetList, const CString &rstrDirectory)
+{
+	const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(rstrDirectory));
+	for (POSITION pos = rTargetList.GetHeadPosition(); pos != NULL;) {
+		const POSITION posCurrent = pos;
+		const CString strExisting(rTargetList.GetNext(pos));
+		if (!EqualPaths(strExisting, strCanonicalDir))
+			continue;
+		if (strExisting.CompareNoCase(strCanonicalDir) != 0)
+			rTargetList.SetAt(posCurrent, strCanonicalDir);
+		return false;
+	}
+	rTargetList.AddTail(strCanonicalDir);
+	return true;
+}
+
+bool RemoveCanonicalDirectoryLocked(CStringList &rTargetList, const CString &rstrDirectory)
+{
+	const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(rstrDirectory));
+	for (POSITION pos = rTargetList.GetHeadPosition(); pos != NULL;) {
+		const POSITION posCurrent = pos;
+		if (!EqualPaths(rTargetList.GetNext(pos), strCanonicalDir))
+			continue;
+		rTargetList.RemoveAt(posCurrent);
+		return true;
+	}
+	return false;
+}
+
+bool RemoveCanonicalDirectoriesUnderRootLocked(CStringList &rTargetList, const CString &rstrDirectory, bool bIncludeRoot)
+{
+	const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(rstrDirectory));
+	bool bChanged = false;
+	for (POSITION pos = rTargetList.GetHeadPosition(); pos != NULL;) {
+		const POSITION posCurrent = pos;
+		const CString strCurrent(rTargetList.GetNext(pos));
+		if ((!bIncludeRoot && EqualPaths(strCurrent, strCanonicalDir))
+			|| !PathHelpers::IsPathWithinDirectory(strCanonicalDir, strCurrent))
+		{
+			continue;
+		}
+		rTargetList.RemoveAt(posCurrent);
+		bChanged = true;
+	}
+	return bChanged;
+}
+
+bool ListContainsEquivalentDirectoryLocked(const CStringList &rTargetList, const CString &rstrDirectory)
+{
+	for (POSITION pos = rTargetList.GetHeadPosition(); pos != NULL;) {
+		if (EqualPaths(rTargetList.GetNext(pos), rstrDirectory))
+			return true;
+	}
+	return false;
+}
+
+void FilterMonitoredDirectoryStateAgainstSharedListLocked(CStringList &rMonitoredRoots, CStringList &rMonitorOwnedDirs, const CStringList &rSharedDirs)
+{
+	for (POSITION pos = rMonitoredRoots.GetHeadPosition(); pos != NULL;) {
+		const POSITION posCurrent = pos;
+		if (!ListContainsEquivalentDirectoryLocked(rSharedDirs, rMonitoredRoots.GetNext(pos)))
+			rMonitoredRoots.RemoveAt(posCurrent);
+	}
+
+	for (POSITION pos = rMonitorOwnedDirs.GetHeadPosition(); pos != NULL;) {
+		const POSITION posCurrent = pos;
+		const CString strCurrent(rMonitorOwnedDirs.GetNext(pos));
+		bool bKeep = ListContainsEquivalentDirectoryLocked(rSharedDirs, strCurrent);
+		if (bKeep) {
+			bKeep = false;
+			for (POSITION posRoot = rMonitoredRoots.GetHeadPosition(); posRoot != NULL;) {
+				if (PathHelpers::IsPathWithinDirectory(rMonitoredRoots.GetNext(posRoot), strCurrent)) {
+					bKeep = true;
+					break;
+				}
+			}
+		}
+		if (!bKeep)
+			rMonitorOwnedDirs.RemoveAt(posCurrent);
+	}
+}
 
 struct ProtectedDiskVolumeThreshold
 {
@@ -572,6 +723,8 @@ bool    CPreferences::m_bHighresTimer;
 bool	CPreferences::m_bKeepUnavailableFixedSharedDirs;
 CCriticalSection CPreferences::m_csSharedDirList;
 CStringList CPreferences::shareddir_list;
+CStringList CPreferences::monitored_shareddir_list;
+CStringList CPreferences::monitor_owned_shareddir_list;
 CStringList CPreferences::addresses_list;
 CString CPreferences::m_strFileCommentsFilePath;
 Preferences_Ext_Struct *CPreferences::prefsExt;
@@ -613,47 +766,97 @@ void CPreferences::ReplaceSharedDirectoryList(const CStringList &in)
 	if (&in == &shareddir_list)
 		return;
 	CSingleLock lock(&m_csSharedDirList, TRUE);
-	shareddir_list.RemoveAll();
-	for (POSITION pos = in.GetHeadPosition(); pos != NULL;) {
-		const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(in.GetNext(pos)));
-		bool bDuplicate = false;
-		for (POSITION posExisting = shareddir_list.GetHeadPosition(); posExisting != NULL;) {
-			if (EqualPaths(shareddir_list.GetNext(posExisting), strCanonicalDir)) {
-				bDuplicate = true;
-				break;
-			}
-		}
-		if (!bDuplicate)
-			shareddir_list.AddTail(strCanonicalDir);
-	}
+	ReplaceCanonicalDirectoryListLocked(shareddir_list, in);
 }
 
 bool CPreferences::AddSharedDirectoryIfAbsent(const CString &dir)
 {
-	const CString strCanonicalDir(PathHelpers::CanonicalizeDirectoryPath(dir));
 	CSingleLock lock(&m_csSharedDirList, TRUE);
-	for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
-		const POSITION posCurrent = pos;
-		const CString strExisting(shareddir_list.GetNext(pos));
-		if (!EqualPaths(strExisting, strCanonicalDir))
-			continue;
-		if (strExisting.CompareNoCase(strCanonicalDir) != 0) {
-			shareddir_list.SetAt(posCurrent, strCanonicalDir);
-		}
-		return false;
-	}
-	shareddir_list.AddTail(strCanonicalDir);
-	return true;
+	return AddCanonicalDirectoryIfAbsentLocked(shareddir_list, dir);
 }
 
 bool CPreferences::IsSharedDirectoryListed(const CString &dir)
 {
 	CSingleLock lock(&m_csSharedDirList, TRUE);
-	for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;) {
-		if (EqualPaths(shareddir_list.GetNext(pos), dir))
-			return true;
-	}
-	return false;
+	return ListContainsEquivalentDirectoryLocked(shareddir_list, dir);
+}
+
+void CPreferences::CopyMonitoredSharedRootList(CStringList &out)
+{
+	if (&out == &monitored_shareddir_list)
+		return;
+	out.RemoveAll();
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	for (POSITION pos = monitored_shareddir_list.GetHeadPosition(); pos != NULL;)
+		out.AddTail(monitored_shareddir_list.GetNext(pos));
+}
+
+void CPreferences::ReplaceMonitoredSharedRootList(const CStringList &in)
+{
+	if (&in == &monitored_shareddir_list)
+		return;
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	ReplaceCanonicalDirectoryListLocked(monitored_shareddir_list, in);
+}
+
+bool CPreferences::AddMonitoredSharedRootIfAbsent(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return AddCanonicalDirectoryIfAbsentLocked(monitored_shareddir_list, dir);
+}
+
+bool CPreferences::RemoveMonitoredSharedRoot(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return RemoveCanonicalDirectoryLocked(monitored_shareddir_list, dir);
+}
+
+bool CPreferences::IsMonitoredSharedRootListed(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return ListContainsEquivalentDirectoryLocked(monitored_shareddir_list, dir);
+}
+
+void CPreferences::CopyMonitorOwnedDirectoryList(CStringList &out)
+{
+	if (&out == &monitor_owned_shareddir_list)
+		return;
+	out.RemoveAll();
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	for (POSITION pos = monitor_owned_shareddir_list.GetHeadPosition(); pos != NULL;)
+		out.AddTail(monitor_owned_shareddir_list.GetNext(pos));
+}
+
+void CPreferences::ReplaceMonitorOwnedDirectoryList(const CStringList &in)
+{
+	if (&in == &monitor_owned_shareddir_list)
+		return;
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	ReplaceCanonicalDirectoryListLocked(monitor_owned_shareddir_list, in);
+}
+
+bool CPreferences::AddMonitorOwnedDirectoryIfAbsent(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return AddCanonicalDirectoryIfAbsentLocked(monitor_owned_shareddir_list, dir);
+}
+
+bool CPreferences::RemoveMonitorOwnedDirectory(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return RemoveCanonicalDirectoryLocked(monitor_owned_shareddir_list, dir);
+}
+
+bool CPreferences::RemoveMonitorOwnedDirectoriesUnderRoot(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return RemoveCanonicalDirectoriesUnderRootLocked(monitor_owned_shareddir_list, dir, false);
+}
+
+bool CPreferences::IsMonitorOwnedDirectoryListed(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return ListContainsEquivalentDirectoryLocked(monitor_owned_shareddir_list, dir);
 }
 
 bool	CPreferences::m_bWinaTransToolbar;
@@ -908,6 +1111,29 @@ void CPreferences::Init()
 			ex->Delete();
 		}
 		sdirfile.Close();
+	}
+
+	strFullPath.Format(_T("%s") MONITOREDSHAREDDIRS, (LPCTSTR)sConfDir);
+	CStringList monitoredRoots;
+	if (LoadPathListFromFile(strFullPath, monitoredRoots))
+		ReplaceMonitoredSharedRootList(monitoredRoots);
+	else {
+		CStringList emptyList;
+		ReplaceMonitoredSharedRootList(emptyList);
+	}
+
+	strFullPath.Format(_T("%s") MONITOROWNSHAREDDIRS, (LPCTSTR)sConfDir);
+	CStringList monitorOwnedDirs;
+	if (LoadPathListFromFile(strFullPath, monitorOwnedDirs))
+		ReplaceMonitorOwnedDirectoryList(monitorOwnedDirs);
+	else {
+		CStringList emptyList;
+		ReplaceMonitorOwnedDirectoryList(emptyList);
+	}
+
+	{
+		CSingleLock lock(&m_csSharedDirList, TRUE);
+		FilterMonitoredDirectoryStateAgainstSharedListLocked(monitored_shareddir_list, monitor_owned_shareddir_list, shareddir_list);
 	}
 
 	// server list addresses
@@ -1750,27 +1976,23 @@ bool CPreferences::Save()
 	SaveStats();
 
 	const CString &strSharesPath(sConfDir + SHAREDDIRS);
-	CSafeBufferedFile file;
-	if (LongPathSeams::OpenFile(file, strSharesPath + stmp, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary)) {
-		try {
-			// write UTF-16LE byte order mark 0xFEFF
-			static const WORD wBOM = u'\xFEFF';
-			CStringList sharedDirs;
-			CopySharedDirectoryList(sharedDirs);
-			file.Write(&wBOM, sizeof wBOM);
-			for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;) {
-				file.CStdioFile::WriteString(sharedDirs.GetNext(pos));
-				file.Write(_T("\r\n"), 2 * sizeof(TCHAR));
-			}
-			file.Close();
-			error |= (LongPathSeams::MoveFileEx(strSharesPath + stmp, strSharesPath, MOVEFILE_REPLACE_EXISTING) == 0);
-		} catch (CFileException *ex) {
-			if (thePrefs.GetVerbose())
-				AddDebugLogLine(true, _T("Failed to save %s%s"), (LPCTSTR)strSharesPath, (LPCTSTR)CExceptionStrDash(*ex));
-			ex->Delete();
-		}
-	} else
-		error = true;
+	CStringList sharedDirs;
+	CStringList monitoredRoots;
+	CStringList monitorOwnedDirs;
+	{
+		CSingleLock lock(&m_csSharedDirList, TRUE);
+		FilterMonitoredDirectoryStateAgainstSharedListLocked(monitored_shareddir_list, monitor_owned_shareddir_list, shareddir_list);
+		for (POSITION pos = shareddir_list.GetHeadPosition(); pos != NULL;)
+			sharedDirs.AddTail(shareddir_list.GetNext(pos));
+		for (POSITION pos = monitored_shareddir_list.GetHeadPosition(); pos != NULL;)
+			monitoredRoots.AddTail(monitored_shareddir_list.GetNext(pos));
+		for (POSITION pos = monitor_owned_shareddir_list.GetHeadPosition(); pos != NULL;)
+			monitorOwnedDirs.AddTail(monitor_owned_shareddir_list.GetNext(pos));
+	}
+
+	error |= !SavePathListToFile(strSharesPath, sharedDirs);
+	error |= !SavePathListToFile(sConfDir + MONITOREDSHAREDDIRS, monitoredRoots);
+	error |= !SavePathListToFile(sConfDir + MONITOROWNSHAREDDIRS, monitorOwnedDirs);
 
 	LongPathSeams::CreateDirectory(GetMuleDirectory(EMULE_INCOMINGDIR), 0);
 	LongPathSeams::CreateDirectory(GetTempDir(), 0);

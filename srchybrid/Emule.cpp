@@ -59,6 +59,7 @@
 #include "ShellUiHelpers.h"
 #include "LongPathSeams.h"
 #include "emuleDlg.h"
+#include "SharedFilesWnd.h"
 #include "enbitmap.h"
 #include "StringConversion.h"
 #include "Log.h"
@@ -69,6 +70,8 @@
 #include "PartFileWriteThread.h"
 #include "OtherFunctions.h"
 #include "PartFilePersistenceSeams.h"
+#include "SharedDirectoryOps.h"
+#include "UserMsgs.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -568,6 +571,9 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_bStartupProfileCompleted()
 	, m_ullStartupProfileBeginQpc()
 	, m_ullStartupProfileFrequency()
+	, m_pSharedDirectoryMonitorThread(NULL)
+	, m_hSharedDirectoryMonitorStopEvent(NULL)
+	, m_hSharedDirectoryMonitorWakeEvent(NULL)
 {
 	// Initialize Windows security features.
 	InitHeapCorruptionDetection();
@@ -1124,11 +1130,149 @@ BOOL CemuleApp::InitInstance()
 int CemuleApp::ExitInstance()
 {
 	AddDebugLogLine(DLP_VERYLOW, _T("%hs"), __FUNCTION__);
+	StopSharedDirectoryMonitor();
 
 	if (m_wTimerRes != 0)
 		timeEndPeriod(m_wTimerRes);
 
 	return CWinApp::ExitInstance();
+}
+
+UINT AFX_CDECL CemuleApp::SharedDirectoryMonitorThreadProc(LPVOID pParam)
+{
+	CemuleApp *pApp = static_cast<CemuleApp*>(pParam);
+	if (pApp != NULL)
+		pApp->RunSharedDirectoryMonitorLoop();
+	return 0;
+}
+
+void CemuleApp::StartSharedDirectoryMonitor()
+{
+	if (m_pSharedDirectoryMonitorThread != NULL)
+		return;
+
+	m_hSharedDirectoryMonitorStopEvent = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+	m_hSharedDirectoryMonitorWakeEvent = ::CreateEvent(NULL, TRUE, FALSE, NULL);
+	if (m_hSharedDirectoryMonitorStopEvent == NULL || m_hSharedDirectoryMonitorWakeEvent == NULL) {
+		if (m_hSharedDirectoryMonitorStopEvent != NULL) {
+			::CloseHandle(m_hSharedDirectoryMonitorStopEvent);
+			m_hSharedDirectoryMonitorStopEvent = NULL;
+		}
+		if (m_hSharedDirectoryMonitorWakeEvent != NULL) {
+			::CloseHandle(m_hSharedDirectoryMonitorWakeEvent);
+			m_hSharedDirectoryMonitorWakeEvent = NULL;
+		}
+		return;
+	}
+
+	m_pSharedDirectoryMonitorThread = AfxBeginThread(&CemuleApp::SharedDirectoryMonitorThreadProc, this, THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED);
+	if (m_pSharedDirectoryMonitorThread == NULL) {
+		::CloseHandle(m_hSharedDirectoryMonitorStopEvent);
+		m_hSharedDirectoryMonitorStopEvent = NULL;
+		::CloseHandle(m_hSharedDirectoryMonitorWakeEvent);
+		m_hSharedDirectoryMonitorWakeEvent = NULL;
+		return;
+	}
+
+	m_pSharedDirectoryMonitorThread->m_bAutoDelete = FALSE;
+	m_pSharedDirectoryMonitorThread->ResumeThread();
+	WakeSharedDirectoryMonitor();
+}
+
+void CemuleApp::StopSharedDirectoryMonitor()
+{
+	if (m_hSharedDirectoryMonitorStopEvent != NULL)
+		::SetEvent(m_hSharedDirectoryMonitorStopEvent);
+	if (m_hSharedDirectoryMonitorWakeEvent != NULL)
+		::SetEvent(m_hSharedDirectoryMonitorWakeEvent);
+	if (m_pSharedDirectoryMonitorThread != NULL) {
+		(void)::WaitForSingleObject(m_pSharedDirectoryMonitorThread->m_hThread, SEC2MS(5));
+		delete m_pSharedDirectoryMonitorThread;
+		m_pSharedDirectoryMonitorThread = NULL;
+	}
+	if (m_hSharedDirectoryMonitorStopEvent != NULL) {
+		::CloseHandle(m_hSharedDirectoryMonitorStopEvent);
+		m_hSharedDirectoryMonitorStopEvent = NULL;
+	}
+	if (m_hSharedDirectoryMonitorWakeEvent != NULL) {
+		::CloseHandle(m_hSharedDirectoryMonitorWakeEvent);
+		m_hSharedDirectoryMonitorWakeEvent = NULL;
+	}
+}
+
+void CemuleApp::WakeSharedDirectoryMonitor()
+{
+	if (m_hSharedDirectoryMonitorWakeEvent != NULL)
+		::SetEvent(m_hSharedDirectoryMonitorWakeEvent);
+}
+
+bool CemuleApp::BuildMonitoredSharedDirectoryUpdate(SMonitoredSharedDirectoryUpdate &rUpdate) const
+{
+	rUpdate.liNewDirectories.RemoveAll();
+	rUpdate.liDowngradedRoots.RemoveAll();
+	rUpdate.bForceTreeReload = false;
+	rUpdate.bReloadSharedFiles = false;
+	CStringList monitoredRoots;
+	thePrefs.CopyMonitoredSharedRootList(monitoredRoots);
+	if (monitoredRoots.IsEmpty())
+		return false;
+
+	CStringList sharedDirs;
+	CStringList ownedDirs;
+	thePrefs.CopySharedDirectoryList(sharedDirs);
+	thePrefs.CopyMonitorOwnedDirectoryList(ownedDirs);
+	rUpdate.bReloadSharedFiles = true;
+
+	for (POSITION posRoot = monitoredRoots.GetHeadPosition(); posRoot != NULL;) {
+		const CString strRoot(monitoredRoots.GetNext(posRoot));
+		if (!DirAccsess(strRoot)) {
+			rUpdate.liDowngradedRoots.AddTail(strRoot);
+			rUpdate.bForceTreeReload = true;
+			continue;
+		}
+
+		CStringList subtreeDirs;
+		SharedDirectoryOps::CollectDirectorySubtree(subtreeDirs, strRoot, false, [](const CString &rstrDirectory) -> bool {
+			return thePrefs.IsShareableDirectory(rstrDirectory);
+		});
+		for (POSITION posDir = subtreeDirs.GetHeadPosition(); posDir != NULL;) {
+			const CString strCurrent(subtreeDirs.GetNext(posDir));
+			if (SharedDirectoryOps::ListContainsEquivalentPath(ownedDirs, strCurrent)
+				&& SharedDirectoryOps::ListContainsEquivalentPath(sharedDirs, strCurrent))
+			{
+				continue;
+			}
+			if (!SharedDirectoryOps::ListContainsEquivalentPath(rUpdate.liNewDirectories, strCurrent))
+				rUpdate.liNewDirectories.AddTail(strCurrent);
+			rUpdate.bForceTreeReload = true;
+		}
+	}
+
+	return rUpdate.bReloadSharedFiles || !rUpdate.liNewDirectories.IsEmpty() || !rUpdate.liDowngradedRoots.IsEmpty();
+}
+
+void CemuleApp::RunSharedDirectoryMonitorLoop()
+{
+	HANDLE aWaitHandles[2] = { m_hSharedDirectoryMonitorStopEvent, m_hSharedDirectoryMonitorWakeEvent };
+	while (true) {
+		const DWORD dwWait = ::WaitForMultipleObjects(_countof(aWaitHandles), aWaitHandles, FALSE, SEC2MS(5));
+		if (dwWait == WAIT_OBJECT_0)
+			break;
+		if (dwWait == WAIT_OBJECT_0 + 1 && m_hSharedDirectoryMonitorWakeEvent != NULL)
+			::ResetEvent(m_hSharedDirectoryMonitorWakeEvent);
+		if (IsClosing())
+			break;
+		if (emuledlg == NULL || emuledlg->sharedfileswnd == NULL || !::IsWindow(emuledlg->sharedfileswnd->GetSafeHwnd()))
+			continue;
+
+		SMonitoredSharedDirectoryUpdate *pUpdate = new SMonitoredSharedDirectoryUpdate;
+		if (!BuildMonitoredSharedDirectoryUpdate(*pUpdate)) {
+			delete pUpdate;
+			continue;
+		}
+		if (!::PostMessage(emuledlg->sharedfileswnd->GetSafeHwnd(), UM_MONITORED_SHARED_DIR_UPDATE, reinterpret_cast<WPARAM>(pUpdate), 0))
+			delete pUpdate;
+	}
 }
 
 bool CemuleApp::InitializeStartupConfigBaseDirOverride()

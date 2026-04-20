@@ -66,6 +66,7 @@ BEGIN_MESSAGE_MAP(CSharedFilesWnd, CResizableDialog)
 	ON_NOTIFY(LVN_ITEMCHANGED, IDC_SFLIST, OnLvnItemchangedSflist)
 	ON_WM_SHOWWINDOW()
 	ON_MESSAGE(UM_AICH_HASHING_COUNT_CHANGED, OnAICHHashingCountChanged)
+	ON_MESSAGE(UM_MONITORED_SHARED_DIR_UPDATE, OnMonitoredSharedDirectoryUpdate)
 END_MESSAGE_MAP()
 
 CSharedFilesWnd::CSharedFilesWnd(CWnd *pParent /*=NULL*/)
@@ -328,6 +329,7 @@ void CSharedFilesWnd::Reload(bool bForceTreeReload)
 	m_ctlSharedDirTree.Reload(bForceTreeReload); // force a reload of the tree to update the 'accessible' state of each directory
 	sharedfilesctrl.SetDirectoryFilter(m_ctlSharedDirTree.GetSelectedFilter(), false);
 	theApp.sharedfiles->Reload();
+	theApp.WakeSharedDirectoryMonitor();
 
 	ShowSelectedFilesDetails();
 	ReportStartupSharedFilesReadinessIfReady();
@@ -355,6 +357,37 @@ void CSharedFilesWnd::OnBnClickedReloadSharedFiles()
 LRESULT CSharedFilesWnd::OnAICHHashingCountChanged(WPARAM wParam, LPARAM)
 {
 	sharedfilesctrl.ApplyAICHHashingCount(static_cast<INT_PTR>(wParam));
+	return 0;
+}
+
+LRESULT CSharedFilesWnd::OnMonitoredSharedDirectoryUpdate(WPARAM wParam, LPARAM)
+{
+	SMonitoredSharedDirectoryUpdate *pUpdate = reinterpret_cast<SMonitoredSharedDirectoryUpdate*>(wParam);
+	if (pUpdate == NULL)
+		return 0;
+
+	bool bStateChanged = false;
+	for (POSITION pos = pUpdate->liDowngradedRoots.GetHeadPosition(); pos != NULL;) {
+		const CString strRoot(pUpdate->liDowngradedRoots.GetNext(pos));
+		bStateChanged |= thePrefs.RemoveMonitoredSharedRoot(strRoot);
+		bStateChanged |= thePrefs.RemoveMonitorOwnedDirectoriesUnderRoot(strRoot);
+	}
+
+	for (POSITION pos = pUpdate->liNewDirectories.GetHeadPosition(); pos != NULL;) {
+		const CString strDirectory(pUpdate->liNewDirectories.GetNext(pos));
+		bStateChanged |= thePrefs.AddSharedDirectoryIfAbsent(strDirectory);
+		bStateChanged |= thePrefs.AddMonitorOwnedDirectoryIfAbsent(strDirectory);
+	}
+
+	if (bStateChanged)
+		(void)thePrefs.Save();
+
+	if (pUpdate->bForceTreeReload || bStateChanged)
+		Reload(true);
+	else if (pUpdate->bReloadSharedFiles)
+		theApp.sharedfiles->Reload();
+
+	delete pUpdate;
 	return 0;
 }
 

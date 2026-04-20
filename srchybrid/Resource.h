@@ -2434,6 +2434,10 @@
 #define IDS_WEB_BIND_ADDR               1713
 #define IDS_WEB_INVALID_BINDADDR        1714
 #define IDS_ENABLE_PERFLOG              1715
+#define IDS_SHAREDIRMONITOR             1724
+#define IDS_SHARESTATE_SHARED           1725
+#define IDS_SHARESTATE_RECURSIVE        1726
+#define IDS_SHARESTATE_MONITORED        1727
 #define IDS_UPNPBACKENDMODE             1719
 #define IDS_UPNPBACKENDMODE_IGDONLY     1720
 #define IDS_UPNPBACKENDMODE_PCPONLY     1721
@@ -2456,6 +2460,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3059
-#define _APS_NEXT_SYMED_VALUE           1722
+#define _APS_NEXT_SYMED_VALUE           1728
 #endif
 #endif

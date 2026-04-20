@@ -124,6 +124,38 @@ inline bool AddSharedDirectory(CStringList &rList, const CString &rstrDirectory,
 	return AddSharedDirectoryImpl(rList, rstrDirectory, bIncludeSubdirectories, isShareableDirectoryFn, visitedDirectories);
 }
 
+template <typename IsShareableDirectoryFn>
+inline void CollectDirectorySubtreeImpl(CStringList &rList, const CString &rstrDirectory, const bool bIncludeRoot, IsShareableDirectoryFn isShareableDirectoryFn, std::vector<LongPathSeams::FileSystemObjectIdentity> &rVisitedDirectories)
+{
+	const CString strCanonicalDirectory(PathHelpers::CanonicalizeDirectoryPath(rstrDirectory));
+	LongPathSeams::FileSystemObjectIdentity directoryIdentity = {};
+	const bool bHasDirectoryIdentity = LongPathSeams::TryGetResolvedDirectoryIdentity(strCanonicalDirectory, directoryIdentity);
+	if (bHasDirectoryIdentity) {
+		if (ContainsDirectoryIdentity(rVisitedDirectories, directoryIdentity))
+			return;
+		rVisitedDirectories.push_back(directoryIdentity);
+	}
+
+	if (bIncludeRoot && isShareableDirectoryFn(strCanonicalDirectory) && !ListContainsEquivalentDirectoryObject(rList, strCanonicalDirectory, bHasDirectoryIdentity ? &directoryIdentity : NULL))
+		rList.AddTail(strCanonicalDirectory);
+
+	CStringList childNames;
+	if (!EnumerateChildDirectories(strCanonicalDirectory, childNames))
+		return;
+
+	for (POSITION pos = childNames.GetHeadPosition(); pos != NULL;) {
+		const CString strChildPath(PathHelpers::AppendPathComponent(strCanonicalDirectory, childNames.GetNext(pos)));
+		CollectDirectorySubtreeImpl(rList, strChildPath, true, isShareableDirectoryFn, rVisitedDirectories);
+	}
+}
+
+template <typename IsShareableDirectoryFn>
+inline void CollectDirectorySubtree(CStringList &rList, const CString &rstrDirectory, const bool bIncludeRoot, IsShareableDirectoryFn isShareableDirectoryFn)
+{
+	std::vector<LongPathSeams::FileSystemObjectIdentity> visitedDirectories;
+	CollectDirectorySubtreeImpl(rList, rstrDirectory, bIncludeRoot, isShareableDirectoryFn, visitedDirectories);
+}
+
 inline bool RemoveSharedDirectory(CStringList &rList, const CString &rstrDirectory, const bool bIncludeSubdirectories)
 {
 	const CString strCanonicalDirectory(PathHelpers::CanonicalizeDirectoryPath(rstrDirectory));
@@ -132,7 +164,7 @@ inline bool RemoveSharedDirectory(CStringList &rList, const CString &rstrDirecto
 		const POSITION posCurrent = pos;
 		const CString strCurrent(rList.GetNext(pos));
 		const bool bMatches = bIncludeSubdirectories
-			? PathHelpers::IsPathWithinDirectory(strCanonicalDirectory, strCurrent)
+			? (EqualPaths(strCurrent, strCanonicalDirectory) || PathHelpers::IsPathWithinDirectory(strCanonicalDirectory, strCurrent))
 			: EqualPaths(strCurrent, strCanonicalDirectory);
 		if (!bMatches)
 			continue;

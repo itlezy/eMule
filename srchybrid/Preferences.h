@@ -614,6 +614,8 @@ public:
 	/// Guards ownership of the live shared-directory list.
 	static CCriticalSection m_csSharedDirList;
 	static CStringList shareddir_list;
+	static CStringList monitored_shareddir_list;
+	static CStringList monitor_owned_shareddir_list;
 	static CStringList addresses_list;
 	static bool		m_bKeepUnavailableFixedSharedDirs;
 
@@ -698,6 +700,28 @@ public:
 	static bool		AddSharedDirectoryIfAbsent(const CString &dir);
 	/// Checks whether an equivalent shared-directory path is already listed.
 	static bool		IsSharedDirectoryListed(const CString &dir);
+	/// Copies the live monitored-root list into a caller-owned snapshot.
+	static void		CopyMonitoredSharedRootList(CStringList &out);
+	/// Replaces the live monitored-root list with a prepared snapshot.
+	static void		ReplaceMonitoredSharedRootList(const CStringList &in);
+	/// Adds one monitored shared root if no equivalent path is already listed.
+	static bool		AddMonitoredSharedRootIfAbsent(const CString &dir);
+	/// Removes one monitored shared root if it is currently listed.
+	static bool		RemoveMonitoredSharedRoot(const CString &dir);
+	/// Checks whether an equivalent monitored-root path is already listed.
+	static bool		IsMonitoredSharedRootListed(const CString &dir);
+	/// Copies the live monitor-owned descendant list into a caller-owned snapshot.
+	static void		CopyMonitorOwnedDirectoryList(CStringList &out);
+	/// Replaces the live monitor-owned descendant list with a prepared snapshot.
+	static void		ReplaceMonitorOwnedDirectoryList(const CStringList &in);
+	/// Adds one monitor-owned descendant if no equivalent path is already listed.
+	static bool		AddMonitorOwnedDirectoryIfAbsent(const CString &dir);
+	/// Removes one monitor-owned descendant if it is currently listed.
+	static bool		RemoveMonitorOwnedDirectory(const CString &dir);
+	/// Removes all monitor-owned descendants that live below the specified root.
+	static bool		RemoveMonitorOwnedDirectoriesUnderRoot(const CString &dir);
+	/// Checks whether an equivalent monitor-owned descendant path is already listed.
+	static bool		IsMonitorOwnedDirectoryListed(const CString &dir);
 	static bool		CanFSHandleLargeFiles(int nForCat);
 	static LPCTSTR	GetConfigFile();
 	static const CString& GetFileCommentsFilePath()		{ return m_strFileCommentsFilePath; }

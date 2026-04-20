@@ -948,6 +948,8 @@ void CemuleDlg::StopTimer()
 	if (theApp.geolocation != NULL)
 		theApp.geolocation->QueueBackgroundRefresh();
 
+	theApp.StartSharedDirectoryMonitor();
+
 	if (!theApp.m_strPendingLink.IsEmpty()) {
 		OnWMData(NULL, (LPARAM)&theApp.sendstruct);
 		theApp.m_strPendingLink.Empty();

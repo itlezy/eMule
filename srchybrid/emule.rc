@@ -3817,8 +3817,12 @@ END
 STRINGTABLE
 BEGIN
     IDS_SHAREDIRSUB         "Share with Subdirectories"
+    IDS_SHAREDIRMONITOR     "Share with Subdirectories and Monitor"
     IDS_UNSHAREDIR          "Unshare Directory"
     IDS_UNSHAREDIRSUB       "Unshare with Subdirectories"
+    IDS_SHARESTATE_SHARED   "[shared]"
+    IDS_SHARESTATE_RECURSIVE "[recursive]"
+    IDS_SHARESTATE_MONITORED "[monitored]"
     IDS_ALLSHAREDFILES      "All Shared Files"
     IDS_ALLDIRECTORIES      "All Directories"
     IDS_SEARCHRELATED       "Search Related Files"
