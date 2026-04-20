@@ -19,6 +19,7 @@
 #include <unordered_set>
 #include <string>
 #include <vector>
+#include "SharedDuplicatePathCachePolicy.h"
 #include "SharedStartupCachePolicy.h"
 #include "MapKey.h"
 #include "FileIdentifier.h"
@@ -178,6 +179,7 @@ protected:
 private:
 	using SharedStartupCacheRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::DirectoryRecord>;
 	using SharedStartupCacheVolumeRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::VolumeRecord>;
+	using SharedDuplicatePathRecordMap = std::unordered_map<std::wstring, SharedDuplicatePathCachePolicy::PathRecord>;
 
 	/**
 	 * @brief Captures the current startup-validation state for one shared directory.
@@ -236,7 +238,9 @@ private:
 	struct StartupCacheSaveSnapshot
 	{
 		CString strCachePath;
+		CString strDuplicatePathCachePath;
 		std::vector<StartupCacheSaveDirectorySnapshot> directories;
+		std::vector<SharedDuplicatePathCachePolicy::PathRecord> duplicatePathRecords;
 	};
 
 	/**
@@ -245,9 +249,11 @@ private:
 	struct StartupCacheSaveResult
 	{
 		bool bWriteSucceeded = false;
+		bool bDuplicatePathWriteSucceeded = false;
 		ULONGLONG ullCompletedTick = 0;
 		SharedStartupCacheRecordMap records;
 		SharedStartupCacheVolumeRecordMap volumeRecords;
+		SharedDuplicatePathRecordMap duplicatePathRecords;
 	};
 
 	/**
@@ -283,16 +289,40 @@ private:
 	 */
 	void	CollectTrackedStartupCacheDirectoryRefs(const SharedStartupCachePolicy::VolumeRecord &rVolumeRecord, std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> &rTrackedDirectoryRefs) const;
 	static CString GetStartupCachePath();
+	/**
+	 * @brief Returns the config-directory path for the shared duplicate-path sidecar.
+	 */
+	static CString GetDuplicatePathCachePath();
 	static std::wstring MakeStartupCacheKey(const CString &strDirectory);
 	static std::wstring MakeStartupCacheVolumeKey(const CString &strVolumeKey);
+	/**
+	 * @brief Canonicalizes one duplicate shared-file path into the sidecar key format.
+	 */
+	static std::wstring MakeDuplicatePathCacheKey(const CString &strFilePath);
 	static bool ReadStartupCacheString(CSafeBufferedFile &file, CString &rValue);
 	static void WriteStartupCacheString(CSafeBufferedFile &file, const CString &strValue);
 	static UINT AFX_CDECL StartupCacheSaveThreadProc(LPVOID pParam);
 	bool	CaptureStartupCacheSaveSnapshot(StartupCacheSaveSnapshot &rSnapshot) const;
+	/**
+	 * @brief Captures the currently valid duplicate shared-path records for sidecar persistence.
+	 */
+	bool	CaptureDuplicatePathCacheSnapshot(std::vector<SharedDuplicatePathCachePolicy::PathRecord> &rSnapshot) const;
 	bool	BuildStartupCacheRecordFromSnapshot(const StartupCacheSaveDirectorySnapshot &rDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord, SharedStartupCacheVolumeRecordMap &rVolumeRecords) const;
 	void	RunStartupCacheSaveWorker(const StartupCacheSaveSnapshot &rSnapshot, StartupCacheSaveResult &rResult);
 	static bool	WriteStartupCacheFile(const CString &strFullPath, const SharedStartupCacheVolumeRecordMap &rVolumeRecords, const std::vector<SharedStartupCachePolicy::DirectoryRecord> &rRecords);
+	/**
+	 * @brief Writes the duplicate shared-path sidecar atomically.
+	 */
+	static bool	WriteDuplicatePathCacheFile(const CString &strFullPath, const std::vector<SharedDuplicatePathCachePolicy::PathRecord> &rRecords);
 	void	UpdateStartupCacheSaveProgress(StartupCacheSavePhase ePhase, ULONGLONG uCompletedDirectories, ULONGLONG uTotalDirectories);
+	/**
+	 * @brief Loads the duplicate shared-path sidecar if it is present and well-formed.
+	 */
+	bool	TryLoadDuplicatePathCache();
+	/**
+	 * @brief Remembers one duplicate shared-file path for future startup hash skipping.
+	 */
+	void	RememberDuplicateSharedPath(const CString &strFilePath, const uchar *pCanonicalFileHash, LONGLONG utcFileDate, ULONGLONG ullFileSize);
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
@@ -324,6 +354,7 @@ private:
 	StartupScanStats m_startupScanStats;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
 	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;
+	SharedDuplicatePathRecordMap m_duplicateSharedPathRecords;
 	std::unordered_map<std::wstring, StartupCacheVolumeValidationState> m_startupCacheVolumeValidation;
 	mutable CCriticalSection m_mutStartupCacheSave;
 	bool	m_bStartupCacheSaveRunning;

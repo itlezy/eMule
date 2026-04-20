@@ -531,6 +531,7 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 #endif
 	LoadSingleSharedFilesList();
 	(void)TryLoadStartupCache();
+	(void)TryLoadDuplicatePathCache();
 	m_nLastStartupCacheSave = ::GetTickCount64();
 	FindSharedFiles(true);
 }
@@ -799,9 +800,13 @@ bool CSharedFileList::AddKnownSharedFile(CKnownFile *pFile, const CString &strFo
 		TRACE(_T("%hs: File already in shared file list: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (LPCTSTR)pFileInMap->GetFilePath());
 		TRACE(_T("%hs: File to add:                      %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFile->GetFileHash()), (LPCTSTR)strFoundFilePath);
 		if (!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap)) {
-			if (!PathHelpers::ArePathsEquivalent(strFoundFilePath, pFileInMap->GetFilePath()))
+			if (!PathHelpers::ArePathsEquivalent(strFoundFilePath, pFileInMap->GetFilePath())) {
 				LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)strFoundFilePath);
-			else {
+				LONGLONG utcCurrentFileDate = -1;
+				ULONGLONG ullCurrentFileSize = 0;
+				if (GetFileStartupState(strFoundFilePath, utcCurrentFileDate, ullCurrentFileSize))
+					RememberDuplicateSharedPath(strFoundFilePath, pFileInMap->GetFileHash(), utcCurrentFileDate, ullCurrentFileSize);
+			} else {
 				if (pFileInMap->GetFilePath().CompareNoCase(strFoundFilePath) != 0) {
 					const CString strOldFilePath(pFileInMap->GetFilePath());
 					pFileInMap->SetPath(strFoundDirectory);
@@ -865,7 +870,10 @@ bool CSharedFileList::AddFile(CKnownFile *pFile)
 		}
 		if ((!pFileInMap->IsKindOf(RUNTIME_CLASS(CPartFile)) || theApp.downloadqueue->IsPartFile(pFileInMap))
 			&& !PathHelpers::ArePathsEquivalent(pFileInMap->GetFilePath(), pFile->GetFilePath()))
+		{
 			LogWarning(GetResString(IDS_ERR_DUPL_FILES), (LPCTSTR)pFileInMap->GetFilePath(), (LPCTSTR)pFile->GetFilePath());
+			RememberDuplicateSharedPath(pFile->GetFilePath(), pFileInMap->GetFileHash(), static_cast<LONGLONG>(pFile->GetUtcFileDate()), static_cast<ULONGLONG>(pFile->GetFileSize()));
+		}
 		return false;
 	}
 	m_UnsharedFiles_map.RemoveKey(CSKey(pFile->GetFileHash()));
@@ -1798,6 +1806,11 @@ CString CSharedFileList::GetStartupCachePath()
 	return thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SharedStartupCachePolicy::GetFileName();
 }
 
+CString CSharedFileList::GetDuplicatePathCachePath()
+{
+	return thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SharedDuplicatePathCachePolicy::GetFileName();
+}
+
 std::wstring CSharedFileList::MakeStartupCacheKey(const CString &strDirectory)
 {
 	return std::wstring(NormalizeSharedDirectoryPath(strDirectory));
@@ -1807,6 +1820,11 @@ std::wstring CSharedFileList::MakeStartupCacheVolumeKey(const CString &strVolume
 {
 	const LongPathSeams::PathString strNormalized(LongPathSeams::NormalizeVolumeGuidPathForKey(static_cast<LPCTSTR>(strVolumeKey)));
 	return std::wstring(strNormalized.c_str());
+}
+
+std::wstring CSharedFileList::MakeDuplicatePathCacheKey(const CString &strFilePath)
+{
+	return std::wstring(NormalizeSharedFilePath(strFilePath));
 }
 
 void CSharedFileList::CollectSharedDirectories(CStringList &dirlist) const
@@ -2136,6 +2154,51 @@ bool CSharedFileList::TryLoadStartupCache()
 	return false;
 }
 
+bool CSharedFileList::TryLoadDuplicatePathCache()
+{
+	m_duplicateSharedPathRecords.clear();
+
+	const CString strFullPath(GetDuplicatePathCachePath());
+	if (!LongPathSeams::PathExists(strFullPath))
+		return true;
+
+	CSafeBufferedFile file;
+	if (!LongPathSeams::OpenFile(file, strFullPath, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary))
+		return false;
+
+	try {
+		constexpr uint32 kMaxRecordCount = 1000000u;
+		if (file.ReadUInt32() != SharedDuplicatePathCachePolicy::kMagic || file.ReadUInt16() != SharedDuplicatePathCachePolicy::kVersion)
+			AfxThrowFileException(CFileException::genericException);
+
+		const uint32 uRecordCount = file.ReadUInt32();
+		if (uRecordCount > kMaxRecordCount)
+			AfxThrowFileException(CFileException::genericException);
+
+		for (uint32 i = 0; i < uRecordCount; ++i) {
+			SharedDuplicatePathCachePolicy::PathRecord record = {};
+			if (!ReadStartupCacheString(file, record.strFilePath))
+				AfxThrowFileException(CFileException::genericException);
+			record.utcFileDate = static_cast<LONGLONG>(file.ReadUInt64());
+			record.ullFileSize = file.ReadUInt64();
+			file.Read(record.canonicalFileHash.data(), static_cast<UINT>(record.canonicalFileHash.size()));
+			if (!SharedDuplicatePathCachePolicy::IsStructurallyValid(record)
+				|| m_duplicateSharedPathRecords.find(MakeDuplicatePathCacheKey(record.strFilePath)) != m_duplicateSharedPathRecords.end())
+			{
+				AfxThrowFileException(CFileException::genericException);
+			}
+			m_duplicateSharedPathRecords.emplace(MakeDuplicatePathCacheKey(record.strFilePath), record);
+		}
+		file.Close();
+		return true;
+	} catch (CFileException *ex) {
+		ex->Delete();
+		m_duplicateSharedPathRecords.clear();
+		DebugLogWarning(_T("Ignoring malformed %s"), SharedDuplicatePathCachePolicy::GetFileName());
+	}
+	return false;
+}
+
 void CSharedFileList::CollectTrackedStartupCacheDirectoryRefs(const SharedStartupCachePolicy::VolumeRecord &rVolumeRecord, std::unordered_set<LongPathSeams::UsnFileReference, LongPathSeams::UsnFileReferenceHasher> &rTrackedDirectoryRefs) const
 {
 	rTrackedDirectoryRefs.clear();
@@ -2188,6 +2251,7 @@ bool CSharedFileList::CaptureStartupCacheSaveSnapshot(StartupCacheSaveSnapshot &
 {
 	rSnapshot = StartupCacheSaveSnapshot{};
 	rSnapshot.strCachePath = GetStartupCachePath();
+	rSnapshot.strDuplicatePathCachePath = GetDuplicatePathCachePath();
 
 	CStringList sharedDirectories;
 	CollectSharedDirectories(sharedDirectories);
@@ -2228,7 +2292,67 @@ bool CSharedFileList::CaptureStartupCacheSaveSnapshot(StartupCacheSaveSnapshot &
 		fileRecord.ullFileSize = static_cast<ULONGLONG>(pFile->GetFileSize());
 		rSnapshot.directories[it->second].files.push_back(fileRecord);
 	}
+	return CaptureDuplicatePathCacheSnapshot(rSnapshot.duplicatePathRecords);
+}
+
+bool CSharedFileList::CaptureDuplicatePathCacheSnapshot(std::vector<SharedDuplicatePathCachePolicy::PathRecord> &rSnapshot) const
+{
+	rSnapshot.clear();
+	rSnapshot.reserve(m_duplicateSharedPathRecords.size());
+	for (const auto &entry : m_duplicateSharedPathRecords) {
+		const SharedDuplicatePathCachePolicy::PathRecord &record = entry.second;
+		if (!SharedDuplicatePathCachePolicy::IsStructurallyValid(record))
+			continue;
+
+		CKnownFile *pCanonicalSharedFile = GetFileByID(record.canonicalFileHash.data());
+		if (pCanonicalSharedFile == NULL)
+			continue;
+		if (PathHelpers::ArePathsEquivalent(record.strFilePath, pCanonicalSharedFile->GetFilePath()))
+			continue;
+
+		const CString strDuplicatePath(NormalizeSharedFilePath(record.strFilePath));
+		const CString strDuplicateDirectory(PathHelpers::EnsureTrailingSeparator(PathHelpers::GetDirectoryPath(strDuplicatePath)));
+		if (!ShouldBeShared(strDuplicateDirectory, strDuplicatePath, false))
+			continue;
+
+		LONGLONG utcCurrentFileDate = -1;
+		ULONGLONG ullCurrentFileSize = 0;
+		if (!GetFileStartupState(strDuplicatePath, utcCurrentFileDate, ullCurrentFileSize))
+			continue;
+		if (utcCurrentFileDate != record.utcFileDate || ullCurrentFileSize != record.ullFileSize)
+			continue;
+
+		rSnapshot.push_back(record);
+	}
 	return true;
+}
+
+void CSharedFileList::RememberDuplicateSharedPath(const CString &strFilePath, const uchar *pCanonicalFileHash, const LONGLONG utcFileDate, const ULONGLONG ullFileSize)
+{
+	if (pCanonicalFileHash == NULL || utcFileDate <= 0 || ullFileSize == 0)
+		return;
+
+	SharedDuplicatePathCachePolicy::PathRecord record = {};
+	record.strFilePath = NormalizeSharedFilePath(strFilePath);
+	record.utcFileDate = utcFileDate;
+	record.ullFileSize = ullFileSize;
+	md4cpy(record.canonicalFileHash.data(), pCanonicalFileHash);
+	if (!SharedDuplicatePathCachePolicy::IsStructurallyValid(record))
+		return;
+
+	const std::wstring strKey(MakeDuplicatePathCacheKey(record.strFilePath));
+	const auto it = m_duplicateSharedPathRecords.find(strKey);
+	if (it != m_duplicateSharedPathRecords.end()
+		&& it->second.strFilePath == record.strFilePath
+		&& it->second.utcFileDate == record.utcFileDate
+		&& it->second.ullFileSize == record.ullFileSize
+		&& it->second.canonicalFileHash == record.canonicalFileHash)
+	{
+		return;
+	}
+
+	m_duplicateSharedPathRecords[strKey] = record;
+	MarkStartupCacheDirty();
 }
 
 bool CSharedFileList::BuildStartupCacheRecordFromSnapshot(const StartupCacheSaveDirectorySnapshot &rDirectory, SharedStartupCachePolicy::DirectoryRecord &rRecord, SharedStartupCacheVolumeRecordMap &rVolumeRecords) const
@@ -2323,6 +2447,36 @@ bool CSharedFileList::WriteStartupCacheFile(const CString &strFullPath, const Sh
 	return false;
 }
 
+bool CSharedFileList::WriteDuplicatePathCacheFile(const CString &strFullPath, const std::vector<SharedDuplicatePathCachePolicy::PathRecord> &rRecords)
+{
+	const CString strTempPath(strFullPath + _T(".tmp"));
+	CSafeBufferedFile file;
+	if (!LongPathSeams::OpenFile(file, strTempPath, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite | CFile::typeBinary))
+		return false;
+
+	try {
+		file.WriteUInt32(SharedDuplicatePathCachePolicy::kMagic);
+		file.WriteUInt16(SharedDuplicatePathCachePolicy::kVersion);
+		file.WriteUInt32(static_cast<uint32>(rRecords.size()));
+		for (const SharedDuplicatePathCachePolicy::PathRecord &record : rRecords) {
+			WriteStartupCacheString(file, record.strFilePath);
+			file.WriteUInt64(static_cast<uint64>(record.utcFileDate));
+			file.WriteUInt64(record.ullFileSize);
+			file.Write(record.canonicalFileHash.data(), static_cast<UINT>(record.canonicalFileHash.size()));
+		}
+		CommitAndClose(file);
+		if (!LongPathSeams::MoveFileEx(strTempPath, strFullPath, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
+			(void)LongPathSeams::DeleteFileIfExists(strTempPath);
+			return false;
+		}
+		return true;
+	} catch (CFileException *ex) {
+		ex->Delete();
+		(void)LongPathSeams::DeleteFileIfExists(strTempPath);
+	}
+	return false;
+}
+
 void CSharedFileList::RunStartupCacheSaveWorker(const StartupCacheSaveSnapshot &rSnapshot, StartupCacheSaveResult &rResult)
 {
 	std::vector<SharedStartupCachePolicy::DirectoryRecord> records;
@@ -2346,12 +2500,18 @@ void CSharedFileList::RunStartupCacheSaveWorker(const StartupCacheSaveSnapshot &
 	UpdateStartupCacheSaveProgress(StartupCacheSavePhase::WritingFile, static_cast<ULONGLONG>(rSnapshot.directories.size()), static_cast<ULONGLONG>(rSnapshot.directories.size()));
 	if (!WriteStartupCacheFile(rSnapshot.strCachePath, volumeRecords, records))
 		return;
+	rResult.bWriteSucceeded = true;
+
+	if (WriteDuplicatePathCacheFile(rSnapshot.strDuplicatePathCachePath, rSnapshot.duplicatePathRecords)) {
+		for (const SharedDuplicatePathCachePolicy::PathRecord &record : rSnapshot.duplicatePathRecords)
+			rResult.duplicatePathRecords.emplace(MakeDuplicatePathCacheKey(record.strFilePath), record);
+		rResult.bDuplicatePathWriteSucceeded = true;
+	}
 
 	for (const SharedStartupCachePolicy::DirectoryRecord &record : records)
 		rResult.records.emplace(MakeStartupCacheKey(record.strDirectoryPath), record);
 	rResult.volumeRecords = std::move(volumeRecords);
 	rResult.ullCompletedTick = ::GetTickCount64();
-	rResult.bWriteSucceeded = true;
 }
 
 UINT AFX_CDECL CSharedFileList::StartupCacheSaveThreadProc(LPVOID pParam)
@@ -2395,16 +2555,19 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 		m_startupCacheVolumeValidation.clear();
 		m_nLastStartupCacheSave = pResult->ullCompletedTick;
 	}
+	if (pResult->bDuplicatePathWriteSucceeded)
+		m_duplicateSharedPathRecords = std::move(pResult->duplicatePathRecords);
 
 	{
 		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
 		const bool bRunAfterCurrent = m_bStartupCacheSaveRunAfterCurrent;
+		const bool bAllWritesSucceeded = pResult->bWriteSucceeded && pResult->bDuplicatePathWriteSucceeded;
 		m_bStartupCacheSaveRunning = false;
 		m_bStartupCacheSaveRunAfterCurrent = false;
 		m_eStartupCacheSavePhase = StartupCacheSavePhase::Idle;
 		m_uStartupCacheSaveDirectoriesDone = 0;
 		m_uStartupCacheSaveDirectoriesTotal = 0;
-		if (pResult->bWriteSucceeded && !bRunAfterCurrent) {
+		if (bAllWritesSucceeded && !bRunAfterCurrent) {
 			m_bStartupCacheDirty = false;
 		} else {
 			m_bStartupCacheDirty = true;
