@@ -20,14 +20,9 @@ public:
 	void Localize();
 
 protected:
-	/** Captures the baseline layout used for the Extended page controls. */
-	void CaptureBaseLayout();
 
 	CTreeOptionsCtrlEx m_ctrlTreeOptions;
 	CString m_sYourHostname;
-	CSize m_szBaseClient;
-	CRect m_rcWarning;
-	CRect m_rcTree;
 	std::map<HTREEITEM, CString> m_treeToolTips;
 
 	HTREEITEM m_htiA4AFSaveCpu;
@@ -237,7 +232,6 @@ protected:
 	afx_msg void OnDestroy();
 	afx_msg LRESULT OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam);
 	afx_msg void OnTvnGetInfoTip(NMHDR *pNMHDR, LRESULT *pResult);
-	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
 };
