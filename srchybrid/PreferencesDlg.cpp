@@ -31,36 +31,14 @@ BEGIN_MESSAGE_MAP(CPreferencesDlg, CTreePropSheet)
 	ON_WM_DESTROY()
 	ON_WM_ERASEBKGND()
 	ON_WM_HELPINFO()
-	ON_MESSAGE(PSM_SETCURSEL, OnSetCurSel)
-	ON_MESSAGE(PSM_SETCURSELID, OnSetCurSelId)
 END_MESSAGE_MAP()
 
-namespace
-{
-	static const int kExtendedExtraWidth = 144;
-	static const int kExtendedExtraHeight = 132;
-
-	static void MoveChildWindow(CWnd *pWnd, const CRect &rect)
-	{
-		if (pWnd != NULL && ::IsWindow(pWnd->GetSafeHwnd()))
-			pWnd->MoveWindow(rect);
-	}
-}
-
-void CPreferencesDlg::RemoveHelpButtons()
-{
-	static const UINT aHelpIds[] = { ID_HELP, IDHELP };
-	for (int i = 0; i < _countof(aHelpIds); ++i) {
-		if (CWnd *pHelpButton = GetDlgItem(aHelpIds[i]))
-			pHelpButton->DestroyWindow();
-	}
-}
-
 CPreferencesDlg::CPreferencesDlg()
-	: m_bNormalLayoutCaptured(false)
-	, m_szExtendedGrowth(kExtendedExtraWidth, kExtendedExtraHeight)
+	: m_pPshStartPage(NULL)
+	, m_bSaveIniFile(false)
 {
 	m_psh.dwFlags &= ~PSH_HASHELP;
+	m_psh.dwFlags |= PSH_NOCONTEXTHELP;
 	m_wndGeneral.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndDisplay.m_psp.dwFlags &= ~PSH_HASHELP;
 	m_wndConnection.m_psp.dwFlags &= ~PSH_HASHELP;
@@ -121,9 +99,6 @@ CPreferencesDlg::CPreferencesDlg()
 	// possible we do not show a page caption (which is a decorative element only anyway).
 	SetTreeViewMode(TRUE, ::GetSystemMetrics(SM_CYSCREEN) >= 600, TRUE);
 	SetTreeWidth(170);
-
-	m_pPshStartPage = NULL;
-	m_bSaveIniFile = false;
 }
 
 void CPreferencesDlg::OnDestroy()
@@ -142,7 +117,10 @@ BOOL CPreferencesDlg::OnInitDialog()
 	BOOL bResult = CTreePropSheet::OnInitDialog();
 	InitWindowStyles(this);
 
-	RemoveHelpButtons();
+	if (CWnd *pHelpButton = GetDlgItem(ID_HELP))
+		pHelpButton->DestroyWindow();
+	if (CWnd *pHelpButton = GetDlgItem(IDHELP))
+		pHelpButton->DestroyWindow();
 
 	for (int i = (int)m_pages.GetCount(); --i >= 0;)
 		if (GetPage(i)->m_psp.pszTemplate == m_pPshStartPage) {
@@ -151,114 +129,7 @@ BOOL CPreferencesDlg::OnInitDialog()
 		}
 
 	Localize();
-	CaptureNormalLayout();
-	ApplyExtendedLayout();
 	return bResult;
-}
-
-void CPreferencesDlg::CaptureNormalLayout()
-{
-	if (m_bNormalLayoutCaptured)
-		return;
-
-	CRect rectWindow;
-	GetWindowRect(&rectWindow);
-	m_szNormalWindow = rectWindow.Size();
-
-	CTreeCtrl *pTree = GetPageTreeControl();
-	if (pTree != NULL) {
-		pTree->GetWindowRect(&m_rcNormalTree);
-		ScreenToClient(&m_rcNormalTree);
-	}
-
-	CWnd *pFrame = GetDlgItem(0xFFFF);
-	if (pFrame != NULL) {
-		pFrame->GetWindowRect(&m_rcNormalFrame);
-		ScreenToClient(&m_rcNormalFrame);
-	}
-
-	HWND hActivePage = PropSheet_GetCurrentPageHwnd(m_hWnd);
-	if (hActivePage != NULL) {
-		::GetWindowRect(hActivePage, &m_rcNormalPage);
-		ScreenToClient(&m_rcNormalPage);
-	}
-
-	static const UINT aButtonIds[] = { IDOK, IDCANCEL, ID_APPLY_NOW };
-	CRect *apRects[] = { &m_rcNormalOk, &m_rcNormalCancel, &m_rcNormalApply };
-	for (int i = 0; i < _countof(aButtonIds); ++i) {
-		CWnd *pButton = GetDlgItem(aButtonIds[i]);
-		if (pButton != NULL) {
-			pButton->GetWindowRect(apRects[i]);
-			ScreenToClient(apRects[i]);
-		} else
-			apRects[i]->SetRectEmpty();
-	}
-	m_rcNormalHelp.SetRectEmpty();
-
-	m_bNormalLayoutCaptured = true;
-}
-
-void CPreferencesDlg::ApplyExtendedLayout()
-{
-	if (!m_bNormalLayoutCaptured || m_hWnd == NULL)
-		return;
-
-	const bool bExtendedActive = (GetActivePage() == &m_wndTweaks);
-	const int dx = bExtendedActive ? m_szExtendedGrowth.cx : 0;
-	const int dy = bExtendedActive ? m_szExtendedGrowth.cy : 0;
-	CWnd *const pFrameWnd = GetDlgItem(0xFFFF);
-
-	SetRedraw(FALSE);
-
-	CRect rectWindow;
-	GetWindowRect(&rectWindow);
-	SetWindowPos(NULL, rectWindow.left, rectWindow.top, m_szNormalWindow.cx + dx, m_szNormalWindow.cy + dy,
-		SWP_NOZORDER | SWP_NOACTIVATE);
-
-	CRect rectTree(m_rcNormalTree);
-	rectTree.bottom += dy;
-	MoveChildWindow(GetPageTreeControl(), rectTree);
-
-	CRect rectFrame(m_rcNormalFrame);
-	rectFrame.right += dx;
-	rectFrame.bottom += dy;
-	MoveChildWindow(pFrameWnd, rectFrame);
-
-	HWND hActivePage = PropSheet_GetCurrentPageHwnd(m_hWnd);
-	if (hActivePage != NULL) {
-		CRect rectPage(m_rcNormalPage);
-		rectPage.right += dx;
-		rectPage.bottom += dy;
-		::MoveWindow(hActivePage, rectPage.left, rectPage.top, rectPage.Width(), rectPage.Height(), TRUE);
-	}
-
-	const CPoint offset(dx, dy);
-	const struct
-	{
-		UINT id;
-		const CRect *normalRect;
-	} aButtons[] =
-	{
-		{ IDOK, &m_rcNormalOk },
-		{ IDCANCEL, &m_rcNormalCancel },
-		{ ID_APPLY_NOW, &m_rcNormalApply }
-	};
-
-	for (int i = 0; i < _countof(aButtons); ++i) {
-		if (!aButtons[i].normalRect->IsRectEmpty()) {
-			CRect rect(*aButtons[i].normalRect);
-			rect.OffsetRect(offset);
-			MoveChildWindow(GetDlgItem(aButtons[i].id), rect);
-		}
-	}
-
-	RemoveHelpButtons();
-	SetRedraw(TRUE);
-	if (pFrameWnd != NULL)
-		pFrameWnd->RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
-	if (hActivePage != NULL)
-		::RedrawWindow(hActivePage, NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
-	RedrawWindow(NULL, NULL, RDW_INVALIDATE | RDW_ERASE | RDW_UPDATENOW | RDW_ALLCHILDREN | RDW_FRAME);
 }
 
 BOOL CPreferencesDlg::OnEraseBkgnd(CDC *pDC)
@@ -354,18 +225,4 @@ BOOL CPreferencesDlg::OnHelpInfo(HELPINFO*)
 {
 	OnHelp();
 	return TRUE;
-}
-
-LRESULT CPreferencesDlg::OnSetCurSel(WPARAM wParam, LPARAM lParam)
-{
-	const LRESULT lResult = CTreePropSheet::OnSetCurSel(wParam, lParam);
-	ApplyExtendedLayout();
-	return lResult;
-}
-
-LRESULT CPreferencesDlg::OnSetCurSelId(WPARAM wParam, LPARAM lParam)
-{
-	const LRESULT lResult = CTreePropSheet::OnSetCurSelId(wParam, lParam);
-	ApplyExtendedLayout();
-	return lResult;
 }
