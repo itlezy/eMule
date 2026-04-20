@@ -139,7 +139,6 @@ protected:
 	bool StartNewSearch(SSearchParams *pParams);
 	void SearchStarted();
 	void SearchCancelled(uint32 uSearchID);
-	CString	CreateWebQuery(SSearchParams *pParams);
 	void ShowResults(const SSearchParams *pParams);
 	void SetAllIcons();
 	void SetSearchResultsIcon(uint32 uSearchID, int iImage);

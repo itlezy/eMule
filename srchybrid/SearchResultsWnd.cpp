@@ -218,10 +218,6 @@ void CSearchResultsWnd::StartSearch(SSearchParams *pParams)
 	case SearchTypeKademlia:
 		StartNewSearch(pParams);
 		return;
-	case SearchTypeContentDB:
-		ShellOpenFile(CreateWebQuery(pParams));
-		delete pParams;
-		return;
 	default:
 		ASSERT(0);
 		delete pParams;
@@ -574,26 +570,6 @@ void CSearchResultsWnd::OnDblClkSearchList(LPNMHDR, LRESULT *pResult)
 {
 	OnBnClickedDownloadSelected();
 	*pResult = 0;
-}
-
-CString CSearchResultsWnd::CreateWebQuery(SSearchParams *pParams)
-{
-	CString query;
-	if (pParams->eType == SearchTypeContentDB) {
-		LPCTSTR p;
-		if (pParams->strFileType == _T(ED2KFTSTR_AUDIO))
-			p = _T("2");
-		else if (pParams->strFileType == _T(ED2KFTSTR_VIDEO))
-			p = _T("3");
-		else if (pParams->strFileType == _T(ED2KFTSTR_PROGRAM))
-			p = _T("1");
-		else
-			p = _T("all");
-		query.Format(_T("https://contentdb.emule-project.net/search.php?s=%s&cat=%s&rel=1&search_option=simple&network=edonkey&go=Search")
-			, (LPCTSTR)EncodeURLQueryParam(pParams->strExpression)
-			, p);
-	}
-	return query;
 }
 
 void CSearchResultsWnd::DownloadSelected()

@@ -1387,7 +1387,6 @@ PROXY                   ICON                    "res\\Proxy.ico"
 SEARCHPARAMS            ICON                    "res\\SearchParams.ico"
 SEARCHMETHOD_KADSERVER  ICON                    "res\\KadServer.ico"
 SEARCHMETHOD_SERVER     ICON                    "res\\ServerSearch.ico"
-SEARCHMETHOD_CONTENTDB  ICON                    "res\\ContentDB.ico"
 SEARCHMETHOD_GLOBAL     ICON                    "res\\Global.ico"
 SEARCHMETHOD_KADEMLIA   ICON                    "res\\SearchKad.ico"
 SEARCHMETHOD_SERVERACTIVE ICON                    "res\\SearchServerActive.ico"
@@ -3266,7 +3265,6 @@ END
 STRINGTABLE
 BEGIN
     IDS_ED2KSERVER          "eD2K Server"
-    IDS_CONTENTDB           "ContentDB (Web)"
     IDS_WEB_GENERATE        "Create new certificate"
     IDS_CERT_ERR_CREATE     "Certificate not created (see Verbose log)"
     IDS_DELETEAFTERFILEOP   "File '%s' will be deleted after the current operation was completed"

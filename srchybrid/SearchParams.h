@@ -11,8 +11,7 @@ enum ESearchType : uint8
 	SearchTypeAutomatic = 0,
 	SearchTypeEd2kServer,
 	SearchTypeEd2kGlobal,
-	SearchTypeKademlia,
-	SearchTypeContentDB
+	SearchTypeKademlia
 };
 
 

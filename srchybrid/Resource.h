@@ -1524,7 +1524,6 @@
 #define IDS_ITALIC                      1598
 #define IDS_IRC_BAN                     1599
 #define IDS_ED2KSERVER                  1600
-#define IDS_CONTENTDB                   1601
 #define IDS_WEB_GENERATE                1602
 #define IDS_CERT_ERR_CREATE             1603
 #define IDS_DELETEAFTERFILEOP           1604

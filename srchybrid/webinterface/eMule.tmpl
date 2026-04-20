@@ -52,7 +52,7 @@ var eMulePics = new Array ("add_server.gif", "arrow_down.gif", "arrow_up.gif", "
 "h_shared.gif", "h_statistic.gif", "h_transfer.gif", "high.gif", "is_banned.gif", "is_credit.gif", "is_friend.gif",
 "is_halfnone.gif", "is_none.gif", "is_release.gif", "is_static.gif", "l_add.gif",
 "l_calendar.gif", "l_cancel.gif", "l_catarrow.gif", "l_clear.gif", "l_clock.gif", "l_close.gif", "l_con.gif", "l_connect.gif",
-"l_downarrow.gif", "l_ed2klink.gif", "l_contentdb.gif", "l_filesearch.gif", "l_forum.gif",
+"l_downarrow.gif", "l_ed2klink.gif", "l_filesearch.gif", "l_forum.gif",
 "l_friend.gif", "l_getflc.gif", "l_hasherror.gif", "l_homepage.gif", "l_info.gif", "l_logout.gif", "l_none.gif",
 "l_options.gif", "l_pause.gif", "l_remove.gif", "l_rename.gif", "l_resume.gif", "l_search.gif", "l_server.gif", "l_shared.gif",
 "l_reboot.gif", "l_showcat.gif", "l_shutdown.gif", "l_sources_0.gif", "l_sources_10.gif", "l_sources_25.gif", "l_sources_5.gif",
@@ -1873,18 +1873,6 @@ function GotoCat(cat) {
 function obj(menu) {
 	return (navigator.appName == "Microsoft Internet Explorer")?this[menu]:document.getElementById(menu);
 }
-function searchange1() {
-	obj("search").style.display="";
-	obj("searchtag").style.background="#005784";
-	obj("contentdb").style.display="none";
-	obj("contentdbtag").style.background="#000000";
-}
-function searchange2() {
-	obj("search").style.display="none";
-	obj("searchtag").style.background="#000000";
-	obj("contentdb").style.display="";
-	obj("contentdbtag").style.background="#005784";
-}
 </script>
 
 
@@ -1894,14 +1882,13 @@ function searchange2() {
    <br>
    <table border=0 cellpadding=4 cellspacing=0 width="100%">
     <tr>
-     <td class="search-main" ID="searchtag" align="center" style="background:#005784" nowrap><img src="l_search.gif" align="middle">&nbsp;<b><a href="javascript:searchange1()">[Search]</a></b>&nbsp;</td>
-     <td class="search-main" ID="contentdbtag" align="center" nowrap><img src="l_contentdb.gif" align="middle">&nbsp;<b><a href="javascript:searchange2()">ContentDB [Search]</a></b>&nbsp;</td>
+     <td class="search-main" align="center" style="background:#005784" nowrap><img src="l_search.gif" align="middle">&nbsp;<b>[Search]</b>&nbsp;</td>
      <td class="search-main" align="right" nowrap><img src="l_ed2klink.gif" align="middle">&nbsp;<b><a href="javascript:ShowHide('ed2k_open');">[Ed2klink]</a></b>&nbsp;</td>  
      <td class="search-main" width="100%">&nbsp;</td>
     </tr>
     <tr>
-     <td class="search-line" colspan="5">
-      <form ID="search" action="" method="GET" style="display:">
+     <td class="search-line" colspan="4">
+      <form ID="search" action="" method="GET">
        <table border=0 cellpadding=4 cellspacing=0 align="left">
         <tr>
          <td class="tabs" width=150>[Name]</td>
@@ -1952,35 +1939,6 @@ function searchange2() {
          <td valign="bottom" height="40">
           <input type="hidden" name="ses" value="[Session]">
           <input type="hidden" name="w" value="search">
-          <input type="submit" value="[Search]">
-         </td>
-         <td>&nbsp;</td>
-        </tr>
-       </table>
-      </form>
-      <form ID="contentdb" action="https://contentdb.emule-project.net/search.php?" method="get" target="_blank" style="display:none;">
-       <table border=0 cellpadding=4 cellspacing=0 align="left">
-        <tr>
-         <td class="tabs" width=150>[Name]</td>
-         <td><input name="s" type="text" size="30"></td>
-        </tr>
-        <tr>
-         <td class="tabs">[Type]</td>
-         <td>
-          <select name="cat">
-          <option value="all">[Any]</option>
-          <option value="1">Software</option>
-          <option value="2">Music</option>
-          <option value="3">Movies</option>
-          <option value="4">Games</option>
-          <option value="5">Miscellaneous items</option>
-          </select>
-         </td>
-        </tr>
-        <tr>
-         <td height="40" valign="bottom">
-          <input type="hidden" name=ses value="[Session]">
-          <input type="hidden" name=qsource value="webinterface">
           <input type="submit" value="[Search]">
          </td>
          <td>&nbsp;</td>
