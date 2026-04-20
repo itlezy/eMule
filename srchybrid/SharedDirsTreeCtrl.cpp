@@ -1291,6 +1291,7 @@ void CSharedDirsTreeCtrl::AddMonitoredSharedDirectory(const CString &strDir)
 	thePrefs.ReplaceMonitoredSharedRootList(m_strliMonitoredRoots);
 	thePrefs.ReplaceMonitorOwnedDirectoryList(m_strliMonitorOwnedDirs);
 	m_bFileSystemRootDirty = true;
+	theApp.WakeSharedDirectoryMonitor();
 	theApp.emuledlg->sharedfileswnd->Reload(true);
 	if (GetSelectedFilter() != NULL && GetSelectedFilter()->m_eItemType == SDI_UNSHAREDDIRECTORY)
 		m_pSharedFilesCtrl->UpdateWindow();
@@ -1308,6 +1309,7 @@ void CSharedDirsTreeCtrl::RemoveMonitoredSharedDirectory(const CString &strDir)
 	thePrefs.ReplaceMonitoredSharedRootList(m_strliMonitoredRoots);
 	thePrefs.ReplaceMonitorOwnedDirectoryList(m_strliMonitorOwnedDirs);
 	m_bFileSystemRootDirty = true;
+	theApp.WakeSharedDirectoryMonitor();
 	theApp.emuledlg->sharedfileswnd->Reload(true);
 	if (GetSelectedFilter() != NULL && GetSelectedFilter()->m_eItemType == SDI_UNSHAREDDIRECTORY)
 		m_pSharedFilesCtrl->UpdateWindow();

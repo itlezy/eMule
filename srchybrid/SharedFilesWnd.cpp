@@ -329,7 +329,6 @@ void CSharedFilesWnd::Reload(bool bForceTreeReload)
 	m_ctlSharedDirTree.Reload(bForceTreeReload); // force a reload of the tree to update the 'accessible' state of each directory
 	sharedfilesctrl.SetDirectoryFilter(m_ctlSharedDirTree.GetSelectedFilter(), false);
 	theApp.sharedfiles->Reload();
-	theApp.WakeSharedDirectoryMonitor();
 
 	ShowSelectedFilesDetails();
 	ReportStartupSharedFilesReadinessIfReady();
@@ -378,9 +377,16 @@ LRESULT CSharedFilesWnd::OnMonitoredSharedDirectoryUpdate(WPARAM wParam, LPARAM)
 		bStateChanged |= thePrefs.AddSharedDirectoryIfAbsent(strDirectory);
 		bStateChanged |= thePrefs.AddMonitorOwnedDirectoryIfAbsent(strDirectory);
 	}
+	for (POSITION pos = pUpdate->liRemovedDirectories.GetHeadPosition(); pos != NULL;) {
+		const CString strDirectory(pUpdate->liRemovedDirectories.GetNext(pos));
+		bStateChanged |= thePrefs.RemoveMonitorOwnedDirectory(strDirectory);
+		bStateChanged |= thePrefs.RemoveSharedDirectory(strDirectory);
+	}
 
-	if (bStateChanged)
+	if (bStateChanged) {
 		(void)thePrefs.Save();
+		theApp.WakeSharedDirectoryMonitor();
+	}
 
 	if (pUpdate->bForceTreeReload || bStateChanged)
 		Reload(true);

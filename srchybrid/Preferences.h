@@ -698,6 +698,8 @@ public:
 	static void		ReplaceSharedDirectoryList(const CStringList &in);
 	/// Adds a shared directory if no equivalent path is already listed.
 	static bool		AddSharedDirectoryIfAbsent(const CString &dir);
+	/// Removes one shared directory if it is currently listed.
+	static bool		RemoveSharedDirectory(const CString &dir);
 	/// Checks whether an equivalent shared-directory path is already listed.
 	static bool		IsSharedDirectoryListed(const CString &dir);
 	/// Copies the live monitored-root list into a caller-owned snapshot.
@@ -1363,6 +1365,7 @@ public:
 	static bool		WatchClipboard4ED2KLinks()			{ return watchclipboard; }
 	static bool		GetRemoveToBin()					{ return m_bRemove2bin; }
 	static bool		GetFilterServerByIP()				{ return filterserverbyip; }
+	static bool		GetKeepUnavailableFixedSharedDirs()	{ return m_bKeepUnavailableFixedSharedDirs; }
 
 	static bool		GetLog2Disk()						{ return log2disk; }
 	static bool		GetDebug2Disk()						{ return m_bVerbose && debug2disk; }

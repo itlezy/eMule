@@ -97,9 +97,20 @@ struct SMonitoredSharedDirectoryUpdate
 {
 	SMonitoredSharedDirectoryUpdate() = default;
 	CStringList liNewDirectories;
+	CStringList liRemovedDirectories;
 	CStringList liDowngradedRoots;
 	bool bForceTreeReload = false;
 	bool bReloadSharedFiles = false;
+};
+
+/**
+ * @brief One persisted USN checkpoint for an actively monitored shared root.
+ */
+struct SMonitoredSharedRootJournalState
+{
+	CString		strRootPath;
+	ULONGLONG	ullUsnJournalId = 0;
+	LONGLONG	llCheckpointUsn = 0;
 };
 
 class CemuleApp : public CWinApp
@@ -325,7 +336,10 @@ private:
 	void FinalizeStartupProfileTrace();
 	static UINT AFX_CDECL SharedDirectoryMonitorThreadProc(LPVOID pParam);
 	void RunSharedDirectoryMonitorLoop();
-	bool BuildMonitoredSharedDirectoryUpdate(SMonitoredSharedDirectoryUpdate &rUpdate) const;
+	/// Loads the persisted per-root USN checkpoints used for startup monitored-share catch-up.
+	bool LoadSharedDirectoryMonitorJournalState();
+	/// Persists the current per-root USN checkpoints for the next startup monitored-share catch-up.
+	bool SaveSharedDirectoryMonitorJournalState() const;
 	UINT		m_wTimerRes;
 	bool		m_bStandbyOff;
 	bool		m_bStartupProfilingEnabled;
@@ -339,6 +353,7 @@ private:
 	CWinThread	*m_pSharedDirectoryMonitorThread;
 	HANDLE		m_hSharedDirectoryMonitorStopEvent;
 	HANDLE		m_hSharedDirectoryMonitorWakeEvent;
+	std::vector<SMonitoredSharedRootJournalState> m_aSharedDirectoryMonitorJournalStates;
 };
 
 extern CemuleApp theApp;

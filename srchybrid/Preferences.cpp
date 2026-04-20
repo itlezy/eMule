@@ -775,6 +775,12 @@ bool CPreferences::AddSharedDirectoryIfAbsent(const CString &dir)
 	return AddCanonicalDirectoryIfAbsentLocked(shareddir_list, dir);
 }
 
+bool CPreferences::RemoveSharedDirectory(const CString &dir)
+{
+	CSingleLock lock(&m_csSharedDirList, TRUE);
+	return RemoveCanonicalDirectoryLocked(shareddir_list, dir);
+}
+
 bool CPreferences::IsSharedDirectoryListed(const CString &dir)
 {
 	CSingleLock lock(&m_csSharedDirList, TRUE);
