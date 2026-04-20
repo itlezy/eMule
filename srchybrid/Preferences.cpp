@@ -981,7 +981,7 @@ void CPreferences::SetStandardValues()
 	defaultWPM.rcNormalPosition.top = 10;
 	defaultWPM.rcNormalPosition.right = 700;
 	defaultWPM.rcNormalPosition.bottom = 500;
-	defaultWPM.showCmd = 0;
+	defaultWPM.showCmd = SW_SHOWMAXIMIZED;
 	EmuleWindowPlacement = defaultWPM;
 	versioncheckLastAutomatic = 0;
 }
@@ -2224,7 +2224,7 @@ void CPreferences::LoadPreferences()
 	ini.SetSection(_T("eMule"));
 
 	m_bFirstStart = ini.GetString(_T("AppVersion")).IsEmpty();
-	m_bDisableFirstTimeWizard = ini.GetBool(_T("DisableFirstTimeWizard"), false);
+	m_bDisableFirstTimeWizard = ini.GetBool(_T("DisableFirstTimeWizard"), true);
 
 #ifdef _BETA
 	CString strCurrVersion(theApp.m_strCurVersionLong);
