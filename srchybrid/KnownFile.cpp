@@ -1092,7 +1092,7 @@ Packet*	CKnownFile::CreateSrcInfoPacket(const CUpDownClient *forClient, uint8 by
 		// some rare issue seen in crash dumps, hopefully fixed already, but to be sure we double check here
 		// TODO: remove check next version, as it uses resources and shouldn't be necessary
 		if (!theApp.clientlist->IsValidClient(cur_src)) {
-#if defined(_BETA) || defined(_DEVBUILD)
+#if defined(_DEVBUILD)
 			throw new CUserException();
 #endif
 			ASSERT(0);

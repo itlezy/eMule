@@ -469,7 +469,6 @@ bool	CPreferences::watchclipboard;
 bool	CPreferences::filterserverbyip;
 bool	CPreferences::m_bFirstStart;
 bool	CPreferences::m_bDisableFirstTimeWizard;
-bool	CPreferences::m_bBetaNaggingDone;
 bool	CPreferences::m_bCreditSystem;
 bool	CPreferences::log2disk;
 bool	CPreferences::debug2disk;
@@ -1810,11 +1809,6 @@ void CPreferences::SavePreferences()
 	//---
 	ini.WriteString(_T("AppVersion"), theApp.m_strCurVersionLong);
 	ini.WriteBool(_T("DisableFirstTimeWizard"), m_bDisableFirstTimeWizard);
-	//---
-#ifdef _BETA
-	if (m_bBetaNaggingDone)
-		ini.WriteString(_T("BetaVersionNotified"), theApp.m_strCurVersionLong);
-#endif
 #ifdef _DEBUG
 	ini.WriteInt(_T("DebugHeap"), m_iDbgHeap);
 #endif
@@ -2225,11 +2219,6 @@ void CPreferences::LoadPreferences()
 
 	m_bFirstStart = ini.GetString(_T("AppVersion")).IsEmpty();
 	m_bDisableFirstTimeWizard = ini.GetBool(_T("DisableFirstTimeWizard"), true);
-
-#ifdef _BETA
-	CString strCurrVersion(theApp.m_strCurVersionLong);
-	m_bBetaNaggingDone = (ini.GetString(_T("BetaVersionNotified"), _T("")) == strCurrVersion);
-#endif
 
 #ifdef _DEBUG
 	m_iDbgHeap = ini.GetInt(_T("DebugHeap"), 1);

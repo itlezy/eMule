@@ -304,7 +304,7 @@ private:
 	CSharedFilesCtrl *output;
 	CStringList		 m_liSingleSharedFiles;
 	CStringList		 m_liSingleExcludedFiles;
-#if defined(_BETA) || defined(_DEVBUILD)
+#if defined(_DEVBUILD)
 	CString			m_strBetaFileName; //beta test file name
 #endif
 

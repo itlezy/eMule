@@ -1115,7 +1115,7 @@ bool CEMSocket::UseBigSendBuffer()
 				SetSockOpt(SO_SNDBUF, &val, sizeof val);
 				vallen = sizeof val;
 				m_bUseBigSendBuffers = (GetSockOpt(SO_SNDBUF, &val, &vallen) && val >= BIGSIZE);
-#if defined(_DEBUG) || defined(_BETA) || defined(_DEVBUILD)
+#if defined(_DEBUG) || defined(_DEVBUILD)
 				if (m_bUseBigSendBuffers)
 					theApp.QueueDebugLogLine(false, _T("Increased Sendbuffer for uploading socket from %u KiB to %u KiB"), oldval / 1024, val / 1024);
 				else

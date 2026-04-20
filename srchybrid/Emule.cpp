@@ -596,9 +596,6 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 #if defined( _DEBUG)
 	m_strCurVersionLong += _T(" DEBUG");
 #endif
-#ifdef _BETA
-	m_strCurVersionLong += _T(" BETA");
-#endif
 #ifdef _DEVBUILD
 	m_strCurVersionLong += _T(" DEVBUILD");
 #endif
@@ -853,7 +850,7 @@ BOOL CemuleApp::InitInstance()
 	// Install crash dump creation
 	//
 	theCrashDumper.uCreateCrashDump = GetProfileInt(_T("eMule"), _T("CreateCrashDump"), 0);
-#if !defined(_BETA) && !defined(_DEVBUILD)
+#if !defined(_DEVBUILD)
 	if (theCrashDumper.uCreateCrashDump > 0)
 #endif
 		theCrashDumper.Enable(_T("eMule ") + m_strCurVersionLongDbg, true, sConfDir);

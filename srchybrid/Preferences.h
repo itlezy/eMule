@@ -501,7 +501,6 @@ public:
 	static bool		filterserverbyip;
 	static bool		m_bFirstStart;
 	static bool		m_bDisableFirstTimeWizard;
-	static bool		m_bBetaNaggingDone;
 	static bool		m_bCreditSystem;
 
 	static bool		log2disk;
@@ -1581,11 +1580,6 @@ public:
 	static uint16	GetRandomTCPPort();
 	static uint16	GetRandomUDPPort();
 
-	// Beta related
-#ifdef _BETA
-	static bool		ShouldBetaNag()						{ return !m_bBetaNaggingDone; }
-	static void		SetDidBetaNagging()					{ m_bBetaNaggingDone = true; }
-#endif
 protected:
 	static CString	m_strFileCommentsFilePath;
 	static Preferences_Ext_Struct *prefsExt;

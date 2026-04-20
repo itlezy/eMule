@@ -520,8 +520,8 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 {
 	m_Files_map.InitHashTable(1031);
 	m_keywords = new CPublishKeywordList;
-#if defined(_BETA) || defined(_DEVBUILD)
-	// In Beta and development versions we create a test file which is published in order to make
+#if defined(_DEVBUILD)
+	// In development versions we create a test file which is published in order to make
 	// testing easier by allowing easily find files which are published and shared by "new" nodes
 	// Compose the name of the test file
 	m_strBetaFileName.Format(_T("eMule%u.%u%c.%u Beta Testfile "), CemuleApp::m_nVersionMjr
@@ -546,7 +546,7 @@ CSharedFileList::~CSharedFileList()
 	// SLUGFILLER: SafeHash
 	delete m_keywords;
 
-#if defined(_BETA) || defined(_DEVBUILD)
+#if defined(_DEVBUILD)
 	//Delete the test file
 	CString sTest(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
 	sTest += m_strBetaFileName;
@@ -594,7 +594,7 @@ void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 	std::unordered_set<std::wstring> addedDirectoryKeys;
 	const CString &tempDir(thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
 
-#if defined(_BETA) || defined(_DEVBUILD)
+#if defined(_DEVBUILD)
 	//Create the test file (before adding the Incoming directory)
 	CSafeBufferedFile f;
 	if (!LongPathSeams::OpenFile(f, tempDir + m_strBetaFileName, CFile::modeCreate | CFile::modeWrite | CFile::shareDenyWrite))
@@ -603,9 +603,9 @@ void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 		try {
 			// do not translate the content!
 			f.CStdioFile::WriteString(m_strBetaFileName); // guarantees a different hash on different versions
-			f.CStdioFile::WriteString(_T("\nThis file is automatically created by eMule Beta versions to help the developers testing and debugging the new features.")
+			f.CStdioFile::WriteString(_T("\nThis file is automatically created by eMule development versions to help the developers testing and debugging the new features.")
 				_T("\neMule will delete this file when exiting, otherwise you can remove this file at any time.")
-				_T("\nThanks for beta testing eMule :)"));
+				_T("\nThanks for helping test eMule :)"));
 			f.Close();
 		} catch (CFileException *ex) {
 			ASSERT(0);

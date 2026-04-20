@@ -775,20 +775,12 @@ void CemuleDlg::DoVersioncheck(bool manual)
 		struct tm tmTemp;
 		time_t tLast = safe_mktime(last.GetLocalTm(&tmTemp));
 		time_t tNow = safe_mktime(CTime::GetCurrentTime().GetLocalTm(&tmTemp));
-#ifndef _BETA
 		if (difftime(tNow, tLast) / DAY2S(1) < thePrefs.GetUpdateDays())
-#else
-		if ((difftime(tNow, tLast) / DAY2S(1)) < 3)
-#endif
 			return;
 	}
 //Automatic version check for community and official versions use different domain names
 //Hence "cv" prefix was added for community version
-#ifndef _BETA
 	if (WSAAsyncGetHostByName(m_hWnd, UM_VERSIONCHECK_RESPONSE, "cv" "vcdns2.emule-project.org", m_acVCDNSBuffer, sizeof m_acVCDNSBuffer) == 0)
-#else
-	if (WSAAsyncGetHostByName(m_hWnd, UM_VERSIONCHECK_RESPONSE, "cv" "vcdns1.emule-project.org", m_acVCDNSBuffer, sizeof m_acVCDNSBuffer) == 0)
-#endif
 	{
 		AddLogLine(true, GetResString(IDS_NEWVERSIONFAILED));
 	}
@@ -2946,18 +2938,12 @@ LRESULT CemuleDlg::OnVersionCheckResponse(WPARAM, LPARAM lParam)
 				dwResult &= 0x00FFFFFF;
 				if (dwResult > *(uint32*)abyCurVer) {
 					SetActiveWindow();
-#ifndef _BETA
 					Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_NEWVERSIONAVL));
 					ShowNotifier(GetResString(IDS_NEWVERSIONAVLPOPUP), TBN_NEWVERSION);
 					thePrefs.UpdateLastVC();
 					if (!thePrefs.GetNotifierOnNewVersion())
 						if (AfxMessageBox(GetResString(IDS_NEWVERSIONAVL) + GetResString(IDS_VISITVERSIONCHECK), MB_YESNO) == IDYES)
 							BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-#else
-					Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_NEWVERSIONAVLBETA));
-					if (AfxMessageBox(GetResString(IDS_NEWVERSIONAVLBETA) + GetResString(IDS_VISITVERSIONCHECK), MB_OK) == IDOK)
-						BrowserOpen(thePrefs.GetVersionCheckBaseURL() + _T("/beta"), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-#endif
 				} else {
 					thePrefs.UpdateLastVC();
 					AddLogLine(true, GetResString(IDS_NONEWERVERSION));
@@ -3007,13 +2993,6 @@ void CemuleDlg::DestroySplash()
 		theApp.AppendStartupProfileLine(_T("CemuleDlg::DestroySplash"), theApp.GetStartupProfileElapsedUs(ullPhaseStart));
 #endif
 	}
-#ifdef _BETA
-	// only do it once to not be annoying given that the beta phases are expected to last longer these days
-	if (!thePrefs.IsFirstStart() && thePrefs.ShouldBetaNag()) {
-		thePrefs.SetDidBetaNagging();
-		LocMessageBox(IDS_BETANAG, MB_ICONINFORMATION | MB_OK, 0);
-	}
-#endif
 }
 
 BOOL CemuleApp::IsIdleMessage(MSG *pMsg)

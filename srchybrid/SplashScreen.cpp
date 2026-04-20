@@ -96,7 +96,7 @@ void CSplashScreen::OnPaint()
 			dc.FillSolidRect(rc.left + 1, rc.top + 1, rc.Width() - 2, rc.Height() - 2, RGB(255, 255, 255));
 
 			LOGFONT lf = {};
-#if defined(_DEBUG) && (defined(_BETA) || defined(_DEVBUILD))
+#if defined(_DEBUG) && defined(_DEVBUILD)
 			lf.lfHeight = 28;
 #else
 			lf.lfHeight = 30;
