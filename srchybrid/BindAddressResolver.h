@@ -15,6 +15,7 @@ enum EBindAddressResolveResult
 	BARR_Default = 0,
 	BARR_Resolved,
 	BARR_InterfaceNotFound,
+	BARR_InterfaceNameAmbiguous,
 	BARR_InterfaceHasNoAddress,
 	BARR_AddressNotFoundOnInterface,
 	BARR_AddressNotFound
@@ -27,7 +28,7 @@ public:
 	static std::vector<BindableNetworkInterface> GetBindableInterfaces();
 
 	// Resolves the stored interface/address selection to the concrete IPv4 address used at runtime.
-	static EBindAddressResolveResult ResolveBindAddress(const CString &strInterfaceId
+	static EBindAddressResolveResult ResolveBindAddress(const CString &strInterfaceName
 		, const CString &strConfiguredAddress
 		, CString &strResolvedAddress
 		, CString *pstrResolvedInterfaceName = NULL);

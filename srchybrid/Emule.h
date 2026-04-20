@@ -120,6 +120,8 @@ public:
 	// Barry - To find out if app is running or shutting/shut down
 	bool IsRunning() const	{ return m_app_state == APP_STATE_RUNNING || m_app_state == APP_STATE_ASKCLOSE; }
 	bool IsClosing() const	{ return m_app_state == APP_STATE_SHUTTINGDOWN || m_app_state == APP_STATE_DONE; }
+	bool IsStartupBindBlocked() const						{ return m_bStartupBindBlocked; }
+	const CString& GetStartupBindBlockReason() const		{ return m_strStartupBindBlockReason; }
 	bool CanWritePartMetFiles(LPCTSTR pszPath, bool bForceRefresh = false, bool bBypassDiskSpaceFloor = false);
 	void InvalidatePartMetWriteGuardCache(LPCTSTR pszPath = NULL);
 	/**
@@ -269,6 +271,7 @@ public:
 	void		UpdateLargeIconSize();
 	bool		IsLegacyThemedControlsActive() const;
 	bool		IsModernThemedControlsActive() const;
+	void		RefreshStartupBindBlockState();
 
 	bool		GetLangHelpFilePath(CString &strResult);
 	void		SetHelpFilePath(LPCTSTR pszHelpFilePath);
@@ -325,8 +328,10 @@ protected:
 	WSADATA		m_wsaData;
 	uint32		m_dwPublicIP;
 	CString		m_strStartupConfigBaseDir;
+	CString		m_strStartupBindBlockReason;
 	bool		m_bGuardClipboardPrompt;
 	bool		m_bAutoStart;
+	bool		m_bStartupBindBlocked;
 
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnHelp();

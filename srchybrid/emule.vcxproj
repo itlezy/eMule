@@ -284,6 +284,7 @@
     <ClCompile Include="PartFileWriteThread.cpp" />
     <ClCompile Include="PerfLog.cpp" />
     <ClCompile Include="Pinger.cpp" />
+    <ClCompile Include="BindAddressResolver.cpp" />
     <ClCompile Include="PPgConnection.cpp" />
     <ClCompile Include="PPgDebug.cpp" />
     <ClCompile Include="PPgDirectories.cpp" />

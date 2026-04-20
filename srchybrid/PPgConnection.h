@@ -1,4 +1,6 @@
 #pragma once
+#include <vector>
+#include "BindAddressResolver.h"
 #include "PreferenceToolTipHelper.h"
 
 class CPPgConnection : public CPropertyPage
@@ -10,8 +12,17 @@ class CPPgConnection : public CPropertyPage
 		IDD = IDD_PPG_CONNECTION
 	};
 	uint16 m_lastudp;
+	CComboBox m_bindInterface;
+	std::vector<BindableNetworkInterface> m_bindInterfaces;
 	void ChangePorts(uint8 iWhat); //0 - UDP, 1 - TCP, 2 - enable/disable "Test ports"
 	bool ChangeUDP();
+	void LoadBindableInterfaces();
+	void FillBindInterfaceCombo();
+	CString GetBindInterfaceText() const;
+	CString GetBindAddressText() const;
+	void UpdateBindStatus();
+	void UpdateRestartRequiredNotice();
+	void SyncBindInterfaceEditTextFromSelection();
 
 public:
 	CPPgConnection();
@@ -42,4 +53,5 @@ protected:
 	afx_msg void OnStartPortTest();
 	afx_msg void OnEnKillFocusTCP();
 	afx_msg void OnEnKillFocusUDP();
+	afx_msg void OnCbnSelChangeBindInterface();
 };

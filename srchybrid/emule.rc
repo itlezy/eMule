@@ -384,6 +384,14 @@ BEGIN
     GROUPBOX        "Network",IDC_CONNECTION_NETWORK,153,174,74,34
     CONTROL         "Use UPnP to Setup Port Forwarding",IDC_PREF_UPNPONSTART,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,116,208,10
+    LTEXT           "Bind interface",IDC_BIND_INTERFACE_LABEL,11,220,90,8
+    COMBOBOX        IDC_BIND_INTERFACE,11,229,208,120,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Bind address",IDC_BIND_ADDRESS_LABEL,11,247,90,8
+    EDITTEXT        IDC_BIND_ADDRESS,11,256,114,12,ES_AUTOHSCROLL
+    CONTROL         "Keep networking offline if the bind target is unavailable at startup",IDC_STARTUP_BIND_BLOCK,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,273,208,18
+    LTEXT           "",IDC_BIND_STATUS,11,293,370,16
+    LTEXT           "",IDC_BIND_RESTART_NOTE,11,311,370,28
 END
 
 IDD_WIZARD DIALOGEX 0, 0, 257, 223
@@ -4080,6 +4088,8 @@ BEGIN
     IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES "TCP error flooder interval (minutes)"
     IDS_TCP_ERROR_FLOODER_THRESHOLD "TCP error flooder threshold"
     IDS_WEB_BIND_ADDR       "Bind address"
+    IDS_BIND_INTERFACE      "Bind interface"
+    IDS_BIND_ADDRESS        "Bind address"
     IDS_WEB_INVALID_BINDADDR "Invalid web bind address. Leave it empty to listen on all interfaces."
     IDS_UPNPBACKENDMODE     "NAT mapping backend mode"
     IDS_UPNPBACKENDMODE_IGDONLY "UPnP IGD only"

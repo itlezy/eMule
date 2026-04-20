@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
 
+#include "BindAddressResolver.h"
 #include "PartFilePersistenceSeams.h"
 #include "Opcodes.h"
 
@@ -171,8 +172,17 @@ public:
 	static CString	strNick;
 	static uint32	m_maxupload;
 	static uint32	m_maxdownload;
+	static CString	m_strConfiguredBindAddr;
+	static CString	m_strBindInterface;
+	static CString	m_strBindInterfaceName;
+	static CString	m_strActiveConfiguredBindAddr;
+	static CString	m_strActiveBindInterface;
+	static CString	m_strActiveBindInterfaceName;
 	static CStringA m_strBindAddrA;
 	static CStringW m_strBindAddrW;
+	static EBindAddressResolveResult m_eActiveBindAddrResolveResult;
+	static bool		m_bBlockNetworkWhenBindUnavailableAtStartup;
+	static bool		m_bActiveStartupBindBlockEnabled;
 	static uint16	port;
 	static uint16	udpport;
 	static uint16	nServerUDPPort;
@@ -747,11 +757,22 @@ public:
 
 	static LPCSTR	GetBindAddrA()						{ return m_pszBindAddrA; }
 	static LPCWSTR	GetBindAddrW()						{ return m_pszBindAddrW; }
+	static const CString& GetConfiguredBindAddr()		{ return m_strConfiguredBindAddr; }
+	static const CString& GetBindInterface()			{ return m_strBindInterface; }
+	static const CString& GetBindInterfaceName()		{ return m_strBindInterfaceName; }
+	static EBindAddressResolveResult GetBindAddressResolveResult() { return m_eActiveBindAddrResolveResult; }
+	static bool		IsStartupBindBlockEnabled()			{ return m_bBlockNetworkWhenBindUnavailableAtStartup; }
+	static const CString& GetActiveConfiguredBindAddr()	{ return m_strActiveConfiguredBindAddr; }
+	static const CString& GetActiveBindInterface()		{ return m_strActiveBindInterface; }
+	static const CString& GetActiveBindInterfaceName()	{ return m_strActiveBindInterfaceName; }
+	static EBindAddressResolveResult GetActiveBindAddressResolveResult() { return m_eActiveBindAddrResolveResult; }
+	static bool		IsActiveStartupBindBlockEnabled()	{ return m_bActiveStartupBindBlockEnabled; }
 #ifdef UNICODE
 #define GetBindAddr  GetBindAddrW
 #else
 #define GetBindAddr  GetBindAddrA
 #endif // !UNICODE
+	static void		SetBindNetworkSelection(const CString &strInterfaceName, const CString &strAddress);
 
 	static uint16	GetPort()							{ return port; }
 	static uint16	GetUDPPort()						{ return udpport; }

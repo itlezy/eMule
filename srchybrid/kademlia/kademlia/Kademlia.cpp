@@ -88,12 +88,23 @@ CKademlia::CKademlia()
 
 void CKademlia::Start()
 {
+	if (theApp.IsStartupBindBlocked()) {
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	// Create a new default pref object.
 	Start(new CPrefs());
 }
 
 void CKademlia::Start(CPrefs *pPrefs)
 {
+	if (theApp.IsStartupBindBlocked()) {
+		delete pPrefs;
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	try {
 		// If we already have an instance, something is wrong.
 		if (m_pInstance) {

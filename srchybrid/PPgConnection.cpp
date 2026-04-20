@@ -29,6 +29,7 @@
 #include "ClientUDPSocket.h"
 #include "PreferencesDlg.h"
 #include "PPgWebServer.h"
+#include "BindStartupPolicy.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -38,6 +39,50 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+	bool IsValidIPv4Literal(const CString &strAddress)
+	{
+		IN_ADDR addr = {};
+		return InetPton(AF_INET, strAddress, &addr) == 1;
+	}
+
+	CString FormatRuntimeBindTarget(const CString &strInterfaceName, const CString &strBindAddress)
+	{
+		if (strInterfaceName.IsEmpty() && strBindAddress.IsEmpty())
+			return _T("Any interface");
+		if (strInterfaceName.IsEmpty())
+			return strBindAddress;
+		if (strBindAddress.IsEmpty())
+			return strInterfaceName;
+
+		CString strTarget(strInterfaceName);
+		strTarget.AppendFormat(_T(" / %s"), (LPCTSTR)strBindAddress);
+		return strTarget;
+	}
+
+	CString FormatFallbackBindStatus(const CString &strInterfaceName, const CString &strConfiguredAddress, EBindAddressResolveResult eResult)
+	{
+		CString strTarget = BindStartupPolicy::FormatConfiguredBindTarget(strInterfaceName, strInterfaceName, strConfiguredAddress);
+		if (strTarget.IsEmpty())
+			strTarget = _T("Any interface");
+
+		switch (eResult) {
+		case BARR_InterfaceNotFound:
+			return _T("Active P2P bind: Any interface. The saved interface is unavailable: ") + strTarget;
+		case BARR_InterfaceNameAmbiguous:
+			return _T("Active P2P bind: Any interface. The saved interface name is ambiguous: ") + strTarget;
+		case BARR_InterfaceHasNoAddress:
+			return _T("Active P2P bind: Any interface. The saved interface has no usable IPv4 address: ") + strTarget;
+		case BARR_AddressNotFoundOnInterface:
+			return _T("Active P2P bind: Any interface. The saved bind IP is missing on the selected interface: ") + strTarget;
+		case BARR_AddressNotFound:
+			return _T("Active P2P bind: Any interface. The saved bind IP is missing on all live interfaces: ") + strTarget;
+		case BARR_Default:
+		case BARR_Resolved:
+		default:
+			return _T("Active P2P bind: Any interface.");
+		}
+	}
+
 	bool TryGetPortValue(CWnd* pWnd, int nCtrlId, bool bAllowZero, uint16& outPort)
 	{
 		CString strValue;
@@ -92,6 +137,10 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_NETWORK_KADEMLIA, OnSettingsChange)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
+	ON_BN_CLICKED(IDC_STARTUP_BIND_BLOCK, OnSettingsChange)
+	ON_CBN_SELCHANGE(IDC_BIND_INTERFACE, OnCbnSelChangeBindInterface)
+	ON_CBN_EDITCHANGE(IDC_BIND_INTERFACE, OnSettingsChange)
+	ON_EN_CHANGE(IDC_BIND_ADDRESS, OnSettingsChange)
 END_MESSAGE_MAP()
 
 CPPgConnection::CPPgConnection()
@@ -100,9 +149,129 @@ CPPgConnection::CPPgConnection()
 {
 }
 
+void CPPgConnection::LoadBindableInterfaces()
+{
+	m_bindInterfaces = CBindAddressResolver::GetBindableInterfaces();
+}
+
+void CPPgConnection::FillBindInterfaceCombo()
+{
+	if (!m_bindInterface.m_hWnd)
+		return;
+
+	m_bindInterface.ResetContent();
+	for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+		const int iItem = m_bindInterface.AddString(m_bindInterfaces[i].strDisplayName);
+		m_bindInterface.SetItemData(iItem, static_cast<DWORD_PTR>(i));
+	}
+
+	const CString strConfiguredInterface = thePrefs.GetBindInterface();
+	if (strConfiguredInterface.IsEmpty())
+		m_bindInterface.SetWindowText(CString());
+	else {
+		for (size_t i = 0; i < m_bindInterfaces.size(); ++i) {
+			if (!m_bindInterfaces[i].strName.CompareNoCase(strConfiguredInterface)) {
+				m_bindInterface.SetCurSel(static_cast<int>(i));
+				SyncBindInterfaceEditTextFromSelection();
+				return;
+			}
+		}
+		m_bindInterface.SetWindowText(strConfiguredInterface);
+	}
+}
+
+CString CPPgConnection::GetBindInterfaceText() const
+{
+	CString strInterface;
+	m_bindInterface.GetWindowText(strInterface);
+	strInterface.Trim();
+
+	const int iSel = m_bindInterface.GetCurSel();
+	if (iSel != CB_ERR) {
+		const DWORD_PTR dwItemData = m_bindInterface.GetItemData(iSel);
+		if (dwItemData < m_bindInterfaces.size()) {
+			CString strDisplay;
+			m_bindInterface.GetLBText(iSel, strDisplay);
+			strDisplay.Trim();
+			if (!strInterface.CompareNoCase(strDisplay))
+				return m_bindInterfaces[dwItemData].strName;
+		}
+	}
+
+	return strInterface;
+}
+
+CString CPPgConnection::GetBindAddressText() const
+{
+	CString strAddress;
+	GetDlgItemText(IDC_BIND_ADDRESS, strAddress);
+	strAddress.Trim();
+	return strAddress;
+}
+
+void CPPgConnection::UpdateBindStatus()
+{
+	CString strStatus;
+	if (theApp.IsStartupBindBlocked())
+		strStatus = theApp.GetStartupBindBlockReason();
+	else if (thePrefs.GetActiveBindAddressResolveResult() == BARR_Default)
+		strStatus = _T("Active P2P bind: Any interface.");
+	else if (thePrefs.GetActiveBindAddressResolveResult() == BARR_Resolved) {
+		CString strRuntimeBindAddress;
+		if (thePrefs.GetBindAddr() != NULL)
+			strRuntimeBindAddress = thePrefs.GetBindAddr();
+		strStatus = _T("Active P2P bind: ") + FormatRuntimeBindTarget(thePrefs.GetActiveBindInterfaceName(), strRuntimeBindAddress);
+	}
+	else
+		strStatus = FormatFallbackBindStatus(thePrefs.GetActiveBindInterfaceName(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult());
+
+	SetDlgItemText(IDC_BIND_STATUS, strStatus);
+}
+
+void CPPgConnection::UpdateRestartRequiredNotice()
+{
+	CString strRestartNote;
+	const CString strPendingInterface = GetBindInterfaceText();
+	const CString strPendingAddress = GetBindAddressText();
+	const bool bPendingStartupBlock = (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
+	if (thePrefs.GetActiveBindInterface().CompareNoCase(strPendingInterface)
+		|| thePrefs.GetActiveConfiguredBindAddr().CompareNoCase(strPendingAddress)
+		|| thePrefs.IsActiveStartupBindBlockEnabled() != bPendingStartupBlock) {
+		CString strResolvedAddress;
+		CString strResolvedInterfaceName;
+		const EBindAddressResolveResult ePendingResult = CBindAddressResolver::ResolveBindAddress(strPendingInterface
+			, strPendingAddress, strResolvedAddress, &strResolvedInterfaceName);
+		strRestartNote = _T("Restart required: the new bind settings take effect only after restarting eMule.");
+		if (BindStartupPolicy::ShouldBlockSessionNetworking(bPendingStartupBlock, strPendingInterface, strPendingAddress, ePendingResult)) {
+			CString strReason = BindStartupPolicy::FormatStartupBlockReason(strResolvedInterfaceName.IsEmpty() ? strPendingInterface : strResolvedInterfaceName
+				, strPendingInterface, strPendingAddress, ePendingResult);
+			if (!strReason.IsEmpty())
+				strRestartNote.AppendFormat(_T(" %s"), (LPCTSTR)strReason);
+		} else if (ePendingResult != BARR_Default && ePendingResult != BARR_Resolved) {
+			strRestartNote.Append(_T(" Restart will fall back to the default interface because the saved bind target is unresolved."));
+		}
+	}
+
+	SetDlgItemText(IDC_BIND_RESTART_NOTE, strRestartNote);
+	if (CWnd *pRestartNote = GetDlgItem(IDC_BIND_RESTART_NOTE))
+		pRestartNote->ShowWindow(strRestartNote.IsEmpty() ? SW_HIDE : SW_SHOW);
+}
+
+void CPPgConnection::SyncBindInterfaceEditTextFromSelection()
+{
+	const int iSel = m_bindInterface.GetCurSel();
+	if (iSel == CB_ERR)
+		return;
+
+	const DWORD_PTR dwItemData = m_bindInterface.GetItemData(iSel);
+	if (dwItemData < m_bindInterfaces.size())
+		m_bindInterface.SetWindowText(m_bindInterfaces[dwItemData].strName);
+}
+
 void CPPgConnection::DoDataExchange(CDataExchange *pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_BIND_INTERFACE, m_bindInterface);
 }
 
 void CPPgConnection::OnEnKillFocusTCP()
@@ -176,10 +345,15 @@ BOOL CPPgConnection::OnInitDialog()
 
 	static_cast<CEdit*>(GetDlgItem(IDC_PORT))->SetLimitText(5);
 	static_cast<CEdit*>(GetDlgItem(IDC_UDPPORT))->SetLimitText(5);
+	static_cast<CEdit*>(GetDlgItem(IDC_BIND_ADDRESS))->SetLimitText(15);
 
+	LoadBindableInterfaces();
 	LoadSettings();
 	Localize();
 	UpdateToolTips();
+	UpdateBindStatus();
+	UpdateRestartRequiredNotice();
+	SetModified(FALSE);
 
 	ChangePorts(2); //"Test ports" button enable/disable
 
@@ -234,6 +408,15 @@ void CPPgConnection::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_STARTTEST,
 		_T("Launches the external connectivity test for the currently configured TCP and UDP ports.\r\n\r\n")
 		_T("Use it after changing ports, bind settings, or router mapping rules."));
+	m_toolTip.SetTool(this, IDC_BIND_INTERFACE,
+		_T("Optional Windows network interface name used for P2P socket binding.\r\n\r\n")
+		_T("Match is by friendly interface name, not adapter number. Changes take effect after restart."));
+	m_toolTip.SetTool(this, IDC_BIND_ADDRESS,
+		_T("Optional IPv4 address used for P2P socket binding.\r\n\r\n")
+		_T("Leave it empty to use the first IPv4 on the selected interface, or the default routing choice when no interface is selected."));
+	m_toolTip.SetTool(this, IDC_STARTUP_BIND_BLOCK,
+		_T("Keeps P2P networking offline for the session if the configured bind target cannot be resolved at startup.\r\n\r\n")
+		_T("Recommended when you explicitly bind to a named interface and do not want silent fallback."));
 }
 
 void CPPgConnection::LoadSettings()
@@ -264,6 +447,10 @@ void CPPgConnection::LoadSettings()
 
 		CheckDlgButton(IDC_PREF_UPNPONSTART, static_cast<UINT>(thePrefs.IsUPnPEnabled()));
 
+		FillBindInterfaceCombo();
+		SetDlgItemText(IDC_BIND_ADDRESS, thePrefs.GetConfiguredBindAddr());
+		CheckDlgButton(IDC_STARTUP_BIND_BLOCK, static_cast<UINT>(thePrefs.IsStartupBindBlockEnabled()));
+
 		ShowLimitValues();
 	}
 }
@@ -283,6 +470,7 @@ BOOL CPPgConnection::OnApply()
 
 	uint32 lastmaxgu = thePrefs.GetMaxUpload(); // save the values
 	uint32 lastmaxgd = thePrefs.maxGraphDownloadRate;
+	bool bBindRestartRequired = false;
 
 	thePrefs.SetMaxDownload(v);
 	SetDlgItemInt(IDC_DOWNLOAD_CAP, thePrefs.GetMaxDownload(), FALSE);
@@ -316,6 +504,25 @@ BOOL CPPgConnection::OnApply()
 			theApp.clientudp->Rebind();
 		else
 			bRestartApp = true;
+	}
+
+	const CString strBindInterface = GetBindInterfaceText();
+	const CString strBindAddress = GetBindAddressText();
+	if (!strBindAddress.IsEmpty() && !IsValidIPv4Literal(strBindAddress)) {
+		AfxMessageBox(_T("BindAddr must be empty or a valid IPv4 address."), MB_ICONWARNING | MB_OK);
+		GetDlgItem(IDC_BIND_ADDRESS)->SetFocus();
+		static_cast<CEdit*>(GetDlgItem(IDC_BIND_ADDRESS))->SetSel(0, -1);
+		return FALSE;
+	}
+	if (thePrefs.GetBindInterface().CompareNoCase(strBindInterface)
+		|| thePrefs.GetConfiguredBindAddr().CompareNoCase(strBindAddress)) {
+		thePrefs.SetBindNetworkSelection(strBindInterface, strBindAddress);
+		bBindRestartRequired = true;
+	}
+	const bool bStartupBindBlock = (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
+	if (thePrefs.IsStartupBindBlockEnabled() != bStartupBindBlock) {
+		thePrefs.m_bBlockNetworkWhenBindUnavailableAtStartup = bStartupBindBlock;
+		bBindRestartRequired = true;
 	}
 
 	if (thePrefs.m_bshowoverhead != (IsDlgButtonChecked(IDC_SHOWOVERHEAD) != 0)) {
@@ -370,6 +577,9 @@ BOOL CPPgConnection::OnApply()
 
 	SetModified(FALSE);
 	LoadSettings();
+	SetModified(FALSE);
+	UpdateBindStatus();
+	UpdateRestartRequiredNotice();
 
 	theApp.emuledlg->ShowConnectionState();
 
@@ -405,6 +615,9 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));
+		SetDlgItemText(IDC_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE));
+		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS));
+		SetDlgItemText(IDC_STARTUP_BIND_BLOCK, _T("Keep networking offline if the bind target is unavailable at startup"));
 		ShowLimitValues();
 	}
 }
@@ -426,8 +639,16 @@ bool CPPgConnection::CheckDown(uint32 &mUp, uint32 mDown)
 void CPPgConnection::OnSettingsChange()
 {
 	SetModified();
-	if (m_hWnd)
+	if (m_hWnd) {
 		ShowLimitValues();
+		UpdateRestartRequiredNotice();
+	}
+}
+
+void CPPgConnection::OnCbnSelChangeBindInterface()
+{
+	SyncBindInterfaceEditTextFromSelection();
+	OnSettingsChange();
 }
 
 void CPPgConnection::ShowLimitValues()

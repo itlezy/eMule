@@ -2434,6 +2434,8 @@
 #define IDS_WEB_BIND_ADDR               1713
 #define IDS_WEB_INVALID_BINDADDR        1714
 #define IDS_ENABLE_PERFLOG              1715
+#define IDS_BIND_INTERFACE              1728
+#define IDS_BIND_ADDRESS                1729
 #define IDS_SHAREDIRMONITOR             1724
 #define IDS_SHARESTATE_SHARED           1725
 #define IDS_SHARESTATE_RECURSIVE        1726
@@ -2451,6 +2453,13 @@
 #define IDC_SHUTDOWN_DETAIL             3056
 #define IDC_WSAPIKEY                    3057
 #define IDC_WSAPIKEY_LBL                3058
+#define IDC_BIND_INTERFACE_LABEL        3059
+#define IDC_BIND_INTERFACE              3060
+#define IDC_BIND_ADDRESS_LABEL          3061
+#define IDC_BIND_ADDRESS                3062
+#define IDC_STARTUP_BIND_BLOCK          3063
+#define IDC_BIND_STATUS                 3064
+#define IDC_BIND_RESTART_NOTE           3065
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2459,7 +2468,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3059
-#define _APS_NEXT_SYMED_VALUE           1728
+#define _APS_NEXT_CONTROL_VALUE         3066
+#define _APS_NEXT_SYMED_VALUE           1730
 #endif
 #endif

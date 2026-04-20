@@ -64,6 +64,91 @@ constexpr size_t kWebApiKeyBytes = 16;
 constexpr UINT kMaxServerKeepAliveTimeoutMinutes = 1440;
 constexpr UINT kMaxFileBufferTimeLimitSeconds = 86400;
 
+/**
+ * @brief Updates the live runtime bind-address cache used by sockets for this session.
+ */
+static void SetResolvedBindAddress(const CString &strResolvedAddress
+	, CStringW &rstrBindAddrW
+	, LPCWSTR &rpszBindAddrW
+	, CStringA &rstrBindAddrA
+	, LPCSTR &rpszBindAddrA)
+{
+	rstrBindAddrW = strResolvedAddress;
+	rpszBindAddrW = rstrBindAddrW.IsEmpty() ? NULL : (LPCWSTR)rstrBindAddrW;
+	rstrBindAddrA = rstrBindAddrW;
+	rpszBindAddrA = rstrBindAddrA.IsEmpty() ? NULL : (LPCSTR)rstrBindAddrA;
+}
+
+/**
+ * @brief Logs one resolved or unresolved P2P bind selection.
+ */
+static void LogBindAddressResolution(LPCTSTR pszBindingName
+	, const CString &strInterfaceName
+	, const CString &strConfiguredAddress
+	, EBindAddressResolveResult eResult
+	, const CString &strResolvedAddress)
+{
+	switch (eResult) {
+	case BARR_Default:
+		if (strInterfaceName.IsEmpty() && strConfiguredAddress.IsEmpty())
+			DebugLog(_T("%s binding uses the default interface selection"), pszBindingName);
+		break;
+	case BARR_Resolved:
+		if (!strResolvedAddress.IsEmpty())
+			DebugLog(_T("%s binding resolved to %s"), pszBindingName, (LPCTSTR)strResolvedAddress);
+		break;
+	case BARR_InterfaceNotFound:
+		DebugLogWarning(_T("%s binding interface not found; using the default interface selection instead (%s)"), pszBindingName
+			, (LPCTSTR)strInterfaceName);
+		break;
+	case BARR_InterfaceNameAmbiguous:
+		DebugLogWarning(_T("%s binding interface name is ambiguous across multiple live adapters; using the default interface selection instead (%s)"), pszBindingName
+			, (LPCTSTR)strInterfaceName);
+		break;
+	case BARR_InterfaceHasNoAddress:
+		DebugLogWarning(_T("%s binding interface has no usable IPv4 address; using the default interface selection instead (%s)"), pszBindingName
+			, (LPCTSTR)strInterfaceName);
+		break;
+	case BARR_AddressNotFoundOnInterface:
+		DebugLogWarning(_T("%s binding address %s was not found on interface %s; using the default interface selection instead"), pszBindingName
+			, (LPCTSTR)strConfiguredAddress
+			, (LPCTSTR)strInterfaceName);
+		break;
+	case BARR_AddressNotFound:
+		DebugLogWarning(_T("%s binding address %s is no longer present on any live interface; using the default interface selection instead"), pszBindingName
+			, (LPCTSTR)strConfiguredAddress);
+		break;
+	default:
+		ASSERT(0);
+	}
+}
+
+/**
+ * @brief Resolves the configured bind selection into the concrete runtime IPv4 for this session.
+ */
+static EBindAddressResolveResult ResolveConfiguredBinding(LPCTSTR pszBindingName
+	, const CString &strInterfaceName
+	, CString &rstrResolvedInterfaceName
+	, const CString &strConfiguredAddress
+	, CStringW &rstrBindAddrW
+	, LPCWSTR &rpszBindAddrW
+	, CStringA &rstrBindAddrA
+	, LPCSTR &rpszBindAddrA)
+{
+	CString strResolvedAddress;
+	CString strLiveInterfaceName;
+	const EBindAddressResolveResult eResult = CBindAddressResolver::ResolveBindAddress(strInterfaceName
+		, strConfiguredAddress, strResolvedAddress, &strLiveInterfaceName);
+
+	rstrResolvedInterfaceName = !strLiveInterfaceName.IsEmpty() ? strLiveInterfaceName : strInterfaceName;
+	if (eResult != BARR_Resolved)
+		strResolvedAddress.Empty();
+
+	SetResolvedBindAddress(strResolvedAddress, rstrBindAddrW, rpszBindAddrW, rstrBindAddrA, rpszBindAddrA);
+	LogBindAddressResolution(pszBindingName, rstrResolvedInterfaceName, strConfiguredAddress, eResult, strResolvedAddress);
+	return eResult;
+}
+
 bool LoadPathListFromFile(const CString &rstrFullPath, CStringList &rOutList)
 {
 	rOutList.RemoveAll();
@@ -343,10 +428,19 @@ int		CPreferences::m_nCurrentUserDirMode = -1;
 int		CPreferences::m_iDbgHeap;
 uint32	CPreferences::m_maxupload;
 uint32	CPreferences::m_maxdownload;
+CString	CPreferences::m_strConfiguredBindAddr;
+CString	CPreferences::m_strBindInterface;
+CString	CPreferences::m_strBindInterfaceName;
+CString	CPreferences::m_strActiveConfiguredBindAddr;
+CString	CPreferences::m_strActiveBindInterface;
+CString	CPreferences::m_strActiveBindInterfaceName;
 LPCSTR	CPreferences::m_pszBindAddrA;
 CStringA CPreferences::m_strBindAddrA;
 LPCWSTR	CPreferences::m_pszBindAddrW;
 CStringW CPreferences::m_strBindAddrW;
+EBindAddressResolveResult CPreferences::m_eActiveBindAddrResolveResult = BARR_Default;
+bool	CPreferences::m_bBlockNetworkWhenBindUnavailableAtStartup = false;
+bool	CPreferences::m_bActiveStartupBindBlockEnabled = false;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
 uint16	CPreferences::nServerUDPPort;
@@ -2067,6 +2161,9 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("Port"), port);
 	ini.WriteInt(_T("UDPPort"), udpport);
 	ini.WriteInt(_T("ServerUDPPort"), nServerUDPPort);
+	ini.WriteString(_T("BindAddr"), m_strConfiguredBindAddr);
+	ini.WriteString(_T("BindInterface"), m_strBindInterface);
+	ini.WriteBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), m_bBlockNetworkWhenBindUnavailableAtStartup);
 	ini.WriteInt(_T("MaxSourcesPerFile"), maxsourceperfile);
 	ini.WriteWORD(_T("Language"), m_wLanguageID);
 	ini.WriteInt(_T("SeeShare"), m_iSeeShares);
@@ -2507,10 +2604,22 @@ void CPreferences::LoadPreferences()
 	m_uTCPErrorFlooderIntervalMinutes = NormalizeBoundedPreference(ini.GetInt(_T("TCPErrorFlooderIntervalMinutes"), static_cast<int>(GetDefaultTCPErrorFlooderIntervalMinutes())), GetDefaultTCPErrorFlooderIntervalMinutes(), GetMinTCPErrorFlooderIntervalMinutes(), GetMaxTCPErrorFlooderIntervalMinutes());
 	m_uTCPErrorFlooderThreshold = NormalizeBoundedPreference(ini.GetInt(_T("TCPErrorFlooderThreshold"), static_cast<int>(GetDefaultTCPErrorFlooderThreshold())), GetDefaultTCPErrorFlooderThreshold(), GetMinTCPErrorFlooderThreshold(), GetMaxTCPErrorFlooderThreshold());
 
-	m_strBindAddrW = ini.GetString(_T("BindAddr")).Trim();
-	m_pszBindAddrW = m_strBindAddrW.IsEmpty() ? NULL : (LPCWSTR)m_strBindAddrW;
-	m_strBindAddrA = m_strBindAddrW;
-	m_pszBindAddrA = m_strBindAddrA.IsEmpty() ? NULL : (LPCSTR)m_strBindAddrA;
+	m_strConfiguredBindAddr = ini.GetString(_T("BindAddr")).Trim();
+	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
+	m_strBindInterfaceName = m_strBindInterface;
+	m_bBlockNetworkWhenBindUnavailableAtStartup = ini.GetBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), !m_strBindInterface.IsEmpty());
+	m_strActiveConfiguredBindAddr = m_strConfiguredBindAddr;
+	m_strActiveBindInterface = m_strBindInterface;
+	m_strActiveBindInterfaceName = m_strBindInterfaceName;
+	m_bActiveStartupBindBlockEnabled = m_bBlockNetworkWhenBindUnavailableAtStartup;
+	m_eActiveBindAddrResolveResult = ResolveConfiguredBinding(_T("P2P")
+		, m_strActiveBindInterface
+		, m_strActiveBindInterfaceName
+		, m_strActiveConfiguredBindAddr
+		, m_strBindAddrW
+		, m_pszBindAddrW
+		, m_strBindAddrA
+		, m_pszBindAddrA);
 
 	port = NormalizePortPreferenceValue(ini.GetInt(_T("Port"), 0), 0, false);
 	if (port == 0)
@@ -3197,6 +3306,15 @@ bool CPreferences::IsShareableDirectory(const CString &rstrDir)
 			return false;
 
 	return true;
+}
+
+void CPreferences::SetBindNetworkSelection(const CString &strInterfaceName, const CString &strAddress)
+{
+	m_strBindInterface = strInterfaceName;
+	m_strBindInterface.Trim();
+	m_strBindInterfaceName = m_strBindInterface;
+	m_strConfiguredBindAddr = strAddress;
+	m_strConfiguredBindAddr.Trim();
 }
 
 void CPreferences::UpdateLastVC()

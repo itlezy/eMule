@@ -60,6 +60,8 @@ namespace BindStartupPolicy
 		switch (eResult) {
 		case BARR_InterfaceNotFound:
 			return _T("Networking disabled for this session because the selected bind interface is no longer available: ") + strTarget;
+		case BARR_InterfaceNameAmbiguous:
+			return _T("Networking disabled for this session because the selected bind interface name matches multiple live adapters: ") + strTarget;
 		case BARR_InterfaceHasNoAddress:
 			return _T("Networking disabled for this session because the selected bind interface has no usable IPv4 address: ") + strTarget;
 		case BARR_AddressNotFoundOnInterface:

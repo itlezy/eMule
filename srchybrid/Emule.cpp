@@ -72,6 +72,7 @@
 #include "PartFilePersistenceSeams.h"
 #include "SharedDirectoryOps.h"
 #include "UserMsgs.h"
+#include "BindStartupPolicy.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -787,8 +788,10 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_sizBigSystemIcon(32, 32)
 	, m_strDefaultFontFaceName(_T("MS Shell Dlg 2"))
 	, m_dwPublicIP()
+	, m_strStartupBindBlockReason()
 	, m_bGuardClipboardPrompt()
 	, m_bAutoStart()
+	, m_bStartupBindBlocked()
 	, m_uDroppedDebugLogEntries()
 	, m_uDroppedLogEntries()
 	, m_bStandbyOff()
@@ -1135,6 +1138,7 @@ BOOL CemuleApp::InitInstance()
 
 	// create & initialize all the important stuff
 	thePrefs.Init();
+	RefreshStartupBindBlockState();
 	theStats.Init();
 
 	if (thePrefs.GetRTLWindowsLayout())
@@ -1755,6 +1759,14 @@ bool CemuleApp::InitializeStartupConfigBaseDirOverride()
 
 	m_strStartupConfigBaseDir = strStartupConfigBaseDir;
 	return true;
+}
+
+void CemuleApp::RefreshStartupBindBlockState()
+{
+	m_bStartupBindBlocked = BindStartupPolicy::ShouldBlockSessionNetworking(thePrefs.IsActiveStartupBindBlockEnabled()
+		, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult());
+	m_strStartupBindBlockReason = BindStartupPolicy::FormatStartupBlockReason(thePrefs.GetActiveBindInterfaceName()
+		, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult());
 }
 
 #ifdef _DEBUG

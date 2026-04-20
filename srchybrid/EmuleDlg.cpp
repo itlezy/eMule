@@ -739,7 +739,7 @@ BOOL CemuleDlg::OnInitDialog()
 		AddDebugLogLine(false, _T("Queued startup stage sequencer message."));
 
 	// Start UPnP port forwarding
-	if (thePrefs.IsUPnPEnabled())
+	if (thePrefs.IsUPnPEnabled() && !theApp.IsStartupBindBlocked())
 		StartUPnP();
 
 	if (thePrefs.IsFirstStart() && !thePrefs.IsFirstTimeWizardDisabled()) {
@@ -847,20 +847,24 @@ void CemuleDlg::OnStartupTimer() noexcept
 				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: downloadqueue->Init"), theApp.GetStartupProfileElapsedUs(ullDownloadInitStart));
 				const ULONGLONG ullSocketInitStart = theApp.GetStartupProfileTimestampUs();
 #endif
-				if (!theApp.listensocket->StartListening()) {
-					CString strError;
-					strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetPort());
-					LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
-					if (thePrefs.GetNotifierOnImportantError())
-						theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
-					bError = true;
-				}
-				if (!theApp.clientudp->Create()) {
-					CString strError;
-					strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetUDPPort());
-					LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
-					if (thePrefs.GetNotifierOnImportantError())
-						theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
+				if (theApp.IsStartupBindBlocked()) {
+					LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+				} else {
+					if (!theApp.listensocket->StartListening()) {
+						CString strError;
+						strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetPort());
+						LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
+						if (thePrefs.GetNotifierOnImportantError())
+							theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
+						bError = true;
+					}
+					if (!theApp.clientudp->Create()) {
+						CString strError;
+						strError.Format(GetResString(IDS_MAIN_SOCKETERROR), thePrefs.GetUDPPort());
+						LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strError);
+						if (thePrefs.GetNotifierOnImportantError())
+							theApp.emuledlg->ShowNotifier(strError, TBN_IMPORTANTEVENT);
+					}
 				}
 #if EMULE_COMPILED_STARTUP_PROFILING
 				theApp.AppendStartupProfileLine(_T("StartupTimer stage 4: socket startup"), theApp.GetStartupProfileElapsedUs(ullSocketInitStart));
@@ -870,12 +874,12 @@ void CemuleDlg::OnStartupTimer() noexcept
 					AddLogLine(true, GetResString(IDS_MAIN_READY), (LPCTSTR)theApp.m_strCurVersionLong);
 
 				theApp.m_app_state = APP_STATE_RUNNING; //initialization completed
-				toolbar->EnableButton(TBBTN_CONNECT, TRUE);
-				m_SysMenuOptions.EnableMenuItem(MP_CONNECT, MF_ENABLED);
-				serverwnd->GetDlgItem(IDC_ED2KCONNECT)->EnableWindow();
+				toolbar->EnableButton(TBBTN_CONNECT, !theApp.IsStartupBindBlocked());
+				m_SysMenuOptions.EnableMenuItem(MP_CONNECT, theApp.IsStartupBindBlocked() ? MF_GRAYED : MF_ENABLED);
+				serverwnd->GetDlgItem(IDC_ED2KCONNECT)->EnableWindow(!theApp.IsStartupBindBlocked());
 				kademliawnd->UpdateControlsState(); //application state change is not tracked - force update
 
-				if (thePrefs.DoAutoConnect())
+				if (!theApp.IsStartupBindBlocked() && thePrefs.DoAutoConnect())
 					PostMessage(WM_COMMAND, MP_CONNECT, 0);
 
 #ifdef HAVE_WIN7_SDK_H
@@ -2128,6 +2132,11 @@ void CemuleDlg::AddSpeedSelectorMenus(CMenu *addToMenu)
 
 void CemuleDlg::StartConnection()
 {
+	if (theApp.IsStartupBindBlocked()) {
+		LogWarning(LOG_STATUSBAR, _T("%s"), (LPCTSTR)theApp.GetStartupBindBlockReason());
+		return;
+	}
+
 	if ((!theApp.serverconnect->IsConnecting() && !theApp.serverconnect->IsConnected()) || !Kademlia::CKademlia::IsRunning()) {
 		// UPnP is still trying to open the ports. In order to not get a LowID by connecting to the servers / kad before
 		// the ports are opened we delay the connection until UPnP gets a result or the timeout is reached
@@ -3695,6 +3704,9 @@ LRESULT CemuleDlg::OnPowerBroadcast(WPARAM wParam, LPARAM lParam)
 
 void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPort)
 {
+	if (theApp.IsStartupBindBlocked())
+		return;
+
 	if (theApp.m_pUPnPFinder != NULL && (m_hUPnPTimeOutTimer == 0 || !bReset)) {
 		if (bReset) {
 			LPCTSTR pszBackendMode = _T("Automatic");
@@ -3736,6 +3748,8 @@ void CemuleDlg::StartUPnP(bool bReset, uint16 nForceTCPPort, uint16 nForceUDPPor
 
 void CemuleDlg::RefreshUPnP(bool bRequestAnswer)
 {
+	if (theApp.IsStartupBindBlocked())
+		return;
 	if (!thePrefs.IsUPnPEnabled())
 		return;
 	if (theApp.m_pUPnPFinder != NULL && m_hUPnPTimeOutTimer == 0) {
