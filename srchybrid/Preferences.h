@@ -493,7 +493,7 @@ public:
 	static bool		m_bMoviePreviewBackup;
 	static int		m_iPreviewSmallBlocks;
 	static bool		m_bPreviewCopiedArchives;
-	static int		m_iInspectAllFileTypes;
+	static bool		m_bInspectAllFileTypes;
 	static bool		m_bPreviewOnIconDblClk;
 	static bool		m_bCheckFileOpen;
 	static bool		indicateratings;
@@ -1233,7 +1233,7 @@ public:
 	static bool		IsMoviePreviewBackup()				{ return m_bMoviePreviewBackup; }
 	static int		GetPreviewSmallBlocks()				{ return m_iPreviewSmallBlocks; }
 	static bool		GetPreviewCopiedArchives()			{ return m_bPreviewCopiedArchives; }
-	static int		GetInspectAllFileTypes()			{ return m_iInspectAllFileTypes; }
+	static bool		GetInspectAllFileTypes()			{ return m_bInspectAllFileTypes; }
 	static int		GetExtractMetaData()				{ return m_iExtractMetaData; }
 	static bool		GetAdjustNTFSDaylightFileTime()		{ return m_bAdjustNTFSDaylightFileTime; }
 	static bool		GetRearrangeKadSearchKeywords()		{ return m_bRearrangeKadSearchKeywords; }

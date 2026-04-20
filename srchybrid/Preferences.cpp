@@ -461,7 +461,7 @@ CString CPreferences::m_strVideoPlayerArgs;
 bool	CPreferences::m_bMoviePreviewBackup;
 int		CPreferences::m_iPreviewSmallBlocks;
 bool	CPreferences::m_bPreviewCopiedArchives;
-int		CPreferences::m_iInspectAllFileTypes;
+bool	CPreferences::m_bInspectAllFileTypes;
 bool	CPreferences::m_bPreviewOnIconDblClk;
 bool	CPreferences::m_bCheckFileOpen;
 bool	CPreferences::indicateratings;
@@ -2047,7 +2047,7 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("FileBufferTimeLimit"), static_cast<int>(m_uFileBufferTimeLimit / SEC2MS(1)));
 	ini.WriteString(_T("DateTimeFormat4Lists"), m_strDateTimeFormat4Lists);
 	ini.WriteBool(_T("PreviewCopiedArchives"), m_bPreviewCopiedArchives);
-	ini.WriteInt(_T("InspectAllFileTypes"), m_iInspectAllFileTypes);
+	ini.WriteBool(_T("InspectAllFileTypes"), m_bInspectAllFileTypes);
 	ini.WriteBool(_T("PreviewOnIconDblClk"), m_bPreviewOnIconDblClk);
 	ini.WriteBool(_T("ShowActiveDownloadsBold"), m_bShowActiveDownloadsBold);
 	ini.WriteBool(_T("UseSystemFontForMainControls"), m_bUseSystemFontForMainControls);
@@ -2519,7 +2519,7 @@ void CPreferences::LoadPreferences()
 	m_bMoviePreviewBackup = ini.GetBool(_T("VideoPreviewBackupped"), true);
 	m_iPreviewSmallBlocks = ini.GetInt(_T("PreviewSmallBlocks"), 0);
 	m_bPreviewCopiedArchives = ini.GetBool(_T("PreviewCopiedArchives"), true);
-	m_iInspectAllFileTypes = ini.GetInt(_T("InspectAllFileTypes"), 0);
+	m_bInspectAllFileTypes = ini.GetBool(_T("InspectAllFileTypes"), false);
 	m_bAllocFull = ini.GetBool(_T("AllocateFullFile"), 0);
 	m_bAutomaticArcPreviewStart = ini.GetBool(_T("AutoArchivePreviewStart"), true);
 	m_bShowSharedFilesDetails = ini.GetBool(_T("ShowSharedFilesDetails"), true);

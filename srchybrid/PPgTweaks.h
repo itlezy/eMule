@@ -83,6 +83,8 @@ protected:
 	HTREEITEM m_htiLogSecureIdent;
 	HTREEITEM m_htiLogUlDlEvents;
 	HTREEITEM m_htiConnectionTimeout;
+	HTREEITEM m_htiGeneralAdvanced;
+	HTREEITEM m_htiLoggingGroup;
 	HTREEITEM m_htiMaxCon5Sec;
 	HTREEITEM m_htiMaxHalfOpen;
 	HTREEITEM m_htiDateTimeFormat4Lists;
@@ -120,6 +122,7 @@ protected:
 	HTREEITEM m_htiDownloadTimeout;
 	HTREEITEM m_htiRestoreLastLogPane;
 	HTREEITEM m_htiRestoreLastMainWndDlg;
+	HTREEITEM m_htiStoragePersistence;
 	HTREEITEM m_htiMinFreeDiskSpaceConfig;
 	HTREEITEM m_htiMinFreeDiskSpaceTemp;
 	HTREEITEM m_htiMinFreeDiskSpaceIncoming;
@@ -157,7 +160,7 @@ protected:
 	UINT m_uServerKeepAliveTimeout;
 	int m_iCommitFiles;
 	int m_iExtractMetaData;
-	int m_iInspectAllFileTypes;
+	bool m_bInspectAllFileTypes;
 	int m_iLogLevel;
 	int m_iMaxConnPerFive;
 	int m_iMaxHalfOpen;

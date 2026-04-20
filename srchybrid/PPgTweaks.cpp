@@ -187,6 +187,41 @@ namespace
 		return label;
 	}
 
+	static CString GetGeneralAdvancedLabel()
+	{
+		return _T("General Advanced");
+	}
+
+	static CString GetFileBehaviorLabel()
+	{
+		return _T("File Behavior");
+	}
+
+	static CString GetStoragePersistenceLabel()
+	{
+		return _T("Storage & Persistence");
+	}
+
+	static CString GetStartupTweaksLabel()
+	{
+		return _T("Startup");
+	}
+
+	static CString GetDisplayTweaksLabel()
+	{
+		return _T("Display & Indicators");
+	}
+
+	static CString GetSecurityTweaksLabel()
+	{
+		return _T("Security & Filtering");
+	}
+
+	static CString GetLoggingTweaksLabel()
+	{
+		return _T("Logging & Diagnostics");
+	}
+
 	static CString GetConfigDiskSpaceLabel()
 	{
 		CString label(_T("Config Drive"));
@@ -209,6 +244,26 @@ namespace
 		label.Append(_T(": "));
 		label.Append(GetResString(IDS_MINFREEDISKSPACE));
 		return label;
+	}
+
+	static CString GetCommitPolicyLabel()
+	{
+		return _T("Flush File Data To Disk");
+	}
+
+	static CString GetCommitNeverLabel()
+	{
+		return _T("Never force flush");
+	}
+
+	static CString GetCommitOnShutdownLabel()
+	{
+		return _T("Only on shutdown");
+	}
+
+	static CString GetCommitAlwaysLabel()
+	{
+		return _T("On every save");
 	}
 }
 
@@ -284,6 +339,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiLogSecureIdent()
 	, m_htiLogUlDlEvents()
 	, m_htiConnectionTimeout()
+	, m_htiGeneralAdvanced()
+	, m_htiLoggingGroup()
 	, m_htiMaxCon5Sec()
 	, m_htiMaxHalfOpen()
 	, m_htiDateTimeFormat4Lists()
@@ -321,6 +378,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiDownloadTimeout()
 	, m_htiRestoreLastLogPane()
 	, m_htiRestoreLastMainWndDlg()
+	, m_htiStoragePersistence()
 	, m_htiMinFreeDiskSpaceConfig()
 	, m_htiMinFreeDiskSpaceTemp()
 	, m_htiMinFreeDiskSpaceIncoming()
@@ -357,7 +415,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_uServerKeepAliveTimeout()
 	, m_iCommitFiles()
 	, m_iExtractMetaData()
-	, m_iInspectAllFileTypes()
+	, m_bInspectAllFileTypes()
 	, m_iLogLevel()
 	, m_iMaxConnPerFive()
 	, m_iMaxHalfOpen()
@@ -522,59 +580,69 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiBBSessionTimeLimit, RUNTIME_CLASS(CNumTreeOptionsEdit));
 
 		/////////////////////////////////////////////////////////////////////////////
-		// Miscellaneous group
+		// General advanced group
 		//
-		m_htiAutoTakeEd2kLinks = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_AUTOTAKEED2KLINKS), TVI_ROOT, m_bAutoTakeEd2kLinks);
-		m_htiCreditSystem = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USECREDITSYSTEM), TVI_ROOT, m_bCreditSystem);
-		m_htiFilterLANIPs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PW_FILTER), TVI_ROOT, m_bFilterLANIPs);
-		m_htiExtControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWEXTSETTINGS), TVI_ROOT, m_bExtControls);
-		m_htiA4AFSaveCpu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_A4AF_SAVE_CPU), TVI_ROOT, m_bA4AFSaveCpu); // ZZ:DownloadManager
-		m_htiAutoArch = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DISABLE_AUTOARCHPREV), TVI_ROOT, m_bAutoArchDisable);
-		m_htiYourHostname = m_ctrlTreeOptions.InsertItem(GetResString(IDS_YOURHOSTNAME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
+		m_htiGeneralAdvanced = m_ctrlTreeOptions.InsertGroup(GetGeneralAdvancedLabel(), iImgConnection, TVI_ROOT);
+		m_htiAutoTakeEd2kLinks = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_AUTOTAKEED2KLINKS), m_htiGeneralAdvanced, m_bAutoTakeEd2kLinks);
+		m_htiCreditSystem = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USECREDITSYSTEM), m_htiGeneralAdvanced, m_bCreditSystem);
+		m_htiExtControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWEXTSETTINGS), m_htiGeneralAdvanced, m_bExtControls);
+		m_htiA4AFSaveCpu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_A4AF_SAVE_CPU), m_htiGeneralAdvanced, m_bA4AFSaveCpu); // ZZ:DownloadManager
+		m_htiAutoArch = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DISABLE_AUTOARCHPREV), m_htiGeneralAdvanced, m_bAutoArchDisable);
+		m_htiYourHostname = m_ctrlTreeOptions.InsertItem(GetResString(IDS_YOURHOSTNAME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiGeneralAdvanced);
 		m_ctrlTreeOptions.AddEditBox(m_htiYourHostname, RUNTIME_CLASS(CTreeOptionsEditEx));
 
 		/////////////////////////////////////////////////////////////////////////////
-		// File related group
+		// File behavior group
 		//
-		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), TVI_ROOT, m_bSparsePartFiles);
-		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), TVI_ROOT, m_bFullAlloc);
-		m_htiMinFreeDiskSpaceConfig = m_ctrlTreeOptions.InsertItem(GetConfigDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
-		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceConfig, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiMinFreeDiskSpaceTemp = m_ctrlTreeOptions.InsertItem(GetTempDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
-		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceTemp, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiMinFreeDiskSpaceIncoming = m_ctrlTreeOptions.InsertItem(GetIncomingDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, TVI_ROOT);
-		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceIncoming, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiCommit = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_COMMITFILES), iImgBackup, TVI_ROOT);
-		m_htiCommitNever = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_NEVER), m_htiCommit, m_iCommitFiles == 0);
-		m_htiCommitOnShutdown = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_ONSHUTDOWN), m_htiCommit, m_iCommitFiles == 1);
-		m_htiCommitAlways = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_ALWAYS), m_htiCommit, m_iCommitFiles == 2);
-		m_htiExtractMetaData = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_EXTRACT_META_DATA), iImgMetaData, TVI_ROOT);
+		m_htiHiddenFile = m_ctrlTreeOptions.InsertGroup(GetFileBehaviorLabel(), iImgMetaData, TVI_ROOT);
+		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), m_htiHiddenFile, m_bSparsePartFiles);
+		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), m_htiHiddenFile, m_bFullAlloc);
+		m_htiExtractMetaData = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_EXTRACT_META_DATA), iImgMetaData, m_htiHiddenFile);
 		m_htiExtractMetaDataNever = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_NEVER), m_htiExtractMetaData, m_iExtractMetaData == 0);
 		m_htiExtractMetaDataID3Lib = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_META_DATA_ID3LIB), m_htiExtractMetaData, m_iExtractMetaData == 1);
 		//m_htiExtractMetaDataMediaDet = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_META_DATA_MEDIADET), m_htiExtractMetaData, m_iExtractMetaData == 2);
-		m_htiHiddenStartup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_STARTUP), iImgConnection, TVI_ROOT);
-		m_htiRestoreLastMainWndDlg = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTMAINWNDDLG), m_htiHiddenStartup, m_bRestoreLastMainWndDlg);
-		m_htiRestoreLastLogPane = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTLOGPANE), m_htiHiddenStartup, m_bRestoreLastLogPane);
-
-		m_htiHiddenFile = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_FILE), iImgBackup, TVI_ROOT);
-		m_htiFileBufferTimeLimit = m_ctrlTreeOptions.InsertItem(GetResString(IDS_FILEBUFFERTIMELIMIT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
-		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferTimeLimit, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiFileBufferSize = m_ctrlTreeOptions.InsertItem(GetFileBufferSizeLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
-		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
-		m_htiQueueSize = m_ctrlTreeOptions.InsertItem(GetResString(IDS_QUEUESIZE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
-		m_ctrlTreeOptions.AddEditBox(m_htiQueueSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiDateTimeFormat4Lists = m_ctrlTreeOptions.InsertItem(GetResString(IDS_DATETIMEFORMAT4LISTS), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
 		m_ctrlTreeOptions.AddEditBox(m_htiDateTimeFormat4Lists, RUNTIME_CLASS(CTreeOptionsEditEx));
 		m_htiPreviewCopiedArchives = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWCOPIEDARCHIVES), m_htiHiddenFile, m_bPreviewCopiedArchives);
-		m_htiInspectAllFileTypes = m_ctrlTreeOptions.InsertItem(GetResString(IDS_INSPECTALLFILETYPES), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenFile);
-		m_ctrlTreeOptions.AddEditBox(m_htiInspectAllFileTypes, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiInspectAllFileTypes = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_INSPECTALLFILETYPES), m_htiHiddenFile, m_bInspectAllFileTypes);
 		m_htiPreviewOnIconDblClk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PREVIEWONICONDBLCLK), m_htiHiddenFile, m_bPreviewOnIconDblClk);
 		m_htiExtraPreviewWithMenu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_EXTRAPREVIEWWITHMENU), m_htiHiddenFile, m_bExtraPreviewWithMenu);
 		m_htiKeepUnavailableFixedSharedDirs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS), m_htiHiddenFile, m_bKeepUnavailableFixedSharedDirs);
 		m_htiPartiallyPurgeOldKnownFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PARTIALLYPURGEOLDKNOWNFILES), m_htiHiddenFile, m_bPartiallyPurgeOldKnownFiles);
 		m_htiAdjustNTFSDaylightFileTime = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ADJUSTNTFSDAYLIGHTFILETIME), m_htiHiddenFile, m_bAdjustNTFSDaylightFileTime);
 
-		m_htiHiddenDisplay = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_DISPLAY), iImgLog, TVI_ROOT);
+		/////////////////////////////////////////////////////////////////////////////
+		// Storage & persistence group
+		//
+		m_htiStoragePersistence = m_ctrlTreeOptions.InsertGroup(GetStoragePersistenceLabel(), iImgBackup, TVI_ROOT);
+		m_htiMinFreeDiskSpaceConfig = m_ctrlTreeOptions.InsertItem(GetConfigDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiStoragePersistence);
+		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceConfig, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMinFreeDiskSpaceTemp = m_ctrlTreeOptions.InsertItem(GetTempDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiStoragePersistence);
+		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceTemp, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMinFreeDiskSpaceIncoming = m_ctrlTreeOptions.InsertItem(GetIncomingDiskSpaceLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiStoragePersistence);
+		m_ctrlTreeOptions.AddEditBox(m_htiMinFreeDiskSpaceIncoming, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiFileBufferTimeLimit = m_ctrlTreeOptions.InsertItem(GetResString(IDS_FILEBUFFERTIMELIMIT), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiStoragePersistence);
+		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferTimeLimit, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiFileBufferSize = m_ctrlTreeOptions.InsertItem(GetFileBufferSizeLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiStoragePersistence);
+		m_ctrlTreeOptions.AddEditBox(m_htiFileBufferSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiQueueSize = m_ctrlTreeOptions.InsertItem(GetResString(IDS_QUEUESIZE), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiStoragePersistence);
+		m_ctrlTreeOptions.AddEditBox(m_htiQueueSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiCommit = m_ctrlTreeOptions.InsertGroup(GetCommitPolicyLabel(), iImgBackup, m_htiStoragePersistence);
+		m_htiCommitNever = m_ctrlTreeOptions.InsertRadioButton(GetCommitNeverLabel(), m_htiCommit, m_iCommitFiles == 0);
+		m_htiCommitOnShutdown = m_ctrlTreeOptions.InsertRadioButton(GetCommitOnShutdownLabel(), m_htiCommit, m_iCommitFiles == 1);
+		m_htiCommitAlways = m_ctrlTreeOptions.InsertRadioButton(GetCommitAlwaysLabel(), m_htiCommit, m_iCommitFiles == 2);
+
+		/////////////////////////////////////////////////////////////////////////////
+		// Startup group
+		//
+		m_htiHiddenStartup = m_ctrlTreeOptions.InsertGroup(GetStartupTweaksLabel(), iImgConnection, TVI_ROOT);
+		m_htiRestoreLastMainWndDlg = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTMAINWNDDLG), m_htiHiddenStartup, m_bRestoreLastMainWndDlg);
+		m_htiRestoreLastLogPane = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_RESTORELASTLOGPANE), m_htiHiddenStartup, m_bRestoreLastLogPane);
+
+		/////////////////////////////////////////////////////////////////////////////
+		// Display group
+		//
+		m_htiHiddenDisplay = m_ctrlTreeOptions.InsertGroup(GetDisplayTweaksLabel(), iImgLog, TVI_ROOT);
 		m_htiShowActiveDownloadsBold = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWACTIVEDOWNLOADSBOLD), m_htiHiddenDisplay, m_bShowActiveDownloadsBold);
 		m_htiUseSystemFontForMainControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USESYSTEMFONTFORMAINCONTROLS), m_htiHiddenDisplay, m_bUseSystemFontForMainControls);
 		m_htiReBarToolbar = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REBARTOOLBAR), m_htiHiddenDisplay, m_bReBarToolbar);
@@ -585,7 +653,11 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiGeoLocationCheckDays = m_ctrlTreeOptions.InsertItem(GetGeoLocationIntervalLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiGeoLocationEnabled);
 		m_ctrlTreeOptions.AddEditBox(m_htiGeoLocationCheckDays, RUNTIME_CLASS(CNumTreeOptionsEdit));
 
-		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_HIDDENRUNTIME_SECURITY), iImgConnection, TVI_ROOT);
+		/////////////////////////////////////////////////////////////////////////////
+		// Security group
+		//
+		m_htiHiddenSecurity = m_ctrlTreeOptions.InsertGroup(GetSecurityTweaksLabel(), iImgConnection, TVI_ROOT);
+		m_htiFilterLANIPs = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_PW_FILTER), m_htiHiddenSecurity, m_bFilterLANIPs);
 		m_htiDetectTCPErrorFlooder = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DETECT_TCP_ERROR_FLOODER), m_htiHiddenSecurity, m_bDetectTCPErrorFlooder);
 		m_htiTCPErrorFlooderIntervalMinutes = m_ctrlTreeOptions.InsertItem(GetResString(IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiDetectTCPErrorFlooder);
 		m_ctrlTreeOptions.AddEditBox(m_htiTCPErrorFlooderIntervalMinutes, RUNTIME_CLASS(CNumTreeOptionsEdit));
@@ -597,10 +669,11 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		/////////////////////////////////////////////////////////////////////////////
 		// Logging group
 		//
-		m_htiLog2Disk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_LOG2DISK), TVI_ROOT, m_bLog2Disk);
-		m_htiPerfLog = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLE_PERFLOG), TVI_ROOT, m_bPerfLogEnabled);
+		m_htiLoggingGroup = m_ctrlTreeOptions.InsertGroup(GetLoggingTweaksLabel(), iImgLog, TVI_ROOT);
+		m_htiLog2Disk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_LOG2DISK), m_htiLoggingGroup, m_bLog2Disk);
+		m_htiPerfLog = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLE_PERFLOG), m_htiLoggingGroup, m_bPerfLogEnabled);
 		if (thePrefs.GetEnableVerboseOptions()) {
-			m_htiVerboseGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_VERBOSE), iImgLog, TVI_ROOT);
+			m_htiVerboseGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_VERBOSE), iImgLog, m_htiLoggingGroup);
 			m_htiVerbose = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLED), m_htiVerboseGroup, m_bVerbose);
 			m_htiLogLevel = m_ctrlTreeOptions.InsertItem(GetResString(IDS_LOG_LEVEL), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiVerboseGroup);
 			m_ctrlTreeOptions.AddEditBox(m_htiLogLevel, RUNTIME_CLASS(CNumTreeOptionsEdit));
@@ -669,6 +742,27 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiSearchKadKeywordLifetime,
 			_T("Maximum lifetime of one Kad keyword search in seconds.\r\n\r\n")
 			_T("Longer lifetimes may find later results but increase background search activity."));
+		SetTreeToolTip(m_htiGeneralAdvanced,
+			_T("General advanced behavior that does not fit cleanly under network, file, display, or security.\r\n\r\n")
+			_T("Most users should leave these near their defaults."));
+		SetTreeToolTip(m_htiHiddenFile,
+			_T("Advanced file-handling behavior, preview inspection, and file-history related options.\r\n\r\n")
+			_T("These settings shape how eMule treats files, not how much disk space it reserves."));
+		SetTreeToolTip(m_htiStoragePersistence,
+			_T("Advanced disk-space protection, file-buffering, and metadata persistence settings.\r\n\r\n")
+			_T("This is the main group for storage safety and disk-I/O tradeoffs."));
+		SetTreeToolTip(m_htiHiddenStartup,
+			_T("Advanced startup restore behavior.\r\n\r\n")
+			_T("These options only affect which UI panes come back when eMule starts."));
+		SetTreeToolTip(m_htiHiddenDisplay,
+			_T("Advanced display, taskbar, tray, and visual-information settings.\r\n\r\n")
+			_T("These options change presentation only, not transfer behavior."));
+		SetTreeToolTip(m_htiHiddenSecurity,
+			_T("Advanced filtering and protection options for stricter peer and message handling.\r\n\r\n")
+			_T("Recommended defaults are appropriate for most users."));
+		SetTreeToolTip(m_htiLoggingGroup,
+			_T("Persistent logging and diagnostic output controls.\r\n\r\n")
+			_T("Most of these settings are only useful while diagnosing a problem."));
 		SetTreeToolTip(m_htiAutoTakeEd2kLinks,
 			_T("Registers eMule as the default handler for ed2k:// links.\r\n\r\n")
 			_T("Enable it if this machine should open ed2k links in eMule automatically. Disable it if another tool should own that association."));
@@ -702,8 +796,17 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			_T("Writes periodic payload and overhead samples for external graphing tools.\r\n\r\n")
 			_T("Operator/debug feature only. Leave it off unless you actively consume the generated files."));
 		SetTreeToolTip(m_htiCommit,
-			_T("Controls how aggressively eMule asks Windows to commit file data to disk.\r\n\r\n")
-			_T("Safer settings reduce crash-loss risk but cost more disk I/O. 'On shutdown' is a balanced default."));
+			_T("Controls how aggressively eMule forces Windows to flush saved file data out to disk.\r\n\r\n")
+			_T("Safer settings reduce crash-loss risk but cost more disk I/O. 'Only on shutdown' is the balanced default."));
+		SetTreeToolTip(m_htiCommitNever,
+			_T("Close files normally without forcing an OS-level disk flush.\r\n\r\n")
+			_T("Fastest and lightest on disk I/O, but the most dependent on Windows flushing later."));
+		SetTreeToolTip(m_htiCommitOnShutdown,
+			_T("Force an OS-level disk flush only while eMule is closing.\r\n\r\n")
+			_T("Recommended default. It improves persistence safety on clean exit without forcing extra flushes during every save."));
+		SetTreeToolTip(m_htiCommitAlways,
+			_T("Force an OS-level disk flush on every save path that uses eMule's commit-close helper.\r\n\r\n")
+			_T("Safest against crash or power-loss metadata loss, but it causes the most disk I/O."));
 		SetTreeToolTip(m_htiExtractMetaData,
 			_T("Controls whether eMule extracts metadata such as tags and media duration from files.\r\n\r\n")
 			_T("Useful for richer file info, but it adds background file inspection. Disable it if you want the lightest scanning."));
@@ -738,8 +841,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			_T("Custom date/time format used in list views.\r\n\r\n")
 			_T("Leave it blank to use the normal default formatting. Change it only if you want a specific custom timestamp style."));
 		SetTreeToolTip(m_htiInspectAllFileTypes,
-			_T("Controls how aggressively eMule inspects file types when extracting preview and metadata details.\r\n\r\n")
-			_T("Higher values find more information but cost more file inspection. Conservative values are safer on slower disks."));
+			_T("Also run the expensive MediaInfo-style inspection path for file types that are not already classified as audio or video.\r\n\r\n")
+			_T("Enable it if you want richer file-info probing for unusual or mislabeled files. Leave it off to inspect only likely audio/video files and reduce background inspection work."));
 		SetTreeToolTip(m_htiReBarToolbar,
 			_T("Uses the older rebar-style main toolbar container instead of the simpler plain toolbar layout.\r\n\r\n")
 			_T("Mostly a UI layout preference. Leave it enabled only if you prefer the legacy toolbar presentation."));
@@ -903,7 +1006,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiFileBufferTimeLimit, m_uFileBufferTimeLimitSeconds);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDateTimeFormat4Lists, m_sDateTimeFormat4Lists);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewCopiedArchives, m_bPreviewCopiedArchives);
-	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiInspectAllFileTypes, m_iInspectAllFileTypes);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiInspectAllFileTypes, m_bInspectAllFileTypes);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPreviewOnIconDblClk, m_bPreviewOnIconDblClk);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtraPreviewWithMenu, m_bExtraPreviewWithMenu);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiKeepUnavailableFixedSharedDirs, m_bKeepUnavailableFixedSharedDirs);
@@ -1092,7 +1195,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
 	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
-	m_iInspectAllFileTypes = thePrefs.GetInspectAllFileTypes();
+	m_bInspectAllFileTypes = thePrefs.GetInspectAllFileTypes();
 	m_bPreviewOnIconDblClk = thePrefs.GetPreviewOnIconDblClk();
 	m_bShowActiveDownloadsBold = thePrefs.GetShowActiveDownloadsBold();
 	m_bUseSystemFontForMainControls = thePrefs.GetUseSystemFontForMainControls();
@@ -1283,7 +1386,7 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.SetFileBufferTimeLimitSeconds(m_uFileBufferTimeLimitSeconds);
 	thePrefs.m_strDateTimeFormat4Lists = m_sDateTimeFormat4Lists;
 	thePrefs.m_bPreviewCopiedArchives = m_bPreviewCopiedArchives;
-	thePrefs.m_iInspectAllFileTypes = max(0, m_iInspectAllFileTypes);
+	thePrefs.m_bInspectAllFileTypes = m_bInspectAllFileTypes;
 	thePrefs.m_bPreviewOnIconDblClk = m_bPreviewOnIconDblClk;
 	thePrefs.m_bShowActiveDownloadsBold = m_bShowActiveDownloadsBold;
 	thePrefs.m_bUseSystemFontForMainControls = m_bUseSystemFontForMainControls;
@@ -1382,15 +1485,16 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiBBSessionTransferPercentValue, IDS_BB_SESSION_TRANSFER_PERCENT_VALUE);
 		LocalizeEditLabel(m_htiBBSessionTransferMiBValue, IDS_BB_SESSION_TRANSFER_MIB_VALUE);
 		LocalizeEditLabel(m_htiBBSessionTimeLimit, IDS_BB_SESSION_TIME_LIMIT);
+		m_ctrlTreeOptions.SetItemText(m_htiGeneralAdvanced, GetGeneralAdvancedLabel());
 		LocalizeEditLabel(m_htiYourHostname, IDS_YOURHOSTNAME);	// itsonlyme: hostnameSource
 		LocalizeItemText(m_htiA4AFSaveCpu, IDS_A4AF_SAVE_CPU);
 		LocalizeItemText(m_htiAutoArch, IDS_DISABLE_AUTOARCHPREV);
 		LocalizeItemText(m_htiAutoTakeEd2kLinks, IDS_AUTOTAKEED2KLINKS);
 		LocalizeItemText(m_htiCloseUPnPPorts, IDS_UPNPCLOSEONEXIT);
-		LocalizeItemText(m_htiCommit, IDS_COMMITFILES);
-		LocalizeItemText(m_htiCommitAlways, IDS_ALWAYS);
-		LocalizeItemText(m_htiCommitNever, IDS_NEVER);
-		LocalizeItemText(m_htiCommitOnShutdown, IDS_ONSHUTDOWN);
+		m_ctrlTreeOptions.SetItemText(m_htiCommit, GetCommitPolicyLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCommitAlways, GetCommitAlwaysLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCommitNever, GetCommitNeverLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCommitOnShutdown, GetCommitOnShutdownLabel());
 		LocalizeItemText(m_htiConditionalTCPAccept, IDS_CONDTCPACCEPT);
 		LocalizeItemText(m_htiCreditSystem, IDS_USECREDITSYSTEM);
 		LocalizeItemText(m_htiDebug2Disk, IDS_LOG2DISK);
@@ -1404,14 +1508,15 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiFilterLANIPs, IDS_PW_FILTER);
 		LocalizeItemText(m_htiForceSpeedsToKB, IDS_FORCESPEEDSTOKB);
 		LocalizeItemText(m_htiFullAlloc, IDS_FULLALLOC);
-		LocalizeItemText(m_htiHiddenDisplay, IDS_HIDDENRUNTIME_DISPLAY);
-		LocalizeItemText(m_htiHiddenFile, IDS_HIDDENRUNTIME_FILE);
-		LocalizeItemText(m_htiHiddenSecurity, IDS_HIDDENRUNTIME_SECURITY);
+		m_ctrlTreeOptions.SetItemText(m_htiHiddenDisplay, GetDisplayTweaksLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiHiddenFile, GetFileBehaviorLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiHiddenSecurity, GetSecurityTweaksLabel());
 		LocalizeItemText(m_htiDetectTCPErrorFlooder, IDS_DETECT_TCP_ERROR_FLOODER);
 		LocalizeEditLabel(m_htiTCPErrorFlooderIntervalMinutes, IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES);
 		LocalizeEditLabel(m_htiTCPErrorFlooderThreshold, IDS_TCP_ERROR_FLOODER_THRESHOLD);
-		LocalizeItemText(m_htiHiddenStartup, IDS_HIDDENRUNTIME_STARTUP);
+		m_ctrlTreeOptions.SetItemText(m_htiHiddenStartup, GetStartupTweaksLabel());
 		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
+		m_ctrlTreeOptions.SetItemText(m_htiLoggingGroup, GetLoggingTweaksLabel());
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiPerfLog, IDS_ENABLE_PERFLOG);
 		LocalizeItemText(m_htiLogA4AF, IDS_LOG_A4AF);
@@ -1448,12 +1553,13 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiVerbose, IDS_ENABLED);
 		LocalizeItemText(m_htiVerboseGroup, IDS_VERBOSE);
 		LocalizeItemText(m_htiAdjustNTFSDaylightFileTime, IDS_ADJUSTNTFSDAYLIGHTFILETIME);
+		m_ctrlTreeOptions.SetItemText(m_htiStoragePersistence, GetStoragePersistenceLabel());
 		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
 		LocalizeEditLabel(m_htiFileBufferTimeLimit, IDS_FILEBUFFERTIMELIMIT);
 		m_ctrlTreeOptions.SetEditLabel(m_htiFileBufferSize, GetFileBufferSizeLabel());
 		LocalizeEditLabel(m_htiQueueSize, IDS_QUEUESIZE);
 		m_ctrlTreeOptions.SetEditLabel(m_htiGeoLocationCheckDays, GetGeoLocationIntervalLabel());
-		LocalizeEditLabel(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
+		LocalizeItemText(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
 	}
 }
 
@@ -1514,6 +1620,8 @@ void CPPgTweaks::OnDestroy()
 	m_htiLogLevel = NULL;
 	m_htiLogUlDlEvents = NULL;
 	m_htiConnectionTimeout = NULL;
+	m_htiGeneralAdvanced = NULL;
+	m_htiLoggingGroup = NULL;
 	m_htiCreditSystem = NULL;
 	m_htiDateTimeFormat4Lists = NULL;
 	m_htiPreviewCopiedArchives = NULL;
@@ -1538,6 +1646,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiDownloadTimeout = NULL;
 	m_htiRestoreLastLogPane = NULL;
 	m_htiRestoreLastMainWndDlg = NULL;
+	m_htiStoragePersistence = NULL;
 	m_htiInspectAllFileTypes = NULL;
 	m_htiLog2Disk = NULL;
 	m_htiPerfLog = NULL;
