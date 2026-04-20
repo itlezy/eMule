@@ -120,11 +120,7 @@ void CPPgServer::LoadSettings()
 BOOL CPPgServer::OnApply()
 {
 	UINT uCurDeadServerRetries = thePrefs.m_uDeadServerRetries;
-	thePrefs.m_uDeadServerRetries = GetDlgItemInt(IDC_SERVERRETRIES, NULL, FALSE);
-	if (thePrefs.m_uDeadServerRetries < 1)
-		thePrefs.m_uDeadServerRetries = 1;
-	else if (thePrefs.m_uDeadServerRetries > MAX_SERVERFAILCOUNT)
-		thePrefs.m_uDeadServerRetries = MAX_SERVERFAILCOUNT;
+	thePrefs.m_uDeadServerRetries = CPreferences::NormalizeRetryCount(GetDlgItemInt(IDC_SERVERRETRIES, NULL, FALSE), 1, 1, MAX_SERVERFAILCOUNT);
 	if (uCurDeadServerRetries != thePrefs.m_uDeadServerRetries) {
 		theApp.emuledlg->serverwnd->serverlistctrl.Invalidate();
 		theApp.emuledlg->serverwnd->serverlistctrl.UpdateWindow();

@@ -108,9 +108,7 @@ BOOL CPPgProxy::OnApply()
 		proxy.bUseProxy = false;
 	proxy.host = str;
 
-	proxy.port = (uint16)GetDlgItemInt(IDC_PROXYPORT, NULL, FALSE);
-	if (!proxy.port)
-		proxy.port = 1080;
+	proxy.port = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_PROXYPORT, NULL, FALSE), 1080);
 
 	if (GetDlgItemText(IDC_USERNAME_A, str)) {
 		proxy.user = str;

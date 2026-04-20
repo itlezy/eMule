@@ -1117,7 +1117,7 @@ BOOL CPPgTweaks::OnApply()
 	if (bUpdateDLmenu)
 		theApp.emuledlg->transferwnd->GetDownloadList()->CreateMenus();
 
-	thePrefs.m_dwServerKeepAliveTimeout = MIN2MS(m_uServerKeepAliveTimeout);
+	thePrefs.SetServerKeepAliveTimeoutMinutes(m_uServerKeepAliveTimeout);
 	thePrefs.m_bSparsePartFiles = m_bSparsePartFiles;
 	thePrefs.m_bAllocFull = m_bFullAlloc;
 	thePrefs.checkDiskspace = true;
@@ -1136,7 +1136,7 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bA4AFSaveCpu = m_bA4AFSaveCpu;
 	thePrefs.m_bRestoreLastMainWndDlg = m_bRestoreLastMainWndDlg;
 	thePrefs.m_bRestoreLastLogPane = m_bRestoreLastLogPane;
-	thePrefs.m_uFileBufferTimeLimit = SEC2MS(max(1u, m_uFileBufferTimeLimitSeconds));
+	thePrefs.SetFileBufferTimeLimitSeconds(m_uFileBufferTimeLimitSeconds);
 	thePrefs.m_strDateTimeFormat4Lists = m_sDateTimeFormat4Lists;
 	thePrefs.m_bPreviewCopiedArchives = m_bPreviewCopiedArchives;
 	thePrefs.m_iInspectAllFileTypes = max(0, m_iInspectAllFileTypes);

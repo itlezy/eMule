@@ -22,12 +22,9 @@ public:
 	static bool CheckUp(uint32 mUp, uint32 &mDown);
 	static bool CheckDown(uint32 &mUp, uint32 mDown);
 protected:
-	CSliderCtrl m_ctlMaxDown;
-	CSliderCtrl m_ctlMaxUp;
 	CPreferenceToolTipHelper m_toolTip;
 
 	void ShowLimitValues();
-	void SetRateSliderTicks(CSliderCtrl &rRate);
 	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
@@ -37,8 +34,7 @@ protected:
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 
 	DECLARE_MESSAGE_MAP()
-	afx_msg void OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar);
-	afx_msg void OnSettingsChange()				{ SetModified(); }
+	afx_msg void OnSettingsChange();
 	afx_msg void OnEnChangeUDPDisable();
 //	afx_msg void OnBnClickedNetworkKademlia();
 	afx_msg void OnHelp();

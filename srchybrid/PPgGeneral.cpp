@@ -252,7 +252,7 @@ BOOL CPPgGeneral::OnApply()
 	thePrefs.onlineSig = IsDlgButtonChecked(IDC_ONLINESIG) != 0;
 	thePrefs.m_bPreventStandby = IsDlgButtonChecked(IDC_PREVENTSTANDBY) != 0;
 	thePrefs.updatenotify = IsDlgButtonChecked(IDC_CHECK4UPDATE) != 0;
-	thePrefs.versioncheckdays = static_cast<CSliderCtrl*>(GetDlgItem(IDC_CHECKDAYS))->GetPos();
+	thePrefs.SetUpdateDays(static_cast<CSliderCtrl*>(GetDlgItem(IDC_CHECKDAYS))->GetPos());
 	thePrefs.splashscreen = IsDlgButtonChecked(IDC_SPLASHON) != 0;
 	thePrefs.startMinimized = IsDlgButtonChecked(IDC_STARTMIN) != 0;
 	thePrefs.m_bAutoStart = IsDlgButtonChecked(IDC_STARTWIN) != 0;

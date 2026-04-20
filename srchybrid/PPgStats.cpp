@@ -191,7 +191,7 @@ BOOL CPPgStats::OnApply()
 				bInvalidateGraphs = true;
 			}
 			SetDlgItemInt(IDC_CGRAPHSCALE, thePrefs.GetStatsMax());
-		} else if (thePrefs.GetStatsMax() != statsMax) {
+		} else if (thePrefs.GetStatsMax() != CPreferences::NormalizeStatsMax(statsMax)) {
 			thePrefs.SetStatsMax(statsMax);
 			bInvalidateGraphs = true;
 		}

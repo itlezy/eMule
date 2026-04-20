@@ -178,7 +178,7 @@ BOOL CPPgDisplay::OnApply()
 	}
 
 	UINT i = GetDlgItemInt(IDC_TOOLTIPDELAY, NULL, FALSE);
-	thePrefs.m_iToolDelayTime = (i > MAX_TOOLTIP_DELAY_SEC) ? MAX_TOOLTIP_DELAY_SEC : i;
+	thePrefs.SetToolTipDelay(i);
 	theApp.emuledlg->SetToolTipsDelay(SEC2MS(thePrefs.GetToolTipDelay()));
 
 	theApp.emuledlg->transferwnd->GetDownloadList()->SetStyle();

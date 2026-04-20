@@ -54,7 +54,6 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_RECONN, OnSettingsChange)
 	ON_BN_CLICKED(IDC_NETWORK_ED2K, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SHOWOVERHEAD, OnSettingsChange)
-	ON_WM_HSCROLL()
 	ON_BN_CLICKED(IDC_NETWORK_KADEMLIA, OnSettingsChange)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
@@ -69,8 +68,6 @@ CPPgConnection::CPPgConnection()
 void CPPgConnection::DoDataExchange(CDataExchange *pDX)
 {
 	CPropertyPage::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_MAXDOWN_SLIDER, m_ctlMaxDown);
-	DDX_Control(pDX, IDC_MAXUP_SLIDER, m_ctlMaxUp);
 }
 
 void CPPgConnection::OnEnKillFocusTCP()
@@ -204,14 +201,7 @@ void CPPgConnection::LoadSettings()
 		const uint32 uploadLimit = thePrefs.GetMaxUpload();
 
 		SetDlgItemInt(IDC_DOWNLOAD_CAP, downloadLimit);
-		m_ctlMaxDown.SetRange(1, downloadLimit);
-		SetRateSliderTicks(m_ctlMaxDown);
-		m_ctlMaxDown.SetPos(downloadLimit);
-
 		SetDlgItemInt(IDC_UPLOAD_CAP, uploadLimit);
-		m_ctlMaxUp.SetRange(1, uploadLimit);
-		SetRateSliderTicks(m_ctlMaxUp);
-		m_ctlMaxUp.SetPos(uploadLimit);
 
 		SetDlgItemInt(IDC_PORT, thePrefs.port, FALSE);
 		SetDlgItemInt(IDC_MAXCON, thePrefs.maxconnections);
@@ -249,17 +239,13 @@ BOOL CPPgConnection::OnApply()
 	uint32 lastmaxgd = thePrefs.maxGraphDownloadRate;
 
 	thePrefs.SetMaxDownload(v);
-	m_ctlMaxDown.SetRange(1, thePrefs.GetMaxDownload(), TRUE);
-	SetRateSliderTicks(m_ctlMaxDown);
-	m_ctlMaxDown.SetPos(thePrefs.GetMaxDownload());
+	SetDlgItemInt(IDC_DOWNLOAD_CAP, thePrefs.GetMaxDownload(), FALSE);
 
 	thePrefs.SetMaxUpload(u);
-	m_ctlMaxUp.SetRange(1, thePrefs.GetMaxUpload(), TRUE);
-	SetRateSliderTicks(m_ctlMaxUp);
-	m_ctlMaxUp.SetPos(thePrefs.GetMaxUpload());
+	SetDlgItemInt(IDC_UPLOAD_CAP, thePrefs.GetMaxUpload(), FALSE);
 
 	u = GetDlgItemInt(IDC_MAXSOURCEPERFILE, NULL, FALSE);
-	thePrefs.maxsourceperfile = (u > INT_MAX ? 1 : u);
+	thePrefs.SetMaxSourcesPerFile((u > INT_MAX) ? CPreferences::GetDefaultMaxSourcesPerFile() : u);
 
 	bool bRestartApp = false;
 
@@ -321,7 +307,7 @@ BOOL CPPgConnection::OnApply()
 			tempcon = GetMaxWindowsTCPConnections();
 		}
 	}
-	thePrefs.maxconnections = tempcon;
+	thePrefs.SetMaxConnections(tempcon);
 
 	if (thePrefs.IsUPnPEnabled() != (IsDlgButtonChecked(IDC_PREF_UPNPONSTART) != 0)) {
 		thePrefs.m_bEnableUPnP = !thePrefs.m_bEnableUPnP;
@@ -388,28 +374,24 @@ bool CPPgConnection::CheckDown(uint32 &mUp, uint32 mDown)
 	return false;
 }
 
-void CPPgConnection::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar *pScrollBar)
+void CPPgConnection::OnSettingsChange()
 {
-	SetModified(TRUE);
-
-	SetDlgItemInt(IDC_UPLOAD_CAP, m_ctlMaxUp.GetPos(), FALSE);
-	SetDlgItemInt(IDC_DOWNLOAD_CAP, m_ctlMaxDown.GetPos(), FALSE);
-
-	ShowLimitValues();
-
-	UpdateData(FALSE);
-	CPropertyPage::OnHScroll(nSBCode, nPos, pScrollBar);
+	SetModified();
+	if (m_hWnd)
+		ShowLimitValues();
 }
 
 void CPPgConnection::ShowLimitValues()
 {
 	static LPCTSTR const pszFmt = _T("%i %s");
 	CString buffer;
+	const UINT uploadLimit = GetDlgItemInt(IDC_UPLOAD_CAP, NULL, FALSE);
+	const UINT downloadLimit = GetDlgItemInt(IDC_DOWNLOAD_CAP, NULL, FALSE);
 
-	buffer.Format(pszFmt, m_ctlMaxUp.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	buffer.Format(pszFmt, uploadLimit, (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_KBS4, buffer);
 
-	buffer.Format(pszFmt, m_ctlMaxDown.GetPos(), (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	buffer.Format(pszFmt, downloadLimit, (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
 	SetDlgItemText(IDC_KBS1, buffer);
 }
 
@@ -441,31 +423,4 @@ void CPPgConnection::OnStartPortTest()
 	uint16 udp = (uint16)GetDlgItemInt(IDC_UDPPORT, NULL, FALSE);
 
 	TriggerPortTest(tcp, udp);
-}
-
-void CPPgConnection::SetRateSliderTicks(CSliderCtrl &rRate)
-{
-	rRate.ClearTics();
-	int iMin, iMax;
-	rRate.GetRange(iMin, iMax);
-	int iDiff = iMax - iMin;
-	if (iDiff > 0) {
-		CRect rc;
-		rRate.GetWindowRect(&rc);
-		if (rc.Width() > 0) {
-			int iTic;
-			int iPixels = rc.Width() / iDiff;
-			if (iPixels >= 6)
-				iTic = 1;
-			else {
-				iTic = 10;
-				while (rc.Width() / (iDiff / iTic) < 8)
-					iTic *= 10;
-			}
-			if (iTic)
-				for (int i = ((iMin + (iTic - 1)) / iTic) * iTic; i < iMax; i += iTic)
-					rRate.SetTic(i);
-			rRate.SetPageSize(iTic);
-		}
-	}
 }

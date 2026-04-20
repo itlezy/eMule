@@ -400,10 +400,10 @@ BOOL CPPgWebServer::OnApply()
 			SetDlgItemText(IDC_WSPASSLOW, sHiddenPassword);
 		}
 
-		thePrefs.m_iWebTimeoutMins = (int)GetDlgItemInt(IDC_WSTIMEOUT, NULL, FALSE);
+		thePrefs.SetWebTimeoutMins(GetDlgItemInt(IDC_WSTIMEOUT, NULL, FALSE));
 
-		uint16 u = (uint16)GetDlgItemInt(IDC_WSPORT, NULL, FALSE);
-		if (u > 0 && u != thePrefs.GetWSPort()) {
+		uint16 u = CPreferences::NormalizePortValue(GetDlgItemInt(IDC_WSPORT, NULL, FALSE), CPreferences::GetDefaultWSPort());
+		if (u != thePrefs.GetWSPort()) {
 			thePrefs.SetWSPort(u);
 			bRestartWebServerSockets = true;
 		}
