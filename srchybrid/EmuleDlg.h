@@ -280,6 +280,8 @@ protected:
 	afx_msg LRESULT OnWMData(WPARAM, LPARAM lParam);
 	afx_msg LRESULT OnFileHashed(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnHashFailed(WPARAM, LPARAM lParam);
+	afx_msg LRESULT OnSharedFileHashed(WPARAM, LPARAM lParam);
+	afx_msg LRESULT OnSharedHashFailed(WPARAM, LPARAM lParam);
 	afx_msg LRESULT OnFileAllocExc(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnFileCompleted(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnFileOpProgress(WPARAM wParam, LPARAM lParam);
@@ -329,6 +331,8 @@ enum EEMuleAppMsgs
 	//thread messages
 	TM_FINISHEDHASHING = WM_APP + 10,
 	TM_HASHFAILED,
+	TM_SHAREDFILEHASHED,
+	TM_SHAREDFILEHASHFAILED,
 	TM_FRAMEGRABFINISHED,
 	TM_FILEALLOCEXC,
 	TM_FILECOMPLETED,

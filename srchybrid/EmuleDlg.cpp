@@ -299,6 +299,8 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(TM_FINISHEDHASHING, OnFileHashed)
 	ON_MESSAGE(TM_FILEOPPROGRESS, OnFileOpProgress)
 	ON_MESSAGE(TM_HASHFAILED, OnHashFailed)
+	ON_MESSAGE(TM_SHAREDFILEHASHED, OnSharedFileHashed)
+	ON_MESSAGE(TM_SHAREDFILEHASHFAILED, OnSharedHashFailed)
 	ON_MESSAGE(TM_FRAMEGRABFINISHED, OnFrameGrabFinished)
 	ON_MESSAGE(TM_FILEALLOCEXC, OnFileAllocExc)
 	ON_MESSAGE(TM_FILECOMPLETED, OnFileCompleted)
@@ -1669,6 +1671,33 @@ LRESULT CemuleDlg::OnHashFailed(WPARAM, LPARAM lParam)
 }
 // SLUGFILLER: SafeHash
 
+LRESULT CemuleDlg::OnSharedFileHashed(WPARAM, LPARAM lParam)
+{
+	CSharedFileHashResult *pResult = reinterpret_cast<CSharedFileHashResult*>(lParam);
+	if (pResult == NULL)
+		return 0;
+
+	if (!theApp.IsClosing() && theApp.sharedfiles != NULL && pResult->pOwner == theApp.sharedfiles && !theApp.sharedfiles->IsSharedHashWorkerShuttingDown())
+		theApp.sharedfiles->FileHashingFinished(pResult);
+	else
+		delete pResult->pKnownFile;
+	delete pResult;
+	return TRUE;
+}
+
+LRESULT CemuleDlg::OnSharedHashFailed(WPARAM, LPARAM lParam)
+{
+	CSharedFileHashResult *pResult = reinterpret_cast<CSharedFileHashResult*>(lParam);
+	if (pResult == NULL)
+		return 0;
+
+	if (!theApp.IsClosing() && theApp.sharedfiles != NULL && pResult->pOwner == theApp.sharedfiles && !theApp.sharedfiles->IsSharedHashWorkerShuttingDown())
+		theApp.sharedfiles->HashFailed(pResult);
+	delete pResult->pKnownFile;
+	delete pResult;
+	return TRUE;
+}
+
 LRESULT CemuleDlg::OnFileAllocExc(WPARAM wParam, LPARAM lParam)
 {
 	if (lParam == 0)
@@ -1835,7 +1864,6 @@ void CemuleDlg::OnClose()
 		::InterlockedExchange(&closing, 0);
 		return;
 	}
-	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
 	notifierenabled = false;
 
 	CShutdownProgressDlg shutdownProgress(this);
@@ -1852,6 +1880,15 @@ void CemuleDlg::OnClose()
 		shutdownProgress.SetPhase(uPercent, CString(pszStep), CString(pszDetail), bMarquee);
 		PumpShutdownProgressMessages(shutdownProgress);
 	};
+
+	if (theApp.sharedfiles != NULL) {
+		updateShutdownPhase(4, _T("Closing eMule"), _T("Waiting for shared-file hashing to finish."), true);
+		while (!theApp.sharedfiles->ShutdownSharedHashWorkerStep(15)) {
+			::Sleep(15);
+			PumpShutdownProgressMessages(shutdownProgress);
+		}
+	}
+	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
 
 	//flush queued messages
 	theApp.HandleDebugLogQueue();
@@ -1899,7 +1936,7 @@ void CemuleDlg::OnClose()
 		}
 	}
 
-	updateShutdownPhase(14, _T("Closing eMule"), _T("Starting background shared startup-cache save."));
+	updateShutdownPhase(18, _T("Closing eMule"), _T("Starting background shared startup-cache save."));
 	if (theApp.sharedfiles != NULL)
 		(void)theApp.sharedfiles->RequestStartupCacheSave(true);
 

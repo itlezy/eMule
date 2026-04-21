@@ -15,6 +15,7 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #pragma once
+#include <deque>
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
@@ -32,6 +33,8 @@ class CPublishKeywordList;
 class CSafeMemFile;
 class CServer;
 class CCollection;
+class CSharedFileList;
+class CSharedFileHashThread;
 typedef CMap<CCKey, const CCKey&, CKnownFile*, CKnownFile*> CKnownFilesMap;
 
 struct UnknownFile_Struct
@@ -42,10 +45,25 @@ struct UnknownFile_Struct
 	ULONGLONG ullQueuedTimestampUs = 0;
 };
 
+/**
+ * @brief Owns one shared-file hash completion posted from the worker thread to the UI thread.
+ */
+struct CSharedFileHashResult
+{
+	CSharedFileList *pOwner = NULL;
+	CKnownFile *pKnownFile = NULL;
+	CString strName;
+	CString strDirectory;
+	CString strSharedDirectory;
+	CString strFilePathKey;
+	ULONGLONG ullQueuedTimestampUs = 0;
+};
+
 class CSharedFileList
 {
 	friend class CSharedFilesCtrl;
 	friend class CClientReqSocket;
+	friend class CSharedFileHashThread;
 
 public:
 	/**
@@ -102,6 +120,18 @@ public:
 	 */
 	bool	IsStartupDeferredHashingActive() const	{ return m_bStartupDeferredHashingActive; }
 	/**
+	 * @brief Advances or starts shutdown of the shared-file hash worker and reports whether it has stopped.
+	 */
+	bool	ShutdownSharedHashWorkerStep(DWORD dwWaitMilliseconds);
+	/**
+	 * @brief Reports whether shared-hash shutdown has been signaled and queued completions should be ignored.
+	 */
+	bool	IsSharedHashWorkerShuttingDown() const;
+	/**
+	 * @brief Reports whether queued, active, or posted shared-file hash work still exists.
+	 */
+	bool	HasSharedHashingWork() const				{ return GetHashingCount() > 0; }
+	/**
 	 * @brief Starts one background startup-cache save when the cache is dirty and no worker is active.
 	 */
 	bool	RequestStartupCacheSave(bool bImmediate = false);
@@ -150,11 +180,13 @@ public:
 
 	uint64	GetDatasize(uint64 &pbytesLargest) const;
 	INT_PTR	GetCount()								{ return m_Files_map.GetCount(); }
-	INT_PTR	GetHashingCount()						{ return waitingforhash_list.GetCount() + currentlyhashing_list.GetCount(); }
+	INT_PTR	GetHashingCount() const;
 	bool	ProbablyHaveSingleSharedFiles() const	{ return bHaveSingleSharedFiles && !m_liSingleSharedFiles.IsEmpty(); } // might not be always up-to-date, could give false "true"s, not a problem currently
 
 	void	HashFailed(UnknownFile_Struct *hashed);	// SLUGFILLER: SafeHash
 	void	FileHashingFinished(CKnownFile *file);
+	void	HashFailed(CSharedFileHashResult *pResult);
+	void	FileHashingFinished(CSharedFileHashResult *pResult);
 
 	bool	GetPopularityRank(const CKnownFile *pFile, uint32 &rnOutSession, uint32 &rnOutTotal) const;
 
@@ -180,6 +212,18 @@ private:
 	using SharedStartupCacheRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::DirectoryRecord>;
 	using SharedStartupCacheVolumeRecordMap = std::unordered_map<std::wstring, SharedStartupCachePolicy::VolumeRecord>;
 	using SharedDuplicatePathRecordMap = std::unordered_map<std::wstring, SharedDuplicatePathCachePolicy::PathRecord>;
+
+	/**
+	 * @brief Describes one queued shared-file hash job consumed by the app-lifetime worker thread.
+	 */
+	struct SharedHashJob
+	{
+		CString strName;
+		CString strDirectory;
+		CString strSharedDirectory;
+		CString strFilePathKey;
+		ULONGLONG ullQueuedTimestampUs = 0;
+	};
 
 	/**
 	 * @brief Captures the current startup-validation state for one shared directory.
@@ -328,13 +372,51 @@ private:
 	 * @brief Reuses one remembered duplicate shared-file path during the startup scan when its canonical MD4 is still known.
 	 */
 	bool	TryReuseRememberedDuplicateSharedPath(const CString &strFilePath, LONGLONG utcFileDate, ULONGLONG ullFileSize);
+	/**
+	 * @brief Creates the app-lifetime shared-file hash worker thread if it is not already running.
+	 */
+	bool	EnsureSharedHashWorkerStarted();
+	/**
+	 * @brief Queues one shared-file hash job and wakes the worker when hashing is enabled.
+	 */
+	void	QueueSharedFileForHash(const CString &strDirectory, const CString &strName, const CString &strSharedDirectory);
+	/**
+	 * @brief Wakes the shared-file hash worker after new work or a state transition.
+	 */
+	void	SignalSharedHashWorker();
+	/**
+	 * @brief Waits until one job can be consumed by the shared-file hash worker.
+	 */
+	bool	WaitForSharedHashJob(SharedHashJob &rJob);
+	/**
+	 * @brief Runs one shared-file hash job on the worker thread.
+	 */
+	void	RunSharedHashJob(const SharedHashJob &rJob);
+	/**
+	 * @brief Tracks one worker-posted hash completion until the UI thread consumes it.
+	 */
+	void	MoveActiveSharedHashToPendingCompletion(const SharedHashJob &rJob);
+	/**
+	 * @brief Clears one worker-posted hash completion after the UI thread consumed or discarded it.
+	 */
+	void	CompleteSharedHashCompletion(const CString &strFilePathKey);
+	/**
+	 * @brief Handles shared hash queue drain side effects on the UI thread.
+	 */
+	void	OnSharedHashQueuePossiblyDrained();
+	/**
+	 * @brief Reports whether the given file path is currently being hashed or awaiting completion.
+	 */
+	bool	IsSharedHashInFlight(const CString &strDirectory, const CString &strName) const;
+	/**
+	 * @brief Signals shutdown, discards queued jobs, and wakes the worker.
+	 */
+	void	SignalSharedHashWorkerShutdown();
 
 	CKnownFilesMap m_Files_map;
 	CMap<CSKey, const CSKey&, bool, bool>		 m_UnsharedFiles_map;
 	CMapStringToString m_mapPseudoDirNames;
 	CPublishKeywordList *m_keywords;
-	CTypedPtrList<CPtrList, UnknownFile_Struct*> waitingforhash_list;
-	CTypedPtrList<CPtrList, UnknownFile_Struct*> currentlyhashing_list;	// SLUGFILLER: SafeHash
 	CServerConnect	 *server;
 	CSharedFilesCtrl *output;
 	CStringList		 m_liSingleSharedFiles;
@@ -357,6 +439,16 @@ private:
 	ULONGLONG m_nStartupCacheDirtyTick;
 	ULONGLONG m_uStartupHashCompletedFiles;
 	ULONGLONG m_uStartupHashFailedFiles;
+	HANDLE m_hSharedHashQueueEvent;
+	CSharedFileHashThread *m_pSharedHashThread;
+	mutable CCriticalSection m_mutSharedHashQueue;
+	std::deque<SharedHashJob> m_sharedHashQueue;
+	std::deque<SharedHashJob> m_sharedHashPendingCompletions;
+	SharedHashJob m_sharedHashActiveJob;
+	bool m_bSharedHashWorkerCanHash;
+	bool m_bSharedHashWorkerExitRequested;
+	bool m_bSharedHashActive;
+	bool m_bSharedHashShutdownSignaled;
 	StartupScanStats m_startupScanStats;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
 	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;
@@ -385,4 +477,20 @@ private:
 	CString		m_strDirectory;
 	CString		m_strFilename;
 	CString		m_strSharedDir;
+};
+
+/**
+ * @brief App-lifetime worker that serially drains shared-file hash jobs without per-file thread churn.
+ */
+class CSharedFileHashThread : public CWinThread
+{
+	DECLARE_DYNCREATE(CSharedFileHashThread)
+protected:
+	CSharedFileHashThread();
+public:
+	virtual BOOL InitInstance();
+	virtual int	Run();
+	void	SetOwner(CSharedFileList *pOwner)		{ m_pOwner = pOwner; }
+private:
+	CSharedFileList *m_pOwner;
 };

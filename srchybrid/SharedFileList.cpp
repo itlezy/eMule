@@ -74,6 +74,25 @@ CString LexicallyNormalizeSharedFilePath(const CString &rstrPath)
 	return PathHelpers::CanonicalizePath(PathHelpers::StripExtendedLengthPrefix(rstrPath));
 }
 
+CString BuildSharedHashFilePath(const CString &strDirectory, const CString &strName)
+{
+	CString strFilePath(strDirectory);
+	if (!strFilePath.IsEmpty() && strFilePath.Right(1) != _T("\\"))
+		strFilePath.AppendChar(_T('\\'));
+	strFilePath += strName;
+	return strFilePath;
+}
+
+CString MakeSharedHashFilePathKey(const CString &strDirectory, const CString &strName)
+{
+	return LexicallyNormalizeSharedFilePath(BuildSharedHashFilePath(strDirectory, strName));
+}
+
+CString MakeSharedHashFilePathKey(const CKnownFile &file)
+{
+	return LexicallyNormalizeSharedFilePath(file.GetFilePath());
+}
+
 std::wstring MakeStartupCacheSnapshotKey(const CString &strDirectory)
 {
 	return std::wstring(LexicallyNormalizeSharedDirectoryPath(strDirectory));
@@ -465,6 +484,36 @@ int CAddFileThread::Run()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+// CSharedFileHashThread
+
+IMPLEMENT_DYNCREATE(CSharedFileHashThread, CWinThread)
+
+CSharedFileHashThread::CSharedFileHashThread()
+	: m_pOwner()
+{
+}
+
+BOOL CSharedFileHashThread::InitInstance()
+{
+	InitThreadLocale();
+	return TRUE;
+}
+
+int CSharedFileHashThread::Run()
+{
+	DbgSetThreadName("Shared file hashing");
+	if (m_pOwner == NULL)
+		return 0;
+
+	(void)::CoInitialize(NULL);
+	CSharedFileList::SharedHashJob job;
+	while (m_pOwner->WaitForSharedHashJob(job))
+		m_pOwner->RunSharedHashJob(job);
+	::CoUninitialize();
+	return 0;
+}
+
+///////////////////////////////////////////////////////////////////////////////
 // CSharedFileList
 
 void CSharedFileList::AddDirectory(const CString &strDir, CStringList &dirlist, std::unordered_set<std::wstring> &rAddedDirectoryKeys, const bool bAllowStartupCache)
@@ -513,6 +562,15 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	, m_nStartupCacheDirtyTick()
 	, m_uStartupHashCompletedFiles()
 	, m_uStartupHashFailedFiles()
+	, m_hSharedHashQueueEvent(::CreateEvent(NULL, FALSE, FALSE, NULL))
+	, m_pSharedHashThread()
+	, m_sharedHashQueue()
+	, m_sharedHashPendingCompletions()
+	, m_sharedHashActiveJob()
+	, m_bSharedHashWorkerCanHash(false)
+	, m_bSharedHashWorkerExitRequested(false)
+	, m_bSharedHashActive(false)
+	, m_bSharedHashShutdownSignaled(false)
 	, m_bStartupCacheSaveRunning(false)
 	, m_bStartupCacheSaveRunAfterCurrent(false)
 	, m_eStartupCacheSavePhase(StartupCacheSavePhase::Idle)
@@ -535,17 +593,18 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	(void)TryLoadDuplicatePathCache();
 	m_nLastStartupCacheSave = ::GetTickCount64();
 	FindSharedFiles(true);
+	(void)EnsureSharedHashWorkerStarted();
 }
 
 CSharedFileList::~CSharedFileList()
 {
+	while (!ShutdownSharedHashWorkerStep(INFINITE)) {
+	}
 	ASSERT(!HasPendingStartupCacheSaveWork());
-	while (!waitingforhash_list.IsEmpty())
-		delete waitingforhash_list.RemoveHead();
-	// SLUGFILLER: SafeHash
-	while (!currentlyhashing_list.IsEmpty())
-		delete currentlyhashing_list.RemoveHead();
-	// SLUGFILLER: SafeHash
+	if (m_hSharedHashQueueEvent != NULL) {
+		VERIFY(::CloseHandle(m_hSharedHashQueueEvent));
+		m_hSharedHashQueueEvent = NULL;
+	}
 	delete m_keywords;
 
 #if defined(_DEVBUILD)
@@ -560,6 +619,243 @@ void CSharedFileList::CopySharedFileMap(CKnownFilesMap &Files_Map)
 {
 	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair))
 		Files_Map[pair->key] = pair->value;
+}
+
+bool CSharedFileList::EnsureSharedHashWorkerStarted()
+{
+	if (m_pSharedHashThread != NULL)
+		return true;
+	if (m_hSharedHashQueueEvent == NULL)
+		return false;
+
+	CSharedFileHashThread *pThread = static_cast<CSharedFileHashThread*>(
+		AfxBeginThread(RUNTIME_CLASS(CSharedFileHashThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
+	if (pThread == NULL)
+		return false;
+
+	pThread->m_bAutoDelete = FALSE;
+	pThread->SetOwner(this);
+	m_pSharedHashThread = pThread;
+	pThread->ResumeThread();
+	return true;
+}
+
+void CSharedFileList::SignalSharedHashWorker()
+{
+	bool bAllowStart = true;
+	{
+		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+		bAllowStart = !m_bSharedHashShutdownSignaled;
+	}
+	if (bAllowStart)
+		(void)EnsureSharedHashWorkerStarted();
+	if (m_hSharedHashQueueEvent != NULL)
+		::SetEvent(m_hSharedHashQueueEvent);
+}
+
+void CSharedFileList::QueueSharedFileForHash(const CString &strDirectory, const CString &strName, const CString &strSharedDirectory)
+{
+	SharedHashJob job = {};
+	job.strDirectory = strDirectory;
+	job.strName = strName;
+	job.strSharedDirectory = strSharedDirectory;
+	job.strFilePathKey = MakeSharedHashFilePathKey(strDirectory, strName);
+	job.ullQueuedTimestampUs = theApp.IsStartupProfilingEnabled() ? theApp.GetStartupProfileTimestampUs() : 0ui64;
+
+	{
+		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+		if (m_bSharedHashWorkerExitRequested)
+			return;
+		m_sharedHashQueue.push_back(job);
+	}
+	SignalSharedHashWorker();
+}
+
+bool CSharedFileList::WaitForSharedHashJob(SharedHashJob &rJob)
+{
+	for (;;) {
+		{
+			CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+			if (m_bSharedHashWorkerExitRequested)
+				return false;
+			if (m_bSharedHashWorkerCanHash && !m_sharedHashQueue.empty()) {
+				rJob = m_sharedHashQueue.front();
+				m_sharedHashQueue.pop_front();
+				m_sharedHashActiveJob = rJob;
+				m_bSharedHashActive = true;
+#if EMULE_COMPILED_STARTUP_PROFILING
+				if (theApp.IsStartupProfilingEnabled()) {
+					theApp.AppendStartupProfileCounter(_T("shared.hash.queue_depth_before_start"), static_cast<ULONGLONG>(m_sharedHashQueue.size() + 1), _T("files"));
+					theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(m_sharedHashQueue.size()), _T("files"));
+					theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), 1, _T("files"));
+				}
+#endif
+				return true;
+			}
+		}
+
+		if (m_hSharedHashQueueEvent == NULL)
+			return false;
+		(void)::WaitForSingleObject(m_hSharedHashQueueEvent, INFINITE);
+	}
+}
+
+void CSharedFileList::RunSharedHashJob(const SharedHashJob &rJob)
+{
+	CString strFilePath(BuildSharedHashFilePath(rJob.strDirectory, rJob.strName));
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled() && rJob.ullQueuedTimestampUs != 0) {
+		const ULONGLONG ullHashStartUs = theApp.GetStartupProfileTimestampUs();
+		CString strPhase;
+		strPhase.Format(_T("shared.hash.file.queue_wait (%s)"), (LPCTSTR)strFilePath);
+		theApp.AppendStartupProfileLine(
+			strPhase,
+			(ullHashStartUs >= rJob.ullQueuedTimestampUs) ? (ullHashStartUs - rJob.ullQueuedTimestampUs) : 0ui64,
+			rJob.ullQueuedTimestampUs);
+	}
+	const ULONGLONG ullHashStartUs = theApp.GetStartupProfileTimestampUs();
+#endif
+
+	DbgSetThreadName("Shared hashing %s", (LPCTSTR)rJob.strName);
+	CSingleLock hashingLock(&theApp.hashing_mut, TRUE);
+	if (!theApp.IsClosing())
+		Log(_T("%s \"%s\""), (LPCTSTR)GetResString(IDS_HASHINGFILE), (LPCTSTR)strFilePath);
+
+	CKnownFile *pKnownFile = NULL;
+	bool bSuccess = false;
+	if (!theApp.IsClosing()) {
+		pKnownFile = new CKnownFile();
+		if (pKnownFile->CreateFromFile(rJob.strDirectory, rJob.strName, NULL)) {
+			pKnownFile->SetSharedDirectory(rJob.strSharedDirectory);
+			bSuccess = true;
+		} else {
+			delete pKnownFile;
+			pKnownFile = NULL;
+		}
+	}
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled()) {
+		CString strPhase;
+		strPhase.Format(_T("shared.hash.file.run (%s)"), (LPCTSTR)strFilePath);
+		theApp.AppendStartupProfileLine(strPhase, theApp.GetStartupProfileElapsedUs(ullHashStartUs), ullHashStartUs);
+	}
+#endif
+	hashingLock.Unlock();
+
+	MoveActiveSharedHashToPendingCompletion(rJob);
+
+	bool bPosted = false;
+	{
+		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+		bPosted = !m_bSharedHashWorkerExitRequested && !theApp.IsClosing() && theApp.emuledlg != NULL && ::IsWindow(theApp.emuledlg->m_hWnd);
+	}
+	if (bPosted) {
+		CSharedFileHashResult *pResult = new CSharedFileHashResult;
+		pResult->pOwner = this;
+		pResult->pKnownFile = pKnownFile;
+		pResult->strName = rJob.strName;
+		pResult->strDirectory = rJob.strDirectory;
+		pResult->strSharedDirectory = rJob.strSharedDirectory;
+		pResult->strFilePathKey = rJob.strFilePathKey;
+		pResult->ullQueuedTimestampUs = rJob.ullQueuedTimestampUs;
+		const UINT uMessage = bSuccess ? TM_SHAREDFILEHASHED : TM_SHAREDFILEHASHFAILED;
+		bPosted = (theApp.emuledlg->PostMessage(uMessage, 0, reinterpret_cast<LPARAM>(pResult)) != FALSE);
+		if (!bPosted)
+			delete pResult;
+	}
+	if (!bPosted) {
+		delete pKnownFile;
+		CompleteSharedHashCompletion(rJob.strFilePathKey);
+	}
+}
+
+void CSharedFileList::MoveActiveSharedHashToPendingCompletion(const SharedHashJob &rJob)
+{
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	if (m_bSharedHashActive && m_sharedHashActiveJob.strFilePathKey.CompareNoCase(rJob.strFilePathKey) == 0) {
+		m_bSharedHashActive = false;
+		m_sharedHashActiveJob = SharedHashJob{};
+		m_sharedHashPendingCompletions.push_back(rJob);
+	}
+}
+
+void CSharedFileList::CompleteSharedHashCompletion(const CString &strFilePathKey)
+{
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	for (auto it = m_sharedHashPendingCompletions.begin(); it != m_sharedHashPendingCompletions.end(); ++it) {
+		if (it->strFilePathKey.CompareNoCase(strFilePathKey) == 0) {
+			m_sharedHashPendingCompletions.erase(it);
+			break;
+		}
+	}
+}
+
+void CSharedFileList::OnSharedHashQueuePossiblyDrained()
+{
+	if (GetHashingCount() != 0)
+		return;
+
+	m_bStartupDeferredHashingActive = false;
+	if (output != NULL)
+		output->FlushStartupDeferredReload();
+	m_nLastStartupCacheSave = ::GetTickCount64();
+}
+
+bool CSharedFileList::IsSharedHashInFlight(const CString &strDirectory, const CString &strName) const
+{
+	const CString strFilePathKey(MakeSharedHashFilePathKey(strDirectory, strName));
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	for (const SharedHashJob &job : m_sharedHashQueue)
+		if (job.strFilePathKey.CompareNoCase(strFilePathKey) == 0)
+			return true;
+	if (m_bSharedHashActive && m_sharedHashActiveJob.strFilePathKey.CompareNoCase(strFilePathKey) == 0)
+		return true;
+	for (const SharedHashJob &job : m_sharedHashPendingCompletions)
+		if (job.strFilePathKey.CompareNoCase(strFilePathKey) == 0)
+			return true;
+	return false;
+}
+
+void CSharedFileList::SignalSharedHashWorkerShutdown()
+{
+	{
+		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+		if (m_bSharedHashShutdownSignaled)
+			return;
+		m_bSharedHashShutdownSignaled = true;
+		m_bSharedHashWorkerExitRequested = true;
+		m_bSharedHashWorkerCanHash = true;
+		m_sharedHashQueue.clear();
+		m_sharedHashPendingCompletions.clear();
+	}
+	SignalSharedHashWorker();
+}
+
+bool CSharedFileList::IsSharedHashWorkerShuttingDown() const
+{
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	return m_bSharedHashShutdownSignaled;
+}
+
+bool CSharedFileList::ShutdownSharedHashWorkerStep(DWORD dwWaitMilliseconds)
+{
+	SignalSharedHashWorkerShutdown();
+	if (m_pSharedHashThread == NULL)
+		return true;
+
+	const DWORD dwWait = ::WaitForSingleObject(m_pSharedHashThread->m_hThread, dwWaitMilliseconds);
+	if (dwWait == WAIT_OBJECT_0) {
+		delete m_pSharedHashThread;
+		m_pSharedHashThread = NULL;
+		return true;
+	}
+	return false;
+}
+
+INT_PTR CSharedFileList::GetHashingCount() const
+{
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	return static_cast<INT_PTR>(m_sharedHashQueue.size() + m_sharedHashPendingCompletions.size() + (m_bSharedHashActive ? 1 : 0));
 }
 
 void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
@@ -631,10 +927,10 @@ void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 		CheckAndAddSingleFile(m_liSingleSharedFiles.GetNext(pos));
 
 	// khaos::kmod-
-	if (waitingforhash_list.IsEmpty())
+	if (GetHashingCount() == 0)
 		AddLogLine(false, GetResString(IDS_SHAREDFOUND), (unsigned)m_Files_map.GetCount());
 	else
-		AddLogLine(false, GetResString(IDS_SHAREDFOUNDHASHING), (unsigned)m_Files_map.GetCount(), (unsigned)waitingforhash_list.GetCount());
+		AddLogLine(false, GetResString(IDS_SHAREDFOUNDHASHING), (unsigned)m_Files_map.GetCount(), (unsigned)GetHashingCount());
 
 	MarkStartupCacheDirty();
 	HashNextFile();
@@ -782,12 +1078,8 @@ void CSharedFileList::CheckAndAddSingleFile(const CString &strDirectory, const W
 		++m_startupScanStats.uDuplicatePathsReused;
 		++m_startupScanStats.uFilesIgnored;
 	} else {
-		if (!IsHashing(strFoundDirectory, strFoundFileName) && !thePrefs.IsTempFile(strFoundDirectory, strFoundFileName)) {
-			UnknownFile_Struct *tohash = new UnknownFile_Struct;
-			tohash->strDirectory = strFoundDirectory;
-			tohash->strName = strFoundFileName;
-			tohash->ullQueuedTimestampUs = theApp.IsStartupProfilingEnabled() ? theApp.GetStartupProfileTimestampUs() : 0ui64;
-			waitingforhash_list.AddTail(tohash);
+		if (!IsSharedHashInFlight(strFoundDirectory, strFoundFileName) && !thePrefs.IsTempFile(strFoundDirectory, strFoundFileName)) {
+			QueueSharedFileForHash(strFoundDirectory, strFoundFileName, CString());
 			++m_startupScanStats.uFilesQueuedForHash;
 		} else {
 			TRACE(_T("%hs: Did not share file \"%s\" - already hashing or temp. file\n"), __FUNCTION__, (LPCTSTR)strFoundFilePath);
@@ -961,22 +1253,32 @@ void CSharedFileList::FileHashingFinished(CKnownFile *file)
 			ASSERT(0);
 	}
 
-	if (GetHashingCount() == 0) {
-		m_bStartupDeferredHashingActive = false;
-		if (output != NULL)
-			output->FlushStartupDeferredReload();
-		m_nLastStartupCacheSave = ::GetTickCount64();
-	}
 	++m_uStartupHashCompletedFiles;
 #if EMULE_COMPILED_STARTUP_PROFILING
 	if (theApp.IsStartupProfilingEnabled()) {
 		theApp.AppendStartupProfileCounter(_T("shared.hash.completed_files"), m_uStartupHashCompletedFiles, _T("files"));
 		theApp.AppendStartupProfileCounter(_T("shared.hash.failed_files"), m_uStartupHashFailedFiles, _T("files"));
-		theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(waitingforhash_list.GetCount()), _T("files"));
-		theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), static_cast<ULONGLONG>(currentlyhashing_list.GetCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(GetHashingCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), 0, _T("files"));
 	}
 #endif
+	OnSharedHashQueuePossiblyDrained();
 	NotifyStartupSharedFilesModelChanged();
+}
+
+void CSharedFileList::FileHashingFinished(CSharedFileHashResult *pResult)
+{
+	if (pResult == NULL)
+		return;
+
+	CompleteSharedHashCompletion(pResult->strFilePathKey);
+	if (pResult->pKnownFile != NULL) {
+		FileHashingFinished(pResult->pKnownFile);
+		pResult->pKnownFile = NULL;
+	} else {
+		OnSharedHashQueuePossiblyDrained();
+		NotifyStartupSharedFilesModelChanged();
+	}
 }
 
 bool CSharedFileList::RemoveFile(CKnownFile *pFile, bool bDeleted)
@@ -1002,8 +1304,6 @@ void CSharedFileList::Reload()
 	ClearVolumeInfoCache();
 	m_mapPseudoDirNames.RemoveAll();
 	m_keywords->RemoveAllKeywordReferences();
-	while (!waitingforhash_list.IsEmpty()) // delete all files which are waiting to get hashed, will be re-added if still shared below
-		delete waitingforhash_list.RemoveHead();
 	bHaveSingleSharedFiles = false;
 	FindSharedFiles(false);
 	m_keywords->PurgeUnreferencedKeywords();
@@ -1019,7 +1319,11 @@ void CSharedFileList::SetOutputCtrl(CSharedFilesCtrl *in_ctrl)
 void CSharedFileList::StartDeferredHashing()
 {
 	m_bStartupDeferredHashingActive = (GetHashingCount() > 0);
-	HashNextFile();
+	{
+		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+		m_bSharedHashWorkerCanHash = true;
+	}
+	SignalSharedHashWorker();
 	if (GetHashingCount() == 0)
 		m_bStartupDeferredHashingActive = false;
 }
@@ -1381,89 +1685,29 @@ bool CSharedFileList::IsFilePtrInList(const CKnownFile *file) const
 
 void CSharedFileList::HashNextFile()
 {
-	// SLUGFILLER: SafeHash
-	if (!::IsWindow(theApp.emuledlg->m_hWnd))	// wait for the dialog to open
+	if (theApp.emuledlg == NULL || !::IsWindow(theApp.emuledlg->m_hWnd))	// wait for the dialog to open
 		return;
 	if (!theApp.IsClosing())
 		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ShowFilesCount();
-	if (!currentlyhashing_list.IsEmpty())	// one hash at a time
-		return;
-	// SLUGFILLER: SafeHash
-	if (waitingforhash_list.IsEmpty())
-		return;
-	const INT_PTR nQueueDepthBeforeDequeue = waitingforhash_list.GetCount();
-	UnknownFile_Struct *nextfile = waitingforhash_list.RemoveHead();
-#if EMULE_COMPILED_STARTUP_PROFILING
-	if (theApp.IsStartupProfilingEnabled() && nextfile->ullQueuedTimestampUs != 0) {
-		const ULONGLONG ullHashStartUs = theApp.GetStartupProfileTimestampUs();
-		CString strFilePath(nextfile->strDirectory);
-		if (!strFilePath.IsEmpty() && strFilePath.Right(1) != _T("\\"))
-			strFilePath.AppendChar(_T('\\'));
-		strFilePath += nextfile->strName;
-		CString strPhase;
-		strPhase.Format(_T("shared.hash.file.queue_wait (%s)"), (LPCTSTR)strFilePath);
-		theApp.AppendStartupProfileLine(
-			strPhase,
-			(ullHashStartUs >= nextfile->ullQueuedTimestampUs) ? (ullHashStartUs - nextfile->ullQueuedTimestampUs) : 0ui64,
-			nextfile->ullQueuedTimestampUs);
-		theApp.AppendStartupProfileCounter(_T("shared.hash.queue_depth_before_start"), static_cast<ULONGLONG>(nQueueDepthBeforeDequeue), _T("files"));
-		theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(waitingforhash_list.GetCount()), _T("files"));
-	}
-#endif
-	currentlyhashing_list.AddTail(nextfile);	// SLUGFILLER: SafeHash - keep track
-#if EMULE_COMPILED_STARTUP_PROFILING
-	if (theApp.IsStartupProfilingEnabled())
-		theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), static_cast<ULONGLONG>(currentlyhashing_list.GetCount()), _T("files"));
-#endif
-	CAddFileThread *addfilethread = static_cast<CAddFileThread*>(AfxBeginThread(RUNTIME_CLASS(CAddFileThread), THREAD_PRIORITY_BELOW_NORMAL, 0, CREATE_SUSPENDED));
-	addfilethread->SetValues(this, nextfile->strDirectory, nextfile->strName, nextfile->strSharedDirectory);
-	addfilethread->ResumeThread();
-	// SLUGFILLER: SafeHash - nextfile deletion is handled elsewhere
-	//delete nextfile;
+	SignalSharedHashWorker();
 }
 
 // SLUGFILLER: SafeHash
 bool CSharedFileList::IsHashing(const CString &rstrDirectory, const CString &rstrName)
 {
-	for (POSITION pos = waitingforhash_list.GetHeadPosition(); pos != NULL;) {
-		const UnknownFile_Struct *pFile = waitingforhash_list.GetNext(pos);
-		if (pFile->strName.CompareNoCase(rstrName) == 0 && EqualPaths(pFile->strDirectory, rstrDirectory))
-			return true;
-	}
-	for (POSITION pos = currentlyhashing_list.GetHeadPosition(); pos != NULL;) {
-		const UnknownFile_Struct *pFile = currentlyhashing_list.GetNext(pos);
-		if (pFile->strName.CompareNoCase(rstrName) == 0 && EqualPaths(pFile->strDirectory, rstrDirectory))
-			return true;
-	}
-	return false;
+	return IsSharedHashInFlight(rstrDirectory, rstrName);
 }
 
 void CSharedFileList::RemoveFromHashing(const CKnownFile *hashed)
 {
-	for (POSITION pos = currentlyhashing_list.GetHeadPosition(); pos != NULL;) {
-		POSITION posLast = pos;
-		const UnknownFile_Struct *pFile = currentlyhashing_list.GetNext(pos);
-		if (pFile->strName.CompareNoCase(hashed->GetFileName()) == 0 && EqualPaths(pFile->strDirectory, hashed->GetPath())) {
-			currentlyhashing_list.RemoveAt(posLast);
-			delete pFile;
-			HashNextFile();	// start next hash if possible, but only if a previous hash finished
-			return;
-		}
-	}
+	if (hashed != NULL)
+		CompleteSharedHashCompletion(MakeSharedHashFilePathKey(*hashed));
 }
 
 void CSharedFileList::HashFailed(UnknownFile_Struct *hashed)
 {
-	for (POSITION pos = currentlyhashing_list.GetHeadPosition(); pos != NULL;) {
-		POSITION posLast = pos;
-		const UnknownFile_Struct *pFile = currentlyhashing_list.GetNext(pos);
-		if (pFile->strName.CompareNoCase(hashed->strName) == 0 && EqualPaths(pFile->strDirectory, hashed->strDirectory)) {
-			currentlyhashing_list.RemoveAt(posLast);
-			delete pFile;
-			HashNextFile();		// start another hash, but only if the previous one had finished
-			break;
-		}
-	}
+	if (hashed != NULL)
+		CompleteSharedHashCompletion(MakeSharedHashFilePathKey(hashed->strDirectory, hashed->strName));
 	delete hashed;
 	MarkStartupCacheDirty();
 	++m_uStartupHashFailedFiles;
@@ -1471,17 +1715,32 @@ void CSharedFileList::HashFailed(UnknownFile_Struct *hashed)
 	if (theApp.IsStartupProfilingEnabled()) {
 		theApp.AppendStartupProfileCounter(_T("shared.hash.completed_files"), m_uStartupHashCompletedFiles, _T("files"));
 		theApp.AppendStartupProfileCounter(_T("shared.hash.failed_files"), m_uStartupHashFailedFiles, _T("files"));
-		theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(waitingforhash_list.GetCount()), _T("files"));
-		theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), static_cast<ULONGLONG>(currentlyhashing_list.GetCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(GetHashingCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), 0, _T("files"));
 	}
 #endif
+	OnSharedHashQueuePossiblyDrained();
 	NotifyStartupSharedFilesModelChanged();
-	if (GetHashingCount() == 0) {
-		m_bStartupDeferredHashingActive = false;
-		if (output != NULL)
-			output->FlushStartupDeferredReload();
-		m_nLastStartupCacheSave = ::GetTickCount64();
+}
+
+void CSharedFileList::HashFailed(CSharedFileHashResult *pResult)
+{
+	if (pResult == NULL)
+		return;
+
+	CompleteSharedHashCompletion(pResult->strFilePathKey);
+	MarkStartupCacheDirty();
+	++m_uStartupHashFailedFiles;
+#if EMULE_COMPILED_STARTUP_PROFILING
+	if (theApp.IsStartupProfilingEnabled()) {
+		theApp.AppendStartupProfileCounter(_T("shared.hash.completed_files"), m_uStartupHashCompletedFiles, _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.failed_files"), m_uStartupHashFailedFiles, _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.waiting_queue_depth"), static_cast<ULONGLONG>(GetHashingCount()), _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.hash.currently_hashing"), 0, _T("files"));
 	}
+#endif
+	OnSharedHashQueuePossiblyDrained();
+	NotifyStartupSharedFilesModelChanged();
 }
 
 void CSharedFileList::UpdateFile(const CKnownFile *toupdate)
@@ -1946,12 +2205,15 @@ bool CSharedFileList::GetFileStartupState(const CString &strFilePath, LONGLONG &
 bool CSharedFileList::HasPendingHashForDirectory(const CString &strDirectory) const
 {
 	const CString strCanonicalDirectory(NormalizeSharedDirectoryPath(strDirectory));
-	for (POSITION pos = waitingforhash_list.GetHeadPosition(); pos != NULL;)
-		if (EqualPaths(waitingforhash_list.GetNext(pos)->strDirectory, strCanonicalDirectory))
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	for (const SharedHashJob &job : m_sharedHashQueue)
+		if (EqualPaths(job.strDirectory, strCanonicalDirectory))
 			return true;
-	for (POSITION pos = currentlyhashing_list.GetHeadPosition(); pos != NULL;)
-		if (EqualPaths(currentlyhashing_list.GetNext(pos)->strDirectory, strCanonicalDirectory))
+	for (const SharedHashJob &job : m_sharedHashPendingCompletions)
+		if (EqualPaths(job.strDirectory, strCanonicalDirectory))
 			return true;
+	if (m_bSharedHashActive && EqualPaths(m_sharedHashActiveJob.strDirectory, strCanonicalDirectory))
+		return true;
 	return false;
 }
 
@@ -2278,15 +2540,23 @@ bool CSharedFileList::CaptureStartupCacheSaveSnapshot(StartupCacheSaveSnapshot &
 		rSnapshot.directories.push_back(std::move(directory));
 	}
 
-	for (POSITION pos = waitingforhash_list.GetHeadPosition(); pos != NULL;) {
-		const auto it = directoryIndex.find(MakeStartupCacheSnapshotKey(waitingforhash_list.GetNext(pos)->strDirectory));
-		if (it != directoryIndex.end())
-			rSnapshot.directories[it->second].bHasPendingHash = true;
-	}
-	for (POSITION pos = currentlyhashing_list.GetHeadPosition(); pos != NULL;) {
-		const auto it = directoryIndex.find(MakeStartupCacheSnapshotKey(currentlyhashing_list.GetNext(pos)->strDirectory));
-		if (it != directoryIndex.end())
-			rSnapshot.directories[it->second].bHasPendingHash = true;
+	{
+		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+		for (const SharedHashJob &job : m_sharedHashQueue) {
+			const auto it = directoryIndex.find(MakeStartupCacheSnapshotKey(job.strDirectory));
+			if (it != directoryIndex.end())
+				rSnapshot.directories[it->second].bHasPendingHash = true;
+		}
+		for (const SharedHashJob &job : m_sharedHashPendingCompletions) {
+			const auto it = directoryIndex.find(MakeStartupCacheSnapshotKey(job.strDirectory));
+			if (it != directoryIndex.end())
+				rSnapshot.directories[it->second].bHasPendingHash = true;
+		}
+		if (m_bSharedHashActive) {
+			const auto it = directoryIndex.find(MakeStartupCacheSnapshotKey(m_sharedHashActiveJob.strDirectory));
+			if (it != directoryIndex.end())
+				rSnapshot.directories[it->second].bHasPendingHash = true;
+		}
 	}
 
 	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair)) {
