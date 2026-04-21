@@ -341,17 +341,19 @@ void CSharedFilesWnd::DoResize(int iDelta)
 
 bool CSharedFilesWnd::IsSharedHashingReloadBlocked() const
 {
-	return theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork();
+	return SharedFilesWndSeams::ShouldDeferReloadForSharedHashing(theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork());
 }
 
 void CSharedFilesWnd::DeferReloadUntilHashingDone(bool bForceTreeReload, bool bNotifyUser)
 {
 	const bool bWasDeferred = m_bDeferredFullReloadAfterHash || m_bDeferredSharedFilesReloadAfterHash;
-	if (bForceTreeReload) {
-		m_bDeferredFullReloadAfterHash = true;
-		m_bDeferredSharedFilesReloadAfterHash = false;
-	} else if (!m_bDeferredFullReloadAfterHash)
-		m_bDeferredSharedFilesReloadAfterHash = true;
+	const SharedFilesWndSeams::ReloadDeferralState currentState = {
+		m_bDeferredFullReloadAfterHash,
+		m_bDeferredSharedFilesReloadAfterHash
+	};
+	const SharedFilesWndSeams::ReloadDeferralState newState = SharedFilesWndSeams::AddDeferredReloadRequest(currentState, bForceTreeReload);
+	m_bDeferredFullReloadAfterHash = newState.bFullTreeReload;
+	m_bDeferredSharedFilesReloadAfterHash = newState.bSharedFilesReload;
 
 	if (bNotifyUser && !bWasDeferred)
 		AddLogLine(false, GetResString(IDS_SF_RELOADDEFERRED));
@@ -360,10 +362,14 @@ void CSharedFilesWnd::DeferReloadUntilHashingDone(bool bForceTreeReload, bool bN
 
 void CSharedFilesWnd::RunDeferredReloadAfterHash()
 {
-	if (!m_bDeferredFullReloadAfterHash && !m_bDeferredSharedFilesReloadAfterHash)
+	const SharedFilesWndSeams::ReloadDeferralState currentState = {
+		m_bDeferredFullReloadAfterHash,
+		m_bDeferredSharedFilesReloadAfterHash
+	};
+	if (!SharedFilesWndSeams::HasDeferredReload(currentState))
 		return;
 
-	const bool bForceTreeReload = m_bDeferredFullReloadAfterHash;
+	const bool bForceTreeReload = currentState.bFullTreeReload;
 	m_bDeferredFullReloadAfterHash = false;
 	m_bDeferredSharedFilesReloadAfterHash = false;
 	if (bForceTreeReload)
