@@ -416,6 +416,10 @@ SStartupTraceDescriptor DescribeStartupTracePhase(LPCTSTR pszPhase)
 		descriptor.strStableId = _T("ui.shared_files_ready");
 		descriptor.strCategory = _T("ui.readiness");
 		descriptor.bFinalizeTrace = true;
+	} else if (strNormalized == _T("ui.shared_files_hashing_done")) {
+		descriptor.strStableId = _T("ui.shared_files_hashing_done");
+		descriptor.strCategory = _T("ui.readiness");
+		descriptor.bFinalizeTrace = true;
 	} else if (strNormalized == _T("BuildSharedDirectoryTree done")) {
 		descriptor.strStableId = _T("shared.tree.build");
 		descriptor.strCategory = _T("shared.tree");
@@ -905,9 +909,6 @@ void CemuleApp::FinalizeStartupProfileTrace()
 		return;
 
 	CSingleLock lock(&m_startupProfileLock, TRUE);
-	if (m_bStartupProfileCompleted)
-		return;
-
 	m_bStartupProfileCompleted = true;
 	(void)WriteStartupProfileTrace();
 #endif
@@ -959,9 +960,6 @@ void CemuleApp::AppendStartupProfileLine(LPCTSTR pszPhase, const ULONGLONG ullDu
 		ullAbsoluteUs = GetStartupProfileTimestampUs();
 
 	CSingleLock lock(&m_startupProfileLock, TRUE);
-	if (m_bStartupProfileCompleted)
-		return;
-
 	SStartupProfileTraceEvent event;
 	event.strName = pszPhase;
 	event.strCategory = descriptor.strCategory;
@@ -991,9 +989,6 @@ void CemuleApp::AppendStartupProfileCounter(LPCTSTR pszCounterName, const ULONGL
 		return;
 
 	CSingleLock lock(&m_startupProfileLock, TRUE);
-	if (m_bStartupProfileCompleted)
-		return;
-
 	SStartupProfileTraceEvent event;
 	event.strName = pszCounterName;
 	event.strCategory = GetStartupCounterCategory(pszCounterName);
