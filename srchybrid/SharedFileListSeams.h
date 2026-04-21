@@ -21,6 +21,16 @@ struct AutoReloadScheduleState
 };
 
 /**
+ * @brief Stable snapshot of the shared hash worker state used before consuming one job.
+ */
+struct SharedHashWorkerStartState
+{
+	bool bWorkerCanHash;
+	bool bQueuedJobAvailable;
+	bool bPendingCompletion;
+};
+
+/**
  * @brief Returns the bounded delay used to yield after queuing one full imported part for async write.
  */
 constexpr DWORD kImportPartProgressYieldMs = 100;
@@ -39,6 +49,14 @@ inline bool ShouldScheduleAutoReload(const AutoReloadScheduleState &rState)
 	}
 
 	return rState.bFallbackPolling || rState.bDirty;
+}
+
+/**
+ * @brief Reports whether the shared hash worker may start another job without building a UI backlog.
+ */
+inline bool ShouldStartSharedHashJob(const SharedHashWorkerStartState &rState)
+{
+	return rState.bWorkerCanHash && rState.bQueuedJobAvailable && !rState.bPendingCompletion;
 }
 
 /**

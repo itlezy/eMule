@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "KnownFileList.h"
 #include "SharedFileList.h"
+#include "SharedFileListSeams.h"
 #include "Packets.h"
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "kademlia/kademlia/search.h"
@@ -678,7 +679,12 @@ bool CSharedFileList::WaitForSharedHashJob(SharedHashJob &rJob)
 			CSingleLock lock(&m_mutSharedHashQueue, TRUE);
 			if (m_bSharedHashWorkerExitRequested)
 				return false;
-			if (m_bSharedHashWorkerCanHash && !m_sharedHashQueue.empty()) {
+			const SharedFileListSeams::SharedHashWorkerStartState startState = {
+				m_bSharedHashWorkerCanHash,
+				!m_sharedHashQueue.empty(),
+				!m_sharedHashPendingCompletions.empty()
+			};
+			if (SharedFileListSeams::ShouldStartSharedHashJob(startState)) {
 				rJob = m_sharedHashQueue.front();
 				m_sharedHashQueue.pop_front();
 				m_sharedHashActiveJob = rJob;
@@ -1292,6 +1298,7 @@ void CSharedFileList::FileHashingFinished(CSharedFileHashResult *pResult)
 		OnSharedHashQueuePossiblyDrained();
 		NotifyStartupSharedFilesModelChanged();
 	}
+	SignalSharedHashWorker();
 }
 
 bool CSharedFileList::RemoveFile(CKnownFile *pFile, bool bDeleted)
@@ -1754,6 +1761,7 @@ void CSharedFileList::HashFailed(CSharedFileHashResult *pResult)
 #endif
 	OnSharedHashQueuePossiblyDrained();
 	NotifyStartupSharedFilesModelChanged();
+	SignalSharedHashWorker();
 }
 
 void CSharedFileList::UpdateFile(const CKnownFile *toupdate)
