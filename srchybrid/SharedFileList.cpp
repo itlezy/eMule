@@ -55,6 +55,9 @@ static char THIS_FILE[] = __FILE__;
 
 namespace
 {
+constexpr int kSharedHashCompletionPostRetries = 20;
+constexpr DWORD kSharedHashCompletionPostRetryDelayMs = 25;
+
 CString NormalizeSharedFilePath(const CString &rstrPath)
 {
 	return PathHelpers::CanonicalizePathForComparison(rstrPath);
@@ -765,13 +768,33 @@ void CSharedFileList::RunSharedHashJob(const SharedHashJob &rJob)
 		pResult->strFilePathKey = rJob.strFilePathKey;
 		pResult->ullQueuedTimestampUs = rJob.ullQueuedTimestampUs;
 		const UINT uMessage = bSuccess ? TM_SHAREDFILEHASHED : TM_SHAREDFILEHASHFAILED;
-		bPosted = (theApp.emuledlg->PostMessage(uMessage, 0, reinterpret_cast<LPARAM>(pResult)) != FALSE);
+		bPosted = false;
+		for (int iRetry = 0; iRetry < kSharedHashCompletionPostRetries; ++iRetry) {
+			HWND hTargetWnd = NULL;
+			{
+				CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+				if (m_bSharedHashWorkerExitRequested || theApp.IsClosing() || theApp.emuledlg == NULL || !::IsWindow(theApp.emuledlg->m_hWnd))
+					break;
+				hTargetWnd = theApp.emuledlg->m_hWnd;
+			}
+			if (::PostMessage(hTargetWnd, uMessage, 0, reinterpret_cast<LPARAM>(pResult)) != FALSE) {
+				bPosted = true;
+				break;
+			}
+			::Sleep(kSharedHashCompletionPostRetryDelayMs);
+		}
 		if (!bPosted)
 			delete pResult;
 	}
 	if (!bPosted) {
+		if (!theApp.IsClosing())
+			DebugLog(_T("Failed to post shared-file hash completion for \"%s\"; discarding result."), (LPCTSTR)strFilePath);
 		delete pKnownFile;
 		CompleteSharedHashCompletion(rJob.strFilePathKey);
+		if (GetHashingCount() == 0) {
+			m_bStartupDeferredHashingActive = false;
+			m_nLastStartupCacheSave = ::GetTickCount64();
+		}
 	}
 }
 
