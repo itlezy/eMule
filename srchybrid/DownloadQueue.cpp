@@ -300,8 +300,20 @@ void CDownloadQueue::AddFileLinkToDownload(const CED2KFileLink &Link, int cat)
 		CFileIdentifierSA tmpFileIdent(Link.GetHashKey(), Link.GetSize(), Link.GetAICHHash(), Link.HasValidAICHHash());
 		CFileIdentifier &fileid = partfile->GetFileIdentifier();
 		if (fileid.CompareRelaxed(tmpFileIdent)) {
-			if (Link.HasValidSources())
-				partfile->AddClientSources(Link.SourcesList, 1, false);
+			if (Link.HasValidSources()) {
+				const UINT uSourcesBefore = partfile->GetSourceCount();
+				if (Link.HasServerSourceHints())
+					partfile->AddSources(Link.SourcesList, 0, 0, true);
+				else
+					partfile->AddClientSources(Link.SourcesList, Link.GetSourceExchangeVersion(), false);
+				AddLogLine(
+					false,
+					_T("Parity harness added ED2K link sources: format=%s before=%u after=%u file=%s"),
+					Link.HasServerSourceHints() ? _T("server") : _T("source-exchange"),
+					uSourcesBefore,
+					partfile->GetSourceCount(),
+					(LPCTSTR)partfile->GetFileName());
+			}
 			if (!fileid.HasAICHHash() && tmpFileIdent.HasAICHHash()) {
 				fileid.SetAICHHash(tmpFileIdent.GetAICHHash());
 				partfile->GetAICHRecoveryHashSet()->SetMasterHash(tmpFileIdent.GetAICHHash(), AICH_VERIFIED);

@@ -84,6 +84,8 @@ public:
 	const CAICHHash &GetAICHHash() const				{ return m_AICHHash; }
 	EMFileSize GetSize() const;
 	bool HasValidSources() const						{ return SourcesList != NULL; }
+	bool HasServerSourceHints() const					{ return m_bServerSourceHints; }
+	uint8 GetSourceExchangeVersion() const				{ return m_uSourceExchangeVersion; }
 	bool HasHostnameSources() const						{ return !m_HostnameSourcesList.IsEmpty(); }
 	bool HasValidAICHHash() const						{ return m_bAICHHashValid; }
 
@@ -101,6 +103,8 @@ private:
 	CString m_size;
 	uchar	m_hash[16];
 	bool	m_bAICHHashValid;
+	bool	m_bServerSourceHints;
+	uint8	m_uSourceExchangeVersion;
 };
 
 

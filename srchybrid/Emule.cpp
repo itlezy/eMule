@@ -917,13 +917,36 @@ bool CemuleApp::ProcessPendingParityHarnessScenario()
 			if (linkFile.ReadString(ed2kLink)) {
 				ed2kLink.Trim();
 				if (!ed2kLink.IsEmpty()) {
-					emuledlg->ProcessED2KLink(ed2kLink);
-					Log(_T("Parity harness queued ED2K link from: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
-					m_bParityHarnessDownloadIssued = true;
+					Log(_T("Parity harness processing ED2K link from: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
+					try {
+						emuledlg->ProcessED2KLink(ed2kLink);
+						Log(_T("Parity harness queued ED2K link from: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
+						m_bParityHarnessDownloadIssued = true;
+					}
+					catch (const CString &strError) {
+						LogWarning(_T("Parity harness failed to queue ED2K link from %s: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile, (LPCTSTR)strError);
+					}
+					catch (CException *pException) {
+						TCHAR szError[1024] = { 0 };
+						if (pException != NULL) {
+							pException->GetErrorMessage(szError, _countof(szError));
+							pException->Delete();
+						}
+						LogWarning(_T("Parity harness failed to queue ED2K link from %s: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile, szError);
+					}
+					catch (...) {
+						LogWarning(_T("Parity harness failed to queue ED2K link from %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
+					}
 				}
+				else
+					LogWarning(_T("Parity harness download link file is empty after trimming: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
 			}
+			else
+				LogWarning(_T("Parity harness could not read ED2K link from: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
 			linkFile.Close();
 		}
+		else
+			LogWarning(_T("Parity harness could not open ED2K link file: %s"), (LPCTSTR)m_strParityHarnessDownloadLinkFile);
 	}
 
 	const bool exportDone =

@@ -99,6 +99,8 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 	, m_name(OptUtf8ToStr(URLDecode(pszName)).Trim())
 	, m_size(pszSize)
 	, m_bAICHHashValid()
+	, m_bServerSourceHints(false)
+	, m_uSourceExchangeVersion(1)
 {
 	// Here we have a little problem. Actually the proper solution would be to decode from UTF-8,
 	// only if the string does contain escape sequences. But if user pastes a raw UTF-8 encoded
@@ -247,6 +249,72 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 	if (!pszSources || !*pszSources)
 		return;
 	LPCTSTR pCh = pszSources;
+	LPCTSTR pExtended = _tcsstr(pCh, _T("sourcesx,"));
+	if (pExtended != NULL) {
+		pExtended += 9; // point to char after "sourcesx,"
+		LPCTSTR pEnd = pExtended;
+		while (*pEnd)
+			++pEnd;
+
+		CSafeMemFile *pExtendedSources = new CSafeMemFile(256);
+		uint8 nCount = 0;
+		pExtendedSources->WriteUInt8(nCount); // init to 0, fix this at the end.
+		while (*pExtended != 0 && nCount < 0xFF) {
+			LPCTSTR pNext;
+			if ((pCh = _tcschr(pExtended, _T(','))) != NULL)
+				pNext = pCh++;
+			else
+				pNext = pCh = pEnd;
+
+			CString strSource(pExtended, static_cast<int>(pNext - pExtended));
+			pExtended = pCh;
+			int iHostSep = strSource.Find(_T(':'));
+			int iPortSep = iHostSep >= 0 ? strSource.Find(_T(':'), iHostSep + 1) : -1;
+			int iHashSep = iPortSep >= 0 ? strSource.Find(_T(':'), iPortSep + 1) : -1;
+			if (iHostSep <= 0 || iPortSep <= iHostSep + 1 || iHashSep <= iPortSep + 1)
+				continue;
+
+			CStringA sIPa(strSource.Left(iHostSep));
+			unsigned long dwID = inet_addr(sIPa);
+			if (dwID == INADDR_NONE || ::IsLowID(dwID))
+				continue;
+
+			CString strPort(strSource.Mid(iHostSep + 1, iPortSep - iHostSep - 1));
+			unsigned long uPort = _tcstoul(strPort, NULL, 10);
+			if (!uPort || uPort > _UI16_MAX)
+				continue;
+
+			CString strUserHash(strSource.Mid(iPortSep + 1, iHashSep - iPortSep - 1));
+			uchar aucUserHash[MDX_DIGEST_SIZE];
+			if (strUserHash.GetLength() != 32 || !strmd4(strUserHash, aucUserHash))
+				continue;
+
+			CString strCryptOptions(strSource.Mid(iHashSep + 1));
+			unsigned long uCryptOptions = _tcstoul(strCryptOptions, NULL, 0);
+			if (uCryptOptions > 0xFF)
+				continue;
+			uCryptOptions |= 0x80; // Server source hint carries the user hash below.
+
+			pExtendedSources->WriteUInt32(dwID);
+			pExtendedSources->WriteUInt16(static_cast<uint16>(uPort));
+			pExtendedSources->WriteUInt8(static_cast<uint8>(uCryptOptions));
+			pExtendedSources->WriteHash16(aucUserHash);
+			++nCount;
+		}
+
+		if (nCount) {
+			pExtendedSources->SeekToBegin();
+			pExtendedSources->WriteUInt8(nCount);
+			pExtendedSources->SeekToBegin();
+			SourcesList = pExtendedSources;
+			m_bServerSourceHints = true;
+			return;
+		}
+
+		delete pExtendedSources;
+		return;
+	}
+
 	pCh = _tcsstr(pCh, _T("sources"));
 	if (pCh == NULL)
 		return;
@@ -396,7 +464,7 @@ CED2KLink* CED2KLink::CreateLinkFromUrl(LPCTSTR uri)
 								bEmuleExt = true;
 							} else {
 								// Accept source hints even when a caller places them before the eMule extension separator.
-								if (!bEmuleExt && strTok.Left(8).CompareNoCase(_T("sources,")) == 0) {
+								if (!bEmuleExt && (strTok.Left(8).CompareNoCase(_T("sources,")) == 0 || strTok.Left(9).CompareNoCase(_T("sourcesx,")) == 0)) {
 									if (!strEmuleExt.IsEmpty())
 										strEmuleExt += _T('|');
 									strEmuleExt += strTok;
