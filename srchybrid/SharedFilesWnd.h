@@ -70,7 +70,10 @@ public:
 	virtual BOOL OnInitDialog();
 	void Localize();
 	void SetToolTipsDelay(DWORD dwDelay);
-	void Reload(bool bForceTreeReload = false);
+	/**
+	 * @brief Reloads shared files unless active shared hashing requires deferring the reload.
+	 */
+	bool Reload(bool bForceTreeReload = false);
 	uint32	GetFilterColumn() const				{ return m_nFilterColumn; }
 	void OnVolumesChanged();
 	void OnSingleFileShareStatusChanged();
@@ -78,6 +81,14 @@ public:
 	void ShowDetailsPanel(bool bShow);
 	void OnStartupSharedFilesModelChanged();
 	void OnStartupProfileStartupComplete();
+	/**
+	 * @brief Runs any full reload deferred while the shared-file hash worker was active.
+	 */
+	void OnSharedHashingDrained();
+	/**
+	 * @brief Refreshes reload affordance text/tooltips from the current hash state.
+	 */
+	void UpdateReloadButtonState();
 
 	CSharedFilesCtrl sharedfilesctrl;
 	CStringArray m_astrFilter;
@@ -89,12 +100,17 @@ private:
 	CSplitterControl m_wndSplitter;
 	CEditDelayed	m_ctlFilter;
 	CHeaderCtrl		m_ctlSharedListHeader;
+	CToolTipCtrl	m_reloadToolTip;
 	uint32			m_nFilterColumn;
 	bool			m_bDetailsVisible;
 	bool			m_bSharedTreeInitialized;
 	bool			m_bStartupSharedTreePopulatedReported;
 	bool			m_bStartupSharedModelPopulatedReported;
 	bool			m_bStartupSharedFilesReadyReported;
+	bool			m_bStartupSharedFilesHashingDoneReported;
+	bool			m_bReloadToolTipCreated;
+	bool			m_bDeferredFullReloadAfterHash;
+	bool			m_bDeferredSharedFilesReloadAfterHash;
 	CSharedFileDetailsModelessSheet	m_dlgDetails;
 
 protected:
@@ -102,6 +118,22 @@ protected:
 	void DoResize(int iDelta);
 	void EnsureSharedTreeInitialized();
 	void ReportStartupSharedFilesReadinessIfReady();
+	/**
+	 * @brief Reports whether a full shared-files reload would conflict with active shared hashing.
+	 */
+	bool IsSharedHashingReloadBlocked() const;
+	/**
+	 * @brief Records a pending reload to run once shared hashing drains.
+	 */
+	void DeferReloadUntilHashingDone(bool bForceTreeReload, bool bNotifyUser);
+	/**
+	 * @brief Applies and clears a reload deferred by active shared hashing.
+	 */
+	void RunDeferredReloadAfterHash();
+	/**
+	 * @brief Updates the reload button tooltip for idle or hash-busy state.
+	 */
+	void UpdateReloadToolTipText();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL PreTranslateMessage(MSG *pMsg);

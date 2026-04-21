@@ -1088,6 +1088,11 @@
 #define IDS_IMP_DELSRC                  1147
 #define IDS_IMP_SIZE                    1148
 #define IDS_IMP_STATUS                  1149
+#define IDS_SF_RELOADTIP                1150
+#define IDS_SF_RELOADDEFERRED           1151
+#define IDS_SF_RELOADBUSYTIP            1152
+#define IDS_SHAREDHASHWAITING           1153
+#define IDS_SHAREDHASHWAITINGFILE       1154
 #define IDS_ESTTIMELEFT                 1156
 #define IDS_TRANSFER_RATE_LABEL         1157
 #define IDS_SAVELOG                     1158

@@ -799,7 +799,10 @@ CKnownFile* FindSharedFileByPath(const CString &rFilePath)
 void RefreshSharedFilesUi()
 {
 	if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL) {
-		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ReloadFileList();
+		if (theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork())
+			theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ScheduleStartupDeferredReload();
+		else
+			theApp.emuledlg->sharedfileswnd->sharedfilesctrl.ReloadFileList();
 		theApp.emuledlg->sharedfileswnd->OnSingleFileShareStatusChanged();
 	}
 }

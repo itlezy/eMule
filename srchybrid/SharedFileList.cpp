@@ -798,6 +798,8 @@ void CSharedFileList::OnSharedHashQueuePossiblyDrained()
 	m_bStartupDeferredHashingActive = false;
 	if (output != NULL)
 		output->FlushStartupDeferredReload();
+	if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL)
+		theApp.emuledlg->sharedfileswnd->OnSharedHashingDrained();
 	m_nLastStartupCacheSave = ::GetTickCount64();
 }
 
@@ -835,6 +837,17 @@ bool CSharedFileList::IsSharedHashWorkerShuttingDown() const
 {
 	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
 	return m_bSharedHashShutdownSignaled;
+}
+
+bool CSharedFileList::GetActiveSharedHashFile(CString &rstrLeafName, CString &rstrFullPath) const
+{
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	if (!m_bSharedHashActive)
+		return false;
+
+	rstrLeafName = m_sharedHashActiveJob.strName;
+	rstrFullPath = BuildSharedHashFilePath(m_sharedHashActiveJob.strDirectory, m_sharedHashActiveJob.strName);
+	return true;
 }
 
 bool CSharedFileList::ShutdownSharedHashWorkerStep(DWORD dwWaitMilliseconds)
@@ -1129,7 +1142,7 @@ bool CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 	bool bAdded = AddFile(toadd);
 	if (!bOnlyAdd) {
 		if (bAdded && output) {
-			if (m_bStartupDeferredHashingActive)
+			if (m_bStartupDeferredHashingActive || HasSharedHashingWork())
 				output->ScheduleStartupDeferredReload();
 			else
 				output->AddFile(toadd);
@@ -1755,12 +1768,11 @@ void CSharedFileList::Process()
 		SendListToServer();
 		m_lastPublishED2K = ::GetTickCount64();
 	}
-	if (m_bStartupCacheDirty
-		&& !theApp.IsClosing()
-		&& !m_bStartupDeferredHashingActive
-		&& !IsStartupCacheSaveRunning()
-		&& ::GetTickCount64() >= m_nStartupCacheDirtyTick + SEC2MS(15))
-		(void)RequestStartupCacheSave();
+	if (m_bStartupCacheDirty && !theApp.IsClosing() && !IsStartupCacheSaveRunning()) {
+		const ULONGLONG uSaveDelay = m_bStartupDeferredHashingActive ? SEC2MS(5) : SEC2MS(15);
+		if (::GetTickCount64() >= m_nStartupCacheDirtyTick + uSaveDelay)
+			(void)RequestStartupCacheSave();
+	}
 }
 
 void CSharedFileList::Publish()

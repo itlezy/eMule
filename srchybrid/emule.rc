@@ -3607,6 +3607,12 @@ BEGIN
     IDS_IMP_DELSRC          "Do you want the source files of successfully imported downloads be deleted?"
     IDS_IMP_SIZE            "%s (Disk:%s)"
     IDS_IMP_STATUS          "Importing %s: %s"
+    IDS_SF_RELOADTIP        "Reload shared files from disk."
+    IDS_SF_RELOADDEFERRED   "Shared files are still hashing. Reload will run after hashing finishes."
+    IDS_SF_RELOADBUSYTIP    "Shared files are hashing; reload is deferred until hashing finishes."
+    IDS_SHAREDHASHWAITING   "Waiting for shared-file hashing to finish."
+    IDS_SHAREDHASHWAITINGFILE
+                            "Waiting for shared-file hashing to finish: %s"
 END
 
 STRINGTABLE

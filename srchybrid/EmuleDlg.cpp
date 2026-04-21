@@ -1882,8 +1882,32 @@ void CemuleDlg::OnClose()
 	};
 
 	if (theApp.sharedfiles != NULL) {
-		updateShutdownPhase(4, _T("Closing eMule"), _T("Waiting for shared-file hashing to finish."), true);
+		CString strHashLeaf;
+		CString strHashPath;
+		CString strHashDetail(GetResString(IDS_SHAREDHASHWAITING));
+		if (theApp.sharedfiles->GetActiveSharedHashFile(strHashLeaf, strHashPath)) {
+			strHashDetail.Format(GetResString(IDS_SHAREDHASHWAITINGFILE), (LPCTSTR)strHashLeaf);
+			DebugLog(_T("Shutdown waiting for shared-file hashing: \"%s\""), (LPCTSTR)strHashPath);
+		}
+		updateShutdownPhase(4, _T("Closing eMule"), strHashDetail, true);
+		ULONGLONG ullLastHashWaitUpdate = ::GetTickCount64();
+		CString strLastHashPath(strHashPath);
 		while (!theApp.sharedfiles->ShutdownSharedHashWorkerStep(15)) {
+			const ULONGLONG ullNow = ::GetTickCount64();
+			if (ullNow >= ullLastHashWaitUpdate + 500) {
+				strHashLeaf.Empty();
+				strHashPath.Empty();
+				strHashDetail = GetResString(IDS_SHAREDHASHWAITING);
+				if (theApp.sharedfiles->GetActiveSharedHashFile(strHashLeaf, strHashPath)) {
+					strHashDetail.Format(GetResString(IDS_SHAREDHASHWAITINGFILE), (LPCTSTR)strHashLeaf);
+					if (strLastHashPath.CompareNoCase(strHashPath) != 0) {
+						DebugLog(_T("Shutdown waiting for shared-file hashing: \"%s\""), (LPCTSTR)strHashPath);
+						strLastHashPath = strHashPath;
+					}
+				}
+				updateShutdownPhase(4, _T("Closing eMule"), strHashDetail, true);
+				ullLastHashWaitUpdate = ullNow;
+			}
 			::Sleep(15);
 			PumpShutdownProgressMessages(shutdownProgress);
 		}
@@ -3608,7 +3632,14 @@ LRESULT CemuleDlg::OnWebGUIInteraction(WPARAM wParam, LPARAM lParam)
 		serverwnd->serverlistctrl.RemoveServer(reinterpret_cast<CServer*>(lParam));
 		break;
 	case WEBGUIIA_SHARED_FILES_RELOAD:
-		theApp.sharedfiles->Reload();
+		if (sharedfileswnd != NULL)
+			(void)sharedfileswnd->Reload(false);
+		else if (theApp.sharedfiles != NULL) {
+			if (theApp.sharedfiles->HasSharedHashingWork())
+				AddLogLine(false, GetResString(IDS_SF_RELOADDEFERRED));
+			else
+				theApp.sharedfiles->Reload();
+		}
 		break;
 	case WEBGUIIA_ADD_TO_STATIC:
 		serverwnd->serverlistctrl.StaticServerFileAppend(reinterpret_cast<CServer*>(lParam));

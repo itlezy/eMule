@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "CustomAutoComplete.h"
 #include "SharedFileList.h"
+#include "SharedFilesWnd.h"
 #include "emuledlg.h"
 #include "TransferDlg.h"
 #include "CatDialog.h"
@@ -171,8 +172,12 @@ void CCatDialog::OnBnClickedOk()
 		return;
 	}
 
-	if (!EqualPaths(m_myCat->strIncomingPath, oldpath))
-		theApp.sharedfiles->Reload();
+	if (!EqualPaths(m_myCat->strIncomingPath, oldpath)) {
+		if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL)
+			(void)theApp.emuledlg->sharedfileswnd->Reload();
+		else if (theApp.sharedfiles != NULL)
+			theApp.sharedfiles->Reload();
+	}
 
 	m_myCat->color = m_newcolor;
 	m_myCat->prio = m_prio.GetCurSel();

@@ -132,6 +132,10 @@ public:
 	 */
 	bool	HasSharedHashingWork() const				{ return GetHashingCount() > 0; }
 	/**
+	 * @brief Copies the active shared-file hash leaf and full path for shutdown UI.
+	 */
+	bool	GetActiveSharedHashFile(CString &rstrLeafName, CString &rstrFullPath) const;
+	/**
 	 * @brief Starts one background startup-cache save when the cache is dirty and no worker is active.
 	 */
 	bool	RequestStartupCacheSave(bool bImmediate = false);

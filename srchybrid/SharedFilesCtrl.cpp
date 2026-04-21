@@ -65,7 +65,7 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 	constexpr UINT_PTR kStartupDeferredReloadTimerId = 0x5346;
-	constexpr UINT kStartupDeferredReloadDelayMs = 75;
+	constexpr UINT kStartupDeferredReloadDelayMs = 500;
 
 	CString FormatUploadRatio(float fRatio)
 	{
@@ -1018,6 +1018,7 @@ void CSharedFilesCtrl::ShowFilesCount()
 	else
 		str.Format(_T(" (%i)"), (int)theApp.sharedfiles->GetCount());
 	theApp.emuledlg->sharedfileswnd->SetDlgItemText(IDC_TRAFFIC_TEXT, GetResString(IDS_SF_FILES) + str);
+	theApp.emuledlg->sharedfileswnd->UpdateReloadButtonState();
 }
 
 void CSharedFilesCtrl::ApplyAICHHashingCount(INT_PTR nVal)

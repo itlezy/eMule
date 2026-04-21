@@ -25,6 +25,7 @@
 #include "UserMsgs.h"
 #include "HelpIDs.h"
 #include "HighColorTab.hpp"
+#include "Log.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -78,6 +79,10 @@ CSharedFilesWnd::CSharedFilesWnd(CWnd *pParent /*=NULL*/)
 	, m_bStartupSharedTreePopulatedReported(false)
 	, m_bStartupSharedModelPopulatedReported(false)
 	, m_bStartupSharedFilesReadyReported(false)
+	, m_bStartupSharedFilesHashingDoneReported(false)
+	, m_bReloadToolTipCreated(false)
+	, m_bDeferredFullReloadAfterHash(false)
+	, m_bDeferredSharedFilesReloadAfterHash(false)
 {
 }
 
@@ -161,6 +166,12 @@ BOOL CSharedFilesWnd::OnInitDialog()
 	GetDlgItem(IDC_SF_HIDESHOWDETAILS)->SetFont(&theApp.m_fontSymbol);
 	GetDlgItem(IDC_SF_HIDESHOWDETAILS)->BringWindowToTop();
 	ShowDetailsPanel(thePrefs.GetShowSharedFilesDetails());
+	if (m_reloadToolTip.Create(this)) {
+		m_bReloadToolTipCreated = true;
+		m_reloadToolTip.AddTool(GetDlgItem(IDC_RELOADSHAREDFILES), GetResString(IDS_SF_RELOADTIP));
+		m_reloadToolTip.SetDelayTime(TTDT_AUTOPOP, SEC2MS(20));
+		m_reloadToolTip.SetDelayTime(TTDT_INITIAL, SEC2MS(thePrefs.GetToolTipDelay()));
+	}
 
 #if EMULE_COMPILED_STARTUP_PROFILING
 	ullPhaseStart = theApp.GetStartupProfileTimestampUs();
@@ -235,7 +246,7 @@ void CSharedFilesWnd::ReportStartupSharedFilesReadinessIfReady()
 #if !EMULE_COMPILED_STARTUP_PROFILING
 	return;
 #else
-	if (!theApp.IsStartupProfilingEnabled() || m_bStartupSharedFilesReadyReported)
+	if (!theApp.IsStartupProfilingEnabled() || (m_bStartupSharedFilesReadyReported && m_bStartupSharedFilesHashingDoneReported))
 		return;
 	if (!theApp.HasStartupProfileReachedStartupComplete())
 		return;
@@ -243,27 +254,34 @@ void CSharedFilesWnd::ReportStartupSharedFilesReadinessIfReady()
 		return;
 
 	const ULONGLONG ullPendingHashes = static_cast<ULONGLONG>(theApp.sharedfiles->GetHashingCount());
-	theApp.AppendStartupProfileCounter(_T("shared.model.pending_hashes"), ullPendingHashes, _T("files"));
-	if (ullPendingHashes != 0)
-		return;
-
 	const ULONGLONG ullSharedFileCount = static_cast<ULONGLONG>(theApp.sharedfiles->GetCount());
 	const ULONGLONG ullVisibleRowCount = static_cast<ULONGLONG>(sharedfilesctrl.GetItemCount());
 	const ULONGLONG ullHiddenSharedFileCount = (ullSharedFileCount >= ullVisibleRowCount) ? (ullSharedFileCount - ullVisibleRowCount) : 0ui64;
 	const CDirectoryItem *pSelectedFilter = m_ctlSharedDirTree.GetSelectedFilter();
-	if (!m_bStartupSharedModelPopulatedReported) {
-		theApp.AppendStartupProfileLine(_T("shared.model.populated"), 0);
-		m_bStartupSharedModelPopulatedReported = true;
+
+	if (!m_bStartupSharedFilesReadyReported) {
+		if (!m_bStartupSharedModelPopulatedReported) {
+			theApp.AppendStartupProfileLine(_T("shared.model.populated"), 0);
+			m_bStartupSharedModelPopulatedReported = true;
+		}
+		theApp.AppendStartupProfileCounter(_T("shared.model.shared_files"), ullSharedFileCount, _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.model.visible_rows"), ullVisibleRowCount, _T("rows"));
+		theApp.AppendStartupProfileCounter(_T("shared.model.hidden_shared_files"), ullHiddenSharedFileCount, _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.model.pending_hashes"), ullPendingHashes, _T("files"));
+		theApp.AppendStartupProfileCounter(
+			_T("shared.model.active_filter"),
+			pSelectedFilter != NULL ? static_cast<ULONGLONG>(static_cast<unsigned>(pSelectedFilter->m_eItemType)) : 0ui64,
+			_T("filter"));
+		theApp.AppendStartupProfileLine(_T("ui.shared_files_ready"), 0);
+		m_bStartupSharedFilesReadyReported = true;
 	}
-	theApp.AppendStartupProfileCounter(_T("shared.model.shared_files"), ullSharedFileCount, _T("files"));
-	theApp.AppendStartupProfileCounter(_T("shared.model.visible_rows"), ullVisibleRowCount, _T("rows"));
-	theApp.AppendStartupProfileCounter(_T("shared.model.hidden_shared_files"), ullHiddenSharedFileCount, _T("files"));
-	theApp.AppendStartupProfileCounter(
-		_T("shared.model.active_filter"),
-		pSelectedFilter != NULL ? static_cast<ULONGLONG>(static_cast<unsigned>(pSelectedFilter->m_eItemType)) : 0ui64,
-		_T("filter"));
-	theApp.AppendStartupProfileLine(_T("ui.shared_files_ready"), 0);
-	m_bStartupSharedFilesReadyReported = true;
+
+	if (!m_bStartupSharedFilesHashingDoneReported && ullPendingHashes == 0) {
+		theApp.AppendStartupProfileCounter(_T("shared.model.hashing_done_shared_files"), ullSharedFileCount, _T("files"));
+		theApp.AppendStartupProfileCounter(_T("shared.model.hashing_done_visible_rows"), ullVisibleRowCount, _T("rows"));
+		theApp.AppendStartupProfileLine(_T("ui.shared_files_hashing_done"), 0);
+		m_bStartupSharedFilesHashingDoneReported = true;
+	}
 #endif
 }
 
@@ -321,8 +339,57 @@ void CSharedFilesWnd::DoResize(int iDelta)
 	UpdateWindow();
 }
 
-void CSharedFilesWnd::Reload(bool bForceTreeReload)
+bool CSharedFilesWnd::IsSharedHashingReloadBlocked() const
 {
+	return theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork();
+}
+
+void CSharedFilesWnd::DeferReloadUntilHashingDone(bool bForceTreeReload, bool bNotifyUser)
+{
+	const bool bWasDeferred = m_bDeferredFullReloadAfterHash || m_bDeferredSharedFilesReloadAfterHash;
+	if (bForceTreeReload) {
+		m_bDeferredFullReloadAfterHash = true;
+		m_bDeferredSharedFilesReloadAfterHash = false;
+	} else if (!m_bDeferredFullReloadAfterHash)
+		m_bDeferredSharedFilesReloadAfterHash = true;
+
+	if (bNotifyUser && !bWasDeferred)
+		AddLogLine(false, GetResString(IDS_SF_RELOADDEFERRED));
+	UpdateReloadButtonState();
+}
+
+void CSharedFilesWnd::RunDeferredReloadAfterHash()
+{
+	if (!m_bDeferredFullReloadAfterHash && !m_bDeferredSharedFilesReloadAfterHash)
+		return;
+
+	const bool bForceTreeReload = m_bDeferredFullReloadAfterHash;
+	m_bDeferredFullReloadAfterHash = false;
+	m_bDeferredSharedFilesReloadAfterHash = false;
+	if (bForceTreeReload)
+		(void)Reload(true);
+	else {
+		theApp.sharedfiles->Reload();
+		sharedfilesctrl.ReloadFileList();
+		ShowSelectedFilesDetails();
+		ReportStartupSharedFilesReadinessIfReady();
+	}
+}
+
+void CSharedFilesWnd::OnSharedHashingDrained()
+{
+	RunDeferredReloadAfterHash();
+	UpdateReloadButtonState();
+	ReportStartupSharedFilesReadinessIfReady();
+}
+
+bool CSharedFilesWnd::Reload(bool bForceTreeReload)
+{
+	if (IsSharedHashingReloadBlocked()) {
+		DeferReloadUntilHashingDone(bForceTreeReload, true);
+		return false;
+	}
+
 	sharedfilesctrl.EnsureModelBound();
 	EnsureSharedTreeInitialized();
 	sharedfilesctrl.SetDirectoryFilter(NULL, false);
@@ -332,6 +399,7 @@ void CSharedFilesWnd::Reload(bool bForceTreeReload)
 
 	ShowSelectedFilesDetails();
 	ReportStartupSharedFilesReadinessIfReady();
+	return true;
 }
 
 void CSharedFilesWnd::OnStnDblClickFilesIco()
@@ -389,9 +457,13 @@ LRESULT CSharedFilesWnd::OnMonitoredSharedDirectoryUpdate(WPARAM wParam, LPARAM)
 	}
 
 	if (pUpdate->bForceTreeReload || bStateChanged)
-		Reload(true);
-	else if (pUpdate->bReloadSharedFiles)
-		theApp.sharedfiles->Reload();
+		(void)Reload(true);
+	else if (pUpdate->bReloadSharedFiles) {
+		if (IsSharedHashingReloadBlocked())
+			DeferReloadUntilHashingDone(false, false);
+		else
+			theApp.sharedfiles->Reload();
+	}
 
 	delete pUpdate;
 	return 0;
@@ -412,6 +484,8 @@ BOOL CSharedFilesWnd::PreTranslateMessage(MSG *pMsg)
 {
 	if (theApp.emuledlg->m_pSplashWnd)
 		return FALSE;
+	if (m_bReloadToolTipCreated)
+		m_reloadToolTip.RelayEvent(pMsg);
 	switch (pMsg->message) {
 	case WM_KEYDOWN:
 		// Don't handle Ctrl+Tab in this window. It will be handled by main window.
@@ -467,6 +541,7 @@ void CSharedFilesWnd::Localize()
 	m_ctlFilter.ShowColumnText(true);
 	sharedfilesctrl.SetDirectoryFilter(NULL, true);
 	SetDlgItemText(IDC_RELOADSHAREDFILES, GetResString(IDS_SF_RELOAD));
+	UpdateReloadToolTipText();
 	m_dlgDetails.Localize();
 }
 
@@ -543,7 +618,10 @@ LRESULT CSharedFilesWnd::OnChangeFilter(WPARAM wParam, LPARAM lParam)
 		m_astrFilter.RemoveAll();
 		m_astrFilter.Append(astrFilter);
 
-		sharedfilesctrl.ReloadFileList();
+		if (IsSharedHashingReloadBlocked())
+			sharedfilesctrl.ScheduleStartupDeferredReload();
+		else
+			sharedfilesctrl.ReloadFileList();
 	}
 	return 0;
 }
@@ -563,6 +641,29 @@ HBRUSH CSharedFilesWnd::OnCtlColor(CDC *pDC, CWnd *pWnd, UINT nCtlColor)
 void CSharedFilesWnd::SetToolTipsDelay(DWORD dwDelay)
 {
 	sharedfilesctrl.SetToolTipsDelay(dwDelay);
+	if (m_bReloadToolTipCreated)
+		m_reloadToolTip.SetDelayTime(TTDT_INITIAL, dwDelay);
+}
+
+void CSharedFilesWnd::UpdateReloadToolTipText()
+{
+	if (!m_bReloadToolTipCreated || GetSafeHwnd() == NULL)
+		return;
+
+	CWnd *pReloadButton = GetDlgItem(IDC_RELOADSHAREDFILES);
+	if (pReloadButton == NULL)
+		return;
+
+	m_reloadToolTip.UpdateTipText(
+		GetResString(IsSharedHashingReloadBlocked() ? IDS_SF_RELOADBUSYTIP : IDS_SF_RELOADTIP),
+		pReloadButton);
+}
+
+void CSharedFilesWnd::UpdateReloadButtonState()
+{
+	if (GetSafeHwnd() == NULL)
+		return;
+	UpdateReloadToolTipText();
 }
 
 void CSharedFilesWnd::ShowSelectedFilesDetails(bool bForce)
