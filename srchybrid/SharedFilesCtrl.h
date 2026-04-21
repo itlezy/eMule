@@ -74,7 +74,7 @@ public:
 	 */
 	void	ScheduleStartupDeferredReload();
 	/**
-	 * @brief Forces one queued startup-deferred Shared Files list reload immediately.
+	 * @brief Runs one queued startup-deferred Shared Files list reload after shared hashing is idle.
 	 */
 	void	FlushStartupDeferredReload();
 	virtual DWORD_PTR GetVirtualItemData(int iItem) const override;

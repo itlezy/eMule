@@ -46,6 +46,14 @@ inline bool ShouldDeferReloadForSharedHashing(const bool bSharedHashingActive)
 }
 
 /**
+ * @brief Reports whether a coalesced Shared Files list reload can run now.
+ */
+inline bool ShouldRunStartupDeferredListReload(const bool bDeferredReloadPending, const bool bSharedHashingActive)
+{
+	return bDeferredReloadPending && !bSharedHashingActive;
+}
+
+/**
  * @brief Adds one deferred reload request, with a full tree reload superseding shared-file-only work.
  */
 inline ReloadDeferralState AddDeferredReloadRequest(const ReloadDeferralState &rState, const bool bForceTreeReload)

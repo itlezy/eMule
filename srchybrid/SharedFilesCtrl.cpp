@@ -36,6 +36,7 @@
 #include "MenuCmds.h"
 #include "IrcWnd.h"
 #include "SharedFilesWnd.h"
+#include "SharedFilesWndSeams.h"
 #include "Opcodes.h"
 #include "InputBox.h"
 #include "WebServices.h"
@@ -98,6 +99,11 @@ namespace
 		if (strNormalizedInput.CompareNoCase(rstrCanonicalPath) != 0)
 			DEBUG_ONLY(DebugLog(_T("Canonicalized dropped shared path: \"%s\" -> \"%s\""), (LPCTSTR)strNormalizedInput, (LPCTSTR)rstrCanonicalPath));
 		return true;
+	}
+
+	bool IsSharedFileHashingActiveForReload()
+	{
+		return theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork();
 	}
 
 	struct SharedFilesRepositionState
@@ -899,10 +905,13 @@ void CSharedFilesCtrl::ScheduleStartupDeferredReload()
 	if (m_bStartupDeferredReloadPending)
 		return;
 
-	if (SetTimer(kStartupDeferredReloadTimerId, kStartupDeferredReloadDelayMs, NULL) != 0)
-		m_bStartupDeferredReloadPending = true;
-	else
+	m_bStartupDeferredReloadPending = true;
+	if (SetTimer(kStartupDeferredReloadTimerId, kStartupDeferredReloadDelayMs, NULL) == 0
+		&& SharedFilesWndSeams::ShouldRunStartupDeferredListReload(m_bStartupDeferredReloadPending, IsSharedFileHashingActiveForReload()))
+	{
+		m_bStartupDeferredReloadPending = false;
 		ReloadFileList();
+	}
 }
 
 void CSharedFilesCtrl::FlushStartupDeferredReload()
@@ -910,6 +919,8 @@ void CSharedFilesCtrl::FlushStartupDeferredReload()
 	if (!m_bModelBound || theApp.IsClosing())
 		return;
 	if (!m_bStartupDeferredReloadPending)
+		return;
+	if (!SharedFilesWndSeams::ShouldRunStartupDeferredListReload(m_bStartupDeferredReloadPending, IsSharedFileHashingActiveForReload()))
 		return;
 
 	KillTimer(kStartupDeferredReloadTimerId);
@@ -1000,6 +1011,8 @@ void CSharedFilesCtrl::OnTimer(UINT_PTR nIDEvent)
 {
 	if (nIDEvent == kStartupDeferredReloadTimerId) {
 		KillTimer(kStartupDeferredReloadTimerId);
+		if (!SharedFilesWndSeams::ShouldRunStartupDeferredListReload(m_bStartupDeferredReloadPending, IsSharedFileHashingActiveForReload()))
+			return;
 		m_bStartupDeferredReloadPending = false;
 		ReloadFileList();
 		return;
