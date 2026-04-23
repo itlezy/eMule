@@ -1881,19 +1881,33 @@ void CemuleDlg::OnClose()
 		PumpShutdownProgressMessages(shutdownProgress);
 	};
 
+	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
+	const DWORD dwSharedHashShutdownWaitMs = SEC2MS(5);
+	const DWORD dwSharedHashShutdownPollMs = 15;
 	if (theApp.sharedfiles != NULL) {
 		CString strHashLeaf;
 		CString strHashPath;
 		CString strHashDetail(GetResString(IDS_SHAREDHASHWAITING));
+		bool bSharedHashShutdownTimedOut = false;
 		if (theApp.sharedfiles->GetActiveSharedHashFile(strHashLeaf, strHashPath)) {
 			strHashDetail.Format(GetResString(IDS_SHAREDHASHWAITINGFILE), (LPCTSTR)strHashLeaf);
 			DebugLog(_T("Shutdown waiting for shared-file hashing: \"%s\""), (LPCTSTR)strHashPath);
 		}
 		updateShutdownPhase(4, _T("Closing eMule"), strHashDetail, true);
 		ULONGLONG ullLastHashWaitUpdate = ::GetTickCount64();
+		const ULONGLONG ullHashShutdownDeadline = ullLastHashWaitUpdate + dwSharedHashShutdownWaitMs;
 		CString strLastHashPath(strHashPath);
-		while (!theApp.sharedfiles->ShutdownSharedHashWorkerStep(15)) {
+		while (!theApp.sharedfiles->ShutdownSharedHashWorkerStep(dwSharedHashShutdownPollMs)) {
 			const ULONGLONG ullNow = ::GetTickCount64();
+			if (ullNow >= ullHashShutdownDeadline) {
+				bSharedHashShutdownTimedOut = true;
+				DebugLogError(_T("Timed out waiting %lu ms for shared-file hash worker shutdown; abandoning shared-file state for process exit."), dwSharedHashShutdownWaitMs);
+				if (!strHashPath.IsEmpty())
+					DebugLogError(_T("Shared-file hash worker still active on \"%s\""), (LPCTSTR)strHashPath);
+				updateShutdownPhase(4, _T("Closing eMule"), _T("Shared-file hashing did not stop in time; abandoning shared-file cleanup for process exit."), true);
+				theApp.sharedfiles = NULL;
+				break;
+			}
 			if (ullNow >= ullLastHashWaitUpdate + 500) {
 				strHashLeaf.Empty();
 				strHashPath.Empty();
@@ -1908,11 +1922,12 @@ void CemuleDlg::OnClose()
 				updateShutdownPhase(4, _T("Closing eMule"), strHashDetail, true);
 				ullLastHashWaitUpdate = ullNow;
 			}
-			::Sleep(15);
+			::Sleep(dwSharedHashShutdownPollMs);
 			PumpShutdownProgressMessages(shutdownProgress);
 		}
+		if (bSharedHashShutdownTimedOut)
+			updateShutdownPhase(6, _T("Closing eMule"), _T("Continuing shutdown without shared-file cleanup after hash-worker timeout."));
 	}
-	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
 
 	//flush queued messages
 	theApp.HandleDebugLogQueue();
@@ -2030,7 +2045,8 @@ void CemuleDlg::OnClose()
 	updateShutdownPhase(90, _T("Closing eMule"), _T("Stopping bandwidth throttling and closing remaining child windows."));
 	theApp.uploadBandwidthThrottler->EndThread();
 
-	theApp.sharedfiles->DeletePartFileInstances();
+	if (theApp.sharedfiles != NULL)
+		theApp.sharedfiles->DeletePartFileInstances();
 
 	searchwnd->SendMessage(WM_CLOSE);
 	transferwnd->SendMessage(WM_CLOSE);

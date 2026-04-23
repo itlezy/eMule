@@ -159,7 +159,10 @@ bool CFileIdentifier::CalculateMD4HashByHashSet(bool bVerifyOnly, bool bDeleteOn
 	for (INT_PTR i = iCnt; --i >= 0;)
 		md4cpy(&buffer[i * MDX_DIGEST_SIZE], m_aMD4HashSet[i]);
 	uchar aucResult[MDX_DIGEST_SIZE];
-	CKnownFile::CreateHash(buffer, (uint32)(iCnt * MDX_DIGEST_SIZE), aucResult);
+	if (!CKnownFile::CreateHash(buffer, (uint32)(iCnt * MDX_DIGEST_SIZE), aucResult)) {
+		delete[] buffer;
+		return false;
+	}
 	delete[] buffer;
 	if (bVerifyOnly) {
 		if (!md4equ(aucResult, m_abyMD4Hash)) {

@@ -453,6 +453,11 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, const
 
 		uchar *newhash = new uchar[MDX_DIGEST_SIZE];
 		if (!CreateHash(file, uSize, newhash, pBlockAICHHashTree)) {
+			if (theApp.IsClosing()) {
+				fclose(file);
+				delete[] newhash;
+				return false;
+			}
 			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)strFilePath, _tcserror(errno));
 			fclose(file);
 			delete[] newhash;
@@ -554,6 +559,10 @@ bool CKnownFile::CreateAICHHashSetOnly()
 		CAICHHashTree *pBlockAICHHashTree = cAICHHashSet.m_pHashTree.FindHash(hashcount * PARTSIZE, uSize);
 		ASSERT(pBlockAICHHashTree != NULL);
 		if (!CreateHash(file, uSize, NULL, pBlockAICHHashTree)) {
+			if (theApp.IsClosing()) {
+				fclose(file);
+				return false;
+			}
 			LogError(_T("Failed to hash file \"%s\" - %s"), (LPCTSTR)GetFilePath(), _tcserror(errno));
 			fclose(file);
 			return false;
@@ -968,7 +977,7 @@ bool CKnownFile::WriteToFile(CFileDataIO &file)
 	return true;
 }
 
-void CKnownFile::CreateHash(CFile *pFile, uint64 Length, uchar *pMd4HashOut, CAICHHashTree *pShaHashOut)
+bool CKnownFile::CreateHash(CFile *pFile, uint64 Length, uchar *pMd4HashOut, CAICHHashTree *pShaHashOut)
 {
 	ASSERT(!Length || pFile);
 	ASSERT(pMd4HashOut != NULL || pShaHashOut != NULL);
@@ -980,6 +989,10 @@ void CKnownFile::CreateHash(CFile *pFile, uint64 Length, uchar *pMd4HashOut, CAI
 	CAICHHashAlgo *pHashAlg = (pShaHashOut != NULL) ? CAICHRecoveryHashSet::GetNewHashAlgo() : NULL;
 
 	for (uint64 Required = Length; Required;) {
+		if (theApp.IsClosing()) {
+			delete pHashAlg;
+			return false;
+		}
 		UINT len = (UINT)(min(Required, (uint64)_countof(X)) / 64);
 		UINT uRead = len ? len * 64 : (UINT)Required;
 		VERIFY(pFile->Read(X, uRead) == uRead);
@@ -1021,14 +1034,14 @@ void CKnownFile::CreateHash(CFile *pFile, uint64 Length, uchar *pMd4HashOut, CAI
 		md4.Finish();
 		md4cpy(pMd4HashOut, md4.GetHash());
 	}
+	return true;
 }
 
 bool CKnownFile::CreateHash(FILE *fp, uint64 uSize, uchar *pucHash, CAICHHashTree *pShaHashOut)
 {
 	try {
 		CStdioFile file(fp);
-		CreateHash(&file, uSize, pucHash, pShaHashOut);
-		return true;
+		return CreateHash(&file, uSize, pucHash, pShaHashOut);
 	} catch (CFileException *ex) {
 		ex->Delete();
 	}
@@ -1039,8 +1052,7 @@ bool CKnownFile::CreateHash(const uchar *pucData, uint32 uSize, uchar *pucHash, 
 {
 	try {
 		CMemFile file(const_cast<uchar*>(pucData), uSize);
-		CreateHash(&file, uSize, pucHash, pShaHashOut);
-		return true;
+		return CreateHash(&file, uSize, pucHash, pShaHashOut);
 	} catch (CFileException *ex) {
 		ex->Delete();
 	}

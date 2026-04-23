@@ -3283,7 +3283,10 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool *pbAICHReportedOK)
 	const uint64 length = mini(m_hpartfile.GetLength() - uOff, PARTSIZE);
 	uchar hashresult[MDX_DIGEST_SIZE];
 	m_hpartfile.Seek((LONGLONG)uOff, CFile::begin);
-	CreateHash(&m_hpartfile, length, hashresult, phtAICHPartHash);
+	if (!CreateHash(&m_hpartfile, length, hashresult, phtAICHPartHash)) {
+		delete phtAICHPartHash;
+		return false;
+	}
 
 	bool bMD4Error = false;
 	bool bMD4Checked = m_FileIdentifier.HasExpectedMD4HashCount();
@@ -5413,13 +5416,9 @@ void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 		return;
 	}
 	CAICHHashTree htOurHash(pVerifiedHash->m_nDataSize, pVerifiedHash->m_bIsLeftBranch, pVerifiedHash->GetBaseSize());
-	try {
-		m_hpartfile.Seek((LONGLONG)uStart, CFile::begin);
-		CreateHash(&m_hpartfile, length, NULL, &htOurHash);
-	} catch (...) {
-		ASSERT(0);
+	m_hpartfile.Seek((LONGLONG)uStart, CFile::begin);
+	if (!CreateHash(&m_hpartfile, length, NULL, &htOurHash))
 		return;
-	}
 
 	if (!htOurHash.m_bHashValid) {
 		AddDebugLogLine(DLP_DEFAULT, false, _T("Processing AICH recovery data: Failed to retrieve AICH Hashset of corrupt part"));

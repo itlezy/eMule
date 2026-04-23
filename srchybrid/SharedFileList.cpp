@@ -891,6 +891,13 @@ bool CSharedFileList::ShutdownSharedHashWorkerStep(DWORD dwWaitMilliseconds)
 		m_pSharedHashThread = NULL;
 		return true;
 	}
+	if (dwWait == WAIT_FAILED) {
+		DebugLogError(_T("Failed to wait for shared-file hash worker shutdown - Error %lu"), ::GetLastError());
+		delete m_pSharedHashThread;
+		m_pSharedHashThread = NULL;
+		ASSERT(0);
+		return true;
+	}
 	return false;
 }
 
