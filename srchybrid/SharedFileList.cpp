@@ -575,6 +575,7 @@ CSharedFileList::CSharedFileList(CServerConnect *in_server)
 	, m_bSharedHashWorkerExitRequested(false)
 	, m_bSharedHashActive(false)
 	, m_bSharedHashShutdownSignaled(false)
+	, m_bStartupCacheInvalidatedByInterruptedHashing(false)
 	, m_bStartupCacheSaveRunning(false)
 	, m_bStartupCacheSaveRunAfterCurrent(false)
 	, m_eStartupCacheSavePhase(StartupCacheSavePhase::Idle)
@@ -832,6 +833,22 @@ void CSharedFileList::OnSharedHashQueuePossiblyDrained()
 	m_nLastStartupCacheSave = ::GetTickCount64();
 }
 
+void CSharedFileList::InvalidateStartupCachesAfterInterruptedHashing()
+{
+	{
+		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+		m_bStartupCacheInvalidatedByInterruptedHashing = true;
+		m_bStartupCacheDirty = false;
+		m_bStartupCacheSaveRunAfterCurrent = false;
+	}
+	m_startupCacheRecords.clear();
+	m_startupCacheVolumes.clear();
+	m_startupCacheVolumeValidation.clear();
+	m_duplicateSharedPathRecords.clear();
+	(void)LongPathSeams::DeleteFileIfExists(GetStartupCachePath());
+	(void)LongPathSeams::DeleteFileIfExists(GetDuplicatePathCachePath());
+}
+
 bool CSharedFileList::IsSharedHashInFlight(const CString &strDirectory, const CString &strName) const
 {
 	const CString strFilePathKey(MakeSharedHashFilePathKey(strDirectory, strName));
@@ -849,16 +866,25 @@ bool CSharedFileList::IsSharedHashInFlight(const CString &strDirectory, const CS
 
 void CSharedFileList::SignalSharedHashWorkerShutdown()
 {
+	bool bInvalidateStartupCaches = false;
 	{
 		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
 		if (m_bSharedHashShutdownSignaled)
 			return;
+		const SharedFileListSeams::SharedHashShutdownCacheState shutdownState = {
+			!m_sharedHashQueue.empty(),
+			!m_sharedHashPendingCompletions.empty(),
+			m_bSharedHashActive
+		};
+		bInvalidateStartupCaches = SharedFileListSeams::ShouldInvalidateStartupCacheAfterSharedHashShutdown(shutdownState);
 		m_bSharedHashShutdownSignaled = true;
 		m_bSharedHashWorkerExitRequested = true;
 		m_bSharedHashWorkerCanHash = true;
 		m_sharedHashQueue.clear();
 		m_sharedHashPendingCompletions.clear();
 	}
+	if (bInvalidateStartupCaches)
+		InvalidateStartupCachesAfterInterruptedHashing();
 	SignalSharedHashWorker();
 }
 
@@ -877,6 +903,11 @@ bool CSharedFileList::GetActiveSharedHashFile(CString &rstrLeafName, CString &rs
 	rstrLeafName = m_sharedHashActiveJob.strName;
 	rstrFullPath = BuildSharedHashFilePath(m_sharedHashActiveJob.strDirectory, m_sharedHashActiveJob.strName);
 	return true;
+}
+
+void CSharedFileList::PurgeInterruptedHashStartupCaches()
+{
+	InvalidateStartupCachesAfterInterruptedHashing();
 }
 
 bool CSharedFileList::ShutdownSharedHashWorkerStep(DWORD dwWaitMilliseconds)
@@ -2059,11 +2090,10 @@ void CSharedFileList::MarkStartupCacheDirty()
 
 bool CSharedFileList::RequestStartupCacheSave(bool /*bImmediate*/)
 {
-	if (!m_bStartupCacheDirty)
-		return false;
-
 	{
 		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+		if (!m_bStartupCacheDirty || m_bStartupCacheInvalidatedByInterruptedHashing)
+			return false;
 		if (m_bStartupCacheSaveRunning)
 			return false;
 		m_bStartupCacheSaveRunning = true;
@@ -2574,6 +2604,11 @@ bool CSharedFileList::EnsureStartupCacheVolumeValidation(const CString &strDirec
 bool CSharedFileList::CaptureStartupCacheSaveSnapshot(StartupCacheSaveSnapshot &rSnapshot) const
 {
 	rSnapshot = StartupCacheSaveSnapshot{};
+	{
+		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+		if (m_bStartupCacheInvalidatedByInterruptedHashing)
+			return false;
+	}
 	rSnapshot.strCachePath = GetStartupCachePath();
 	rSnapshot.strDuplicatePathCachePath = GetDuplicatePathCachePath();
 
@@ -2886,12 +2921,24 @@ UINT AFX_CDECL CSharedFileList::StartupCacheSaveThreadProc(LPVOID pParam)
 	if (!bPosted) {
 		if (pRequest != NULL && pRequest->pOwner != NULL) {
 			CSingleLock stateLock(&pRequest->pOwner->m_mutStartupCacheSave, TRUE);
+			const bool bStartupCacheInvalidated = pRequest->pOwner->m_bStartupCacheInvalidatedByInterruptedHashing;
 			pRequest->pOwner->m_bStartupCacheSaveRunning = false;
 			pRequest->pOwner->m_bStartupCacheSaveRunAfterCurrent = false;
 			pRequest->pOwner->m_eStartupCacheSavePhase = StartupCacheSavePhase::Idle;
 			pRequest->pOwner->m_uStartupCacheSaveDirectoriesDone = 0;
 			pRequest->pOwner->m_uStartupCacheSaveDirectoriesTotal = 0;
-			pRequest->pOwner->m_nStartupCacheDirtyTick = ::GetTickCount64();
+			if (bStartupCacheInvalidated) {
+				pRequest->pOwner->m_bStartupCacheDirty = false;
+			} else {
+				pRequest->pOwner->m_nStartupCacheDirtyTick = ::GetTickCount64();
+			}
+			stateLock.Unlock();
+			if (bStartupCacheInvalidated) {
+				if (pResult->bWriteSucceeded)
+					(void)LongPathSeams::DeleteFileIfExists(pRequest->pOwner->GetStartupCachePath());
+				if (pResult->bDuplicatePathWriteSucceeded)
+					(void)LongPathSeams::DeleteFileIfExists(pRequest->pOwner->GetDuplicatePathCachePath());
+			}
 		}
 		delete pResult;
 	}
@@ -2905,6 +2952,29 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 	StartupCacheSaveResult *pResult = static_cast<StartupCacheSaveResult*>(pResultVoid);
 	if (pResult == NULL)
 		return;
+
+	bool bStartupCacheInvalidated = false;
+	{
+		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+		bStartupCacheInvalidated = m_bStartupCacheInvalidatedByInterruptedHashing;
+	}
+	if (bStartupCacheInvalidated) {
+		if (pResult->bWriteSucceeded)
+			(void)LongPathSeams::DeleteFileIfExists(GetStartupCachePath());
+		if (pResult->bDuplicatePathWriteSucceeded)
+			(void)LongPathSeams::DeleteFileIfExists(GetDuplicatePathCachePath());
+		{
+			CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+			m_bStartupCacheSaveRunning = false;
+			m_bStartupCacheSaveRunAfterCurrent = false;
+			m_eStartupCacheSavePhase = StartupCacheSavePhase::Idle;
+			m_uStartupCacheSaveDirectoriesDone = 0;
+			m_uStartupCacheSaveDirectoriesTotal = 0;
+			m_bStartupCacheDirty = false;
+		}
+		delete pResult;
+		return;
+	}
 
 	UpdateStartupCacheSaveProgress(StartupCacheSavePhase::ApplyingResult, m_uStartupCacheSaveDirectoriesTotal, m_uStartupCacheSaveDirectoriesTotal);
 	if (pResult->bWriteSucceeded) {

@@ -31,6 +31,25 @@ struct SharedHashWorkerStartState
 };
 
 /**
+ * @brief Stable snapshot of the bounded shared-hash shutdown wait budget.
+ */
+struct SharedHashShutdownWaitState
+{
+	ULONGLONG ullElapsedMs;
+	ULONGLONG ullWaitBudgetMs;
+};
+
+/**
+ * @brief Stable snapshot of the shared-hash worker state captured when shutdown begins.
+ */
+struct SharedHashShutdownCacheState
+{
+	bool bQueuedJobAvailable;
+	bool bPendingCompletion;
+	bool bActiveJob;
+};
+
+/**
  * @brief Returns the bounded delay used to yield after queuing one full imported part for async write.
  */
 constexpr DWORD kImportPartProgressYieldMs = 100;
@@ -57,6 +76,22 @@ inline bool ShouldScheduleAutoReload(const AutoReloadScheduleState &rState)
 inline bool ShouldStartSharedHashJob(const SharedHashWorkerStartState &rState)
 {
 	return rState.bWorkerCanHash && rState.bQueuedJobAvailable && !rState.bPendingCompletion;
+}
+
+/**
+ * @brief Reports whether shutdown should keep waiting for the shared hash worker.
+ */
+inline bool ShouldKeepWaitingForSharedHashWorkerShutdown(const SharedHashShutdownWaitState &rState)
+{
+	return rState.ullElapsedMs < rState.ullWaitBudgetMs;
+}
+
+/**
+ * @brief Reports whether shutdown interrupted shared hashing strongly enough to invalidate warm caches.
+ */
+inline bool ShouldInvalidateStartupCacheAfterSharedHashShutdown(const SharedHashShutdownCacheState &rState)
+{
+	return rState.bQueuedJobAvailable || rState.bPendingCompletion || rState.bActiveJob;
 }
 
 /**

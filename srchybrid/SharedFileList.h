@@ -136,6 +136,10 @@ public:
 	 */
 	bool	GetActiveSharedHashFile(CString &rstrLeafName, CString &rstrFullPath) const;
 	/**
+	 * @brief Drops persisted startup-cache sidecars after shutdown interrupted shared hashing.
+	 */
+	void	PurgeInterruptedHashStartupCaches();
+	/**
 	 * @brief Starts one background startup-cache save when the cache is dirty and no worker is active.
 	 */
 	bool	RequestStartupCacheSave(bool bImmediate = false);
@@ -409,6 +413,10 @@ private:
 	 */
 	void	OnSharedHashQueuePossiblyDrained();
 	/**
+	 * @brief Invalidates warm shared startup caches after shutdown discards queued or active hashing work.
+	 */
+	void	InvalidateStartupCachesAfterInterruptedHashing();
+	/**
 	 * @brief Reports whether the given file path is currently being hashed or awaiting completion.
 	 */
 	bool	IsSharedHashInFlight(const CString &strDirectory, const CString &strName) const;
@@ -453,6 +461,7 @@ private:
 	bool m_bSharedHashWorkerExitRequested;
 	bool m_bSharedHashActive;
 	bool m_bSharedHashShutdownSignaled;
+	bool	m_bStartupCacheInvalidatedByInterruptedHashing;
 	StartupScanStats m_startupScanStats;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
 	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;

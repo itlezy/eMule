@@ -54,6 +54,7 @@
 #include "Opcodes.h"
 #include "ProtocolGuards.h"
 #include "SharedFileList.h"
+#include "SharedFileListSeams.h"
 #include "ED2KLink.h"
 #include "Splashscreen.h"
 #include "Exceptions.h"
@@ -1884,6 +1885,7 @@ void CemuleDlg::OnClose()
 	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
 	const DWORD dwSharedHashShutdownWaitMs = SEC2MS(5);
 	const DWORD dwSharedHashShutdownPollMs = 15;
+	const bool bSharedHashingWasActiveOnClose = (theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork());
 	if (theApp.sharedfiles != NULL) {
 		CString strHashLeaf;
 		CString strHashPath;
@@ -1894,12 +1896,16 @@ void CemuleDlg::OnClose()
 			DebugLog(_T("Shutdown waiting for shared-file hashing: \"%s\""), (LPCTSTR)strHashPath);
 		}
 		updateShutdownPhase(4, _T("Closing eMule"), strHashDetail, true);
-		ULONGLONG ullLastHashWaitUpdate = ::GetTickCount64();
-		const ULONGLONG ullHashShutdownDeadline = ullLastHashWaitUpdate + dwSharedHashShutdownWaitMs;
+		const ULONGLONG ullHashShutdownStartTick = ::GetTickCount64();
+		ULONGLONG ullLastHashWaitUpdate = ullHashShutdownStartTick;
 		CString strLastHashPath(strHashPath);
 		while (!theApp.sharedfiles->ShutdownSharedHashWorkerStep(dwSharedHashShutdownPollMs)) {
 			const ULONGLONG ullNow = ::GetTickCount64();
-			if (ullNow >= ullHashShutdownDeadline) {
+			const SharedFileListSeams::SharedHashShutdownWaitState waitState = {
+				(ullNow >= ullHashShutdownStartTick) ? (ullNow - ullHashShutdownStartTick) : 0ui64,
+				dwSharedHashShutdownWaitMs
+			};
+			if (!SharedFileListSeams::ShouldKeepWaitingForSharedHashWorkerShutdown(waitState)) {
 				bSharedHashShutdownTimedOut = true;
 				DebugLogError(_T("Timed out waiting %lu ms for shared-file hash worker shutdown; abandoning shared-file state for process exit."), dwSharedHashShutdownWaitMs);
 				if (!strHashPath.IsEmpty())
@@ -1976,7 +1982,7 @@ void CemuleDlg::OnClose()
 	}
 
 	updateShutdownPhase(18, _T("Closing eMule"), _T("Starting background shared startup-cache save."));
-	if (theApp.sharedfiles != NULL)
+	if (theApp.sharedfiles != NULL && !bSharedHashingWasActiveOnClose)
 		(void)theApp.sharedfiles->RequestStartupCacheSave(true);
 
 	updateShutdownPhase(22, _T("Closing eMule"), _T("Stopping Kad and waiting for the hashing thread to acknowledge shutdown."));
@@ -2006,6 +2012,8 @@ void CemuleDlg::OnClose()
 			::Sleep(15);
 			PumpShutdownProgressMessages(shutdownProgress);
 		}
+		if (bSharedHashingWasActiveOnClose)
+			theApp.sharedfiles->PurgeInterruptedHashStartupCaches();
 		updateShutdownPhase(62, _T("Closing eMule"), _T("Saving shared file list configuration."));
 		theApp.sharedfiles->Save();
 	}
