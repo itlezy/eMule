@@ -755,47 +755,56 @@ void CSharedFileList::RunSharedHashJob(const SharedHashJob &rJob)
 
 	MoveActiveSharedHashToPendingCompletion(rJob);
 
+	CSharedFileHashResult *pResult = new CSharedFileHashResult;
+	pResult->pOwner = this;
+	pResult->pKnownFile = pKnownFile;
+	pResult->bSuccess = bSuccess;
+	pResult->strName = rJob.strName;
+	pResult->strDirectory = rJob.strDirectory;
+	pResult->strSharedDirectory = rJob.strSharedDirectory;
+	pResult->strFilePathKey = rJob.strFilePathKey;
+	pResult->ullQueuedTimestampUs = rJob.ullQueuedTimestampUs;
+
 	bool bPosted = false;
-	{
-		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
-		bPosted = !m_bSharedHashWorkerExitRequested && !theApp.IsClosing() && theApp.emuledlg != NULL && ::IsWindow(theApp.emuledlg->m_hWnd);
-	}
-	if (bPosted) {
-		CSharedFileHashResult *pResult = new CSharedFileHashResult;
-		pResult->pOwner = this;
-		pResult->pKnownFile = pKnownFile;
-		pResult->strName = rJob.strName;
-		pResult->strDirectory = rJob.strDirectory;
-		pResult->strSharedDirectory = rJob.strSharedDirectory;
-		pResult->strFilePathKey = rJob.strFilePathKey;
-		pResult->ullQueuedTimestampUs = rJob.ullQueuedTimestampUs;
-		const UINT uMessage = bSuccess ? TM_SHAREDFILEHASHED : TM_SHAREDFILEHASHFAILED;
-		bPosted = false;
-		for (int iRetry = 0; iRetry < kSharedHashCompletionPostRetries; ++iRetry) {
-			HWND hTargetWnd = NULL;
-			{
-				CSingleLock lock(&m_mutSharedHashQueue, TRUE);
-				if (m_bSharedHashWorkerExitRequested || theApp.IsClosing() || theApp.emuledlg == NULL || !::IsWindow(theApp.emuledlg->m_hWnd))
-					break;
-				hTargetWnd = theApp.emuledlg->m_hWnd;
-			}
-			if (::PostMessage(hTargetWnd, uMessage, 0, reinterpret_cast<LPARAM>(pResult)) != FALSE) {
-				bPosted = true;
+	const UINT uMessage = bSuccess ? TM_SHAREDFILEHASHED : TM_SHAREDFILEHASHFAILED;
+	for (int iRetry = 0; iRetry < kSharedHashCompletionPostRetries; ++iRetry) {
+		HWND hTargetWnd = NULL;
+		{
+			CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+			if (m_bSharedHashWorkerExitRequested || theApp.IsClosing() || theApp.emuledlg == NULL || !::IsWindow(theApp.emuledlg->m_hWnd))
 				break;
-			}
-			::Sleep(kSharedHashCompletionPostRetryDelayMs);
+			hTargetWnd = theApp.emuledlg->m_hWnd;
 		}
-		if (!bPosted)
-			delete pResult;
+		if (::PostMessage(hTargetWnd, uMessage, 0, reinterpret_cast<LPARAM>(pResult)) != FALSE) {
+			bPosted = true;
+			break;
+		}
+		::Sleep(kSharedHashCompletionPostRetryDelayMs);
 	}
-	if (!bPosted) {
-		if (!theApp.IsClosing())
-			DebugLog(_T("Failed to post shared-file hash completion for \"%s\"; discarding result."), (LPCTSTR)strFilePath);
-		delete pKnownFile;
-		CompleteSharedHashCompletion(rJob.strFilePathKey);
-		if (GetHashingCount() == 0)
-			NoteStartupHashingQueueDrained(::GetTickCount64());
+
+	const SharedFileListSeams::SharedHashCompletionDeliveryAction eDeliveryAction =
+		SharedFileListSeams::GetSharedHashCompletionDeliveryAction({
+			IsSharedHashWorkerShuttingDown(),
+			theApp.IsClosing(),
+			bPosted
+		});
+
+	if (eDeliveryAction == SharedFileListSeams::SharedHashCompletionDeliveryAction::PostDirect)
+		return;
+
+	if (eDeliveryAction == SharedFileListSeams::SharedHashCompletionDeliveryAction::QueueForUiRetry) {
+		DebugLog(_T("Failed to post shared-file hash completion for \"%s\"; queuing UI-thread retry."), (LPCTSTR)strFilePath);
+		QueueDeferredSharedHashResult(pResult);
+		return;
 	}
+
+	if (!theApp.IsClosing())
+		DebugLog(_T("Failed to deliver shared-file hash completion for \"%s\" during shutdown; discarding result."), (LPCTSTR)strFilePath);
+	delete pKnownFile;
+	delete pResult;
+	CompleteSharedHashCompletion(rJob.strFilePathKey);
+	if (GetHashingCount() == 0)
+		NoteStartupHashingQueueDrained(::GetTickCount64());
 }
 
 void CSharedFileList::MoveActiveSharedHashToPendingCompletion(const SharedHashJob &rJob)
@@ -816,6 +825,53 @@ void CSharedFileList::CompleteSharedHashCompletion(const CString &strFilePathKey
 			m_sharedHashPendingCompletions.erase(it);
 			break;
 		}
+	}
+}
+
+void CSharedFileList::QueueDeferredSharedHashResult(CSharedFileHashResult *pResult)
+{
+	if (pResult == NULL)
+		return;
+
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	m_sharedHashDeferredResults.push_back(pResult);
+}
+
+bool CSharedFileList::TakeDeferredSharedHashResult(CSharedFileHashResult *&rpResult)
+{
+	rpResult = NULL;
+
+	CSingleLock lock(&m_mutSharedHashQueue, TRUE);
+	if (m_sharedHashDeferredResults.empty())
+		return false;
+
+	rpResult = m_sharedHashDeferredResults.front();
+	m_sharedHashDeferredResults.pop_front();
+	return true;
+}
+
+void CSharedFileList::DrainDeferredSharedHashResults()
+{
+	CSharedFileHashResult *pResult = NULL;
+	while (TakeDeferredSharedHashResult(pResult)) {
+		if (pResult == NULL)
+			continue;
+
+		const bool bCanConsume = !theApp.IsClosing()
+			&& theApp.sharedfiles != NULL
+			&& pResult->pOwner == theApp.sharedfiles
+			&& !IsSharedHashWorkerShuttingDown();
+		if (pResult->bSuccess) {
+			if (bCanConsume)
+				FileHashingFinished(pResult);
+			else
+				delete pResult->pKnownFile;
+		} else {
+			if (bCanConsume)
+				HashFailed(pResult);
+			delete pResult->pKnownFile;
+		}
+		delete pResult;
 	}
 }
 
@@ -865,6 +921,7 @@ bool CSharedFileList::IsSharedHashInFlight(const CString &strDirectory, const CS
 void CSharedFileList::SignalSharedHashWorkerShutdown()
 {
 	bool bInvalidateStartupCaches = false;
+	std::deque<CSharedFileHashResult*> deferredResults;
 	{
 		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
 		if (m_bSharedHashShutdownSignaled)
@@ -880,6 +937,13 @@ void CSharedFileList::SignalSharedHashWorkerShutdown()
 		m_bSharedHashWorkerCanHash = true;
 		m_sharedHashQueue.clear();
 		m_sharedHashPendingCompletions.clear();
+		deferredResults.swap(m_sharedHashDeferredResults);
+	}
+	for (CSharedFileHashResult *pResult : deferredResults) {
+		if (pResult == NULL)
+			continue;
+		delete pResult->pKnownFile;
+		delete pResult;
 	}
 	if (bInvalidateStartupCaches)
 		InvalidateStartupCachesAfterInterruptedHashing();
@@ -1869,6 +1933,7 @@ void CSharedFileList::UpdateFile(const CKnownFile *toupdate)
 
 void CSharedFileList::Process()
 {
+	DrainDeferredSharedHashResults();
 	Publish();
 	if (m_lastPublishED2KFlag && ::GetTickCount64() >= m_lastPublishED2K + ED2KREPUBLISHTIME) {
 		SendListToServer();

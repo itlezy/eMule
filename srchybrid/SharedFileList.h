@@ -52,6 +52,7 @@ struct CSharedFileHashResult
 {
 	CSharedFileList *pOwner = NULL;
 	CKnownFile *pKnownFile = NULL;
+	bool bSuccess = false;
 	CString strName;
 	CString strDirectory;
 	CString strSharedDirectory;
@@ -413,6 +414,18 @@ private:
 	 */
 	void	CompleteSharedHashCompletion(const CString &strFilePathKey);
 	/**
+	 * @brief Retains one hash completion for later UI-thread delivery after direct message posting failed.
+	 */
+	void	QueueDeferredSharedHashResult(CSharedFileHashResult *pResult);
+	/**
+	 * @brief Pops the next retained hash completion for UI-thread delivery.
+	 */
+	bool	TakeDeferredSharedHashResult(CSharedFileHashResult *&rpResult);
+	/**
+	 * @brief Replays retained hash completions on the UI thread when message posting previously failed.
+	 */
+	void	DrainDeferredSharedHashResults();
+	/**
 	 * @brief Handles shared hash queue drain side effects on the UI thread.
 	 */
 	void	OnSharedHashQueuePossiblyDrained();
@@ -464,6 +477,7 @@ private:
 	mutable CCriticalSection m_mutSharedHashQueue;
 	std::deque<SharedHashJob> m_sharedHashQueue;
 	std::deque<SharedHashJob> m_sharedHashPendingCompletions;
+	std::deque<CSharedFileHashResult*> m_sharedHashDeferredResults;
 	SharedHashJob m_sharedHashActiveJob;
 	bool m_bSharedHashWorkerCanHash;
 	bool m_bSharedHashWorkerExitRequested;

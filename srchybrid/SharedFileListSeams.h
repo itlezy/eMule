@@ -61,6 +61,20 @@ struct StartupCacheSaveScheduleState
 	ULONGLONG ullDirtyTick;
 };
 
+enum class SharedHashCompletionDeliveryAction : unsigned char
+{
+	PostDirect,
+	QueueForUiRetry,
+	DropResult
+};
+
+struct SharedHashCompletionDeliveryState
+{
+	bool bWorkerExitRequested;
+	bool bAppClosing;
+	bool bDirectPostSucceeded;
+};
+
 /**
  * @brief Stable snapshot of the shared-hash worker state captured when shutdown begins.
  */
@@ -130,6 +144,15 @@ inline bool ShouldStartStartupCacheSave(const StartupCacheSaveScheduleState &rSt
 		? kStartupCacheSaveDelayDuringHashDrainMs
 		: kStartupCacheSaveDelayIdleMs;
 	return rState.ullNowTick >= rState.ullDirtyTick + ullDelayMs;
+}
+
+inline SharedHashCompletionDeliveryAction GetSharedHashCompletionDeliveryAction(const SharedHashCompletionDeliveryState &rState)
+{
+	if (rState.bDirectPostSucceeded)
+		return SharedHashCompletionDeliveryAction::PostDirect;
+	if (rState.bWorkerExitRequested || rState.bAppClosing)
+		return SharedHashCompletionDeliveryAction::DropResult;
+	return SharedHashCompletionDeliveryAction::QueueForUiRetry;
 }
 
 /**
