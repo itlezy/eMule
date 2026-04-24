@@ -384,6 +384,7 @@ void CIrcChannelTabCtrl::RemoveChannel(const CString &sChannel)
 
 void CIrcChannelTabCtrl::DeleteAllChannels()
 {
+	DeleteAllItems();
 	while (!m_lstChannels.IsEmpty()) {
 		Channel *pCurChannel = m_lstChannels.RemoveHead();
 		m_pParent->m_wndNicks.DeleteAllNick(pCurChannel);
