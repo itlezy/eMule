@@ -217,9 +217,6 @@ void CKadSearchListCtrl::SearchAdd(const Kademlia::CSearch *search)
 {
 	try {
 		ASSERT(search != NULL);
-		if (!IsLiveSearch(search))
-			return;
-		PruneStaleSearchItems();
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)search;
