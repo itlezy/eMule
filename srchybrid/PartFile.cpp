@@ -1545,6 +1545,17 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 		return false;
 	}
 
+	// Preserve the previous part.met snapshot before replacing it.
+	const CString strBakFile(m_fullname + PARTMET_BAK_EXT);
+	const CString strBakTmpFile(strBakFile + PARTMET_TMP_EXT);
+	DWORD dwBackupError = ERROR_SUCCESS;
+	if (!CopyFileToTempAndReplace(m_fullname, strBakFile, strBakTmpFile, bDontOverrideBak, &dwBackupError)) {
+		if (!bDontOverrideBak) {
+			DebugLogError(_T("Failed to create backup of %s (%s) - %s"), (LPCTSTR)m_fullname, (LPCTSTR)GetFileName(), (LPCTSTR)GetErrorMessage(dwBackupError));
+			theApp.InvalidatePartMetWriteGuardCache(m_fullname);
+		}
+	}
+
 	// after successfully writing the temporary part.met file...
 	DWORD dwReplaceError = ERROR_SUCCESS;
 	if (!ReplaceFileAtomically(strTmpFile, m_fullname, &dwReplaceError)) {
@@ -1557,17 +1568,6 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 		LogError(_T("%s"), (LPCTSTR)strError);
 		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
-	}
-
-	// create a backup of the successfully written part.met file
-	const CString strBakFile(m_fullname + PARTMET_BAK_EXT);
-	const CString strBakTmpFile(strBakFile + PARTMET_TMP_EXT);
-	DWORD dwBackupError = ERROR_SUCCESS;
-	if (!CopyFileToTempAndReplace(m_fullname, strBakFile, strBakTmpFile, bDontOverrideBak, &dwBackupError)) {
-		if (!bDontOverrideBak) {
-			DebugLogError(_T("Failed to create backup of %s (%s) - %s"), (LPCTSTR)m_fullname, (LPCTSTR)GetFileName(), (LPCTSTR)GetErrorMessage(dwBackupError));
-			theApp.InvalidatePartMetWriteGuardCache(m_fullname);
-		}
 	}
 
 	return true;
