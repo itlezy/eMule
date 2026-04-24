@@ -61,6 +61,34 @@ struct StartupCacheSaveScheduleState
 	ULONGLONG ullDirtyTick;
 };
 
+enum class StartupCacheSavePostFailureAction : unsigned char
+{
+	RetryLater,
+	DiscardPersistedResultAndClearDirty
+};
+
+struct StartupCacheSavePostFailureState
+{
+	bool bCacheInvalidated;
+	bool bShutdownAbandoned;
+};
+
+enum class StartupCacheSaveCompletionAction : unsigned char
+{
+	DiscardPersistedResultAndClearDirty,
+	ApplyResultAndClearDirty,
+	ApplyResultAndRemainDirty
+};
+
+struct StartupCacheSaveCompletionState
+{
+	bool bCacheInvalidated;
+	bool bShutdownAbandoned;
+	bool bCacheWriteSucceeded;
+	bool bDuplicatePathWriteSucceeded;
+	bool bRunAfterCurrent;
+};
+
 enum class SharedHashCompletionDeliveryAction : unsigned char
 {
 	PostDirect,
@@ -147,6 +175,22 @@ inline bool ShouldStartStartupCacheSave(const StartupCacheSaveScheduleState &rSt
 		? kStartupCacheSaveDelayDuringHashDrainMs
 		: kStartupCacheSaveDelayIdleMs;
 	return rState.ullNowTick >= rState.ullDirtyTick + ullDelayMs;
+}
+
+inline StartupCacheSavePostFailureAction GetStartupCacheSavePostFailureAction(const StartupCacheSavePostFailureState &rState)
+{
+	if (rState.bCacheInvalidated || rState.bShutdownAbandoned)
+		return StartupCacheSavePostFailureAction::DiscardPersistedResultAndClearDirty;
+	return StartupCacheSavePostFailureAction::RetryLater;
+}
+
+inline StartupCacheSaveCompletionAction GetStartupCacheSaveCompletionAction(const StartupCacheSaveCompletionState &rState)
+{
+	if (rState.bCacheInvalidated || rState.bShutdownAbandoned)
+		return StartupCacheSaveCompletionAction::DiscardPersistedResultAndClearDirty;
+	if (rState.bCacheWriteSucceeded && rState.bDuplicatePathWriteSucceeded && !rState.bRunAfterCurrent)
+		return StartupCacheSaveCompletionAction::ApplyResultAndClearDirty;
+	return StartupCacheSaveCompletionAction::ApplyResultAndRemainDirty;
 }
 
 inline SharedHashCompletionDeliveryAction GetSharedHashCompletionDeliveryAction(const SharedHashCompletionDeliveryState &rState)

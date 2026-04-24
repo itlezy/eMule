@@ -3038,18 +3038,24 @@ UINT AFX_CDECL CSharedFileList::StartupCacheSaveThreadProc(LPVOID pParam)
 			CSingleLock stateLock(&pRequest->pOwner->m_mutStartupCacheSave, TRUE);
 			const bool bStartupCacheInvalidated = pRequest->pOwner->m_bStartupCacheInvalidatedByInterruptedHashing;
 			const bool bStartupCacheSaveShutdownAbandoned = pRequest->pOwner->m_bStartupCacheSaveShutdownAbandoned;
+			const SharedFileListSeams::StartupCacheSavePostFailureAction ePostFailureAction =
+				SharedFileListSeams::GetStartupCacheSavePostFailureAction({
+					bStartupCacheInvalidated,
+					bStartupCacheSaveShutdownAbandoned
+				});
 			pRequest->pOwner->m_bStartupCacheSaveRunning = false;
 			pRequest->pOwner->m_bStartupCacheSaveRunAfterCurrent = false;
 			pRequest->pOwner->m_eStartupCacheSavePhase = StartupCacheSavePhase::Idle;
 			pRequest->pOwner->m_uStartupCacheSaveDirectoriesDone = 0;
 			pRequest->pOwner->m_uStartupCacheSaveDirectoriesTotal = 0;
-			if (bStartupCacheInvalidated || bStartupCacheSaveShutdownAbandoned) {
+			if (ePostFailureAction == SharedFileListSeams::StartupCacheSavePostFailureAction::DiscardPersistedResultAndClearDirty) {
 				pRequest->pOwner->m_bStartupCacheDirty = false;
 			} else {
+				pRequest->pOwner->m_bStartupCacheDirty = true;
 				pRequest->pOwner->m_nStartupCacheDirtyTick = ::GetTickCount64();
 			}
 			stateLock.Unlock();
-			if (bStartupCacheInvalidated || bStartupCacheSaveShutdownAbandoned) {
+			if (ePostFailureAction == SharedFileListSeams::StartupCacheSavePostFailureAction::DiscardPersistedResultAndClearDirty) {
 				if (pResult->bWriteSucceeded)
 					(void)LongPathSeams::DeleteFileIfExists(pRequest->pOwner->GetStartupCachePath());
 				if (pResult->bDuplicatePathWriteSucceeded)
@@ -3071,12 +3077,22 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 
 	bool bStartupCacheInvalidated = false;
 	bool bStartupCacheSaveShutdownAbandoned = false;
+	bool bRunAfterCurrent = false;
 	{
 		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
 		bStartupCacheInvalidated = m_bStartupCacheInvalidatedByInterruptedHashing;
 		bStartupCacheSaveShutdownAbandoned = m_bStartupCacheSaveShutdownAbandoned;
+		bRunAfterCurrent = m_bStartupCacheSaveRunAfterCurrent;
 	}
-	if (bStartupCacheInvalidated || bStartupCacheSaveShutdownAbandoned) {
+	const SharedFileListSeams::StartupCacheSaveCompletionAction eCompletionAction =
+		SharedFileListSeams::GetStartupCacheSaveCompletionAction({
+			bStartupCacheInvalidated,
+			bStartupCacheSaveShutdownAbandoned,
+			pResult->bWriteSucceeded,
+			pResult->bDuplicatePathWriteSucceeded,
+			bRunAfterCurrent
+		});
+	if (eCompletionAction == SharedFileListSeams::StartupCacheSaveCompletionAction::DiscardPersistedResultAndClearDirty) {
 		if (pResult->bWriteSucceeded)
 			(void)LongPathSeams::DeleteFileIfExists(GetStartupCachePath());
 		if (pResult->bDuplicatePathWriteSucceeded)
@@ -3105,8 +3121,6 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 
 	{
 		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
-		const bool bRunAfterCurrent = m_bStartupCacheSaveRunAfterCurrent;
-		const bool bAllWritesSucceeded = pResult->bWriteSucceeded && pResult->bDuplicatePathWriteSucceeded;
 		if (pResult->bWriteSucceeded)
 			m_nLastStartupCacheSave = pResult->ullCompletedTick;
 		m_bStartupCacheSaveRunning = false;
@@ -3114,7 +3128,7 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 		m_eStartupCacheSavePhase = StartupCacheSavePhase::Idle;
 		m_uStartupCacheSaveDirectoriesDone = 0;
 		m_uStartupCacheSaveDirectoriesTotal = 0;
-		if (bAllWritesSucceeded && !bRunAfterCurrent) {
+		if (eCompletionAction == SharedFileListSeams::StartupCacheSaveCompletionAction::ApplyResultAndClearDirty) {
 			m_bStartupCacheDirty = false;
 		} else {
 			m_bStartupCacheDirty = true;
