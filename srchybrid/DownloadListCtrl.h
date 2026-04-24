@@ -144,6 +144,8 @@ protected:
 	void SetAllIcons();
 	void DrawFileItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT uDrawTextAlignment, CtrlItem_Struct *pCtrlItem);
 	void DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT uDrawTextAlignment, CtrlItem_Struct *pCtrlItem);
+	bool IsLiveSourceItem(const CtrlItem_Struct *pCtrlItem) const;
+	bool PruneStaleSourceItems();
 	int GetFilesCountInCurCat();
 	CString GetFileItemDisplayText(const CPartFile *lpPartFile, int iSubItem);
 	CString GetSourceItemDisplayText(const CtrlItem_Struct *pCtrlItem, int iSubItem);

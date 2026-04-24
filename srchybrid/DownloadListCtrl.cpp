@@ -38,6 +38,7 @@
 #include "SearchDlg.h"
 #include "SharedFileList.h"
 #include "GeoLocation.h"
+#include "ClientList.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -59,6 +60,23 @@ namespace
 		if (client == NULL)
 			return 0;
 		return client->GetIP() != 0 ? client->GetIP() : client->GetConnectIP();
+	}
+
+	bool IsSourceCtrlItem(const CtrlItem_Struct *item)
+	{
+		return item != NULL && (item->type == AVAILABLE_SOURCE || item->type == UNAVAILABLE_SOURCE);
+	}
+
+	bool IsLiveSourceCtrlItem(const CtrlItem_Struct *item)
+	{
+		if (!IsSourceCtrlItem(item) || item->value == NULL || theApp.clientlist == NULL)
+			return false;
+		return theApp.clientlist->ContainsClientPointer(static_cast<CUpDownClient*>(item->value));
+	}
+
+	bool IsLiveDownloadClient(const CUpDownClient *client)
+	{
+		return theApp.clientlist != NULL && theApp.clientlist->ContainsClientPointer(client);
 	}
 }
 
@@ -267,6 +285,9 @@ void CDownloadListCtrl::AddFile(CPartFile *toadd)
 
 void CDownloadListCtrl::AddSource(CPartFile *owner, CUpDownClient *source, bool notavailable)
 {
+	if (!IsLiveDownloadClient(source))
+		return;
+
 	ItemType itemtype = notavailable ? UNAVAILABLE_SOURCE : AVAILABLE_SOURCE;
 	// Update the other instances of this source
 	bool bFound = false;
@@ -314,6 +335,41 @@ void CDownloadListCtrl::AddSource(CPartFile *owner, CUpDownClient *source, bool 
 		if (iItem >= 0)
 			InsertItem(LVIF_TEXT | LVIF_PARAM, iItem + 1, LPSTR_TEXTCALLBACK, 0, 0, 0, (LPARAM)newitem);
 	}
+}
+
+bool CDownloadListCtrl::IsLiveSourceItem(const CtrlItem_Struct *pCtrlItem) const
+{
+	return IsLiveSourceCtrlItem(pCtrlItem);
+}
+
+bool CDownloadListCtrl::PruneStaleSourceItems()
+{
+	bool bRemoved = false;
+	for (ListItems::const_iterator it = m_ListItems.begin(); it != m_ListItems.end();) {
+		CtrlItem_Struct *delItem = it->second;
+		if (IsSourceCtrlItem(delItem) && !IsLiveSourceItem(delItem)) {
+			it = m_ListItems.erase(it);
+
+			LVFINDINFO find;
+			find.flags = LVFI_PARAM;
+			find.lParam = (LPARAM)delItem;
+			for (;;) {
+				int iItem = FindItem(&find);
+				if (iItem < 0)
+					break;
+				DeleteItem(iItem);
+			}
+
+			delete delItem;
+			bRemoved = true;
+		} else
+			++it;
+	}
+
+	if (bRemoved)
+		m_availableCommandsDirty = true;
+
+	return bRemoved;
 }
 
 void CDownloadListCtrl::RemoveSource(CUpDownClient *source, CPartFile *owner)
@@ -463,6 +519,9 @@ void CDownloadListCtrl::DrawFileItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT 
 CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrlItem, int iSubItem)
 {
 	CString sText;
+	if (!IsLiveSourceItem(pCtrlItem))
+		return sText;
+
 	const CUpDownClient *pClient = static_cast<CUpDownClient*>(pCtrlItem->value);
 	switch (iSubItem) {
 	case 0: //icon, name, status
@@ -574,6 +633,9 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 
 void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT uDrawTextAlignment, CtrlItem_Struct *pCtrlItem)
 {
+	if (!IsLiveSourceItem(pCtrlItem))
+		return;
+
 	const CUpDownClient *pClient = static_cast<CUpDownClient*>(pCtrlItem->value);
 	const CString &sItem(GetSourceItemDisplayText(pCtrlItem, nColumn));
 	switch (nColumn) {
@@ -708,6 +770,9 @@ void CDownloadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	RECT rcClient;
 	GetClientRect(&rcClient);
 	CtrlItem_Struct *content = reinterpret_cast<CtrlItem_Struct*>(lpDrawItemStruct->itemData);
+	if (IsSourceCtrlItem(content) && !IsLiveSourceItem(content))
+		return;
+
 	if (m_pFontBold)
 		if (content->type == FILE_TYPE && static_cast<CPartFile*>(content->value)->GetTransferringSrcCount()
 			|| ((content->type == UNAVAILABLE_SOURCE || content->type == AVAILABLE_SOURCE)
@@ -849,6 +914,15 @@ void CDownloadListCtrl::ExpandCollapseItem(int iItem, int iAction, bool bCollaps
 	if (iItem == -1)
 		return;
 	CtrlItem_Struct *content = reinterpret_cast<CtrlItem_Struct*>(GetItemData(iItem));
+	if (IsSourceCtrlItem(content) && !IsLiveSourceItem(content)) {
+		PruneStaleSourceItems();
+		return;
+	}
+
+	PruneStaleSourceItems();
+	if (iItem >= GetItemCount())
+		return;
+	content = reinterpret_cast<CtrlItem_Struct*>(GetItemData(iItem));
 
 	// to collapse/expand files when one of its sources is selected
 	if (content != NULL && bCollapseSource && content->parent != NULL) {
@@ -883,7 +957,7 @@ void CDownloadListCtrl::ExpandCollapseItem(int iItem, int iAction, bool bCollaps
 			// Remark: don't use GetSourceCount() => UNAVAILABLE_SOURCE
 			for (ListItems::const_iterator it = m_ListItems.begin(); it != m_ListItems.end(); ++it) {
 				const CtrlItem_Struct *cur_item = it->second;
-				if (cur_item->owner == partfile) {
+				if (cur_item->owner == partfile && (!IsSourceCtrlItem(cur_item) || IsLiveSourceItem(cur_item))) {
 					partfile->srcarevisible = true;
 					InsertItem(LVIF_TEXT | LVIF_PARAM, iItem + 1, LPSTR_TEXTCALLBACK, 0, 0, 0, (LPARAM)cur_item);
 				}
@@ -914,6 +988,10 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 	int iSel = GetNextItem(-1, LVIS_SELECTED);
 	if (iSel >= 0) {
 		const CtrlItem_Struct *content = reinterpret_cast<CtrlItem_Struct*>(GetItemData(iSel));
+		if (IsSourceCtrlItem(content) && !IsLiveSourceItem(content)) {
+			PruneStaleSourceItems();
+			return;
+		}
 		if (content != NULL && content->type == FILE_TYPE) {
 			// get merged settings
 			int iSelectedItems = 0;
@@ -1074,12 +1152,12 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			VERIFY(CatsMenu.DestroyMenu());
 			VERIFY(PreviewWithMenu.DestroyMenu());
 		} else {
-			const CUpDownClient *client = (content != NULL) ? static_cast<CUpDownClient*>(content->value) : NULL;
+			const CUpDownClient *client = (content != NULL && IsLiveSourceItem(content)) ? static_cast<CUpDownClient*>(content->value) : NULL;
 			const bool is_ed2k = client && client->IsEd2kClient();
 			CTitledMenu ClientMenu;
 			ClientMenu.CreatePopupMenu();
 			ClientMenu.AddMenuTitle(GetResString(IDS_CLIENTS), true);
-			ClientMenu.AppendMenu(MF_STRING, MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("CLIENTDETAILS"));
+			ClientMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("CLIENTDETAILS"));
 			ClientMenu.SetDefaultItem(MP_DETAIL);
 			ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_ADDFRIEND, GetResString(IDS_ADDFRIEND), _T("ADDFRIEND"));
 			ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
@@ -1529,7 +1607,7 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				} else if (wParam >= MP_PREVIEW_APP_MIN && wParam <= MP_PREVIEW_APP_MAX)
 					thePreviewApps.RunApp(file, (UINT)wParam);
 			}
-		} else if (content != NULL) {
+		} else if (content != NULL && IsLiveSourceItem(content)) {
 			CUpDownClient *client = static_cast<CUpDownClient*>(content->value);
 
 			switch (wParam) {
@@ -1610,6 +1688,7 @@ void CDownloadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	else
 		SetSortArrow(pNMLV->iSubItem, sortAscending ? arrowDoubleUp : arrowDoubleDown);
 	UpdateSortHistory(MAKELONG(pNMLV->iSubItem + adder, !sortAscending));
+	PruneStaleSourceItems();
 	SortItems(SortProc, MAKELONG(pNMLV->iSubItem + adder, !sortAscending));
 	// Save new preferences
 	thePrefs.TransferlistRemainSortStyle(m_bRemainSort);
@@ -1620,6 +1699,10 @@ int CALLBACK CDownloadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM 
 {
 	const CtrlItem_Struct *item1 = reinterpret_cast<CtrlItem_Struct*>(lParam1);
 	const CtrlItem_Struct *item2 = reinterpret_cast<CtrlItem_Struct*>(lParam2);
+	const bool bLiveItem1 = !IsSourceCtrlItem(item1) || IsLiveSourceCtrlItem(item1);
+	const bool bLiveItem2 = !IsSourceCtrlItem(item2) || IsLiveSourceCtrlItem(item2);
+	if (!bLiveItem1 || !bLiveItem2)
+		return bLiveItem1 ? -1 : (bLiveItem2 ? 1 : 0);
 
 	int iResult;
 	if (item1->type == FILE_TYPE && item2->type != FILE_TYPE) {
@@ -1838,6 +1921,11 @@ void CDownloadListCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 	int iSel = GetSelectionMark();
 	if (iSel >= 0) {
 		const CtrlItem_Struct *content = reinterpret_cast<CtrlItem_Struct*>(GetItemData(iSel));
+		if (IsSourceCtrlItem(content) && !IsLiveSourceItem(content)) {
+			PruneStaleSourceItems();
+			*pResult = 0;
+			return;
+		}
 		if (content && content->value) {
 			if (content->type == FILE_TYPE) {
 				CPoint pt;
@@ -1870,7 +1958,7 @@ void CDownloadListCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 						}
 					}
 				}
-			} else
+			} else if (IsLiveSourceItem(content))
 				ShowClientDialog(static_cast<CUpDownClient*>(content->value));
 		}
 	}
@@ -2141,8 +2229,10 @@ void CDownloadListCtrl::ShowSelectedFileDetails()
 				&& point.x >= sm_iIconOffset + theApp.GetSmallSytemIconSize().cx
 				&& point.x <= sm_iIconOffset + theApp.GetSmallSytemIconSize().cx + RATING_ICON_WIDTH);
 			ShowFileDialog(b ? IDD_COMMENTLST : 0);
-		} else
+		} else if (IsLiveSourceItem(content))
 			ShowClientDialog(static_cast<CUpDownClient*>(content->value));
+		else if (IsSourceCtrlItem(content))
+			PruneStaleSourceItems();
 }
 
 int CDownloadListCtrl::GetCompleteDownloads(int cat, int &total)
@@ -2294,7 +2384,10 @@ void CDownloadListCtrl::OnLvnGetDispInfo(LPNMHDR pNMHDR, LRESULT *pResult)
 					break;
 				case UNAVAILABLE_SOURCE:
 				case AVAILABLE_SOURCE:
-					_tcsncpy_s(rItem.pszText, rItem.cchTextMax, GetSourceItemDisplayText(pCtrlItem, rItem.iSubItem), _TRUNCATE);
+					if (IsLiveSourceItem(pCtrlItem))
+						_tcsncpy_s(rItem.pszText, rItem.cchTextMax, GetSourceItemDisplayText(pCtrlItem, rItem.iSubItem), _TRUNCATE);
+					else if (rItem.pszText != NULL && rItem.cchTextMax > 0)
+						rItem.pszText[0] = _T('\0');
 					break;
 				default:
 					ASSERT(0);
@@ -2324,7 +2417,7 @@ void CDownloadListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 			// build info text and display it
 			if (content->type == 1) // for downloading files
 				info = static_cast<CPartFile*>(content->value)->GetInfoSummary();
-			else if (content->type == 3 || content->type == 2) { // for sources
+			else if ((content->type == 3 || content->type == 2) && IsLiveSourceItem(content)) { // for sources
 				const CUpDownClient *client = static_cast<CUpDownClient*>(content->value);
 				if (client->IsEd2kClient()) {
 					in_addr server;
@@ -2474,6 +2567,9 @@ CObject* CDownloadListListCtrlItemWalk::GetNextSelectableItem()
 
 void CDownloadListCtrl::ShowClientDialog(CUpDownClient *pClient)
 {
+	if (!IsLiveDownloadClient(pClient))
+		return;
+
 	CDownloadListListCtrlItemWalk::SetItemType(AVAILABLE_SOURCE); // just set to something !=FILE_TYPE
 	CClientDetailDialog dialog(pClient, this);
 	dialog.DoModal();
