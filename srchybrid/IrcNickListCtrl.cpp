@@ -60,6 +60,8 @@ int CALLBACK CIrcNickListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM l
 		return 0;
 	const Nick *pItem1 = reinterpret_cast<Nick*>(lParam1);
 	const Nick *pItem2 = reinterpret_cast<Nick*>(lParam2);
+	if (pItem1 == NULL || pItem2 == NULL)
+		return pItem1 ? -1 : (pItem2 ? 1 : 0);
 
 	if (pItem1->m_iLevel != pItem2->m_iLevel) {
 		if (pItem1->m_iLevel == -1)
@@ -228,9 +230,14 @@ bool CIrcNickListCtrl::RemoveNick(const CString &sChannel, const CString &sNick)
 
 void CIrcNickListCtrl::DeleteAllNick(Channel *pChannel)
 {
-	if (pChannel)
+	if (pChannel) {
+		if (m_pParent != NULL && pChannel == m_pParent->m_wndChanSel.m_pCurrentChannel) {
+			DeleteAllItems();
+			UpdateNickCount();
+		}
 		while (!pChannel->m_lstNicks.IsEmpty())
 			delete pChannel->m_lstNicks.RemoveHead();
+	}
 }
 
 void CIrcNickListCtrl::DeleteNickInAll(const CString &sNick, const CString &sMessage)
@@ -373,11 +380,10 @@ BOOL CIrcNickListCtrl::OnCommand(WPARAM wParam, LPARAM)
 {
 	int iNickItem = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	int iChanItem = m_pParent->m_wndChanSel.GetCurSel();
-	const Nick *pNick = reinterpret_cast<Nick*>(GetItemData(iNickItem));
+	const Nick *pNick = (iNickItem >= 0) ? reinterpret_cast<Nick*>(GetItemData(iNickItem)) : NULL;
 	TCITEM ti;
 	ti.mask = TCIF_PARAM;
-	m_pParent->m_wndChanSel.GetItem(iChanItem, &ti);
-	Channel *pChannel = reinterpret_cast<Channel*>(ti.lParam);
+	Channel *pChannel = (iChanItem >= 0 && m_pParent->m_wndChanSel.GetItem(iChanItem, &ti)) ? reinterpret_cast<Channel*>(ti.lParam) : NULL;
 
 	switch (wParam) {
 	case Irc_Priv:
