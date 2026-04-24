@@ -1534,7 +1534,7 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 		case MP_REMOVE:
 		case MPG_DELETE:
 			{
-				if (IDNO == LocMessageBox(IDS_CONFIRM_FILEDELETE, MB_ICONWARNING | MB_DEFBUTTON2 | MB_YESNO, 0))
+				if (LocMessageBox(IDS_CONFIRM_FILEDELETE, MB_ICONWARNING | MB_DEFBUTTON2 | MB_YESNO, 0) != IDYES)
 					return TRUE;
 
 				SetRedraw(false);
