@@ -40,6 +40,9 @@ protected:
 
 	CString CreateSelectedServersURLs();
 	void DeleteSelectedServers();
+	const CServer* GetLiveServerByIndex(int iItem);
+	bool IsLiveServer(const CServer *pServer) const;
+	bool PruneStaleServerItems();
 
 	void SetSelectedServersPriority(UINT uPriority);
 	void SetAllIcons();

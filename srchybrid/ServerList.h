@@ -52,6 +52,7 @@ public:
 	CServer*	GetServerByIPTCP(uint32 nIP, uint16 nTCPPort) const;
 	CServer*	GetServerByIPUDP(uint32 nIP, uint16 nUDPPort, bool bObfuscationPorts = true) const;
 	int			GetPositionOfServer(const CServer *pServer) const;
+	bool		ContainsServerPointer(const CServer *pServer) const	{ return pServer != NULL && list.Find(const_cast<CServer*>(pServer)) != NULL; }
 
 	void		SetServerPosition(INT_PTR newPosition);
 	INT_PTR		GetServerPostion() const		{ return serverpos; }

@@ -38,6 +38,14 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	bool IsLiveServerPointer(const CServer *pServer)
+	{
+		return theApp.serverlist != NULL && theApp.serverlist->ContainsServerPointer(pServer);
+	}
+}
+
 
 IMPLEMENT_DYNAMIC(CServerListCtrl, CMuleListCtrl)
 
@@ -113,6 +121,36 @@ void CServerListCtrl::SetAllIcons()
 	ASSERT((GetStyle() & LVS_SHAREIMAGELISTS) != 0);
 	m_pImageList = &theApp.emuledlg->GetClientIconList();
 	VERIFY(ApplyImageList(*m_pImageList) == NULL);
+}
+
+const CServer* CServerListCtrl::GetLiveServerByIndex(int iItem)
+{
+	if (iItem < 0 || iItem >= GetItemCount())
+		return NULL;
+
+	const CServer *pServer = reinterpret_cast<CServer*>(GetItemData(iItem));
+	return IsLiveServer(pServer) ? pServer : NULL;
+}
+
+bool CServerListCtrl::IsLiveServer(const CServer *pServer) const
+{
+	return IsLiveServerPointer(pServer);
+}
+
+bool CServerListCtrl::PruneStaleServerItems()
+{
+	bool bRemoved = false;
+	for (int iItem = GetItemCount(); --iItem >= 0;) {
+		if (!IsLiveServer(reinterpret_cast<CServer*>(GetItemData(iItem)))) {
+			DeleteItem(iItem);
+			bRemoved = true;
+		}
+	}
+
+	if (bRemoved)
+		ShowServerCount();
+
+	return bRemoved;
 }
 
 CString CServerListCtrl::GetItemDisplayText(const CServer *server, int iSubItem) const
@@ -200,6 +238,9 @@ void CServerListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	const CServer *pServer = reinterpret_cast<CServer*>(lpDrawItemStruct->itemData);
 	if (!pServer || theApp.IsClosing())
 		return;
+	if (!IsLiveServer(pServer))
+		return;
+
 	CRect rcItem(lpDrawItemStruct->rcItem);
 	CMemoryDC dc(CDC::FromHandle(lpDrawItemStruct->hDC), rcItem);
 	BOOL bCtrlFocused;
@@ -283,10 +324,10 @@ void CServerListCtrl::RemoveServer(const CServer *pServer)
 {
 	int iItem = FindServer(pServer);
 	if (iItem >= 0) {
-		theApp.serverlist->RemoveServer(pServer);
 		DeleteItem(iItem);
 		ShowServerCount();
 	}
+	theApp.serverlist->RemoveServer(pServer);
 }
 
 void CServerListCtrl::RemoveAllDeadServers()
@@ -343,13 +384,17 @@ void CServerListCtrl::EndBulkLoad()
 
 void CServerListCtrl::OnContextMenu(CWnd*, CPoint point)
 {
+	PruneStaleServerItems();
+
 	// get merged settings
 	bool bFirstItem = true;
 	int iSelectedItems = GetSelectedCount();
 	int iStaticServers = 0;
 	UINT uPrioMenuItem = 0;
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-		const CServer *pServer = reinterpret_cast<CServer*>(GetItemData(GetNextSelectedItem(pos)));
+		const CServer *pServer = GetLiveServerByIndex(GetNextSelectedItem(pos));
+		if (pServer == NULL)
+			continue;
 		iStaticServers += static_cast<int>(pServer->IsStaticMember());
 
 		UINT uCurPrioMenuItem;
@@ -416,6 +461,7 @@ void CServerListCtrl::OnContextMenu(CWnd*, CPoint point)
 BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 {
 	wParam = LOWORD(wParam);
+	PruneStaleServerItems();
 
 	switch (wParam) {
 	case MP_CONNECTTO:
@@ -425,8 +471,8 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
 				int iItem = GetNextSelectedItem(pos);
 				if (iItem > -1) {
-					const CServer *pServer = reinterpret_cast<CServer*>(GetItemData(iItem));
-					if (!thePrefs.IsCryptLayerRequired() || pServer->SupportsObfuscationTCP() || !pServer->TriedCrypt())
+					const CServer *pServer = GetLiveServerByIndex(iItem);
+					if (pServer != NULL && (!thePrefs.IsCryptLayerRequired() || pServer->SupportsObfuscationTCP() || !pServer->TriedCrypt()))
 						theApp.serverlist->MoveServerDown(pServer);
 				}
 			}
@@ -434,9 +480,9 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		} else {
 			int iItem = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 			if (iItem > -1) {
-				const CServer *pServer = reinterpret_cast<CServer*>(GetItemData(iItem));
-				if (!thePrefs.IsCryptLayerRequired() || pServer->SupportsObfuscationTCP() || !pServer->TriedCrypt())
-					theApp.serverconnect->ConnectToServer(reinterpret_cast<CServer*>(GetItemData(iItem)));
+				const CServer *pServer = GetLiveServerByIndex(iItem);
+				if (pServer != NULL && (!thePrefs.IsCryptLayerRequired() || pServer->SupportsObfuscationTCP() || !pServer->TriedCrypt()))
+					theApp.serverconnect->ConnectToServer(const_cast<CServer*>(pServer));
 			}
 		}
 		theApp.emuledlg->ShowConnectionState();
@@ -478,8 +524,8 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				theApp.emuledlg->ShowConnectionState();
 			}
 			ShowWindow(SW_HIDE);
-			theApp.serverlist->RemoveAllServers();
 			DeleteAllItems();
+			theApp.serverlist->RemoveAllServers();
 			ShowWindow(SW_SHOW);
 			ShowServerCount();
 		}
@@ -489,16 +535,20 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		return TRUE;
 	case MP_ADDTOSTATIC:
 		for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-			CServer *pServer = reinterpret_cast<CServer*>(GetItemData(GetNextSelectedItem(pos)));
-			if (!StaticServerFileAppend(pServer))
+			const CServer *pServer = GetLiveServerByIndex(GetNextSelectedItem(pos));
+			if (pServer == NULL)
+				continue;
+			if (!StaticServerFileAppend(const_cast<CServer*>(pServer)))
 				return FALSE;
 			RefreshServer(pServer);
 		}
 		return TRUE;
 	case MP_REMOVEFROMSTATIC:
 		for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-			CServer *pServer = reinterpret_cast<CServer*>(GetItemData(GetNextSelectedItem(pos)));
-			if (!StaticServerFileRemove(pServer))
+			const CServer *pServer = GetLiveServerByIndex(GetNextSelectedItem(pos));
+			if (pServer == NULL)
+				continue;
+			if (!StaticServerFileRemove(const_cast<CServer*>(pServer)))
 				return FALSE;
 			RefreshServer(pServer);
 		}
@@ -520,7 +570,9 @@ CString CServerListCtrl::CreateSelectedServersURLs()
 {
 	CString links;
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-		const CServer *pServer = reinterpret_cast<CServer*>(GetItemData(GetNextSelectedItem(pos)));
+		const CServer *pServer = GetLiveServerByIndex(GetNextSelectedItem(pos));
+		if (pServer == NULL)
+			continue;
 		if (!links.IsEmpty())
 			links += _T("\r\n");
 		links.AppendFormat(_T("ed2k://|server|%s|%u|/"), pServer->GetAddress(), pServer->GetPort());
@@ -534,8 +586,10 @@ void CServerListCtrl::DeleteSelectedServers()
 	POSITION pos;
 	while ((pos = GetFirstSelectedItemPosition()) != NULL) {
 		int iItem = GetNextSelectedItem(pos);
-		theApp.serverlist->RemoveServer(reinterpret_cast<const CServer*>(GetItemData(iItem)));
+		const CServer *pServer = GetLiveServerByIndex(iItem);
 		DeleteItem(iItem);
+		if (pServer != NULL)
+			theApp.serverlist->RemoveServer(pServer);
 	}
 	ShowServerCount();
 	SetRedraw(true);
@@ -547,8 +601,8 @@ void CServerListCtrl::SetSelectedServersPriority(UINT uPriority)
 {
 	bool bUpdateStaticServersFile = false;
 	for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-		CServer *pServer = reinterpret_cast<CServer*>(GetItemData(GetNextSelectedItem(pos)));
-		if (pServer->GetPreference() != uPriority) {
+		CServer *pServer = const_cast<CServer*>(GetLiveServerByIndex(GetNextSelectedItem(pos)));
+		if (pServer != NULL && pServer->GetPreference() != uPriority) {
 			pServer->SetPreference(uPriority);
 			if (pServer->IsStaticMember())
 				bUpdateStaticServersFile = true;
@@ -563,8 +617,11 @@ void CServerListCtrl::OnNmDblClk(LPNMHDR, LRESULT*)
 {
 	int iItem = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	if (iItem >= 0) {
-		theApp.serverconnect->ConnectToServer(reinterpret_cast<CServer*>(GetItemData(iItem)));
-		theApp.emuledlg->ShowConnectionState();
+		CServer *pServer = const_cast<CServer*>(GetLiveServerByIndex(iItem));
+		if (pServer != NULL) {
+			theApp.serverconnect->ConnectToServer(pServer);
+			theApp.emuledlg->ShowConnectionState();
+		}
 	}
 }
 
@@ -583,6 +640,11 @@ void CServerListCtrl::RefreshServer(const CServer *pServer)
 	if (m_bBulkLoading)
 		return;
 	if (pServer && !theApp.IsClosing()) {
+		if (!IsLiveServer(pServer)) {
+			PruneStaleServerItems();
+			return;
+		}
+
 		int iItem = FindServer(pServer);
 		if (iItem >= 0) {
 			for (int i = 0; i <= 15; ++i) //column autosizing requires item text
@@ -619,6 +681,7 @@ void CServerListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	// Sort table
 	UpdateSortHistory(MAKELONG(pNMLV->iSubItem, !sortAscending));
 	SetSortArrow(pNMLV->iSubItem, sortAscending);
+	PruneStaleServerItems();
 	SortItems(SortProc, MAKELONG(pNMLV->iSubItem, !sortAscending));
 	*pResult = 0;
 }
@@ -629,6 +692,10 @@ int CALLBACK CServerListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 		return 0;
 	const CServer *item1 = reinterpret_cast<CServer*>(lParam1);
 	const CServer *item2 = reinterpret_cast<CServer*>(lParam2);
+	const bool bLiveItem1 = IsLiveServerPointer(item1);
+	const bool bLiveItem2 = IsLiveServerPointer(item2);
+	if (!bLiveItem1 || !bLiveItem2)
+		return bLiveItem1 ? -1 : (bLiveItem2 ? 1 : 0);
 
 	int iResult;
 	switch (LOWORD(lParamSort)) {
@@ -783,7 +850,7 @@ void CServerListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 		ULONGLONG ulTotalLowIdUsers = 0;
 		ULONGLONG ulTotalFiles = 0;
 		for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
-			const CServer *pServer = reinterpret_cast<CServer*>(GetItemData(GetNextSelectedItem(pos)));
+			const CServer *pServer = GetLiveServerByIndex(GetNextSelectedItem(pos));
 			if (pServer) {
 				++iSelected;
 				ulTotalUsers += pServer->GetUsers();
