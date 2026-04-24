@@ -111,6 +111,18 @@ void CSearchManager::StopAllSearches()
 		delete itSearchMap->second;
 }
 
+void CSearchManager::StopAllKeywordSearches()
+{
+	for (SearchMap::iterator itSearchMap = m_mapSearches.begin(); itSearchMap != m_mapSearches.end();) {
+		CSearch *pSearch = itSearchMap->second;
+		if (pSearch != NULL && pSearch->GetSearchType() == CSearch::KEYWORD) {
+			itSearchMap = m_mapSearches.erase(itSearchMap);
+			delete pSearch;
+		} else
+			++itSearchMap;
+	}
+}
+
 bool CSearchManager::StartSearch(CSearch *pSearch)
 {
 	// A search object was created, now try to start the search.

@@ -1542,6 +1542,7 @@ void CSearchResultsWnd::DeleteAllSearches()
 			Kademlia::CSearchManager::StopSearch(params->dwSearchID, false);
 			listSearchParamsToDelete.AddTail(params);
 		}
+	Kademlia::CSearchManager::StopAllKeywordSearches();
 
 	NoTabItems();
 
