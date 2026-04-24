@@ -129,6 +129,8 @@ protected:
 	void RebuildVisibleFileIndex();
 	void ClearVisibleFiles();
 	void ApplyVisibleFileCount();
+	bool IsLiveVisibleFilePointer(const CShareableFile *file) const;
+	bool PruneStaleVisibleFiles();
 	bool ShouldPreserveVirtualListState() const;
 	bool ShouldDisplayFile(const CShareableFile *file) const;
 	void SortVisibleFiles();

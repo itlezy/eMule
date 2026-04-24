@@ -602,6 +602,53 @@ void CSharedFilesCtrl::ClearVisibleFiles()
 	m_mapVisibleFileIndex.RemoveAll();
 }
 
+bool CSharedFilesCtrl::IsLiveVisibleFilePointer(const CShareableFile *file) const
+{
+	if (file == NULL)
+		return false;
+
+	if (theApp.sharedfiles != NULL) {
+		for (const CKnownFilesMap::CPair *pair = theApp.sharedfiles->m_Files_map.PGetFirstAssoc(); pair != NULL; pair = theApp.sharedfiles->m_Files_map.PGetNextAssoc(pair)) {
+			if (static_cast<const CShareableFile*>(pair->value) == file)
+				return true;
+		}
+	}
+
+	if (theApp.knownfiles != NULL) {
+		const CKnownFilesMap &knownFiles = theApp.knownfiles->GetKnownFiles();
+		for (const CKnownFilesMap::CPair *pair = knownFiles.PGetFirstAssoc(); pair != NULL; pair = knownFiles.PGetNextAssoc(pair)) {
+			if (static_cast<const CShareableFile*>(pair->value) == file)
+				return true;
+		}
+	}
+
+	for (POSITION pos = liTempShareableFilesInDir.GetHeadPosition(); pos != NULL;) {
+		if (liTempShareableFilesInDir.GetNext(pos) == file)
+			return true;
+	}
+
+	return false;
+}
+
+bool CSharedFilesCtrl::PruneStaleVisibleFiles()
+{
+	const size_t uOldSize = m_aVisibleFiles.size();
+	m_aVisibleFiles.erase(std::remove_if(m_aVisibleFiles.begin(), m_aVisibleFiles.end(),
+		[this](const CShareableFile *file) {
+			return !IsLiveVisibleFilePointer(file);
+		}), m_aVisibleFiles.end());
+
+	if (m_pHighlightedItem != NULL && !IsLiveVisibleFilePointer(m_pHighlightedItem))
+		m_pHighlightedItem = NULL;
+
+	if (m_aVisibleFiles.size() == uOldSize)
+		return false;
+
+	RebuildVisibleFileIndex();
+	ApplyVisibleFileCount();
+	return true;
+}
+
 void CSharedFilesCtrl::ApplyVisibleFileCount()
 {
 	SetItemCountEx(static_cast<int>(m_aVisibleFiles.size()), LVSICF_NOINVALIDATEALL | LVSICF_NOSCROLL);
@@ -757,6 +804,10 @@ void CSharedFilesCtrl::AddFile(const CShareableFile *file)
 		return;
 	if (theApp.IsClosing())
 		return;
+	if (PruneStaleVisibleFiles())
+		Invalidate(FALSE);
+	if (!IsLiveVisibleFilePointer(file))
+		return;
 	if (!ShouldDisplayFile(file))
 		return;
 	if (FindFile(file) >= 0) {
@@ -810,6 +861,8 @@ void CSharedFilesCtrl::RemoveFile(const CShareableFile *file, bool bDeletedFromD
 {
 	if (!m_bModelBound)
 		return;
+	if (PruneStaleVisibleFiles())
+		Invalidate(FALSE);
 	int iItem = FindFile(file);
 	if (iItem >= 0) {
 		if (!bDeletedFromDisk && m_pDirectoryFilter != NULL && m_pDirectoryFilter->m_eItemType == SDI_UNSHAREDDIRECTORY)
@@ -843,7 +896,11 @@ void CSharedFilesCtrl::UpdateFile(const CShareableFile *file, bool bUpdateFileSu
 {
 	if (!m_bModelBound)
 		return;
-	if (file && !theApp.IsClosing()) {
+	if (theApp.IsClosing())
+		return;
+	if (PruneStaleVisibleFiles())
+		Invalidate(FALSE);
+	if (IsLiveVisibleFilePointer(file)) {
 		int iItem = FindFile(file);
 		if (!ShouldDisplayFile(file)) {
 			if (iItem >= 0)
