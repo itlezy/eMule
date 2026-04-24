@@ -164,6 +164,14 @@ inline bool ShouldKeepWaitingForStartupCacheSaveShutdown(const StartupCacheSaveS
 }
 
 /**
+ * @brief Reports whether shutdown should persist the shared startup cache at all.
+ */
+inline bool ShouldPersistStartupCacheOnShutdown(const bool bSharedHashingWasActiveOnClose)
+{
+	return !bSharedHashingWasActiveOnClose;
+}
+
+/**
  * @brief Reports whether the UI thread should start the background startup-cache save now.
  */
 inline bool ShouldStartStartupCacheSave(const StartupCacheSaveScheduleState &rState)
