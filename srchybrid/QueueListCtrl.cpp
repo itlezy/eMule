@@ -24,6 +24,7 @@
 #include "emuledlg.h"
 #include "FriendList.h"
 #include "UploadQueue.h"
+#include "ClientList.h"
 #include "TransferDlg.h"
 #include "GeoLocation.h"
 #include "MemDC.h"
@@ -53,6 +54,14 @@ namespace
 	const CKnownFile* GetQueueClientFile(const CUpDownClient* client)
 	{
 		return client != NULL ? theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) : NULL;
+	}
+
+	bool IsLiveQueuedClient(const CUpDownClient *client)
+	{
+		if (client == NULL || theApp.clientlist == NULL || theApp.uploadqueue == NULL)
+			return false;
+		return theApp.clientlist->ContainsClientPointer(client)
+			&& theApp.uploadqueue->IsOnUploadQueue(const_cast<CUpDownClient*>(client));
 	}
 
 	CString FormatUploadRatio(float fRatio)
@@ -174,6 +183,36 @@ void CQueueListCtrl::SetAllIcons()
 	VERIFY(ApplyImageList(*m_pImageList) == NULL);
 }
 
+const CUpDownClient* CQueueListCtrl::GetLiveClientByIndex(int iItem)
+{
+	if (iItem < 0 || iItem >= GetItemCount())
+		return NULL;
+
+	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(iItem));
+	return IsLiveClient(client) ? client : NULL;
+}
+
+bool CQueueListCtrl::IsLiveClient(const CUpDownClient *client) const
+{
+	return IsLiveQueuedClient(client);
+}
+
+bool CQueueListCtrl::PruneStaleClientItems()
+{
+	bool bRemoved = false;
+	for (int iItem = GetItemCount(); --iItem >= 0;) {
+		if (!IsLiveClient(reinterpret_cast<CUpDownClient*>(GetItemData(iItem)))) {
+			DeleteItem(iItem);
+			bRemoved = true;
+		}
+	}
+
+	if (bRemoved)
+		theApp.emuledlg->transferwnd->UpdateListCount(CTransferWnd::wnd2OnQueue);
+
+	return bRemoved;
+}
+
 void CQueueListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	if (!lpDrawItemStruct->itemData || theApp.IsClosing())
@@ -186,6 +225,8 @@ void CQueueListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	RECT rcClient;
 	GetClientRect(&rcClient);
 	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(lpDrawItemStruct->itemData);
+	if (!IsLiveClient(client))
+		return;
 
 	const CHeaderCtrl *pHeaderCtrl = GetHeaderCtrl();
 	int iCount = pHeaderCtrl->GetItemCount();
@@ -398,8 +439,10 @@ void CQueueListCtrl::OnLvnGetDispInfo(LPNMHDR pNMHDR, LRESULT *pResult)
 		const LVITEMW &rItem = reinterpret_cast<NMLVDISPINFO*>(pNMHDR)->item;
 		if (rItem.mask & LVIF_TEXT) {
 			const CUpDownClient *pClient = reinterpret_cast<CUpDownClient*>(rItem.lParam);
-			if (pClient != NULL)
+			if (IsLiveClient(pClient))
 				_tcsncpy_s(rItem.pszText, rItem.cchTextMax, GetItemDisplayText(pClient, rItem.iSubItem), _TRUNCATE);
+			else if (rItem.pszText != NULL && rItem.cchTextMax > 0)
+				rItem.pszText[0] = _T('\0');
 		}
 	}
 	*pResult = 0;
@@ -434,6 +477,7 @@ void CQueueListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	// Sort table
 	UpdateSortHistory(MAKELONG(pNMLV->iSubItem, !sortAscending));
 	SetSortArrow(pNMLV->iSubItem, sortAscending);
+	PruneStaleClientItems();
 	SortItems(SortProc, MAKELONG(pNMLV->iSubItem, !sortAscending));
 	*pResult = 0;
 }
@@ -442,6 +486,10 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 {
 	const CUpDownClient *item1 = reinterpret_cast<CUpDownClient*>(lParam1);
 	const CUpDownClient *item2 = reinterpret_cast<CUpDownClient*>(lParam2);
+	const bool bLiveItem1 = IsLiveQueuedClient(item1);
+	const bool bLiveItem2 = IsLiveQueuedClient(item2);
+	if (!bLiveItem1 || !bLiveItem2)
+		return bLiveItem1 ? -1 : (bLiveItem2 ? 1 : 0);
 
 	int iResult = 0;
 	switch (LOWORD(lParamSort)) {
@@ -586,9 +634,9 @@ void CQueueListCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 {
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	if (iSel >= 0) {
-		CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(iSel));
+		const CUpDownClient *client = GetLiveClientByIndex(iSel);
 		if (client) {
-			CClientDetailDialog dialog(client, this);
+			CClientDetailDialog dialog(const_cast<CUpDownClient*>(client), this);
 			dialog.DoModal();
 		}
 	}
@@ -597,8 +645,9 @@ void CQueueListCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 
 void CQueueListCtrl::OnContextMenu(CWnd*, CPoint point)
 {
+	PruneStaleClientItems();
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
-	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(iSel >= 0 ? GetItemData(iSel) : NULL);
+	const CUpDownClient *client = GetLiveClientByIndex(iSel);
 	const bool is_ed2k = client && client->IsEd2kClient();
 
 	CTitledMenu ClientMenu;
@@ -638,20 +687,22 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	if (iSel >= 0) {
-		CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(iSel));
+		const CUpDownClient *client = GetLiveClientByIndex(iSel);
 		switch (wParam) {
 		case MP_SHOWLIST:
-			client->RequestSharedFileList();
+			if (client)
+				const_cast<CUpDownClient*>(client)->RequestSharedFileList();
 			break;
 		case MP_MESSAGE:
-			theApp.emuledlg->chatwnd->StartSession(client);
+			if (client)
+				theApp.emuledlg->chatwnd->StartSession(const_cast<CUpDownClient*>(client));
 			break;
 		case MP_ADDFRIEND:
-			if (theApp.friendlist->AddFriend(client))
+			if (client && theApp.friendlist->AddFriend(const_cast<CUpDownClient*>(client)))
 				Update(iSel);
 			break;
 		case MP_REMOVEFRIEND:
-			{
+			if (client) {
 				CFriend *pFriend = theApp.friendlist->SearchFriend(client->GetUserHash(), 0, 0);
 				if (pFriend != NULL) {
 					theApp.friendlist->RemoveFriend(pFriend);
@@ -660,33 +711,33 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			}
 			break;
 		case MP_BAN:
-			if (!client->IsBanned()) {
-				client->Ban(GetResString(IDS_BAN_ARBITRARY));
+			if (client && !client->IsBanned()) {
+				const_cast<CUpDownClient*>(client)->Ban(GetResString(IDS_BAN_ARBITRARY));
 				Update(iSel);
 			}
 			break;
 		case MP_UNBAN:
-			if (client->IsBanned()) {
-				client->UnBan();
+			if (client && client->IsBanned()) {
+				const_cast<CUpDownClient*>(client)->UnBan();
 				Update(iSel);
 			}
 			break;
 		case MP_COPY_ED2K_HASH:
-			{
+			if (client) {
 				const CKnownFile *file = GetQueueClientFile(client);
 				if (file != NULL && !file->IsPartFile())
 					theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
 			}
 			break;
 		case MP_OPEN:
-			{
+			if (client) {
 				const CKnownFile *file = GetQueueClientFile(client);
 				if (file != NULL && !file->IsPartFile())
 					ShellDefaultVerb(file->GetFilePath());
 			}
 			break;
 		case MP_OPENFOLDER:
-			{
+			if (client) {
 				const CKnownFile *file = GetQueueClientFile(client);
 				if (file != NULL && !file->IsPartFile())
 					ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
@@ -695,13 +746,13 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		case MP_DETAIL:
 		case MPG_ALTENTER:
 		case IDA_ENTER:
-			{
-				CClientDetailDialog dialog(client, this);
+			if (client) {
+				CClientDetailDialog dialog(const_cast<CUpDownClient*>(client), this);
 				dialog.DoModal();
 			}
 			break;
 		case MP_BOOT:
-			if (client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a)
+			if (client && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a)
 				Kademlia::CKademlia::Bootstrap(ntohl(client->GetIP()), client->GetKadPort());
 		}
 	}
@@ -710,16 +761,27 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 
 void CQueueListCtrl::AddClient(CUpDownClient *client, bool resetclient)
 {
+	if (thePrefs.IsQueueListDisabled() || theApp.IsClosing())
+		return;
+	if (!IsLiveClient(client))
+		return;
+
 	if (resetclient && client) {
 		client->SetWaitStartTime();
 		client->SetAskedCount(1);
 	}
-	if (!thePrefs.IsQueueListDisabled() && !theApp.IsClosing()) {
-		int iItemCount = GetItemCount();
-		int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, iItemCount, LPSTR_TEXTCALLBACK, 0, 0, 0, (LPARAM)client);
-		Update(iItem);
-		theApp.emuledlg->transferwnd->UpdateListCount(CTransferWnd::wnd2OnQueue, iItemCount + 1);
-	}
+	PruneStaleClientItems();
+
+	LVFINDINFO find;
+	find.flags = LVFI_PARAM;
+	find.lParam = (LPARAM)client;
+	if (FindItem(&find) >= 0)
+		return;
+
+	int iItemCount = GetItemCount();
+	int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, iItemCount, LPSTR_TEXTCALLBACK, 0, 0, 0, (LPARAM)client);
+	Update(iItem);
+	theApp.emuledlg->transferwnd->UpdateListCount(CTransferWnd::wnd2OnQueue, iItemCount + 1);
 }
 
 void CQueueListCtrl::RemoveClient(const CUpDownClient *client)
@@ -728,11 +790,16 @@ void CQueueListCtrl::RemoveClient(const CUpDownClient *client)
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)client;
-		int iItem = FindItem(&find);
-		if (iItem >= 0) {
+		bool bRemoved = false;
+		for (;;) {
+			int iItem = FindItem(&find);
+			if (iItem < 0)
+				break;
 			DeleteItem(iItem);
-			theApp.emuledlg->transferwnd->UpdateListCount(CTransferWnd::wnd2OnQueue);
+			bRemoved = true;
 		}
+		if (bRemoved)
+			theApp.emuledlg->transferwnd->UpdateListCount(CTransferWnd::wnd2OnQueue);
 	}
 }
 
@@ -742,6 +809,11 @@ void CQueueListCtrl::RefreshClient(const CUpDownClient *client)
 		&& theApp.emuledlg->transferwnd->GetQueueList()->IsWindowVisible()
 		&& !theApp.IsClosing())
 	{
+		if (!IsLiveClient(client)) {
+			RemoveClient(client);
+			return;
+		}
+
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)client;
@@ -765,9 +837,9 @@ void CQueueListCtrl::ShowSelectedUserDetails()
 	SetItemState(it, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 	SetSelectionMark(it);   // display selection mark correctly!
 
-	CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(GetSelectionMark()));
+	const CUpDownClient *client = GetLiveClientByIndex(GetSelectionMark());
 	if (client) {
-		CClientDetailDialog dialog(client, this);
+		CClientDetailDialog dialog(const_cast<CUpDownClient*>(client), this);
 		dialog.DoModal();
 	}
 }
