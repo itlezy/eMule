@@ -436,9 +436,15 @@ void CServerConnect::CheckForTimeout()
 
 		if (curTick >= tmpkey + dwServerConnectTimeout) {
 			LogWarning(GetResString(IDS_ERR_CONTIMEOUT), (LPCTSTR)tmpsock->cur_server->GetListName(), tmpsock->cur_server->GetAddress(), tmpsock->cur_server->GetPort());
+			CServer *pRetryServer = NULL;
+			const bool bRetryWithoutObfuscation = singleconnecting && tmpsock->IsServerCryptEnabledConnection() && !thePrefs.IsCryptLayerRequired();
+			if (bRetryWithoutObfuscation)
+				pRetryServer = theApp.serverlist->GetServerByAddress(tmpsock->cur_server->GetAddress(), tmpsock->cur_server->GetPort());
 			connectionattempts.RemoveKey(tmpkey);
 			DestroySocket(tmpsock);
-			if (singleconnecting)
+			if (bRetryWithoutObfuscation && pRetryServer != NULL)
+				ConnectToServer(pRetryServer, false, true);
+			else if (singleconnecting)
 				StopConnectionTry();
 			else
 				TryAnotherConnectionRequest();
