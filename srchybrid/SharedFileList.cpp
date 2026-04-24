@@ -793,10 +793,8 @@ void CSharedFileList::RunSharedHashJob(const SharedHashJob &rJob)
 			DebugLog(_T("Failed to post shared-file hash completion for \"%s\"; discarding result."), (LPCTSTR)strFilePath);
 		delete pKnownFile;
 		CompleteSharedHashCompletion(rJob.strFilePathKey);
-		if (GetHashingCount() == 0) {
-			m_bStartupDeferredHashingActive = false;
-			m_nLastStartupCacheSave = ::GetTickCount64();
-		}
+		if (GetHashingCount() == 0)
+			NoteStartupHashingQueueDrained(::GetTickCount64());
 	}
 }
 
@@ -826,12 +824,11 @@ void CSharedFileList::OnSharedHashQueuePossiblyDrained()
 	if (GetHashingCount() != 0)
 		return;
 
-	m_bStartupDeferredHashingActive = false;
+	NoteStartupHashingQueueDrained(::GetTickCount64());
 	if (output != NULL)
 		output->FlushStartupDeferredReload();
 	if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL)
 		theApp.emuledlg->sharedfileswnd->OnSharedHashingDrained();
-	m_nLastStartupCacheSave = ::GetTickCount64();
 }
 
 void CSharedFileList::InvalidateStartupCachesAfterInterruptedHashing()
@@ -939,15 +936,54 @@ INT_PTR CSharedFileList::GetHashingCount() const
 	return static_cast<INT_PTR>(m_sharedHashQueue.size() + m_sharedHashPendingCompletions.size() + (m_bSharedHashActive ? 1 : 0));
 }
 
+bool CSharedFileList::IsStartupDeferredHashingActive() const
+{
+	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+	return m_bStartupDeferredHashingActive;
+}
+
+void CSharedFileList::ResetStartupCacheSchedulingState(const ULONGLONG ullNowTick)
+{
+	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+	m_bStartupDeferredHashingActive = false;
+	m_nLastStartupCacheSave = ullNowTick;
+	m_nStartupCacheDirtyTick = ullNowTick;
+}
+
+void CSharedFileList::SetStartupDeferredHashingActiveFlag(const bool bActive)
+{
+	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+	m_bStartupDeferredHashingActive = bActive;
+}
+
+void CSharedFileList::NoteStartupHashingQueueDrained(const ULONGLONG ullNowTick)
+{
+	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+	m_bStartupDeferredHashingActive = false;
+	m_nLastStartupCacheSave = ullNowTick;
+}
+
+bool CSharedFileList::ShouldStartStartupCacheSaveNow(const ULONGLONG ullNowTick) const
+{
+	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
+	const SharedFileListSeams::StartupCacheSaveScheduleState scheduleState = {
+		m_bStartupCacheDirty,
+		theApp.IsClosing(),
+		m_bStartupCacheSaveRunning,
+		m_bStartupDeferredHashingActive,
+		ullNowTick,
+		m_nStartupCacheDirtyTick
+	};
+	return SharedFileListSeams::ShouldStartStartupCacheSave(scheduleState);
+}
+
 void CSharedFileList::FindSharedFiles(const bool bAllowStartupCache)
 {
 	m_startupScanStats = StartupScanStats();
 	m_uStartupHashCompletedFiles = 0;
 	m_uStartupHashFailedFiles = 0;
 	m_bStartupDuplicateReuseActive = bAllowStartupCache;
-	m_bStartupDeferredHashingActive = false;
-	m_nLastStartupCacheSave = ::GetTickCount64();
-	m_nStartupCacheDirtyTick = m_nLastStartupCacheSave;
+	ResetStartupCacheSchedulingState(::GetTickCount64());
 	if (!m_Files_map.IsEmpty() && theApp.downloadqueue) {
 		CSingleLock listlock(&m_mutWriteList);
 
@@ -1210,7 +1246,7 @@ bool CSharedFileList::SafeAddKFile(CKnownFile *toadd, bool bOnlyAdd)
 	bool bAdded = AddFile(toadd);
 	if (!bOnlyAdd) {
 		if (bAdded && output) {
-			if (m_bStartupDeferredHashingActive || HasSharedHashingWork())
+			if (IsStartupDeferredHashingActive() || HasSharedHashingWork())
 				output->ScheduleStartupDeferredReload();
 			else
 				output->AddFile(toadd);
@@ -1400,14 +1436,14 @@ void CSharedFileList::SetOutputCtrl(CSharedFilesCtrl *in_ctrl)
 
 void CSharedFileList::StartDeferredHashing()
 {
-	m_bStartupDeferredHashingActive = (GetHashingCount() > 0);
+	SetStartupDeferredHashingActiveFlag(GetHashingCount() > 0);
 	{
 		CSingleLock lock(&m_mutSharedHashQueue, TRUE);
 		m_bSharedHashWorkerCanHash = true;
 	}
 	SignalSharedHashWorker();
 	if (GetHashingCount() == 0)
-		m_bStartupDeferredHashingActive = false;
+		SetStartupDeferredHashingActiveFlag(false);
 }
 
 void CSharedFileList::SendListToServer()
@@ -1838,11 +1874,9 @@ void CSharedFileList::Process()
 		SendListToServer();
 		m_lastPublishED2K = ::GetTickCount64();
 	}
-	if (m_bStartupCacheDirty && !theApp.IsClosing() && !IsStartupCacheSaveRunning()) {
-		const ULONGLONG uSaveDelay = m_bStartupDeferredHashingActive ? SEC2MS(5) : SEC2MS(15);
-		if (::GetTickCount64() >= m_nStartupCacheDirtyTick + uSaveDelay)
-			(void)RequestStartupCacheSave();
-	}
+	const ULONGLONG ullNowTick = ::GetTickCount64();
+	if (ShouldStartStartupCacheSaveNow(ullNowTick))
+		(void)RequestStartupCacheSave();
 }
 
 void CSharedFileList::Publish()
@@ -2082,9 +2116,9 @@ bool CSharedFileList::ExcludeFile(const CString &strFilePath)
 
 void CSharedFileList::MarkStartupCacheDirty()
 {
+	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
 	m_bStartupCacheDirty = true;
 	m_nStartupCacheDirtyTick = ::GetTickCount64();
-	CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
 	if (m_bStartupCacheSaveRunning)
 		m_bStartupCacheSaveRunAfterCurrent = true;
 }
@@ -3000,7 +3034,6 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 		m_startupCacheRecords = std::move(pResult->records);
 		m_startupCacheVolumes = std::move(pResult->volumeRecords);
 		m_startupCacheVolumeValidation.clear();
-		m_nLastStartupCacheSave = pResult->ullCompletedTick;
 	}
 	if (pResult->bDuplicatePathWriteSucceeded)
 		m_duplicateSharedPathRecords = std::move(pResult->duplicatePathRecords);
@@ -3009,6 +3042,8 @@ void CSharedFileList::HandleStartupCacheSaveCompletion(void *pResultVoid)
 		CSingleLock stateLock(&m_mutStartupCacheSave, TRUE);
 		const bool bRunAfterCurrent = m_bStartupCacheSaveRunAfterCurrent;
 		const bool bAllWritesSucceeded = pResult->bWriteSucceeded && pResult->bDuplicatePathWriteSucceeded;
+		if (pResult->bWriteSucceeded)
+			m_nLastStartupCacheSave = pResult->ullCompletedTick;
 		m_bStartupCacheSaveRunning = false;
 		m_bStartupCacheSaveRunAfterCurrent = false;
 		m_eStartupCacheSavePhase = StartupCacheSavePhase::Idle;

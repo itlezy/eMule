@@ -49,6 +49,19 @@ struct StartupCacheSaveShutdownWaitState
 };
 
 /**
+ * @brief Stable snapshot of the startup-cache save scheduling state evaluated on the UI thread.
+ */
+struct StartupCacheSaveScheduleState
+{
+	bool bCacheDirty;
+	bool bAppClosing;
+	bool bSaveRunning;
+	bool bDeferredHashingActive;
+	ULONGLONG ullNowTick;
+	ULONGLONG ullDirtyTick;
+};
+
+/**
  * @brief Stable snapshot of the shared-hash worker state captured when shutdown begins.
  */
 struct SharedHashShutdownCacheState
@@ -62,6 +75,8 @@ struct SharedHashShutdownCacheState
  * @brief Returns the bounded delay used to yield after queuing one full imported part for async write.
  */
 constexpr DWORD kImportPartProgressYieldMs = 100;
+constexpr ULONGLONG kStartupCacheSaveDelayDuringHashDrainMs = 5000ui64;
+constexpr ULONGLONG kStartupCacheSaveDelayIdleMs = 15000ui64;
 
 /**
  * @brief Returns the scheduling decision for the next shared-folder auto-reload from one stable state snapshot.
@@ -101,6 +116,20 @@ inline bool ShouldKeepWaitingForSharedHashWorkerShutdown(const SharedHashShutdow
 inline bool ShouldKeepWaitingForStartupCacheSaveShutdown(const StartupCacheSaveShutdownWaitState &rState)
 {
 	return rState.ullElapsedMs < rState.ullWaitBudgetMs;
+}
+
+/**
+ * @brief Reports whether the UI thread should start the background startup-cache save now.
+ */
+inline bool ShouldStartStartupCacheSave(const StartupCacheSaveScheduleState &rState)
+{
+	if (!rState.bCacheDirty || rState.bAppClosing || rState.bSaveRunning)
+		return false;
+
+	const ULONGLONG ullDelayMs = rState.bDeferredHashingActive
+		? kStartupCacheSaveDelayDuringHashDrainMs
+		: kStartupCacheSaveDelayIdleMs;
+	return rState.ullNowTick >= rState.ullDirtyTick + ullDelayMs;
 }
 
 /**

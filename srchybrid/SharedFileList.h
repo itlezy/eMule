@@ -118,7 +118,7 @@ public:
 	/**
 	 * @brief Reports whether the initial startup-only deferred shared hash queue is still draining.
 	 */
-	bool	IsStartupDeferredHashingActive() const	{ return m_bStartupDeferredHashingActive; }
+	bool	IsStartupDeferredHashingActive() const;
 	/**
 	 * @brief Advances or starts shutdown of the shared-file hash worker and reports whether it has stopped.
 	 */
@@ -416,6 +416,10 @@ private:
 	 * @brief Handles shared hash queue drain side effects on the UI thread.
 	 */
 	void	OnSharedHashQueuePossiblyDrained();
+	void	ResetStartupCacheSchedulingState(ULONGLONG ullNowTick);
+	void	SetStartupDeferredHashingActiveFlag(bool bActive);
+	void	NoteStartupHashingQueueDrained(ULONGLONG ullNowTick);
+	bool	ShouldStartStartupCacheSaveNow(ULONGLONG ullNowTick) const;
 	/**
 	 * @brief Invalidates warm shared startup caches after shutdown discards queued or active hashing work.
 	 */
