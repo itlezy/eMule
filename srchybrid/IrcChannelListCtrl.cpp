@@ -141,6 +141,8 @@ int CALLBACK CIrcChannelListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARA
 {
 	const ChannelName *pItem1 = reinterpret_cast<ChannelName*>(lParam1);
 	const ChannelName *pItem2 = reinterpret_cast<ChannelName*>(lParam2);
+	if (pItem1 == NULL || pItem2 == NULL)
+		return pItem1 ? -1 : (pItem2 ? 1 : 0);
 
 	int iResult = 0;
 	switch (LOWORD(lParamSort)) {
@@ -206,12 +208,12 @@ bool CIrcChannelListCtrl::AddChannelToList(const CString &sName, const CString &
 	return true;
 }
 
-void CIrcChannelListCtrl::ResetServerChannelList(bool bShutDown)
+void CIrcChannelListCtrl::ResetServerChannelList(bool /*bShutDown*/)
 {
+	if (m_hWnd != NULL)
+		DeleteAllItems();
 	while (!m_lstChannelNames.IsEmpty())
 		delete m_lstChannelNames.RemoveHead();
-	if (!bShutDown)
-		DeleteAllItems();
 }
 
 void CIrcChannelListCtrl::JoinChannels()
