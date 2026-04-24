@@ -25,6 +25,7 @@
 #include "DownloadQueue.h"
 #include "PartFile.h"
 #include "kademlia/kademlia/search.h"
+#include "kademlia/kademlia/SearchManager.h"
 #include "kademlia/utils/LookupHistory.h"
 
 #ifdef _DEBUG
@@ -33,6 +34,13 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
+namespace
+{
+	bool IsLiveKadSearchPointer(const Kademlia::CSearch *search)
+	{
+		return Kademlia::CSearchManager::ContainsSearchPointer(search);
+	}
+}
 
 // CKadSearchListCtrl
 
@@ -109,10 +117,40 @@ void CKadSearchListCtrl::Localize()
 
 	LocaliseHeaderCtrl(uids, _countof(uids));
 
+	PruneStaleSearchItems();
 	for (int i = GetItemCount(); --i >= 0;)
-		SearchRef(reinterpret_cast<Kademlia::CSearch*>(GetItemData(i)));
+		if (const Kademlia::CSearch *search = GetLiveSearchByIndex(i))
+			SearchRef(search);
 
 	UpdateKadSearchCount();
+}
+
+const Kademlia::CSearch* CKadSearchListCtrl::GetLiveSearchByIndex(int iItem)
+{
+	if (iItem < 0 || iItem >= GetItemCount())
+		return NULL;
+
+	const Kademlia::CSearch *search = reinterpret_cast<Kademlia::CSearch*>(GetItemData(iItem));
+	return IsLiveSearch(search) ? search : NULL;
+}
+
+bool CKadSearchListCtrl::IsLiveSearch(const Kademlia::CSearch *search) const
+{
+	return IsLiveKadSearchPointer(search);
+}
+
+bool CKadSearchListCtrl::PruneStaleSearchItems()
+{
+	bool bRemoved = false;
+	for (int i = GetItemCount(); --i >= 0;) {
+		if (!IsLiveSearch(reinterpret_cast<Kademlia::CSearch*>(GetItemData(i)))) {
+			DeleteItem(i);
+			bRemoved = true;
+		}
+	}
+	if (bRemoved)
+		UpdateKadSearchCount();
+	return bRemoved;
 }
 
 void CKadSearchListCtrl::UpdateSearch(int iItem, const Kademlia::CSearch *search)
@@ -179,6 +217,14 @@ void CKadSearchListCtrl::SearchAdd(const Kademlia::CSearch *search)
 {
 	try {
 		ASSERT(search != NULL);
+		if (!IsLiveSearch(search))
+			return;
+		PruneStaleSearchItems();
+		LVFINDINFO find;
+		find.flags = LVFI_PARAM;
+		find.lParam = (LPARAM)search;
+		if (FindItem(&find) >= 0)
+			return;
 		int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, GetItemCount(), _T(""), 0, 0, 0, (LPARAM)search);
 		if (iItem >= 0) {
 			UpdateSearch(iItem, search);
@@ -193,14 +239,17 @@ void CKadSearchListCtrl::SearchRem(const Kademlia::CSearch *search)
 {
 	try {
 		ASSERT(search != NULL);
+		bool bRemoved = false;
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)search;
-		int iItem = FindItem(&find);
-		if (iItem >= 0) {
+		int iItem;
+		while ((iItem = FindItem(&find)) >= 0) {
 			DeleteItem(iItem);
-			UpdateKadSearchCount();
+			bRemoved = true;
 		}
+		if (bRemoved)
+			UpdateKadSearchCount();
 	} catch (...) {
 		ASSERT(0);
 	}
@@ -210,6 +259,10 @@ void CKadSearchListCtrl::SearchRef(const Kademlia::CSearch *search)
 {
 	try {
 		ASSERT(search != NULL);
+		if (!IsLiveSearch(search)) {
+			SearchRem(search);
+			return;
+		}
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)search;
@@ -237,6 +290,7 @@ void CKadSearchListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	int iSortItem = pNMLV->iSubItem;
 
 	// Sort table
+	PruneStaleSearchItems();
 	UpdateSortHistory(MAKELONG(iSortItem, !bSortAscending));
 	SetSortArrow(iSortItem, bSortAscending);
 	SortItems(SortProc, MAKELONG(iSortItem, !bSortAscending));
@@ -249,6 +303,10 @@ int CALLBACK CKadSearchListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM
 	const Kademlia::CSearch *item2 = reinterpret_cast<Kademlia::CSearch*>(lParam2);
 	if (item1 == NULL || item2 == NULL)
 		return 0;
+	const bool bItem1Live = IsLiveKadSearchPointer(item1);
+	const bool bItem2Live = IsLiveKadSearchPointer(item2);
+	if (!bItem1Live || !bItem2Live)
+		return bItem1Live ? -1 : (bItem2Live ? 1 : 0);
 
 	int iResult;
 	switch (LOWORD(lParamSort)) {
@@ -291,11 +349,14 @@ int CALLBACK CKadSearchListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM
 
 Kademlia::CLookupHistory* CKadSearchListCtrl::FetchAndSelectActiveSearch(bool bMark)
 {
+	PruneStaleSearchItems();
 	int iIntrestingItem = -1;
 	int iItem = -1;
+	Kademlia::CLookupHistory *pInterestingLookupHistory = NULL;
+	Kademlia::CLookupHistory *pLookupHistory = NULL;
 
 	for (int i = GetItemCount(); --i >= 0;) {
-		const Kademlia::CSearch *pSearch = (Kademlia::CSearch*)GetItemData(i);
+		const Kademlia::CSearch *pSearch = GetLiveSearchByIndex(i);
 		if (pSearch != NULL && !pSearch->GetLookupHistory()->IsSearchStopped() && !pSearch->GetLookupHistory()->IsSearchDeleted()) {
 			// prefer interesting search rather than node searches
 			switch (pSearch->GetSearchType()) {
@@ -306,6 +367,7 @@ Kademlia::CLookupHistory* CKadSearchListCtrl::FetchAndSelectActiveSearch(bool bM
 			case Kademlia::CSearch::STOREFILE:
 			case Kademlia::CSearch::STOREKEYWORD:
 				iIntrestingItem = i;
+				pInterestingLookupHistory = pSearch->GetLookupHistory();
 				break;
 			case Kademlia::CSearch::NODE:
 			case Kademlia::CSearch::NODECOMPLETE:
@@ -313,8 +375,10 @@ Kademlia::CLookupHistory* CKadSearchListCtrl::FetchAndSelectActiveSearch(bool bM
 			case Kademlia::CSearch::NODEFWCHECKUDP:
 			case Kademlia::CSearch::FINDBUDDY:
 			default:
-				if (iItem == -1)
+				if (iItem == -1) {
 					iItem = i;
+					pLookupHistory = pSearch->GetLookupHistory();
+				}
 			}
 			if (iIntrestingItem >= 0)
 				break;
@@ -323,12 +387,12 @@ Kademlia::CLookupHistory* CKadSearchListCtrl::FetchAndSelectActiveSearch(bool bM
 	if (iIntrestingItem >= 0) {
 		if (bMark)
 			SetItemState(iIntrestingItem, LVIS_SELECTED, LVIS_SELECTED);
-		return ((Kademlia::CSearch*)GetItemData(iIntrestingItem))->GetLookupHistory();
+		return pInterestingLookupHistory;
 	}
 	if (iItem >= 0) {
 		if (bMark)
 			SetItemState(iItem, LVIS_SELECTED, LVIS_SELECTED);
-		return ((Kademlia::CSearch*)GetItemData(iItem))->GetLookupHistory();
+		return pLookupHistory;
 	}
 	return NULL;
 }

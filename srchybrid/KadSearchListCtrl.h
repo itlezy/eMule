@@ -57,6 +57,9 @@ private:
 	};
 
 protected:
+	const Kademlia::CSearch* GetLiveSearchByIndex(int iItem);
+	bool IsLiveSearch(const Kademlia::CSearch *search) const;
+	bool PruneStaleSearchItems();
 	void UpdateSearch(int iItem, const Kademlia::CSearch *search);
 	void SetAllIcons();
 

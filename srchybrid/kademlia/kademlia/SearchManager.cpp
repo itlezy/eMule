@@ -70,6 +70,18 @@ bool CSearchManager::IsSearching(uint32 uSearchID)
 	return false;
 }
 
+bool CSearchManager::ContainsSearchPointer(const CSearch *pSearch)
+{
+	if (pSearch == NULL)
+		return false;
+
+	for (SearchMap::const_iterator itSearchMap = m_mapSearches.begin(); itSearchMap != m_mapSearches.end(); ++itSearchMap)
+		if (itSearchMap->second == pSearch)
+			return true;
+
+	return false;
+}
+
 void CSearchManager::StopSearch(uint32 uSearchID, bool bDelayDelete)
 {
 	// Stop a specific searchID
@@ -82,8 +94,9 @@ void CSearchManager::StopSearch(uint32 uSearchID, bool bDelayDelete)
 				// Delete this search now.
 				// If this method is changed to continue looping, take care of the iterator as we will already
 				// be pointing to the next entry and the for-loop could cause you to iterate past the end.
-				delete itSearchMap->second;
+				CSearch *pSearch = itSearchMap->second;
 				m_mapSearches.erase(itSearchMap);
+				delete pSearch;
 			}
 			return;
 		}
@@ -92,9 +105,10 @@ void CSearchManager::StopSearch(uint32 uSearchID, bool bDelayDelete)
 void CSearchManager::StopAllSearches()
 {
 	// Stop and delete all searches.
-	for (SearchMap::const_iterator itSearchMap = m_mapSearches.begin(); itSearchMap != m_mapSearches.end(); ++itSearchMap)
+	SearchMap mapSearches;
+	mapSearches.swap(m_mapSearches);
+	for (SearchMap::const_iterator itSearchMap = mapSearches.begin(); itSearchMap != mapSearches.end(); ++itSearchMap)
 		delete itSearchMap->second;
-	m_mapSearches.clear();
 }
 
 bool CSearchManager::StartSearch(CSearch *pSearch)
@@ -338,8 +352,8 @@ void CSearchManager::JumpStart()
 				bDel = true;
 		}
 		if (bDel) {
-			delete pSearch;
 			itSearchMap = m_mapSearches.erase(itSearchMap);	//Don't do anything after this. We are already at the next entry.
+			delete pSearch;
 		} else {
 			if (bStop)
 				pSearch->PrepareToStop();
