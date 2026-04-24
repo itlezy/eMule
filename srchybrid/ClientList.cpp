@@ -705,6 +705,11 @@ bool CClientList::IsValidClient(CUpDownClient *tocheck) const
 	return list.Find(tocheck) != NULL;
 }
 
+bool CClientList::ContainsClientPointer(const CUpDownClient *tocheck) const
+{
+	return tocheck != NULL && list.Find(const_cast<CUpDownClient*>(tocheck)) != NULL;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Kad client list

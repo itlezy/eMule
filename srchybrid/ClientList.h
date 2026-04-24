@@ -147,6 +147,7 @@ public:
 	void	RemoveConnectingClient(const CUpDownClient *pToRemove);
 
 	void	Process();
+	bool	ContainsClientPointer(const CUpDownClient *tocheck) const;
 	bool	IsValidClient(CUpDownClient *tocheck) const;
 	void	Debug_SocketDeleted(CClientReqSocket *deleted) const;
 	void	ProcessA4AFClients() const; // ZZ:DownloadManager
