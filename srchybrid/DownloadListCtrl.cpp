@@ -151,7 +151,7 @@ void CDownloadListCtrl::Init()
 	InsertColumn(6,		_T(""),	LVCFMT_RIGHT,	60);							//IDS_DL_SOURCES
 	InsertColumn(7,		_T(""),	LVCFMT_LEFT,	DFLT_PRIORITY_COL_WIDTH);		//IDS_PRIORITY
 	InsertColumn(8,		_T(""),	LVCFMT_LEFT,	70);							//IDS_STATUS
-	InsertColumn(9,		_T(""),	LVCFMT_LEFT,	110);							//IDS_DL_REMAINS
+	InsertColumn(9,		_T(""),	LVCFMT_RIGHT,	110);							//IDS_DL_REMAINS
 	InsertColumn(10,	_T(""),	LVCFMT_LEFT,	150, -1, true);					//IDS_LASTSEENCOMPL
 	InsertColumn(11,	_T(""),	LVCFMT_LEFT,	120, -1, true);					//IDS_FD_LASTCHANGE
 	InsertColumn(12,	_T(""),	LVCFMT_LEFT,	100, -1, true);					//IDS_CAT
