@@ -370,11 +370,17 @@ void CChatSelector::ConnectingResult(CUpDownClient *sender, bool success)
 
 void CChatSelector::DeleteAllItems()
 {
+	CTypedPtrList<CPtrList, CChatItem*> itemsToDelete;
 	TCITEM ti;
 	ti.mask = TCIF_PARAM;
 	for (int i = GetItemCount(); --i >= 0;)
 		if (GetItem(i, &ti))
-			delete reinterpret_cast<CChatItem*>(ti.lParam);
+			itemsToDelete.AddTail(reinterpret_cast<CChatItem*>(ti.lParam));
+
+	CClosableTabCtrl::DeleteAllItems();
+
+	while (!itemsToDelete.IsEmpty())
+		delete itemsToDelete.RemoveHead();
 }
 
 void CChatSelector::OnTimer(UINT_PTR /*nIDEvent*/)
