@@ -1885,6 +1885,8 @@ void CemuleDlg::OnClose()
 	theApp.m_app_state = APP_STATE_SHUTTINGDOWN;
 	const DWORD dwSharedHashShutdownWaitMs = SEC2MS(5);
 	const DWORD dwSharedHashShutdownPollMs = 15;
+	const DWORD dwStartupCacheSaveShutdownWaitMs = SEC2MS(5);
+	const DWORD dwStartupCacheSaveShutdownPollMs = 15;
 	const bool bSharedHashingWasActiveOnClose = (theApp.sharedfiles != NULL && theApp.sharedfiles->HasSharedHashingWork());
 	if (theApp.sharedfiles != NULL) {
 		CString strHashLeaf;
@@ -2002,6 +2004,8 @@ void CemuleDlg::OnClose()
 
 	theApp.knownfiles->Save();
 	if (theApp.sharedfiles != NULL) {
+		const ULONGLONG ullStartupCacheSaveShutdownStartTick = ::GetTickCount64();
+		bool bStartupCacheSaveShutdownTimedOut = false;
 		while (theApp.sharedfiles->HasPendingStartupCacheSaveWork()) {
 			if (!theApp.sharedfiles->IsStartupCacheSaveRunning())
 				(void)theApp.sharedfiles->RequestStartupCacheSave(true);
@@ -2009,13 +2013,35 @@ void CemuleDlg::OnClose()
 			CSharedFileList::StartupCacheSaveProgress progress = {};
 			theApp.sharedfiles->GetStartupCacheSaveProgress(progress);
 			updateShutdownPhase(54, _T("Closing eMule"), FormatStartupCacheShutdownDetail(progress), true);
-			::Sleep(15);
+			const ULONGLONG ullNow = ::GetTickCount64();
+			const SharedFileListSeams::StartupCacheSaveShutdownWaitState waitState = {
+				(ullNow >= ullStartupCacheSaveShutdownStartTick) ? (ullNow - ullStartupCacheSaveShutdownStartTick) : 0ui64,
+				dwStartupCacheSaveShutdownWaitMs
+			};
+			if (!SharedFileListSeams::ShouldKeepWaitingForStartupCacheSaveShutdown(waitState)) {
+				bStartupCacheSaveShutdownTimedOut = true;
+				const bool bKeepSharedFilesAlive = theApp.sharedfiles->AbandonStartupCacheSaveForShutdown();
+				DebugLogError(_T("Timed out waiting %lu ms for shared startup-cache save shutdown; abandoning startup-cache persistence state."), dwStartupCacheSaveShutdownWaitMs);
+				if (bKeepSharedFilesAlive) {
+					DebugLogError(_T("Shared startup-cache save worker is still active; abandoning shared-file cleanup for process exit."));
+					updateShutdownPhase(54, _T("Closing eMule"), _T("Shared startup-cache save did not stop in time; abandoning shared-file cleanup for process exit."), true);
+					theApp.sharedfiles = NULL;
+				} else {
+					updateShutdownPhase(54, _T("Closing eMule"), _T("Shared startup-cache save did not finish in time; continuing shutdown without waiting for it."), false);
+				}
+				break;
+			}
+			::Sleep(dwStartupCacheSaveShutdownPollMs);
 			PumpShutdownProgressMessages(shutdownProgress);
 		}
-		if (bSharedHashingWasActiveOnClose)
-			theApp.sharedfiles->PurgeInterruptedHashStartupCaches();
-		updateShutdownPhase(62, _T("Closing eMule"), _T("Saving shared file list configuration."));
-		theApp.sharedfiles->Save();
+		if (bStartupCacheSaveShutdownTimedOut && theApp.sharedfiles == NULL)
+			updateShutdownPhase(58, _T("Closing eMule"), _T("Continuing shutdown without shared-file cleanup after startup-cache save timeout."));
+		if (theApp.sharedfiles != NULL) {
+			if (bSharedHashingWasActiveOnClose)
+				theApp.sharedfiles->PurgeInterruptedHashStartupCaches();
+			updateShutdownPhase(62, _T("Closing eMule"), _T("Saving shared file list configuration."));
+			theApp.sharedfiles->Save();
+		}
 	}
 	searchwnd->SaveAllSettings();
 	serverwnd->SaveAllSettings();

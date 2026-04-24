@@ -40,6 +40,15 @@ struct SharedHashShutdownWaitState
 };
 
 /**
+ * @brief Stable snapshot of the bounded startup-cache-save shutdown wait budget.
+ */
+struct StartupCacheSaveShutdownWaitState
+{
+	ULONGLONG ullElapsedMs;
+	ULONGLONG ullWaitBudgetMs;
+};
+
+/**
  * @brief Stable snapshot of the shared-hash worker state captured when shutdown begins.
  */
 struct SharedHashShutdownCacheState
@@ -82,6 +91,14 @@ inline bool ShouldStartSharedHashJob(const SharedHashWorkerStartState &rState)
  * @brief Reports whether shutdown should keep waiting for the shared hash worker.
  */
 inline bool ShouldKeepWaitingForSharedHashWorkerShutdown(const SharedHashShutdownWaitState &rState)
+{
+	return rState.ullElapsedMs < rState.ullWaitBudgetMs;
+}
+
+/**
+ * @brief Reports whether shutdown should keep waiting for the startup-cache save worker.
+ */
+inline bool ShouldKeepWaitingForStartupCacheSaveShutdown(const StartupCacheSaveShutdownWaitState &rState)
 {
 	return rState.ullElapsedMs < rState.ullWaitBudgetMs;
 }

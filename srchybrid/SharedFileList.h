@@ -159,6 +159,10 @@ public:
 	 * @brief Applies one worker-produced startup-cache save result on the UI thread.
 	 */
 	void	HandleStartupCacheSaveCompletion(void *pResult);
+	/**
+	 * @brief Stops waiting for startup-cache persistence during shutdown and reports whether this object must stay alive.
+	 */
+	bool	AbandonStartupCacheSaveForShutdown();
 	bool	RemoveFile(CKnownFile *pFile, bool bDeleted = false);	// removes a specific shared file from the list
 	void	UpdateFile(const CKnownFile *toupdate);
 	void	AddFileFromNewlyCreatedCollection(const CString &rstrFilePath)	{ CheckAndAddSingleFile(rstrFilePath); }
@@ -462,6 +466,7 @@ private:
 	bool m_bSharedHashActive;
 	bool m_bSharedHashShutdownSignaled;
 	bool	m_bStartupCacheInvalidatedByInterruptedHashing;
+	bool	m_bStartupCacheSaveShutdownAbandoned;
 	StartupScanStats m_startupScanStats;
 	SharedStartupCacheRecordMap m_startupCacheRecords;
 	SharedStartupCacheVolumeRecordMap m_startupCacheVolumes;
