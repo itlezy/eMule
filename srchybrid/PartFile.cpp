@@ -5396,16 +5396,27 @@ void CPartFile::RequestAICHRecovery(UINT nPart)
 
 void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 {
-	if (GetPartCount() < nPart) {
+	if (GetPartCount() <= nPart) {
 		ASSERT(0);
 		return;
 	}
 	FlushBuffer(true, true);
 	const uint64 uStart = PARTSIZE * nPart;
-	const uint64 length = mini(m_hpartfile.GetLength() - uStart, PARTSIZE);
+	const ULONGLONG uFileLength = m_hpartfile.GetLength();
+	if (uFileLength <= uStart) {
+		AddDebugLogLine(DLP_DEFAULT, false, _T("AICHRecoveryDataAvailable: file length %I64u has not reached part %u at %I64u, skipping"), uFileLength, nPart, uStart);
+		return;
+	}
+
+	const uint64 length = mini((uint64)(uFileLength - uStart), (uint64)PARTSIZE);
+	if (length == 0) {
+		AddDebugLogLine(DLP_DEFAULT, false, _T("AICHRecoveryDataAvailable: zero-length part %u at %I64u, skipping"), nPart, uStart);
+		return;
+	}
+
 	// if the part was already OK, it would now be complete
-	if (IsCompleteBD(uStart, uStart + length - 1)) {
-		AddDebugLogLine(DLP_DEFAULT, false, _T("Processing AICH recovery data: The part (%u) is already complete, canceling"));
+	if (IsCompleteBDSafe(uStart, uStart + length - 1)) {
+		AddDebugLogLine(DLP_DEFAULT, false, _T("Processing AICH recovery data: The part (%u) is already complete, canceling"), nPart);
 		return;
 	}
 
@@ -5455,7 +5466,7 @@ void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 		thePrefs.sesLostFromCorruption -= nRecovered;
 
 	// OK now some sanity checks
-	if (IsCompleteBD(uStart, uStart + length - 1)) {
+	if (IsCompleteBDSafe(uStart, uStart + length - 1)) {
 		// this is bad, but it could probably happen under some rare circumstances
 		// make sure that HashSinglePart() (MD4 and possibly AICH again) agrees to this fact too,
 		// for Verified Hashes problems are handled within that functions, otherwise:
