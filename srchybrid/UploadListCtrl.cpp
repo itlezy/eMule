@@ -29,6 +29,7 @@
 #include "KnownFile.h"
 #include "SharedFileList.h"
 #include "ClientCredits.h"
+#include "ClientList.h"
 #include "ChatWnd.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "UploadQueue.h"
@@ -52,6 +53,20 @@ namespace
 	const CKnownFile* GetUploadClientFile(const CUpDownClient* client)
 	{
 		return client != NULL ? theApp.sharedfiles->GetFileByID(client->GetUploadFileID()) : NULL;
+	}
+
+	bool IsLiveUploadingClient(const CUpDownClient *client)
+	{
+		if (client == NULL || theApp.clientlist == NULL || theApp.uploadqueue == NULL)
+			return false;
+		if (!theApp.clientlist->ContainsClientPointer(client))
+			return false;
+
+		for (POSITION pos = theApp.uploadqueue->GetFirstFromUploadList(); pos != NULL;) {
+			if (theApp.uploadqueue->GetNextFromUploadList(pos) == client)
+				return true;
+		}
+		return false;
 	}
 
 	CString FormatUploadRatio(float fRatio)
@@ -181,6 +196,36 @@ void CUploadListCtrl::SetAllIcons()
 	VERIFY(ApplyImageList(*m_pImageList) == NULL);
 }
 
+const CUpDownClient* CUploadListCtrl::GetLiveClientByIndex(int iItem)
+{
+	if (iItem < 0 || iItem >= GetItemCount())
+		return NULL;
+
+	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(iItem));
+	return IsLiveClient(client) ? client : NULL;
+}
+
+bool CUploadListCtrl::IsLiveClient(const CUpDownClient *client) const
+{
+	return IsLiveUploadingClient(client);
+}
+
+bool CUploadListCtrl::PruneStaleClientItems()
+{
+	bool bRemoved = false;
+	for (int iItem = GetItemCount(); --iItem >= 0;) {
+		if (!IsLiveClient(reinterpret_cast<CUpDownClient*>(GetItemData(iItem)))) {
+			DeleteItem(iItem);
+			bRemoved = true;
+		}
+	}
+
+	if (bRemoved)
+		theApp.emuledlg->transferwnd->m_pwndTransfer->UpdateListCount(CTransferWnd::wnd2Uploading);
+
+	return bRemoved;
+}
+
 void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 {
 	if (!lpDrawItemStruct->itemData || theApp.IsClosing())
@@ -193,6 +238,8 @@ void CUploadListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 	RECT rcClient;
 	GetClientRect(&rcClient);
 	const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(lpDrawItemStruct->itemData);
+	if (!IsLiveClient(client))
+		return;
 	if (client->GetSlotNumber() > (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 		dc.SetTextColor(::GetSysColor(COLOR_GRAYTEXT));
 
@@ -400,8 +447,10 @@ void CUploadListCtrl::OnLvnGetDispInfo(LPNMHDR pNMHDR, LRESULT *pResult)
 		const LVITEMW &rItem = reinterpret_cast<NMLVDISPINFO*>(pNMHDR)->item;
 		if (rItem.mask & LVIF_TEXT) {
 			const CUpDownClient *pClient = reinterpret_cast<CUpDownClient*>(rItem.lParam);
-			if (pClient != NULL)
+			if (IsLiveClient(pClient))
 				_tcsncpy_s(rItem.pszText, rItem.cchTextMax, GetItemDisplayText(pClient, rItem.iSubItem), _TRUNCATE);
+			else if (rItem.pszText != NULL && rItem.cchTextMax > 0)
+				rItem.pszText[0] = _T('\0');
 		}
 	}
 	*pResult = 0;
@@ -420,7 +469,7 @@ void CUploadListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 			return;
 		}
 
-		const CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(pGetInfoTip->iItem));
+		const CUpDownClient *client = GetLiveClientByIndex(pGetInfoTip->iItem);
 		if (client && pGetInfoTip->pszText && pGetInfoTip->cchTextMax > 0) {
 			CString strInfo;
 			strInfo.Format(GetResString(IDS_USERINFO), client->GetUserName());
@@ -470,6 +519,7 @@ void CUploadListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	// Sort table
 	UpdateSortHistory(MAKELONG(pNMLV->iSubItem, !sortAscending));
 	SetSortArrow(pNMLV->iSubItem, sortAscending);
+	PruneStaleClientItems();
 	SortItems(SortProc, MAKELONG(pNMLV->iSubItem, !sortAscending));
 	*pResult = 0;
 }
@@ -478,6 +528,10 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 {
 	const CUpDownClient *item1 = reinterpret_cast<CUpDownClient*>(lParam1);
 	const CUpDownClient *item2 = reinterpret_cast<CUpDownClient*>(lParam2);
+	const bool bLiveItem1 = IsLiveUploadingClient(item1);
+	const bool bLiveItem2 = IsLiveUploadingClient(item2);
+	if (!bLiveItem1 || !bLiveItem2)
+		return bLiveItem1 ? -1 : (bLiveItem2 ? 1 : 0);
 
 	int iResult = 0;
 	switch (LOWORD(lParamSort)) {
@@ -644,9 +698,9 @@ void CUploadListCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 {
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	if (iSel >= 0) {
-		CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(iSel));
+		const CUpDownClient *client = GetLiveClientByIndex(iSel);
 		if (client) {
-			CClientDetailDialog dialog(client, this);
+			CClientDetailDialog dialog(const_cast<CUpDownClient*>(client), this);
 			dialog.DoModal();
 		}
 	}
@@ -655,8 +709,9 @@ void CUploadListCtrl::OnNmDblClk(LPNMHDR, LRESULT *pResult)
 
 void CUploadListCtrl::OnContextMenu(CWnd*, CPoint point)
 {
+	PruneStaleClientItems();
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
-	const CUpDownClient *client = (iSel >= 0) ? reinterpret_cast<CUpDownClient*>(GetItemData(iSel)) : NULL;
+	const CUpDownClient *client = GetLiveClientByIndex(iSel);
 	const bool is_ed2k = client && client->IsEd2kClient();
 
 	CTitledMenu ClientMenu;
@@ -695,20 +750,22 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 
 	int iSel = GetNextItem(-1, LVIS_SELECTED | LVIS_FOCUSED);
 	if (iSel >= 0) {
-		CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(iSel));
+		const CUpDownClient *client = GetLiveClientByIndex(iSel);
 		switch (wParam) {
 		case MP_SHOWLIST:
-			client->RequestSharedFileList();
+			if (client)
+				const_cast<CUpDownClient*>(client)->RequestSharedFileList();
 			break;
 		case MP_MESSAGE:
-			theApp.emuledlg->chatwnd->StartSession(client);
+			if (client)
+				theApp.emuledlg->chatwnd->StartSession(const_cast<CUpDownClient*>(client));
 			break;
 		case MP_ADDFRIEND:
-			if (theApp.friendlist->AddFriend(client))
+			if (client && theApp.friendlist->AddFriend(const_cast<CUpDownClient*>(client)))
 				Update(iSel);
 			break;
 		case MP_REMOVEFRIEND:
-			{
+			if (client) {
 				CFriend *pFriend = theApp.friendlist->SearchFriend(client->GetUserHash(), 0, 0);
 				if (pFriend != NULL) {
 					theApp.friendlist->RemoveFriend(pFriend);
@@ -717,33 +774,33 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			}
 			break;
 		case MP_BAN:
-			if (!client->IsBanned()) {
-				client->Ban(GetResString(IDS_BAN_ARBITRARY));
+			if (client && !client->IsBanned()) {
+				const_cast<CUpDownClient*>(client)->Ban(GetResString(IDS_BAN_ARBITRARY));
 				Update(iSel);
 			}
 			break;
 		case MP_UNBAN:
-			if (client->IsBanned()) {
-				client->UnBan();
+			if (client && client->IsBanned()) {
+				const_cast<CUpDownClient*>(client)->UnBan();
 				Update(iSel);
 			}
 			break;
 		case MP_COPY_ED2K_HASH:
-			{
+			if (client) {
 				const CKnownFile *file = GetUploadClientFile(client);
 				if (file != NULL && !file->IsPartFile())
 					theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
 			}
 			break;
 		case MP_OPEN:
-			{
+			if (client) {
 				const CKnownFile *file = GetUploadClientFile(client);
 				if (file != NULL && !file->IsPartFile())
 					ShellDefaultVerb(file->GetFilePath());
 			}
 			break;
 		case MP_OPENFOLDER:
-			{
+			if (client) {
 				const CKnownFile *file = GetUploadClientFile(client);
 				if (file != NULL && !file->IsPartFile())
 					ShellOpen(_T("explorer"), _T("/select,\"") + file->GetFilePath() + _T('\"'));
@@ -752,13 +809,13 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 		case MP_DETAIL:
 		case MPG_ALTENTER:
 		case IDA_ENTER:
-			{
-				CClientDetailDialog dialog(client, this);
+			if (client) {
+				CClientDetailDialog dialog(const_cast<CUpDownClient*>(client), this);
 				dialog.DoModal();
 			}
 			break;
 		case MP_BOOT:
-			if (client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a)
+			if (client && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a)
 				Kademlia::CKademlia::Bootstrap(ntohl(client->GetIP()), client->GetKadPort());
 		}
 	}
@@ -768,6 +825,15 @@ BOOL CUploadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 void CUploadListCtrl::AddClient(const CUpDownClient *client)
 {
 	if (theApp.IsClosing())
+		return;
+	if (!IsLiveClient(client))
+		return;
+	PruneStaleClientItems();
+
+	LVFINDINFO find;
+	find.flags = LVFI_PARAM;
+	find.lParam = (LPARAM)client;
+	if (FindItem(&find) >= 0)
 		return;
 
 	int iItemCount = GetItemCount();
@@ -784,11 +850,16 @@ void CUploadListCtrl::RemoveClient(const CUpDownClient *client)
 	LVFINDINFO find;
 	find.flags = LVFI_PARAM;
 	find.lParam = (LPARAM)client;
-	int iItem = FindItem(&find);
-	if (iItem >= 0) {
+	bool bRemoved = false;
+	for (;;) {
+		int iItem = FindItem(&find);
+		if (iItem < 0)
+			break;
 		DeleteItem(iItem);
-		theApp.emuledlg->transferwnd->m_pwndTransfer->UpdateListCount(CTransferWnd::wnd2Uploading);
+		bRemoved = true;
 	}
+	if (bRemoved)
+		theApp.emuledlg->transferwnd->m_pwndTransfer->UpdateListCount(CTransferWnd::wnd2Uploading);
 }
 
 void CUploadListCtrl::RefreshClient(const CUpDownClient *client)
@@ -797,6 +868,11 @@ void CUploadListCtrl::RefreshClient(const CUpDownClient *client)
 		&& theApp.emuledlg->transferwnd->m_pwndTransfer->uploadlistctrl.IsWindowVisible()
 		&& !theApp.IsClosing())
 	{
+		if (!IsLiveClient(client)) {
+			RemoveClient(client);
+			return;
+		}
+
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)client;
@@ -820,9 +896,9 @@ void CUploadListCtrl::ShowSelectedUserDetails()
 	SetItemState(it, LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
 	SetSelectionMark(it);   // display selection mark correctly!
 
-	CUpDownClient *client = reinterpret_cast<CUpDownClient*>(GetItemData(GetSelectionMark()));
+	const CUpDownClient *client = GetLiveClientByIndex(GetSelectionMark());
 	if (client) {
-		CClientDetailDialog dialog(client, this);
+		CClientDetailDialog dialog(const_cast<CUpDownClient*>(client), this);
 		dialog.DoModal();
 	}
 }

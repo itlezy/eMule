@@ -44,6 +44,9 @@ protected:
 	CToolTipCtrlX m_tooltip;
 
 	void SetAllIcons();
+	const CUpDownClient* GetLiveClientByIndex(int iItem);
+	bool IsLiveClient(const CUpDownClient *client) const;
+	bool PruneStaleClientItems();
 	CString GetItemDisplayText(const CUpDownClient *client, int iSubItem) const;
 	static int CALLBACK SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);
 
