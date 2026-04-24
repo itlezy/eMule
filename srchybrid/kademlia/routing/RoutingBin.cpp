@@ -165,6 +165,17 @@ void CRoutingBin::RemoveContact(CContact *const pContact, bool bNoTrackingAdjust
 	m_listEntries.remove(pContact);
 }
 
+bool CRoutingBin::ContainsContactPointer(const CContact *pContact) const
+{
+	if (pContact == NULL)
+		return false;
+
+	for (ContactList::const_iterator itContact = m_listEntries.begin(); itContact != m_listEntries.end(); ++itContact)
+		if (*itContact == pContact)
+			return true;
+	return false;
+}
+
 CContact* CRoutingBin::GetContact(const CUInt128 &uID)
 {
 	// Find contact by ID.

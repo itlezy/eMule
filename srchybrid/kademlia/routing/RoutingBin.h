@@ -50,6 +50,7 @@ namespace Kademlia
 		void RemoveContact(CContact *const pContact, bool bNoTrackingAdjust = false);
 		CContact* GetContact(const CUInt128 &uID);
 		CContact* GetContact(uint32 uIP, uint16 nPort, bool bTCPPort);
+		bool ContainsContactPointer(const CContact *pContact) const;
 		CContact* GetOldest();
 		UINT GetSize() const;
 		void GetNumContacts(uint32 &nInOutContacts, uint32 &nInOutFilteredContacts, uint8 byMinVersion) const;

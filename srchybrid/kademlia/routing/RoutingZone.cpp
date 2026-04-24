@@ -594,6 +594,17 @@ CContact* CRoutingZone::GetContact(uint32 uIP, uint16 nPort, bool bTCPPort) cons
 	return pContact ? pContact : m_pSubZones[1]->GetContact(uIP, nPort, bTCPPort);
 }
 
+bool CRoutingZone::ContainsContactPointer(const CContact *pContact) const
+{
+	if (pContact == NULL)
+		return false;
+	if (IsLeaf())
+		return m_pBin->ContainsContactPointer(pContact);
+
+	return m_pSubZones[0]->ContainsContactPointer(pContact)
+		|| m_pSubZones[1]->ContainsContactPointer(pContact);
+}
+
 CContact* CRoutingZone::GetRandomContact(uint32 nMaxType, uint32 nMinKadVersion) const
 {
 	if (IsLeaf())

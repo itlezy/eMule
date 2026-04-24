@@ -23,6 +23,8 @@
 #include "MemDC.h"
 #include "Opcodes.h"
 #include "OtherFunctions.h"
+#include "Kademlia/Kademlia/Kademlia.h"
+#include "Kademlia/Routing/RoutingZone.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -85,6 +87,15 @@ namespace
 		default:
 			return NULL;
 		}
+	}
+
+	bool IsLiveKadContactPointer(const Kademlia::CContact *contact)
+	{
+		if (contact == NULL)
+			return false;
+		if (Kademlia::CKademlia::GetRoutingZone() != NULL && Kademlia::CKademlia::GetRoutingZone()->ContainsContactPointer(contact))
+			return true;
+		return Kademlia::CKademlia::s_liBootstrapList.Find(const_cast<Kademlia::CContact*>(contact)) != NULL;
 	}
 }
 
@@ -205,6 +216,36 @@ CString CKadContactListCtrl::GetContactDistanceText(const Kademlia::CContact *co
 	return strDistance;
 }
 
+const Kademlia::CContact* CKadContactListCtrl::GetLiveContactByIndex(int iItem)
+{
+	if (iItem < 0 || iItem >= GetItemCount())
+		return NULL;
+
+	const Kademlia::CContact *contact = reinterpret_cast<Kademlia::CContact*>(GetItemData(iItem));
+	return IsLiveContact(contact) ? contact : NULL;
+}
+
+bool CKadContactListCtrl::IsLiveContact(const Kademlia::CContact *contact) const
+{
+	return IsLiveKadContactPointer(contact);
+}
+
+bool CKadContactListCtrl::PruneStaleContactItems()
+{
+	bool bRemoved = false;
+	for (int iItem = GetItemCount(); --iItem >= 0;) {
+		if (!IsLiveContact(reinterpret_cast<Kademlia::CContact*>(GetItemData(iItem)))) {
+			DeleteItem(iItem);
+			bRemoved = true;
+		}
+	}
+
+	if (bRemoved)
+		UpdateKadContactCount();
+
+	return bRemoved;
+}
+
 void CKadContactListCtrl::UpdateContact(int iItem, const Kademlia::CContact *contact)
 {
 	CString id;
@@ -242,6 +283,16 @@ bool CKadContactListCtrl::ContactAdd(const Kademlia::CContact *contact)
 {
 	try {
 		ASSERT(contact != NULL);
+		if (!IsLiveContact(contact))
+			return false;
+		PruneStaleContactItems();
+
+		LVFINDINFO find;
+		find.flags = LVFI_PARAM;
+		find.lParam = (LPARAM)contact;
+		if (FindItem(&find) >= 0)
+			return true;
+
 		int iItem = InsertItem(LVIF_TEXT | LVIF_PARAM, GetItemCount(), _T(""), 0, 0, 0, (LPARAM)contact);
 		if (iItem >= 0) {
 			UpdateContact(iItem, contact);
@@ -261,11 +312,16 @@ void CKadContactListCtrl::ContactRem(const Kademlia::CContact *contact)
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)contact;
-		int iItem = FindItem(&find);
-		if (iItem >= 0) {
+		bool bRemoved = false;
+		for (;;) {
+			int iItem = FindItem(&find);
+			if (iItem < 0)
+				break;
 			DeleteItem(iItem);
-			UpdateKadContactCount();
+			bRemoved = true;
 		}
+		if (bRemoved)
+			UpdateKadContactCount();
 	} catch (...) {
 		ASSERT(0);
 	}
@@ -275,6 +331,11 @@ void CKadContactListCtrl::ContactRef(const Kademlia::CContact *contact)
 {
 	try {
 		ASSERT(contact != NULL);
+		if (!IsLiveContact(contact)) {
+			ContactRem(contact);
+			return;
+		}
+
 		LVFINDINFO find;
 		find.flags = LVFI_PARAM;
 		find.lParam = (LPARAM)contact;
@@ -304,6 +365,7 @@ void CKadContactListCtrl::OnLvnColumnClick(LPNMHDR pNMHDR, LRESULT *pResult)
 	// Sort table
 	UpdateSortHistory(MAKELONG(iSortItem, !bSortAscending));
 	SetSortArrow(iSortItem, bSortAscending);
+	PruneStaleContactItems();
 	SortItems(SortProc, MAKELONG(iSortItem, !bSortAscending));
 	*pResult = 0;
 }
@@ -314,6 +376,9 @@ void CKadContactListCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		return;
 
 	const Kademlia::CContact *contact = reinterpret_cast<Kademlia::CContact*>(lpDrawItemStruct->itemData);
+	if (!IsLiveContact(contact))
+		return;
+
 	CRect rcItem(lpDrawItemStruct->rcItem);
 	CMemoryDC dc(CDC::FromHandle(lpDrawItemStruct->hDC), rcItem);
 	BOOL bCtrlFocused;
@@ -384,6 +449,10 @@ int CALLBACK CKadContactListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARA
 	const Kademlia::CContact *item2 = reinterpret_cast<Kademlia::CContact*>(lParam2);
 	if (item1 == NULL || item2 == NULL)
 		return 0;
+	const bool bLiveItem1 = IsLiveKadContactPointer(item1);
+	const bool bLiveItem2 = IsLiveKadContactPointer(item2);
+	if (!bLiveItem1 || !bLiveItem2)
+		return bLiveItem1 ? -1 : (bLiveItem2 ? 1 : 0);
 
 	int iResult;
 	switch (LOWORD(lParamSort)) {

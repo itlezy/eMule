@@ -54,6 +54,9 @@ protected:
 	CString GetContactTypeText(const Kademlia::CContact *contact) const;
 	CString GetContactVersionText(const Kademlia::CContact *contact) const;
 	CString GetContactDistanceText(const Kademlia::CContact *contact) const;
+	const Kademlia::CContact* GetLiveContactByIndex(int iItem);
+	bool IsLiveContact(const Kademlia::CContact *contact) const;
+	bool PruneStaleContactItems();
 	virtual void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
 
 	static int CALLBACK SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lParamSort);

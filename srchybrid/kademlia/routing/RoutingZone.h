@@ -68,6 +68,7 @@ namespace Kademlia
 			bool		VerifyContact(const CUInt128 &uID, uint32 uIP) const;
 			CContact*	GetContact(const CUInt128 &uID) const;
 			CContact*	GetContact(uint32 uIP, uint16 nPort, bool bTCPPort) const;
+			bool		ContainsContactPointer(const CContact *pContact) const;
 			CContact*	GetRandomContact(uint32 nMaxType, uint32 nMinKadVersion) const;
 			uint32		GetNumContacts() const;
 			void		GetNumContacts(uint32 &nInOutContacts, uint32 &nInOutFilteredContacts, uint8 byMinVersion) const;
