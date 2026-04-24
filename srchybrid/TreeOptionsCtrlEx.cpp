@@ -349,10 +349,25 @@ void CTreeOptionsCtrlEx::OnCreateImageList()
 
 void CTreeOptionsCtrlEx::SetEditLabel(HTREEITEM hItem, const CString &rstrLabel)
 {
+	CString sLabel(rstrLabel);
+	const CString &sSeparator = GetTextSeparator();
+	if (!sSeparator.IsEmpty()) {
+		// Avoid embedding the exact value separator in labels; value parsing depends on it.
+		CString sSafeSeparator(sSeparator);
+		const int nLast = sSafeSeparator.GetLength() - 1;
+		if (nLast >= 0) {
+			if (sSafeSeparator[nLast] == _T(' '))
+				sSafeSeparator.SetAt(nLast, (TCHAR)0x00A0);
+			else
+				sSafeSeparator += (TCHAR)0x00A0;
+		}
+		sLabel.Replace(sSeparator, sSafeSeparator);
+	}
+
 	CString sItemText(GetItemText(hItem));
-	int nSeparator = sItemText.Find(GetTextSeparator());
+	int nSeparator = sItemText.Find(sSeparator);
 	sItemText.Delete(0, nSeparator < 0 ? INT_MAX : nSeparator);
-	sItemText.Insert(0, rstrLabel);
+	sItemText.Insert(0, sLabel);
 	SetItemText(hItem, sItemText);
 }
 
