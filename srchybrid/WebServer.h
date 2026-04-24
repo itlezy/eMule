@@ -319,6 +319,7 @@ public:
 	bool ReloadTemplates();
 	INT_PTR GetSessionCount()					{ return m_Params.Sessions.GetCount(); }
 	bool IsRunning() const						{ return m_bServerWorking; }
+	bool AreTemplatesLoaded() const				{ return m_bTemplatesLoaded; }
 protected:
 	//all static method names have an underscore prefix
 	static void		_ProcessURL(const ThreadData &Data);
@@ -394,6 +395,7 @@ private:
 	int				m_iSearchSortby;
 	uint16			m_nIntruderDetect;
 	bool			m_bServerWorking;
+	bool			m_bTemplatesLoaded;
 	bool			m_bSearchAsc;
 	bool			m_bIsTempDisabled;
 };

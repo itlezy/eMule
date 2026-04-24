@@ -87,6 +87,7 @@ CWebServer::CWebServer()
 	, m_iSearchSortby(3)
 	, m_nIntruderDetect()
 	, m_bServerWorking()
+	, m_bTemplatesLoaded()
 	, m_bSearchAsc()
 	, m_bIsTempDisabled()
 {
@@ -149,6 +150,8 @@ void CWebServer::_SaveWIConfigArray(BOOL *array, int size, LPCTSTR key)
 
 bool CWebServer::ReloadTemplates()
 {
+	m_bTemplatesLoaded = false;
+
 	//Last-Modified: <day-name>, <day> <month-name> <year> <hour>:<minute>:<second> GMT
 	//Day and month names must be 3 English letters, 30 characters total.
 	_locale_t locale = _tcreate_locale(LC_TIME, _T("en-US"));
@@ -222,18 +225,16 @@ bool CWebServer::ReloadTemplates()
 			m_Templates.sProgressbarImgsPercent.Replace(_T("[PROGRESSGIFINTERNAL]"), _T("%i"));
 			m_Templates.sProgressbarImgs.Replace(_T("[PROGRESSGIFNAME]"), _T("%s"));
 			m_Templates.sProgressbarImgs.Replace(_T("[PROGRESSGIFINTERNAL]"), _T("%i"));
+			m_bTemplatesLoaded = true;
 			return true;
 		}
 		if (thePrefs.GetWSIsEnabled() || m_bServerWorking) {
 			CString buffer;
 			buffer.Format(GetResString(IDS_WS_ERR_LOADTEMPLATE), (LPCTSTR)sFile);
 			AddLogLine(true, buffer);
-			AfxMessageBox(buffer, MB_OK);
-			StopServer();
 		}
 	} else if (m_bServerWorking) {
 		AddLogLine(true, GetResString(IDS_WEB_ERR_CANTLOAD), (LPCTSTR)sFile);
-		StopServer();
 	}
 	return false;
 }
@@ -370,6 +371,12 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 #endif
 		if (WebServerJson::IsApiRequest(Data)) {
 			WebServerJson::ProcessRequest(Data);
+			::CoUninitialize();
+			return;
+		}
+
+		if (!pThis->AreTemplatesLoaded()) {
+			Data.pSocket->SendReply("HTTP/1.1 503 Service Unavailable\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Length: 40\r\nConnection: close\r\n\r\nWeb interface templates are unavailable.");
 			::CoUninitialize();
 			return;
 		}
