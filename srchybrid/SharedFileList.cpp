@@ -687,7 +687,7 @@ bool CSharedFileList::WaitForSharedHashJob(SharedHashJob &rJob)
 			const SharedFileListSeams::SharedHashWorkerStartState startState = {
 				m_bSharedHashWorkerCanHash,
 				!m_sharedHashQueue.empty(),
-				!m_sharedHashPendingCompletions.empty()
+				static_cast<unsigned int>(m_sharedHashPendingCompletions.size())
 			};
 			if (SharedFileListSeams::ShouldStartSharedHashJob(startState)) {
 				rJob = m_sharedHashQueue.front();

@@ -27,7 +27,7 @@ struct SharedHashWorkerStartState
 {
 	bool bWorkerCanHash;
 	bool bQueuedJobAvailable;
-	bool bPendingCompletion;
+	unsigned int uPendingCompletionCount;
 };
 
 /**
@@ -89,6 +89,7 @@ struct SharedHashShutdownCacheState
  * @brief Returns the bounded delay used to yield after queuing one full imported part for async write.
  */
 constexpr DWORD kImportPartProgressYieldMs = 100;
+constexpr unsigned int kSharedHashPendingCompletionBacklogMax = 4u;
 constexpr ULONGLONG kStartupCacheSaveDelayDuringHashDrainMs = 5000ui64;
 constexpr ULONGLONG kStartupCacheSaveDelayIdleMs = 15000ui64;
 
@@ -113,7 +114,9 @@ inline bool ShouldScheduleAutoReload(const AutoReloadScheduleState &rState)
  */
 inline bool ShouldStartSharedHashJob(const SharedHashWorkerStartState &rState)
 {
-	return rState.bWorkerCanHash && rState.bQueuedJobAvailable && !rState.bPendingCompletion;
+	return rState.bWorkerCanHash
+		&& rState.bQueuedJobAvailable
+		&& rState.uPendingCompletionCount < kSharedHashPendingCompletionBacklogMax;
 }
 
 /**
