@@ -3125,11 +3125,23 @@ void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 		m_tCompleteSourcesTime = 0; //force update in Shared Files
 
 		SetStatus(PS_COMPLETE); // (set status and) update status-related modification of GUI elements
-		theApp.knownfiles->SafeAddKFile(this);
+		const UINT nCompletedCategory = GetCategory();
+		const CString strCompletedFileName(GetFileName());
+		const bool bKnownFileAdded = theApp.knownfiles->SafeAddKFile(this);
 		ASSERT(!nInUse);
 		theApp.downloadqueue->RemoveFile(this);
 		CUploadDiskIOThread::DissociateFile(this); //file has moved, a new handle would be required
 		bNoNewReads = false; //ready for uploading - enable reading
+		if (!bKnownFileAdded) {
+			if (theApp.sharedfiles != NULL && theApp.sharedfiles->IsFilePtrInList(this))
+				theApp.sharedfiles->RemoveFile(this);
+			theApp.emuledlg->transferwnd->GetDownloadList()->RemoveFile(this);
+			theApp.emuledlg->transferwnd->GetDownloadList()->ShowFilesCount();
+			AddDebugLogLine(false, _T("Discarded completed duplicate file \"%s\" because an existing live same-MD4 known file was kept"), (LPCTSTR)strCompletedFileName);
+			delete this;
+			theApp.downloadqueue->StartNextFileIfPrefs(static_cast<int>(nCompletedCategory));
+			return;
+		}
 		if (thePrefs.GetRemoveFinishedDownloads())
 			theApp.emuledlg->transferwnd->GetDownloadList()->RemoveFile(this);
 		else

@@ -1413,8 +1413,25 @@ void CSharedFileList::FileHashingFinished(CKnownFile *file)
 			else
 				ASSERT(0);
 		} else {
-			SafeAddKFile(file);
-			theApp.knownfiles->SafeAddKFile(file);
+			const CString strDuplicatePath(file->GetFilePath());
+			const LONGLONG llDuplicateDate = static_cast<LONGLONG>(file->GetUtcFileDate());
+			const ULONGLONG ullDuplicateSize = static_cast<ULONGLONG>(file->GetFileSize());
+			uchar aucDuplicateHash[16];
+			md4cpy(aucDuplicateHash, file->GetFileHash());
+			const bool bSharedAdded = SafeAddKFile(file);
+			if (!theApp.knownfiles->SafeAddKFile(file)) {
+				TRACE(_T("%hs: Known file list kept an existing same-MD4 entry: %s \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(aucDuplicateHash), (LPCTSTR)strDuplicatePath);
+				RememberDuplicateSharedPath(strDuplicatePath, aucDuplicateHash, llDuplicateDate, ullDuplicateSize);
+				if (bSharedAdded && IsFilePtrInList(file))
+					RemoveFile(file);
+				if (bSharedAdded
+					&& !IsFilePtrInList(file)
+					&& !theApp.knownfiles->IsFilePtrInList(file)
+					&& (theApp.downloadqueue == NULL || !theApp.downloadqueue->IsPartFile(file)))
+				{
+					delete file;
+				}
+			}
 			MarkStartupCacheDirty();
 		}
 	} else {

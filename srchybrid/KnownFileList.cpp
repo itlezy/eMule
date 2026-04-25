@@ -86,6 +86,42 @@ namespace
 
 		return true;
 	}
+
+	bool IsSharedKnownFile(const CKnownFile *pFile)
+	{
+		return pFile != NULL
+			&& theApp.sharedfiles != NULL
+			&& theApp.sharedfiles->IsFilePtrInList(pFile);
+	}
+
+	bool IsDownloadingKnownFile(const CKnownFile *pFile)
+	{
+		return pFile != NULL
+			&& theApp.downloadqueue != NULL
+			&& theApp.downloadqueue->IsPartFile(pFile);
+	}
+
+	void MergeCompatibleKnownFileStats(CKnownFile *pKeep, const CKnownFile *pDiscard)
+	{
+		ASSERT(pKeep != NULL);
+		ASSERT(pDiscard != NULL);
+		ASSERT(pKeep->GetFileSize() == pDiscard->GetFileSize());
+		if (pKeep->GetFileSize() == pDiscard->GetFileSize())
+			pKeep->statistic.MergeFileStats(&pDiscard->statistic);
+	}
+
+	void RefreshKnownFilePathSpelling(CKnownFile *pKeep, const CKnownFile *pIncoming)
+	{
+		if (pKeep == NULL || pIncoming == NULL)
+			return;
+
+		if (PathHelpers::ArePathsEquivalent(pKeep->GetFilePath(), pIncoming->GetFilePath())
+			&& pKeep->GetFilePath().CompareNoCase(pIncoming->GetFilePath()) != 0)
+		{
+			pKeep->SetPath(pIncoming->GetPath());
+			pKeep->SetFilePath(pIncoming->GetFilePath());
+		}
+	}
 }
 
 CKnownFileList::CKnownFileList()
@@ -325,48 +361,47 @@ void CKnownFileList::Process()
 
 bool CKnownFileList::SafeAddKFile(CKnownFile *toadd)
 {
-	bool bRemovedDuplicateSharedFile = false;
 	CCKey key(toadd->GetFileHash());
 	CKnownFile *pFileInMap;
 	if (m_Files_map.Lookup(key, pFileInMap)) {
 		TRACE(_T("%hs: Already in known list:   %s %I64u \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(pFileInMap->GetFileHash()), (uint64)pFileInMap->GetFileSize(), (LPCTSTR)pFileInMap->GetFileName());
-		TRACE(_T("%hs: Old entry replaced with: %s %I64u \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(toadd->GetFileHash()), (uint64)toadd->GetFileSize(), (LPCTSTR)toadd->GetFileName());
+		TRACE(_T("%hs: Incoming known file:   %s %I64u \"%s\"\n"), __FUNCTION__, (LPCTSTR)md4str(toadd->GetFileHash()), (uint64)toadd->GetFileSize(), (LPCTSTR)toadd->GetFileName());
 
-		// if we hash files which are already in known file list and add them later (when the hashing thread is finished),
-		// we can not delete any already available entry from known files list. that entry can already be used by the
-		// shared file list -> crash.
+		if (pFileInMap == toadd) {
+			if (toadd->GetFileIdentifier().HasAICHHash())
+				m_mapKnownFilesByAICH[toadd->GetFileIdentifier().GetAICHHash()] = toadd;
+			return true;
+		}
+
+		const bool bExistingIsShared = IsSharedKnownFile(pFileInMap);
+		const bool bExistingIsDownloading = IsDownloadingKnownFile(pFileInMap);
+		const bool bIncomingIsShared = IsSharedKnownFile(toadd);
+		const bool bIncomingIsDownloading = IsDownloadingKnownFile(toadd);
+		const KnownFileCollisionDecision eDecision = ResolveKnownFileCollision(
+			bExistingIsShared,
+			bExistingIsDownloading,
+			bIncomingIsShared,
+			bIncomingIsDownloading);
+
+		if (eDecision == KnownFileCollisionDecision::KeepExisting) {
+			TRACE(_T("%hs: Keeping existing known-file entry for duplicate MD4\n"), __FUNCTION__);
+			MergeCompatibleKnownFileStats(pFileInMap, toadd);
+			RefreshKnownFilePathSpelling(pFileInMap, toadd);
+			if (!bIncomingIsShared && !bIncomingIsDownloading)
+				delete toadd;
+			return false;
+		}
+
+		TRACE(_T("%hs: Replacing inactive known-file entry with live duplicate MD4 owner\n"), __FUNCTION__);
+		ASSERT(!bExistingIsShared);
+		ASSERT(!bExistingIsDownloading);
+		MergeCompatibleKnownFileStats(toadd, pFileInMap);
+		RefreshKnownFilePathSpelling(toadd, pFileInMap);
 
 		RemoveFromLookupIndex(pFileInMap);
 		m_Files_map.RemoveKey(CCKey(pFileInMap->GetFileHash()));
-		m_mapKnownFilesByAICH.RemoveKey(pFileInMap->GetFileIdentifier().GetAICHHash());
-		//This can happen in a couple of situations.
-		//File was renamed outside of eMule.
-		//A user decided to re-download a file he has downloaded and unshared.
-		if (theApp.sharedfiles) {
-			// This solves the problem with dangling ptr in shared files ctrl,
-			// but creates a new bug. It may lead to unshared files! Even
-			// worse it may lead to files which are 'shared' in GUI but
-			// which are not shared 'logically'.
-			//
-			// To reduce the harm, remove the file from shared files list,
-			// only if really needed. Right now this 'harm' applies for files
-			// which are re-shared and then completed (again) because they were
-			// also in download queue (they were added there when the already
-			// available file was not in shared file list).
-			if (theApp.sharedfiles->IsFilePtrInList(pFileInMap))
-				bRemovedDuplicateSharedFile = theApp.sharedfiles->RemoveFile(pFileInMap);
-			ASSERT(!theApp.sharedfiles->IsFilePtrInList(pFileInMap));
-		}
-		//Double check to make sure this is the same file as it's possible that a two files have
-		//the same hash. Maybe in the future we can change the client to not just use Hash as a key
-		//throughout the entire client.
-		ASSERT(toadd->GetFileSize() == pFileInMap->GetFileSize());
-		ASSERT(toadd != pFileInMap);
-		if (toadd->GetFileSize() == pFileInMap->GetFileSize())
-			toadd->statistic.MergeFileStats(&pFileInMap->statistic);
-
-		ASSERT(theApp.sharedfiles == NULL || !theApp.sharedfiles->IsFilePtrInList(pFileInMap));
-		ASSERT(theApp.downloadqueue == NULL || !theApp.downloadqueue->IsPartFile(pFileInMap));
+		if (pFileInMap->GetFileIdentifier().HasAICHHash())
+			m_mapKnownFilesByAICH.RemoveKey(pFileInMap->GetFileIdentifier().GetAICHHash());
 
 		// Quick fix: If we downloaded already downloaded files again, and if those files had the same
 		// file names, and were renamed during file completion, we have a pending ptr in transfer window.
@@ -379,8 +414,6 @@ bool CKnownFileList::SafeAddKFile(CKnownFile *toadd)
 	}
 	m_Files_map[key] = toadd;
 	AddToLookupIndex(toadd);
-	if (bRemovedDuplicateSharedFile)
-		theApp.sharedfiles->SafeAddKFile(toadd);
 
 	if (toadd->GetFileIdentifier().HasAICHHash())
 		m_mapKnownFilesByAICH[toadd->GetFileIdentifier().GetAICHHash()] = toadd;
