@@ -29,10 +29,32 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 CUPnPImplWrapper::CUPnPImplWrapper()
+	: m_pActiveImpl(NULL)
 {
 	static_assert(UPNP_BACKEND_AUTOMATIC == NAT_MAPPING_BACKEND_MODE_AUTOMATIC, "UPnP automatic preference value changed");
 	static_assert(UPNP_BACKEND_IGD_ONLY == NAT_MAPPING_BACKEND_MODE_UPNP_IGD_ONLY, "UPnP IGD-only preference value changed");
 	static_assert(UPNP_BACKEND_PCP_NATPMP_ONLY == NAT_MAPPING_BACKEND_MODE_PCP_NATPMP_ONLY, "UPnP PCP/NAT-PMP-only preference value changed");
+
+	ConfigureImplementations();
+}
+
+CUPnPImplWrapper::~CUPnPImplWrapper()
+{
+	ClearImplementations();
+}
+
+void CUPnPImplWrapper::ClearImplementations()
+{
+	while (!m_liAvailable.IsEmpty())
+		delete m_liAvailable.RemoveHead();
+	while (!m_liUsed.IsEmpty())
+		delete m_liUsed.RemoveHead();
+	m_pActiveImpl = NULL;
+}
+
+void CUPnPImplWrapper::ConfigureImplementations()
+{
+	ClearImplementations();
 
 	const NatMappingBackendOrder backendOrder = BuildNatMappingBackendOrder(thePrefs.GetUPnPBackendMode());
 	for (size_t i = 0; i < backendOrder.uCount; ++i) {
@@ -50,15 +72,6 @@ CUPnPImplWrapper::CUPnPImplWrapper()
 	Init();
 }
 
-CUPnPImplWrapper::~CUPnPImplWrapper()
-{
-	while (!m_liAvailable.IsEmpty())
-		delete m_liAvailable.RemoveHead();
-	while (!m_liUsed.IsEmpty())
-		delete m_liUsed.RemoveHead();
-	m_pActiveImpl = NULL;
-}
-
 void CUPnPImplWrapper::Init()
 {
 	ASSERT(!m_liAvailable.IsEmpty());
@@ -68,9 +81,7 @@ void CUPnPImplWrapper::Init()
 
 void CUPnPImplWrapper::Reset()
 {
-	while (!m_liUsed.IsEmpty())
-		m_liAvailable.AddTail(m_liUsed.RemoveHead());
-	Init();
+	ConfigureImplementations();
 }
 
 bool CUPnPImplWrapper::SwitchImplentation()

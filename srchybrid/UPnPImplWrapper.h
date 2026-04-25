@@ -29,6 +29,14 @@ public:
 	void Reset();
 
 protected:
+	/**
+	 * Deletes all configured NAT mapping implementations and clears the active pointer.
+	 */
+	void ClearImplementations();
+	/**
+	 * Rebuilds the backend list from the current NAT mapping preference and activates the first backend.
+	 */
+	void ConfigureImplementations();
 	void Init();
 
 private:
