@@ -153,6 +153,10 @@ public:
 	 */
 	void AppendStartupProfileCounter(LPCTSTR pszCounterName, ULONGLONG ullValue, LPCTSTR pszValueKey = _T("value"));
 	/**
+	 * @brief Rewrites the startup profiling trace with the samples captured so far.
+	 */
+	void FlushStartupProfileTrace();
+	/**
 	 * @brief Reports whether startup redirected config-backed files to an alternate base directory.
 	 */
 	bool HasStartupConfigBaseDirOverride() const				{ return !m_strStartupConfigBaseDir.IsEmpty(); }

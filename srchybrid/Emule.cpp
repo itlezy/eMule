@@ -473,6 +473,12 @@ SStartupTraceDescriptor DescribeStartupTracePhase(LPCTSTR pszPhase)
 	return descriptor;
 }
 
+bool ShouldFlushStartupProfileAfterCounter(LPCTSTR pszCounterName)
+{
+	return pszCounterName != NULL
+		&& _tcscmp(pszCounterName, _T("shared.hash.currently_hashing")) == 0;
+}
+
 CString GetStartupCounterCategory(LPCTSTR pszCounterName)
 {
 	const CString strCounterName(pszCounterName != NULL ? pszCounterName : _T(""));
@@ -914,6 +920,19 @@ void CemuleApp::FinalizeStartupProfileTrace()
 #endif
 }
 
+void CemuleApp::FlushStartupProfileTrace()
+{
+#if !EMULE_COMPILED_STARTUP_PROFILING
+	return;
+#else
+	if (!m_bStartupProfilingEnabled)
+		return;
+
+	CSingleLock lock(&m_startupProfileLock, TRUE);
+	(void)WriteStartupProfileTrace();
+#endif
+}
+
 bool CemuleApp::WriteStartupProfileTrace() const
 {
 #if !EMULE_COMPILED_STARTUP_PROFILING
@@ -988,6 +1007,7 @@ void CemuleApp::AppendStartupProfileCounter(LPCTSTR pszCounterName, const ULONGL
 	if (!m_bStartupProfilingEnabled || pszCounterName == NULL || pszCounterName[0] == _T('\0'))
 		return;
 
+	const bool bFlushTrace = ShouldFlushStartupProfileAfterCounter(pszCounterName);
 	CSingleLock lock(&m_startupProfileLock, TRUE);
 	SStartupProfileTraceEvent event;
 	event.strName = pszCounterName;
@@ -998,6 +1018,10 @@ void CemuleApp::AppendStartupProfileCounter(LPCTSTR pszCounterName, const ULONGL
 	event.ullTimestampUs = GetStartupProfileTimestampUs();
 	event.ullCounterValue = ullValue;
 	m_aStartupProfileTraceEvents.emplace_back(event);
+	lock.Unlock();
+
+	if (bFlushTrace)
+		FlushStartupProfileTrace();
 #endif
 }
 
