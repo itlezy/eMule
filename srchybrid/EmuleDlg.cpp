@@ -3681,6 +3681,7 @@ LRESULT CemuleDlg::OnWebGUIInteraction(WPARAM wParam, LPARAM lParam)
 			theApp.serverconnect->Disconnect();
 		if (lParam != 1)	// !ED2K
 			Kademlia::CKademlia::Stop();
+		ShowConnectionState();
 		break;
 	case WEBGUIIA_SERVER_REMOVE:
 		serverwnd->serverlistctrl.RemoveServer(reinterpret_cast<CServer*>(lParam));
@@ -3723,12 +3724,15 @@ LRESULT CemuleDlg::OnWebGUIInteraction(WPARAM wParam, LPARAM lParam)
 		break;
 	case WEBGUIIA_KAD_START:
 		Kademlia::CKademlia::Start();
+		ShowConnectionState();
 		break;
 	case WEBGUIIA_KAD_STOP:
 		Kademlia::CKademlia::Stop();
+		ShowConnectionState();
 		break;
 	case WEBGUIIA_KAD_RCFW:
 		Kademlia::CKademlia::RecheckFirewalled();
+		ShowConnectionState();
 	}
 
 	return 0;

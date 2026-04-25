@@ -925,6 +925,17 @@ CServer* FindServerByEndpoint(const SPipeApiServerEndpoint &rEndpoint)
 }
 
 /**
+ * Marshals one legacy web action onto the main UI thread before it mutates
+ * connection state owned by the dialog and socket layers.
+ */
+void InvokeWebGuiInteraction(const WPARAM wAction, const LPARAM lParam = 0)
+{
+	if (theApp.emuledlg == NULL || theApp.emuledlg->GetSafeHwnd() == NULL)
+		return;
+	::SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, wAction, lParam);
+}
+
+/**
  * Starts the existing eMule rehash flow for a part file.
  */
 bool StartPartFileRecheck(CPartFile &rPartFile, SPipeApiError &rError)
@@ -1036,17 +1047,15 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 				rError.strMessage = _T("server not found");
 				return json();
 			}
-			theApp.serverconnect->ConnectToServer(pServer);
+			InvokeWebGuiInteraction(WEBGUIIA_CONNECTTOSERVER, reinterpret_cast<LPARAM>(pServer));
 		} else
-			theApp.serverconnect->ConnectToAnyServer();
+			InvokeWebGuiInteraction(WEBGUIIA_CONNECTTOSERVER);
 
-		theApp.emuledlg->ShowConnectionState();
 		return BuildServerStatusJson();
 	}
 
 	if (strCommand == "servers/disconnect") {
-		theApp.serverconnect->Disconnect();
-		theApp.emuledlg->ShowConnectionState();
+		InvokeWebGuiInteraction(WEBGUIIA_DISCONNECT, 1);
 		return BuildServerStatusJson();
 	}
 
@@ -1104,8 +1113,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		}
 
 		const json result = BuildServerJson(*pServer);
-		theApp.emuledlg->serverwnd->serverlistctrl.RemoveServer(pServer);
-		theApp.emuledlg->ShowConnectionState();
+		InvokeWebGuiInteraction(WEBGUIIA_SERVER_REMOVE, reinterpret_cast<LPARAM>(pServer));
 		return result;
 	}
 
@@ -1113,20 +1121,17 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		return BuildKadStatusJson();
 
 	if (strCommand == "kad/connect") {
-		Kademlia::CKademlia::Start();
-		theApp.emuledlg->ShowConnectionState();
+		InvokeWebGuiInteraction(WEBGUIIA_KAD_START);
 		return BuildKadStatusJson();
 	}
 
 	if (strCommand == "kad/disconnect") {
-		Kademlia::CKademlia::Stop();
-		theApp.emuledlg->ShowConnectionState();
+		InvokeWebGuiInteraction(WEBGUIIA_DISCONNECT, 2);
 		return BuildKadStatusJson();
 	}
 
 	if (strCommand == "kad/recheck_firewall") {
-		Kademlia::CKademlia::RecheckFirewalled();
-		theApp.emuledlg->ShowConnectionState();
+		InvokeWebGuiInteraction(WEBGUIIA_KAD_RCFW);
 		return BuildKadStatusJson();
 	}
 
