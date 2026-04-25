@@ -212,6 +212,8 @@ BEGIN_MESSAGE_MAP(CPPgWebServer, CPropertyPage)
 	ON_EN_CHANGE(IDC_WSPASSLOW, OnDataChange)
 	ON_EN_CHANGE(IDC_WSPORT, OnDataChange)
 	ON_EN_CHANGE(IDC_WEBBINDADDR, OnDataChange)
+	ON_EN_CHANGE(IDC_WS_MAXFILEUPLOAD, OnDataChange)
+	ON_EN_CHANGE(IDC_WS_ALLOWEDIPS, OnDataChange)
 	ON_EN_CHANGE(IDC_TMPLPATH, OnDataChange)
 	ON_EN_CHANGE(IDC_CERTPATH, OnDataChange)
 	ON_EN_CHANGE(IDC_KEYPATH, OnDataChange)
@@ -273,6 +275,8 @@ BOOL CPPgWebServer::OnInitDialog()
 	static_cast<CEdit*>(GetDlgItem(IDC_WSAPIKEY))->SetLimitText(64);
 	static_cast<CEdit*>(GetDlgItem(IDC_WSPORT))->SetLimitText(5);
 	static_cast<CEdit*>(GetDlgItem(IDC_WEBBINDADDR))->SetLimitText(15);
+	static_cast<CEdit*>(GetDlgItem(IDC_WS_MAXFILEUPLOAD))->SetLimitText(5);
+	static_cast<CEdit*>(GetDlgItem(IDC_WS_ALLOWEDIPS))->SetLimitText(512);
 
 	LoadSettings();
 	Localize();
@@ -297,6 +301,18 @@ void CPPgWebServer::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_WSUPNP,
 		_T("Includes the WebServer port in automatic NAT mapping when UPnP or PCP/NAT-PMP is enabled.\r\n\r\n")
 		_T("Enable it only if you intentionally want the Web UI or REST API reachable through your router mapping."));
+	m_toolTip.SetTool(this, IDC_WS_MAXFILEUPLOAD,
+		_T("Maximum single file-upload size accepted by the WebServer in MiB.\r\n\r\n")
+		_T("Use a small value for normal remote control. Raise it only if trusted Web clients need to upload larger files."));
+	m_toolTip.SetTool(this, IDC_WS_MAXFILEUPLOAD_LBL,
+		_T("Maximum single file-upload size accepted by the WebServer in MiB.\r\n\r\n")
+		_T("Use a small value for normal remote control. Raise it only if trusted Web clients need to upload larger files."));
+	m_toolTip.SetTool(this, IDC_WS_ALLOWEDIPS,
+		_T("Optional semicolon-separated IPv4 allow-list for WebServer clients.\r\n\r\n")
+		_T("Leave blank to allow any remote address that can reach the WebServer. Example: 127.0.0.1;192.168.1.50"));
+	m_toolTip.SetTool(this, IDC_WS_ALLOWEDIPS_LBL,
+		_T("Optional semicolon-separated IPv4 allow-list for WebServer clients.\r\n\r\n")
+		_T("Leave blank to allow any remote address that can reach the WebServer. Example: 127.0.0.1;192.168.1.50"));
 	m_toolTip.SetTool(this, IDC_WS_ALLOWHILEVFUNC,
 		_T("Allows high-level administrative Web actions that can change runtime state more aggressively.\r\n\r\n")
 		_T("Recommended: keep this off unless you explicitly need those actions from trusted admin clients."));
@@ -314,6 +330,8 @@ void CPPgWebServer::LoadSettings()
 	GetDlgItem(IDC_WSUPNP)->EnableWindow(thePrefs.IsUPnPEnabled() && thePrefs.GetWSIsEnabled());
 	SetDlgItemInt(IDC_WSPORT, thePrefs.GetWSPort());
 	SetDlgItemText(IDC_WEBBINDADDR, GetEffectiveWebBindAddrForUi());
+	SetDlgItemInt(IDC_WS_MAXFILEUPLOAD, thePrefs.GetMaxWebUploadFileSizeMB());
+	SetDlgItemText(IDC_WS_ALLOWEDIPS, CPreferences::GetAllowedRemoteAccessIPsString());
 
 	SetDlgItemText(IDC_TMPLPATH, thePrefs.GetTemplate());
 	SetDlgItemInt(IDC_WSTIMEOUT, thePrefs.GetWebTimeoutMins());
@@ -422,6 +440,28 @@ BOOL CPPgWebServer::OnApply()
 			bRestartWebServerSockets = true;
 		}
 
+		BOOL bTranslated = FALSE;
+		const uint32 uMaxUploadMB = CPreferences::NormalizeMaxWebUploadFileSizeMB(GetDlgItemInt(IDC_WS_MAXFILEUPLOAD, &bTranslated, FALSE));
+		if (!bTranslated) {
+			AfxMessageBox(_T("Please enter a valid WebServer upload size in MiB."), MB_OK | MB_ICONWARNING);
+			GetDlgItem(IDC_WS_MAXFILEUPLOAD)->SetFocus();
+			return FALSE;
+		}
+		thePrefs.SetMaxWebUploadFileSizeMB(uMaxUploadMB);
+		SetDlgItemInt(IDC_WS_MAXFILEUPLOAD, thePrefs.GetMaxWebUploadFileSizeMB());
+
+		CString strAllowedIPs;
+		GetDlgItemText(IDC_WS_ALLOWEDIPS, strAllowedIPs);
+		CString strInvalidIP;
+		if (!CPreferences::SetAllowedRemoteAccessIPsString(strAllowedIPs, strInvalidIP)) {
+			CString strMessage;
+			strMessage.Format(_T("Invalid allowed WebServer IP address \"%s\".\r\n\r\nUse semicolon-separated IPv4 addresses, or leave the field blank to allow any remote address."), (LPCTSTR)strInvalidIP);
+			AfxMessageBox(strMessage, MB_OK | MB_ICONWARNING);
+			GetDlgItem(IDC_WS_ALLOWEDIPS)->SetFocus();
+			return FALSE;
+		}
+		SetDlgItemText(IDC_WS_ALLOWEDIPS, CPreferences::GetAllowedRemoteAccessIPsString());
+
 		if (thePrefs.GetWebUseHttps() != bHTTPS || (bHTTPS && m_bNewCert))
 			theApp.webserver->StopServer();
 		m_bNewCert = false;
@@ -458,6 +498,8 @@ void CPPgWebServer::Localize()
 		SetDlgItemText(IDC_WSUPNP, GetResString(IDS_WEBUPNPINCLUDE));
 		SetDlgItemText(IDC_WSPORT_LBL, GetResString(IDS_PORT) + _T(':'));
 		SetDlgItemText(IDC_WEBBINDADDR_LBL, GetResString(IDS_WEB_BIND_ADDR) + _T(':'));
+		SetDlgItemText(IDC_WS_MAXFILEUPLOAD_LBL, _T("Max upload MiB:"));
+		SetDlgItemText(IDC_WS_ALLOWEDIPS_LBL, _T("Allowed IPs:"));
 
 		SetDlgItemText(IDC_TEMPLATE, GetResString(IDS_WS_RELOAD_TMPL) + _T(':'));
 		SetDlgItemText(IDC_WSRELOADTMPL, GetResString(IDS_SF_RELOAD));
@@ -510,6 +552,8 @@ void CPPgWebServer::OnEnChangeWSEnabled()
 	GetDlgItem(IDC_WS_GZIP)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSPORT)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WEBBINDADDR)->EnableWindow(bIsWIEnabled);
+	GetDlgItem(IDC_WS_MAXFILEUPLOAD)->EnableWindow(bIsWIEnabled);
+	GetDlgItem(IDC_WS_ALLOWEDIPS)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_TMPLPATH)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_TMPLBROWSE)->EnableWindow(bIsWIEnabled);
 	GetDlgItem(IDC_WSTIMEOUT)->EnableWindow(bIsWIEnabled);

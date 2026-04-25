@@ -32,6 +32,7 @@
 #include "HelpIDs.h"
 #include "Log.h"
 #include "PerfLog.h"
+#include "PreferenceUiSeams.h"
 #include "UserMsgs.h"
 
 #ifdef _DEBUG
@@ -187,6 +188,141 @@ namespace
 		return label;
 	}
 
+	static CString GetCreateCrashDumpLabel()
+	{
+		return _T("Crash dump creation");
+	}
+
+	static CString GetCreateCrashDumpDisabledLabel()
+	{
+		return _T("Disabled");
+	}
+
+	static CString GetCreateCrashDumpPromptLabel()
+	{
+		return _T("Ask before creating dump");
+	}
+
+	static CString GetCreateCrashDumpAlwaysLabel()
+	{
+		return _T("Create dump automatically");
+	}
+
+	static CString GetMaxLogFileSizeLabel()
+	{
+		return _T("Maximum log file size [KiB]");
+	}
+
+	static CString GetMaxLogBufferLabel()
+	{
+		return _T("Log view buffer [KiB]");
+	}
+
+	static CString GetLogFileFormatLabel()
+	{
+		return _T("Log file format");
+	}
+
+	static CString GetLogFileFormatUnicodeLabel()
+	{
+		return _T("UTF-16 Unicode");
+	}
+
+	static CString GetLogFileFormatUtf8Label()
+	{
+		return _T("UTF-8");
+	}
+
+	static CString GetFullVerboseLabel()
+	{
+		return _T("Full verbose logging");
+	}
+
+	static CString GetPerfLogFileFormatLabel()
+	{
+		return _T("Performance log format");
+	}
+
+	static CString GetPerfLogFileLabel()
+	{
+		return _T("Performance log file");
+	}
+
+	static CString GetPerfLogIntervalLabel()
+	{
+		return _T("Performance log interval [minutes]");
+	}
+
+	static CString GetHighresTimerLabel()
+	{
+		return _T("High-resolution system timer");
+	}
+
+	static CString GetIchLabel()
+	{
+		return _T("Intelligent Corruption Handling");
+	}
+
+	static CString GetDontCompressAviLabel()
+	{
+		return _T("Do not compress AVI uploads");
+	}
+
+	static CString GetPreviewSmallBlocksLabel()
+	{
+		return _T("Preview incomplete media blocks");
+	}
+
+	static CString GetPreviewSmallBlocksAllowLabel()
+	{
+		return _T("Allow after safety checks");
+	}
+
+	static CString GetPreviewSmallBlocksForceLabel()
+	{
+		return _T("Force even with missing first block");
+	}
+
+	static CString GetBeepOnErrorLabel()
+	{
+		return _T("Beep on important errors");
+	}
+
+	static CString GetShowCopyEd2kLinkCmdLabel()
+	{
+		return _T("Show Copy ed2k Link command");
+	}
+
+	static CString GetIconFlashOnNewMessageLabel()
+	{
+		return _T("Flash tray icon on new message");
+	}
+
+	static CString GetDateTimeFormatLabel()
+	{
+		return _T("General date/time format");
+	}
+
+	static CString GetDateTimeFormat4LogLabel()
+	{
+		return _T("Log date/time format");
+	}
+
+	static CString GetTxtEditorLabel()
+	{
+		return _T("Text editor command");
+	}
+
+	static CString GetMaxChatHistoryLinesLabel()
+	{
+		return _T("Maximum chat history lines");
+	}
+
+	static CString GetMaxMessageSessionsLabel()
+	{
+		return _T("Maximum message sessions");
+	}
+
 	static CString GetGeneralAdvancedLabel()
 	{
 		return _T("General Advanced");
@@ -314,10 +450,22 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiDebug2Disk()
 	, m_htiDebugSourceExchange()
 	, m_htiExtControls()
+	, m_htiBeepOnError()
+	, m_htiCreateCrashDump()
+	, m_htiCreateCrashDumpDisabled()
+	, m_htiCreateCrashDumpPrompt()
+	, m_htiCreateCrashDumpAlways()
+	, m_htiDateTimeFormat()
+	, m_htiDateTimeFormat4Log()
+	, m_htiDontCompressAvi()
+	, m_htiFullVerbose()
+	, m_htiHighresTimer()
 	, m_htiHiddenDisplay()
 	, m_htiHiddenFile()
 	, m_htiHiddenSecurity()
 	, m_htiHiddenStartup()
+	, m_htiICH()
+	, m_htiIconFlashOnNewMessage()
 	, m_htiExtractMetaData()
 	, m_htiExtractMetaDataID3Lib()
 	, m_htiExtractMetaDataNever()
@@ -326,6 +474,16 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiInspectAllFileTypes()
 	, m_htiLog2Disk()
 	, m_htiPerfLog()
+	, m_htiPerfLogFileFormat()
+	, m_htiPerfLogFileFormatCsv()
+	, m_htiPerfLogFileFormatMrtg()
+	, m_htiPerfLogFile()
+	, m_htiPerfLogInterval()
+	, m_htiLogFileFormat()
+	, m_htiLogFileFormatUnicode()
+	, m_htiLogFileFormatUtf8()
+	, m_htiMaxLogFileSize()
+	, m_htiMaxLogBuffer()
 	, m_htiLogA4AF()
 	, m_htiLogBannedClients()
 	, m_htiLogFileSaving()
@@ -340,6 +498,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiMaxCon5Sec()
 	, m_htiMaxHalfOpen()
 	, m_htiDateTimeFormat4Lists()
+	, m_htiMaxChatHistoryLines()
+	, m_htiMaxMessageSessions()
 	, m_htiSearchGroup()
 	, m_htiSearchEd2kGroup()
 	, m_htiSearchEd2kMaxResults()
@@ -350,7 +510,12 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiSearchKadFileLifetime()
 	, m_htiSearchKadKeywordLifetime()
 	, m_htiPreviewCopiedArchives()
+	, m_htiPreviewSmallBlocks()
+	, m_htiPreviewSmallBlocksDisabled()
+	, m_htiPreviewSmallBlocksAllow()
+	, m_htiPreviewSmallBlocksForce()
 	, m_htiPreviewOnIconDblClk()
+	, m_htiShowCopyEd2kLinkCmd()
 	, m_htiShowActiveDownloadsBold()
 	, m_htiUseSystemFontForMainControls()
 	, m_htiReBarToolbar()
@@ -391,7 +556,13 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiUPnPBackendModePcpNatPmpOnly()
 	, m_htiVerbose()
 	, m_htiVerboseGroup()
+	, m_htiTxtEditor()
 	, m_htiYourHostname()
+	, m_uMaxLogFileSizeKiB()
+	, m_uMaxLogBufferKiB()
+	, m_uMaxChatHistoryLines()
+	, m_uMaxMessageSessions()
+	, m_uPerfLogIntervalMinutes()
 	, m_iMinFreeDiskSpaceConfigGB()
 	, m_iMinFreeDiskSpaceTempGB()
 	, m_iMinFreeDiskSpaceIncomingGB()
@@ -410,6 +581,10 @@ CPPgTweaks::CPPgTweaks()
 	, m_uServerKeepAliveTimeout()
 	, m_iCommitFiles()
 	, m_iExtractMetaData()
+	, m_iCreateCrashDumpMode()
+	, m_iLogFileFormat()
+	, m_iPerfLogFileFormat()
+	, m_iPreviewSmallBlocks()
 	, m_bInspectAllFileTypes()
 	, m_iLogLevel()
 	, m_iMaxConnPerFive()
@@ -418,22 +593,32 @@ CPPgTweaks::CPPgTweaks()
 	, m_iBBSessionTransferMode()
 	, m_iUPnPBackendMode(UPNP_BACKEND_AUTOMATIC)
 	, m_sDateTimeFormat4Lists()
+	, m_sDateTimeFormat()
+	, m_sDateTimeFormat4Log()
+	, m_sPerfLogFile()
+	, m_sTxtEditor()
 	, m_sBBSlowThresholdFactor()
 	, m_sBBLowRatioThreshold()
 	, m_bA4AFSaveCpu()
 	, m_bAutoArchDisable(true)
 	, m_bAutoTakeEd2kLinks()
+	, m_bBeepOnError()
 	, m_bBBLowRatioBoost()
 	, m_bCloseUPnPOnExit(true)
 	, m_bConditionalTCPAccept()
 	, m_bCreditSystem()
 	, m_bDebug2Disk()
 	, m_bDebugSourceExchange()
+	, m_bDontCompressAvi()
 	, m_bExtControls()
 	, m_bExtraPreviewWithMenu()
 	, m_bFilterLANIPs()
 	, m_bFullAlloc()
+	, m_bFullVerbose()
 	, m_bGeoLocationEnabled()
+	, m_bHighresTimer()
+	, m_bICH()
+	, m_bIconFlashOnNewMessage()
 	, m_bInitializedTreeOpts()
 	, m_bKeepUnavailableFixedSharedDirs()
 	, m_bLog2Disk()
@@ -456,6 +641,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bRestoreLastMainWndDlg()
 	, m_bShowedWarning()
 	, m_bShowActiveDownloadsBold()
+	, m_bShowCopyEd2kLinkCmd()
 	, m_bShowUpDownIconInTaskbar()
 	, m_bShowVerticalHourMarkers()
 	, m_bSparsePartFiles()
@@ -584,11 +770,22 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiAutoArch = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DISABLE_AUTOARCHPREV), m_htiGeneralAdvanced, m_bAutoArchDisable);
 		m_htiYourHostname = m_ctrlTreeOptions.InsertItem(GetResString(IDS_YOURHOSTNAME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiGeneralAdvanced);
 		m_ctrlTreeOptions.AddEditBox(m_htiYourHostname, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiTxtEditor = m_ctrlTreeOptions.InsertItem(GetTxtEditorLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiGeneralAdvanced);
+		m_ctrlTreeOptions.AddEditBox(m_htiTxtEditor, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiHighresTimer = m_ctrlTreeOptions.InsertCheckBox(GetHighresTimerLabel(), m_htiGeneralAdvanced, m_bHighresTimer);
 
 		/////////////////////////////////////////////////////////////////////////////
 		// File behavior group
 		//
 		m_htiHiddenFile = m_ctrlTreeOptions.InsertGroup(GetFileBehaviorLabel(), iImgMetaData, TVI_ROOT);
+		m_htiICH = m_ctrlTreeOptions.InsertCheckBox(GetIchLabel(), m_htiHiddenFile, m_bICH);
+		m_htiDontCompressAvi = m_ctrlTreeOptions.InsertCheckBox(GetDontCompressAviLabel(), m_htiHiddenFile, m_bDontCompressAvi);
+		m_htiPreviewSmallBlocks = m_ctrlTreeOptions.InsertGroup(GetPreviewSmallBlocksLabel(), iImgMetaData, m_htiHiddenFile);
+		m_htiPreviewSmallBlocksDisabled = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DISABLED), m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks == 0);
+		m_htiPreviewSmallBlocksAllow = m_ctrlTreeOptions.InsertRadioButton(GetPreviewSmallBlocksAllowLabel(), m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks == 1);
+		m_htiPreviewSmallBlocksForce = m_ctrlTreeOptions.InsertRadioButton(GetPreviewSmallBlocksForceLabel(), m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks == 2);
+		m_htiBeepOnError = m_ctrlTreeOptions.InsertCheckBox(GetBeepOnErrorLabel(), m_htiHiddenFile, m_bBeepOnError);
+		m_htiShowCopyEd2kLinkCmd = m_ctrlTreeOptions.InsertCheckBox(GetShowCopyEd2kLinkCmdLabel(), m_htiHiddenFile, m_bShowCopyEd2kLinkCmd);
 		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), m_htiHiddenFile, m_bSparsePartFiles);
 		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), m_htiHiddenFile, m_bFullAlloc);
 		m_htiExtractMetaData = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_EXTRACT_META_DATA), iImgMetaData, m_htiHiddenFile);
@@ -636,6 +833,11 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		// Display group
 		//
 		m_htiHiddenDisplay = m_ctrlTreeOptions.InsertGroup(GetDisplayTweaksLabel(), iImgLog, TVI_ROOT);
+		m_htiIconFlashOnNewMessage = m_ctrlTreeOptions.InsertCheckBox(GetIconFlashOnNewMessageLabel(), m_htiHiddenDisplay, m_bIconFlashOnNewMessage);
+		m_htiDateTimeFormat = m_ctrlTreeOptions.InsertItem(GetDateTimeFormatLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenDisplay);
+		m_ctrlTreeOptions.AddEditBox(m_htiDateTimeFormat, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiDateTimeFormat4Log = m_ctrlTreeOptions.InsertItem(GetDateTimeFormat4LogLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenDisplay);
+		m_ctrlTreeOptions.AddEditBox(m_htiDateTimeFormat4Log, RUNTIME_CLASS(CTreeOptionsEditEx));
 		m_htiShowActiveDownloadsBold = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWACTIVEDOWNLOADSBOLD), m_htiHiddenDisplay, m_bShowActiveDownloadsBold);
 		m_htiUseSystemFontForMainControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USESYSTEMFONTFORMAINCONTROLS), m_htiHiddenDisplay, m_bUseSystemFontForMainControls);
 		m_htiReBarToolbar = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REBARTOOLBAR), m_htiHiddenDisplay, m_bReBarToolbar);
@@ -658,16 +860,39 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_ctrlTreeOptions.AddEditBox(m_htiTCPErrorFlooderThreshold, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiRearrangeKadSearchKeywords = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_REARRANGEKADSEARCHKEYWORDS), m_htiHiddenSecurity, m_bRearrangeKadSearchKeywords);
 		m_htiMessageFromValidSourcesOnly = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_MESSAGEFROMVALIDSOURCESONLY), m_htiHiddenSecurity, m_bMessageFromValidSourcesOnly);
+		m_htiMaxChatHistoryLines = m_ctrlTreeOptions.InsertItem(GetMaxChatHistoryLinesLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenSecurity);
+		m_ctrlTreeOptions.AddEditBox(m_htiMaxChatHistoryLines, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMaxMessageSessions = m_ctrlTreeOptions.InsertItem(GetMaxMessageSessionsLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiHiddenSecurity);
+		m_ctrlTreeOptions.AddEditBox(m_htiMaxMessageSessions, RUNTIME_CLASS(CNumTreeOptionsEdit));
 
 		/////////////////////////////////////////////////////////////////////////////
 		// Logging group
 		//
 		m_htiLoggingGroup = m_ctrlTreeOptions.InsertGroup(GetLoggingTweaksLabel(), iImgLog, TVI_ROOT);
+		m_htiCreateCrashDump = m_ctrlTreeOptions.InsertGroup(GetCreateCrashDumpLabel(), iImgLog, m_htiLoggingGroup);
+		m_htiCreateCrashDumpDisabled = m_ctrlTreeOptions.InsertRadioButton(GetCreateCrashDumpDisabledLabel(), m_htiCreateCrashDump, m_iCreateCrashDumpMode == 0);
+		m_htiCreateCrashDumpPrompt = m_ctrlTreeOptions.InsertRadioButton(GetCreateCrashDumpPromptLabel(), m_htiCreateCrashDump, m_iCreateCrashDumpMode == 1);
+		m_htiCreateCrashDumpAlways = m_ctrlTreeOptions.InsertRadioButton(GetCreateCrashDumpAlwaysLabel(), m_htiCreateCrashDump, m_iCreateCrashDumpMode == 2);
+		m_htiMaxLogFileSize = m_ctrlTreeOptions.InsertItem(GetMaxLogFileSizeLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiLoggingGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiMaxLogFileSize, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiMaxLogBuffer = m_ctrlTreeOptions.InsertItem(GetMaxLogBufferLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiLoggingGroup);
+		m_ctrlTreeOptions.AddEditBox(m_htiMaxLogBuffer, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiLogFileFormat = m_ctrlTreeOptions.InsertGroup(GetLogFileFormatLabel(), iImgLog, m_htiLoggingGroup);
+		m_htiLogFileFormatUnicode = m_ctrlTreeOptions.InsertRadioButton(GetLogFileFormatUnicodeLabel(), m_htiLogFileFormat, m_iLogFileFormat == Unicode);
+		m_htiLogFileFormatUtf8 = m_ctrlTreeOptions.InsertRadioButton(GetLogFileFormatUtf8Label(), m_htiLogFileFormat, m_iLogFileFormat == Utf8);
 		m_htiLog2Disk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_LOG2DISK), m_htiLoggingGroup, m_bLog2Disk);
 		m_htiPerfLog = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLE_PERFLOG), m_htiLoggingGroup, m_bPerfLogEnabled);
+		m_htiPerfLogFileFormat = m_ctrlTreeOptions.InsertGroup(GetPerfLogFileFormatLabel(), iImgLog, m_htiPerfLog);
+		m_htiPerfLogFileFormatCsv = m_ctrlTreeOptions.InsertRadioButton(_T("CSV"), m_htiPerfLogFileFormat, m_iPerfLogFileFormat == CPerfLog::CSV);
+		m_htiPerfLogFileFormatMrtg = m_ctrlTreeOptions.InsertRadioButton(_T("MRTG"), m_htiPerfLogFileFormat, m_iPerfLogFileFormat == CPerfLog::MRTG);
+		m_htiPerfLogFile = m_ctrlTreeOptions.InsertItem(GetPerfLogFileLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiPerfLog);
+		m_ctrlTreeOptions.AddEditBox(m_htiPerfLogFile, RUNTIME_CLASS(CTreeOptionsEditEx));
+		m_htiPerfLogInterval = m_ctrlTreeOptions.InsertItem(GetPerfLogIntervalLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiPerfLog);
+		m_ctrlTreeOptions.AddEditBox(m_htiPerfLogInterval, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		if (thePrefs.GetEnableVerboseOptions()) {
 			m_htiVerboseGroup = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_VERBOSE), iImgLog, m_htiLoggingGroup);
 			m_htiVerbose = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLED), m_htiVerboseGroup, m_bVerbose);
+			m_htiFullVerbose = m_ctrlTreeOptions.InsertCheckBox(GetFullVerboseLabel(), m_htiVerboseGroup, m_bFullVerbose);
 			m_htiLogLevel = m_ctrlTreeOptions.InsertItem(GetResString(IDS_LOG_LEVEL), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiVerboseGroup);
 			m_ctrlTreeOptions.AddEditBox(m_htiLogLevel, RUNTIME_CLASS(CNumTreeOptionsEdit));
 			m_htiDebug2Disk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_LOG2DISK), m_htiVerboseGroup, m_bDebug2Disk);
@@ -768,6 +993,34 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiYourHostname,
 			_T("Optional hostname label eMule reports where your local identity text is shown.\r\n\r\n")
 			_T("Leave it blank unless you intentionally want to name this instance."));
+		SetTreeToolTip(m_htiTxtEditor,
+			_T("Command used when eMule opens text files such as logs or generated text output.\r\n\r\n")
+			_T("Use a full path if the editor is not on PATH. The default is notepad.exe."));
+		SetTreeToolTip(m_htiHighresTimer,
+			_T("Requests a high-resolution Windows timer while eMule is running.\r\n\r\n")
+			_T("This can make timing smoother on some systems, but it may increase power use. Restart eMule after changing it."));
+		SetTreeToolTip(m_htiICH,
+			_T("Enables Intelligent Corruption Handling for damaged downloaded chunks.\r\n\r\n")
+			_T("Recommended: enabled. It helps recover good data inside corrupted parts instead of redownloading more than necessary."));
+		SetTreeToolTip(m_htiDontCompressAvi,
+			_T("Skips protocol compression for AVI upload payloads.\r\n\r\n")
+			_T("AVI data is usually already hard to compress, so this can reduce CPU work without meaningfully increasing transfer size."));
+		SetTreeToolTip(m_htiPreviewSmallBlocks,
+			_T("Controls whether media preview is offered before the normal preview safety checks are fully satisfied.\r\n\r\n")
+			_T("Higher levels make preview available earlier, but failed or misleading previews become more likely."));
+		SetTreeToolTip(m_htiPreviewSmallBlocksDisabled,
+			_T("Use the normal conservative preview rules."));
+		SetTreeToolTip(m_htiPreviewSmallBlocksAllow,
+			_T("Allow preview with smaller available blocks after the normal metadata and player checks pass."));
+		SetTreeToolTip(m_htiPreviewSmallBlocksForce,
+			_T("Offer preview even when the first block is missing.\r\n\r\n")
+			_T("Use only with players that can tolerate incomplete media, such as VLC."));
+		SetTreeToolTip(m_htiBeepOnError,
+			_T("Plays the system error sound when eMule reports important errors.\r\n\r\n")
+			_T("Useful for unattended troubleshooting. Disable it if audible alerts would be distracting."));
+		SetTreeToolTip(m_htiShowCopyEd2kLinkCmd,
+			_T("Changes file context menus to show a direct Copy ed2k Link command instead of the standard Show ed2k Link action.\r\n\r\n")
+			_T("Enable it if copying links is your normal workflow."));
 		SetTreeToolTip(m_htiSparsePartFiles,
 			_T("Uses sparse files for part files when the filesystem supports them.\r\n\r\n")
 			_T("Recommended: enabled on NTFS to reduce upfront disk allocation. Disable only if sparse-file behavior causes a filesystem-specific problem."));
@@ -833,6 +1086,15 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiDateTimeFormat4Lists,
 			_T("Custom date/time format used in list views.\r\n\r\n")
 			_T("Leave it blank to use the normal default formatting. Change it only if you want a specific custom timestamp style."));
+		SetTreeToolTip(m_htiDateTimeFormat,
+			_T("Custom date/time format used by general file and peer detail displays.\r\n\r\n")
+			_T("Uses CTime formatting tokens. Keep it non-empty; invalid tokens can produce confusing timestamps."));
+		SetTreeToolTip(m_htiDateTimeFormat4Log,
+			_T("Custom date/time format used in log lines and log-like status output.\r\n\r\n")
+			_T("Uses CTime formatting tokens. Keep it concise so log lines stay readable."));
+		SetTreeToolTip(m_htiIconFlashOnNewMessage,
+			_T("Flashes the tray icon when a new chat message arrives.\r\n\r\n")
+			_T("Purely a notification preference. Enable it if you want messages to stand out while eMule is minimized."));
 		SetTreeToolTip(m_htiInspectAllFileTypes,
 			_T("Also run the expensive MediaInfo-style inspection path for file types that are not already classified as audio or video.\r\n\r\n")
 			_T("Enable it if you want richer file-info probing for unusual or mislabeled files. Leave it off to inspect only likely audio/video files and reduce background inspection work."));
@@ -854,9 +1116,51 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiMessageFromValidSourcesOnly,
 			_T("Accepts messages only from peers that already look like valid sources for your transfers.\r\n\r\n")
 			_T("Stronger privacy/spam protection, but it can block unsolicited contact. Enable it if you want a stricter message policy."));
+		SetTreeToolTip(m_htiMaxChatHistoryLines,
+			_T("Maximum number of history lines retained per chat or IRC channel view.\r\n\r\n")
+			_T("Higher values keep more context but use more memory and can make busy chats slower to display."));
+		SetTreeToolTip(m_htiMaxMessageSessions,
+			_T("Maximum number of peer message sessions retained at once.\r\n\r\n")
+			_T("Higher values keep more conversations available, but they increase memory use. The default is conservative."));
+		SetTreeToolTip(m_htiCreateCrashDump,
+			_T("Controls crash dump creation when eMule encounters an unhandled crash.\r\n\r\n")
+			_T("Crash dumps help diagnose hard failures but can contain process memory. Share them only with trusted developers."));
+		SetTreeToolTip(m_htiCreateCrashDumpDisabled,
+			_T("Do not create crash dump files."));
+		SetTreeToolTip(m_htiCreateCrashDumpPrompt,
+			_T("Ask before writing a crash dump when a crash occurs."));
+		SetTreeToolTip(m_htiCreateCrashDumpAlways,
+			_T("Create a crash dump automatically when a crash occurs.\r\n\r\n")
+			_T("Best for debugging repeatable crashes on a trusted machine."));
+		SetTreeToolTip(m_htiMaxLogFileSize,
+			_T("Maximum size of each on-disk log file in KiB.\r\n\r\n")
+			_T("Use 0 for no rotation limit. Very large values keep more history but consume more disk space."));
+		SetTreeToolTip(m_htiMaxLogBuffer,
+			_T("Maximum in-memory log view buffer in KiB.\r\n\r\n")
+			_T("Higher values keep more visible log history but use more memory and can slow very busy log views."));
+		SetTreeToolTip(m_htiLogFileFormat,
+			_T("Encoding used for newly opened on-disk log files.\r\n\r\n")
+			_T("Changing this while logs are already open is persisted, but the new format is used after the log file is reopened or eMule restarts."));
+		SetTreeToolTip(m_htiLogFileFormatUnicode,
+			_T("Write logs as UTF-16 Unicode. This is the legacy default and preserves Windows text broadly."));
+		SetTreeToolTip(m_htiLogFileFormatUtf8,
+			_T("Write logs as UTF-8. Useful for tools that expect modern UTF-8 text files."));
 		SetTreeToolTip(m_htiLog2Disk,
 			_T("Writes the normal application log to disk instead of keeping it in memory only.\r\n\r\n")
 			_T("Useful for debugging and long-running unattended use, but it adds disk writes. Leave it off unless you want persistent logs."));
+		SetTreeToolTip(m_htiPerfLogFileFormat,
+			_T("Output format for performance logging samples.\r\n\r\n")
+			_T("CSV is easiest to inspect manually. MRTG writes sidecar files for graphing tools that expect MRTG-style input."));
+		SetTreeToolTip(m_htiPerfLogFileFormatCsv,
+			_T("Write one CSV performance log file with timestamped payload and overhead samples."));
+		SetTreeToolTip(m_htiPerfLogFileFormatMrtg,
+			_T("Write MRTG-style data and overhead sidecar files derived from the configured base path."));
+		SetTreeToolTip(m_htiPerfLogFile,
+			_T("Base file path for performance logging.\r\n\r\n")
+			_T("Leave it blank to use the default file in eMule's config directory. MRTG mode derives _data and _overhead files from this path."));
+		SetTreeToolTip(m_htiPerfLogInterval,
+			_T("Sampling interval for performance logging in minutes.\r\n\r\n")
+			_T("Short intervals create finer graphs but more disk writes. Use 1..1440."));
 		SetTreeToolTip(m_htiVerboseGroup,
 			_T("Extra diagnostic logging controls for deep troubleshooting.\r\n\r\n")
 			_T("These options are for debugging, not normal operation. Leave them off unless you are investigating a specific issue."));
@@ -978,6 +1282,9 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiVerbose,
 			_T("Master switch for the verbose logging controls below.\r\n\r\n")
 			_T("Disable it for normal use. Enable it only while investigating a specific problem."));
+		SetTreeToolTip(m_htiFullVerbose,
+			_T("Records the fullest available verbose trace when verbose logging is enabled.\r\n\r\n")
+			_T("This can become very noisy and should be used only for focused troubleshooting."));
 		SetTreeToolTip(m_htiLogLevel,
 			_T("Verbosity threshold for diagnostic log output.\r\n\r\n")
 			_T("Higher levels record more detail but create more noise."));
@@ -1112,11 +1419,20 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtControls, m_bExtControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiA4AFSaveCpu, m_bA4AFSaveCpu);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiYourHostname, m_sYourHostname);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiTxtEditor, m_sTxtEditor);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiHighresTimer, m_bHighresTimer);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoArch, m_bAutoArchDisable);
+	if (pDX->m_bSaveAndValidate && m_sTxtEditor.Trim().IsEmpty())
+		FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiTxtEditor, _T("Please enter an editor command, for example notepad.exe."));
 
 	/////////////////////////////////////////////////////////////////////////////
 	// File related group
 	//
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiICH, m_bICH);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDontCompressAvi, m_bDontCompressAvi);
+	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBeepOnError, m_bBeepOnError);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowCopyEd2kLinkCmd, m_bShowCopyEd2kLinkCmd);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSparsePartFiles, m_bSparsePartFiles);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpaceConfig, m_iMinFreeDiskSpaceConfigGB);
@@ -1137,12 +1453,21 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtraPreviewWithMenu, m_bExtraPreviewWithMenu);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiKeepUnavailableFixedSharedDirs, m_bKeepUnavailableFixedSharedDirs);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPartiallyPurgeOldKnownFiles, m_bPartiallyPurgeOldKnownFiles);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiIconFlashOnNewMessage, m_bIconFlashOnNewMessage);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDateTimeFormat, m_sDateTimeFormat);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiDateTimeFormat4Log, m_sDateTimeFormat4Log);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowActiveDownloadsBold, m_bShowActiveDownloadsBold);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiUseSystemFontForMainControls, m_bUseSystemFontForMainControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiReBarToolbar, m_bReBarToolbar);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowUpDownIconInTaskbar, m_bShowUpDownIconInTaskbar);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
+	if (pDX->m_bSaveAndValidate) {
+		if (m_sDateTimeFormat.Trim().IsEmpty())
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat, _T("Please enter a non-empty CTime format string."));
+		if (m_sDateTimeFormat4Log.Trim().IsEmpty())
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat4Log, _T("Please enter a non-empty CTime format string."));
+	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiGeoLocationEnabled, m_bGeoLocationEnabled);
 	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiGeoLocationCheckDays, m_uGeoLocationCheckDays);
 	if (pDX->m_bSaveAndValidate) {
@@ -1165,6 +1490,20 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiRearrangeKadSearchKeywords, m_bRearrangeKadSearchKeywords);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiMessageFromValidSourcesOnly, m_bMessageFromValidSourcesOnly);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiMaxChatHistoryLines, m_uMaxChatHistoryLines);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiMaxMessageSessions, m_uMaxMessageSessions);
+	if (pDX->m_bSaveAndValidate) {
+		if (!PreferenceUiSeams::IsPositiveBounded(m_uMaxChatHistoryLines, PreferenceUiSeams::kMaxChatHistoryLines)) {
+			CString detail;
+			detail.Format(_T("Expected range: 1..%u."), PreferenceUiSeams::kMaxChatHistoryLines);
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxChatHistoryLines, detail);
+		}
+		if (!PreferenceUiSeams::IsPositiveBounded(m_uMaxMessageSessions, PreferenceUiSeams::kMaxMessageSessions)) {
+			CString detail;
+			detail.Format(_T("Expected range: 1..%u."), PreferenceUiSeams::kMaxMessageSessions);
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxMessageSessions, detail);
+		}
+	}
 	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiFileBufferSize, m_uFileBufferSizeKiB);
 	if (pDX->m_bSaveAndValidate) {
 		const UINT uMinFileBufferSizeKiB = thePrefs.GetMinFileBufferSizeBytes() / 1024u;
@@ -1187,14 +1526,44 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	/////////////////////////////////////////////////////////////////////////////
 	// Logging group
 	//
+	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiCreateCrashDump, m_iCreateCrashDumpMode);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiMaxLogFileSize, m_uMaxLogFileSizeKiB);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiMaxLogBuffer, m_uMaxLogBufferKiB);
+	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiLogFileFormat, m_iLogFileFormat);
+	if (pDX->m_bSaveAndValidate) {
+		if (!PreferenceUiSeams::IsLogFileSizeKiBAllowed(m_uMaxLogFileSizeKiB)) {
+			CString detail;
+			detail.Format(_T("Expected range: 0..%u KiB. Use 0 for no rotation limit."), PreferenceUiSeams::kMaxLogFileSizeKiB);
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxLogFileSize, detail);
+		}
+		if (!PreferenceUiSeams::IsLogBufferKiBAllowed(m_uMaxLogBufferKiB)) {
+			CString detail;
+			detail.Format(_T("Expected range: %u..%u KiB."), PreferenceUiSeams::kMinLogBufferKiB, PreferenceUiSeams::kMaxLogBufferKiB);
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxLogBuffer, detail);
+		}
+	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiLog2Disk, m_bLog2Disk);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiPerfLog, m_bPerfLogEnabled);
+	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiPerfLogFileFormat, m_iPerfLogFileFormat);
+	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiPerfLogFile, m_sPerfLogFile);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiPerfLogInterval, m_uPerfLogIntervalMinutes);
+	if (pDX->m_bSaveAndValidate
+		&& !PreferenceUiSeams::IsPositiveBounded(m_uPerfLogIntervalMinutes, PreferenceUiSeams::kMaxPerfLogIntervalMinutes))
+	{
+		CString detail;
+		detail.Format(_T("Expected range: 1..%u minutes."), PreferenceUiSeams::kMaxPerfLogIntervalMinutes);
+		FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiPerfLogInterval, detail);
+	}
 	if (m_htiLogLevel) {
 		DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiLogLevel, m_iLogLevel);
 		DDV_MinMaxInt(pDX, m_iLogLevel, 1, 5);
 	}
 	if (m_htiVerbose)
 		DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiVerbose, m_bVerbose);
+	if (m_htiFullVerbose) {
+		DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullVerbose, m_bFullVerbose);
+		m_ctrlTreeOptions.SetCheckBoxEnable(m_htiFullVerbose, m_bVerbose);
+	}
 	if (m_htiDebug2Disk) {
 		DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDebug2Disk, m_bDebug2Disk);
 		m_ctrlTreeOptions.SetCheckBoxEnable(m_htiDebug2Disk, m_bVerbose);
@@ -1261,10 +1630,18 @@ BOOL CPPgTweaks::OnInitDialog()
 		m_bLogFileSaving = thePrefs.m_bLogFileSaving;					// do *not* use the corresponding 'Get...' function here!
 		m_bLogA4AF = thePrefs.m_bLogA4AF;							    // do *not* use the corresponding 'Get...' function here! // ZZ:DownloadManager
 		m_bLogUlDlEvents = thePrefs.m_bLogUlDlEvents;
+		m_bFullVerbose = thePrefs.m_bFullVerbose;
 		m_iLogLevel = 5 - thePrefs.m_byLogLevel;
 	}
+	m_iCreateCrashDumpMode = thePrefs.GetCreateCrashDumpMode();
+	m_uMaxLogFileSizeKiB = PreferenceUiSeams::LogFileSizeBytesToKiB(thePrefs.GetMaxLogFileSize());
+	m_uMaxLogBufferKiB = static_cast<UINT>(max(0, thePrefs.GetMaxLogBuff() / 1024));
+	m_iLogFileFormat = thePrefs.GetLogFileFormat();
 	m_bLog2Disk = thePrefs.log2disk;
 	m_bPerfLogEnabled = thePerfLog.IsEnabled();
+	m_iPerfLogFileFormat = thePerfLog.GetConfiguredFileFormat();
+	m_sPerfLogFile = thePerfLog.GetConfiguredFilePath();
+	m_uPerfLogIntervalMinutes = thePerfLog.GetConfiguredIntervalMinutes();
 	m_bCreditSystem = thePrefs.m_bCreditSystem;
 	m_iCommitFiles = thePrefs.m_iCommitFiles;
 	m_iExtractMetaData = thePrefs.m_iExtractMetaData;
@@ -1290,6 +1667,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iShareeMule = thePrefs.m_nCurrentUserDirMode;
 
 	m_bA4AFSaveCpu = thePrefs.GetA4AFSaveCpu();
+	m_bHighresTimer = thePrefs.GetHighresTimer();
 	m_bRestoreLastMainWndDlg = thePrefs.GetRestoreLastMainWndDlg();
 	m_bRestoreLastLogPane = thePrefs.GetRestoreLastLogPane();
 	m_uConnectionTimeoutSeconds = max(thePrefs.GetMinTimeoutSeconds(), thePrefs.TimeoutMsToSeconds(thePrefs.GetConnectionTimeout()));
@@ -1318,7 +1696,14 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iBBSessionTransferMiB = static_cast<int>(thePrefs.GetBBSessionTransferMode() == BBSTM_ABSOLUTE_MIB ? thePrefs.GetBBSessionTransferValue() : 0);
 	m_iBBSessionTimeLimitSeconds = static_cast<int>(thePrefs.GetBBSessionTimeLimitSeconds());
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
+	m_bICH = thePrefs.IsICHEnabled();
+	m_bDontCompressAvi = thePrefs.GetDontCompressAvi();
+	m_iPreviewSmallBlocks = thePrefs.GetPreviewSmallBlocks();
+	m_bBeepOnError = thePrefs.IsErrorBeepEnabled();
+	m_bShowCopyEd2kLinkCmd = thePrefs.GetShowCopyEd2kLinkCmd();
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
+	m_sDateTimeFormat = thePrefs.GetDateTimeFormat();
+	m_sDateTimeFormat4Log = thePrefs.GetDateTimeFormat4Log();
 	m_bPreviewCopiedArchives = thePrefs.GetPreviewCopiedArchives();
 	m_bInspectAllFileTypes = thePrefs.GetInspectAllFileTypes();
 	m_bPreviewOnIconDblClk = thePrefs.GetPreviewOnIconDblClk();
@@ -1328,6 +1713,7 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bShowUpDownIconInTaskbar = thePrefs.IsShowUpDownIconInTaskbar();
 	m_bShowVerticalHourMarkers = thePrefs.m_bShowVerticalHourMarkers;
 	m_bForceSpeedsToKB = thePrefs.GetForceSpeedsToKB();
+	m_bIconFlashOnNewMessage = thePrefs.DoFlashOnNewMessage();
 	m_bGeoLocationEnabled = thePrefs.IsGeoLocationEnabled();
 	m_uGeoLocationCheckDays = thePrefs.NormalizeGeoLocationCheckDays(thePrefs.GetGeoLocationCheckDays());
 	m_bExtraPreviewWithMenu = thePrefs.GetExtraPreviewWithMenu();
@@ -1337,6 +1723,9 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_bMessageFromValidSourcesOnly = thePrefs.MsgOnlySecure();
 	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
 	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
+	m_uMaxChatHistoryLines = static_cast<UINT>(thePrefs.GetMaxChatHistoryLines());
+	m_uMaxMessageSessions = thePrefs.GetMsgSessionsMax();
+	m_sTxtEditor = thePrefs.GetTxtEditor();
 
 	m_ctrlTreeOptions.SetImageListColorFlags(theApp.m_iDfltImageListColorFlags);
 	CPropertyPage::OnInitDialog();
@@ -1412,14 +1801,22 @@ BOOL CPPgTweaks::OnApply()
 			RevertReg();
 	}
 
+	thePrefs.SetCreateCrashDumpMode(m_iCreateCrashDumpMode);
+	thePrefs.uMaxLogFileSize = PreferenceUiSeams::LogFileSizeKiBToBytes(m_uMaxLogFileSizeKiB);
+	thePrefs.iMaxLogBuff = static_cast<int>(m_uMaxLogBufferKiB * 1024u);
+	thePrefs.m_iLogFileFormat = static_cast<ELogFileFormat>(PreferenceUiSeams::NormalizeLogFileFormat(m_iLogFileFormat));
+	theLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
+	theVerboseLog.SetMaxFileSize(thePrefs.GetMaxLogFileSize());
+	(void)theLog.SetFileFormat(thePrefs.GetLogFileFormat());
+	(void)theVerboseLog.SetFileFormat(thePrefs.GetLogFileFormat());
+
 	if (!thePrefs.log2disk && m_bLog2Disk)
 		theLog.Open();
 	else if (thePrefs.log2disk && !m_bLog2Disk)
 		theLog.Close();
 	thePrefs.log2disk = m_bLog2Disk;
 
-	if (thePerfLog.IsEnabled() != m_bPerfLogEnabled)
-		thePerfLog.SetEnabled(m_bPerfLogEnabled);
+	thePerfLog.SetSettings(m_bPerfLogEnabled, m_iPerfLogFileFormat, m_sPerfLogFile, m_uPerfLogIntervalMinutes);
 
 	if (thePrefs.GetEnableVerboseOptions()) {
 		if (!thePrefs.GetDebug2Disk() && m_bVerbose && m_bDebug2Disk)
@@ -1436,6 +1833,7 @@ BOOL CPPgTweaks::OnApply()
 		thePrefs.m_bLogFileSaving = m_bLogFileSaving;
 		thePrefs.m_bLogA4AF = m_bLogA4AF;
 		thePrefs.m_bLogUlDlEvents = m_bLogUlDlEvents;
+		thePrefs.m_bFullVerbose = m_bFullVerbose;
 		thePrefs.m_byLogLevel = 5 - m_iLogLevel;
 
 		thePrefs.m_bVerbose = m_bVerbose; // store after related options were stored!
@@ -1445,12 +1843,20 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_iCommitFiles = m_iCommitFiles;
 	thePrefs.m_iExtractMetaData = m_iExtractMetaData;
 	thePrefs.filterLANIPs = m_bFilterLANIPs;
+	const bool bShowCopyEd2kLinkCmdChanged = thePrefs.GetShowCopyEd2kLinkCmd() != m_bShowCopyEd2kLinkCmd;
+	thePrefs.ICH = m_bICH;
+	thePrefs.dontcompressavi = m_bDontCompressAvi;
+	thePrefs.m_iPreviewSmallBlocks = PreferenceUiSeams::NormalizePreviewSmallBlocks(m_iPreviewSmallBlocks);
+	thePrefs.beepOnError = m_bBeepOnError;
+	thePrefs.m_bShowCopyEd2kLinkCmd = m_bShowCopyEd2kLinkCmd;
+	thePrefs.m_bHighresTimer = m_bHighresTimer;
+	thePrefs.m_strTxtEditor = m_sTxtEditor;
 	thePrefs.SetFileBufferSize(m_uFileBufferSizeKiB * 1024u);
 	thePrefs.SetQueueSize(m_iQueueSize);
 	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
 	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
 
-	bool bUpdateDLmenu = false;
+	bool bUpdateDLmenu = bShowCopyEd2kLinkCmdChanged;
 	if (thePrefs.m_bExtControls != m_bExtControls) {
 		bUpdateDLmenu = true;
 		thePrefs.m_bExtControls = m_bExtControls;
@@ -1483,7 +1889,11 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bRestoreLastMainWndDlg = m_bRestoreLastMainWndDlg;
 	thePrefs.m_bRestoreLastLogPane = m_bRestoreLastLogPane;
 	thePrefs.SetFileBufferTimeLimitSeconds(m_uFileBufferTimeLimitSeconds);
+	thePrefs.m_strDateTimeFormat = m_sDateTimeFormat;
+	thePrefs.m_strDateTimeFormat4Log = m_sDateTimeFormat4Log;
 	thePrefs.m_strDateTimeFormat4Lists = m_sDateTimeFormat4Lists;
+	thePrefs.m_iMaxChatHistory = static_cast<INT_PTR>(m_uMaxChatHistoryLines);
+	thePrefs.SetMsgSessionsMax(m_uMaxMessageSessions);
 	thePrefs.m_bPreviewCopiedArchives = m_bPreviewCopiedArchives;
 	thePrefs.m_bInspectAllFileTypes = m_bInspectAllFileTypes;
 	thePrefs.m_bPreviewOnIconDblClk = m_bPreviewOnIconDblClk;
@@ -1493,6 +1903,7 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_bShowUpDownIconInTaskbar = m_bShowUpDownIconInTaskbar;
 	thePrefs.m_bShowVerticalHourMarkers = m_bShowVerticalHourMarkers;
 	thePrefs.m_bForceSpeedsToKB = m_bForceSpeedsToKB;
+	thePrefs.m_bIconflashOnNewMessage = m_bIconFlashOnNewMessage;
 	thePrefs.m_bExtraPreviewWithMenu = m_bExtraPreviewWithMenu;
 	thePrefs.m_bKeepUnavailableFixedSharedDirs = m_bKeepUnavailableFixedSharedDirs;
 	thePrefs.m_bPartiallyPurgeOldKnownFiles = m_bPartiallyPurgeOldKnownFiles;
@@ -1585,6 +1996,8 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiBBSessionTimeLimit, IDS_BB_SESSION_TIME_LIMIT);
 		m_ctrlTreeOptions.SetItemText(m_htiGeneralAdvanced, GetGeneralAdvancedLabel());
 		LocalizeEditLabel(m_htiYourHostname, IDS_YOURHOSTNAME);	// itsonlyme: hostnameSource
+		m_ctrlTreeOptions.SetEditLabel(m_htiTxtEditor, GetTxtEditorLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiHighresTimer, GetHighresTimerLabel());
 		LocalizeItemText(m_htiA4AFSaveCpu, IDS_A4AF_SAVE_CPU);
 		LocalizeItemText(m_htiAutoArch, IDS_DISABLE_AUTOARCHPREV);
 		LocalizeItemText(m_htiAutoTakeEd2kLinks, IDS_AUTOTAKEED2KLINKS);
@@ -1609,14 +2022,36 @@ void CPPgTweaks::Localize()
 		m_ctrlTreeOptions.SetItemText(m_htiHiddenDisplay, GetDisplayTweaksLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiHiddenFile, GetFileBehaviorLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiHiddenSecurity, GetSecurityTweaksLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiICH, GetIchLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiDontCompressAvi, GetDontCompressAviLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiPreviewSmallBlocks, GetPreviewSmallBlocksLabel());
+		LocalizeItemText(m_htiPreviewSmallBlocksDisabled, IDS_DISABLED);
+		m_ctrlTreeOptions.SetItemText(m_htiPreviewSmallBlocksAllow, GetPreviewSmallBlocksAllowLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiPreviewSmallBlocksForce, GetPreviewSmallBlocksForceLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiBeepOnError, GetBeepOnErrorLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiShowCopyEd2kLinkCmd, GetShowCopyEd2kLinkCmdLabel());
 		LocalizeItemText(m_htiDetectTCPErrorFlooder, IDS_DETECT_TCP_ERROR_FLOODER);
 		LocalizeEditLabel(m_htiTCPErrorFlooderIntervalMinutes, IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES);
 		LocalizeEditLabel(m_htiTCPErrorFlooderThreshold, IDS_TCP_ERROR_FLOODER_THRESHOLD);
 		m_ctrlTreeOptions.SetItemText(m_htiHiddenStartup, GetStartupTweaksLabel());
 		LocalizeItemText(m_htiKeepUnavailableFixedSharedDirs, IDS_KEEPUNAVAILABLEFIXEDSHAREDDIRS);
 		m_ctrlTreeOptions.SetItemText(m_htiLoggingGroup, GetLoggingTweaksLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCreateCrashDump, GetCreateCrashDumpLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCreateCrashDumpDisabled, GetCreateCrashDumpDisabledLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCreateCrashDumpPrompt, GetCreateCrashDumpPromptLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiCreateCrashDumpAlways, GetCreateCrashDumpAlwaysLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiMaxLogFileSize, GetMaxLogFileSizeLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiMaxLogBuffer, GetMaxLogBufferLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiLogFileFormat, GetLogFileFormatLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiLogFileFormatUnicode, GetLogFileFormatUnicodeLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiLogFileFormatUtf8, GetLogFileFormatUtf8Label());
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiPerfLog, IDS_ENABLE_PERFLOG);
+		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormat, GetPerfLogFileFormatLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormatCsv, _T("CSV"));
+		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormatMrtg, _T("MRTG"));
+		m_ctrlTreeOptions.SetEditLabel(m_htiPerfLogFile, GetPerfLogFileLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiPerfLogInterval, GetPerfLogIntervalLabel());
 		LocalizeItemText(m_htiLogA4AF, IDS_LOG_A4AF);
 		LocalizeItemText(m_htiLogBannedClients, IDS_LOG_BANNED_CLIENTS);
 		LocalizeItemText(m_htiLogFileSaving, IDS_LOG_FILE_SAVING);
@@ -1625,6 +2060,8 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiLogSecureIdent, IDS_LOG_SECURE_IDENT);
 		LocalizeItemText(m_htiLogUlDlEvents, IDS_LOG_ULDL_EVENTS);
 		LocalizeItemText(m_htiMessageFromValidSourcesOnly, IDS_MESSAGEFROMVALIDSOURCESONLY);
+		m_ctrlTreeOptions.SetEditLabel(m_htiMaxChatHistoryLines, GetMaxChatHistoryLinesLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiMaxMessageSessions, GetMaxMessageSessionsLabel());
 		LocalizeItemText(m_htiPartiallyPurgeOldKnownFiles, IDS_PARTIALLYPURGEOLDKNOWNFILES);
 		LocalizeItemText(m_htiPreviewCopiedArchives, IDS_PREVIEWCOPIEDARCHIVES);
 		LocalizeItemText(m_htiPreviewOnIconDblClk, IDS_PREVIEWONICONDBLCLK);
@@ -1637,6 +2074,7 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiShareeMuleOldStyle, IDS_SHAREEMULEOLD);
 		LocalizeItemText(m_htiShareeMulePublicUser, IDS_SHAREEMULEPUBLIC);
 		LocalizeItemText(m_htiShowActiveDownloadsBold, IDS_SHOWACTIVEDOWNLOADSBOLD);
+		m_ctrlTreeOptions.SetItemText(m_htiIconFlashOnNewMessage, GetIconFlashOnNewMessageLabel());
 		LocalizeItemText(m_htiShowUpDownIconInTaskbar, IDS_SHOWUPDOWNICONINTASKBAR);
 		LocalizeItemText(m_htiShowVerticalHourMarkers, IDS_SHOWVERTICALHOURMARKERS);
 		LocalizeItemText(m_htiGeoLocationEnabled, IDS_ENABLE_GEOLOCATION);
@@ -1649,6 +2087,8 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiUPnPBackendModePcpNatPmpOnly, IDS_UPNPBACKENDMODE_PCPONLY);
 		LocalizeItemText(m_htiUseSystemFontForMainControls, IDS_USESYSTEMFONTFORMAINCONTROLS);
 		LocalizeItemText(m_htiVerbose, IDS_ENABLED);
+		if (m_htiFullVerbose)
+			m_ctrlTreeOptions.SetItemText(m_htiFullVerbose, GetFullVerboseLabel());
 		LocalizeItemText(m_htiVerboseGroup, IDS_VERBOSE);
 		m_ctrlTreeOptions.SetItemText(m_htiStoragePersistence, GetStoragePersistenceLabel());
 		LocalizeEditLabel(m_htiDateTimeFormat4Lists, IDS_DATETIMEFORMAT4LISTS);
@@ -1657,6 +2097,8 @@ void CPPgTweaks::Localize()
 		LocalizeEditLabel(m_htiQueueSize, IDS_QUEUESIZE);
 		m_ctrlTreeOptions.SetEditLabel(m_htiGeoLocationCheckDays, GetGeoLocationIntervalLabel());
 		LocalizeItemText(m_htiInspectAllFileTypes, IDS_INSPECTALLFILETYPES);
+		m_ctrlTreeOptions.SetEditLabel(m_htiDateTimeFormat, GetDateTimeFormatLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiDateTimeFormat4Log, GetDateTimeFormat4LogLabel());
 	}
 }
 
@@ -1700,10 +2142,22 @@ void CPPgTweaks::OnDestroy()
 	m_htiAutoTakeEd2kLinks = NULL;
 	m_htiVerboseGroup = NULL;
 	m_htiVerbose = NULL;
+	m_htiFullVerbose = NULL;
 	m_htiDebugSourceExchange = NULL;
+	m_htiBeepOnError = NULL;
+	m_htiCreateCrashDump = NULL;
+	m_htiCreateCrashDumpDisabled = NULL;
+	m_htiCreateCrashDumpPrompt = NULL;
+	m_htiCreateCrashDumpAlways = NULL;
+	m_htiDateTimeFormat = NULL;
+	m_htiDateTimeFormat4Log = NULL;
+	m_htiDontCompressAvi = NULL;
+	m_htiHighresTimer = NULL;
 	m_htiHiddenDisplay = NULL;
 	m_htiHiddenFile = NULL;
 	m_htiHiddenSecurity = NULL;
+	m_htiICH = NULL;
+	m_htiIconFlashOnNewMessage = NULL;
 	m_htiDetectTCPErrorFlooder = NULL;
 	m_htiTCPErrorFlooderIntervalMinutes = NULL;
 	m_htiTCPErrorFlooderThreshold = NULL;
@@ -1721,8 +2175,15 @@ void CPPgTweaks::OnDestroy()
 	m_htiLoggingGroup = NULL;
 	m_htiCreditSystem = NULL;
 	m_htiDateTimeFormat4Lists = NULL;
+	m_htiMaxChatHistoryLines = NULL;
+	m_htiMaxMessageSessions = NULL;
 	m_htiPreviewCopiedArchives = NULL;
+	m_htiPreviewSmallBlocks = NULL;
+	m_htiPreviewSmallBlocksDisabled = NULL;
+	m_htiPreviewSmallBlocksAllow = NULL;
+	m_htiPreviewSmallBlocksForce = NULL;
 	m_htiPreviewOnIconDblClk = NULL;
+	m_htiShowCopyEd2kLinkCmd = NULL;
 	m_htiShowActiveDownloadsBold = NULL;
 	m_htiUseSystemFontForMainControls = NULL;
 	m_htiReBarToolbar = NULL;
@@ -1746,6 +2207,16 @@ void CPPgTweaks::OnDestroy()
 	m_htiInspectAllFileTypes = NULL;
 	m_htiLog2Disk = NULL;
 	m_htiPerfLog = NULL;
+	m_htiPerfLogFileFormat = NULL;
+	m_htiPerfLogFileFormatCsv = NULL;
+	m_htiPerfLogFileFormatMrtg = NULL;
+	m_htiPerfLogFile = NULL;
+	m_htiPerfLogInterval = NULL;
+	m_htiLogFileFormat = NULL;
+	m_htiLogFileFormatUnicode = NULL;
+	m_htiLogFileFormatUtf8 = NULL;
+	m_htiMaxLogFileSize = NULL;
+	m_htiMaxLogBuffer = NULL;
 	m_htiDebug2Disk = NULL;
 	m_htiCommit = NULL;
 	m_htiCommitNever = NULL;
@@ -1765,6 +2236,7 @@ void CPPgTweaks::OnDestroy()
 	m_htiExtractMetaDataNever = NULL;
 	m_htiExtractMetaDataID3Lib = NULL;
 	m_htiAutoArch = NULL;
+	m_htiTxtEditor = NULL;
 	m_htiUPnP = NULL;
 	m_htiCloseUPnPPorts = NULL;
 	m_htiUPnPBackendMode = NULL;
@@ -1786,6 +2258,8 @@ LRESULT CPPgTweaks::OnTreeOptsCtrlNotify(WPARAM wParam, LPARAM lParam)
 		if (m_htiVerbose && pton->hItem == m_htiVerbose) {
 			BOOL bCheck;
 			if (m_ctrlTreeOptions.GetCheckBox(m_htiVerbose, bCheck)) {
+				if (m_htiFullVerbose)
+					m_ctrlTreeOptions.SetCheckBoxEnable(m_htiFullVerbose, bCheck);
 				if (m_htiDebug2Disk)
 					m_ctrlTreeOptions.SetCheckBoxEnable(m_htiDebug2Disk, bCheck);
 				if (m_htiDebugSourceExchange)

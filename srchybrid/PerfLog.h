@@ -3,6 +3,20 @@
 class CPerfLog
 {
 public:
+	// those values have to be specified in 'preferences.ini' -> hardcode them
+	enum ELogMode : uint8
+	{
+		None = 0,
+		OneSample = 1,
+		AllSamples = 2
+	};
+	// those values have to be specified in 'preferences.ini' -> hardcode them
+	enum ELogFileFormat : uint8
+	{
+		CSV = 0,
+		MRTG = 1
+	};
+
 	CPerfLog();
 
 	void Startup();
@@ -17,9 +31,16 @@ public:
 	 */
 	void SetEnabled(bool bEnable);
 	/**
+	 * Persists the PerfLog output settings and applies them immediately.
+	 */
+	void SetSettings(bool bEnable, int iFileFormat, const CString &strFilePath, UINT uIntervalMinutes);
+	/**
 	 * Returns whether PerfLog is currently active.
 	 */
 	bool IsEnabled() const;
+	static int GetConfiguredFileFormat();
+	static CString GetConfiguredFilePath();
+	static UINT GetConfiguredIntervalMinutes();
 
 protected:
 	DWORD	m_dwInterval;
@@ -31,19 +52,8 @@ protected:
 	uint64	m_nLastSessionRecvBytes;
 	uint64	m_nLastDnOH;
 	uint64	m_nLastUpOH;
-	// those values have to be specified in 'preferences.ini' -> hardcode them
-	enum ELogMode : uint8
-	{
-		None = 0,
-		OneSample = 1,
-		AllSamples = 2
-	} m_eMode;
-	// those values have to be specified in 'preferences.ini' -> hardcode them
-	enum ELogFileFormat : uint8
-	{
-		CSV = 0,
-		MRTG = 1
-	} m_eFileFormat;
+	ELogMode m_eMode;
+	ELogFileFormat m_eFileFormat;
 
 	bool m_bInitialized;
 

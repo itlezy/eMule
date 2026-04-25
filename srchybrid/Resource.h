@@ -2465,6 +2465,10 @@
 #define IDC_STARTUP_BIND_BLOCK          3063
 #define IDC_BIND_STATUS                 3064
 #define IDC_BIND_RESTART_NOTE           3065
+#define IDC_WS_MAXFILEUPLOAD_LBL        3066
+#define IDC_WS_MAXFILEUPLOAD            3067
+#define IDC_WS_ALLOWEDIPS_LBL           3068
+#define IDC_WS_ALLOWEDIPS               3069
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2473,7 +2477,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3066
+#define _APS_NEXT_CONTROL_VALUE         3070
 #define _APS_NEXT_SYMED_VALUE           1730
 #endif
 #endif

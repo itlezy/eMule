@@ -39,6 +39,7 @@
 #include "StatisticsDlg.h"
 #include "Log.h"
 #include "MuleToolbarCtrl.h"
+#include "PreferenceUiSeams.h"
 #include "VistaDefines.h"
 #include <osrng.h>
 
@@ -720,6 +721,7 @@ bool	CPreferences::debug2disk;
 int		CPreferences::iMaxLogBuff;
 UINT	CPreferences::uMaxLogFileSize;
 ELogFileFormat CPreferences::m_iLogFileFormat = Unicode;
+int		CPreferences::m_iCreateCrashDumpMode;
 bool	CPreferences::scheduler;
 bool	CPreferences::dontcompressavi;
 bool	CPreferences::msgonlyfriends;
@@ -2225,9 +2227,12 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("OnlineSignature"), onlineSig);
 	ini.WriteBool(_T("StartupMinimized"), startMinimized);
 	ini.WriteBool(_T("AutoStart"), m_bAutoStart);
+	ini.WriteInt(_T("CreateCrashDump"), m_iCreateCrashDumpMode);
 	ini.WriteInt(_T("LastMainWndDlgID"), m_iLastMainWndDlgID);
 	ini.WriteInt(_T("LastLogPaneID"), m_iLastLogPaneID);
 	ini.WriteBool(_T("SafeServerConnect"), m_bSafeServerConnect);
+	ini.WriteBool(_T("UserSortedServerList"), m_bUseUserSortedServerList);
+	ini.WriteBool(_T("ICH"), ICH);
 	ini.WriteBool(_T("ShowRatesOnTitle"), showRatesInTitle);
 	ini.WriteBool(_T("IndicateRatings"), indicateratings);
 	ini.WriteBool(_T("WatchClipboard4ED2kFilelinks"), watchclipboard);
@@ -2238,6 +2243,10 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("SparsePartFiles"), m_bSparsePartFiles);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
+	ini.WriteBool(_T("DontCompressAvi"), dontcompressavi);
+	ini.WriteBool(_T("BeepOnError"), beepOnError);
+	ini.WriteBool(_T("AllowLocalHostIP"), m_bAllocLocalHostIP);
+	ini.WriteBool(_T("IconflashOnNewMessage"), m_bIconflashOnNewMessage);
 	ini.WriteBool(_T("ShowWin7TaskbarGoodies"), m_bShowWin7TaskbarGoodies);
 
 	// Barry - New properties...
@@ -2295,7 +2304,12 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("IRCEnableUTF8"), m_bIRCEnableUTF8);
 
 	ini.WriteBool(_T("SmartIdCheck"), m_bSmartServerIdCheck);
+	ini.WriteInt(_T("MaxLogFileSize"), uMaxLogFileSize);
+	ini.WriteInt(_T("MaxLogBuff"), iMaxLogBuff / 1024);
+	ini.WriteInt(_T("LogFileFormat"), m_iLogFileFormat);
+	ini.WriteBool(_T("VerboseOptions"), m_bEnableVerboseOptions);
 	ini.WriteBool(_T("Verbose"), m_bVerbose);
+	ini.WriteBool(_T("FullVerbose"), m_bFullVerbose);
 	ini.WriteBool(_T("DebugSourceExchange"), m_bDebugSourceExchange);	// do *not* use the according 'Get...' function here!
 	ini.WriteBool(_T("LogBannedClients"), m_bLogBannedClients);			// do *not* use the according 'Get...' function here!
 	ini.WriteBool(_T("LogRatingDescReceived"), m_bLogRatingDescReceived);// do *not* use the according 'Get...' function here!
@@ -2313,12 +2327,14 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("DebugClientTCP"), m_iDebugClientTCPLevel);
 	ini.WriteInt(_T("DebugClientUDP"), m_iDebugClientUDPLevel);
 	ini.WriteInt(_T("DebugClientKadUDP"), m_iDebugClientKadUDPLevel);
+	ini.WriteInt(_T("DebugSearchResultDetailLevel"), m_iDebugSearchResultDetailLevel);
 #endif
 	ini.WriteBool(_T("PreviewPrio"), m_bpreviewprio);
 	ini.WriteBool(_T("ManualHighPrio"), m_bManualAddedServersHighPriority);
 	ini.WriteBool(_T("FullChunkTransfers"), m_btransferfullchunks);
 	ini.WriteBool(_T("ShowOverhead"), m_bshowoverhead);
 	ini.WriteBool(_T("VideoPreviewBackupped"), m_bMoviePreviewBackup);
+	ini.WriteInt(_T("PreviewSmallBlocks"), m_iPreviewSmallBlocks);
 	ini.WriteInt(_T("StartNextFile"), m_istartnextfile);
 
 	ini.DeleteKey(_T("FileBufferSizePref")); // delete old 'file buff size' setting
@@ -2359,7 +2375,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("AdvancedSpamFilter"), m_bAdvancedSpamfilter);
 	ini.WriteBool(_T("ShowDwlPercentage"), m_bShowDwlPercentage);
 	ini.WriteBool(_T("RemoveFilesToBin"), m_bRemove2bin);
-	//ini.WriteBool(_T("ShowCopyEd2kLinkCmd"),m_bShowCopyEd2kLinkCmd);
+	ini.WriteBool(_T("ShowCopyEd2kLinkCmd"), m_bShowCopyEd2kLinkCmd);
 	ini.WriteBool(_T("AutoArchivePreviewStart"), m_bAutomaticArcPreviewStart);
 	// Hidden runtime preferences exposed in the advanced tree.
 	ini.WriteBool(_T("RestoreLastMainWndDlg"), m_bRestoreLastMainWndDlg);
@@ -2379,6 +2395,8 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("KeepUnavailableFixedSharedDirs"), m_bKeepUnavailableFixedSharedDirs);
 	ini.WriteBool(_T("PartiallyPurgeOldKnownFiles"), m_bPartiallyPurgeOldKnownFiles);
 	ini.WriteBool(_T("MessageFromValidSourcesOnly"), msgsecure);
+	ini.WriteInt(_T("MaxChatHistoryLines"), (int)m_iMaxChatHistory);
+	ini.WriteInt(_T("MaxMessageSessions"), maxmsgsessions);
 	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
 	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_uBBMaxUploadClientsAllowed);
 	ini.WriteFloat(_T("BBSlowThresholdFactor"), m_fBBSlowUploadThresholdFactor);
@@ -2401,6 +2419,9 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("ToolbarBitmapFolder"), m_sToolbarBitmapFolder);
 	ini.WriteInt(_T("ToolbarLabels"), m_nToolbarLabels);
 	ini.WriteInt(_T("ToolbarIconSize"), m_sizToolbarIconSize.cx);
+	ini.WriteInt(_T("StraightWindowStyles"), m_iStraightWindowStyles);
+	ini.WriteBool(_T("RTLWindowsLayout"), m_bRTLWindowsLayout);
+	ini.WriteBool(_T("DontRecreateStatGraphsOnResize"), dontRecreateGraphs);
 	ini.WriteString(_T("SkinProfile"), m_strSkinProfile);
 	ini.WriteString(_T("SkinProfileDir"), m_strSkinProfileDir);
 
@@ -2432,6 +2453,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("CryptLayerRequired"), m_bCryptLayerRequired);
 	ini.WriteBool(_T("CryptLayerSupported"), m_bCryptLayerSupported);
 	ini.WriteInt(_T("KadUDPKey"), m_dwKadUDPKey);
+	ini.WriteInt(_T("CryptTCPPaddingLength"), m_byCryptTCPPaddingLength);
 
 	ini.WriteBool(_T("EnableSearchResultSpamFilter"), m_bEnableSearchResultFilter);
 
@@ -2451,6 +2473,7 @@ void CPreferences::SavePreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Statistics"
 	//
+	ini.WriteInt(_T("SaveInterval"), statsSaveInterval, _T("Statistics"));
 	ini.WriteInt(_T("statsConnectionsGraphRatio"), statsConnectionsGraphRatio, _T("Statistics"));
 	ini.WriteString(_T("statsExpandedTreeItems"), m_strStatsExpandedTreeItems);
 	CString sValue, sKey;
@@ -2477,6 +2500,8 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("UseLowRightsUser"), m_bWebLowEnabled);
 	ini.WriteBool(_T("AllowAdminHiLevelFunc"), m_bAllowAdminHiLevFunc);
 	ini.WriteInt(_T("WebTimeoutMins"), m_iWebTimeoutMins);
+	ini.WriteInt(_T("MaxFileUploadSizeMB"), m_iWebFileUploadSizeLimitMB);
+	ini.WriteString(_T("AllowedIPs"), GetAllowedRemoteAccessIPsString());
 	ini.WriteBool(_T("UseHTTPS"), m_bWebUseHttps);
 	ini.WriteString(_T("HTTPSCertificate"), m_sWebHttpsCertificate);
 	ini.WriteString(_T("HTTPSKey"), m_sWebHttpsKey);
@@ -2544,6 +2569,7 @@ void CPreferences::LoadPreferences()
 
 	m_bFirstStart = ini.GetString(_T("AppVersion")).IsEmpty();
 	m_bDisableFirstTimeWizard = ini.GetBool(_T("DisableFirstTimeWizard"), true);
+	SetCreateCrashDumpMode(ini.GetInt(_T("CreateCrashDump"), 0));
 
 #ifdef _DEBUG
 	m_iDbgHeap = ini.GetInt(_T("DebugHeap"), 1);
@@ -2794,9 +2820,9 @@ void CPreferences::LoadPreferences()
 
 	m_bSmartServerIdCheck = ini.GetBool(_T("SmartIdCheck"), true);
 	log2disk = ini.GetBool(_T("SaveLogToDisk"), false);
-	uMaxLogFileSize = ini.GetInt(_T("MaxLogFileSize"), 1024 * 1024);
-	iMaxLogBuff = ini.GetInt(_T("MaxLogBuff"), 64) * 1024;
-	m_iLogFileFormat = (ELogFileFormat)ini.GetInt(_T("LogFileFormat"), Unicode);
+	uMaxLogFileSize = PreferenceUiSeams::NormalizeLogFileSizeBytes(ini.GetInt(_T("MaxLogFileSize"), PreferenceUiSeams::kDefaultLogFileSizeBytes));
+	iMaxLogBuff = static_cast<int>(PreferenceUiSeams::NormalizeLogBufferKiB(ini.GetInt(_T("MaxLogBuff"), PreferenceUiSeams::kDefaultLogBufferKiB)) * 1024u);
+	m_iLogFileFormat = (ELogFileFormat)PreferenceUiSeams::NormalizeLogFileFormat(ini.GetInt(_T("LogFileFormat"), Unicode));
 	m_bEnableVerboseOptions = ini.GetBool(_T("VerboseOptions"), true);
 	if (m_bEnableVerboseOptions) {
 		m_bVerbose = ini.GetBool(_T("Verbose"), false);
@@ -2844,7 +2870,7 @@ void CPreferences::LoadPreferences()
 	m_istartnextfile = ini.GetInt(_T("StartNextFile"), 0);
 	m_bshowoverhead = ini.GetBool(_T("ShowOverhead"), false);
 	m_bMoviePreviewBackup = ini.GetBool(_T("VideoPreviewBackupped"), true);
-	m_iPreviewSmallBlocks = ini.GetInt(_T("PreviewSmallBlocks"), 0);
+	m_iPreviewSmallBlocks = PreferenceUiSeams::NormalizePreviewSmallBlocks(ini.GetInt(_T("PreviewSmallBlocks"), 0));
 	m_bPreviewCopiedArchives = ini.GetBool(_T("PreviewCopiedArchives"), true);
 	m_bInspectAllFileTypes = ini.GetBool(_T("InspectAllFileTypes"), false);
 	m_bAllocFull = ini.GetBool(_T("AllocateFullFile"), 0);
@@ -2894,10 +2920,8 @@ void CPreferences::LoadPreferences()
 	m_bRemove2bin = ini.GetBool(_T("RemoveFilesToBin"), true);
 	m_bShowCopyEd2kLinkCmd = ini.GetBool(_T("ShowCopyEd2kLinkCmd"), false);
 
-	m_iMaxChatHistory = ini.GetInt(_T("MaxChatHistoryLines"), 100);
-	if (m_iMaxChatHistory < 1)
-		m_iMaxChatHistory = 100;
-	SetMsgSessionsMax(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxMessageSessions"), static_cast<int>(GetDefaultMsgSessionsMax())), GetDefaultMsgSessionsMax()));
+	m_iMaxChatHistory = PreferenceUiSeams::NormalizePositiveBounded(ini.GetInt(_T("MaxChatHistoryLines"), 100), 100, PreferenceUiSeams::kMaxChatHistoryLines);
+	SetMsgSessionsMax(PreferenceUiSeams::NormalizePositiveBounded(ini.GetInt(_T("MaxMessageSessions"), static_cast<int>(GetDefaultMsgSessionsMax())), GetDefaultMsgSessionsMax(), PreferenceUiSeams::kMaxMessageSessions));
 	m_bShowActiveDownloadsBold = ini.GetBool(_T("ShowActiveDownloadsBold"), false);
 
 	m_strTxtEditor = ini.GetString(_T("TxtEditor"), _T("notepad.exe"));
@@ -3024,7 +3048,8 @@ void CPreferences::LoadPreferences()
 			ResetStatsColor(i);
 	}
 	m_bHasCustomTaskIconColor = ini.GetBool(_T("HasCustomTaskIconColor"), false);
-	m_bShowVerticalHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), true);
+	const bool bLegacyStatisticsHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), true);
+	m_bShowVerticalHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), bLegacyStatisticsHourMarkers, _T("eMule"));
 
 	// -khaos--+++> Load Stats
 	// I changed this to a separate function because it is now also used
@@ -3048,13 +3073,14 @@ void CPreferences::LoadPreferences()
 	SetMaxWebUploadFileSizeMB(NormalizeNonNegativePreference(ini.GetInt(_T("MaxFileUploadSizeMB"), static_cast<int>(GetDefaultMaxWebUploadFileSizeMB())), GetDefaultMaxWebUploadFileSizeMB()));
 	m_bAllowAdminHiLevFunc = ini.GetBool(_T("AllowAdminHiLevelFunc"), false);
 
+	m_aAllowedRemoteAccessIPs.RemoveAll();
 	buffer = ini.GetString(_T("AllowedIPs"));
 	for (int iPos = 0; iPos >= 0;) {
 		const CString &strIP(buffer.Tokenize(_T(";"), iPos));
 		if (!strIP.IsEmpty()) {
-			u_long nIP = inet_addr((CStringA)strIP);
-			if (nIP != INADDR_ANY && nIP != INADDR_NONE)
-				m_aAllowedRemoteAccessIPs.Add(nIP);
+			uint32_t uIP = 0;
+			if (PreferenceUiSeams::TryParseIPv4Address(strIP, uIP) && uIP != 0u && uIP != 0xffffffffu)
+				m_aAllowedRemoteAccessIPs.Add(static_cast<UINT>(uIP));
 		}
 	}
 	m_bWebUseHttps = ini.GetBool(_T("UseHTTPS"), false);
@@ -3333,12 +3359,38 @@ void CPreferences::SetWSLowPass(const CString &strNewPass)
 	m_strWebLowPassword = MD5Sum(strNewPass).GetHashString();
 }
 
+void CPreferences::SetCreateCrashDumpMode(int iMode)
+{
+	m_iCreateCrashDumpMode = PreferenceUiSeams::NormalizeCrashDumpMode(iMode);
+}
+
 void CPreferences::SetWSApiKey(const CString &strNewKey)
 {
 	m_strWebApiKey = strNewKey;
 	m_strWebApiKey.Trim();
 	if (m_strWebApiKey.IsEmpty())
 		m_strWebApiKey = GenerateRandomWebApiKey();
+}
+
+CString CPreferences::GetAllowedRemoteAccessIPsString()
+{
+	std::vector<uint32_t> addresses;
+	addresses.reserve(static_cast<size_t>(m_aAllowedRemoteAccessIPs.GetCount()));
+	for (INT_PTR i = 0; i < m_aAllowedRemoteAccessIPs.GetCount(); ++i)
+		addresses.push_back(static_cast<uint32_t>(m_aAllowedRemoteAccessIPs.GetAt(i)));
+	return PreferenceUiSeams::FormatAllowedRemoteIpList(addresses);
+}
+
+bool CPreferences::SetAllowedRemoteAccessIPsString(const CString &strAllowedIPs, CString &strInvalidToken)
+{
+	std::vector<uint32_t> addresses;
+	if (!PreferenceUiSeams::TryParseAllowedRemoteIpList(strAllowedIPs, addresses, strInvalidToken))
+		return false;
+
+	m_aAllowedRemoteAccessIPs.RemoveAll();
+	for (size_t i = 0; i < addresses.size(); ++i)
+		m_aAllowedRemoteAccessIPs.Add(static_cast<UINT>(addresses[i]));
+	return true;
 }
 
 void CPreferences::SetWSPort(uint16 uPort)
@@ -3393,7 +3445,7 @@ void CPreferences::SetMaxHalfConnections(UINT in)
 
 void CPreferences::SetMsgSessionsMax(UINT in)
 {
-	maxmsgsessions = NormalizePositivePreference(in, GetDefaultMsgSessionsMax());
+	maxmsgsessions = min(PreferenceUiSeams::kMaxMessageSessions, NormalizePositivePreference(in, GetDefaultMsgSessionsMax()));
 }
 
 void CPreferences::SetProxySettings(const ProxySettings &proxysettings)

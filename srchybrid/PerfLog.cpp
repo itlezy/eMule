@@ -24,6 +24,7 @@
 #include "Statistics.h"
 #include "Log.h"
 #include "PerfLogSeams.h"
+#include "PreferenceUiSeams.h"
 #include "otherfunctions.h"
 
 #ifdef _DEBUG
@@ -34,6 +35,23 @@ static char THIS_FILE[] = __FILE__;
 
 
 CPerfLog thePerfLog;
+
+namespace
+{
+CString GetDefaultPerfLogFilePath(int iFileFormat)
+{
+	CString strDefFilePath(thePrefs.GetMuleDirectory(EMULE_CONFIGBASEDIR));
+	strDefFilePath += (PreferenceUiSeams::NormalizePerfLogFileFormat(iFileFormat) == 0)
+		? _T("perflog.csv")
+		: _T("perflog.mrtg");
+	return strDefFilePath;
+}
+
+int NormalizePerfLogMode(int iMode)
+{
+	return (iMode == CPerfLog::OneSample || iMode == CPerfLog::AllSamples) ? iMode : CPerfLog::None;
+}
+}
 
 CPerfLog::CPerfLog()
 	: m_dwInterval(MIN2MS(5))
@@ -65,26 +83,16 @@ void CPerfLog::LoadSettings()
 {
 	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
 
-	m_eMode = static_cast<ELogMode>(ini.GetInt(_T("Mode"), None));
-	if (m_eMode != None && m_eMode != OneSample && m_eMode != AllSamples)
-		m_eMode = None;
+	m_eMode = static_cast<ELogMode>(NormalizePerfLogMode(ini.GetInt(_T("Mode"), None)));
 	m_eFileFormat = CSV;
 	m_dwInterval = MIN2MS(5);
 	m_strFilePath.Empty();
 	m_strMRTGDataFilePath.Empty();
 	m_strMRTGOverheadFilePath.Empty();
 	if (m_eMode != None) {
-		m_eFileFormat = static_cast<ELogFileFormat>(ini.GetInt(_T("FileFormat"), CSV));
-		if (m_eFileFormat != CSV && m_eFileFormat != MRTG)
-			m_eFileFormat = CSV;
+		m_eFileFormat = static_cast<ELogFileFormat>(PreferenceUiSeams::NormalizePerfLogFileFormat(ini.GetInt(_T("FileFormat"), CSV)));
 
-		// set default log file path
-		CString strDefFilePath(thePrefs.GetMuleDirectory(EMULE_CONFIGBASEDIR));
-		if (m_eFileFormat == CSV)
-			strDefFilePath += _T("perflog.csv");
-		else
-			strDefFilePath += _T("perflog.mrtg");
-
+		const CString strDefFilePath(GetDefaultPerfLogFilePath(m_eFileFormat));
 		m_strFilePath = ini.GetString(_T("File"), strDefFilePath);
 		if (m_strFilePath.IsEmpty())
 			m_strFilePath = strDefFilePath;
@@ -95,11 +103,7 @@ void CPerfLog::LoadSettings()
 			m_strFilePath.Empty();
 		}
 
-		const int iIntervalMinutes = ini.GetInt(_T("Interval"), 5);
-		if (iIntervalMinutes > 0)
-			m_dwInterval = MIN2MS(iIntervalMinutes);
-		else
-			m_dwInterval = MIN2MS(5);
+		m_dwInterval = MIN2MS(PreferenceUiSeams::NormalizePerfLogIntervalMinutes(ini.GetInt(_T("Interval"), 5)));
 	}
 }
 
@@ -149,16 +153,46 @@ void CPerfLog::ReloadSettings()
 
 void CPerfLog::SetEnabled(bool bEnable)
 {
+	SetSettings(bEnable, GetConfiguredFileFormat(), GetConfiguredFilePath(), GetConfiguredIntervalMinutes());
+}
+
+void CPerfLog::SetSettings(bool bEnable, int iFileFormat, const CString &strFilePath, UINT uIntervalMinutes)
+{
 	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
-	int iCurrentMode = ini.GetInt(_T("Mode"), None);
-	if (iCurrentMode != OneSample && iCurrentMode != AllSamples)
-		iCurrentMode = None;
+	const int iCurrentMode = NormalizePerfLogMode(ini.GetInt(_T("Mode"), None));
 
 	const int iNewMode = bEnable ? ((iCurrentMode != None) ? iCurrentMode : static_cast<int>(AllSamples)) : static_cast<int>(None);
 	if (iCurrentMode != iNewMode)
 		ini.WriteInt(_T("Mode"), iNewMode);
 
+	CString strNormalizedPath(strFilePath);
+	strNormalizedPath.Trim();
+	ini.WriteInt(_T("FileFormat"), PreferenceUiSeams::NormalizePerfLogFileFormat(iFileFormat));
+	ini.WriteString(_T("File"), strNormalizedPath);
+	ini.WriteInt(_T("Interval"), static_cast<int>(PreferenceUiSeams::NormalizePerfLogIntervalMinutes(uIntervalMinutes)));
+
 	ReloadSettings();
+}
+
+int CPerfLog::GetConfiguredFileFormat()
+{
+	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
+	return PreferenceUiSeams::NormalizePerfLogFileFormat(ini.GetInt(_T("FileFormat"), CSV));
+}
+
+CString CPerfLog::GetConfiguredFilePath()
+{
+	const int iFileFormat = GetConfiguredFileFormat();
+	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
+	CString strFilePath(ini.GetString(_T("File"), GetDefaultPerfLogFilePath(iFileFormat)));
+	strFilePath.Trim();
+	return strFilePath.IsEmpty() ? GetDefaultPerfLogFilePath(iFileFormat) : strFilePath;
+}
+
+UINT CPerfLog::GetConfiguredIntervalMinutes()
+{
+	CIni ini(thePrefs.GetConfigFile(), _T("PerfLog"));
+	return PreferenceUiSeams::NormalizePerfLogIntervalMinutes(ini.GetInt(_T("Interval"), 5));
 }
 
 void CPerfLog::WriteSamples(UINT nCurDn, UINT nCurUp, UINT nCurDnOH, UINT nCurUpOH)

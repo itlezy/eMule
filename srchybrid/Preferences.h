@@ -518,6 +518,7 @@ public:
 	static int		iMaxLogBuff;
 	static UINT		uMaxLogFileSize;
 	static ELogFileFormat m_iLogFileFormat;
+	static int		m_iCreateCrashDumpMode;
 	static bool		scheduler;
 	static bool		dontcompressavi;
 	static bool		msgonlyfriends;
@@ -1419,6 +1420,8 @@ public:
 	static int		GetMaxLogBuff()						{ return iMaxLogBuff; }
 	static UINT		GetMaxLogFileSize()					{ return uMaxLogFileSize; }
 	static ELogFileFormat GetLogFileFormat()			{ return m_iLogFileFormat; }
+	static int		GetCreateCrashDumpMode()			{ return m_iCreateCrashDumpMode; }
+	static void		SetCreateCrashDumpMode(int iMode);
 
 	// Web Server
 	static uint16	GetWSPort()							{ return m_nWebPort; }
@@ -1451,6 +1454,8 @@ public:
 	static bool		GetWebAdminAllowedHiLevFunc()		{ return m_bAllowAdminHiLevFunc; }
 	static void		SetWSLowPass(const CString &strNewPass);
 	static const CUIntArray& GetAllowedRemoteAccessIPs() { return m_aAllowedRemoteAccessIPs; }
+	static CString	GetAllowedRemoteAccessIPsString();
+	static bool		SetAllowedRemoteAccessIPsString(const CString &strAllowedIPs, CString &strInvalidToken);
 	static uint32	GetMaxWebUploadFileSizeMB()			{ return static_cast<uint32>(m_iWebFileUploadSizeLimitMB); }
 	static uint32	GetDefaultMaxWebUploadFileSizeMB()	{ return 5; }
 	static uint32	GetMaxWebUploadFileSizeLimitMB()	{ return 65535; }
