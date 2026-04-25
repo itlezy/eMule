@@ -394,6 +394,13 @@ inline bool TryBuildRoute(
 			rRoute.params["limit"] = ullLimit > INT_MAX ? INT_MAX : static_cast<int>(ullLimit);
 		return true;
 	}
+	if (route.size() == 2 && route[0] == "log" && route[1] == "get" && bGet) {
+		rRoute.strCommand = "log/get";
+		uint64_t ullLimit = 0;
+		if (TryParseUnsignedQueryValue(query, "limit", ullLimit))
+			rRoute.params["limit"] = ullLimit > INT_MAX ? INT_MAX : static_cast<int>(ullLimit);
+		return true;
+	}
 
 	rErrorCode = "NOT_FOUND";
 	rErrorMessage = "API route not found";
