@@ -304,6 +304,12 @@ inline bool TryBuildRoute(
 		rRoute.params["hash"] = route[1];
 		return true;
 	}
+	if (route.size() == 4 && route[0] == "transfers" && route[2] == "sources" && route[3] == "browse" && bPost) {
+		rRoute.strCommand = "transfers/source_browse";
+		rRoute.params = body;
+		rRoute.params["hash"] = route[1];
+		return true;
+	}
 	if (route.size() == 3 && route[0] == "transfers" && route[2] == "recheck" && bPost) {
 		rRoute.strCommand = "transfers/recheck";
 		rRoute.params["hash"] = route[1];

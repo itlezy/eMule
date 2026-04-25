@@ -362,7 +362,9 @@ json BuildSourceJson(const CUpDownClient &rClient)
 		{"serverIp", StdUtf8FromCString(rClient.GetServerIP() != 0 ? ipstr(rClient.GetServerIP()) : CString())},
 		{"serverPort", rClient.GetServerPort()},
 		{"lowId", rClient.HasLowID()},
-		{"queueRank", rClient.GetRemoteQueueRank()}
+		{"queueRank", rClient.GetRemoteQueueRank()},
+		{"viewSharedFiles", rClient.GetViewSharedFilesSupport()},
+		{"sharedFilesRequestPending", rClient.GetFileListRequested() > 0}
 	};
 }
 
@@ -878,6 +880,37 @@ CUpDownClient* FindClientForUploadControl(const SPipeApiClientSelector &rSelecto
 }
 
 /**
+ * Reports whether one transfer source matches a REST client selector.
+ */
+bool TransferSourceMatchesSelector(const CUpDownClient &rClient, const SPipeApiClientSelector &rSelector)
+{
+	if (rSelector.bHasUserHash && !md4equ(rClient.GetUserHash(), rSelector.aucUserHash))
+		return false;
+	if (rSelector.bHasEndpoint) {
+		const uint32 dwClientIp = rClient.GetIP() != 0 ? rClient.GetIP() : rClient.GetConnectIP();
+		if (dwClientIp != rSelector.dwIp || rClient.GetUserPort() != rSelector.uPort)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Resolves a source-control selector against the sources attached to one transfer.
+ */
+CUpDownClient* FindTransferSourceClient(CPartFile &rPartFile, const SPipeApiClientSelector &rSelector, SPipeApiError &rError)
+{
+	for (POSITION pos = rPartFile.srclist.GetHeadPosition(); pos != NULL;) {
+		CUpDownClient *const pClient = rPartFile.srclist.GetNext(pos);
+		if (pClient != NULL && TransferSourceMatchesSelector(*pClient, rSelector))
+			return pClient;
+	}
+
+	rError.strCode = "NOT_FOUND";
+	rError.strMessage = _T("transfer source not found");
+	return NULL;
+}
+
+/**
  * Parses one optional { addr, port } server endpoint from a command payload.
  */
 bool TryGetServerEndpoint(const json &rParams, SPipeApiServerEndpoint &rEndpoint, bool &rbHasEndpoint, SPipeApiError &rError)
@@ -1356,6 +1389,48 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		for (POSITION pos = pPartFile->srclist.GetHeadPosition(); pos != NULL;)
 			result.push_back(BuildSourceJson(*pPartFile->srclist.GetNext(pos)));
 		return result;
+	}
+
+	if (strCommand == "transfers/source_browse") {
+		CPartFile *const pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pPartFile == NULL)
+			return json();
+
+		SPipeApiClientSelector selector;
+		if (!TryGetUploadClientSelector(params, selector, rError)) {
+			if (rError.strMessage == _T("userHash or ip and port are required"))
+				rError.strMessage = _T("source userHash or ip and port are required");
+			return json();
+		}
+
+		CUpDownClient *const pClient = FindTransferSourceClient(*pPartFile, selector, rError);
+		if (pClient == NULL)
+			return json();
+		if (!pClient->GetViewSharedFilesSupport()) {
+			rError.strCode = "INVALID_STATE";
+			rError.strMessage = _T("transfer source does not support shared-file browsing");
+			return json();
+		}
+
+		uint32 uSearchID = pClient->GetSearchID();
+		if (uSearchID == 0) {
+			if (theApp.emuledlg == NULL || theApp.emuledlg->searchwnd == NULL || theApp.emuledlg->searchwnd->m_pwndResults == NULL) {
+				rError.strCode = "EMULE_UNAVAILABLE";
+				rError.strMessage = _T("search window is not available");
+				return json();
+			}
+			uSearchID = theApp.emuledlg->searchwnd->m_pwndResults->GetNextSearchID();
+			pClient->SetSearchID(uSearchID);
+		}
+
+		const bool bAlreadyPending = pClient->GetFileListRequested() > 0;
+		if (!bAlreadyPending)
+			pClient->RequestSharedFileList();
+		return json{
+			{"ok", true},
+			{"alreadyPending", bAlreadyPending},
+			{"search_id", StdUtf8FromCString(FormatSearchId(uSearchID))}
+		};
 	}
 
 	if (strCommand == "transfers/add") {
