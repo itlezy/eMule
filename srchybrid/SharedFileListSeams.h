@@ -4,6 +4,7 @@
 #include "PathHelpers.h"
 
 #define EMULE_TESTS_HAS_SHARED_FILE_LIST_PATH_SEAMS 1
+#define EMULE_TESTS_HAS_SHARED_FILE_LIST_ASYNC_HASH_SEAMS 1
 
 namespace SharedFileListSeams
 {
