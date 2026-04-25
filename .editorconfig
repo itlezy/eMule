@@ -9,7 +9,7 @@ indent_style = space
 indent_size = 4
 
 [*.{c,cc,cpp,cxx,h,hh,hpp,hxx,inl,idl,def,txt}]
-end_of_line = crlf
+end_of_line = lf
 
 [*.{cmd,bat,ps1,psm1,ps1xml}]
 end_of_line = crlf

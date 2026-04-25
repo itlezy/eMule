@@ -20,19 +20,19 @@
 *.rc2 text eol=crlf
 *.iss text eol=crlf
 
-# Source files keep CRLF to match .editorconfig.
-*.c text eol=crlf
-*.cc text eol=crlf
-*.cpp text eol=crlf
-*.cxx text eol=crlf
-*.h text eol=crlf
-*.hh text eol=crlf
-*.hpp text eol=crlf
-*.hxx text eol=crlf
-*.inl text eol=crlf
-*.idl text eol=crlf
-*.def text eol=crlf
-*.txt text eol=crlf
+# Source files keep LF to match .editorconfig.
+*.c text eol=lf
+*.cc text eol=lf
+*.cpp text eol=lf
+*.cxx text eol=lf
+*.h text eol=lf
+*.hh text eol=lf
+*.hpp text eol=lf
+*.hxx text eol=lf
+*.inl text eol=lf
+*.idl text eol=lf
+*.def text eol=lf
+*.txt text eol=lf
 
 # Repo metadata and structured text stay LF.
 *.md text eol=lf
