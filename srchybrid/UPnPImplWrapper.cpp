@@ -19,6 +19,7 @@
 #include "UPnPImpl.h"
 #include "UPnPImplMiniLib.h"
 #include "UPnPImplPcpNatPmp.h"
+#include "UPnPImplWrapperSeams.h"
 #include "Preferences.h"
 
 #ifdef _DEBUG
@@ -29,18 +30,20 @@ static char THIS_FILE[] = __FILE__;
 
 CUPnPImplWrapper::CUPnPImplWrapper()
 {
-	switch (thePrefs.GetUPnPBackendMode()) {
-		case UPNP_BACKEND_IGD_ONLY:
-			m_liAvailable.AddTail(new CUPnPImplMiniLib());
-			break;
-		case UPNP_BACKEND_PCP_NATPMP_ONLY:
-			m_liAvailable.AddTail(new CUPnPImplPcpNatPmp());
-			break;
-		case UPNP_BACKEND_AUTOMATIC:
-		default:
-			m_liAvailable.AddTail(new CUPnPImplMiniLib());
-			m_liAvailable.AddTail(new CUPnPImplPcpNatPmp());
-			break;
+	static_assert(UPNP_BACKEND_AUTOMATIC == NAT_MAPPING_BACKEND_MODE_AUTOMATIC, "UPnP automatic preference value changed");
+	static_assert(UPNP_BACKEND_IGD_ONLY == NAT_MAPPING_BACKEND_MODE_UPNP_IGD_ONLY, "UPnP IGD-only preference value changed");
+	static_assert(UPNP_BACKEND_PCP_NATPMP_ONLY == NAT_MAPPING_BACKEND_MODE_PCP_NATPMP_ONLY, "UPnP PCP/NAT-PMP-only preference value changed");
+
+	const NatMappingBackendOrder backendOrder = BuildNatMappingBackendOrder(thePrefs.GetUPnPBackendMode());
+	for (size_t i = 0; i < backendOrder.uCount; ++i) {
+		switch (backendOrder.aeBackends[i]) {
+			case NAT_MAPPING_BACKEND_UPNP_IGD:
+				m_liAvailable.AddTail(new CUPnPImplMiniLib());
+				break;
+			case NAT_MAPPING_BACKEND_PCP_NATPMP:
+				m_liAvailable.AddTail(new CUPnPImplPcpNatPmp());
+				break;
+		}
 	}
 	if (m_liAvailable.IsEmpty())
 		m_liAvailable.AddTail(new CUPnPImplNone());
