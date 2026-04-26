@@ -1,10 +1,13 @@
 #include "stdafx.h"
 #include <locale.h>
 #include <algorithm>
+#include <vector>
 #include "emule.h"
 #include "StringConversion.h"
 #include "WebServer.h"
+#include "WebServerAuthStateSeams.h"
 #include "WebServerJson.h"
+#include "WebServerStaticFileSeams.h"
 #include "ClientCredits.h"
 #include "ClientList.h"
 #include "DownloadQueue.h"
@@ -390,13 +393,16 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 		// check for being banned
 		int myfaults = 0;
 		const ULONGLONG curTick = ::GetTickCount64();
-		for (INT_PTR i = pThis->m_Params.badlogins.GetCount(); --i >= 0;)
-			if (curTick >= pThis->m_Params.badlogins[i].timestamp + MIN2MS(15))
-				pThis->m_Params.badlogins.RemoveAt(i); // remove outdated entries
-			else
-				myfaults += static_cast<int>(pThis->m_Params.badlogins[i].ip == myip);
+		{
+			CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+			for (INT_PTR i = pThis->m_Params.badlogins.GetCount(); --i >= 0;)
+				if (WebServerAuthStateSeams::IsBadLoginExpired(curTick, pThis->m_Params.badlogins[i].timestamp, MIN2MS(15)))
+					pThis->m_Params.badlogins.RemoveAt(i); // remove outdated entries
+				else
+					myfaults += static_cast<int>(pThis->m_Params.badlogins[i].ip == myip);
+		}
 
-		if (myfaults > 4) {
+		if (WebServerAuthStateSeams::ShouldDenyForBadLoginFaults(myfaults)) {
 			Data.pSocket->SendContent(HTTPInit, _GetPlainResString(IDS_ACCESSDENIED));
 			::CoUninitialize();
 			return;
@@ -422,6 +428,7 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 					ses.startTime = CTime::GetCurrentTime();
 					ses.lSession = lSession = (long)(rand() >> 1);
 					ses.lastcat = -thePrefs.GetCatFilter(0);
+					CSingleLock lock(&pThis->m_WebStateLock, TRUE);
 					pThis->m_Params.Sessions.Add(ses);
 				}
 
@@ -434,7 +441,10 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 				ses.admin = false;
 				ses.startTime = CTime::GetCurrentTime();
 				ses.lSession = lSession = (long)(rand() >> 1);
-				pThis->m_Params.Sessions.Add(ses);
+				{
+					CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+					pThis->m_Params.Sessions.Add(ses);
+				}
 
 				SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
 
@@ -444,18 +454,29 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 				LogWarning(LOG_STATUSBAR, GetResString(IDS_WEB_BADLOGINATTEMPT) + _T(" (%s)"), (LPCTSTR)ip);
 
 				BadLogin newban = BadLogin{myip, curTick};	// remember the failed attempt
-				pThis->m_Params.badlogins.Add(newban);
-				if (++myfaults > 4) {
+				{
+					CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+					pThis->m_Params.badlogins.Add(newban);
+					myfaults = 0;
+					for (INT_PTR i = pThis->m_Params.badlogins.GetCount(); --i >= 0;)
+						if (WebServerAuthStateSeams::IsBadLoginExpired(curTick, pThis->m_Params.badlogins[i].timestamp, MIN2MS(15)))
+							pThis->m_Params.badlogins.RemoveAt(i);
+						else
+							myfaults += static_cast<int>(pThis->m_Params.badlogins[i].ip == myip);
+				}
+				if (WebServerAuthStateSeams::ShouldDenyForBadLoginFaults(myfaults)) {
 					Data.pSocket->SendContent(HTTPInit, _GetPlainResString(IDS_ACCESSDENIED));
 					::CoUninitialize();
 					return;
 				}
 			}
 			isUseGzip = false; // [Julien]
-			if (login)	// on login, forget previous failed attempts
+			if (login) {	// on login, forget previous failed attempts
+				CSingleLock lock(&pThis->m_WebStateLock, TRUE);
 				for (INT_PTR i = pThis->m_Params.badlogins.GetCount(); --i >= 0;)
 					if (pThis->m_Params.badlogins[i].ip == myip)
 						pThis->m_Params.badlogins.RemoveAt(i);
+			}
 		}
 
 		sSession.Format(_T("%ld"), lSession);
@@ -3504,19 +3525,27 @@ bool CWebServer::_IsLoggedIn(const ThreadData &Data, long lSession)
 	if (pThis == NULL)
 		return false;
 
-	_RemoveTimeOuts(Data);
+	bool bSessionCountChanged = false;
+	bool bLoggedIn = false;
+	{
+		CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+		bSessionCountChanged = _RemoveTimeOutsLocked(pThis);
 
-	// find our session
-	// i should have used CMap there, but i like CArray more ;-)
-	if (lSession != 0)
-		for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;)
-			if (pThis->m_Params.Sessions[i].lSession == lSession) {
-				// if found, also reset expiration time
-				pThis->m_Params.Sessions[i].startTime = CTime::GetCurrentTime();
-				return true;
-			}
+		// find our session
+		// i should have used CMap there, but i like CArray more ;-)
+		if (lSession != 0)
+			for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;)
+				if (pThis->m_Params.Sessions[i].lSession == lSession) {
+					// if found, also reset expiration time
+					pThis->m_Params.Sessions[i].startTime = CTime::GetCurrentTime();
+					bLoggedIn = true;
+					break;
+				}
+	}
 
-	return false;
+	if (bSessionCountChanged)
+		SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
+	return bLoggedIn;
 }
 
 void CWebServer::_RemoveTimeOuts(const ThreadData &Data)
@@ -3527,6 +3556,22 @@ void CWebServer::_RemoveTimeOuts(const ThreadData &Data)
 		pThis->UpdateSessionCount();
 }
 
+bool CWebServer::_RemoveTimeOutsLocked(CWebServer *pThis)
+{
+	if (pThis == NULL || thePrefs.GetWebTimeoutMins() <= 0)
+		return false;
+
+	const INT_PTR oldvalue = pThis->m_Params.Sessions.GetCount();
+	const CTime curTime(CTime::GetCurrentTime());
+	for (INT_PTR i = oldvalue; --i >= 0;) {
+		const CTimeSpan ts = curTime - pThis->m_Params.Sessions[i].startTime;
+		if (WebServerAuthStateSeams::IsSessionExpired(ts.GetTotalSeconds(), thePrefs.GetWebTimeoutMins()))
+			pThis->m_Params.Sessions.RemoveAt(i);
+	}
+
+	return oldvalue != pThis->m_Params.Sessions.GetCount();
+}
+
 bool CWebServer::_RemoveSession(const ThreadData &Data, long lSession)
 {
 	CWebServer *pThis = reinterpret_cast<CWebServer*>(Data.pThis);
@@ -3534,13 +3579,22 @@ bool CWebServer::_RemoveSession(const ThreadData &Data, long lSession)
 		return false;
 
 	// find our session
-	for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;)
-		if (pThis->m_Params.Sessions[i].lSession == lSession) {
-			pThis->m_Params.Sessions.RemoveAt(i);
-			AddLogLine(true, (LPCTSTR)GetResString(IDS_WEB_SESSIONEND), (LPCTSTR)ipstr(pThis->m_uCurIP));
-			SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
-			return true;
-		}
+	bool bRemoved = false;
+	{
+		CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+		for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;)
+			if (pThis->m_Params.Sessions[i].lSession == lSession) {
+				pThis->m_Params.Sessions.RemoveAt(i);
+				bRemoved = true;
+				break;
+			}
+	}
+
+	if (bRemoved) {
+		AddLogLine(true, (LPCTSTR)GetResString(IDS_WEB_SESSIONEND), (LPCTSTR)ipstr(pThis->m_uCurIP));
+		SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
+		return true;
+	}
 
 	return false;
 }
@@ -3548,10 +3602,12 @@ bool CWebServer::_RemoveSession(const ThreadData &Data, long lSession)
 Session CWebServer::_GetSessionByID(const ThreadData &Data, long sessionID)
 {
 	CWebServer *pThis = reinterpret_cast<CWebServer*>(Data.pThis);
-	if (pThis != NULL && sessionID != 0)
+	if (pThis != NULL && sessionID != 0) {
+		CSingleLock lock(&pThis->m_WebStateLock, TRUE);
 		for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;)
 			if (pThis->m_Params.Sessions[i].lSession == sessionID)
 				return pThis->m_Params.Sessions[i];
+	}
 
 	return Session{};
 }
@@ -3559,10 +3615,12 @@ Session CWebServer::_GetSessionByID(const ThreadData &Data, long sessionID)
 bool CWebServer::_IsSessionAdmin(const ThreadData &Data, long sessionID)
 {
 	CWebServer *pThis = reinterpret_cast<CWebServer*>(Data.pThis);
-	if (pThis != NULL && sessionID != 0)
+	if (pThis != NULL && sessionID != 0) {
+		CSingleLock lock(&pThis->m_WebStateLock, TRUE);
 		for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;)
 			if (pThis->m_Params.Sessions[i].lSession == sessionID)
 				return pThis->m_Params.Sessions[i].admin;
+	}
 
 	return false;
 }
@@ -3929,18 +3987,22 @@ CString CWebServer::_GetSearch(const ThreadData &Data)
 
 INT_PTR CWebServer::UpdateSessionCount()
 {
-	if (thePrefs.GetWebTimeoutMins() > 0) {
-		INT_PTR oldvalue = m_Params.Sessions.GetCount();
-		CTime curTime(CTime::GetCurrentTime());
-		for (INT_PTR i = oldvalue; --i >= 0;) {
-			CTimeSpan ts = curTime - m_Params.Sessions[i].startTime;
-			if (ts.GetTotalSeconds() >= MIN2S(thePrefs.GetWebTimeoutMins()))
-				m_Params.Sessions.RemoveAt(i);
-		}
-
-		if (oldvalue != m_Params.Sessions.GetCount())
-			SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
+	INT_PTR nSessionCount = 0;
+	bool bSessionCountChanged = false;
+	{
+		CSingleLock lock(&m_WebStateLock, TRUE);
+		bSessionCountChanged = _RemoveTimeOutsLocked(this);
+		nSessionCount = m_Params.Sessions.GetCount();
 	}
+
+	if (bSessionCountChanged)
+		SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
+	return nSessionCount;
+}
+
+INT_PTR CWebServer::GetSessionCount()
+{
+	CSingleLock lock(&m_WebStateLock, TRUE);
 	return m_Params.Sessions.GetCount();
 }
 
@@ -4072,19 +4134,26 @@ void CWebServer::_SetLastUserCat(const ThreadData &Data, long lSession, int cat)
 	if (pThis == NULL)
 		return;
 
-	_RemoveTimeOuts(Data);
+	bool bSessionCountChanged = false;
+	{
+		CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+		bSessionCountChanged = _RemoveTimeOutsLocked(pThis);
 
-	// find our session
-	if (lSession != 0)
-		for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;) {
-			Session &ses = pThis->m_Params.Sessions[i];
-			if (ses.lSession == lSession) {
-				// if found, also reset expiration time
-				ses.startTime = CTime::GetCurrentTime();
-				ses.lastcat = cat;
-				break;
+		// find our session
+		if (lSession != 0)
+			for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;) {
+				Session &ses = pThis->m_Params.Sessions[i];
+				if (ses.lSession == lSession) {
+					// if found, also reset expiration time
+					ses.startTime = CTime::GetCurrentTime();
+					ses.lastcat = cat;
+					break;
+				}
 			}
-		}
+	}
+
+	if (bSessionCountChanged)
+		SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
 }
 
 int CWebServer::_GetLastUserCat(const ThreadData &Data, long lSession)
@@ -4093,18 +4162,31 @@ int CWebServer::_GetLastUserCat(const ThreadData &Data, long lSession)
 	if (pThis == NULL)
 		return 0;
 
-	_RemoveTimeOuts(Data);
+	bool bSessionCountChanged = false;
+	int nLastUserCat = 0;
+	bool bFound = false;
+	{
+		CSingleLock lock(&pThis->m_WebStateLock, TRUE);
+		bSessionCountChanged = _RemoveTimeOutsLocked(pThis);
 
-	if (lSession != 0)
-		// find our session
-		for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;) {
-			Session &ses = pThis->m_Params.Sessions[i];
-			if (ses.lSession == lSession) {
-				// if found, also reset expiration time
-				ses.startTime = CTime::GetCurrentTime();
-				return ses.lastcat;
+		if (lSession != 0)
+			// find our session
+			for (INT_PTR i = pThis->m_Params.Sessions.GetCount(); --i >= 0;) {
+				Session &ses = pThis->m_Params.Sessions[i];
+				if (ses.lSession == lSession) {
+					// if found, also reset expiration time
+					ses.startTime = CTime::GetCurrentTime();
+					nLastUserCat = ses.lastcat;
+					bFound = true;
+					break;
+				}
 			}
-		}
+	}
+
+	if (bSessionCountChanged)
+		SendMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, WEBGUIIA_UPDATEMYINFO, 0);
+	if (bFound)
+		return nLastUserCat;
 
 	return 0;
 }
@@ -4114,41 +4196,35 @@ void CWebServer::_ProcessFileReq(const ThreadData &Data)
 	const CWebServer *pThis = reinterpret_cast<CWebServer*>(Data.pThis);
 	if (pThis == NULL)
 		return;
-	CString contenttype;
 
-	CString filename(Data.sURL);
-	LPCTSTR const pDot = ::PathFindExtension(filename);
-	if (CPTR(filename, filename.GetLength()) > &pDot[2]) { //at least 2 characters
-		CString ext(&pDot[1]); //skip the dot
-		ext.MakeLower();
-		if (ext == _T("bmp") || ext == _T("gif") || ext == _T("jpeg") || ext == _T("jpg") || ext == _T("png"))
-			contenttype.Format(_T("Content-Type: image/%s\r\n"), (LPCTSTR)ext);
-		//DonQ - additional file types
-		else if (ext == _T("ico"))
-			contenttype = _T("Content-Type: image/x-icon\r\n");
-		else if (ext == _T("css"))
-			contenttype = _T("Content-Type: text/css\r\n");
-		else if (ext == _T("js"))
-			contenttype = _T("Content-Type: text/javascript\r\n");
+	CStringA contenttype(WebServerStaticFileSeams::GetStaticContentTypeHeader(Data.sURL));
+	contenttype.AppendFormat("Last-Modified: %s\r\nETag: %s\r\n", static_cast<LPCSTR>(CStringA(pThis->m_Params.sLastModified)), static_cast<LPCSTR>(CStringA(pThis->m_Params.sETag)));
+
+	CString filename;
+	if (!WebServerStaticFileSeams::TryBuildContainedStaticFilePath(thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR), Data.sURL, filename)) {
+		Data.pSocket->SendReply("HTTP/1.1 404 File not found\r\n");
+		return;
 	}
-
-	contenttype.AppendFormat(_T("Last-Modified: %s\r\nETag: %s\r\n"), (LPCTSTR)pThis->m_Params.sLastModified, (LPCTSTR)pThis->m_Params.sETag);
-
-	filename.Replace(_T('/'), _T('\\'));
-	if (filename[0] == _T('\\'))
-		filename.Delete(0, 1);
-	filename.Insert(0, thePrefs.GetMuleDirectory(EMULE_WEBSERVERDIR));
 
 	CSafeFile file;
 	if (LongPathSeams::OpenFile(file, filename, CFile::modeRead | CFile::shareDenyWrite | CFile::typeBinary)) {
-		if (thePrefs.GetMaxWebUploadFileSizeMB() == 0 || file.GetLength() <= thePrefs.GetMaxWebUploadFileSizeMB() * 1024ull * 1024ull) {
-			UINT filesize = (UINT)file.GetLength();
+		const ULONGLONG ullFileSize = file.GetLength();
+		if (WebServerStaticFileSeams::IsStaticFileSizeAllowed(ullFileSize, thePrefs.GetMaxWebUploadFileSizeMB())) {
+			CStringA header;
+			header.Format("HTTP/1.1 200 OK\r\n%sContent-Length: %I64u\r\n\r\n", (LPCSTR)contenttype, ullFileSize);
+			Data.pSocket->SendData(header, header.GetLength());
 
-			char *buffer = new char[filesize];
-			UINT size = file.Read(buffer, filesize);
+			std::vector<char> buffer(WebServerStaticFileSeams::kStaticFileChunkSize);
+			ULONGLONG ullRemaining = ullFileSize;
+			while (ullRemaining > 0) {
+				const UINT nBytesToRead = static_cast<UINT>(std::min<ULONGLONG>(buffer.size(), ullRemaining));
+				const UINT nBytesRead = file.Read(buffer.data(), nBytesToRead);
+				if (nBytesRead == 0)
+					break;
+				Data.pSocket->SendData(buffer.data(), nBytesRead);
+				ullRemaining -= nBytesRead;
+			}
 			file.Close();
-			Data.pSocket->SendContent((CStringA)contenttype, buffer, size);
-			delete[] buffer;
 		} else
 			Data.pSocket->SendReply("HTTP/1.1 403 Forbidden\r\n");
 	} else

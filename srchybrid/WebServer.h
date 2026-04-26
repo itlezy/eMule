@@ -317,7 +317,7 @@ public:
 	void RestartSockets();
 	void AddStatsLine(const UpDown &line);
 	bool ReloadTemplates();
-	INT_PTR GetSessionCount()					{ return m_Params.Sessions.GetCount(); }
+	INT_PTR GetSessionCount();
 	bool IsRunning() const						{ return m_bServerWorking; }
 	bool AreTemplatesLoaded() const				{ return m_bTemplatesLoaded; }
 protected:
@@ -354,6 +354,7 @@ private:
 	static void		_ConnectToServer(const CString &sIP, int nPort);
 	static bool		_IsLoggedIn(const ThreadData &Data, long lSession);
 	static void		_RemoveTimeOuts(const ThreadData &Data);
+	static bool		_RemoveTimeOutsLocked(CWebServer *pThis);
 	static bool		_RemoveSession(const ThreadData &Data, long lSession);
 	static CString	_SpecialChars(const CString &cstr, bool noquote = true);
 	static CString	_GetPlainResString(UINT nID, bool noquote = true);
@@ -389,6 +390,7 @@ private:
 	static int AFX_CDECL _UploadCmp(void *prm, void const *pv1, void const *pv2);
 
 	// Common data
+	mutable CCriticalSection m_WebStateLock;
 	GlobalParams	m_Params;
 	WebTemplates	m_Templates;
 	u_long			m_uCurIP;
