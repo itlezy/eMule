@@ -119,7 +119,6 @@ struct SharedHashShutdownCacheState
  */
 constexpr DWORD kImportPartProgressYieldMs = 100;
 constexpr unsigned int kSharedHashPendingCompletionBacklogMax = 4u;
-constexpr ULONGLONG kStartupCacheSaveDelayDuringHashDrainMs = 5000ui64;
 constexpr ULONGLONG kStartupCacheSaveDelayIdleMs = 15000ui64;
 
 /**
@@ -177,13 +176,10 @@ inline bool ShouldPersistStartupCacheOnShutdown(const bool bSharedHashingWasActi
  */
 inline bool ShouldStartStartupCacheSave(const StartupCacheSaveScheduleState &rState)
 {
-	if (!rState.bCacheDirty || rState.bAppClosing || rState.bSaveRunning)
+	if (!rState.bCacheDirty || rState.bAppClosing || rState.bSaveRunning || rState.bDeferredHashingActive)
 		return false;
 
-	const ULONGLONG ullDelayMs = rState.bDeferredHashingActive
-		? kStartupCacheSaveDelayDuringHashDrainMs
-		: kStartupCacheSaveDelayIdleMs;
-	return rState.ullNowTick >= rState.ullDirtyTick + ullDelayMs;
+	return rState.ullNowTick >= rState.ullDirtyTick + kStartupCacheSaveDelayIdleMs;
 }
 
 inline StartupCacheSavePostFailureAction GetStartupCacheSavePostFailureAction(const StartupCacheSavePostFailureState &rState)
