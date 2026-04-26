@@ -16,6 +16,7 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
 #include "emule.h"
+#include "DownloadProgressBarSeams.h"
 #include "DownloadListCtrl.h"
 #include "updownclient.h"
 #include "MenuCmds.h"
@@ -483,6 +484,8 @@ void CDownloadListCtrl::DrawFileItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT 
 
 			int iWidth = rcDraw.Width();
 			int iHeight = rcDraw.Height();
+			if (!DownloadProgressBarSeams::HasDrawableExtent(iWidth, iHeight))
+				break;
 			HGDIOBJ hOldBitmap;
 			CDC cdcStatus;
 			cdcStatus.CreateCompatibleDC(&dc);
@@ -495,7 +498,11 @@ void CDownloadListCtrl::DrawFileItem(CDC &dc, int nColumn, LPCRECT lpRect, UINT 
 				hOldBitmap = cdcStatus.SelectObject(pCtrlItem->status);
 
 				CRect rec_status(0, 0, iWidth, iHeight);
-				pPartFile->DrawStatusBar(cdcStatus, rec_status, thePrefs.UseFlatBar());
+				const bool bUseFlatBar = thePrefs.UseFlatBar();
+				const int iSavedDC = DownloadProgressBarSeams::ShouldIsolateFlatBarDcState(bUseFlatBar) ? cdcStatus.SaveDC() : 0;
+				pPartFile->DrawStatusBar(cdcStatus, rec_status, bUseFlatBar);
+				if (iSavedDC != 0)
+					cdcStatus.RestoreDC(iSavedDC);
 				pCtrlItem->dwUpdated = curTick + DLC_BARUPDATE + (rand() & 0x7f);
 			} else
 				hOldBitmap = cdcStatus.SelectObject(pCtrlItem->status);
@@ -713,6 +720,8 @@ void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UIN
 		{
 			int iWidth = lpRect->right - lpRect->left;
 			int iHeight = lpRect->bottom - lpRect->top - 2;
+			if (!DownloadProgressBarSeams::HasDrawableExtent(iWidth, iHeight))
+				break;
 			HGDIOBJ hOldBitmap;
 			CDC cdcStatus;
 			cdcStatus.CreateCompatibleDC(&dc);
@@ -725,7 +734,11 @@ void CDownloadListCtrl::DrawSourceItem(CDC &dc, int nColumn, LPCRECT lpRect, UIN
 				hOldBitmap = cdcStatus.SelectObject(pCtrlItem->status);
 
 				CRect rec_status(0, 0, iWidth, iHeight);
-				pClient->DrawStatusBar(cdcStatus, rec_status, (pCtrlItem->type == UNAVAILABLE_SOURCE), thePrefs.UseFlatBar());
+				const bool bUseFlatBar = thePrefs.UseFlatBar();
+				const int iSavedDC = DownloadProgressBarSeams::ShouldIsolateFlatBarDcState(bUseFlatBar) ? cdcStatus.SaveDC() : 0;
+				pClient->DrawStatusBar(cdcStatus, rec_status, (pCtrlItem->type == UNAVAILABLE_SOURCE), bUseFlatBar);
+				if (iSavedDC != 0)
+					cdcStatus.RestoreDC(iSavedDC);
 				pCtrlItem->dwUpdated = curTick + DLC_BARUPDATE + (rand() & 0x7f);
 			} else
 				hOldBitmap = cdcStatus.SelectObject(pCtrlItem->status);

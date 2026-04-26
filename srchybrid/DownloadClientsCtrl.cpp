@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "emuledlg.h"
 #include "DownloadClientsCtrl.h"
+#include "DownloadProgressBarSeams.h"
 #include "ClientDetailDialog.h"
 #include "MemDC.h"
 #include "MenuCmds.h"
@@ -213,7 +214,13 @@ void CDownloadClientsCtrl::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			case 4: //download status bar
 				++rcItem.top;
 				--rcItem.bottom;
-				client->DrawStatusBar(dc, &rcItem, false, thePrefs.UseFlatBar());
+				if (DownloadProgressBarSeams::HasDrawableExtent(rcItem.Width(), rcItem.Height())) {
+					const bool bUseFlatBar = thePrefs.UseFlatBar();
+					const int iSavedDC = DownloadProgressBarSeams::ShouldIsolateFlatBarDcState(bUseFlatBar) ? dc.SaveDC() : 0;
+					client->DrawStatusBar(dc, &rcItem, false, bUseFlatBar);
+					if (iSavedDC != 0)
+						dc.RestoreDC(iSavedDC);
+				}
 				++rcItem.bottom;
 				--rcItem.top;
 			}
