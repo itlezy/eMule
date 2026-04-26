@@ -27,6 +27,7 @@
 #include "Opcodes.h"
 #include "Server.h"
 #include "ServerConnect.h"
+#include "ServerMetPersistenceSeams.h"
 #include "Packets.h"
 #include "emuledlg.h"
 #include "HttpDownloadDlg.h"
@@ -68,31 +69,34 @@ void CServerList::AutoUpdate()
 
 	const CString &confdir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	const CString &servermetdownload(confdir + _T("server_met.download"));
-	const CString &servermetbackup(confdir + _T("server_met.old"));
-	const CString &servermet(confdir + SERVER_MET_FILENAME);
+	const CString &servermetdownloadcandidate(servermetdownload + _T(".new"));
 
-	(void)LongPathSeams::DeleteFile(servermetbackup);
-	(void)LongPathSeams::DeleteFile(servermetdownload);
-	(void)LongPathSeams::MoveFile(servermet, servermetbackup);
+	(void)LongPathSeams::DeleteFileIfExists(servermetdownload);
+	(void)LongPathSeams::DeleteFileIfExists(servermetdownloadcandidate);
 
 	bool bDownloaded = false;
 	for (POSITION Pos = thePrefs.addresses_list.GetHeadPosition(); Pos != NULL;) {
+		(void)LongPathSeams::DeleteFileIfExists(servermetdownloadcandidate);
 		CHttpDownloadDlg dlgDownload;
 		dlgDownload.m_strTitle = GetResString(IDS_HTTP_CAPTION);
 		dlgDownload.m_sURLToDownload = thePrefs.addresses_list.GetNext(Pos);
-		dlgDownload.m_sFileToDownloadInto = servermetdownload;
+		dlgDownload.m_sFileToDownloadInto = servermetdownloadcandidate;
 		if (dlgDownload.DoModal() == IDOK) {
-			bDownloaded = true;
-			break;
+			DWORD dwPromoteError = ERROR_SUCCESS;
+			if (ServerMetPersistenceSeams::InstallDownloadedServerMetCandidate(servermetdownloadcandidate, servermetdownload, &dwPromoteError)) {
+				bDownloaded = true;
+				break;
+			}
+			LogError(LOG_STATUSBAR, _T("Failed to install downloaded server.met from \"%s\": %s"),
+				(LPCTSTR)dlgDownload.m_sURLToDownload, (LPCTSTR)GetErrorMessage(dwPromoteError));
+			(void)LongPathSeams::DeleteFileIfExists(servermetdownloadcandidate);
+			continue;
 		}
 		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FAILEDDOWNLOADMET), (LPCTSTR)dlgDownload.m_sURLToDownload);
 	}
 
-	if (bDownloaded)
-		(void)LongPathSeams::MoveFile(servermet, servermetdownload);
-	else
-		(void)LongPathSeams::DeleteFile(servermet);
-	(void)LongPathSeams::MoveFile(servermetbackup, servermet);
+	if (!bDownloaded)
+		(void)LongPathSeams::DeleteFileIfExists(servermetdownloadcandidate);
 }
 
 bool CServerList::Init()
@@ -371,7 +375,7 @@ void CServerList::GetStatus(uint32 &total, uint32 &failed
 		}
 	}
 
-	occ = maxuserknownmax ? (totaluserknownmax * 100.0f) / maxuserknownmax : 0.0f;
+	occ = maxuserknownmax ? (static_cast<float>(totaluserknownmax) * 100.0f) / static_cast<float>(maxuserknownmax) : 0.0f;
 }
 
 void CServerList::GetAvgFile(uint32 &average) const
@@ -575,6 +579,8 @@ bool CServerList::SaveServermetToFile()
 	const CString &sConfDir(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR));
 	const CString &curservermet(sConfDir + SERVER_MET_FILENAME);
 	const CString &newservermet(curservermet + _T(".new"));
+	const CString &backupservermet(sConfDir + _T("server_met.old"));
+	const CString &backupservermettmp(backupservermet + _T(".tmp"));
 
 	CSafeBufferedFile file;
 	if (!CFileOpen(file, newservermet
@@ -723,8 +729,17 @@ bool CServerList::SaveServermetToFile()
 		}
 		CommitAndClose(file);
 
-		LongPathSeams::MoveFileEx(curservermet, sConfDir + _T("server_met.old"), MOVEFILE_REPLACE_EXISTING);
-		LongPathSeams::MoveFileEx(newservermet, curservermet, MOVEFILE_REPLACE_EXISTING);
+		DWORD dwBackupError = ERROR_SUCCESS;
+		if (!ServerMetPersistenceSeams::RefreshServerMetBackup(curservermet, backupservermet, backupservermettmp, &dwBackupError)) {
+			AddDebugLogLine(false, _T("Failed to refresh server.met backup \"%s\": %s"),
+				(LPCTSTR)backupservermet, (LPCTSTR)GetErrorMessage(dwBackupError));
+		}
+
+		DWORD dwReplaceError = ERROR_SUCCESS;
+		if (!ServerMetPersistenceSeams::PromotePreparedServerMet(newservermet, curservermet, &dwReplaceError)) {
+			LogError(LOG_STATUSBAR, _T("%s - %s"), (LPCTSTR)GetResString(IDS_ERR_SAVESERVERMET2), (LPCTSTR)GetErrorMessage(dwReplaceError));
+			return false;
+		}
 	} catch (CFileException *ex) {
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)GetResString(IDS_ERR_SAVESERVERMET2), (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
