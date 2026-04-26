@@ -20,6 +20,7 @@
 #include "emule.h"
 #include "partfile.h"
 #include "log.h"
+#include "HelperThreadLaunchSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -37,13 +38,20 @@ IMPLEMENT_DYNCREATE(CPartFileWriteThread, CWinThread)
 CPartFileWriteThread::CPartFileWriteThread()
 	: m_eventThreadEnded(FALSE, TRUE)
 	, m_hPort()
+	, m_bThreadStarted()
+	, m_bStopRequested()
 	, m_Run(RUN_STOP)
 	, m_bNewData()
 {
 #if EMULE_COMPILED_STARTUP_PROFILING
 	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
-	AfxBeginThread(RunProc, (LPVOID)this, THREAD_PRIORITY_BELOW_NORMAL);
+	CWinThread *pThread = AfxBeginThread(RunProc, (LPVOID)this, THREAD_PRIORITY_BELOW_NORMAL);
+	m_bThreadStarted = HelperThreadLaunchSeams::DidStartThread(pThread);
+	if (!m_bThreadStarted) {
+		theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to start part-file write helper thread"));
+		m_eventThreadEnded.SetEvent();
+	}
 #if EMULE_COMPILED_STARTUP_PROFILING
 	theApp.AppendStartupProfileLine(_T("broadband.partfile_write.launch_thread"), theApp.GetStartupProfileElapsedUs(ullPhaseStart), ullPhaseStart);
 #endif
@@ -67,8 +75,15 @@ UINT AFX_CDECL CPartFileWriteThread::RunProc(LPVOID pParam)
 
 void CPartFileWriteThread::EndThread()
 {
+	m_bStopRequested = true;
+	const HelperThreadLaunchSeams::IocpShutdownAction action =
+		HelperThreadLaunchSeams::ClassifyIocpShutdown(m_bThreadStarted, m_hPort != NULL);
+	if (action == HelperThreadLaunchSeams::IocpShutdownAction::NoOp)
+		return;
+
 	m_Run = RUN_STOP;
-	PostQueuedCompletionStatus(m_hPort, 0, 0, NULL);
+	if (action == HelperThreadLaunchSeams::IocpShutdownAction::SignalAndWait)
+		PostQueuedCompletionStatus(m_hPort, 0, 0, NULL);
 	m_eventThreadEnded.Lock();
 }
 
@@ -78,8 +93,20 @@ UINT CPartFileWriteThread::RunInternal()
 	const ULONGLONG ullThreadStartUs = theApp.GetStartupProfileTimestampUs();
 #endif
 	m_hPort = ::CreateIoCompletionPort(INVALID_HANDLE_VALUE, 0, 0, 1);
-	if (!m_hPort)
-		return ::GetLastError();
+	if (!m_hPort) {
+		const DWORD dwError = ::GetLastError();
+		theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to create part-file write completion port: %s"), (LPCTSTR)GetErrorMessage(dwError, 1));
+		m_Run = RUN_STOP;
+		m_eventThreadEnded.SetEvent();
+		return dwError;
+	}
+	if (m_bStopRequested) {
+		::CloseHandle(m_hPort);
+		m_hPort = 0;
+		m_Run = RUN_STOP;
+		m_eventThreadEnded.SetEvent();
+		return 0;
+	}
 
 	DWORD dwWrite = 0;
 	ULONG_PTR completionKey = 0;
@@ -88,7 +115,7 @@ UINT CPartFileWriteThread::RunInternal()
 #if EMULE_COMPILED_STARTUP_PROFILING
 	theApp.AppendStartupProfileLine(_T("broadband.partfile_write.thread_ready"), theApp.GetStartupProfileElapsedUs(ullThreadStartUs), ullThreadStartUs);
 #endif
-	while (m_Run
+	while (!m_bStopRequested && m_Run
 		&& ::GetQueuedCompletionStatus(m_hPort, &dwWrite, &completionKey, (LPOVERLAPPED*)&pCurIO, INFINITE)
 		&& completionKey)
 	{
@@ -211,6 +238,8 @@ void CPartFileWriteThread::WriteCompletionRoutine(DWORD dwBytesWritten, const Ov
 
 bool CPartFileWriteThread::AddFile(CPartFile *pFile)
 {
+	if (!HelperThreadLaunchSeams::CanPostIocpWork(m_bThreadStarted, m_bStopRequested, m_hPort != NULL, m_Run != RUN_STOP))
+		return false;
 	ASSERT(m_hPort && m_Run);
 	if (pFile && pFile->m_hWrite == INVALID_HANDLE_VALUE) {
 		const CString sPartFile(RemoveFileExtension(pFile->GetFullName()));
@@ -241,6 +270,8 @@ void CPartFileWriteThread::RemFile(CPartFile *pFile)
 
 void CPartFileWriteThread::WakeUpCall()
 {
+	if (!HelperThreadLaunchSeams::CanPostIocpWork(m_bThreadStarted, m_bStopRequested, m_hPort != NULL, m_Run != RUN_STOP))
+		return;
 	//pending I/O makes posting unnecessary
 	if (m_Run == RUN_IDLE && m_listPendingIO.IsEmpty())
 		PostQueuedCompletionStatus(m_hPort, 0, WAKEUP, NULL);

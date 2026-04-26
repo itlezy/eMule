@@ -63,6 +63,8 @@ private:
 
 	CEvent	m_eventThreadEnded;
 	HANDLE	m_hPort;
+	bool	m_bThreadStarted;
+	volatile bool m_bStopRequested;
 	volatile char m_Run; //0 - not running; 1 - idle; 2 - processing
 	volatile char m_bNewData;
 };

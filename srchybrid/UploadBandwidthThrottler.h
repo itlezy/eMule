@@ -82,5 +82,6 @@ private:
 	INT_PTR m_highestNumberOfFullyActivatedSlots;
 	LONG m_nNeedsMoreBandwidthSlots;
 
+	bool m_bThreadStarted;
 	volatile bool m_bRun;
 };

@@ -24,6 +24,8 @@
 #include "uploadqueue.h"
 #include "preferences.h"
 #include "UploadDiskIOThread.h"
+#include "log.h"
+#include "HelperThreadLaunchSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -42,12 +44,19 @@ UploadBandwidthThrottler::UploadBandwidthThrottler()
 	, m_SentBytesSinceLastCallOverhead()
 	, m_highestNumberOfFullyActivatedSlots()
 	, m_nNeedsMoreBandwidthSlots()
+	, m_bThreadStarted()
 	, m_bRun(true)
 {
 #if EMULE_COMPILED_STARTUP_PROFILING
 	const ULONGLONG ullPhaseStart = theApp.GetStartupProfileTimestampUs();
 #endif
-	AfxBeginThread(RunProc, (LPVOID)this);
+	CWinThread *pThread = AfxBeginThread(RunProc, (LPVOID)this);
+	m_bThreadStarted = HelperThreadLaunchSeams::DidStartThread(pThread);
+	if (!m_bThreadStarted) {
+		m_bRun = false;
+		theApp.QueueDebugLogLineEx(LOG_ERROR, _T("Failed to start upload bandwidth throttler helper thread"));
+		m_eventThreadEnded.SetEvent();
+	}
 #if EMULE_COMPILED_STARTUP_PROFILING
 	theApp.AppendStartupProfileLine(_T("broadband.throttler.launch_thread"), theApp.GetStartupProfileElapsedUs(ullPhaseStart), ullPhaseStart);
 #endif
@@ -237,8 +246,12 @@ void UploadBandwidthThrottler::EndThread()
 
 	// signal the thread to stop looping and exit.
 	m_bRun = false;
+	if (!HelperThreadLaunchSeams::ShouldWaitForEventThreadShutdown(m_bThreadStarted))
+		return;
 
 	//Pause(false);
+	m_eventDataAvailable.SetEvent();
+	m_eventSocketAvailable.SetEvent();
 
 	// wait for the thread to signal that it has stopped looping.
 	m_eventThreadEnded.Lock();
