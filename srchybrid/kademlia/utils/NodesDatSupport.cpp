@@ -3,6 +3,7 @@
 #include <cstdio>
 
 #include "LongPathSeams.h"
+#include "KadPersistenceSeams.h"
 #include "KadSupport.h"
 #include "NodesDatSupport.h"
 
@@ -214,16 +215,42 @@ namespace Kademlia
 		return true;
 	}
 
+	bool ReplaceNodesDatFileWithOps(LPCTSTR pszSourceFilename, LPCTSTR pszTargetFilename, DWORD *pdwLastError, const PartFilePersistenceSeams::FileSystemOps &rOps)
+	{
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_SUCCESS;
+
+		if (PromotePreparedKadFileWithOps(pszSourceFilename, pszTargetFilename, pdwLastError, rOps))
+			return true;
+
+		const DWORD dwError = pdwLastError != NULL ? *pdwLastError : rOps.GetLastError();
+		if (PromotePreparedKadFileWithOps(pszSourceFilename, pszTargetFilename, pdwLastError, rOps))
+			return true;
+		if (pdwLastError != NULL)
+			*pdwLastError = dwError;
+		return false;
+	}
+
 	bool ReplaceNodesDatFile(LPCTSTR pszSourceFilename, LPCTSTR pszTargetFilename)
 	{
-		if (LongPathSeams::MoveFileEx(pszSourceFilename, pszTargetFilename, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH)) {
-			return true;
-		}
+		DWORD dwLastError = ERROR_SUCCESS;
+		const bool bReplaced = ReplaceNodesDatFileWithOps(pszSourceFilename, pszTargetFilename, &dwLastError, PartFilePersistenceSeams::GetDefaultFileSystemOps());
+		if (!bReplaced)
+			::SetLastError(dwLastError);
+		return bReplaced;
+	}
 
-		const DWORD dwError = ::GetLastError();
-		if (LongPathSeams::MoveFileEx(pszSourceFilename, pszTargetFilename, MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH))
-			return true;
-		::SetLastError(dwError);
-		return false;
+	bool InstallPreparedNodesDatFile(LPCTSTR pszSourceFilename, LPCTSTR pszTargetFilename, DWORD *pdwLastError)
+	{
+		if (pdwLastError != NULL)
+			*pdwLastError = ERROR_SUCCESS;
+
+		NodesDatFileInfo fileInfo;
+		if (!InspectNodesDatFile(pszSourceFilename, fileInfo) || fileInfo.m_bBootstrapOnly) {
+			if (pdwLastError != NULL)
+				*pdwLastError = ERROR_INVALID_DATA;
+			return false;
+		}
+		return ReplaceNodesDatFileWithOps(pszSourceFilename, pszTargetFilename, pdwLastError, PartFilePersistenceSeams::GetDefaultFileSystemOps());
 	}
 }

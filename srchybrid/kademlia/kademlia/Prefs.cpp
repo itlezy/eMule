@@ -42,6 +42,7 @@ their client on the eMule forum.
 #include "kademlia/kademlia/kademlia.h"
 #include "kademlia/kademlia/indexed.h"
 #include "kademlia/routing/RoutingZone.h"
+#include "kademlia/utils/KadPersistenceSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -120,14 +121,19 @@ void CPrefs::ReadFile()
 void CPrefs::WriteFile()
 {
 	try {
+		const CString strTempFilename = BuildKadPersistenceTempFilename(m_sFilename);
 		CSafeBufferedFile file;
-		if (LongPathSeams::OpenFile(file, m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
+		if (LongPathSeams::OpenFile(file, strTempFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
 			::setvbuf(file.m_pStream, NULL, _IOFBF, 16384);
 			file.WriteUInt32(m_uIP);
 			file.WriteUInt16(0); //This is no longer used.
 			file.WriteUInt128(m_uClientID);
 			file.WriteUInt8(0); //This is to tell older clients there are no tags.
-			file.Close();
+			CommitAndClose(file);
+
+			DWORD dwLastError = ERROR_SUCCESS;
+			if (!InstallPreparedKadPrefsCandidate(strTempFilename, m_sFilename, &dwLastError))
+				DebugLogError(_T("Unable to promote Kad preferences file: %s (error %u)"), (LPCTSTR)m_sFilename, dwLastError);
 		}
 	} catch (CException *ex) {
 		ASSERT(0);

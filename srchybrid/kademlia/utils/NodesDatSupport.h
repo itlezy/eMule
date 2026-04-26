@@ -1,6 +1,7 @@
 #pragma once
 
 #include "KadSupport.h"
+#include "PartFilePersistenceSeams.h"
 
 namespace Kademlia
 {
@@ -24,4 +25,14 @@ namespace Kademlia
 	 * @brief Atomically replaces the persisted `nodes.dat` with a validated candidate file.
 	 */
 	bool ReplaceNodesDatFile(LPCTSTR pszSourceFilename, LPCTSTR pszTargetFilename);
+
+	/**
+	 * @brief Atomically replaces the persisted `nodes.dat` through injectable filesystem operations.
+	 */
+	bool ReplaceNodesDatFileWithOps(LPCTSTR pszSourceFilename, LPCTSTR pszTargetFilename, DWORD *pdwLastError, const PartFilePersistenceSeams::FileSystemOps &rOps);
+
+	/**
+	 * @brief Validates and promotes a prepared `nodes.dat` candidate.
+	 */
+	bool InstallPreparedNodesDatFile(LPCTSTR pszSourceFilename, LPCTSTR pszTargetFilename, DWORD *pdwLastError = NULL);
 }

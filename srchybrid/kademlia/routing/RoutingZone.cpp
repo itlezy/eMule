@@ -54,6 +54,7 @@ their client on the eMule forum.
 #include "kademliawnd.h"
 #include "Log.h"
 #include "Opcodes.h"
+#include "OtherFunctions.h"
 #include "kademlia/kademlia/Defines.h"
 #include "kademlia/kademlia/Kademlia.h"
 #include "kademlia/kademlia/Prefs.h"
@@ -62,6 +63,8 @@ their client on the eMule forum.
 #include "kademlia/net/KademliaUDPListener.h"
 #include "LongPathSeams.h"
 #include "kademlia/utils/FastKad.h"
+#include "kademlia/utils/KadPersistenceSeams.h"
+#include "kademlia/utils/NodesDatSupport.h"
 #include "kademlia/routing/RoutingZone.h"
 #include "kademlia/routing/RoutingBin.h"
 #include "kademlia/utils/KadUDPKey.h"
@@ -355,13 +358,14 @@ void CRoutingZone::ReadBootstrapNodesDat(CFileDataIO &file)
 void CRoutingZone::WriteFile()
 {
 	// don't overwrite a bootstrap nodes.dat with an empty one, if we didn't finish probing
-	if (!CKademlia::s_liBootstrapList.IsEmpty() && GetNumContacts() == 0) {
+	if (ShouldSkipNodesDatSaveForBootstrapOnly(!CKademlia::s_liBootstrapList.IsEmpty(), GetNumContacts())) {
 		DebugLogWarning(_T("Skipped storing nodes.dat, because we have an unfinished bootstrap of the nodes.dat version and no contacts in our routing table"));
 		return;
 	}
 
+	const CString strTempFilename = BuildKadPersistenceTempFilename(m_sFilename);
 	CSafeBufferedFile file;
-	if (!LongPathSeams::OpenFile(file, m_sFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
+	if (!LongPathSeams::OpenFile(file, strTempFilename, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, NULL)) {
 		DebugLogError(_T("Unable to store Kad file: %s"), (LPCTSTR)m_sFilename);
 		return;
 	}
@@ -391,8 +395,16 @@ void CRoutingZone::WriteFile()
 			file.WriteUInt8(static_cast<uint8>(contact.IsIpVerified()));
 			fastKadNodes.push_back(CFastKad::NodeKey(contact.GetClientID(), contact.GetUDPPort()));
 		}
-		file.Close();
-		fastKad.SaveNodesMetadata(GetFastKadFilename(), fastKadNodes);
+		CommitAndClose(file);
+
+		DWORD dwLastError = ERROR_SUCCESS;
+		const bool bNodesPromoted = InstallPreparedNodesDatFile(strTempFilename, m_sFilename, &dwLastError);
+		if (!bNodesPromoted) {
+			DebugLogError(_T("Unable to promote Kad file: %s (error %u)"), (LPCTSTR)m_sFilename, dwLastError);
+			return;
+		}
+		if (ShouldSaveFastKadSidecarAfterNodesPromotion(bNodesPromoted))
+			fastKad.SaveNodesMetadata(GetFastKadFilename(), fastKadNodes);
 		AddDebugLogLine(false, _T("Wrote %ld contact%s to file."), listContacts.size(), ((listContacts.size() == 1) ? _T("") : _T("s")));
 	} catch (CFileException *ex) {
 		ex->Delete();
