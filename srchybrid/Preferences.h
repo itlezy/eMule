@@ -1252,10 +1252,10 @@ public:
 	static UINT		GetDefaultDownloadTimeoutSeconds()	{ return 75; }
 	static UINT		GetDefaultEd2kSearchMaxResults()	{ return 0; }
 	static UINT		GetDefaultEd2kSearchMaxMoreRequests() { return 0; }
-	static UINT		GetDefaultKadFileSearchTotal()		{ return 500; }
-	static UINT		GetDefaultKadKeywordSearchTotal()	{ return 500; }
-	static UINT		GetDefaultKadFileSearchLifetimeSeconds() { return 60; }
-	static UINT		GetDefaultKadKeywordSearchLifetimeSeconds() { return 60; }
+	static UINT		GetDefaultKadFileSearchTotal()		{ return 750; }
+	static UINT		GetDefaultKadKeywordSearchTotal()	{ return 750; }
+	static UINT		GetDefaultKadFileSearchLifetimeSeconds() { return 90; }
+	static UINT		GetDefaultKadKeywordSearchLifetimeSeconds() { return 90; }
 	static bool		GetDefaultDetectTCPErrorFlooder()	{ return true; }
 	static UINT		GetDefaultTCPErrorFlooderIntervalMinutes() { return 60; }
 	static UINT		GetDefaultTCPErrorFlooderThreshold() { return 10; }
@@ -1357,7 +1357,18 @@ public:
 	 * @brief Returns the configured IP-filter update URL.
 	 */
 	static const CString& GetIPFilterUpdateUrl()		{ return m_strIPFilterUpdateUrl; }
-	static LPCTSTR	GetDefaultIPFilterUpdateUrl();
+	/**
+	 * @brief Returns the built-in default URL for IP-filter update downloads.
+	 */
+	static LPCTSTR	GetDefaultIPFilterUpdateUrl()		{ return _T("http://upd.emule-security.org/ipfilter.zip"); }
+	/**
+	 * @brief Returns the built-in default URL for server.met update downloads.
+	 */
+	static LPCTSTR	GetDefaultServerMetUrl()			{ return _T("http://upd.emule-security.org/server.met"); }
+	/**
+	 * @brief Returns the built-in default URL for nodes.dat Kad bootstrap downloads.
+	 */
+	static LPCTSTR	GetDefaultNodesDatUrl()				{ return _T("http://upd.emule-security.org/nodes.dat"); }
 	/**
 	 * @brief Stores the automatic IP-filter update interval in days.
 	 */
@@ -1384,6 +1395,10 @@ public:
 	 * @brief Returns the configured automatic geolocation DB check interval in days.
 	 */
 	static UINT		GetGeoLocationCheckDays()			{ return m_uGeoLocationCheckDays; }
+	/**
+	 * @brief Returns whether IP geolocation is enabled for profiles without an explicit value.
+	 */
+	static bool		GetDefaultGeoLocationEnabled()		{ return true; }
 	static UINT		GetDefaultGeoLocationCheckDays()	{ return 30; }
 	static UINT		GetMinGeoLocationCheckDays()		{ return 7; }
 	static UINT		GetMaxGeoLocationCheckDays()		{ return 365; }
@@ -1462,6 +1477,10 @@ public:
 	static UINT		GetMaxLogFileSize()					{ return uMaxLogFileSize; }
 	static ELogFileFormat GetLogFileFormat()			{ return m_iLogFileFormat; }
 	static int		GetCreateCrashDumpMode()			{ return m_iCreateCrashDumpMode; }
+	/**
+	 * @brief Returns the crash-dump mode used when no preference is stored.
+	 */
+	static int		GetDefaultCreateCrashDumpMode()		{ return 1; }
 	static void		SetCreateCrashDumpMode(int iMode);
 
 	// Web Server

@@ -202,7 +202,8 @@ BOOL CKademliaWnd::OnInitDialog()
 			m_pacONBSIPs->LoadList(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + ONBOOTSTRAP_STRINGS_PROFILE);
 	}
 
-	CheckDlgButton(IDC_RADCLIENTS, 1);
+	SetDlgItemText(IDC_BOOTSTRAPURL, CPreferences::GetDefaultNodesDatUrl());
+	CheckRadioButton(IDC_RADIP, IDC_RADNODESURL, IDC_RADNODESURL);
 	ShowLookupGraph(false);
 
 	return TRUE;

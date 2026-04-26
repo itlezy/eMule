@@ -170,6 +170,7 @@ BOOL CServerWnd::OnInitDialog()
 
 	static_cast<CEdit*>(GetDlgItem(IDC_SPORT))->SetLimitText(5);
 	SetDlgItemText(IDC_SPORT, _T("4661"));
+	SetDlgItemText(IDC_SERVERMETURL, CPreferences::GetDefaultServerMetUrl());
 
 	TCITEM ti;
 	CString name(GetResString(IDS_SV_SERVERINFO));

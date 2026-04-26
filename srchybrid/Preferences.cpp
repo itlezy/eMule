@@ -1038,11 +1038,6 @@ UINT CPreferences::NormalizeIPFilterUpdatePeriodDays(UINT uDays)
 	return IPFilterUpdateSeams::NormalizeUpdatePeriodDays(uDays);
 }
 
-LPCTSTR CPreferences::GetDefaultIPFilterUpdateUrl()
-{
-	return _T("http://upd.emule-security.org/ipfilter.zip");
-}
-
 void CPreferences::SetIPFilterUpdatePeriodDays(UINT uDays)
 {
 	m_uIPFilterUpdatePeriodDays = NormalizeIPFilterUpdatePeriodDays(uDays);
@@ -2635,7 +2630,7 @@ void CPreferences::LoadPreferences()
 
 	m_bFirstStart = ini.GetString(_T("AppVersion")).IsEmpty();
 	m_bDisableFirstTimeWizard = ini.GetBool(_T("DisableFirstTimeWizard"), true);
-	SetCreateCrashDumpMode(ini.GetInt(_T("CreateCrashDump"), 0));
+	SetCreateCrashDumpMode(ini.GetInt(_T("CreateCrashDump"), GetDefaultCreateCrashDumpMode()));
 
 #ifdef _DEBUG
 	m_iDbgHeap = ini.GetInt(_T("DebugHeap"), 1);
@@ -2782,7 +2777,7 @@ void CPreferences::LoadPreferences()
 
 	m_bPreventStandby = ini.GetBool(_T("PreventStandby"), false);
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
-	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), false);
+	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), GetDefaultGeoLocationEnabled());
 	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(_T("GeoLocationCheckDays"), static_cast<int>(GetDefaultGeoLocationCheckDays())))));
 	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(_T("GeoLocationLastCheckTime"), _T("0")))));
 	m_strGeoLocationUpdateUrl = ini.GetString(_T("GeoLocationUpdateUrl"), _T("https://download.db-ip.com/free/dbip-city-lite-%Y-%m.mmdb.gz"));

@@ -8,10 +8,10 @@
 namespace PreferenceUiSeams
 {
 constexpr UINT kMaxLogFileSizeKiB = 1024u * 1024u;
-constexpr UINT kDefaultLogFileSizeBytes = 1024u * 1024u;
+constexpr UINT kDefaultLogFileSizeBytes = 16u * 1024u * 1024u;
 constexpr UINT kMinLogBufferKiB = 16u;
 constexpr UINT kMaxLogBufferKiB = 1024u * 1024u;
-constexpr UINT kDefaultLogBufferKiB = 64u;
+constexpr UINT kDefaultLogBufferKiB = 256u;
 constexpr UINT kMaxChatHistoryLines = 10000u;
 constexpr UINT kMaxMessageSessions = 10000u;
 constexpr UINT kMaxPerfLogIntervalMinutes = 1440u;
