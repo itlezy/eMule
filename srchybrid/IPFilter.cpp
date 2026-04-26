@@ -51,11 +51,6 @@ CIPFilter::~CIPFilter()
 	RemoveAllIPFilters();
 }
 
-static int __cdecl CompareByStartIP(const void *p1, const void *p2) noexcept
-{
-	return CompareUnsigned((*(SIPFilter**)p1)->start, (*(SIPFilter**)p2)->start);
-}
-
 CString CIPFilter::GetDefaultFilePath()
 {
 	return thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + DFLT_IPFILTER_FILENAME;
@@ -207,50 +202,42 @@ INT_PTR CIPFilter::AddFromFile(LPCTSTR pszFilePath, bool bShowResponse)
 		}
 		fclose(readFile);
 
-		// sort the filter list by starting address of IP ranges
-		qsort(m_iplist.GetData(), m_iplist.GetCount(), sizeof(m_iplist[0]), CompareByStartIP);
+		std::vector<IPFilterSeams::IPRange> loadedRanges;
+		loadedRanges.reserve(static_cast<size_t>(m_iplist.GetCount()));
+		for (INT_PTR iRange = 0; iRange < m_iplist.GetCount(); ++iRange) {
+			const SIPFilter *pFilter = m_iplist[iRange];
+			IPFilterSeams::IPRange range;
+			range.Start = pFilter->start;
+			range.End = pFilter->end;
+			range.Level = pFilter->level;
+			range.Description = pFilter->desc;
+			loadedRanges.push_back(range);
+		}
 
-		// merge overlapping and adjacent filter ranges
-		INT_PTR iDuplicate = 0;
-		INT_PTR iMerged = 0;
-		if (m_iplist.GetCount() >= 2) {
-			INT_PTR iDeleted = 0;
-
-			SIPFilter **pPrv = &m_iplist[0];
-			SIPFilter **pEnd = &m_iplist[m_iplist.GetCount() - 1];
-			for (SIPFilter **pCur = pPrv; ++pCur <= pEnd;) {
-				SIPFilter &rPrv = **pPrv;
-				SIPFilter &rCur = **pCur;
-				if (rCur.start >= rPrv.start && rCur.start <= rPrv.end	 // overlapping
-					|| rCur.start == rPrv.end + 1 && rCur.level == rPrv.level) // adjacent
+		IPFilterSeams::NormalizationStats normalizationStats;
+		const std::vector<IPFilterSeams::IPRange> normalizedRanges = IPFilterSeams::NormalizeIPRanges(loadedRanges, &normalizationStats);
+		bool bNormalizedChanged = normalizedRanges.size() != loadedRanges.size();
+		if (!bNormalizedChanged) {
+			for (size_t iRange = 0; iRange < normalizedRanges.size(); ++iRange) {
+				if (normalizedRanges[iRange].Start != loadedRanges[iRange].Start
+					|| normalizedRanges[iRange].End != loadedRanges[iRange].End
+					|| normalizedRanges[iRange].Level != loadedRanges[iRange].Level
+					|| normalizedRanges[iRange].Description != loadedRanges[iRange].Description)
 				{
-					if (rCur.start != rPrv.start || rCur.end != rPrv.end) { // don't merge identical entries
-						//TODO: different 'level' for overlapping entries are not yet handled
-						if (rCur.end > rPrv.end)
-							rPrv.end = rCur.end;
-						//rPrv->desc.AppendFormat("; %s", (LPCSTR)rCur->desc); // this may create a very, very long description string...
-						++iMerged;
-					} else {
-						// if we have identical entries, use the lowest 'level'
-						if (rCur.level < rPrv.level)
-							rPrv.level = rCur.level;
-						++iDuplicate;
-					}
-					delete *pCur;
-					++iDeleted;
-				} else
-					*++pPrv = *pCur;
-			}
-
-			if (iDeleted > 0) {
-				m_iplist.SetSize(m_iplist.GetCount() - iDeleted);	// Truncate the IP filter
-				m_bModified = true;
+					bNormalizedChanged = true;
+					break;
+				}
 			}
 		}
+		RemoveAllIPFilters();
+		for (const IPFilterSeams::IPRange &range : normalizedRanges)
+			AddIPRange(range.Start, range.End, range.Level, range.Description);
+		if (bNormalizedChanged)
+			m_bModified = true;
 
 		if (thePrefs.GetVerbose()) {
 			AddDebugLogLine(false, _T("Loaded IP filters from \"%s\""), pszFilePath);
-			AddDebugLogLine(false, _T("Parsed lines/entries:%u  Found IP ranges:%u  Duplicate:%u  Merged:%u  Time:%s"), iLine, iFoundRanges, iDuplicate, iMerged, (LPCTSTR)CastSecondsToHM((::GetTickCount64() - dwStart + 500) / 1000));
+			AddDebugLogLine(false, _T("Parsed lines/entries:%u  Found IP ranges:%u  Duplicate:%u  Merged:%u  Time:%s"), iLine, iFoundRanges, normalizationStats.DuplicateCount, normalizationStats.MergedCount, (LPCTSTR)CastSecondsToHM((::GetTickCount64() - dwStart + 500) / 1000));
 		}
 		AddLogLine(bShowResponse, GetResString(IDS_IPFILTERLOADED), m_iplist.GetCount());
 	}
