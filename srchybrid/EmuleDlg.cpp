@@ -72,6 +72,7 @@
 #include "UploadBandwidthThrottler.h"
 #include "FriendList.h"
 #include "IPFilter.h"
+#include "IPFilterUpdater.h"
 #include "Statistics.h"
 #include "MuleToolbarCtrl.h"
 #include "TaskbarNotifier.h"
@@ -246,6 +247,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(WM_USERCHANGED, OnUserChanged)
 	ON_MESSAGE(UM_STARTUP_NEXT_STAGE, OnStartupNextStage)
 	ON_MESSAGE(UM_GEOLOCATION_UPDATED, OnGeoLocationUpdated)
+	ON_MESSAGE(UM_IPFILTER_UPDATED, OnIPFilterUpdated)
 	ON_WM_SHOWWINDOW()
 	ON_WM_DESTROY()
 	ON_WM_SETTINGCHANGE()
@@ -954,6 +956,8 @@ void CemuleDlg::StopTimer()
 
 	if (theApp.geolocation != NULL)
 		theApp.geolocation->QueueBackgroundRefresh();
+	if (theApp.ipfilterUpdater != NULL)
+		theApp.ipfilterUpdater->QueueBackgroundRefresh();
 
 	theApp.StartSharedDirectoryMonitor();
 
@@ -973,6 +977,13 @@ LRESULT CemuleDlg::OnGeoLocationUpdated(WPARAM wParam, LPARAM)
 {
 	if (theApp.geolocation != NULL)
 		theApp.geolocation->HandleBackgroundRefreshResult(wParam != 0);
+	return 0;
+}
+
+LRESULT CemuleDlg::OnIPFilterUpdated(WPARAM wParam, LPARAM)
+{
+	if (theApp.ipfilterUpdater != NULL)
+		theApp.ipfilterUpdater->HandleBackgroundRefreshResult(wParam != 0);
 	return 0;
 }
 
@@ -2105,6 +2116,7 @@ void CemuleDlg::OnClose()
 	delete theApp.clientlist;				theApp.clientlist = NULL;
 	delete theApp.friendlist;				theApp.friendlist = NULL;		// CFriendList::SaveList
 	delete theApp.scheduler;				theApp.scheduler = NULL;
+	delete theApp.ipfilterUpdater;			theApp.ipfilterUpdater = NULL;
 	delete theApp.ipfilter;					theApp.ipfilter = NULL;			// CIPFilter::SaveToDefaultFile
 	delete theApp.webserver;				theApp.webserver = NULL;
 	delete theApp.geolocation;				theApp.geolocation = NULL;

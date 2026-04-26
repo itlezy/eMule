@@ -175,6 +175,7 @@
     <ClCompile Include="CreditsThread.cpp" />
     <ClCompile Include="CustomAutoComplete.cpp" />
     <ClCompile Include="DeadSourceList.cpp" />
+    <ClCompile Include="DirectDownload.cpp" />
     <ClCompile Include="DialogMinTrayBtn.cpp" />
     <ClCompile Include="DirectDownloadDlg.cpp" />
     <ClCompile Include="DirectoryTreeCtrl.cpp" />
@@ -218,6 +219,7 @@
     <ClCompile Include="InputBox.cpp" />
     <ClCompile Include="IPFilter.cpp" />
     <ClCompile Include="IPFilterDlg.cpp" />
+    <ClCompile Include="IPFilterUpdater.cpp" />
     <ClCompile Include="IrcChannelListCtrl.cpp" />
     <ClCompile Include="IrcChannelTabCtrl.cpp" />
     <ClCompile Include="IrcMain.cpp" />
@@ -449,6 +451,7 @@
     <ClInclude Include="DeadSourceList.h" />
     <ClInclude Include="Debug_FileSize.h" />
     <ClInclude Include="DebugHelpers.h" />
+    <ClInclude Include="DirectDownload.h" />
     <ClInclude Include="DialogMinTrayBtn.h" />
     <ClInclude Include="DirectDownloadDlg.h" />
     <ClInclude Include="DirectoryTreeCtrl.h" />
@@ -495,6 +498,8 @@
     <ClInclude Include="InputBox.h" />
     <ClInclude Include="IPFilter.h" />
     <ClInclude Include="IPFilterDlg.h" />
+    <ClInclude Include="IPFilterUpdater.h" />
+    <ClInclude Include="IPFilterUpdateSeams.h" />
     <ClInclude Include="IrcChannelListCtrl.h" />
     <ClInclude Include="IrcChannelTabCtrl.h" />
     <ClInclude Include="IrcMain.h" />

@@ -15,7 +15,6 @@
 //along with this program; if not, write to the Free Software
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "stdafx.h"
-#include <afxinet.h>
 #include <map>
 #include <memory>
 #include <share.h>
@@ -23,6 +22,7 @@
 #include <time.h>
 #include <vector>
 #include "GeoLocation.h"
+#include "DirectDownload.h"
 #include "emule.h"
 #include "Preferences.h"
 #include "UserMsgs.h"
@@ -152,17 +152,6 @@ namespace
 		return strDate;
 	}
 
-	bool CreateTempPathInDirectory(const CString& strDirectory, LPCTSTR pszPrefix, CString& strTempPath, CString& strError)
-	{
-		LongPathSeams::PathString strTempPathLong;
-		if (!LongPathSeams::CreateUniqueTempFilePath(strDirectory, pszPrefix, strTempPathLong)) {
-			strError.Format(_T("CreateUniqueTempFilePath failed for %s (%u)"), (LPCTSTR)strDirectory, ::GetLastError());
-			return false;
-		}
-
-		strTempPath = strTempPathLong.c_str();
-		return true;
-	}
 }
 
 /**
@@ -748,11 +737,11 @@ bool CGeoLocation::QueueRefresh(bool bForce, bool bUserInitiated)
 	CString strArchiveTempPath;
 	CString strDatabaseTempPath;
 	CString strError;
-	if (!CreateTempPathInDirectory(strConfigDir, _T("geo"), strArchiveTempPath, strError)) {
+	if (!DirectDownload::CreateTempPathInDirectory(strConfigDir, _T("geo"), strArchiveTempPath, strError)) {
 		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strError);
 		return false;
 	}
-	if (!CreateTempPathInDirectory(strConfigDir, _T("gdb"), strDatabaseTempPath, strError)) {
+	if (!DirectDownload::CreateTempPathInDirectory(strConfigDir, _T("gdb"), strDatabaseTempPath, strError)) {
 		(void)LongPathSeams::DeleteFileIfExists(strArchiveTempPath);
 		AddDebugLogLine(false, _T("%s"), (LPCTSTR)strError);
 		return false;
@@ -996,7 +985,7 @@ UINT AFX_CDECL CGeoLocation::BackgroundRefreshThread(LPVOID pParam)
 	}
 
 	CString strError;
-	if (!DownloadUrlToFileDirect(pContext->strDownloadUrl, pContext->strArchiveTempPath, strError)) {
+	if (!DirectDownload::DownloadUrlToFile(pContext->strDownloadUrl, pContext->strArchiveTempPath, strError)) {
 		AddDebugLogLine(false, _T("GeoLocation: download failed from %s (%s)"), (LPCTSTR)pContext->strDownloadUrl, (LPCTSTR)strError);
 		goto cleanup;
 	}
@@ -1027,118 +1016,4 @@ cleanup:
 	if (pContext->hNotifyWnd != NULL)
 		(void)::PostMessage(pContext->hNotifyWnd, UM_GEOLOCATION_UPDATED, bUpdated ? 1u : 0u, 0);
 	return 0;
-}
-
-bool CGeoLocation::DownloadUrlToFileDirect(const CString& strUrl, const CString& strTargetPath, CString& strError)
-{
-	strError.Empty();
-
-	HINTERNET hInternetSession = ::InternetOpen(AfxGetAppName(), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-	if (hInternetSession == NULL) {
-		strError.Format(_T("InternetOpen failed (%u)"), ::GetLastError());
-		return false;
-	}
-
-	TCHAR szHostName[INTERNET_MAX_HOST_NAME_LENGTH] = {};
-	TCHAR szUrlPath[2048] = {};
-	TCHAR szExtraInfo[2048] = {};
-	URL_COMPONENTS components = {};
-	components.dwStructSize = sizeof(components);
-	components.lpszHostName = szHostName;
-	components.dwHostNameLength = _countof(szHostName);
-	components.lpszUrlPath = szUrlPath;
-	components.dwUrlPathLength = _countof(szUrlPath);
-	components.lpszExtraInfo = szExtraInfo;
-	components.dwExtraInfoLength = _countof(szExtraInfo);
-	if (!::InternetCrackUrl(strUrl, 0, 0, &components)) {
-		strError.Format(_T("InternetCrackUrl failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hInternetSession);
-		return false;
-	}
-
-	CString strObject(components.lpszUrlPath, components.dwUrlPathLength);
-	strObject.Append(CString(components.lpszExtraInfo, components.dwExtraInfoLength));
-	const DWORD dwServiceType = (components.nScheme == INTERNET_SCHEME_HTTPS) ? INTERNET_SERVICE_HTTP : INTERNET_SERVICE_HTTP;
-	HINTERNET hHttpConnection = ::InternetConnect(hInternetSession,
-		CString(components.lpszHostName, components.dwHostNameLength),
-		components.nPort,
-		NULL,
-		NULL,
-		dwServiceType,
-		0,
-		0);
-	if (hHttpConnection == NULL) {
-		strError.Format(_T("InternetConnect failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hInternetSession);
-		return false;
-	}
-
-	LPCTSTR pszAcceptTypes[] = {_T("*/*"), NULL};
-	DWORD dwFlags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_KEEP_CONNECTION;
-	if (components.nScheme == INTERNET_SCHEME_HTTPS)
-		dwFlags |= INTERNET_FLAG_SECURE;
-
-	HINTERNET hHttpFile = ::HttpOpenRequest(hHttpConnection, _T("GET"), strObject, NULL, NULL, pszAcceptTypes, dwFlags, 0);
-	if (hHttpFile == NULL) {
-		strError.Format(_T("HttpOpenRequest failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
-		return false;
-	}
-
-	::HttpAddRequestHeaders(hHttpFile, _T("Accept-Encoding: identity\r\n"), _UI32_MAX, HTTP_ADDREQ_FLAG_ADD);
-	if (!::HttpSendRequest(hHttpFile, NULL, 0, NULL, 0)) {
-		strError.Format(_T("HttpSendRequest failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
-		return false;
-	}
-
-	DWORD dwStatusCode = 0;
-	DWORD dwStatusLength = sizeof(dwStatusCode);
-	if (!::HttpQueryInfo(hHttpFile, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &dwStatusCode, &dwStatusLength, NULL) || dwStatusCode != HTTP_STATUS_OK) {
-		strError.Format(_T("Unexpected HTTP status %u"), static_cast<unsigned>(dwStatusCode));
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
-		return false;
-	}
-
-	const int fdOut = LongPathSeams::OpenCrtWriteOnlyLongPath(strTargetPath, CREATE_ALWAYS, FILE_SHARE_READ);
-	if (fdOut == -1) {
-		strError.Format(_T("Could not open %s for writing"), (LPCTSTR)strTargetPath);
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
-		return false;
-	}
-
-	BYTE buffer[16 * 1024] = {};
-	DWORD dwBytesRead = 0;
-	bool bSuccess = true;
-	do {
-		if (!::InternetReadFile(hHttpFile, buffer, sizeof(buffer), &dwBytesRead)) {
-			strError.Format(_T("InternetReadFile failed (%u)"), ::GetLastError());
-			bSuccess = false;
-			break;
-		}
-
-		if (dwBytesRead > 0) {
-			if (_write(fdOut, buffer, dwBytesRead) != static_cast<int>(dwBytesRead)) {
-				strError.Format(_T("Write failed for %s (%u)"), (LPCTSTR)strTargetPath, errno);
-				bSuccess = false;
-				break;
-			}
-		}
-	} while (dwBytesRead != 0);
-
-	_close(fdOut);
-	::InternetCloseHandle(hHttpFile);
-	::InternetCloseHandle(hHttpConnection);
-	::InternetCloseHandle(hInternetSession);
-
-	if (!bSuccess)
-		(void)LongPathSeams::DeleteFileIfExists(strTargetPath);
-	return bSuccess;
 }

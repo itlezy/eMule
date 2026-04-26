@@ -56,6 +56,7 @@ class CUPnPImplWrapper;
 class CUploadDiskIOThread;
 class CPartFileWriteThread;
 class CGeoLocation;
+class CIPFilterUpdater;
 
 struct SLogItem;
 
@@ -180,6 +181,7 @@ public:
 	CFriendList			*friendlist;
 	CClientUDPSocket	*clientudp;
 	CIPFilter			*ipfilter;
+	CIPFilterUpdater	*ipfilterUpdater;
 	CWebServer			*webserver;
 	CScheduler			*scheduler;
 	CUPnPImplWrapper	*m_pUPnPFinder;

@@ -678,6 +678,10 @@ public:
 	static UINT		m_uGeoLocationCheckDays;
 	static __time64_t m_tGeoLocationLastCheckTime;
 	static CString	m_strGeoLocationUpdateUrl;
+	static bool		m_bAutoIPFilterUpdate;
+	static UINT		m_uIPFilterUpdatePeriodDays;
+	static __time64_t m_tIPFilterLastUpdateTime;
+	static CString	m_strIPFilterUpdateUrl;
 
 
 	enum Table
@@ -1329,6 +1333,43 @@ public:
 	static time_t	GetLastVC()							{ return versioncheckLastAutomatic; }
 	static void		UpdateLastVC();
 	static int		GetIPFilterLevel()					{ return filterlevel; }
+	/**
+	 * @brief Returns whether automatic IP-filter downloads are enabled.
+	 */
+	static bool		GetAutoIPFilterUpdate()				{ return m_bAutoIPFilterUpdate; }
+	/**
+	 * @brief Stores whether automatic IP-filter downloads are enabled.
+	 */
+	static void		SetAutoIPFilterUpdate(bool bEnable)	{ m_bAutoIPFilterUpdate = bEnable; }
+	/**
+	 * @brief Returns the configured automatic IP-filter update interval in days.
+	 */
+	static UINT		GetIPFilterUpdatePeriodDays()		{ return m_uIPFilterUpdatePeriodDays; }
+	static UINT		GetDefaultIPFilterUpdatePeriodDays();
+	static UINT		GetMinIPFilterUpdatePeriodDays();
+	static UINT		GetMaxIPFilterUpdatePeriodDays();
+	static UINT		NormalizeIPFilterUpdatePeriodDays(UINT uDays);
+	/**
+	 * @brief Returns the last attempted automatic IP-filter update time.
+	 */
+	static __time64_t GetIPFilterLastUpdateTime()		{ return m_tIPFilterLastUpdateTime; }
+	/**
+	 * @brief Returns the configured IP-filter update URL.
+	 */
+	static const CString& GetIPFilterUpdateUrl()		{ return m_strIPFilterUpdateUrl; }
+	static LPCTSTR	GetDefaultIPFilterUpdateUrl();
+	/**
+	 * @brief Stores the automatic IP-filter update interval in days.
+	 */
+	static void		SetIPFilterUpdatePeriodDays(UINT uDays);
+	/**
+	 * @brief Stores the last attempted automatic IP-filter update time and optionally persists it immediately.
+	 */
+	static void		SetIPFilterLastUpdateTime(__time64_t tTimestamp, bool bPersist = false);
+	/**
+	 * @brief Stores the IP-filter update URL and optionally persists it immediately.
+	 */
+	static void		SetIPFilterUpdateUrl(const CString& strUrl, bool bPersist = false);
 	static const CString& GetMessageFilter()			{ return messageFilter; }
 	static const CString& GetCommentFilter()			{ return commentFilter; }
 	static void		SetCommentFilter(const CString &strFilter) { commentFilter = strFilter; }

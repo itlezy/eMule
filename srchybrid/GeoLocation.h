@@ -131,7 +131,6 @@ private:
 	bool QueueRefresh(bool bForce, bool bUserInitiated);
 
 	static UINT AFX_CDECL BackgroundRefreshThread(LPVOID pParam);
-	static bool DownloadUrlToFileDirect(const CString& strUrl, const CString& strTargetPath, CString& strError);
 
 	CMmdbCityDatabase* m_pDatabase;
 	__time64_t m_tBuildEpoch;

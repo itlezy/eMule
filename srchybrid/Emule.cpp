@@ -42,6 +42,7 @@
 #include "UpDownClient.h"
 #include "DownloadQueue.h"
 #include "IPFilter.h"
+#include "IPFilterUpdater.h"
 #include "Statistics.h"
 #include "WebServer.h"
 #include "UploadQueue.h"
@@ -792,6 +793,7 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	, m_iDfltImageListColorFlags(ILC_COLOR)
 	, m_app_state(APP_STATE_STARTING)
 	, geolocation()
+	, ipfilterUpdater()
 	, m_hSystemImageList()
 	, m_sizSmallSystemIcon(16, 16)
 	, m_hBigSystemImageList()
@@ -1303,6 +1305,11 @@ BOOL CemuleApp::InitInstance()
 	ipfilter = new CIPFilter();
 #if EMULE_COMPILED_STARTUP_PROFILING
 	AppendStartupProfileLine(_T("Construct CIPFilter"), GetStartupProfileElapsedUs(ullPhaseStart));
+	ullPhaseStart = GetStartupProfileTimestampUs();
+#endif
+	ipfilterUpdater = new CIPFilterUpdater();
+#if EMULE_COMPILED_STARTUP_PROFILING
+	AppendStartupProfileLine(_T("Construct CIPFilterUpdater"), GetStartupProfileElapsedUs(ullPhaseStart));
 	ullPhaseStart = GetStartupProfileTimestampUs();
 #endif
 	webserver = new CWebServer(); // Web Server [kuchin]

@@ -21,9 +21,12 @@ public:
 protected:
 	CCustomAutoComplete *m_pacIPFilterURL;
 	CPreferenceToolTipHelper m_toolTip;
+	bool m_bAutoUpdate;
+	UINT m_uPeriodDays;
 
 	void LoadSettings();
 	void UpdateToolTips();
+	void UpdateAutoUpdateControls();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
 	virtual BOOL OnInitDialog();
@@ -37,6 +40,8 @@ protected:
 	afx_msg void OnEditIPFilter();
 	afx_msg void OnLoadIPFFromURL();
 	afx_msg void OnEnChangeUpdateUrl();
+	afx_msg void OnBnClickedAutoupdateIpfilter();
+	afx_msg void OnEnChangeIpfilterperiod();
 	afx_msg void OnDDClicked();
 	afx_msg void OnHelp();
 	afx_msg BOOL OnHelpInfo(HELPINFO*);
