@@ -88,6 +88,14 @@ public:
 
 	bool	GetPublishedED2K() const					{ return m_PublishedED2K; }
 	void	SetPublishedED2K(bool val);
+	/**
+	 * @brief Reports whether this file needs to be offered again without clearing the visible ED2K published state.
+	 */
+	bool	IsED2KRepublishPending() const				{ return m_bED2KRepublishPending; }
+	/**
+	 * @brief Queues or clears a transient ED2K republish refresh for this shared file.
+	 */
+	void	SetED2KRepublishPending(bool val)			{ m_bED2KRepublishPending = val; }
 
 	uint32	GetKadFileSearchID() const					{ return kadFileSearchID; }
 	void	SetKadFileSearchID(uint32 id)				{ kadFileSearchID = id; } //Don't use this unless you know what your are DOING!! (Hopefully I do. :)
@@ -174,6 +182,7 @@ private:
 	uint8	m_iUpPriority;
 	bool	m_bAutoUpPriority;
 	bool	m_PublishedED2K;
+	bool	m_bED2KRepublishPending;
 	bool	m_bAICHRecoverHashSetAvailable;
 	uint32	m_nPartFileHashLayoutGenerationSnapshot;
 };

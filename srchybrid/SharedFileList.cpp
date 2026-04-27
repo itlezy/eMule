@@ -1326,7 +1326,7 @@ void CSharedFileList::RepublishFile(CKnownFile *pFile)
 	CServer *pCurServer = server->GetCurrentServer();
 	if (pCurServer && (pCurServer->GetTCPFlags() & SRV_TCPFLG_COMPRESSION)) {
 		m_lastPublishED2KFlag = true;
-		pFile->SetPublishedED2K(false); // FIXME: this creates a wrong 'No' for the ed2k shared info in the listview until the file is shared again.
+		pFile->SetED2KRepublishPending(true);
 	}
 }
 
@@ -1539,7 +1539,7 @@ void CSharedFileList::SendListToServer()
 	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair)) {
 		CKnownFile *cur_file = pair->value;
 		//insert sorted into sortedList
-		if (!cur_file->GetPublishedED2K() && (!cur_file->IsLargeFile() || (pCurServer != NULL && pCurServer->SupportsLargeFilesTCP()))) {
+		if ((!cur_file->GetPublishedED2K() || cur_file->IsED2KRepublishPending()) && (!cur_file->IsLargeFile() || (pCurServer != NULL && pCurServer->SupportsLargeFilesTCP()))) {
 			bool added = false;
 			for (POSITION pos = sortedList.GetHeadPosition(); pos != 0 && !added;) {
 				POSITION pos2 = pos;
@@ -1570,6 +1570,7 @@ void CSharedFileList::SendListToServer()
 	for (POSITION pos = sortedList.GetHeadPosition(); pos != 0 && count-- > 0;) {
 		CKnownFile *file = sortedList.GetNext(pos);
 		CreateOfferedFilePacket(file, files, pCurServer);
+		file->SetED2KRepublishPending(false);
 		file->SetPublishedED2K(true);
 	}
 	sortedList.RemoveAll();
@@ -1598,8 +1599,10 @@ void CSharedFileList::SendListToServer()
 void CSharedFileList::ClearED2KPublishInfo()
 {
 	m_lastPublishED2KFlag = true;
-	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair))
+	for (const CKnownFilesMap::CPair *pair = m_Files_map.PGetFirstAssoc(); pair != NULL; pair = m_Files_map.PGetNextAssoc(pair)) {
+		pair->value->SetED2KRepublishPending(false);
 		pair->value->SetPublishedED2K(false);
+	}
 }
 
 void CSharedFileList::ClearKadSourcePublishInfo()

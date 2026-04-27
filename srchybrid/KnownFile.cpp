@@ -121,6 +121,7 @@ CKnownFile::CKnownFile()
 	, m_iUpPriority()
 	, m_bAutoUpPriority(thePrefs.GetNewAutoUp())
 	, m_PublishedED2K()
+	, m_bED2KRepublishPending()
 	, m_bAICHRecoverHashSetAvailable()
 	, m_nPartFileHashLayoutGenerationSnapshot()
 {
@@ -157,6 +158,7 @@ void CKnownFile::AssertValid() const
 	CHECK_BOOL(m_bAutoUpPriority);
 	(void)s_ShareStatusBar;
 	CHECK_BOOL(m_PublishedED2K);
+	CHECK_BOOL(m_bED2KRepublishPending);
 	(void)kadFileSearchID;
 	(void)m_lastPublishTimeKadSrc;
 	(void)m_lastPublishTimeKadNotes;
