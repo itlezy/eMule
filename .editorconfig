@@ -22,5 +22,9 @@ end_of_line = crlf
 [*.{rc,rc2}]
 charset = utf-8-bom
 
+[*.manifest]
+charset = utf-8-bom
+end_of_line = crlf
+
 [*.md]
 trim_trailing_whitespace = false
