@@ -17,7 +17,6 @@
 #include "stdafx.h"
 #include "Packets.h"
 #include "OtherFunctions.h"
-#include "ProtocolGuards.h"
 #include "SafeFile.h"
 #include "StringConversion.h"
 #include "zlib.h"
@@ -27,18 +26,6 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-
-namespace
-{
-	/**
-	 * Returns the payload size encoded in a packet header while treating zero-length
-	 * packets as malformed instead of letting the subtraction underflow.
-	 */
-	inline uint32 GetPacketPayloadSize(const Header_Struct &header)
-	{
-		return header.packetlength > 0 ? header.packetlength - 1 : 0;
-	}
-}
 
 
 void Packet::init()
@@ -64,7 +51,7 @@ Packet::Packet(uint8 protocol)
 
 Packet::Packet(char *header)
 	: pBuffer()
-	, size(GetPacketPayloadSize(*reinterpret_cast<Header_Struct*>(header)))
+	, size(reinterpret_cast<Header_Struct*>(header)->packetlength - 1)
 	, opcode(reinterpret_cast<Header_Struct*>(header)->command)
 	, prot(reinterpret_cast<Header_Struct*>(header)->eDonkeyID)
 	, completebuffer()
@@ -516,7 +503,7 @@ CTag::CTag(CFileDataIO &data, bool bOptUTF8)
 	case TAGTYPE_BLOB:
 		// 07-Apr-2004: eMule versions prior to 0.42e.29 handled the "len" as int16!
 		m_nBlobSize = data.ReadUInt32();
-		if (CanReadBlobPayload(data.GetPosition(), data.GetLength(), m_nBlobSize)) {
+		if (m_nBlobSize <= data.GetLength() - data.GetPosition()) {
 			m_pData = new BYTE[m_nBlobSize];
 			data.Read(m_pData, m_nBlobSize);
 		} else {

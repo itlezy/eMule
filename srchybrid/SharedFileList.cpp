@@ -26,7 +26,6 @@
 #include "DownloadQueue.h"
 #include "Statistics.h"
 #include "Preferences.h"
-#include "ProtocolGuards.h"
 #include "UpDownClient.h"
 #include "ServerConnect.h"
 #include "SafeFile.h"
@@ -369,7 +368,7 @@ bool CAddFileThread::ImportParts()
 			++partsuccess;
 
 			if (theApp.IsRunning()) {
-				WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(static_cast<uint64>(i), static_cast<uint64>(m_PartsToImport.GetSize())));
+				WPARAM uProgress = (WPARAM)(i * 100 / m_PartsToImport.GetSize());
 				VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)m_partfile));
 				::Sleep(100); // sleep very shortly to give time to write (or else mem grows!)
 			}

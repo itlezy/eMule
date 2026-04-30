@@ -2618,33 +2618,20 @@ CString ipstr(uint32 nIP, uint16 nPort)
 	return ipstr((LPCTSTR)ipstr(nIP), nPort);
 }
 
-/**
- * Format an IPv4 address into a caller-provided ANSI buffer without relying on
- * Winsock's thread-local/static inet_ntoa conversion storage.
- */
-static void FormatIPv4AddressA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
-{
-	const BYTE *pucIP = (BYTE*)&nIP;
-	snprintf(pszAddress, iMaxAddress, "%u.%u.%u.%u", pucIP[0], pucIP[1], pucIP[2], pucIP[3]);
-}
-
 CString ipstr(uint32 nIP)
 {
-	CHAR szAddress[16];
-	FormatIPv4AddressA(szAddress, _countof(szAddress), nIP);
-	return CString(CA2T(szAddress));
+	return CString(inet_ntoa(*(in_addr*)&nIP));
 }
 
 CStringA ipstrA(uint32 nIP)
 {
-	CHAR szAddress[16];
-	FormatIPv4AddressA(szAddress, _countof(szAddress), nIP);
-	return CStringA(szAddress);
+	return CStringA(inet_ntoa(*(in_addr*)&nIP));
 }
 
 void ipstrA(CHAR *pszAddress, int iMaxAddress, uint32 nIP)
 {
-	FormatIPv4AddressA(pszAddress, iMaxAddress, nIP);
+	const BYTE *pucIP = (BYTE*)&nIP;
+	snprintf(pszAddress, iMaxAddress, "%u.%u.%u.%u", pucIP[0], pucIP[1], pucIP[2], pucIP[3]);
 }
 
 static bool IsDaylightSavingTimeActive(LONG &rlDaylightBias)
@@ -3731,13 +3718,9 @@ uint32 LevenshteinDistance(const CString &str1, const CString &str2)
 	return d_del;
 }
 
-/**
- * @brief Builds a path into a MAX_PATH-sized caller buffer without overflowing it.
- *
- * This helper mirrors `_tmakepath`, but treats MAX_PATH overflow as a normal runtime
- * failure instead of writing past the destination. Callers receive an empty output
- * string and `false` when the combined path does not fit.
- */
+// Wrapper for _tmakepath which ensures that the output buffer does not exceed MAX_PATH
+// using a smaller buffer without checking the sizes prior calling this function is not safe
+// If the resulting path would be longer than MAX_PATH-1, it will be empty and return false (similar to PathCombine)
 bool _tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPCTSTR ext)
 {
 	if (path == NULL) {
@@ -3751,11 +3734,7 @@ bool _tmakepathlimit(LPTSTR path, LPCTSTR drive, LPCTSTR dir, LPCTSTR fname, LPC
 	size_t sLen = _tcslen(tchBuffer);
 	if (sLen >= MAX_PATH) {
 		path[0] = _T('\0');
-		TRACE(_T("Path exceeds MAX_PATH in _tmakepathlimit: drive='%s' dir='%s' fname='%s' ext='%s'\n"),
-			drive != NULL ? drive : _T(""),
-			dir != NULL ? dir : _T(""),
-			fname != NULL ? fname : _T(""),
-			ext != NULL ? ext : _T(""));
+		ASSERT(0);
 		return false;
 	}
 	_tcscpy(path, tchBuffer);

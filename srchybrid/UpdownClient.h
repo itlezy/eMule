@@ -82,11 +82,6 @@ public:
 	virtual void	SendCancelTransfer();
 	virtual bool	IsEd2kClient() const							{ return true; }
 	virtual bool	Disconnected(LPCTSTR pszReason, bool bFromSocket = false);
-	/**
-	 * Tries to connect the client and reports whether the object is still alive
-	 * afterwards. Callers that receive `false` must not touch the pointer again
-	 * unless they are deleting it immediately at that call site.
-	 */
 	virtual bool	TryToConnect(bool bIgnoreMaxCon = false, bool bNoCallbacks = false, CRuntimeClass *pClassSocket = NULL);
 	virtual void	Connect();
 	virtual void	ConnectionEstablished();
@@ -297,10 +292,6 @@ public:
 	bool			IsRemoteQueueFull() const						{ return m_bRemoteQueueFull; }
 	void			SetRemoteQueueFull(bool flag)					{ m_bRemoteQueueFull = flag; }
 	void			DrawStatusBar(CDC &dc, const CRect &rect, bool onlygreyrect, bool  bFlat) const;
-	/**
-	 * Starts a download re-ask and reports whether the caller must keep or
-	 * destroy the client object afterwards.
-	 */
 	bool			AskForDownload();
 	virtual void	SendFileRequest();
 	void			SendStartupLoadReq();

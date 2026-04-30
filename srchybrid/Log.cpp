@@ -395,11 +395,7 @@ void CLogFile::StartNewLogFile()
 	strLogBakNam.Format(_T("%s - %s"), szNam, szDateLogStarted);
 
 	TCHAR szLogBakFilePath[MAX_PATH];
-	if (!_tmakepathlimit(szLogBakFilePath, szDrv, szDir, strLogBakNam, szExt)) {
-		// Skip rotation when the derived backup path does not fit in MAX_PATH.
-		Open();
-		return;
-	}
+	_tmakepathlimit(szLogBakFilePath, szDrv, szDir, strLogBakNam, szExt);
 
 	if (_trename(m_strFilePath, szLogBakFilePath) != 0)
 		VERIFY(_tremove(m_strFilePath) == 0);

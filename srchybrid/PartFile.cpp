@@ -2350,10 +2350,8 @@ uint32 CPartFile::Process(uint32 reducedownload, UINT icounter/*in percent*/)
 						cur_src->SetLastTriedToConnectTime();
 						cur_src->SendFileRequest();
 					} else if (curTick >= cur_src->GetLastTriedToConnectTime() + MIN2MS(20)) {
-						if (!cur_src->AskForDownload()) {
-							delete cur_src;
+						if (!cur_src->AskForDownload()) // NOTE: This may *delete* the client!!
 							break; //I left this break here as a reminder in case of re-arranging things.
-						}
 					}
 				}
 			}
@@ -2810,10 +2808,7 @@ DWORD CALLBACK CopyProgressRoutine(LARGE_INTEGER TotalFileSize, LARGE_INTEGER To
 {
 	CPartFile *pPartFile = static_cast<CPartFile*>(lpData);
 	if (TotalFileSize.QuadPart && pPartFile && pPartFile->IsKindOf(RUNTIME_CLASS(CPartFile))) {
-		/** Keep the runtime zero-denominator guard inline with the progress calculation. */
-		WPARAM uProgress = (WPARAM)(TotalFileSize.QuadPart
-			? (TotalBytesTransferred.QuadPart * 100 / TotalFileSize.QuadPart)
-			: 0);
+		WPARAM uProgress = (WPARAM)(TotalBytesTransferred.QuadPart * 100 / TotalFileSize.QuadPart);
 		if (uProgress != pPartFile->GetFileOpProgress()) {
 			ASSERT(uProgress <= 100);
 			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pPartFile));

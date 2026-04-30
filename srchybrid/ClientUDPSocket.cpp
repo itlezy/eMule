@@ -25,7 +25,6 @@
 #include "SharedFileList.h"
 #include "UploadQueue.h"
 #include "Preferences.h"
-#include "ProtocolGuards.h"
 #include "ClientList.h"
 #include "EncryptedDatagramSocket.h"
 #include "IPFilter.h"
@@ -93,7 +92,7 @@ void CClientUDPSocket::OnReceive(int nErrorCode)
 				break;
 			case OP_KADEMLIAPACKEDPROT:
 				theStats.AddDownDataOverheadKad(nPacketLen);
-				if (!HasCompressedUdpPayload(static_cast<UINT>(nPacketLen)))
+				if (nPacketLen < 2)
 					strError = _T("Kad packet (compressed) too short");
 				else {
 					BYTE *unpack = NULL;
@@ -206,17 +205,14 @@ bool CClientUDPSocket::ProcessPacket(const BYTE *packet, UINT size, uint8 opcode
 			if (buddy) {
 				if (size < 17 || buddy->socket == NULL)
 					break;
-
-				/** Preserve the fixed 10-byte callback prefix before rewriting and forwarding the payload. */
-				const UINT nCallbackPayloadSize = size - 10;
 				if (md4equ(packet, buddy->GetBuddyID())) {
 					PokeUInt32(const_cast<BYTE*>(packet) + 10, ip);
 					PokeUInt16(const_cast<BYTE*>(packet) + 14, port);
 					Packet *response = new Packet(OP_EMULEPROT);
 					response->opcode = OP_REASKCALLBACKTCP;
-					response->pBuffer = new char[nCallbackPayloadSize];
-					memcpy(response->pBuffer, packet + 10, nCallbackPayloadSize);
-					response->size = nCallbackPayloadSize;
+					response->pBuffer = new char[size];
+					memcpy(response->pBuffer, packet + 10, size - 10);
+					response->size = size - 10;
 					if (thePrefs.GetDebugClientTCPLevel() > 0)
 						DebugSend("OP_ReaskCallbackTCP", buddy);
 					theStats.AddUpDataOverheadFileRequest(response->size);

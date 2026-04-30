@@ -80,13 +80,10 @@ BOOL CAddFriend::OnInitDialog()
 			SetDlgItemText(IDC_LAST_CHATTED, t.Format(thePrefs.GetDateTimeFormat()));
 		}*/
 
-		if (CWnd *pAddWnd = GetDlgItem(IDC_ADD))
-			pAddWnd->ShowWindow(SW_HIDE);
+		GetDlgItem(IDC_ADD)->ShowWindow(SW_HIDE);
 	} else {
 		SetIcon(m_icoWnd = theApp.LoadIcon(_T("AddFriend")), FALSE);
-		/** Guard the editable nickname control so template drift degrades without crashing. */
-		if (CEdit *pUserNameEdit = static_cast<CEdit*>(GetDlgItem(IDC_USERNAME)))
-			pUserNameEdit->SetLimitText(thePrefs.GetMaxUserNickLength());
+		static_cast<CEdit*>(GetDlgItem(IDC_USERNAME))->SetLimitText(thePrefs.GetMaxUserNickLength());
 		SetDlgItemText(IDC_USERHASH, _T(""));
 	}
 	return TRUE;

@@ -34,98 +34,6 @@ static char THIS_FILE[] = __FILE__;
 
 static TCHAR const sCaptchaCharSet[] = _T("ABCDEFGHIJKLMNPQRSTUVWXYZ123456789");
 
-namespace
-{
-	/**
-	 * Deletes a GDI object automatically unless ownership was explicitly handed
-	 * off to another container.
-	 */
-	class CScopedDeleteGdiObject
-	{
-	public:
-		explicit CScopedDeleteGdiObject(HGDIOBJ hObject = NULL)
-			: m_hObject(hObject)
-		{
-		}
-
-		~CScopedDeleteGdiObject()
-		{
-			if (m_hObject != NULL)
-				::DeleteObject(m_hObject);
-		}
-
-		HGDIOBJ Get() const
-		{
-			return m_hObject;
-		}
-
-		HGDIOBJ Release()
-		{
-			HGDIOBJ hObject = m_hObject;
-			m_hObject = NULL;
-			return hObject;
-		}
-
-	private:
-		HGDIOBJ m_hObject;
-	};
-
-	/**
-	 * Deletes a scratch memory DC automatically on every return path.
-	 */
-	class CScopedDeleteDc
-	{
-	public:
-		explicit CScopedDeleteDc(HDC hDC = NULL)
-			: m_hDC(hDC)
-		{
-		}
-
-		~CScopedDeleteDc()
-		{
-			if (m_hDC != NULL)
-				::DeleteDC(m_hDC);
-		}
-
-		HDC Get() const
-		{
-			return m_hDC;
-		}
-
-	private:
-		HDC m_hDC;
-	};
-
-	/**
-	 * Restores the previously selected GDI object automatically so exception
-	 * unwinding cannot strand temporary fonts or bitmaps in a DC.
-	 */
-	class CScopedSelectObject
-	{
-	public:
-		CScopedSelectObject(HDC hDC, HGDIOBJ hObject)
-			: m_hDC(hDC)
-			, m_hPrevious(m_hDC != NULL && hObject != NULL ? ::SelectObject(m_hDC, hObject) : NULL)
-		{
-		}
-
-		~CScopedSelectObject()
-		{
-			if (m_hDC != NULL && m_hPrevious != NULL && m_hPrevious != HGDI_ERROR)
-				::SelectObject(m_hDC, m_hPrevious);
-		}
-
-		bool IsValid() const
-		{
-			return m_hPrevious != NULL && m_hPrevious != HGDI_ERROR;
-		}
-
-	private:
-		HDC m_hDC;
-		HGDIOBJ m_hPrevious;
-	};
-}
-
 CCaptchaGenerator::CCaptchaGenerator(uint32 nLetterCount)
 	: m_hbmpCaptcha()
 {
@@ -149,28 +57,23 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 	bmiMono.bmiHeader.biBitCount = 1;
 	bmiMono.bmiHeader.biCompression = BI_RGB;
 	void *pv;
-	CScopedDeleteGdiObject hbmpCaptcha(::CreateDIBSection(NULL, (BITMAPINFO*)&bmiMono, DIB_RGB_COLORS, &pv, NULL, 0));
+	m_hbmpCaptcha = ::CreateDIBSection(NULL, (BITMAPINFO*)&bmiMono, DIB_RGB_COLORS, &pv, NULL, 0);
 	bmiMono.bmiHeader.biWidth = LETTERSIZE;
-	CScopedDeleteGdiObject hBitMem(::CreateDIBSection(NULL, (BITMAPINFO*)&bmiMono, DIB_RGB_COLORS, &pv, NULL, 0));
+	HBITMAP hBitMem = ::CreateDIBSection(NULL, (BITMAPINFO*)&bmiMono, DIB_RGB_COLORS, &pv, NULL, 0);
 
 	int nFontSize = 40;
 	LOGFONT m_LF = { 0 };
 	m_LF.lfHeight = nFontSize;
 	m_LF.lfWeight = FW_HEAVY;
 	_tcsncpy(m_LF.lfFaceName, _T("Arial"), LF_FACESIZE - 1);	// For UNICODE support
-	CScopedDeleteGdiObject hFont(CreateFontIndirect(&m_LF));
+	HFONT hFont = CreateFontIndirect(&m_LF);
 
-	CScopedDeleteDc hdc(::CreateCompatibleDC(NULL));
-	CScopedDeleteDc hdcMem(::CreateCompatibleDC(NULL));
-	ASSERT(hdc.Get() && hdcMem.Get() && hbmpCaptcha.Get() && hBitMem.Get() && hFont.Get());
-	if (!hdc.Get() || !hdcMem.Get() || !hbmpCaptcha.Get() || !hBitMem.Get() || !hFont.Get())
-		return;
-
-	CScopedSelectObject selectCaptchaBitmap(hdc.Get(), hbmpCaptcha.Get());
-	CScopedSelectObject selectMemBitmap(hdcMem.Get(), hBitMem.Get());
-	CScopedSelectObject selectMemFont(hdcMem.Get(), hFont.Get());
-	if (!selectCaptchaBitmap.IsValid() || !selectMemBitmap.IsValid() || !selectMemFont.IsValid())
-		return;
+	HDC hdc = ::CreateCompatibleDC(NULL);
+	HDC hdcMem = ::CreateCompatibleDC(NULL);
+	HBITMAP hBitmapOld = (HBITMAP)::SelectObject(hdc, m_hbmpCaptcha);
+	HBITMAP hBitMemOld = (HBITMAP)::SelectObject(hdcMem, hBitMem);
+	HFONT hFontOld = (HFONT)::SelectObject(hdcMem, hFont);
+	ASSERT(hdc && hdcMem && m_hbmpCaptcha && hBitMem && hFont);
 
 	WCHAR wT[2] = { 0 };
 	int xOff = (CROWDEDSIZE) / 2;
@@ -178,8 +81,8 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 		*wT = sCaptchaCharSet[rand() % (_countof(sCaptchaCharSet) - 1)];
 		m_strCaptchaText += *wT;
 		RECT r{0, 0, (LETTERSIZE), (LETTERSIZE) };
-		::DrawText(hdcMem.Get(), wT, 1, &r, DT_TOP | DT_LEFT | DT_CALCRECT);
-		::DrawText(hdcMem.Get(), wT, 1, &r, DT_TOP | DT_LEFT);
+		::DrawText(hdcMem, wT, 1, &r, DT_TOP | DT_LEFT | DT_CALCRECT);
+		::DrawText(hdcMem, wT, 1, &r, DT_TOP | DT_LEFT);
 		float scale = (nFontSize - (rand() % 10)) / (float)nFontSize;
 		float angle = (35 - (rand() % 71)) * (float)M_PI / 180;
 		float co = cosf(angle);
@@ -196,13 +99,19 @@ void CCaptchaGenerator::ReGenerateCaptcha(uint32 nLetterCount)
 		ap[1].y = (LONG)(y2 + scale * (r2.right * si + r2.top * co));
 		ap[2].x = (LONG)(x2 + scale * (r2.left * co - r2.bottom * si));
 		ap[2].y = (LONG)(y2 + scale * (r2.left * si + r2.bottom * co));
-		::PlgBlt(hdc.Get(), ap, hdcMem.Get(), 0, 0, r.right - r.left, r.bottom - r.top, NULL, 0, 0);
+		::PlgBlt(hdc, ap, hdcMem, 0, 0, r.right - r.left, r.bottom - r.top, NULL, 0, 0);
 		xOff += CROWDEDSIZE;
 	}
 	for (int j = nWidth * nHeight / 4; --j > 0;) //add noise
-		::SetPixel(hdc.Get(), rand() % nWidth, rand() % nHeight, RGB(0, 0, 0));
+		::SetPixel(hdc, rand() % nWidth, rand() % nHeight, RGB(0, 0, 0));
 
-	m_hbmpCaptcha = (HBITMAP)hbmpCaptcha.Release();
+	::SelectObject(hdcMem, hFontOld);
+	::DeleteObject(hFont);
+	::SelectObject(hdcMem, hBitMemOld);
+	::DeleteObject(hBitMem);
+	::DeleteDC(hdcMem);
+	::SelectObject(hdc, hBitmapOld);
+	::DeleteDC(hdc);
 #if TEST_FRAMEGRABBER //reusing macro from FrameGrabThread
 	CImage captcha;
 	captcha.Attach(m_hbmpCaptcha);
