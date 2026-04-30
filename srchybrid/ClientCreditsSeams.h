@@ -4,7 +4,10 @@
 #include <cstring>
 #include <limits>
 
+#include "types.h"
+
 #define EMULE_TEST_HAVE_CLIENT_CREDITS_BUFFER_SEAMS 1
+#define EMULE_TEST_HAVE_CLIENT_CREDITS_FAILURE_POLICY_SEAMS 1
 
 struct ClientCreditsChallengeLayout
 {
@@ -33,6 +36,22 @@ inline bool TryBuildClientCreditsChallengeLayout(const size_t nKeyLength, const 
 inline bool CanStoreClientCreditsSignature(const size_t nSignatureLength, const size_t nMaxSize)
 {
 	return nSignatureLength <= nMaxSize;
+}
+
+/**
+ * @brief Keeps failed secure-ident signature creation on the historical zero-length failure result.
+ */
+inline uint8 GetClientCreditsSignatureFailureResult()
+{
+	return 0u;
+}
+
+/**
+ * @brief Mirrors the existing verbose-only debug logging policy for non-fatal secure-ident failures.
+ */
+inline bool ShouldLogClientCreditsFailureDetail(const bool bVerboseLogging)
+{
+	return bVerboseLogging;
 }
 
 /**

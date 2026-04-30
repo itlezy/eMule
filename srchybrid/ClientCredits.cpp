@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "ClientCredits.h"
+#include "ClientCreditsSeams.h"
 #include "OtherFunctions.h"
 #include "Preferences.h"
 #include "SafeFile.h"
@@ -407,7 +408,7 @@ void CClientCreditsList::InitalizeCrypting()
 		asink.MessageEnd();
 	} catch (...) {
 		delete m_pSignkey;
-		m_pSignkey = NULL;
+		ResetClientCreditsCryptState(m_pSignkey, m_abyMyPublicKey, m_nMyPublicKeyLen);
 		LogError(LOG_STATUSBAR, GetResString(IDS_CRYPT_INITFAILED));
 		ASSERT(0);
 	}
@@ -432,7 +433,7 @@ bool CClientCreditsList::CreateKeyPair()
 			AddDebugLogLine(false, _T("Created new RSA keypair"));
 		return true;
 	} catch (...) {
-		if (thePrefs.GetVerbose())
+		if (ShouldLogClientCreditsFailureDetail(thePrefs.GetVerbose()))
 			AddDebugLogLine(false, _T("Failed to create new RSA keypair"));
 		ASSERT(0);
 	}
@@ -449,33 +450,44 @@ uint8 CClientCreditsList::CreateSignature(CClientCredits *pTarget, uchar *pachOu
 
 	// create a signature of the public key from pTarget
 	if (!CryptoAvailable())
-		return 0;
+		return GetClientCreditsSignatureFailureResult();
 	try {
 		SecByteBlock sbbSignature(sigkey->SignatureLength());
+		if (!CanStoreClientCreditsSignature(sbbSignature.size(), nMaxSize)) {
+			if (ShouldLogClientCreditsFailureDetail(thePrefs.GetVerbose()))
+				AddDebugLogLine(false, _T("Failed to create secure-ident signature: output buffer too small (%u < %Iu)"), nMaxSize, sbbSignature.size());
+			return GetClientCreditsSignatureFailureResult();
+		}
+
 		AutoSeededRandomPool rng;
 		byte abyBuffer[MAXPUBKEYSIZE + 9];
 		size_t keylen = pTarget->GetSecIDKeyLen();
+		ClientCreditsChallengeLayout layout = {};
+		if (!TryBuildClientCreditsChallengeLayout(keylen, byChaIPKind != 0, layout)) {
+			if (ShouldLogClientCreditsFailureDetail(thePrefs.GetVerbose()))
+				AddDebugLogLine(false, _T("Failed to create secure-ident signature: invalid public key length %Iu"), keylen);
+			return GetClientCreditsSignatureFailureResult();
+		}
+
 		memcpy(abyBuffer, pTarget->GetSecureIdent(), keylen);
 		// 4 additional bytes of random data sent from this client
 		uint32 challenge = pTarget->m_dwCryptRndChallengeFrom;
 		ASSERT(challenge);
 		PokeUInt32(&abyBuffer[keylen], challenge);
-		size_t ChIpLen;
-		if (byChaIPKind == 0)
-			ChIpLen = 0;
-		else {
-			ChIpLen = 5;
+		if (byChaIPKind != 0) {
 			PokeUInt32(&abyBuffer[keylen + 4], ChallengeIP);
 			abyBuffer[keylen + 4 + 4] = byChaIPKind;
 		}
-		sigkey->SignMessage(rng, abyBuffer, keylen + 4 + ChIpLen, sbbSignature.begin());
+		sigkey->SignMessage(rng, abyBuffer, layout.nMessageLength, sbbSignature.begin());
 		ArraySink asink(pachOutput, nMaxSize);
 		asink.Put(sbbSignature.begin(), sbbSignature.size());
 		return (uint8)asink.TotalPutLength();
 	} catch (...) {
+		if (ShouldLogClientCreditsFailureDetail(thePrefs.GetVerbose()))
+			AddDebugLogLine(false, _T("Failed to create secure-ident signature due to an unexpected exception"));
 		ASSERT(0);
 	}
-	return 0;
+	return GetClientCreditsSignatureFailureResult();
 }
 
 bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget, const uchar *pachSignature, uint8 nInputSize,
@@ -493,41 +505,47 @@ bool CClientCreditsList::VerifyIdent(CClientCredits *pTarget, const uchar *pachS
 		RSASSA_PKCS1v15_SHA_Verifier pubkey(ss_Pubkey);
 		// 4 additional bytes random data send from this client +5 bytes v2
 		byte abyBuffer[MAXPUBKEYSIZE + 9];
-		memcpy(abyBuffer, m_abyMyPublicKey, m_nMyPublicKeyLen);
-		uint32 challenge = pTarget->m_dwCryptRndChallengeFor;
-		ASSERT(challenge);
-		PokeUInt32(&abyBuffer[m_nMyPublicKeyLen], challenge);
-
-		// v2 security improvements (not supported by 29b, not used as default by 29c)
-		size_t nChIpSize;
-		if (byChaIPKind == 0)
-			nChIpSize = 0;
-		else {
-			nChIpSize = 5;
-			uint32 ChallengeIP = 0;
-			switch (byChaIPKind) {
-			case CRYPT_CIP_LOCALCLIENT:
-				ChallengeIP = dwForIP;
-				break;
-			case CRYPT_CIP_REMOTECLIENT:
-				if (theApp.serverconnect->GetClientID() == 0 || theApp.serverconnect->IsLowID()) {
-					if (thePrefs.GetLogSecureIdent())
-						AddDebugLogLine(false, _T("Warning: Maybe SecureHash Ident fails because LocalIP is unknown"));
-					ChallengeIP = theApp.serverconnect->GetLocalIP();
-				} else
-					ChallengeIP = theApp.serverconnect->GetClientID();
-				break;
-			case CRYPT_CIP_NONECLIENT: // maybe not supported in future versions
-				ChallengeIP = 0;
-			}
-			PokeUInt32(&abyBuffer[m_nMyPublicKeyLen + 4], ChallengeIP);
-			abyBuffer[m_nMyPublicKeyLen + 4 + 4] = byChaIPKind;
+		ClientCreditsChallengeLayout layout = {};
+		bool bCanBuildChallenge = TryBuildClientCreditsChallengeLayout(m_nMyPublicKeyLen, byChaIPKind != 0, layout);
+		if (!bCanBuildChallenge) {
+			if (ShouldLogClientCreditsFailureDetail(thePrefs.GetVerbose()))
+				AddDebugLogLine(false, _T("Error: Invalid secure-ident public key length in %hs"), __FUNCTION__);
 		}
-		//v2 end
 
-		bResult = pubkey.VerifyMessage(abyBuffer, m_nMyPublicKeyLen + 4 + nChIpSize, pachSignature, nInputSize);
+		if (bCanBuildChallenge) {
+			memcpy(abyBuffer, m_abyMyPublicKey, m_nMyPublicKeyLen);
+			uint32 challenge = pTarget->m_dwCryptRndChallengeFor;
+			ASSERT(challenge);
+			PokeUInt32(&abyBuffer[m_nMyPublicKeyLen], challenge);
+
+			// v2 security improvements (not supported by 29b, not used as default by 29c)
+			if (byChaIPKind != 0) {
+				uint32 ChallengeIP = 0;
+				switch (byChaIPKind) {
+				case CRYPT_CIP_LOCALCLIENT:
+					ChallengeIP = dwForIP;
+					break;
+				case CRYPT_CIP_REMOTECLIENT:
+					if (theApp.serverconnect->GetClientID() == 0 || theApp.serverconnect->IsLowID()) {
+						if (thePrefs.GetLogSecureIdent())
+							AddDebugLogLine(false, _T("Warning: Maybe SecureHash Ident fails because LocalIP is unknown"));
+						ChallengeIP = theApp.serverconnect->GetLocalIP();
+					} else
+						ChallengeIP = theApp.serverconnect->GetClientID();
+					break;
+				case CRYPT_CIP_NONECLIENT: // maybe not supported in future versions
+					ChallengeIP = 0;
+				}
+				PokeUInt32(&abyBuffer[m_nMyPublicKeyLen + 4], ChallengeIP);
+				abyBuffer[m_nMyPublicKeyLen + 4 + 4] = byChaIPKind;
+			}
+			//v2 end
+
+			bResult = pubkey.VerifyMessage(abyBuffer, layout.nMessageLength, pachSignature, nInputSize);
+		} else
+			bResult = false;
 	} catch (...) {
-		if (thePrefs.GetVerbose())
+		if (ShouldLogClientCreditsFailureDetail(thePrefs.GetVerbose()))
 			AddDebugLogLine(false, _T("Error: Unknown exception in %hs"), __FUNCTION__);
 		//ASSERT(0);
 		bResult = false;
