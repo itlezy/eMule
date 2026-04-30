@@ -19,7 +19,6 @@
 #include "resource.h"
 #include "opcodes.h"
 #include "ED2KLink.h"
-#include "ProtocolGuards.h"
 #include "SafeFile.h"
 #include "StringConversion.h"
 #include "preferences.h"
@@ -381,8 +380,8 @@ CED2KFileLink::CED2KFileLink(LPCTSTR pszName, LPCTSTR pszSize, LPCTSTR pszHash
 			++nInvalid;
 			continue;
 		}
-		uint32 dwID = 0;
-		if (!TryParseDottedIPv4Literal(sIPa, &dwID)) {	// host name?
+		unsigned long dwID = inet_addr(sIPa);
+		if (dwID == INADDR_NONE) {	// host name?
 			if (_tcslen(pIP) > 512) {
 				++nInvalid;
 				continue;

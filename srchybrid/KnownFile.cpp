@@ -33,7 +33,6 @@
 #include "Preferences.h"
 #include "PartFile.h"
 #include "Packets.h"
-#include "ProtocolGuards.h"
 #include "Kademlia/Kademlia/SearchManager.h"
 #include "Kademlia/Kademlia/Entry.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -437,9 +436,7 @@ bool CKnownFile::CreateFromFile(LPCTSTR in_directory, LPCTSTR in_filename, LPVOI
 
 			ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->IsKindOf(RUNTIME_CLASS(CKnownFile)));
 			ASSERT(reinterpret_cast<CKnownFile*>(pvProgressParam)->GetFileSize() == GetFileSize());
-			const uint64 nFileSize = static_cast<uint64>(GetFileSize());
-			const uint64 nBytesHashed = nFileSize >= togo ? nFileSize - togo : 0;
-			WPARAM uProgress = static_cast<WPARAM>(CalculateProgressPercent(nBytesHashed, nFileSize));
+			WPARAM uProgress = (WPARAM)(100 - (togo * 100) / (uint64)GetFileSize());
 			ASSERT(uProgress <= 100);
 			VERIFY(theApp.emuledlg->PostMessage(TM_FILEOPPROGRESS, uProgress, (LPARAM)pvProgressParam));
 		}

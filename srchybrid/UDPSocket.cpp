@@ -215,11 +215,7 @@ void CUDPSocket::OnReceive(int nErrorCode)
 		}
 		OracleUdpDump(_T("recv"), _T("server_udp"), sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port), buffer, length, strMetadata, pBuffer, nPayLoadLen);
 
-		/** Require the protocol byte and opcode byte before touching the UDP payload header. */
-		if (nPayLoadLen < 2) {
-			if (thePrefs.GetDebugServerUDPLevel() > 0)
-				Debug(_T("***NOTE: ServerUDPMessage from %s:%u - Packet too short (%d bytes)\n"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4, nPayLoadLen);
-		} else if (pBuffer[0] == OP_EDONKEYPROT)
+		if (pBuffer[0] == OP_EDONKEYPROT)
 			ProcessPacket(pBuffer + 2, nPayLoadLen - 2, pBuffer[1], sockAddr.sin_addr.s_addr, ntohs(sockAddr.sin_port));
 		else if (thePrefs.GetDebugServerUDPLevel() > 0)
 			Debug(_T("***NOTE: ServerUDPMessage from %s:%u - Unknown protocol 0x%02x, Encrypted: %s\n"), (LPCTSTR)ipstr(sockAddr.sin_addr), ntohs(sockAddr.sin_port) - 4, pBuffer[0], (nPayLoadLen == length) ? _T("Yes") : _T("No"));

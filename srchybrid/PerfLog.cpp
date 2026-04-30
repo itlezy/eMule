@@ -78,15 +78,11 @@ void CPerfLog::Startup()
 			_tsplitpath(m_strFilePath, drv, dir, nam, NULL);
 			m_strFilePath.Empty();
 
-			if (_tmakepathlimit(m_strMRTGDataFilePath.GetBuffer(MAX_PATH), drv, dir, CString(nam) + _T("_data"), _T("mrtg")))
-				m_strMRTGDataFilePath.ReleaseBuffer();
-			else
-				m_strMRTGDataFilePath.ReleaseBuffer(0);
+			_tmakepathlimit(m_strMRTGDataFilePath.GetBuffer(MAX_PATH), drv, dir, CString(nam) + _T("_data"), _T("mrtg"));
+			m_strMRTGDataFilePath.ReleaseBuffer();
 
-			if (_tmakepathlimit(m_strMRTGOverheadFilePath.GetBuffer(MAX_PATH), drv, dir, CString(nam) + _T("_overhead"), _T("mrtg")))
-				m_strMRTGOverheadFilePath.ReleaseBuffer();
-			else
-				m_strMRTGOverheadFilePath.ReleaseBuffer(0);
+			_tmakepathlimit(m_strMRTGOverheadFilePath.GetBuffer(MAX_PATH), drv, dir, CString(nam) + _T("_overhead"), _T("mrtg"));
+			m_strMRTGOverheadFilePath.ReleaseBuffer();
 		}
 
 		m_dwInterval = MIN2MS(ini.GetInt(_T("Interval"), 5));

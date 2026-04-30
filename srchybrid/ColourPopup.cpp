@@ -487,8 +487,6 @@ int CColourPopup::GetRow(int nIndex) const
 		return DEFAULT_BOX_VALUE;
 	if (nIndex < 0 || nIndex >= m_nNumColours)
 		return INVALID_COLOUR;
-	if (m_nNumColumns <= 0)
-		return INVALID_COLOUR;
 	return nIndex / m_nNumColumns;
 }
 
@@ -499,8 +497,6 @@ int CColourPopup::GetColumn(int nIndex) const
 	if (nIndex == DEFAULT_BOX_VALUE && m_strDefaultText.GetLength())
 		return DEFAULT_BOX_VALUE;
 	if (nIndex < 0 || nIndex >= m_nNumColours)
-		return INVALID_COLOUR;
-	if (m_nNumColumns <= 0)
 		return INVALID_COLOUR;
 	return nIndex % m_nNumColumns;
 }
@@ -586,9 +582,8 @@ void CColourPopup::SetWindowSize()
 	// Get the number of columns and rows
 	//m_nNumColumns = (int) sqrt((double)m_nNumColours);    // for a square window (yuk)
 	m_nNumColumns = 8;
-	ASSERT(m_nNumColumns > 0);
-	m_nNumRows = (m_nNumColumns > 0) ? (m_nNumColours / m_nNumColumns) : 0;
-	if (m_nNumColumns > 0 && (m_nNumColours % m_nNumColumns))
+	m_nNumRows = m_nNumColours / m_nNumColumns;
+	if (m_nNumColours % m_nNumColumns)
 		++m_nNumRows;
 
 	// Get the current window position, and set the new size
@@ -688,8 +683,7 @@ void CColourPopup::ChangeSelection(int nIndex)
 		Colour = m_crInitialColour;
 	else
 		Colour = m_crColour = (m_nCurrentSel == DEFAULT_BOX_VALUE ? CLR_DEFAULT : GetColour(m_nCurrentSel));
-	if (m_pParent != NULL && ::IsWindow(m_pParent->m_hWnd))
-		m_pParent->SendMessage(UM_CPN_SELCHANGE, (WPARAM)Colour, 0);
+	m_pParent->SendMessage(UM_CPN_SELCHANGE, (WPARAM)Colour, 0);
 }
 
 void CColourPopup::EndSelection(int nMessage)
@@ -713,9 +707,7 @@ void CColourPopup::EndSelection(int nMessage)
 	if (nMessage == UM_CPN_SELENDCANCEL)
 		m_crColour = m_crInitialColour;
 
-	/** Only notify a live parent window; popup shutdown can race owner destruction. */
-	if (m_pParent != NULL && ::IsWindow(m_pParent->m_hWnd))
-		m_pParent->SendMessage(nMessage, (WPARAM)m_crColour, 0);
+	m_pParent->SendMessage(nMessage, (WPARAM)m_crColour, 0);
 
 	// Kill focus bug fixed by Martin Wawrusch
 	if (!m_bChildWindowVisible)

@@ -309,10 +309,8 @@ bool CUrlClient::ProcessHttpDownResponse(const CStringAArray &astrHeaders)
 
 		// the tricky part
 		socket->Safe_Delete();		// mark our parent object for getting deleted!
-		if (!TryToConnect(true)) {	// replace our parent object with a new one
-			delete this;
+		if (!TryToConnect(true))	// replace our parent object with a new one
 			throwCStr(_T("Failed to connect to redirected URL"));
-		}
 		return false;				// tell our old parent object (which was marked as to get deleted
 									// and which is no longer attached to us) to disconnect.
 	}

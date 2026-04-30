@@ -200,8 +200,8 @@ bool CUpDownClient::Compare(const CUpDownClient *tocomp, bool bIgnoreUserhash) c
 }
 
 // Return bool is not if you asked or not.
-// false = caller must delete the client immediately and stop using the pointer.
-// true = client object is still alive.
+// false = Client was deleted!
+// true = client was not deleted!
 bool CUpDownClient::AskForDownload()
 {
 	TraceParityKadDownloadClientEvent("kad_source_ask", this, "enter");

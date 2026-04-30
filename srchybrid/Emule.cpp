@@ -1643,7 +1643,7 @@ bool CemuleApp::CopyTextToClipboard(const CString &strText)
 	if (hGlobalA != NULL) {
 		LPSTR pGlobalA = static_cast<LPSTR>(::GlobalLock(hGlobalA));
 		if (pGlobalA != NULL) {
-			memcpy(pGlobalA, (LPCSTR)strTextA, strTextA.GetLength() + 1);
+			strcpy(pGlobalA, strTextA);
 			::GlobalUnlock(hGlobalA);
 		} else {
 			::GlobalFree(hGlobalA);
