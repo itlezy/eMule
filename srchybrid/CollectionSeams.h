@@ -6,6 +6,7 @@
 #include "types.h"
 
 #define EMULE_TEST_HAVE_COLLECTION_OWNERSHIP_SEAMS 1
+#define EMULE_TEST_HAVE_COLLECTION_REJECTED_IMPORT_SEAM 1
 
 struct CollectionSignatureLayout
 {
@@ -46,6 +47,14 @@ inline bool TryConvertCollectionSerializedLength(const ULONGLONG nSerializedLeng
  * @brief Keeps collection import tolerant of malformed individual entries while continuing the outer file load.
  */
 inline bool ShouldContinueAfterCollectionEntryFailure()
+{
+	return true;
+}
+
+/**
+ * @brief Treats rejected imported collection entries as still owned by the importer.
+ */
+inline bool ShouldDisposeRejectedCollectionImportEntry()
 {
 	return true;
 }

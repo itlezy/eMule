@@ -53,6 +53,11 @@ public:
 	bool m_bTextFormat;
 
 private:
+	/**
+	 * @brief Adopts an imported collection file only after it is accepted by the collection map.
+	 */
+	bool	AddImportedFileToCollection(CCollectionFile *pCollectionFile);
+
 	uint32	m_nKeySize;
 	CCollectionFilesMap m_CollectionFilesMap;
 	byte	*m_pabyCollectionAuthorKey;

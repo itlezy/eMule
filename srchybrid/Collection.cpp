@@ -28,6 +28,8 @@
 #include "md5sum.h"
 #include "OtherFunctions.h"
 
+#include <memory>
+
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -99,6 +101,21 @@ CCollectionFile* CCollection::AddFileToCollection(CAbstractFile *pAbstractFile, 
 	return pCollectionFile;
 }
 
+bool CCollection::AddImportedFileToCollection(CCollectionFile *pCollectionFile)
+{
+	if (pCollectionFile == NULL)
+		return false;
+
+	std::unique_ptr<CCollectionFile> ownedFile(pCollectionFile);
+	CCollectionFile *pAddedFile = AddFileToCollection(ownedFile.get(), false);
+	if (pAddedFile == ownedFile.get()) {
+		ownedFile.release();
+		return true;
+	}
+
+	return false;
+}
+
 void CCollection::RemoveFileFromCollection(const CAbstractFile *pAbstractFile)
 {
 	CSKey key(pAbstractFile->GetFileHash());
@@ -151,8 +168,10 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 			}
 			for (uint32 fileCount = data.ReadUInt32(); fileCount > 0; --fileCount)
 				try {
-					CCollectionFile *pCollectionFile = new CCollectionFile(data);
-					AddFileToCollection(pCollectionFile, false);
+					AddImportedFileToCollection(new CCollectionFile(data));
+				} catch (CFileException *ex) {
+					DebugLogWarning(_T("Collection load: skipped one unreadable binary entry in '%s' - %s"), (LPCTSTR)sFilePath, (LPCTSTR)CExceptionStr(*ex));
+					ex->Delete();
 				} catch (...) {
 					DebugLogWarning(_T("Collection load: skipped one invalid binary entry in '%s'"), (LPCTSTR)sFilePath);
 					ASSERT(0);
@@ -214,11 +233,9 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 					//These lines can be used for future features.
 					if (sLink.Find(_T('#')) != 0) {
 						try {
-							CCollectionFile *pCollectionFile = new CCollectionFile();
+							std::unique_ptr<CCollectionFile> pCollectionFile(new CCollectionFile());
 							if (pCollectionFile->InitFromLink(sLink))
-								AddFileToCollection(pCollectionFile, false);
-							else
-								delete pCollectionFile;
+								AddImportedFileToCollection(pCollectionFile.release());
 						} catch (...) {
 							DebugLogWarning(_T("Collection load: unexpected exception while parsing a text entry in '%s'"), (LPCTSTR)sFilePath);
 							ASSERT(0);
