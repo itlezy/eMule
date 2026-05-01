@@ -2787,7 +2787,7 @@ void CPreferences::LoadPreferences()
 	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
 	transferDoubleclick = ini.GetBool(_T("TransferDoubleClick"), true);
 	beepOnError = ini.GetBool(_T("BeepOnError"), false);
-	confirmExit = ini.GetBool(_T("ConfirmExit"), true);
+	confirmExit = ini.GetBool(_T("ConfirmExit"), false);
 	filterLANIPs = ini.GetBool(_T("FilterBadIPs"), true);
 	m_bAllocLocalHostIP = ini.GetBool(_T("AllowLocalHostIP"), false);
 	autoconnect = ini.GetBool(_T("Autoconnect"), false);
