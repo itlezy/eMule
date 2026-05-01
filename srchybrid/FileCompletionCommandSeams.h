@@ -18,7 +18,7 @@ struct CompletionCommandContext
 	CString fileName;
 	CString fileHash;
 	CString categoryName;
-	uint64 fileSize = 0;
+	unsigned __int64 fileSize = 0;
 };
 
 struct CompletionCommandLaunchRequest
