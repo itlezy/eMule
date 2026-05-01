@@ -40,6 +40,7 @@
 #include "Preferences.h"
 #include "PartFileHashSeams.h"
 #include "PartFileCompletionSeams.h"
+#include "FileCompletionCommandSeams.h"
 #include "PartFilePauseResumeSeams.h"
 #include "PartFilePreviewSeams.h"
 #include "PartFilePersistenceSeams.h"
@@ -116,6 +117,61 @@ bool QueuePartFileProgressUpdate(const CKnownFileProgressTargetSnapshot &progres
 		return false;
 	}
 	return true;
+}
+
+/** Launches the optional post-completion executable for one retained completed file. */
+void LaunchFileCompletionCommand(const CPartFile &partFile, const UINT nCompletedCategory)
+{
+	FileCompletionCommandSeams::CompletionCommandContext context;
+	context.enabled = thePrefs.GetRunCommandOnFileCompletion();
+	context.appClosing = theApp.IsClosing();
+	context.completionSucceeded = true;
+	context.knownFileAdded = true;
+	context.programPath = thePrefs.GetFileCompletionProgram();
+	context.argumentTemplate = thePrefs.GetFileCompletionArguments();
+	context.filePath = partFile.GetFilePath();
+	context.directory = partFile.GetPath();
+	context.fileName = partFile.GetFileName();
+	context.fileHash = md4str(partFile.GetFileHash());
+	context.fileSize = static_cast<uint64>(partFile.GetFileSize());
+	const Category_Struct *const pCategory = thePrefs.GetCategory(nCompletedCategory);
+	context.categoryName = pCategory != NULL ? pCategory->strTitle : CString();
+
+	FileCompletionCommandSeams::CompletionCommandLaunchRequest launchRequest;
+	if (!FileCompletionCommandSeams::TryBuildLaunchRequest(context, launchRequest))
+		return;
+
+	STARTUPINFO startupInfo = {};
+	startupInfo.cb = sizeof(startupInfo);
+	startupInfo.dwFlags = STARTF_USESHOWWINDOW;
+	startupInfo.wShowWindow = SW_SHOWMINNOACTIVE;
+
+	PROCESS_INFORMATION processInfo = {};
+	LPTSTR pszCommandLine = launchRequest.commandLine.GetBuffer();
+	const BOOL bCreated = ::CreateProcess(
+		launchRequest.applicationName,
+		pszCommandLine,
+		NULL,
+		NULL,
+		FALSE,
+		0,
+		NULL,
+		launchRequest.workingDirectory.IsEmpty() ? NULL : (LPCTSTR)launchRequest.workingDirectory,
+		&startupInfo,
+		&processInfo);
+	const DWORD dwError = bCreated ? ERROR_SUCCESS : ::GetLastError();
+	launchRequest.commandLine.ReleaseBuffer();
+
+	if (!bCreated) {
+		LogWarning(LOG_DONTNOTIFY, _T("Failed to launch file completion program \"%s\" for \"%s\" - %s"),
+			(LPCTSTR)launchRequest.applicationName,
+			(LPCTSTR)partFile.GetFilePath(),
+			(LPCTSTR)GetErrorMessage(dwError, 1));
+		return;
+	}
+
+	VERIFY(::CloseHandle(processInfo.hThread));
+	VERIFY(::CloseHandle(processInfo.hProcess));
 }
 
 struct CPartFileCopyProgressContext
@@ -3179,6 +3235,7 @@ void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 				m_pCollection = NULL;
 			}
 		}
+		LaunchFileCompletionCommand(*this, nCompletedCategory);
 	}
 
 	theApp.downloadqueue->StartNextFileIfPrefs(GetCategory());
