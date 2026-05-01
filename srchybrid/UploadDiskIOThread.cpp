@@ -402,10 +402,15 @@ bool CUploadDiskIOThread::ShouldCompressBasedOnFilename(const CString &strFileNa
 		return true; //no extension
 	CString strExt(&pDot[1]);
 	strExt.MakeLower();
-	if (strExt == _T("avi"))
-		return !thePrefs.GetDontCompressAvi();
 
-	static LPCTSTR const exts[] = { _T("zip"), _T("rar"), _T("7z"), _T("cbz"), _T("cbr"), _T("ogm"), _T("ace"), NULL };
+	static LPCTSTR const exts[] = {
+		_T("7z"), _T("aac"), _T("ace"), _T("apk"), _T("avi"), _T("bz2"), _T("cab"), _T("cbr"), _T("cbz"),
+		_T("docx"), _T("flac"), _T("flv"), _T("gif"), _T("gz"), _T("jar"), _T("jpeg"), _T("jpg"), _T("lz"),
+		_T("lzma"), _T("m2ts"), _T("m4a"), _T("m4v"), _T("mkv"), _T("mov"), _T("mp3"), _T("mp4"), _T("mpeg"),
+		_T("mpg"), _T("mts"), _T("odp"), _T("ods"), _T("odt"), _T("ogg"), _T("ogm"), _T("opus"), _T("pdf"),
+		_T("png"), _T("pptx"), _T("rar"), _T("ts"), _T("vob"), _T("webm"), _T("webp"), _T("wma"), _T("wmv"),
+		_T("xlsx"), _T("xz"), _T("zip"), _T("zst"), NULL
+	};
 	for (LPCTSTR ext = *exts; *ext; ++ext)
 		if (strExt == ext)
 			return false;

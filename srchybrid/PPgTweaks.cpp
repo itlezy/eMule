@@ -263,11 +263,6 @@ namespace
 		return _T("Intelligent Corruption Handling");
 	}
 
-	static CString GetDontCompressAviLabel()
-	{
-		return _T("Do not compress AVI uploads");
-	}
-
 	static CString GetPreviewSmallBlocksLabel()
 	{
 		return _T("Preview incomplete media blocks");
@@ -457,7 +452,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiCreateCrashDumpAlways()
 	, m_htiDateTimeFormat()
 	, m_htiDateTimeFormat4Log()
-	, m_htiDontCompressAvi()
 	, m_htiFullVerbose()
 	, m_htiHighresTimer()
 	, m_htiHiddenDisplay()
@@ -609,7 +603,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bCreditSystem()
 	, m_bDebug2Disk()
 	, m_bDebugSourceExchange()
-	, m_bDontCompressAvi()
 	, m_bExtControls()
 	, m_bExtraPreviewWithMenu()
 	, m_bFilterLANIPs()
@@ -779,7 +772,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		//
 		m_htiHiddenFile = m_ctrlTreeOptions.InsertGroup(GetFileBehaviorLabel(), iImgMetaData, TVI_ROOT);
 		m_htiICH = m_ctrlTreeOptions.InsertCheckBox(GetIchLabel(), m_htiHiddenFile, m_bICH);
-		m_htiDontCompressAvi = m_ctrlTreeOptions.InsertCheckBox(GetDontCompressAviLabel(), m_htiHiddenFile, m_bDontCompressAvi);
 		m_htiPreviewSmallBlocks = m_ctrlTreeOptions.InsertGroup(GetPreviewSmallBlocksLabel(), iImgMetaData, m_htiHiddenFile);
 		m_htiPreviewSmallBlocksDisabled = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_DISABLED), m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks == 0);
 		m_htiPreviewSmallBlocksAllow = m_ctrlTreeOptions.InsertRadioButton(GetPreviewSmallBlocksAllowLabel(), m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks == 1);
@@ -1002,9 +994,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiICH,
 			_T("Enables Intelligent Corruption Handling for damaged downloaded chunks.\r\n\r\n")
 			_T("Recommended: enabled. It helps recover good data inside corrupted parts instead of redownloading more than necessary."));
-		SetTreeToolTip(m_htiDontCompressAvi,
-			_T("Skips protocol compression for AVI upload payloads.\r\n\r\n")
-			_T("AVI data is usually already hard to compress, so this can reduce CPU work without meaningfully increasing transfer size."));
 		SetTreeToolTip(m_htiPreviewSmallBlocks,
 			_T("Controls whether media preview is offered before the normal preview safety checks are fully satisfied.\r\n\r\n")
 			_T("Higher levels make preview available earlier, but failed or misleading previews become more likely."));
@@ -1429,7 +1418,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	// File related group
 	//
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiICH, m_bICH);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiDontCompressAvi, m_bDontCompressAvi);
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBeepOnError, m_bBeepOnError);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowCopyEd2kLinkCmd, m_bShowCopyEd2kLinkCmd);
@@ -1697,7 +1685,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iBBSessionTimeLimitSeconds = static_cast<int>(thePrefs.GetBBSessionTimeLimitSeconds());
 	m_uFileBufferTimeLimitSeconds = max(1u, thePrefs.GetFileBufferTimeLimit() / SEC2MS(1));
 	m_bICH = thePrefs.IsICHEnabled();
-	m_bDontCompressAvi = thePrefs.GetDontCompressAvi();
 	m_iPreviewSmallBlocks = thePrefs.GetPreviewSmallBlocks();
 	m_bBeepOnError = thePrefs.IsErrorBeepEnabled();
 	m_bShowCopyEd2kLinkCmd = thePrefs.GetShowCopyEd2kLinkCmd();
@@ -1845,7 +1832,6 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.filterLANIPs = m_bFilterLANIPs;
 	const bool bShowCopyEd2kLinkCmdChanged = thePrefs.GetShowCopyEd2kLinkCmd() != m_bShowCopyEd2kLinkCmd;
 	thePrefs.ICH = m_bICH;
-	thePrefs.dontcompressavi = m_bDontCompressAvi;
 	thePrefs.m_iPreviewSmallBlocks = PreferenceUiSeams::NormalizePreviewSmallBlocks(m_iPreviewSmallBlocks);
 	thePrefs.beepOnError = m_bBeepOnError;
 	thePrefs.m_bShowCopyEd2kLinkCmd = m_bShowCopyEd2kLinkCmd;
@@ -2023,7 +2009,6 @@ void CPPgTweaks::Localize()
 		m_ctrlTreeOptions.SetItemText(m_htiHiddenFile, GetFileBehaviorLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiHiddenSecurity, GetSecurityTweaksLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiICH, GetIchLabel());
-		m_ctrlTreeOptions.SetItemText(m_htiDontCompressAvi, GetDontCompressAviLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiPreviewSmallBlocks, GetPreviewSmallBlocksLabel());
 		LocalizeItemText(m_htiPreviewSmallBlocksDisabled, IDS_DISABLED);
 		m_ctrlTreeOptions.SetItemText(m_htiPreviewSmallBlocksAllow, GetPreviewSmallBlocksAllowLabel());
@@ -2151,7 +2136,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiCreateCrashDumpAlways = NULL;
 	m_htiDateTimeFormat = NULL;
 	m_htiDateTimeFormat4Log = NULL;
-	m_htiDontCompressAvi = NULL;
 	m_htiHighresTimer = NULL;
 	m_htiHiddenDisplay = NULL;
 	m_htiHiddenFile = NULL;

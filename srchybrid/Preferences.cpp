@@ -724,7 +724,6 @@ UINT	CPreferences::uMaxLogFileSize;
 ELogFileFormat CPreferences::m_iLogFileFormat = Unicode;
 int		CPreferences::m_iCreateCrashDumpMode;
 bool	CPreferences::scheduler;
-bool	CPreferences::dontcompressavi;
 bool	CPreferences::msgonlyfriends;
 bool	CPreferences::msgsecure;
 bool	CPreferences::m_bUseChatCaptchas;
@@ -2304,7 +2303,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("SparsePartFiles"), m_bSparsePartFiles);
 	ini.WriteString(_T("YourHostname"), m_strYourHostname);
 	ini.WriteBool(_T("CheckFileOpen"), m_bCheckFileOpen);
-	ini.WriteBool(_T("DontCompressAvi"), dontcompressavi);
 	ini.WriteBool(_T("BeepOnError"), beepOnError);
 	ini.WriteBool(_T("AllowLocalHostIP"), m_bAllocLocalHostIP);
 	ini.WriteBool(_T("IconflashOnNewMessage"), m_bIconflashOnNewMessage);
@@ -2724,8 +2722,6 @@ void CPreferences::LoadPreferences()
 	SetTrafficOMeterInterval(NormalizeNonNegativePreference(ini.GetInt(_T("StatGraphsInterval"), static_cast<int>(GetDefaultTrafficOMeterInterval())), GetDefaultTrafficOMeterInterval()));
 	SetStatsInterval(NormalizeNonNegativePreference(ini.GetInt(_T("statsInterval"), static_cast<int>(GetDefaultStatsInterval())), GetDefaultStatsInterval()));
 	m_bFillGraphs = ini.GetBool(_T("StatsFillGraphs"));
-	dontcompressavi = ini.GetBool(_T("DontCompressAvi"), false);
-
 	m_uDeadServerRetries = NormalizeRetryCount(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("DeadServerRetry"), 1), 1), 1, 1, MAX_SERVERFAILCOUNT);
 	SetServerKeepAliveTimeoutMilliseconds(static_cast<DWORD>(NormalizeNonNegativePreference(ini.GetInt(_T("ServerKeepAliveTimeout"), 0), 0)));
 	m_dwConnectionTimeout = NormalizeTimeoutSeconds(ini.GetInt(_T("ConnectionTimeout"), GetDefaultConnectionTimeoutSeconds()), GetDefaultConnectionTimeoutSeconds());

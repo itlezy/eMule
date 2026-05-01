@@ -62,7 +62,6 @@ protected:
 	HTREEITEM m_htiCreateCrashDumpAlways;
 	HTREEITEM m_htiDateTimeFormat;
 	HTREEITEM m_htiDateTimeFormat4Log;
-	HTREEITEM m_htiDontCompressAvi;
 	HTREEITEM m_htiFullVerbose;
 	HTREEITEM m_htiHighresTimer;
 	HTREEITEM m_htiHiddenDisplay;
@@ -218,7 +217,6 @@ protected:
 	bool m_bCreditSystem;
 	bool m_bDebug2Disk;
 	bool m_bDebugSourceExchange;
-	bool m_bDontCompressAvi;
 	bool m_bExtControls;
 	bool m_bExtraPreviewWithMenu;
 	bool m_bFilterLANIPs;

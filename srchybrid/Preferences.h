@@ -520,7 +520,6 @@ public:
 	static ELogFileFormat m_iLogFileFormat;
 	static int		m_iCreateCrashDumpMode;
 	static bool		scheduler;
-	static bool		dontcompressavi;
 	static bool		msgonlyfriends;
 	static bool		msgsecure;
 	static bool		m_bUseChatCaptchas;
@@ -1541,8 +1540,6 @@ public:
 	static void		SetKadKeywordSearchLifetimeSeconds(UINT in) { m_uKadKeywordSearchLifetimeSeconds = in; }
 	static bool		IsSchedulerEnabled()				{ return scheduler; }
 	static void		SetSchedulerEnabled(bool in)		{ scheduler = in; }
-	static bool		GetDontCompressAvi()				{ return dontcompressavi; }
-
 	static bool		MsgOnlyFriends()					{ return msgonlyfriends; }
 	static bool		MsgOnlySecure()						{ return msgsecure; }
 	static UINT		GetMsgSessionsMax()					{ return maxmsgsessions; }
