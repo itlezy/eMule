@@ -33,6 +33,7 @@
 #include <Mmsystem.h>
 #include "IrcMain.h"
 #include "emule.h"
+#include "Version.h"
 #include "ED2KLink.h"
 #include "DownloadQueue.h"
 #include "server.h"
@@ -289,7 +290,7 @@ void CIrcMain::ParseMessage(const CString &sRawMessage)
 					}
 					//Create our response.
 					CString sBuild;
-					sBuild.Format(_T("PRIVMSG %s :\001REPFRIEND eMule%s%s|%s|%u:%u|%s:%s|%s|\001"), (LPCTSTR)sTarget, (LPCTSTR)theApp.m_strCurVersionLong, Irc_Version, (LPCTSTR)sVerify, theApp.IsFirewalled() ? 0 : theApp.GetID(), thePrefs.GetPort(), (LPCTSTR)sIP, (LPCTSTR)sPort, (LPCTSTR)md4str(thePrefs.GetUserHash()));
+					sBuild.Format(_T("PRIVMSG %s :\001REPFRIEND %s %s%s|%s|%u:%u|%s:%s|%s|\001"), (LPCTSTR)sTarget, MOD_RELEASE_PRODUCT_NAME, (LPCTSTR)theApp.m_strCurVersionLong, Irc_Version, (LPCTSTR)sVerify, theApp.IsFirewalled() ? 0 : theApp.GetID(), thePrefs.GetPort(), (LPCTSTR)sIP, (LPCTSTR)sPort, (LPCTSTR)md4str(thePrefs.GetUserHash()));
 					m_pIRCSocket->SendString(sBuild);
 					sBuild.Format(_T("%s %s"), (LPCTSTR)sTarget, (LPCTSTR)GetResString(IDS_IRC_ADDASFRIEND));
 					if (!thePrefs.GetIRCIgnoreEmuleAddFriendMsgs())
@@ -1496,7 +1497,7 @@ void CIrcMain::Connect()
 		if (m_sNick.CompareNoCase(_T("emule")) == 0)
 			m_sNick.Format(_T("eMuleIRC%hu-%s"), thePrefs.GetLanguageID(), (LPCTSTR)sHash);
 		m_sNick = m_sNick.Left(25);
-		m_sVersion.Format(_T("eMule%s%s"), (LPCTSTR)theApp.m_strCurVersionLong, (LPCTSTR)Irc_Version);
+		m_sVersion.Format(_T("%s %s%s"), MOD_RELEASE_PRODUCT_NAME, (LPCTSTR)theApp.m_strCurVersionLong, (LPCTSTR)Irc_Version);
 		m_sUser.Format(_T("USER %s 8 * :%s"), (LPCTSTR)sIdent, (LPCTSTR)m_sVersion);
 		m_pIRCSocket->Create();
 		m_pwndIRC->AddStatus(GetResString(IDS_CONNECTING));

@@ -31,6 +31,7 @@
 #include "NetworkInfoDlg.h"
 #include "Log.h"
 #include "UserMsgs.h"
+#include "Version.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -123,7 +124,7 @@ BOOL CServerWnd::OnInitDialog()
 		servermsgbox->ApplySkin();
 		servermsgbox->SetTitle(GetResString(IDS_SV_SERVERINFO));
 
-		servermsgbox->AppendText(_T("eMule v"));
+		servermsgbox->AppendText(CString(MOD_RELEASE_PRODUCT_NAME) + _T(" "));
 		servermsgbox->AppendText(theApp.m_strCurVersionLong);
 		servermsgbox->AppendText(_T("\n"));
 		// MOD Note: Do not remove this part - Merkur

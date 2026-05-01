@@ -32,6 +32,7 @@
 #include <dbt.h>
 #include <dwmapi.h>
 #include <uxtheme.h>
+#include <memory>
 #include "emule.h"
 #include "emuleDlg.h"
 #include "otherfunctions.h"
@@ -100,6 +101,8 @@
 #include "UploadDiskIOThread.h"
 #include "PartFileWriteThread.h"
 #include "ClientCredits.h"
+#include "ReleaseUpdateCheck.h"
+#include "Version.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -120,6 +123,33 @@ static const UINT UWM_TASK_BUTTON_CREATED = RegisterWindowMessage(_T("TaskbarBut
 
 namespace
 {
+	struct SVersionCheckContext
+	{
+		HWND hNotifyWnd = NULL;
+		bool bManual = false;
+	};
+
+	struct SVersionCheckResult
+	{
+		bool bManual = false;
+		ReleaseUpdateCheck::SUpdateCheckResult result;
+	};
+
+	UINT AFX_CDECL VersionCheckThreadProc(LPVOID pParam)
+	{
+		std::unique_ptr<SVersionCheckContext> pContext(reinterpret_cast<SVersionCheckContext*>(pParam));
+		if (pContext.get() == NULL)
+			return 0;
+
+		std::unique_ptr<SVersionCheckResult> pResult(new SVersionCheckResult);
+		pResult->bManual = pContext->bManual;
+		pResult->result = ReleaseUpdateCheck::CheckLatestRelease();
+
+		if (pContext->hNotifyWnd != NULL && ::PostMessage(pContext->hNotifyWnd, UM_VERSIONCHECK_RESPONSE, 0, reinterpret_cast<LPARAM>(pResult.get())))
+			(void)pResult.release();
+		return 0;
+	}
+
 	CUpDownClient* ResolveQueuedClient(const CClientDisplayUpdateRequest &request)
 	{
 		if (theApp.clientlist == NULL)
@@ -246,6 +276,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(WM_KICKIDLE, OnKickIdle)
 	ON_MESSAGE(WM_USERCHANGED, OnUserChanged)
 	ON_MESSAGE(UM_STARTUP_NEXT_STAGE, OnStartupNextStage)
+	ON_MESSAGE(UM_VERSIONCHECK_RESPONSE, OnVersionCheckResponse)
 	ON_MESSAGE(UM_GEOLOCATION_UPDATED, OnGeoLocationUpdated)
 	ON_MESSAGE(UM_IPFILTER_UPDATED, OnIPFilterUpdated)
 	ON_WM_SHOWWINDOW()
@@ -333,6 +364,7 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_uLastSysTrayIconCookie(SYS_TRAY_ICON_COOKIE_FORCE_UPDATE)
 	, m_uUpDatarate()
 	, m_uDownDatarate()
+	, m_bVersionCheckQueued()
 	, m_bStartMinimizedChecked()
 	, m_bStartMinimized()
 	, m_bMsgBlinkState()
@@ -529,7 +561,7 @@ BOOL CemuleDlg::OnInitDialog()
 	}
 
 	// set title
-	SetWindowText(_T("eMule v") + theApp.m_strCurVersionLong);
+	SetWindowText(CString(MOD_RELEASE_PRODUCT_NAME) + _T(" ") + theApp.m_strCurVersionLong);
 
 	// Init taskbar notifier
 	m_wndTaskbarNotifier.CreateWnd(this);
@@ -770,6 +802,9 @@ BOOL CemuleDlg::OnInitDialog()
 void CemuleDlg::DoVersioncheck(bool manual)
 {
 #ifndef _DEVBUILD
+	if (m_bVersionCheckQueued)
+		return;
+
 	if (!manual && thePrefs.GetLastVC() != 0) {
 		CTime last(thePrefs.GetLastVC());
 		struct tm tmTemp;
@@ -778,9 +813,66 @@ void CemuleDlg::DoVersioncheck(bool manual)
 		if (difftime(tNow, tLast) / DAY2S(1) < thePrefs.GetUpdateDays())
 			return;
 	}
+
+	const HWND hNotifyWnd = m_hWnd;
+	std::unique_ptr<SVersionCheckContext> pContext(new SVersionCheckContext);
+	pContext->hNotifyWnd = hNotifyWnd;
+	pContext->bManual = manual;
+
+	CWinThread *pThread = AfxBeginThread(VersionCheckThreadProc, pContext.get(), THREAD_PRIORITY_BELOW_NORMAL, 0, 0, NULL);
+	if (pThread == NULL) {
+		if (manual)
+			AddLogLine(true, GetResString(IDS_NEWVERSIONFAILED));
+		else
+			AddDebugLogLine(false, _T("Version check: failed to start background update thread."));
+		return;
+	}
+
+	pThread->m_bAutoDelete = TRUE;
+	m_bVersionCheckQueued = true;
 	thePrefs.UpdateLastVC();
-	BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
+	(void)pContext.release();
 #endif
+}
+
+LRESULT CemuleDlg::OnVersionCheckResponse(WPARAM, LPARAM lParam)
+{
+	std::unique_ptr<SVersionCheckResult> pResult(reinterpret_cast<SVersionCheckResult*>(lParam));
+	m_bVersionCheckQueued = false;
+	if (pResult.get() == NULL)
+		return 0;
+
+	switch (pResult->result.eStatus) {
+	case ReleaseUpdateCheck::EUpdateCheckStatus::NewerVersionAvailable:
+	{
+		CString strReleaseUrl(pResult->result.strReleaseUrl);
+		if (strReleaseUrl.IsEmpty())
+			strReleaseUrl = thePrefs.GetVersionCheckURL();
+
+		CString strLog(GetResString(IDS_NEWVERSIONAVL));
+		if (!pResult->result.strLatestVersion.IsEmpty())
+			strLog.AppendFormat(_T(" (%s)"), (LPCTSTR)pResult->result.strLatestVersion);
+		Log(LOG_SUCCESS | LOG_STATUSBAR, _T("%s"), (LPCTSTR)strLog);
+		ShowNotifier(GetResString(IDS_NEWVERSIONAVLPOPUP), TBN_NEWVERSION, strReleaseUrl);
+		if (!thePrefs.GetNotifierOnNewVersion() && AfxMessageBox(GetResString(IDS_NEWVERSIONAVL) + GetResString(IDS_VISITVERSIONCHECK), MB_YESNO) == IDYES)
+			BrowserOpen(strReleaseUrl, thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
+		break;
+	}
+	case ReleaseUpdateCheck::EUpdateCheckStatus::NoNewerVersion:
+		if (pResult->bManual)
+			AddLogLine(true, GetResString(IDS_NONEWERVERSION));
+		break;
+	case ReleaseUpdateCheck::EUpdateCheckStatus::Failed:
+	default:
+		if (pResult->bManual) {
+			AddLogLine(true, GetResString(IDS_NEWVERSIONFAILED));
+		} else if (!pResult->result.strError.IsEmpty())
+			AddDebugLogLine(false, _T("Version check failed: %s"), (LPCTSTR)pResult->result.strError);
+		else
+			AddDebugLogLine(false, _T("Version check failed."));
+		break;
+	}
+	return 0;
 }
 
 void CemuleDlg::OnStartupTimer() noexcept
@@ -1366,7 +1458,8 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 		UpdateTrayIcon(min(iDownRatePercent, 100));
 
 		CString buffer;
-		buffer.Format(_T("eMule v%s (%s)\r\n%s")
+		buffer.Format(_T("%s %s (%s)\r\n%s")
+			, MOD_RELEASE_PRODUCT_NAME
 			, (LPCTSTR)theApp.m_strCurVersionLong
 			, (LPCTSTR)GetResString(theApp.IsConnected() ? IDS_CONNECTED : IDS_DISCONNECTED)
 			, (LPCTSTR)strTransferRate);
@@ -1380,7 +1473,7 @@ void CemuleDlg::ShowTransferRate(bool bForceAll)
 	}
 	if (IsWindowVisible() && thePrefs.ShowRatesOnTitle()) {
 		CString szBuff;
-		szBuff.Format(_T("(U:%.1f D:%.1f) eMule v%s"), m_uUpDatarate / 1024.0f, m_uDownDatarate / 1024.0f, (LPCTSTR)theApp.m_strCurVersionLong);
+		szBuff.Format(_T("(U:%.1f D:%.1f) %s %s"), m_uUpDatarate / 1024.0f, m_uDownDatarate / 1024.0f, MOD_RELEASE_PRODUCT_NAME, (LPCTSTR)theApp.m_strCurVersionLong);
 		SetWindowText(szBuff);
 	}
 }

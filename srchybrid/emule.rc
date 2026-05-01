@@ -279,7 +279,7 @@ BEGIN
     CONTROL         "Prompt on exit",IDC_EXIT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,84,202,10
     CONTROL         "Onlinesig",IDC_ONLINESIG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,94,202,10
     GROUPBOX        "Startup",IDC_STARTUP,3,156,223,61
-    CONTROL         "Open GitHub Releases on startup",IDC_CHECK4UPDATE,
+    CONTROL         "Check for eMule BB updates",IDC_CHECK4UPDATE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,172,153,10
     CONTROL         "",IDC_CHECKDAYS,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,169,175,53,10
     LTEXT           "days",IDC_DAYS,171,166,48,9
@@ -2205,7 +2205,7 @@ BEGIN
     IDS_HTTPDOWNLOAD_ABORTING_TRANSFER "Aborting transfer"
     IDS_FD_COMPR            "Compression"
     IDS_WIZARD_NETWORK      "Choose which Network(s) you want to use"
-    IDS_MAIN_READY          "eMule Version %s ready"
+    IDS_MAIN_READY          "eMule BB %s ready"
     IDS_WIZARD_ED2K         "eD2K Settings"
     IDS_SEL_SKIN            "Select Skin..."
     IDS_MAIN_SOCKETERROR    "Fatal Error: Unable to create socket on port %u"
@@ -2460,7 +2460,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_VERSIONCHECK        "&Version check"
+    IDS_VERSIONCHECK        "&Check for updates"
     IDS_VISITVERSIONCHECK   "\n\nDo you want do visit the Information page now?"
     IDS_PW_VIDEOPLAYER      "Video Player"
     IDS_VIDEOBACKUP         "Create backup to preview"
@@ -3210,13 +3210,13 @@ BEGIN
     IDS_WEBSVEDIT           "Edit Web Services..."
     IDS_IRC_EMULEPROTO_IGNORESENDLINK
                             "Ignore eMule send link protocol messages"
-    IDS_CHECK4UPDATE        "Open GitHub Releases on startup"
+    IDS_CHECK4UPDATE        "Check for eMule BB updates"
     IDS_STARTUP             "Startup"
-    IDS_NEWVERSIONAVL       "A new version of eMule is available! Check the project-homepage for more information."
-    IDS_NEWVERSIONAVLPOPUP  "A new version of eMule is available. Click here to read about the new version!"
-    IDS_NEWVERSIONFAILED    "Unable to check for new version."
-    IDS_CB_TBN_ONNEWVERSION "New eMule version detected"
-    IDS_NONEWERVERSION      "No new eMule version detected."
+    IDS_NEWVERSIONAVL       "A new version of eMule BB is available! Check GitHub Releases for more information."
+    IDS_NEWVERSIONAVLPOPUP  "A new version of eMule BB is available. Click here to read about the new version!"
+    IDS_NEWVERSIONFAILED    "Unable to check for eMule BB updates."
+    IDS_CB_TBN_ONNEWVERSION "New eMule BB version detected"
+    IDS_NONEWERVERSION      "No new eMule BB version detected."
 END
 
 STRINGTABLE

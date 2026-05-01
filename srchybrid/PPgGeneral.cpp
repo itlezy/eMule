@@ -173,8 +173,8 @@ void CPPgGeneral::UpdateToolTips()
 		_T("Brings eMule to the foreground when a handled ed2k link or similar external action targets the app.\r\n\r\n")
 		_T("Enable it if you want link clicks to reveal eMule immediately. Leave it off if you prefer background handling."));
 	m_toolTip.SetTool(this, IDC_CHECK4UPDATE,
-		_T("Opens the GitHub Releases page on startup when the configured interval has elapsed.\r\n\r\n")
-		_T("Leave it off for a quiet startup, or enable it if you want a periodic release reminder."));
+		_T("Checks GitHub Releases on startup when the configured interval has elapsed and only alerts when a newer eMule BB package is available.\r\n\r\n")
+		_T("Leave it off for a quiet startup, or enable it if you want a periodic update check."));
 	m_toolTip.SetTool(this, IDC_PREVENTSTANDBY,
 		_T("Blocks system standby while eMule is running so long transfers, Kad, and server sessions are not interrupted.\r\n\r\n")
 		_T("Recommended: enabled on desktops or dedicated boxes. Disable it if you want the machine's normal sleep policy to win."));

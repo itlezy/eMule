@@ -312,6 +312,7 @@
     <ClCompile Include="Quantize.cpp" />
     <ClCompile Include="QueueListCtrl.cpp" />
     <ClCompile Include="RARFile.cpp" />
+    <ClCompile Include="ReleaseUpdateCheck.cpp" />
     <ClCompile Include="RichEditCtrlX.cpp" />
     <ClCompile Include="RichEditStream.cpp" />
     <ClCompile Include="SafeFile.cpp" />
@@ -601,6 +602,8 @@
     <ClInclude Include="Quantize.h" />
     <ClInclude Include="QueueListCtrl.h" />
     <ClInclude Include="RARFile.h" />
+    <ClInclude Include="ReleaseUpdateCheck.h" />
+    <ClInclude Include="ReleaseUpdateCheckSeams.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RichEditCtrlX.h" />
     <ClInclude Include="RichEditStream.h" />

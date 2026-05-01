@@ -19,6 +19,7 @@
 #include "CreditsThread.h"
 #include "opcodes.h"
 #include "OtherFunctions.h"
+#include "Version.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -364,7 +365,7 @@ void CCreditsThread::InitText()
 	sTmp.Format(_T("S:%d"), m_rectScreen.Height());
 	m_arCredits.Add(sTmp);
 
-	m_arCredits.Add(_T("03:00:eMule"));
+	m_arCredits.Add(CString(_T("03:00:")) + MOD_RELEASE_PRODUCT_NAME);
 	m_arCredits.Add(_T("02:01:Version ") + theApp.m_strCurVersionLong);
 	m_arCredits.Add(_T("01:06:Copyright (C) 2002-2026 Merkur"));
 	m_arCredits.Add(_T("S:50"));

@@ -26,6 +26,7 @@
 #include <timeapi.h>
 #include <uxtheme.h>
 #include "emule.h"
+#include "Version.h"
 #include "opcodes.h"
 #include "mdump.h"
 #include "Scheduler.h"
@@ -830,13 +831,13 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	m_dwProductVersionMS = MAKELONG(CemuleApp::m_nVersionMin, CemuleApp::m_nVersionMjr);
 	m_dwProductVersionLS = MAKELONG(CemuleApp::m_nVersionBld, CemuleApp::m_nVersionUpd);
 
-	// create a string version (e.g. "0.30a")
+	// create a public mod release string while keeping the upstream base version for protocol checks
 	ASSERT(CemuleApp::m_nVersionUpd + 'a' <= 'f');
-	m_strCurVersionLongDbg.Format(_T("%u.%u%c.%u"), CemuleApp::m_nVersionMjr, CemuleApp::m_nVersionMin, _T('a') + CemuleApp::m_nVersionUpd, CemuleApp::m_nVersionBld);
+	m_strCurVersionLongDbg.Format(_T("%s %s (base %u.%u%c.%u)"), MOD_RELEASE_PRODUCT_NAME, MOD_RELEASE_VERSION_TEXT, CemuleApp::m_nVersionMjr, CemuleApp::m_nVersionMin, _T('a') + CemuleApp::m_nVersionUpd, CemuleApp::m_nVersionBld);
 #if defined( _DEBUG) || defined(_DEVBUILD)
 	m_strCurVersionLong = m_strCurVersionLongDbg;
 #else
-	m_strCurVersionLong.Format(_T("%u.%u%c"), CemuleApp::m_nVersionMjr, CemuleApp::m_nVersionMin, _T('a') + CemuleApp::m_nVersionUpd);
+	m_strCurVersionLong = MOD_RELEASE_VERSION_TEXT;
 #endif
 	m_strCurVersionLong += CemuleApp::m_sPlatform;
 
@@ -1109,7 +1110,7 @@ BOOL CemuleApp::InitInstance()
 #if !defined(_DEVBUILD)
 	if (theCrashDumper.uCreateCrashDump > 0)
 #endif
-		theCrashDumper.Enable(_T("eMule ") + m_strCurVersionLongDbg, true, sConfDir);
+		theCrashDumper.Enable(m_strCurVersionLongDbg, true, sConfDir);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Locale initialization -- BE VERY CAREFUL HERE!!!
@@ -1182,7 +1183,7 @@ BOOL CemuleApp::InitInstance()
 		theVerboseLog.Open();
 		theVerboseLog.Log(_T("\r\n"));
 	}
-	Log(_T("Starting eMule v%s"), (LPCTSTR)m_strCurVersionLong);
+	Log(_T("Starting %s %s"), MOD_RELEASE_PRODUCT_NAME, (LPCTSTR)m_strCurVersionLong);
 #if EMULE_COMPILED_STARTUP_PROFILING
 	ResetStartupProfile();
 	AppendStartupProfileLine(_T("InitInstance: logging and profile setup"), 0);

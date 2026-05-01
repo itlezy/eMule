@@ -3550,6 +3550,11 @@ CString CPreferences::GetVersionCheckBaseURL()
 	return _T("https://github.com/itlezy/eMule/releases");
 }
 
+CString CPreferences::GetVersionCheckApiURL()
+{
+	return _T("https://api.github.com/repos/itlezy/eMule/releases/latest");
+}
+
 CString CPreferences::GetVersionCheckURL()
 {
 	return thePrefs.GetVersionCheckBaseURL() + _T("/latest");

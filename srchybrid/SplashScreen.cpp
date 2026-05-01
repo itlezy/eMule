@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "SplashScreen.h"
 #include "OtherFunctions.h"
+#include "Version.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -107,7 +108,7 @@ void CSplashScreen::OnPaint()
 			CFont font;
 			font.CreateFontIndirect(&lf);
 			CFont *pOldFont = dc.SelectObject(&font);
-			const CString &strAppVersion(_T("eMule ") + theApp.m_strCurVersionLong);
+			const CString &strAppVersion(CString(MOD_RELEASE_PRODUCT_NAME) + _T(" ") + theApp.m_strCurVersionLong);
 			rc.top += dc.DrawText(strAppVersion, &rc, DT_CENTER | DT_NOPREFIX);
 			if (pOldFont)
 				dc.SelectObject(pOldFont);

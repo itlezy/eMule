@@ -8,6 +8,7 @@
 #include "opcodes.h"
 #include "otherfunctions.h"
 #include "PPgConnection.h"
+#include "Version.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -283,7 +284,7 @@ BOOL CMuleSystrayDlg::OnInitDialog()
 
 	m_ctrlSidebar.SetHorizontal(false);
 	m_ctrlSidebar.SetFont(&Font);
-	m_ctrlSidebar.SetWindowText(_T("eMule ") + theApp.m_strCurVersionLong);
+	m_ctrlSidebar.SetWindowText(CString(MOD_RELEASE_PRODUCT_NAME) + _T(" ") + theApp.m_strCurVersionLong);
 
 	CWnd *pDesktopWnd = GetDesktopWindow();
 	RECT rDesktop;

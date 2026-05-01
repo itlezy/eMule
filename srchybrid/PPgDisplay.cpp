@@ -26,6 +26,7 @@
 #include "ServerWnd.h"
 #include "HelpIDs.h"
 #include "opcodes.h"
+#include "Version.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -196,7 +197,7 @@ BOOL CPPgDisplay::OnApply()
 	if (mintotray_old != thePrefs.mintotray)
 		theApp.emuledlg->TrayMinimizeToTrayChange();
 	if (!thePrefs.ShowRatesOnTitle())
-		theApp.emuledlg->SetWindowText(_T("eMule v") + theApp.m_strCurVersionLong);
+		theApp.emuledlg->SetWindowText(CString(MOD_RELEASE_PRODUCT_NAME) + _T(" ") + theApp.m_strCurVersionLong);
 
 	SetModified(FALSE);
 	return CPropertyPage::OnApply();

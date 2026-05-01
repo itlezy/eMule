@@ -183,6 +183,7 @@ protected:
 	UINT			m_uLastSysTrayIconCookie;
 	uint32			m_uUpDatarate;
 	uint32			m_uDownDatarate;
+	bool			m_bVersionCheckQueued;
 	bool			m_bStartMinimizedChecked;
 	bool			m_bStartMinimized;
 	bool			m_bMsgBlinkState;
@@ -295,6 +296,7 @@ protected:
 	afx_msg LRESULT OnTaskbarBtnCreated(WPARAM, LPARAM);
 #endif
 
+	afx_msg LRESULT OnVersionCheckResponse(WPARAM wParam, LPARAM lParam);
 	//Web Interface
 	afx_msg LRESULT OnWebGUIInteraction(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebServerClearCompleted(WPARAM wParam, LPARAM lParam);
