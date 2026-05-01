@@ -36,6 +36,12 @@ enum ENotifierSoundType
 	ntfstSpeech
 };
 
+enum ENotifierDisplayMode
+{
+	ntfdmCustomPopup,
+	ntfdmWindowsToast
+};
+
 enum TLSmode: byte
 {
 	MODE_NONE,
@@ -415,6 +421,7 @@ public:
 	static bool		notifierOnImportantError;
 	static bool		notifierOnEveryChatMsg;
 	static bool		notifierOnNewVersion;
+	static ENotifierDisplayMode notifierDisplayMode;
 	static ENotifierSoundType notifierSoundType;
 	static CString	notifierSoundFile;
 
@@ -1131,6 +1138,7 @@ public:
 	static bool		GetNotifierOnImportantError()		{ return notifierOnImportantError; }
 	static bool		GetNotifierOnEveryChatMsg()			{ return notifierOnEveryChatMsg; }
 	static bool		GetNotifierOnNewVersion()			{ return notifierOnNewVersion; }
+	static ENotifierDisplayMode GetNotifierDisplayMode() { return notifierDisplayMode; }
 	static ENotifierSoundType GetNotifierSoundType()	{ return notifierSoundType; }
 	static const CString& GetNotifierSoundFile()		{ return notifierSoundFile; }
 

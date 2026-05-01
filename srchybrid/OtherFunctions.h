@@ -174,6 +174,7 @@ void canonical(CString &path); //lexically canonicalizes dot segments
 CString RemoveFileExtension(const CString &rstrFilePath);
 bool EqualPaths(const CString &rstrDir1, const CString &rstrDir2);
 CString StringLimit(const CString &in, UINT length);
+CString FormatDisplayFileName(const CString &rstrFileName);
 CString CleanupFilename(const CString &filename, bool bExtension = true);
 CString ValidFilename(const CString &filename);
 bool ExpandEnvironmentStrings(CString &rstrStrings);

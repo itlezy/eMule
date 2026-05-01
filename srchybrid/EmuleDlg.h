@@ -19,6 +19,7 @@
 #include "TaskbarNotifier.h"
 #include "TitledMenu.h"
 #include "TrayDialog.h"
+#include "WindowsToastNotifier.h"
 
 namespace Kademlia
 {
@@ -68,6 +69,7 @@ class CemuleDlg : public CTrayDialog
 	CImageList m_IconList;
 	CReBarCtrl m_ctlMainTopReBar;
 	CTaskbarNotifier m_wndTaskbarNotifier;
+	CWindowsToastNotifier m_wndWindowsToastNotifier;
 	void SetClientIconList();
 public:
 	explicit CemuleDlg(CWnd *pParent = NULL);
@@ -227,6 +229,8 @@ protected:
 	void AddSpeedSelectorMenus(CMenu *addToMenu);
 	int  GetRecMaxUpload();
 	void LoadNotifier(const CString &configuration);
+	void ShowNotificationPopup(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink);
+	void HandleNotifierClicked(TbnMsg nMsgType, LPARAM lParam);
 	bool notifierenabled;
 	void ShowToolPopup(bool toolsonly = false);
 	void SetAllIcons();
@@ -278,6 +282,7 @@ protected:
 	// end of quick-speed changer
 
 	afx_msg LRESULT OnTaskbarNotifierClicked(WPARAM, LPARAM lParam);
+	afx_msg LRESULT OnWindowsToastClicked(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWMData(WPARAM, LPARAM lParam);
 	afx_msg LRESULT OnFileHashed(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnHashFailed(WPARAM, LPARAM lParam);

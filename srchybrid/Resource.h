@@ -2478,6 +2478,7 @@
 #define IDC_AUTOUPDATE_IPFILTER         3070
 #define IDC_IPFILTERPERIOD_LABEL        3071
 #define IDC_IPFILTERPERIOD              3072
+#define IDC_CB_TBN_USEWINDOWSTOAST      3073
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2486,7 +2487,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3073
+#define _APS_NEXT_CONTROL_VALUE         3074
 #define _APS_NEXT_SYMED_VALUE           1736
 #endif
 #endif

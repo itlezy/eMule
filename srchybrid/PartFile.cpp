@@ -57,6 +57,7 @@
 #include "ClientList.h"
 #include "shahashset.h"
 #include "Log.h"
+#include "OtherFunctions.h"
 #include "Collection.h"
 #include "CollectionViewDialog.h"
 #include "uploaddiskiothread.h"
@@ -1647,7 +1648,7 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 			}
 			if (bMD4Error || bAICHError) {
 				errorfound = true;
-				LogWarning(GetResString(IDS_ERR_FOUNDCORRUPTION), nPart, (LPCTSTR)GetFileName());
+				LogWarning(GetResString(IDS_ERR_FOUNDCORRUPTION), nPart, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 				const uint64 nPartStart = nPart * PARTSIZE;
 				AddGap(nPartStart, min(nPartStart + PARTSIZE, (uint64)m_nFileSize) - 1);
 				if (bMD4Checked && bAICHChecked && bMD4Error != bAICHError)
@@ -1684,18 +1685,18 @@ void CPartFile::PartFileHashFinished(CKnownFile *result)
 	if (errorfound) {
 		SetStatus(PS_READY);
 		if (thePrefs.GetVerbose())
-			DebugLogError(LOG_STATUSBAR, _T("File hashing failed for \"%s\""), (LPCTSTR)GetFileName());
+			DebugLogError(LOG_STATUSBAR, _T("File hashing failed for %s"), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		SavePartFile();
 		return;
 	}
 	if (thePrefs.GetVerbose())
-		AddDebugLogLine(true, _T("Completed hashing file \"%s\""), (LPCTSTR)GetFileName());
+		AddDebugLogLine(true, _T("Completed hashing file %s"), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 	if (status == PS_COMPLETING) {
 		if (theApp.sharedfiles->GetFileByID(GetFileHash()) == NULL)
 			theApp.sharedfiles->SafeAddKFile(this);
 		CompleteFile(true);
 	} else {
-		AddLogLine(false, GetResString(IDS_HASHINGDONE), (LPCTSTR)GetFileName());
+		AddLogLine(false, GetResString(IDS_HASHINGDONE), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		SetStatus(PS_READY);
 		SavePartFile();
 		if (bToShare)
@@ -2981,7 +2982,7 @@ BOOL CPartFile::PerformFileComplete()
 		if ((HANDLE)m_hpartfile != INVALID_HANDLE_VALUE)
 			m_hpartfile.Close();
 	} catch (CFileException *ex) {
-		theApp.QueueLogLine(true, GetResString(IDS_ERR_FILEERROR), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+		theApp.QueueLogLine(true, GetResString(IDS_ERR_FILEERROR), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)CExceptionStr(*ex));
 		ex->Delete();
 	}
 
@@ -3035,11 +3036,11 @@ BOOL CPartFile::PerformFileComplete()
 			break;
 		DWORD dwMoveResult = ::GetLastError();
 		if (dwMoveResult != ERROR_SHARING_VIOLATION || !bFirstTry) {
-			theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - \"%s\": %s")
-				, (LPCTSTR)GetFileName(), (LPCTSTR)strNewname, (LPCTSTR)GetErrorMessage(dwMoveResult));
+			theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - %s: %s")
+				, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)strNewname, (LPCTSTR)GetErrorMessage(dwMoveResult));
 			if (PartFileCompletionSeams::ShouldWarnAboutDisabledLongPathSupport(dwMoveResult, strNewname, IsWin32LongPathsEnabled()))
-				theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - \"%s\": Windows long-path support is disabled; enable LongPathsEnabled to avoid failures with overlong paths")
-					, (LPCTSTR)GetFileName(), (LPCTSTR)strNewname);
+				theApp.QueueLogLine(true, GetResString(IDS_ERR_COMPLETIONFAILED) + _T(" - %s: Windows long-path support is disabled; enable LongPathsEnabled to avoid failures with overlong paths")
+					, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)strNewname);
 
 			m_paused = m_stopped = true;
 			SetStatus(PS_ERROR);
@@ -3162,13 +3163,14 @@ void CPartFile::PerformFileCompleteEnd(DWORD dwResult)
 		theApp.sharedfiles->RepublishFile(this);
 
 		// give visual response
-		Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_DOWNLOADDONE), (LPCTSTR)GetFileName());
-		theApp.emuledlg->ShowNotifier(GetResString(IDS_TBN_DOWNLOADDONE) + _T('\n') + GetFileName(), TBN_DOWNLOADFINISHED, GetFilePath());
+		const CString strDisplayFileName(FormatDisplayFileName(GetFileName()));
+		Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_DOWNLOADDONE), (LPCTSTR)strDisplayFileName);
+		theApp.emuledlg->ShowNotifier(GetResString(IDS_TBN_DOWNLOADDONE) + _T('\n') + strDisplayFileName, TBN_DOWNLOADFINISHED, GetFilePath());
 		if (dwResult & FILE_COMPLETION_THREAD_RENAMED) {
 			CString strFilePath(GetFullName());
 			::PathStripPath(strFilePath.GetBuffer());
 			strFilePath.ReleaseBuffer();
-			Log(LOG_STATUSBAR, GetResString(IDS_DOWNLOADRENAMED), (LPCTSTR)strFilePath);
+			Log(LOG_STATUSBAR, GetResString(IDS_DOWNLOADRENAMED), (LPCTSTR)FormatDisplayFileName(strFilePath));
 		}
 		if (!m_pCollection && CCollection::HasCollectionExtention(GetFileName())) {
 			m_pCollection = new CCollection();
@@ -3219,7 +3221,7 @@ void CPartFile::DeletePartFile()
 
 	if (GetFileOp() != PFOP_NONE) { //hashing, copying, uncompressing
 		if (!m_bDelayDelete) {
-			LogWarning(LOG_STATUSBAR, GetResString(IDS_DELETEAFTERFILEOP), (LPCTSTR)GetFileName());
+			LogWarning(LOG_STATUSBAR, GetResString(IDS_DELETEAFTERFILEOP), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 			m_bDelayDelete = true; //signal to hashing thread
 		}
 		return;
@@ -3275,7 +3277,7 @@ bool CPartFile::HashSinglePart(UINT partnumber, bool *pbAICHReportedOK)
 	if (pbAICHReportedOK != NULL)
 		*pbAICHReportedOK = false;
 	if (!m_FileIdentifier.HasExpectedMD4HashCount() && !(m_FileIdentifier.HasAICHHash() && m_FileIdentifier.HasExpectedAICHHashCount())) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_HASHERRORWARNING), (LPCTSTR)GetFileName());
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_HASHERRORWARNING), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		m_bMD4HashsetNeeded = true;
 		m_bAICHPartHashsetNeeded = true;
 		return true;
@@ -3501,7 +3503,7 @@ void CPartFile::PauseFile(bool bInsufficient, bool resort)
 	const PartFilePauseResumeSeams::TransitionResult pauseTransition = PartFilePauseResumeSeams::ApplyPauseTransition(
 		PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped }, bInsufficient);
 	if (bInsufficient)
-		LogError(LOG_STATUSBAR, _T("Insufficient disk space - pausing download of \"%s\""), (LPCTSTR)GetFileName());
+		LogError(LOG_STATUSBAR, _T("Insufficient disk space - pausing download of %s"), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 	m_paused = pauseTransition.NextState.Paused;
 	m_insufficient = pauseTransition.NextState.Insufficient;
 
@@ -3585,15 +3587,15 @@ void CPartFile::ResumeFileInsufficient()
 		ULONGLONG uFreeBytes = 0;
 		ULONGLONG uRequiredBytes = 0;
 		if (!CanResumeInsufficientForDiskSpace(&uFreeBytes, &uRequiredBytes)) {
-			LogWarning(_T("Cannot resume download of \"%s\" because a protected volume is still below its required free-space threshold.")
-				, (LPCTSTR)GetFileName()
+			LogWarning(_T("Cannot resume download of %s because a protected volume is still below its required free-space threshold.")
+				, (LPCTSTR)FormatDisplayFileName(GetFileName())
 				);
 			return;
 		}
 
 		const PartFilePauseResumeSeams::TransitionResult resumeTransition = PartFilePauseResumeSeams::ApplyInsufficientResumeTransition(
 			PartFilePauseResumeSeams::State{ ResolvePauseResumeRuntimeStatus(status), m_paused, m_insufficient, m_stopped });
-		AddLogLine(false, _T("Resuming download of \"%s\""), (LPCTSTR)GetFileName());
+		AddLogLine(false, _T("Resuming download of %s"), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		m_insufficient = resumeTransition.NextState.Insufficient;
 		SetActive(theApp.IsConnected());
 		m_LastSearchTime = 0;
@@ -4306,7 +4308,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 				// Is part corrupt
 				bool bAICHAgreed;
 				if (!HashSinglePart(uPartNumber, &bAICHAgreed)) {
-					LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_PARTCORRUPT), uPartNumber, (LPCTSTR)GetFileName());
+					LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_PARTCORRUPT), uPartNumber, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 					AddGap(uStart, uEnd);
 
 					// add part to corrupted list, if not already there
@@ -4353,7 +4355,7 @@ void CPartFile::FlushBuffer(bool bForceICH, bool bNoAICH)
 					if (posCorrupted)
 						corrupted_list.RemoveAt(posCorrupted);
 
-					AddLogLine(true, GetResString(IDS_ICHWORKED), uPartNumber, (LPCTSTR)GetFileName(), (LPCTSTR)CastItoXBytes(uRecovered));
+					AddLogLine(true, GetResString(IDS_ICHWORKED), uPartNumber, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)CastItoXBytes(uRecovered));
 
 					// update file stats
 					if (m_uCorruptionLoss >= uRecovered) // check if the tag existed in part.met
@@ -4432,7 +4434,7 @@ void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 {
 	if (ex->m_cause == CFileException::diskFull) {
 		CString msg;
-		msg.Format(GetResString(IDS_ERR_OUTOFSPACE), (LPCTSTR)GetFileName());
+		msg.Format(GetResString(IDS_ERR_OUTOFSPACE), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		LogError(LOG_STATUSBAR, msg);
 		if (theApp.IsRunning() && thePrefs.GetNotifierOnImportantError())
 			theApp.emuledlg->ShowNotifier(msg, TBN_IMPORTANTEVENT);
@@ -4446,13 +4448,13 @@ void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 
 		if (ex->m_cause == CFileException::diskFull) {
 			CString msg;
-			msg.Format(GetResString(IDS_ERR_OUTOFSPACE), (LPCTSTR)GetFileName());
+			msg.Format(GetResString(IDS_ERR_OUTOFSPACE), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 			LogError(LOG_STATUSBAR, msg);
 			// may be called during shutdown!
 			if (thePrefs.GetNotifierOnImportantError() && !theApp.IsClosing())
 				theApp.emuledlg->ShowNotifier(msg, TBN_IMPORTANTEVENT);
 		} else {
-			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_WRITEERROR), (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_WRITEERROR), (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)CExceptionStr(*ex));
 			SetStatus(PS_ERROR);
 		}
 		m_paused = true;
@@ -4474,7 +4476,7 @@ void CPartFile::FlushBuffersExceptionHandler(CFileException *ex)
 void CPartFile::FlushBuffersExceptionHandler()
 {
 	ASSERT(0);
-	LogError(LOG_STATUSBAR, GetResString(IDS_ERR_WRITEERROR), (LPCTSTR)GetFileName(), (LPCTSTR)GetResString(IDS_UNKNOWN));
+	LogError(LOG_STATUSBAR, GetResString(IDS_ERR_WRITEERROR), (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)GetResString(IDS_UNKNOWN));
 	SetStatus(PS_ERROR);
 	m_paused = true;
 	m_iLastPausePurge = time(NULL);
@@ -5507,7 +5509,7 @@ void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 	SavePartFile();
 	// make sure the user appreciates our great recovery work :P
 	//AICH successfully recovered %s of %s from part %u for %s
-	AddLogLine(true, GetResString(IDS_AICH_WORKED), (LPCTSTR)CastItoXBytes(nRecovered), (LPCTSTR)CastItoXBytes(length), nPart, (LPCTSTR)GetFileName());
+	AddLogLine(true, GetResString(IDS_AICH_WORKED), (LPCTSTR)CastItoXBytes(nRecovered), (LPCTSTR)CastItoXBytes(length), nPart, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 }
 
 UINT CPartFile::GetMaxSources() const

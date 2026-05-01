@@ -49,6 +49,7 @@ BEGIN_MESSAGE_MAP(CPPgNotify, CPropertyPage)
 	ON_BN_CLICKED(IDC_CB_TBN_IMPORTATNT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CB_TBN_POP_ALWAYS, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CB_TBN_ONNEWVERSION, OnSettingsChange)
+	ON_BN_CLICKED(IDC_CB_TBN_USEWINDOWSTOAST, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SMTPSERVER, OnBnClickedSMTPserver)
 	ON_EN_CHANGE(IDC_EDIT_SENDER, OnSettingsChange)
 	ON_EN_CHANGE(IDC_EDIT_RECEIVER, OnSettingsChange)
@@ -98,6 +99,7 @@ BOOL CPPgNotify::OnInitDialog()
 	CheckDlgButton(IDC_CB_TBN_IMPORTATNT, thePrefs.notifierOnImportantError ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_POP_ALWAYS, thePrefs.notifierOnEveryChatMsg ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_ONNEWVERSION, thePrefs.notifierOnNewVersion ? BST_CHECKED : BST_UNCHECKED);
+	CheckDlgButton(IDC_CB_TBN_USEWINDOWSTOAST, thePrefs.notifierDisplayMode == ntfdmWindowsToast ? BST_CHECKED : BST_UNCHECKED);
 
 	GetDlgItem(IDC_CB_TBN_POP_ALWAYS)->EnableWindow(IsDlgButtonChecked(IDC_CB_TBN_ONCHAT));
 
@@ -132,6 +134,9 @@ void CPPgNotify::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_CB_TBN_POP_ALWAYS,
 		_T("Shows a popup for every incoming chat message instead of only the first one.\r\n\r\n")
 		_T("Enable it if you do not want follow-up chat messages to stay quiet."));
+	m_toolTip.SetTool(this, IDC_CB_TBN_USEWINDOWSTOAST,
+		_T("Uses Windows toast notifications instead of the custom eMule popup.\r\n\r\n")
+		_T("If Windows rejects a toast notification, eMule falls back to the custom popup."));
 	m_toolTip.SetTool(this, IDC_CB_ENABLENOTIFICATIONS,
 		_T("Enables outbound email notifications for the configured events.\r\n\r\n")
 		_T("Only enable it if you have already configured a working SMTP server and addresses."));
@@ -166,6 +171,7 @@ void CPPgNotify::Localize()
 		SetDlgItemText(IDC_TASKBARNOTIFIER, GetResString(IDS_PW_TASKBARNOTIFIER));
 		SetDlgItemText(IDC_CB_TBN_IMPORTATNT, GetResString(IDS_PS_TBN_IMPORTANT) + _T(" (*)"));
 		SetDlgItemText(IDC_CB_TBN_ONNEWVERSION, GetResString(IDS_CB_TBN_ONNEWVERSION));
+		SetDlgItemText(IDC_CB_TBN_USEWINDOWSTOAST, _T("Use Windows toast notifications"));
 		SetDlgItemText(IDC_TBN_OPTIONS, GetResString(IDS_PW_TBN_OPTIONS));
 		SetDlgItemText(IDC_CB_TBN_USESPEECH, GetResString(IDS_USESPEECH));
 		SetDlgItemText(IDC_EMAILNOT_GROUP, _T("(*) ") + GetResString(IDS_PW_EMAILNOTIFICATIONS));
@@ -197,6 +203,7 @@ BOOL CPPgNotify::OnApply()
 	thePrefs.notifierOnImportantError = IsDlgButtonChecked(IDC_CB_TBN_IMPORTATNT) != 0;
 	thePrefs.notifierOnEveryChatMsg = IsDlgButtonChecked(IDC_CB_TBN_POP_ALWAYS) != 0;
 	thePrefs.notifierOnNewVersion = IsDlgButtonChecked(IDC_CB_TBN_ONNEWVERSION) != 0;
+	thePrefs.notifierDisplayMode = IsDlgButtonChecked(IDC_CB_TBN_USEWINDOWSTOAST) != 0 ? ntfdmWindowsToast : ntfdmCustomPopup;
 
 	GetDlgItemText(IDC_EDIT_SENDER, m_mail.sFrom);
 	GetDlgItemText(IDC_EDIT_RECEIVER, m_mail.sTo);

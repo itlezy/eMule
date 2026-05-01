@@ -308,6 +308,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	// WM_USER messages
 	//
 	ON_MESSAGE(UM_TASKBARNOTIFIERCLICKED, OnTaskbarNotifierClicked)
+	ON_MESSAGE(UM_WINDOWS_TOAST_CLICKED, OnWindowsToastClicked)
 
 	// Web Server messages
 	ON_MESSAGE(WEB_GUI_INTERACTION, OnWebGUIInteraction)
@@ -1924,6 +1925,7 @@ LRESULT CemuleDlg::OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam)
 void CemuleDlg::OnDestroy()
 {
 	AddDebugLogLine(DLP_VERYLOW, _T("%hs"), __FUNCTION__);
+	m_wndWindowsToastNotifier.Shutdown();
 
 	// If eMule was started with "RUNAS":
 	// When user is logging of (or reboots or shutdown system), Windows may or may not send
@@ -2486,7 +2488,7 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 	switch (nMsgType) {
 	case TBN_CHAT:
 		if (thePrefs.GetNotifierOnChat()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+			ShowNotificationPopup(pszText, nMsgType, pszLink);
 			bShowIt = true;
 			pszSoundEvent = _T("eMule_Chat");
 			iSoundPrio = 1;
@@ -2494,7 +2496,7 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 		break;
 	case TBN_DOWNLOADFINISHED:
 		if (thePrefs.GetNotifierOnDownloadFinished()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+			ShowNotificationPopup(pszText, nMsgType, pszLink);
 			bShowIt = true;
 			pszSoundEvent = _T("eMule_DownloadFinished");
 			iSoundPrio = 1;
@@ -2503,7 +2505,7 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 		break;
 	case TBN_DOWNLOADADDED:
 		if (thePrefs.GetNotifierOnNewDownload()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+			ShowNotificationPopup(pszText, nMsgType, pszLink);
 			bShowIt = true;
 			pszSoundEvent = _T("eMule_DownloadAdded");
 			iSoundPrio = 1;
@@ -2511,14 +2513,14 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 		break;
 	case TBN_LOG:
 		if (thePrefs.GetNotifierOnLog()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+			ShowNotificationPopup(pszText, nMsgType, pszLink);
 			bShowIt = true;
 			pszSoundEvent = _T("eMule_LogEntryAdded");
 		}
 		break;
 	case TBN_IMPORTANTEVENT:
 		if (thePrefs.GetNotifierOnImportantError()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+			ShowNotificationPopup(pszText, nMsgType, pszLink);
 			bShowIt = true;
 			pszSoundEvent = _T("eMule_Urgent");
 			iSoundPrio = 1;
@@ -2527,14 +2529,14 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 		break;
 	case TBN_NEWVERSION:
 		if (thePrefs.GetNotifierOnNewVersion()) {
-			m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+			ShowNotificationPopup(pszText, nMsgType, pszLink);
 			bShowIt = true;
 			pszSoundEvent = _T("eMule_NewVersion");
 			iSoundPrio = 1;
 		}
 		break;
 	case TBN_NULL:
-		m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+		ShowNotificationPopup(pszText, nMsgType, pszLink);
 		bShowIt = true;
 	}
 
@@ -2555,6 +2557,13 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 	}
 }
 
+void CemuleDlg::ShowNotificationPopup(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink)
+{
+	if (thePrefs.GetNotifierDisplayMode() == ntfdmWindowsToast && m_wndWindowsToastNotifier.Show(m_hWnd, pszText, nMsgType, pszLink))
+		return;
+	m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+}
+
 void CemuleDlg::LoadNotifier(const CString &configuration)
 {
 	notifierenabled = m_wndTaskbarNotifier.LoadConfiguration(configuration);
@@ -2562,12 +2571,24 @@ void CemuleDlg::LoadNotifier(const CString &configuration)
 
 LRESULT CemuleDlg::OnTaskbarNotifierClicked(WPARAM, LPARAM lParam)
 {
+	HandleNotifierClicked(static_cast<TbnMsg>(m_wndTaskbarNotifier.GetMessageType()), lParam);
+	return 0;
+}
+
+LRESULT CemuleDlg::OnWindowsToastClicked(WPARAM wParam, LPARAM lParam)
+{
+	HandleNotifierClicked(static_cast<TbnMsg>(wParam), lParam);
+	return 0;
+}
+
+void CemuleDlg::HandleNotifierClicked(TbnMsg nMsgType, LPARAM lParam)
+{
 	if (lParam) {
 		ShellDefaultVerb((LPTSTR)lParam);
 		free((void*)lParam);
 	}
 
-	switch (m_wndTaskbarNotifier.GetMessageType()) {
+	switch (nMsgType) {
 	case TBN_CHAT:
 		RestoreWindow();
 		SetActiveDialog(chatwnd);
@@ -2591,7 +2612,6 @@ LRESULT CemuleDlg::OnTaskbarNotifierClicked(WPARAM, LPARAM lParam)
 	case TBN_NEWVERSION:
 		BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
 	}
-	return 0;
 }
 
 void CemuleDlg::OnSettingChange(UINT uFlags, LPCTSTR lpszSection)

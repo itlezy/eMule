@@ -1469,6 +1469,18 @@ CString StringLimit(const CString &in, UINT length)
 	return in.Left(length - 8) + _T("...") + in.Right(8);
 }
 
+CString FormatDisplayFileName(const CString &rstrFileName)
+{
+	if (rstrFileName.IsEmpty())
+		return rstrFileName;
+	if (rstrFileName.Left(2) == _T("[ ") && rstrFileName.Right(2) == _T(" ]"))
+		return rstrFileName;
+
+	CString strDisplayName;
+	strDisplayName.Format(_T("[ %s ]"), (LPCTSTR)rstrFileName);
+	return strDisplayName;
+}
+
 BOOL DialogBrowseFile(CString &rstrPath, LPCTSTR pszFilters, LPCTSTR pszDefaultFileName, DWORD dwFlags, bool openfilestyle, HWND hWndOwner, LPCTSTR pszDlgTitle, LPCTSTR pszDefExt)
 {
 	const DWORD dwEffectiveFlags = dwFlags | OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT;

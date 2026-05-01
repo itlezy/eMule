@@ -621,6 +621,7 @@ bool	CPreferences::notifierOnLog;
 bool	CPreferences::notifierOnImportantError;
 bool	CPreferences::notifierOnEveryChatMsg;
 bool	CPreferences::notifierOnNewVersion;
+ENotifierDisplayMode CPreferences::notifierDisplayMode = ntfdmCustomPopup;
 ENotifierSoundType CPreferences::notifierSoundType = ntfstNoSound;
 CString	CPreferences::notifierSoundFile;
 CString CPreferences::m_strIRCServer;
@@ -2323,6 +2324,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("NotifyOnImportantError"), notifierOnImportantError);
 	ini.WriteBool(_T("NotifierPopEveryChatMessage"), notifierOnEveryChatMsg);
 	ini.WriteBool(_T("NotifierPopNewVersion"), notifierOnNewVersion);
+	ini.WriteInt(_T("NotifierDisplayMode"), (int)notifierDisplayMode);
 	ini.WriteInt(_T("NotifierUseSound"), (int)notifierSoundType);
 	ini.WriteString(_T("NotifierSoundPath"), notifierSoundFile);
 
@@ -2845,6 +2847,8 @@ void CPreferences::LoadPreferences()
 	notifierOnImportantError = ini.GetBool(_T("NotifyOnImportantError"));
 	notifierOnEveryChatMsg = ini.GetBool(_T("NotifierPopEveryChatMessage"));
 	notifierOnNewVersion = ini.GetBool(_T("NotifierPopNewVersion"));
+	const int iNotifierDisplayMode = ini.GetInt(_T("NotifierDisplayMode"), ntfdmCustomPopup);
+	notifierDisplayMode = iNotifierDisplayMode == ntfdmWindowsToast ? ntfdmWindowsToast : ntfdmCustomPopup;
 	notifierSoundType = (ENotifierSoundType)ini.GetInt(_T("NotifierUseSound"), ntfstNoSound);
 	notifierSoundFile = ini.GetString(_T("NotifierSoundPath"));
 

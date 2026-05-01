@@ -20,6 +20,7 @@
 #include "DirectDownload.h"
 #include "emule.h"
 #include "LongPathSeams.h"
+#include "WinInetHandle.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -45,8 +46,8 @@ bool DownloadUrlToFile(const CString& strUrl, const CString& strTargetPath, CStr
 {
 	strError.Empty();
 
-	HINTERNET hInternetSession = ::InternetOpen(AfxGetAppName(), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0);
-	if (hInternetSession == NULL) {
+	WinInetUtil::CInternetHandle hInternetSession(::InternetOpen(AfxGetAppName(), INTERNET_OPEN_TYPE_DIRECT, NULL, NULL, 0));
+	if (!hInternetSession) {
 		strError.Format(_T("InternetOpen failed (%u)"), ::GetLastError());
 		return false;
 	}
@@ -64,24 +65,22 @@ bool DownloadUrlToFile(const CString& strUrl, const CString& strTargetPath, CStr
 	components.dwExtraInfoLength = _countof(szExtraInfo);
 	if (!::InternetCrackUrl(strUrl, 0, 0, &components)) {
 		strError.Format(_T("InternetCrackUrl failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hInternetSession);
 		return false;
 	}
 
 	CString strObject(components.lpszUrlPath, components.dwUrlPathLength);
 	strObject.Append(CString(components.lpszExtraInfo, components.dwExtraInfoLength));
 	const DWORD dwServiceType = INTERNET_SERVICE_HTTP;
-	HINTERNET hHttpConnection = ::InternetConnect(hInternetSession,
+	WinInetUtil::CInternetHandle hHttpConnection(::InternetConnect(hInternetSession.Get(),
 		CString(components.lpszHostName, components.dwHostNameLength),
 		components.nPort,
 		NULL,
 		NULL,
 		dwServiceType,
 		0,
-		0);
-	if (hHttpConnection == NULL) {
+		0));
+	if (!hHttpConnection) {
 		strError.Format(_T("InternetConnect failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hInternetSession);
 		return false;
 	}
 
@@ -90,39 +89,28 @@ bool DownloadUrlToFile(const CString& strUrl, const CString& strTargetPath, CStr
 	if (components.nScheme == INTERNET_SCHEME_HTTPS)
 		dwFlags |= INTERNET_FLAG_SECURE;
 
-	HINTERNET hHttpFile = ::HttpOpenRequest(hHttpConnection, _T("GET"), strObject, NULL, NULL, pszAcceptTypes, dwFlags, 0);
-	if (hHttpFile == NULL) {
+	WinInetUtil::CInternetHandle hHttpFile(::HttpOpenRequest(hHttpConnection.Get(), _T("GET"), strObject, NULL, NULL, pszAcceptTypes, dwFlags, 0));
+	if (!hHttpFile) {
 		strError.Format(_T("HttpOpenRequest failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
 		return false;
 	}
 
-	::HttpAddRequestHeaders(hHttpFile, _T("Accept-Encoding: identity\r\n"), _UI32_MAX, HTTP_ADDREQ_FLAG_ADD);
-	if (!::HttpSendRequest(hHttpFile, NULL, 0, NULL, 0)) {
+	::HttpAddRequestHeaders(hHttpFile.Get(), _T("Accept-Encoding: identity\r\n"), _UI32_MAX, HTTP_ADDREQ_FLAG_ADD);
+	if (!::HttpSendRequest(hHttpFile.Get(), NULL, 0, NULL, 0)) {
 		strError.Format(_T("HttpSendRequest failed (%u)"), ::GetLastError());
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
 		return false;
 	}
 
 	DWORD dwStatusCode = 0;
 	DWORD dwStatusLength = sizeof(dwStatusCode);
-	if (!::HttpQueryInfo(hHttpFile, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &dwStatusCode, &dwStatusLength, NULL) || dwStatusCode != HTTP_STATUS_OK) {
+	if (!::HttpQueryInfo(hHttpFile.Get(), HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &dwStatusCode, &dwStatusLength, NULL) || dwStatusCode != HTTP_STATUS_OK) {
 		strError.Format(_T("Unexpected HTTP status %u"), static_cast<unsigned>(dwStatusCode));
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
 		return false;
 	}
 
 	const int fdOut = LongPathSeams::OpenCrtWriteOnlyLongPath(strTargetPath, CREATE_ALWAYS, FILE_SHARE_READ);
 	if (fdOut == -1) {
 		strError.Format(_T("Could not open %s for writing"), (LPCTSTR)strTargetPath);
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hHttpConnection);
-		::InternetCloseHandle(hInternetSession);
 		return false;
 	}
 
@@ -130,7 +118,7 @@ bool DownloadUrlToFile(const CString& strUrl, const CString& strTargetPath, CStr
 	DWORD dwBytesRead = 0;
 	bool bSuccess = true;
 	do {
-		if (!::InternetReadFile(hHttpFile, buffer, sizeof(buffer), &dwBytesRead)) {
+		if (!::InternetReadFile(hHttpFile.Get(), buffer, sizeof(buffer), &dwBytesRead)) {
 			strError.Format(_T("InternetReadFile failed (%u)"), ::GetLastError());
 			bSuccess = false;
 			break;
@@ -146,9 +134,6 @@ bool DownloadUrlToFile(const CString& strUrl, const CString& strTargetPath, CStr
 	} while (dwBytesRead != 0);
 
 	_close(fdOut);
-	::InternetCloseHandle(hHttpFile);
-	::InternetCloseHandle(hHttpConnection);
-	::InternetCloseHandle(hInternetSession);
 
 	if (!bSuccess)
 		(void)LongPathSeams::DeleteFileIfExists(strTargetPath);

@@ -21,6 +21,7 @@
 #include "ReleaseUpdateCheckSeams.h"
 #include "Preferences.h"
 #include "Version.h"
+#include "WinInetHandle.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -52,65 +53,56 @@ namespace
 		strJson.clear();
 		strError.Empty();
 
-		HINTERNET hInternetSession = ::InternetOpen(GetReleaseCheckUserAgent(), INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0);
-		if (hInternetSession == NULL) {
+		WinInetUtil::CInternetHandle hInternetSession(::InternetOpen(GetReleaseCheckUserAgent(), INTERNET_OPEN_TYPE_PRECONFIG, NULL, NULL, 0));
+		if (!hInternetSession) {
 			strError.Format(_T("InternetOpen failed (%u)"), ::GetLastError());
 			return false;
 		}
 
 		DWORD dwTimeoutMs = kReleaseCheckTimeoutMs;
-		::InternetSetOption(hInternetSession, INTERNET_OPTION_CONNECT_TIMEOUT, &dwTimeoutMs, sizeof(dwTimeoutMs));
-		::InternetSetOption(hInternetSession, INTERNET_OPTION_RECEIVE_TIMEOUT, &dwTimeoutMs, sizeof(dwTimeoutMs));
-		::InternetSetOption(hInternetSession, INTERNET_OPTION_SEND_TIMEOUT, &dwTimeoutMs, sizeof(dwTimeoutMs));
+		::InternetSetOption(hInternetSession.Get(), INTERNET_OPTION_CONNECT_TIMEOUT, &dwTimeoutMs, sizeof(dwTimeoutMs));
+		::InternetSetOption(hInternetSession.Get(), INTERNET_OPTION_RECEIVE_TIMEOUT, &dwTimeoutMs, sizeof(dwTimeoutMs));
+		::InternetSetOption(hInternetSession.Get(), INTERNET_OPTION_SEND_TIMEOUT, &dwTimeoutMs, sizeof(dwTimeoutMs));
 
 		const CString strHeaders(_T("Accept: application/vnd.github+json\r\n")
 			_T("Accept-Encoding: identity\r\n")
 			_T("X-GitHub-Api-Version: 2022-11-28\r\n"));
 		const DWORD dwFlags = INTERNET_FLAG_RELOAD | INTERNET_FLAG_DONT_CACHE | INTERNET_FLAG_NO_COOKIES | INTERNET_FLAG_SECURE;
-		HINTERNET hHttpFile = ::InternetOpenUrl(hInternetSession,
+		WinInetUtil::CInternetHandle hHttpFile(::InternetOpenUrl(hInternetSession.Get(),
 			thePrefs.GetVersionCheckApiURL(),
 			strHeaders,
 			strHeaders.GetLength(),
 			dwFlags,
-			0);
-		if (hHttpFile == NULL) {
+			0));
+		if (!hHttpFile) {
 			strError.Format(_T("InternetOpenUrl failed (%u)"), ::GetLastError());
-			::InternetCloseHandle(hInternetSession);
 			return false;
 		}
 
 		DWORD dwStatusCode = 0;
 		DWORD dwStatusLength = sizeof(dwStatusCode);
-		if (!::HttpQueryInfo(hHttpFile, HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &dwStatusCode, &dwStatusLength, NULL) || dwStatusCode != HTTP_STATUS_OK) {
+		if (!::HttpQueryInfo(hHttpFile.Get(), HTTP_QUERY_STATUS_CODE | HTTP_QUERY_FLAG_NUMBER, &dwStatusCode, &dwStatusLength, NULL) || dwStatusCode != HTTP_STATUS_OK) {
 			strError.Format(_T("Unexpected HTTP status %u"), static_cast<unsigned>(dwStatusCode));
-			::InternetCloseHandle(hHttpFile);
-			::InternetCloseHandle(hInternetSession);
 			return false;
 		}
 
 		BYTE buffer[16 * 1024] = {};
 		DWORD dwBytesRead = 0;
 		do {
-			if (!::InternetReadFile(hHttpFile, buffer, sizeof(buffer), &dwBytesRead)) {
+			if (!::InternetReadFile(hHttpFile.Get(), buffer, sizeof(buffer), &dwBytesRead)) {
 				strError.Format(_T("InternetReadFile failed (%u)"), ::GetLastError());
-				::InternetCloseHandle(hHttpFile);
-				::InternetCloseHandle(hInternetSession);
 				return false;
 			}
 
 			if (dwBytesRead != 0) {
 				if (strJson.size() + dwBytesRead > kMaxReleaseJsonBytes) {
 					strError = _T("Latest-release JSON response is too large.");
-					::InternetCloseHandle(hHttpFile);
-					::InternetCloseHandle(hInternetSession);
 					return false;
 				}
 				strJson.append(reinterpret_cast<const char*>(buffer), dwBytesRead);
 			}
 		} while (dwBytesRead != 0);
 
-		::InternetCloseHandle(hHttpFile);
-		::InternetCloseHandle(hInternetSession);
 		return true;
 	}
 }
