@@ -181,6 +181,9 @@ Nick* CIrcNickListCtrl::NewNick(const CString &sChannel, const CString &sNick)
 
 void CIrcNickListCtrl::RefreshNickList(const Channel *pChannel)
 {
+	if (!::IsWindow(m_hWnd))
+		return;
+
 	//Hide nickList to speed things up.
 	ShowWindow(SW_HIDE);
 	DeleteAllItems();
@@ -231,7 +234,7 @@ bool CIrcNickListCtrl::RemoveNick(const CString &sChannel, const CString &sNick)
 void CIrcNickListCtrl::DeleteAllNick(Channel *pChannel)
 {
 	if (pChannel) {
-		if (m_pParent != NULL && pChannel == m_pParent->m_wndChanSel.m_pCurrentChannel) {
+		if (m_pParent != NULL && pChannel == m_pParent->m_wndChanSel.m_pCurrentChannel && ::IsWindow(m_hWnd)) {
 			DeleteAllItems();
 			UpdateNickCount();
 		}

@@ -125,12 +125,6 @@ void CTransferWnd::OnInitialUpdate()
 	clientlistctrl.Init();
 	downloadclientsctrl.Init();
 
-	const UINT uSavedWnd2 = thePrefs.GetTransferWnd2();
-	if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidSecondaryPane(static_cast<int>(uSavedWnd2))))
-		LogInvalidTransferWndState(_T("CTransferWnd::OnInitialUpdate secondary pane"), uSavedWnd2);
-	m_uWnd2 = static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(uSavedWnd2)));
-	ShowWnd2(m_uWnd2);
-
 	AddAnchor(IDC_DOWNLOADLIST, TOP_LEFT, ANCHOR(100, thePrefs.GetSplitterbarPosition()));
 	AddAnchor(IDC_UPLOADLIST, ANCHOR(0, thePrefs.GetSplitterbarPosition()), BOTTOM_RIGHT);
 	AddAnchor(IDC_QUEUELIST, ANCHOR(0, thePrefs.GetSplitterbarPosition()), BOTTOM_RIGHT);
@@ -152,6 +146,12 @@ void CTransferWnd::OnInitialUpdate()
 	m_dwShowListIDC = uLists[uid > 5 ? 0 : uid];
 	if (uid > 5)
 		LogInvalidTransferWndState(_T("CTransferWnd::OnInitialUpdate primary list"), uid);
+
+	const UINT uSavedWnd2 = thePrefs.GetTransferWnd2();
+	if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidSecondaryPane(static_cast<int>(uSavedWnd2))))
+		LogInvalidTransferWndState(_T("CTransferWnd::OnInitialUpdate secondary pane"), uSavedWnd2);
+	m_uWnd2 = static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(uSavedWnd2)));
+	ShowWnd2(m_uWnd2);
 
 	//cats
 	m_rightclickindex = -1;

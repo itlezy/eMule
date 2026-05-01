@@ -2163,17 +2163,21 @@ void CemuleDlg::OnClose()
 	// explicitly delete all listview items which may hold ptrs to objects which will get deleted
 	// by the dtors (some lines below) to avoid potential problems during application shutdown.
 	updateShutdownPhase(82, _T("Closing eMule"), _T("Clearing UI lists and pending conversion jobs."));
-	transferwnd->GetDownloadList()->DeleteAllItems();
+	const auto deleteAllListItemsIfLive = [](CListCtrl *pCtrl) {
+		if (pCtrl != NULL && ::IsWindow(pCtrl->GetSafeHwnd()))
+			pCtrl->DeleteAllItems();
+	};
+	deleteAllListItemsIfLive(transferwnd->GetDownloadList());
 	chatwnd->chatselector.DeleteAllItems();
-	chatwnd->m_FriendListCtrl.DeleteAllItems();
+	deleteAllListItemsIfLive(&chatwnd->m_FriendListCtrl);
 	theApp.clientlist->DeleteAll();
 	searchwnd->DeleteAllSearchListCtrlItems();
-	sharedfileswnd->sharedfilesctrl.DeleteAllItems();
-	transferwnd->GetQueueList()->DeleteAllItems();
-	transferwnd->GetClientList()->DeleteAllItems();
-	transferwnd->GetUploadList()->DeleteAllItems();
-	transferwnd->GetDownloadClientsList()->DeleteAllItems();
-	serverwnd->serverlistctrl.DeleteAllItems();
+	deleteAllListItemsIfLive(&sharedfileswnd->sharedfilesctrl);
+	deleteAllListItemsIfLive(transferwnd->GetQueueList());
+	deleteAllListItemsIfLive(transferwnd->GetClientList());
+	deleteAllListItemsIfLive(transferwnd->GetUploadList());
+	deleteAllListItemsIfLive(transferwnd->GetDownloadClientsList());
+	deleteAllListItemsIfLive(&serverwnd->serverlistctrl);
 
 	updateShutdownPhase(90, _T("Closing eMule"), _T("Stopping bandwidth throttling and closing remaining child windows."));
 	theApp.uploadBandwidthThrottler->EndThread();

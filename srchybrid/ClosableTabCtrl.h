@@ -6,6 +6,7 @@ class CClosableTabCtrl : public CTabCtrl
 
 public:
 	CClosableTabCtrl();
+	BOOL DeleteAllItems();
 	BOOL DeleteItem(int nItem);
 
 	bool m_bClosable;

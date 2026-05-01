@@ -106,7 +106,8 @@ void CSearchDlg::OnClose()
 
 void CSearchDlg::DeleteAllSearchListCtrlItems()
 {
-	m_pwndResults->searchlistctrl.DeleteAllItems();
+	if (m_pwndResults != NULL && ::IsWindow(m_pwndResults->searchlistctrl.GetSafeHwnd()))
+		m_pwndResults->searchlistctrl.DeleteAllItems();
 }
 
 void CSearchDlg::OnShowWindow(BOOL bShow, UINT nStatus)

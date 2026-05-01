@@ -447,28 +447,22 @@ CPrefs* CKademlia::GetPrefs()
 
 CKademliaUDPListener* CKademlia::GetUDPListener()
 {
-	if (m_pInstance == NULL || m_pInstance->m_pUDPListener == NULL) {
-		ASSERT(0);
+	if (m_pInstance == NULL || m_pInstance->m_pUDPListener == NULL)
 		return NULL;
-	}
 	return m_pInstance->m_pUDPListener;
 }
 
 CRoutingZone* CKademlia::GetRoutingZone()
 {
-	if (m_pInstance == NULL || m_pInstance->m_pRoutingZone == NULL) {
-		ASSERT(0);
+	if (m_pInstance == NULL || m_pInstance->m_pRoutingZone == NULL)
 		return NULL;
-	}
 	return m_pInstance->m_pRoutingZone;
 }
 
 CIndexed* CKademlia::GetIndexed()
 {
-	if (m_pInstance == NULL || m_pInstance->m_pIndexed == NULL) {
-		ASSERT(0);
+	if (m_pInstance == NULL || m_pInstance->m_pIndexed == NULL)
 		return NULL;
-	}
 	return m_pInstance->m_pIndexed;
 }
 

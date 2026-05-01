@@ -370,6 +370,9 @@ void CChatSelector::ConnectingResult(CUpDownClient *sender, bool success)
 
 void CChatSelector::DeleteAllItems()
 {
+	if (!::IsWindow(m_hWnd))
+		return;
+
 	CTypedPtrList<CPtrList, CChatItem*> itemsToDelete;
 	TCITEM ti;
 	ti.mask = TCIF_PARAM;
