@@ -7,6 +7,7 @@
 #include "WebServer.h"
 #include "WebServerAuthStateSeams.h"
 #include "WebServerJson.h"
+#include "WebServerLegacySeams.h"
 #include "WebServerStaticFileSeams.h"
 #include "ClientCredits.h"
 #include "ClientList.h"
@@ -620,6 +621,7 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 
 			if (isUseGzip) {
 				bool bOk = false;
+				const bool bUseUncompressedFallback = WebServerLegacySeams::ShouldFallbackToUncompressedResponseAfterGzipFailure();
 				try {
 					CStringA strA(wc2utf8(Out));
 					uLongf destLen = strA.GetLength() + 1024;
@@ -633,7 +635,7 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 					AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Gzip compression failed in CWebServer::ProcessURL: page='%s'"), (LPCTSTR)(sPageForLog.IsEmpty() ? CString(_T("<root>")) : sPageForLog.Left(64)));
 					ASSERT(0);
 				}
-				if (!bOk) {
+				if (!bOk && bUseUncompressedFallback) {
 					isUseGzip = false;
 					delete[] gzipOut;
 					gzipOut = NULL;
@@ -3757,16 +3759,7 @@ CString CWebServer::_GetSearch(const ThreadData &Data)
 		pParams->strExpression = _ParseURL(Data.sURL, _T("tosearch"));
 		pParams->strFileType = _ParseURL(Data.sURL, _T("type"));
 		// for safety: this string is sent to servers and/or kad nodes, validate it!
-		if (!pParams->strFileType.IsEmpty()
-			&& pParams->strFileType != _T(ED2KFTSTR_ARCHIVE)
-			&& pParams->strFileType != _T(ED2KFTSTR_AUDIO)
-			&& pParams->strFileType != _T(ED2KFTSTR_CDIMAGE)
-			&& pParams->strFileType != _T(ED2KFTSTR_DOCUMENT)
-			&& pParams->strFileType != _T(ED2KFTSTR_IMAGE)
-			&& pParams->strFileType != _T(ED2KFTSTR_PROGRAM)
-			&& pParams->strFileType != _T(ED2KFTSTR_VIDEO)
-			&& pParams->strFileType != _T(ED2KFTSTR_EMULECOLLECTION))
-		{
+		if (WebServerLegacySeams::ShouldClearUnsupportedLegacySearchFileType(pParams->strFileType)) {
 			ASSERT(0);
 			AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Ignoring unsupported web search file type '%s'"), (LPCTSTR)pParams->strFileType.Left(64));
 			pParams->strFileType.Empty();
@@ -3794,22 +3787,29 @@ CString CWebServer::_GetSearch(const ThreadData &Data)
 		try {
 			if (pParams->eType != SearchTypeKademlia) {
 				if (!theApp.emuledlg->searchwnd->DoNewEd2kSearch(pParams)) {
-					delete pParams;
-					pParams = NULL;
+					if (WebServerLegacySeams::ShouldDeleteLegacySearchParamsAfterFailedStart()) {
+						delete pParams;
+						pParams = NULL;
+					}
 					strResponse = _GetPlainResString(IDS_ERR_NOTCONNECTED);
 				} else
 					::Sleep(SEC2MS(2));	// wait for some results to come in (thanks thread)
 			} else if (!theApp.emuledlg->searchwnd->DoNewKadSearch(pParams)) {
-				delete pParams;
-				pParams = NULL;
+				if (WebServerLegacySeams::ShouldDeleteLegacySearchParamsAfterFailedStart()) {
+					delete pParams;
+					pParams = NULL;
+				}
 				strResponse = _GetPlainResString(IDS_ERR_NOTCONNECTEDKAD);
 			}
 		} catch (...) {
 			AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Unexpected exception in CWebServer::_GetSearch: method='%s' query-len=%u"), (LPCTSTR)method.Left(32), pParams ? (UINT)pParams->strExpression.GetLength() : 0);
-			strResponse = _GetPlainResString(IDS_ERROR);
+			if (WebServerLegacySeams::ShouldUseGenericLegacySearchErrorAfterException())
+				strResponse = _GetPlainResString(IDS_ERROR);
 			ASSERT(0);
-			delete pParams;
-			pParams = NULL;
+			if (WebServerLegacySeams::ShouldDeleteLegacySearchParamsAfterFailedStart()) {
+				delete pParams;
+				pParams = NULL;
+			}
 		}
 		Out.Replace(_T("[Message]"), strResponse);
 
