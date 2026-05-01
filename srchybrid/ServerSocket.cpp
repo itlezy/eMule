@@ -17,6 +17,7 @@
 #include "stdafx.h"
 #include "emule.h"
 #include "ServerSocket.h"
+#include "ServerSocketSeams.h"
 #include "SearchList.h"
 #include "DownloadQueue.h"
 #include "Statistics.h"
@@ -612,13 +613,13 @@ bool CServerSocket::ProcessPacket(const BYTE *packet, uint32 size, uint8 opcode)
 		}
 		ASSERT(0);
 		ex->Delete();
-		if (opcode == OP_SEARCHRESULT || opcode == OP_FOUNDSOURCES)
+		if (ServerSocketSeams::GetProcessPacketFailureAction(opcode) == ServerSocketSeams::EServerPacketFailureAction::KeepConnection)
 			return true;
 	} catch (CMemoryException *ex) {
 		ProcessPacketError(size, opcode, _T("CMemoryException"), true);
 		ASSERT(0);
 		ex->Delete();
-		if (opcode == OP_SEARCHRESULT || opcode == OP_FOUNDSOURCES)
+		if (ServerSocketSeams::GetProcessPacketFailureAction(opcode) == ServerSocketSeams::EServerPacketFailureAction::KeepConnection)
 			return true;
 	} catch (const CString &error) {
 		ProcessPacketError(size, opcode, error);
@@ -710,7 +711,7 @@ bool CServerSocket::PacketReceived(Packet *packet)
 			if (!packet->UnPackPacket(250000)) {
 				if (thePrefs.GetVerbose())
 					DebugLogError(_T("Failed to decompress server TCP packet: protocol=0x%02x  opcode=0x%02x  size=%u"), packet->prot, packet->opcode, packet->size);
-				return true;
+				return ServerSocketSeams::ShouldConsumePackedPacketUnpackFailure();
 			}
 			packet->prot = OP_EDONKEYPROT;
 			if (thePrefs.GetDebugServerTCPLevel() > 1)
@@ -724,7 +725,9 @@ bool CServerSocket::PacketReceived(Packet *packet)
 #ifndef _DEBUG
 	} catch (...) {
 		DebugLogError(_T("Error: Unhandled exception while processing server TCP packet: protocol=0x%02x  opcode=0x%02x  size=%u")
-			, packet ? packet->prot : 0, packet ? packet->opcode : 0, packet ? packet->size : 0);
+			, ServerSocketSeams::GetPacketFieldOrDefault(packet, &Packet::prot, static_cast<uint8>(0))
+			, ServerSocketSeams::GetPacketFieldOrDefault(packet, &Packet::opcode, static_cast<uint8>(0))
+			, ServerSocketSeams::GetPacketFieldOrDefault(packet, &Packet::size, static_cast<uint32>(0)));
 		ASSERT(0);
 		return false;
 	}
