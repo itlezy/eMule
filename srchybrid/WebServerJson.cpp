@@ -477,6 +477,143 @@ json BuildPreferencesJson()
 }
 
 /**
+ * Wraps redesigned collection responses in a forward-compatible envelope when
+ * the resource route requested it.
+ */
+json ItemsEnvelopeIfRequested(const json &rParams, const json &rItems)
+{
+	return rParams.value("_items_envelope", false) ? json{{"items", rItems}} : rItems;
+}
+
+/**
+ * Serializes application identity and build metadata for the public API.
+ */
+json BuildAppJson(const char *pszBuildFlavor)
+{
+	return json{
+		{"appName", "eMule"},
+		{"version", StdUtf8FromCString(theApp.m_strCurVersionLong)},
+		{"build", pszBuildFlavor},
+#if defined(_M_ARM64)
+		{"platform", "arm64"}
+#else
+		{"platform", "x64"}
+#endif
+	};
+}
+
+/**
+ * Builds the complete shared-file collection without changing UI state.
+ */
+json BuildSharedFilesListJson()
+{
+	CKnownFilesMap sharedFiles;
+	theApp.sharedfiles->CopySharedFileMap(sharedFiles);
+	json result = json::array();
+	for (const CKnownFilesMap::CPair *pair = sharedFiles.PGetFirstAssoc(); pair != NULL; pair = sharedFiles.PGetNextAssoc(pair)) {
+		if (pair->value != NULL)
+			result.push_back(BuildSharedFileJson(*pair->value));
+	}
+	return result;
+}
+
+/**
+ * Builds the active upload or waiting queue collection for REST polling.
+ */
+json BuildUploadsListJson(const bool bWaitingQueue)
+{
+	json result = json::array();
+	if (!bWaitingQueue) {
+		for (POSITION pos = theApp.uploadqueue->GetFirstFromUploadList(); pos != NULL;) {
+			CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromUploadList(pos);
+			if (pClient != NULL)
+				result.push_back(BuildUploadJson(*pClient, false));
+		}
+	} else {
+		for (POSITION pos = theApp.uploadqueue->GetFirstFromWaitingList(); pos != NULL;) {
+			CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromWaitingList(pos);
+			if (pClient != NULL)
+				result.push_back(BuildUploadJson(*pClient, true));
+		}
+	}
+	return result;
+}
+
+/**
+ * Builds recent log entries with a caller-bounded maximum length.
+ */
+json BuildLogEntriesJson(const size_t maxEntries)
+{
+	const std::vector<SRecentLogEntry> entries = GetRecentLogEntries(maxEntries);
+	json result = json::array();
+	for (const SRecentLogEntry &entry : entries) {
+		CString strLevel(_T("info"));
+		switch (entry.uFlags & LOGMSGTYPEMASK) {
+		case LOG_WARNING:
+			strLevel = _T("warning");
+			break;
+		case LOG_ERROR:
+			strLevel = _T("error");
+			break;
+		case LOG_SUCCESS:
+			strLevel = _T("success");
+			break;
+		default:
+			break;
+		}
+
+		result.push_back(json{
+			{"timestamp", static_cast<int64_t>(entry.time.GetTime())},
+			{"message", StdUtf8FromCString(entry.strText)},
+			{"level", StdUtf8FromCString(strLevel)},
+			{"debug", (entry.uFlags & LOG_DEBUG) != 0}
+		});
+	}
+	return result;
+}
+
+/**
+ * Builds the transfer collection with the same filter semantics as the list
+ * endpoint.
+ */
+json BuildTransfersListJson(const json &rParams, SPipeApiError &rError)
+{
+	WebApiCommandSeams::STransfersListRequest request;
+	std::string strError;
+	if (!WebApiCommandSeams::TryParseTransfersListRequest(rParams, request, strError)) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = CStringFromStdUtf8(strError);
+		return json();
+	}
+	if (request.bHasCategory && request.uCategory >= thePrefs.GetCatCount()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("category is out of range");
+		return json();
+	}
+
+	const CString strFilter(CStringFromStdUtf8(request.strFilterLower));
+	json result = json::array();
+	POSITION pos = NULL;
+	while (true) {
+		CPartFile *pPartFile = theApp.downloadqueue->GetFileNext(pos);
+		if (pPartFile == NULL)
+			break;
+		if (request.bHasCategory && pPartFile->GetCategory() != request.uCategory)
+			continue;
+		if (!strFilter.IsEmpty()) {
+			CString strName(pPartFile->GetFileName());
+			strName.MakeLower();
+			CString strState(GetTransferStateName(*pPartFile));
+			strState.MakeLower();
+			if (strName.Find(strFilter) < 0 && strState.Find(strFilter) < 0)
+				continue;
+		}
+		result.push_back(BuildTransferJson(*pPartFile));
+	}
+	return result;
+}
+
+/**
  * Applies the curated mutable preferences and persists them through the
  * normal preferences save path.
  */
@@ -1025,16 +1162,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 #endif
 
 	if (strCommand == "app/version") {
-		return json{
-			{"appName", "eMule"},
-			{"version", StdUtf8FromCString(theApp.m_strCurVersionLong)},
-			{"build", pszBuildFlavor},
-#if defined(_M_ARM64)
-			{"platform", "arm64"}
-#else
-			{"platform", "x64"}
-#endif
-		};
+		return BuildAppJson(pszBuildFlavor);
 	}
 
 	if (strCommand == "app/preferences/get")
@@ -1054,6 +1182,43 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	if (strCommand == "stats/global")
 		return BuildGlobalStatsJson();
 
+	if (strCommand == "status/get") {
+		return json{
+			{"stats", BuildGlobalStatsJson()},
+			{"servers", BuildServerStatusJson()},
+			{"kad", BuildKadStatusJson()}
+		};
+	}
+
+	if (strCommand == "snapshot/get") {
+		SPipeApiError listError;
+		json transfers = BuildTransfersListJson(json::object(), listError);
+		if (!listError.strCode.IsEmpty()) {
+			rError = listError;
+			return json();
+		}
+
+		json servers = json::array();
+		for (INT_PTR i = 0; i < theApp.serverlist->GetServerCount(); ++i) {
+			CServer *const pServer = theApp.serverlist->GetServerAt(i);
+			if (pServer != NULL)
+				servers.push_back(BuildServerJson(*pServer));
+		}
+
+		const size_t maxEntries = static_cast<size_t>(max(1, params.value("limit", 200)));
+		return json{
+			{"app", BuildAppJson(pszBuildFlavor)},
+			{"status", json{{"stats", BuildGlobalStatsJson()}, {"servers", BuildServerStatusJson()}, {"kad", BuildKadStatusJson()}}},
+			{"transfers", transfers},
+			{"sharedFiles", BuildSharedFilesListJson()},
+			{"uploads", BuildUploadsListJson(false)},
+			{"uploadQueue", BuildUploadsListJson(true)},
+			{"servers", servers},
+			{"kad", BuildKadStatusJson()},
+			{"logs", BuildLogEntriesJson(maxEntries)}
+		};
+	}
+
 	if (strCommand == "servers/list") {
 		json result = json::array();
 		for (INT_PTR i = 0; i < theApp.serverlist->GetServerCount(); ++i) {
@@ -1061,7 +1226,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			if (pServer != NULL)
 				result.push_back(BuildServerJson(*pServer));
 		}
-		return result;
+		return ItemsEnvelopeIfRequested(params, result);
 	}
 
 	if (strCommand == "servers/status")
@@ -1169,14 +1334,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "shared/list") {
-		CKnownFilesMap sharedFiles;
-		theApp.sharedfiles->CopySharedFileMap(sharedFiles);
-		json result = json::array();
-		for (const CKnownFilesMap::CPair *pair = sharedFiles.PGetFirstAssoc(); pair != NULL; pair = sharedFiles.PGetNextAssoc(pair)) {
-			if (pair->value != NULL)
-				result.push_back(BuildSharedFileJson(*pair->value));
-		}
-		return result;
+		return ItemsEnvelopeIfRequested(params, BuildSharedFilesListJson());
 	}
 
 	if (strCommand == "shared/add") {
@@ -1293,21 +1451,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	if (strCommand == "uploads/list" || strCommand == "uploads/queue") {
 		const bool bWaitingQueue = strCommand == "uploads/queue";
-		json result = json::array();
-		if (!bWaitingQueue) {
-			for (POSITION pos = theApp.uploadqueue->GetFirstFromUploadList(); pos != NULL;) {
-				CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromUploadList(pos);
-				if (pClient != NULL)
-					result.push_back(BuildUploadJson(*pClient, false));
-			}
-		} else {
-			for (POSITION pos = theApp.uploadqueue->GetFirstFromWaitingList(); pos != NULL;) {
-				CUpDownClient *const pClient = theApp.uploadqueue->GetNextFromWaitingList(pos);
-				if (pClient != NULL)
-					result.push_back(BuildUploadJson(*pClient, true));
-			}
-		}
-		return result;
+		return ItemsEnvelopeIfRequested(params, BuildUploadsListJson(bWaitingQueue));
 	}
 
 	if (strCommand == "uploads/remove" || strCommand == "uploads/release_slot") {
@@ -1339,40 +1483,10 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "transfers/list") {
-		WebApiCommandSeams::STransfersListRequest request;
-		std::string strError;
-		if (!WebApiCommandSeams::TryParseTransfersListRequest(params, request, strError)) {
-			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = CStringFromStdUtf8(strError);
+		const json result = BuildTransfersListJson(params, rError);
+		if (!rError.strCode.IsEmpty())
 			return json();
-		}
-		if (request.bHasCategory && request.uCategory >= thePrefs.GetCatCount()) {
-			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("category is out of range");
-			return json();
-		}
-
-		const CString strFilter(CStringFromStdUtf8(request.strFilterLower));
-
-		json result = json::array();
-		POSITION pos = NULL;
-		while (true) {
-			CPartFile *pPartFile = theApp.downloadqueue->GetFileNext(pos);
-			if (pPartFile == NULL)
-				break;
-			if (request.bHasCategory && pPartFile->GetCategory() != request.uCategory)
-				continue;
-			if (!strFilter.IsEmpty()) {
-				CString strName(pPartFile->GetFileName());
-				strName.MakeLower();
-				CString strState(GetTransferStateName(*pPartFile));
-				strState.MakeLower();
-				if (strName.Find(strFilter) < 0 && strState.Find(strFilter) < 0)
-					continue;
-			}
-			result.push_back(BuildTransferJson(*pPartFile));
-		}
-		return result;
+		return ItemsEnvelopeIfRequested(params, result);
 	}
 
 	if (strCommand == "transfers/get") {
@@ -1388,7 +1502,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		json result = json::array();
 		for (POSITION pos = pPartFile->srclist.GetHeadPosition(); pos != NULL;)
 			result.push_back(BuildSourceJson(*pPartFile->srclist.GetNext(pos)));
-		return result;
+		return ItemsEnvelopeIfRequested(params, result);
 	}
 
 	if (strCommand == "transfers/source_browse") {
@@ -1434,6 +1548,59 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "transfers/add") {
+		auto addOneLink = [&](const std::string &rLinkUtf8, CString &rLinkError) -> json
+		{
+			CED2KLink *pLink = NULL;
+			try {
+				CString strLink(CStringFromStdUtf8(rLinkUtf8));
+				const bool bSlash = (strLink[strLink.GetLength() - 1] == _T('/'));
+				pLink = CED2KLink::CreateLinkFromUrl(bSlash ? strLink : strLink + _T('/'));
+				if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
+					throw CString(_T("invalid ed2k link"));
+
+				const CED2KFileLink *const pFileLink = pLink->GetFileLink();
+				theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, 0);
+				const json result{
+					{"hash", StdUtf8FromCString(HashToHex(pFileLink->GetHashKey()))},
+					{"name", StdUtf8FromCString(pFileLink->GetName())}
+				};
+				delete pLink;
+				return result;
+			} catch (const CString &rCaughtError) {
+				delete pLink;
+				rLinkError = rCaughtError;
+				return json();
+			}
+		};
+
+		if (params.contains("links")) {
+			if (!params["links"].is_array()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("links must be a string array");
+				return json();
+			}
+
+			json results = json::array();
+			for (const json &linkValue : params["links"]) {
+				std::string strLinkUtf8;
+				std::string strError;
+				if (!WebApiCommandSeams::TryParseTransferAddLink(json{{"link", linkValue}}, strLinkUtf8, strError)) {
+					results.push_back(json{{"ok", false}, {"error", strError}});
+					continue;
+				}
+
+				CString strLinkError;
+				json added = addOneLink(strLinkUtf8, strLinkError);
+				if (!strLinkError.IsEmpty())
+					results.push_back(json{{"ok", false}, {"error", StdUtf8FromCString(strLinkError)}});
+				else {
+					added["ok"] = true;
+					results.push_back(added);
+				}
+			}
+			return json{{"results", results}};
+		}
+
 		std::string strLinkUtf8;
 		std::string strError;
 		if (!WebApiCommandSeams::TryParseTransferAddLink(params, strLinkUtf8, strError)) {
@@ -1442,31 +1609,14 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 		}
 
-		CED2KLink *pLink = NULL;
-		try {
-			CString strLink(CStringFromStdUtf8(strLinkUtf8));
-			const bool bSlash = (strLink[strLink.GetLength() - 1] == _T('/'));
-			pLink = CED2KLink::CreateLinkFromUrl(bSlash ? strLink : strLink + _T('/'));
-			if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
-				throw CString(_T("invalid ed2k link"));
-
-			const CED2KFileLink *const pFileLink = pLink->GetFileLink();
-			theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, 0);
-			CPartFile *const pPartFile = theApp.downloadqueue->GetFileByID(pFileLink->GetHashKey());
-			(void)pPartFile;
-
-			const json result{
-				{"hash", StdUtf8FromCString(HashToHex(pFileLink->GetHashKey()))},
-				{"name", StdUtf8FromCString(pFileLink->GetName())}
-			};
-			delete pLink;
-			return result;
-		} catch (const CString &rLinkError) {
-			delete pLink;
+		CString strLinkError;
+		json result = addOneLink(strLinkUtf8, strLinkError);
+		if (!strLinkError.IsEmpty()) {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = rLinkError;
+			rError.strMessage = strLinkError;
 			return json();
 		}
+		return result;
 	}
 
 	auto handleTransferBulkMutation = [&](LPCTSTR pszAction) -> json
@@ -1782,32 +1932,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	if (strCommand == "log/get") {
 		const size_t maxEntries = static_cast<size_t>(max(1, params.value("limit", 200)));
-		const std::vector<SRecentLogEntry> entries = GetRecentLogEntries(maxEntries);
-		json result = json::array();
-		for (const SRecentLogEntry &entry : entries) {
-			CString strLevel(_T("info"));
-			switch (entry.uFlags & LOGMSGTYPEMASK) {
-			case LOG_WARNING:
-				strLevel = _T("warning");
-				break;
-			case LOG_ERROR:
-				strLevel = _T("error");
-				break;
-			case LOG_SUCCESS:
-				strLevel = _T("success");
-				break;
-			default:
-				break;
-			}
-
-			result.push_back(json{
-				{"timestamp", static_cast<int64_t>(entry.time.GetTime())},
-				{"message", StdUtf8FromCString(entry.strText)},
-				{"level", StdUtf8FromCString(strLevel)},
-				{"debug", (entry.uFlags & LOG_DEBUG) != 0}
-			});
-		}
-		return result;
+		return ItemsEnvelopeIfRequested(params, BuildLogEntriesJson(maxEntries));
 	}
 
 rError.strCode = "INVALID_ARGUMENT";

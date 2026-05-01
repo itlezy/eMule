@@ -106,6 +106,12 @@ void CWebSocket::OnRequestReceived(const char *pHeader, DWORD dwHeaderLen, const
 		sMethod = "POST";
 		CStringA sData(pData, dwDataLen);
 		sURL = '?' + sData.Trim();	// '?' to imitate GET syntax for ParseURL
+	} else if (strncmp(sHeader, "PATCH", 5) == 0) {
+		sMethod = "PATCH";
+		sURL = sHeader.Trim();
+	} else if (strncmp(sHeader, "DELETE", 6) == 0) {
+		sMethod = "DELETE";
+		sURL = sHeader.Trim();
 	}
 	int iFirstSpace = sHeader.Find(' ');
 	if (iFirstSpace >= 0) {

@@ -83,7 +83,7 @@ namespace ReleaseUpdateCheckSeams
 		unsigned uParsed = 0;
 		do {
 			const unsigned uDigit = static_cast<unsigned>(text[uPos] - '0');
-			if (uParsed > (std::numeric_limits<unsigned>::max() - uDigit) / 10u)
+			if (uParsed > ((std::numeric_limits<unsigned>::max)() - uDigit) / 10u)
 				return false;
 			uParsed = uParsed * 10u + uDigit;
 			++uPos;

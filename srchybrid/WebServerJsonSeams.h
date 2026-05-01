@@ -162,6 +162,57 @@ inline bool TryParseUnsignedQueryValue(const std::map<std::string, std::string> 
 }
 
 /**
+ * @brief Copies common collection query parameters into one command payload.
+ */
+inline void CopyTransferListQueryParams(const std::map<std::string, std::string> &rQuery, json &rParams)
+{
+	const auto itFilter = rQuery.find("filter");
+	if (itFilter != rQuery.end())
+		rParams["filter"] = itFilter->second;
+	uint64_t ullCategory = 0;
+	if (TryParseUnsignedQueryValue(rQuery, "category", ullCategory))
+		rParams["category"] = ullCategory;
+}
+
+/**
+ * @brief Copies the bounded log-tail query parameter into one command payload.
+ */
+inline void CopyLogQueryParams(const std::map<std::string, std::string> &rQuery, json &rParams)
+{
+	uint64_t ullLimit = 0;
+	if (TryParseUnsignedQueryValue(rQuery, "limit", ullLimit))
+		rParams["limit"] = ullLimit > INT_MAX ? INT_MAX : static_cast<int>(ullLimit);
+}
+
+/**
+ * @brief Parses an endpoint route token in the public "address:port" form.
+ */
+inline bool TryCopyEndpointToken(const std::string &rValue, json &rParams)
+{
+	const std::string::size_type uColon = rValue.rfind(':');
+	if (uColon == std::string::npos || uColon == 0 || uColon + 1 >= rValue.size())
+		return false;
+
+	char *pEnd = NULL;
+	errno = 0;
+	const unsigned long ulPort = std::strtoul(rValue.substr(uColon + 1).c_str(), &pEnd, 10);
+	if (errno != 0 || pEnd == NULL || *pEnd != '\0' || ulPort == 0 || ulPort > 0xFFFFul)
+		return false;
+
+	rParams["addr"] = rValue.substr(0, uColon);
+	rParams["port"] = static_cast<unsigned>(ulPort);
+	return true;
+}
+
+/**
+ * @brief Marks list responses that should use the redesigned resource envelope.
+ */
+inline void RequestItemsEnvelope(json &rParams)
+{
+	rParams["_items_envelope"] = true;
+}
+
+/**
  * @brief Parses one JSON request body and reports the stable REST error text
  * when parsing fails.
  */
@@ -239,16 +290,24 @@ inline bool TryBuildRoute(
 		body = json::object();
 	}
 
-	const std::string strMethodUpper(ToLowerAscii(rMethod));
-	const bool bGet = strMethodUpper == "get";
-	const bool bPost = strMethodUpper == "post";
-	if (!bGet && !bPost) {
+	const std::string strMethodLower(ToLowerAscii(rMethod));
+	const bool bGet = strMethodLower == "get";
+	const bool bPost = strMethodLower == "post";
+	const bool bPatch = strMethodLower == "patch";
+	const bool bDelete = strMethodLower == "delete";
+	if (!bGet && !bPost && !bPatch && !bDelete) {
 		rErrorCode = "INVALID_ARGUMENT";
-		rErrorMessage = "only GET and POST are supported";
+		rErrorMessage = "only GET, POST, PATCH, and DELETE are supported";
 		return false;
 	}
 
-	if (route.size() == 2 && route[0] == "app" && route[1] == "version" && bGet) {
+	if (route.empty()) {
+		rErrorCode = "NOT_FOUND";
+		rErrorMessage = "API route not found";
+		return false;
+	}
+
+	if (route.size() == 1 && route[0] == "app" && bGet) {
 		rRoute.strCommand = "app/version";
 		return true;
 	}
@@ -257,7 +316,7 @@ inline bool TryBuildRoute(
 			rRoute.strCommand = "app/preferences/get";
 			return true;
 		}
-		if (bPost) {
+		if (bPatch) {
 			rRoute.strCommand = "app/preferences/set";
 			rRoute.params["prefs"] = body;
 			return true;
@@ -267,30 +326,23 @@ inline bool TryBuildRoute(
 		rRoute.strCommand = "app/shutdown";
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "stats" && route[1] == "global" && bGet) {
-		rRoute.strCommand = "stats/global";
+	if (route.size() == 1 && route[0] == "status" && bGet) {
+		rRoute.strCommand = "status/get";
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "snapshot" && bGet) {
+		rRoute.strCommand = "snapshot/get";
+		CopyLogQueryParams(query, rRoute.params);
 		return true;
 	}
 	if (route.size() == 1 && route[0] == "transfers" && bGet) {
 		rRoute.strCommand = "transfers/list";
-		const auto itFilter = query.find("filter");
-		if (itFilter != query.end())
-			rRoute.params["filter"] = itFilter->second;
-		uint64_t ullCategory = 0;
-		if (TryParseUnsignedQueryValue(query, "category", ullCategory))
-			rRoute.params["category"] = ullCategory;
+		CopyTransferListQueryParams(query, rRoute.params);
+		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "transfers" && route[1] == "add" && bPost) {
+	if (route.size() == 1 && route[0] == "transfers" && bPost) {
 		rRoute.strCommand = "transfers/add";
-		rRoute.params = body;
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "transfers"
-		&& (route[1] == "pause" || route[1] == "resume" || route[1] == "stop" || route[1] == "delete")
-		&& bPost)
-	{
-		rRoute.strCommand = "transfers/" + route[1];
 		rRoute.params = body;
 		return true;
 	}
@@ -299,9 +351,46 @@ inline bool TryBuildRoute(
 		rRoute.params["hash"] = route[1];
 		return true;
 	}
+	if (route.size() == 2 && route[0] == "transfers" && bPatch) {
+		const std::string strAction = body.value("action", std::string());
+		if (strAction == "pause" || strAction == "resume" || strAction == "stop") {
+			rRoute.strCommand = "transfers/" + strAction;
+			rRoute.params = body;
+			rRoute.params["hashes"] = json::array({route[1]});
+			return true;
+		}
+		if (strAction == "recheck") {
+			rRoute.strCommand = "transfers/recheck";
+			rRoute.params = body;
+			rRoute.params["hash"] = route[1];
+			return true;
+		}
+		if (body.contains("priority")) {
+			rRoute.strCommand = "transfers/set_priority";
+			rRoute.params = body;
+			rRoute.params["hash"] = route[1];
+			return true;
+		}
+		if (body.contains("category")) {
+			rRoute.strCommand = "transfers/set_category";
+			rRoute.params = body;
+			rRoute.params["hash"] = route[1];
+			return true;
+		}
+		rErrorCode = "INVALID_ARGUMENT";
+		rErrorMessage = "transfer PATCH requires action, priority, or category";
+		return false;
+	}
+	if (route.size() == 2 && route[0] == "transfers" && bDelete) {
+		rRoute.strCommand = "transfers/delete";
+		rRoute.params = body;
+		rRoute.params["hashes"] = json::array({route[1]});
+		return true;
+	}
 	if (route.size() == 3 && route[0] == "transfers" && route[2] == "sources" && bGet) {
 		rRoute.strCommand = "transfers/sources";
 		rRoute.params["hash"] = route[1];
+		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
 	if (route.size() == 4 && route[0] == "transfers" && route[2] == "sources" && route[3] == "browse" && bPost) {
@@ -310,101 +399,126 @@ inline bool TryBuildRoute(
 		rRoute.params["hash"] = route[1];
 		return true;
 	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "recheck" && bPost) {
-		rRoute.strCommand = "transfers/recheck";
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "priority" && bPost) {
-		rRoute.strCommand = "transfers/set_priority";
-		rRoute.params = body;
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 3 && route[0] == "transfers" && route[2] == "category" && bPost) {
-		rRoute.strCommand = "transfers/set_category";
-		rRoute.params = body;
-		rRoute.params["hash"] = route[1];
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "uploads" && route[1] == "list" && bGet) {
+	if (route.size() == 1 && route[0] == "uploads" && bGet) {
 		rRoute.strCommand = "uploads/list";
+		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "uploads" && route[1] == "queue" && bGet) {
+	if (route.size() == 1 && route[0] == "upload-queue" && bGet) {
 		rRoute.strCommand = "uploads/queue";
+		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "uploads" && (route[1] == "remove" || route[1] == "release_slot") && bPost) {
-		rRoute.strCommand = "uploads/" + route[1];
+	if (route.size() == 2 && route[0] == "uploads" && bDelete) {
+		rRoute.strCommand = "uploads/remove";
+		rRoute.params = body;
+		if (route[1].size() == 32)
+			rRoute.params["userHash"] = route[1];
+		return true;
+	}
+	if (route.size() == 3 && route[0] == "uploads" && route[2] == "release-slot" && bPost) {
+		rRoute.strCommand = "uploads/release_slot";
+		rRoute.params = body;
+		if (route[1].size() == 32)
+			rRoute.params["userHash"] = route[1];
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "servers" && bGet) {
+		rRoute.strCommand = "servers/list";
+		RequestItemsEnvelope(rRoute.params);
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "servers" && bPost) {
+		rRoute.strCommand = "servers/add";
 		rRoute.params = body;
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "servers" && (route[1] == "list" || route[1] == "status") && bGet) {
-		rRoute.strCommand = "servers/" + route[1];
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "servers" && (route[1] == "connect" || route[1] == "disconnect" || route[1] == "add" || route[1] == "remove") && bPost) {
-		rRoute.strCommand = "servers/" + route[1];
+	if (route.size() == 2 && route[0] == "servers" && bPatch) {
+		const std::string strAction = body.value("action", std::string());
+		if (strAction != "connect" && strAction != "disconnect") {
+			rErrorCode = "INVALID_ARGUMENT";
+			rErrorMessage = "server PATCH action must be connect or disconnect";
+			return false;
+		}
+		rRoute.strCommand = "servers/" + strAction;
 		rRoute.params = body;
+		if (!TryCopyEndpointToken(route[1], rRoute.params) && strAction == "connect") {
+			rErrorCode = "INVALID_ARGUMENT";
+			rErrorMessage = "server id must use address:port";
+			return false;
+		}
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "kad" && route[1] == "status" && bGet) {
+	if (route.size() == 2 && route[0] == "servers" && bDelete) {
+		rRoute.strCommand = "servers/remove";
+		rRoute.params = body;
+		if (!TryCopyEndpointToken(route[1], rRoute.params)) {
+			rErrorCode = "INVALID_ARGUMENT";
+			rErrorMessage = "server id must use address:port";
+			return false;
+		}
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "kad" && bGet) {
 		rRoute.strCommand = "kad/status";
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "kad" && (route[1] == "connect" || route[1] == "disconnect" || route[1] == "recheck_firewall") && bPost) {
-		rRoute.strCommand = "kad/" + route[1];
-		return true;
+	if (route.size() == 1 && route[0] == "kad" && bPatch) {
+		const std::string strAction = body.value("action", std::string());
+		if (strAction == "connect" || strAction == "disconnect" || strAction == "recheck_firewall") {
+			rRoute.strCommand = "kad/" + strAction;
+			return true;
+		}
+		rErrorCode = "INVALID_ARGUMENT";
+		rErrorMessage = "kad PATCH action must be connect, disconnect, or recheck_firewall";
+		return false;
 	}
-	if (route.size() == 2 && route[0] == "shared" && route[1] == "list" && bGet) {
+	if (route.size() == 1 && route[0] == "shared-files" && bGet) {
 		rRoute.strCommand = "shared/list";
+		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "shared" && route[1] == "add" && bPost) {
+	if (route.size() == 1 && route[0] == "shared-files" && bPost) {
 		rRoute.strCommand = "shared/add";
 		rRoute.params = body;
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "shared" && route[1] == "remove" && bPost) {
+	if (route.size() == 1 && route[0] == "shared-files" && bDelete) {
 		rRoute.strCommand = "shared/remove";
 		rRoute.params = body;
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "shared" && bGet) {
+	if (route.size() == 2 && route[0] == "shared-files" && bGet) {
 		rRoute.strCommand = "shared/get";
 		rRoute.params["hash"] = route[1];
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "search" && route[1] == "start" && bPost) {
+	if (route.size() == 2 && route[0] == "shared-files" && bDelete) {
+		rRoute.strCommand = "shared/remove";
+		rRoute.params = body;
+		rRoute.params["hash"] = route[1];
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "searches" && bPost) {
 		rRoute.strCommand = "search/start";
 		rRoute.params = body;
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "search" && route[1] == "results" && bGet) {
+	if (route.size() == 2 && route[0] == "searches" && bGet) {
 		rRoute.strCommand = "search/results";
-		const auto it = query.find("search_id");
-		if (it != query.end())
-			rRoute.params["search_id"] = it->second;
+		rRoute.params["search_id"] = route[1];
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "search" && route[1] == "stop" && bPost) {
+	if (route.size() == 2 && route[0] == "searches" && bDelete) {
 		rRoute.strCommand = "search/stop";
 		rRoute.params = body;
+		rRoute.params["search_id"] = route[1];
 		return true;
 	}
-	if (route.size() == 1 && route[0] == "log" && bGet) {
+	if (route.size() == 1 && route[0] == "logs" && bGet) {
 		rRoute.strCommand = "log/get";
-		uint64_t ullLimit = 0;
-		if (TryParseUnsignedQueryValue(query, "limit", ullLimit))
-			rRoute.params["limit"] = ullLimit > INT_MAX ? INT_MAX : static_cast<int>(ullLimit);
-		return true;
-	}
-	if (route.size() == 2 && route[0] == "log" && route[1] == "get" && bGet) {
-		rRoute.strCommand = "log/get";
-		uint64_t ullLimit = 0;
-		if (TryParseUnsignedQueryValue(query, "limit", ullLimit))
-			rRoute.params["limit"] = ullLimit > INT_MAX ? INT_MAX : static_cast<int>(ullLimit);
+		CopyLogQueryParams(query, rRoute.params);
+		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
 
