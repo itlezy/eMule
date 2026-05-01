@@ -2637,7 +2637,7 @@ void CPreferences::LoadPreferences()
 #endif
 
 	m_nWebMirrorAlertLevel = ini.GetInt(_T("WebMirrorAlertLevel"), 0);
-	updatenotify = ini.GetBool(_T("UpdateNotifyTestClient"), true);
+	updatenotify = ini.GetBool(_T("UpdateNotifyTestClient"), false);
 
 	SetUserNick(ini.GetStringUTF8(_T("Nick"), DEFAULT_NICK));
 	if (strNick.IsEmpty() || IsDefaultNick(strNick))
@@ -2784,7 +2784,7 @@ void CPreferences::LoadPreferences()
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
 	splashscreen = ini.GetBool(_T("Splashscreen"), false);
-	bringtoforeground = ini.GetBool(_T("BringToFront"), true);
+	bringtoforeground = ini.GetBool(_T("BringToFront"), false);
 	transferDoubleclick = ini.GetBool(_T("TransferDoubleClick"), true);
 	beepOnError = ini.GetBool(_T("BeepOnError"), false);
 	confirmExit = ini.GetBool(_T("ConfirmExit"), false);
@@ -2930,9 +2930,9 @@ void CPreferences::LoadPreferences()
 	m_btransferfullchunks = ini.GetBool(_T("FullChunkTransfers"), true);
 	m_istartnextfile = ini.GetInt(_T("StartNextFile"), 0);
 	m_bshowoverhead = ini.GetBool(_T("ShowOverhead"), false);
-	m_bMoviePreviewBackup = ini.GetBool(_T("VideoPreviewBackupped"), true);
+	m_bMoviePreviewBackup = ini.GetBool(_T("VideoPreviewBackupped"), false);
 	m_iPreviewSmallBlocks = PreferenceUiSeams::NormalizePreviewSmallBlocks(ini.GetInt(_T("PreviewSmallBlocks"), 0));
-	m_bPreviewCopiedArchives = ini.GetBool(_T("PreviewCopiedArchives"), true);
+	m_bPreviewCopiedArchives = ini.GetBool(_T("PreviewCopiedArchives"), false);
 	m_bInspectAllFileTypes = ini.GetBool(_T("InspectAllFileTypes"), false);
 	m_bAllocFull = ini.GetBool(_T("AllocateFullFile"), 0);
 	m_bAutomaticArcPreviewStart = ini.GetBool(_T("AutoArchivePreviewStart"), false);
