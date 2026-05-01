@@ -94,6 +94,20 @@ struct STransferBulkMutationRequest
 	}
 };
 
+/**
+ * @brief Carries the validated shared-file rating/comment mutation payload.
+ */
+struct SSharedFileRatingCommentRequest
+{
+	std::string strComment;
+	int iRating;
+
+	SSharedFileRatingCommentRequest()
+		: iRating(0)
+	{
+	}
+};
+
 inline std::string ToLowerAscii(const std::string &rValue)
 {
 	std::string result(rValue);
@@ -330,6 +344,32 @@ inline bool TryParseTransferBulkMutationRequest(const json &rParams, STransferBu
 	for (const json &hashValue : rParams["hashes"])
 		rRequest.hashes.push_back(hashValue);
 	rRequest.bDeleteFiles = rParams.value("deleteFiles", rParams.value("delete_files", false));
+	return true;
+}
+
+/**
+ * @brief Validates a shared-file rating/comment mutation payload before the UI
+ * layer resolves the shared-file hash.
+ */
+inline bool TryParseSharedFileRatingCommentRequest(const json &rParams, SSharedFileRatingCommentRequest &rRequest, std::string &rError)
+{
+	if (!rParams.contains("comment") || !rParams["comment"].is_string()) {
+		rError = "comment must be a string";
+		return false;
+	}
+	if (!rParams.contains("rating") || !rParams["rating"].is_number_integer()) {
+		rError = "rating must be an integer between 0 and 5";
+		return false;
+	}
+
+	const int iRating = rParams["rating"].get<int>();
+	if (iRating < 0 || iRating > 5) {
+		rError = "rating must be an integer between 0 and 5";
+		return false;
+	}
+
+	rRequest.strComment = rParams["comment"].get<std::string>();
+	rRequest.iRating = iRating;
 	return true;
 }
 

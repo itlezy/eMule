@@ -464,6 +464,10 @@ json BuildSharedFileJson(const CKnownFile &rKnownFile)
 		{"partCount", rKnownFile.GetPartCount()},
 		{"partFile", rKnownFile.IsPartFile()},
 		{"complete", !rKnownFile.IsPartFile()},
+		{"comment", StdUtf8FromCString(const_cast<CKnownFile&>(rKnownFile).GetFileComment())},
+		{"rating", const_cast<CKnownFile&>(rKnownFile).GetFileRating()},
+		{"hasComment", rKnownFile.HasComment()},
+		{"userRating", rKnownFile.UserRating()},
 		{"publishedEd2k", rKnownFile.GetPublishedED2K()},
 		{"sharedByRule", theApp.sharedfiles->ShouldBeShared(rKnownFile.GetPath(), rKnownFile.GetFilePath(), false)}
 	};
@@ -580,7 +584,7 @@ json BuildAppJson(const char *pszBuildFlavor)
 			{"categoryAssignment", true},
 			{"categoryCrud", false},
 			{"renameFile", false},
-			{"fileRatingComment", false}
+			{"fileRatingComment", true}
 		}},
 #if defined(_M_ARM64)
 		{"platform", "arm64"}
@@ -941,8 +945,33 @@ json BuildSearchResultJson(const CSearchFile &rSearchFile)
 		{"clientCount", rSearchFile.GetClientsCount()},
 		{"serverCount", rSearchFile.GetServers().GetSize()},
 		{"kadPublishInfo", rSearchFile.GetKadPublishInfo()},
+		{"rating", rSearchFile.UserRating()},
+		{"hasComment", rSearchFile.HasComment()},
 		{"spam", rSearchFile.IsConsideredSpam()}
 	};
+}
+
+/**
+ * Applies a validated rating/comment update to one shared file.
+ */
+bool TryApplySharedFileRatingComment(CKnownFile &rKnownFile, const json &rParams, SPipeApiError &rError)
+{
+	WebApiCommandSeams::SSharedFileRatingCommentRequest request;
+	std::string strError;
+	if (!WebApiCommandSeams::TryParseSharedFileRatingCommentRequest(rParams, request, strError)) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = CStringFromStdUtf8(strError);
+		return false;
+	}
+
+	CString strComment(CStringFromStdUtf8(request.strComment));
+	if (strComment.GetLength() > MAXFILECOMMENTLEN)
+		strComment.Truncate(MAXFILECOMMENTLEN);
+
+	rKnownFile.SetFileComment(strComment);
+	rKnownFile.SetFileRating(static_cast<UINT>(request.iRating));
+	rKnownFile.UpdateFileRatingCommentAvail(true);
+	return true;
 }
 
 /**
@@ -1480,6 +1509,29 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			rError.strMessage = _T("shared file not found");
 			return json();
 		}
+		return BuildSharedFileJson(*pKnownFile);
+	}
+
+	if (strCommand == "shared/set_rating_comment") {
+		uchar hash[MDX_DIGEST_SIZE];
+		if (!TryDecodeHash(params.contains("hash") ? params["hash"] : json(), hash, rError))
+			return json();
+
+		CKnownFile *const pKnownFile = theApp.sharedfiles->GetFileByID(hash);
+		if (pKnownFile == NULL) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("shared file not found");
+			return json();
+		}
+		if (pKnownFile->IsPartFile()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("part files cannot have shared-file rating/comment metadata set through this endpoint");
+			return json();
+		}
+		if (!TryApplySharedFileRatingComment(*pKnownFile, params, rError))
+			return json();
+
+		RefreshSharedFilesUi();
 		return BuildSharedFileJson(*pKnownFile);
 	}
 

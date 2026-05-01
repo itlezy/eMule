@@ -493,6 +493,12 @@ inline bool TryBuildRoute(
 		rRoute.params = body;
 		return true;
 	}
+	if (route.size() == 2 && route[0] == "shared-files" && bPatch) {
+		rRoute.strCommand = "shared/set_rating_comment";
+		rRoute.params = body;
+		rRoute.params["hash"] = route[1];
+		return true;
+	}
 	if (route.size() == 2 && route[0] == "shared-files" && bGet) {
 		rRoute.strCommand = "shared/get";
 		rRoute.params["hash"] = route[1];
