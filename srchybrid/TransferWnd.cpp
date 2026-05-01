@@ -19,6 +19,7 @@
 #include "emuledlg.h"
 #include "SearchDlg.h"
 #include "TransferWnd.h"
+#include "TransferWndSeams.h"
 #include "TransferDlg.h"
 #include "OtherFunctions.h"
 #include "ClientList.h"
@@ -30,6 +31,7 @@
 #include "UserMsgs.h"
 #include "SharedFilesWnd.h"
 #include "HelpIDs.h"
+#include "Log.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -54,6 +56,14 @@ static char THIS_FILE[] = __FILE__;
 #define	WND2_NUM_BUTTONS	4
 
 // CTransferWnd dialog
+
+namespace
+{
+void LogInvalidTransferWndState(LPCTSTR pszContext, const UINT uValue)
+{
+	AddDebugLogLine(DLP_VERYHIGH, false, _T("*** Invalid transfer window state in %s: value=%u"), pszContext, uValue);
+}
+}
 
 IMPLEMENT_DYNCREATE(CTransferWnd, CResizableFormView)
 
@@ -115,7 +125,10 @@ void CTransferWnd::OnInitialUpdate()
 	clientlistctrl.Init();
 	downloadclientsctrl.Init();
 
-	m_uWnd2 = (EWnd2)thePrefs.GetTransferWnd2();
+	const UINT uSavedWnd2 = thePrefs.GetTransferWnd2();
+	if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidSecondaryPane(static_cast<int>(uSavedWnd2))))
+		LogInvalidTransferWndState(_T("CTransferWnd::OnInitialUpdate secondary pane"), uSavedWnd2);
+	m_uWnd2 = static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(uSavedWnd2)));
 	ShowWnd2(m_uWnd2);
 
 	AddAnchor(IDC_DOWNLOADLIST, TOP_LEFT, ANCHOR(100, thePrefs.GetSplitterbarPosition()));
@@ -137,6 +150,8 @@ void CTransferWnd::OnInitialUpdate()
 		, IDC_CLIENTLIST};					//5
 	UINT uid = thePrefs.GetTransferWnd1();
 	m_dwShowListIDC = uLists[uid > 5 ? 0 : uid];
+	if (uid > 5)
+		LogInvalidTransferWndState(_T("CTransferWnd::OnInitialUpdate primary list"), uid);
 
 	//cats
 	m_rightclickindex = -1;
@@ -229,7 +244,12 @@ void CTransferWnd::DoResize(int delta)
 			downloadclientsctrl.UpdateWindow();
 			break;
 		default:
+			if (TransferWndSeams::ShouldLogInvalidState(false))
+				LogInvalidTransferWndState(_T("CTransferWnd::DoResize secondary pane"), static_cast<UINT>(m_uWnd2));
 			ASSERT(0);
+			m_uWnd2 = static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(m_uWnd2)));
+			ShowWnd2(m_uWnd2);
+			return;
 		}
 		if (pHeaderUpdate != NULL) {
 			pHeaderUpdate->Invalidate();
@@ -337,7 +357,10 @@ BOOL CTransferWnd::PreTranslateMessage(MSG *pMsg)
 					downloadclientsctrl.ShowSelectedUserDetails();
 					break;
 				default:
+					if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsUserDetailPrimaryListId(m_dwShowListIDC)))
+						LogInvalidTransferWndState(_T("CTransferWnd::PreTranslateMessage primary list"), m_dwShowListIDC);
 					ASSERT(0);
+					break;
 				}
 			} else {
 				switch (m_uWnd2) {
@@ -354,7 +377,10 @@ BOOL CTransferWnd::PreTranslateMessage(MSG *pMsg)
 					downloadclientsctrl.ShowSelectedUserDetails();
 					break;
 				default:
+					if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsUserDetailSecondaryPane(static_cast<int>(m_uWnd2))))
+						LogInvalidTransferWndState(_T("CTransferWnd::PreTranslateMessage secondary pane"), static_cast<UINT>(m_uWnd2));
 					ASSERT(0);
+					break;
 				}
 			}
 		}
@@ -420,7 +446,10 @@ void CTransferWnd::UpdateListCount(EWnd2 listindex, int iCount /*=-1*/)
 			m_btnWnd2.SetWindowText(strBuffer);
 			break;
 		default:
+			if (TransferWndSeams::ShouldLogInvalidState(false))
+				LogInvalidTransferWndState(_T("CTransferWnd::UpdateListCount secondary pane"), static_cast<UINT>(m_uWnd2));
 			ASSERT(0);
+			return;
 		}
 		break;
 	case IDC_DOWNLOADLIST:
@@ -453,8 +482,13 @@ void CTransferWnd::UpdateListCount(EWnd2 listindex, int iCount /*=-1*/)
 			strBuffer.Format(_T("%s (%i)"), (LPCTSTR)GetResString(IDS_DOWNLOADING), (iCount < 0) ? downloadclientsctrl.GetItemCount() : iCount);
 			m_btnWnd1.SetWindowText(strBuffer);
 		}
+		break;
 	default:
-		/*ASSERT(0)*/;
+		if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidPrimaryListId(m_dwShowListIDC)))
+			LogInvalidTransferWndState(_T("CTransferWnd::UpdateListCount primary list"), m_dwShowListIDC);
+		ASSERT(0);
+		m_dwShowListIDC = TransferWndSeams::NormalizePrimaryListId(m_dwShowListIDC);
+		return;
 	}
 }
 
@@ -506,13 +540,23 @@ void CTransferWnd::SwitchUploadList()
 		SetWnd2Icon(w2iUploading);
 		break;
 	default:
+		if (TransferWndSeams::ShouldLogInvalidState(false))
+			LogInvalidTransferWndState(_T("CTransferWnd::SwitchUploadList secondary pane"), static_cast<UINT>(m_uWnd2));
 		ASSERT(0);
+		ShowWnd2(static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(m_uWnd2))));
+		return;
 	}
 	UpdateListCount(m_uWnd2);
 }
 
 void CTransferWnd::ShowWnd2(EWnd2 uWnd2)
 {
+	if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidSecondaryPane(static_cast<int>(uWnd2)))) {
+		LogInvalidTransferWndState(_T("CTransferWnd::ShowWnd2 secondary pane"), static_cast<UINT>(uWnd2));
+		ASSERT(0);
+		uWnd2 = static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(uWnd2)));
+	}
+
 	if (uWnd2 == wnd2Downloading) {
 		SetWnd2(uWnd2);
 		queuelistctrl.Hide();
@@ -555,6 +599,11 @@ void CTransferWnd::ShowWnd2(EWnd2 uWnd2)
 
 void CTransferWnd::SetWnd2(EWnd2 uWnd2)
 {
+	if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidSecondaryPane(static_cast<int>(uWnd2)))) {
+		LogInvalidTransferWndState(_T("CTransferWnd::SetWnd2 secondary pane"), static_cast<UINT>(uWnd2));
+		ASSERT(0);
+		uWnd2 = static_cast<EWnd2>(TransferWndSeams::NormalizeSecondaryPane(static_cast<int>(uWnd2)));
+	}
 	m_uWnd2 = uWnd2;
 	thePrefs.SetTransferWnd2(m_uWnd2);
 }
@@ -1381,6 +1430,13 @@ void CTransferWnd::SetWnd2Icon(EWnd2Icon iIcon)
 
 void CTransferWnd::ShowList(uint32 dwListIDC)
 {
+	if (TransferWndSeams::ShouldLogInvalidState(TransferWndSeams::IsValidPrimaryListId(dwListIDC))) {
+		LogInvalidTransferWndState(_T("CTransferWnd::ShowList primary list"), dwListIDC);
+		ASSERT(0);
+		ShowSplitWindow(true);
+		return;
+	}
+
 	RECT rcWnd;
 	GetWindowRect(&rcWnd);
 	ScreenToClient(&rcWnd);
