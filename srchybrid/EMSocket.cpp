@@ -115,6 +115,8 @@ CEMSocket::CEMSocket()
 	, m_bUseOverlappedSend(true)
 	, m_bPendingSendOv()
 {
+	// Timer-resolution probe, 2026-05-02: keep timeGetTime() for send pacing.
+	// It observed 1 ms deltas; GetTickCount64 stayed at 15-16 ms on the same host.
 	lastCalledSend = timeGetTime();
 	lastSent = lastCalledSend > SEC2MS(1) ? lastCalledSend - SEC2MS(1) : 0;
 }

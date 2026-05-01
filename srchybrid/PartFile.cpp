@@ -384,7 +384,7 @@ bool CPartFile::FlushBufferedDataForShutdown()
 
 	CPartFileWriteThread *pThread = theApp.m_pPartFileWriteThread;
 	if (pThread != NULL && pThread->IsRunning()) {
-		const DWORD dwStartTick = ::GetTickCount();
+		const ULONGLONG ullStartTick = ::GetTickCount64();
 		do {
 			if (m_iWrites > 0) {
 				pThread->WakeUpCall();
@@ -393,7 +393,7 @@ bool CPartFile::FlushBufferedDataForShutdown()
 			FlushBuffer(false, true);
 			if (!HasDirtyBufferedData())
 				return true;
-		} while (::GetTickCount() - dwStartTick < kShutdownFlushWaitMs);
+		} while (::GetTickCount64() - ullStartTick < kShutdownFlushWaitMs);
 	} else {
 		FlushBuffer(false, true);
 	}

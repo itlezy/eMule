@@ -30,7 +30,7 @@ struct UploadingToClient_Struct
 		, m_bDisableCompression()
 		, m_bRetired()
 		, m_nPendingIOBlocks()
-		, m_dwRetiredTick()
+		, m_ullRetiredTick()
 	{
 	}
 	~UploadingToClient_Struct();
@@ -43,7 +43,7 @@ struct UploadingToClient_Struct
 	bool												m_bDisableCompression;
 	bool												m_bRetired;
 	std::atomic<LONG>									m_nPendingIOBlocks;
-	DWORD												m_dwRetiredTick;
+	ULONGLONG											m_ullRetiredTick;
 };
 typedef CTypedPtrList<CPtrList, UploadingToClient_Struct*> CUploadingPtrList;
 

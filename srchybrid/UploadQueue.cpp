@@ -745,7 +745,7 @@ CUploadQueue::RetiredUploadClientStructContext CUploadQueue::RemoveUploadClientS
 
 	uploadinglist.RemoveAt(pos);
 	pUploadClientStruct->m_bRetired = true;
-	pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
+	pUploadClientStruct->m_ullRetiredTick = ::GetTickCount64();
 	m_retiredUploadingList.AddTail(pUploadClientStruct);
 	return {pUploadClientStruct};
 }
@@ -968,7 +968,7 @@ void CUploadQueue::DeleteAll()
 	while (!uploadinglist.IsEmpty()) {
 		UploadingToClient_Struct *pUploadClientStruct = uploadinglist.RemoveHead();
 		pUploadClientStruct->m_bRetired = true;
-		pUploadClientStruct->m_dwRetiredTick = ::GetTickCount();
+		pUploadClientStruct->m_ullRetiredTick = ::GetTickCount64();
 		deletingList.AddTail(pUploadClientStruct);
 	}
 	while (!m_retiredUploadingList.IsEmpty())
