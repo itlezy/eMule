@@ -18,6 +18,7 @@
 
 #include <cctype>
 #include <exception>
+#include <limits>
 #include <string>
 #include <string_view>
 
@@ -81,7 +82,10 @@ namespace ReleaseUpdateCheckSeams
 
 		unsigned uParsed = 0;
 		do {
-			uParsed = uParsed * 10u + static_cast<unsigned>(text[uPos] - '0');
+			const unsigned uDigit = static_cast<unsigned>(text[uPos] - '0');
+			if (uParsed > (std::numeric_limits<unsigned>::max() - uDigit) / 10u)
+				return false;
+			uParsed = uParsed * 10u + uDigit;
 			++uPos;
 		} while (uPos < text.size() && std::isdigit(static_cast<unsigned char>(text[uPos])));
 
