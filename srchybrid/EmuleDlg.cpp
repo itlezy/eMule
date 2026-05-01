@@ -3998,42 +3998,45 @@ BOOL CemuleDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)
 	//	ZIP disk drives (although Windows Explorer recognises a changed media, we do not get a message)
 	//	CD-ROM drives (although MSDN says different...)
 	//
-	if ((nEventType == DBT_DEVICEARRIVAL || nEventType == DBT_DEVICEREMOVECOMPLETE) && !IsBadReadPtr((void*)dwData, sizeof(DEV_BROADCAST_HDR))) {
+	if ((nEventType == DBT_DEVICEARRIVAL || nEventType == DBT_DEVICEREMOVECOMPLETE) && dwData != 0) {
+		const DEV_BROADCAST_HDR *pHdr = reinterpret_cast<const DEV_BROADCAST_HDR*>(dwData);
+		if (pHdr->dbch_size >= sizeof(DEV_BROADCAST_HDR)) {
 #ifdef _DEBUG
-		CString strMsg(nEventType == DBT_DEVICEARRIVAL ? _T("DBT_DEVICEARRIVAL") : _T("DBT_DEVICEREMOVECOMPLETE"));
+			CString strMsg(nEventType == DBT_DEVICEARRIVAL ? _T("DBT_DEVICEARRIVAL") : _T("DBT_DEVICEREMOVECOMPLETE"));
 #endif
-		const DEV_BROADCAST_HDR *pHdr = (DEV_BROADCAST_HDR*)dwData;
-		if (pHdr->dbch_devicetype == DBT_DEVTYP_VOLUME && !IsBadReadPtr((void*)dwData, sizeof(DEV_BROADCAST_VOLUME))) {
-			const DEV_BROADCAST_VOLUME *pVol = (DEV_BROADCAST_VOLUME*)pHdr;
+			if (pHdr->dbch_devicetype == DBT_DEVTYP_VOLUME && pHdr->dbch_size >= sizeof(DEV_BROADCAST_VOLUME)) {
+				const DEV_BROADCAST_VOLUME *pVol = reinterpret_cast<const DEV_BROADCAST_VOLUME*>(pHdr);
 #ifdef _DEBUG
-			strMsg += _T(" Volume");
-			if (pVol->dbcv_flags & DBTF_MEDIA)
-				strMsg += _T(" Media");
-			if (pVol->dbcv_flags & DBTF_NET)
-				strMsg += _T(" Net");
-			if ((pVol->dbcv_flags & ~(DBTF_NET | DBTF_MEDIA)) != 0)
-				strMsg.AppendFormat(_T(" flags=0x%08x"), pVol->dbcv_flags);
+				strMsg += _T(" Volume");
+				if (pVol->dbcv_flags & DBTF_MEDIA)
+					strMsg += _T(" Media");
+				if (pVol->dbcv_flags & DBTF_NET)
+					strMsg += _T(" Net");
+				if ((pVol->dbcv_flags & ~(DBTF_NET | DBTF_MEDIA)) != 0)
+					strMsg.AppendFormat(_T(" flags=0x%08x"), pVol->dbcv_flags);
 #endif
-			bool bVolumesChanged = false;
-			for (UINT uDrive = 0; uDrive <= 25; ++uDrive) {
-				UINT uMask = 1 << uDrive;
-				if (pVol->dbcv_unitmask & uMask) {
-					DEBUG_ONLY(strMsg.AppendFormat(_T(" %c:"), _T('A') + uDrive));
-					if (pVol->dbcv_flags & (DBTF_MEDIA | DBTF_NET))
-						ClearVolumeInfoCache(uDrive);
-					bVolumesChanged = true;
+				bool bVolumesChanged = false;
+				for (UINT uDrive = 0; uDrive <= 25; ++uDrive) {
+					UINT uMask = 1 << uDrive;
+					if (pVol->dbcv_unitmask & uMask) {
+						DEBUG_ONLY(strMsg.AppendFormat(_T(" %c:"), _T('A') + uDrive));
+						if (pVol->dbcv_flags & (DBTF_MEDIA | DBTF_NET))
+							ClearVolumeInfoCache(uDrive);
+						bVolumesChanged = true;
+					}
 				}
-			}
-			if (bVolumesChanged && sharedfileswnd)
-				sharedfileswnd->OnVolumesChanged();
-		} else
-			DEBUG_ONLY(strMsg.AppendFormat(_T(" devicetype=0x%08x"), pHdr->dbch_devicetype));
+				if (bVolumesChanged && sharedfileswnd)
+					sharedfileswnd->OnVolumesChanged();
+			} else
+				DEBUG_ONLY(strMsg.AppendFormat(_T(" devicetype=0x%08x"), pHdr->dbch_devicetype));
 
 #ifdef _DEBUG
-		TRACE(_T("CemuleDlg::OnDeviceChange: %s\n"), (LPCTSTR)strMsg);
+			TRACE(_T("CemuleDlg::OnDeviceChange: %s\n"), (LPCTSTR)strMsg);
 #endif
+		} else
+			TRACE(_T("CemuleDlg::OnDeviceChange: nEventType=0x%08x  dwData=%p  dbch_size=0x%08x\n"), nEventType, reinterpret_cast<const void*>(dwData), pHdr->dbch_size);
 	} else
-		TRACE(_T("CemuleDlg::OnDeviceChange: nEventType=0x%08x  dwData=0x%08x\n"), nEventType, dwData);
+		TRACE(_T("CemuleDlg::OnDeviceChange: nEventType=0x%08x  dwData=%p\n"), nEventType, reinterpret_cast<const void*>(dwData));
 	return __super::OnDeviceChange(nEventType, dwData);
 }
 
