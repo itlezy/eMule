@@ -172,6 +172,8 @@ bool CCollection::InitCollectionFromFile(const CString &sFilePath, const CString
 				} catch (CFileException *ex) {
 					DebugLogWarning(_T("Collection load: skipped one unreadable binary entry in '%s' - %s"), (LPCTSTR)sFilePath, (LPCTSTR)CExceptionStr(*ex));
 					ex->Delete();
+				} catch (const CString &error) {
+					DebugLogWarning(_T("Collection load: skipped one invalid binary entry in '%s' - %s"), (LPCTSTR)sFilePath, (LPCTSTR)error);
 				} catch (...) {
 					DebugLogWarning(_T("Collection load: skipped one invalid binary entry in '%s'"), (LPCTSTR)sFilePath);
 					ASSERT(0);

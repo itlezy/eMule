@@ -16,10 +16,12 @@
 //Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 #include "StdAfx.h"
 #include "collectionfile.h"
+#include "CollectionSeams.h"
 #include "Packets.h"
 #include "Ed2kLink.h"
 #include "resource.h"
 #include "Log.h"
+#include "OtherFunctions.h"
 #include "Kademlia/Kademlia/Entry.h"
 #include "Kademlia/Kademlia/Tag.h"
 
@@ -34,26 +36,46 @@ IMPLEMENT_DYNAMIC(CCollectionFile, CAbstractFile)
 
 CCollectionFile::CCollectionFile(CFileDataIO &in_data)
 {
-	for (uint32 cnt = in_data.ReadUInt32(); cnt > 0; --cnt)
+	const uint32 nTagCount = in_data.ReadUInt32();
+	if (!HasSaneCollectionFileTagCount(in_data.GetPosition(), in_data.GetLength(), nTagCount)) {
+		DebugLogWarning(_T("Collection file import: rejected entry with malformed tag count %u"), nTagCount);
+		throw CString(_T("malformed collection entry tag count"));
+	}
+
+	for (uint32 cnt = nTagCount; cnt > 0; --cnt)
 		try {
 			CTag *toadd = new CTag(in_data, true);
 			m_taglist.Add(toadd);
+		} catch (CFileException *ex) {
+			DebugLogWarning(_T("Collection file import: skipped one unreadable entry tag - %s"), (LPCTSTR)CExceptionStr(*ex));
+			ex->Delete();
 		} catch (...) {
+			DebugLogWarning(_T("Collection file import: skipped one malformed entry tag"));
+			if (!ShouldSkipMalformedCollectionFileTag())
+				throw;
 		}
 
 	CTag *pTagHash = GetTag(FT_FILEHASH);
 	if (pTagHash)
 		SetFileHash(pTagHash->GetHash());
-	else
+	else {
+		DebugLogWarning(_T("Collection file import: rejected entry without a file hash"));
 		ASSERT(0);
+		if (ShouldRejectCollectionFileWithoutHash())
+			throw CString(_T("collection entry without file hash"));
+	}
 
 	pTagHash = GetTag(FT_AICH_HASH);
 	if (pTagHash != NULL && pTagHash->IsStr()) {
 		CAICHHash hash;
 		if (DecodeBase32(pTagHash->GetStr(), hash) == CAICHHash::GetHashSize())
 			m_FileIdentifier.SetAICHHash(hash);
-		else
+		else {
+			DebugLogWarning(_T("Collection file import: ignored invalid AICH hash tag"));
 			ASSERT(0);
+			if (!ShouldIgnoreInvalidCollectionAICHHash())
+				throw CString(_T("invalid collection entry AICH hash"));
+		}
 	}
 
 	// here we have two choices
