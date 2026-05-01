@@ -340,6 +340,27 @@ inline bool TryBuildRoute(
 		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
+	if (route.size() == 1 && route[0] == "categories" && bPost) {
+		rRoute.strCommand = "categories/create";
+		rRoute.params = body;
+		return true;
+	}
+	if (route.size() == 2 && route[0] == "categories" && bGet) {
+		rRoute.strCommand = "categories/get";
+		rRoute.params["id"] = route[1];
+		return true;
+	}
+	if (route.size() == 2 && route[0] == "categories" && bPatch) {
+		rRoute.strCommand = "categories/update";
+		rRoute.params = body;
+		rRoute.params["id"] = route[1];
+		return true;
+	}
+	if (route.size() == 2 && route[0] == "categories" && bDelete) {
+		rRoute.strCommand = "categories/delete";
+		rRoute.params["id"] = route[1];
+		return true;
+	}
 	if (route.size() == 1 && route[0] == "transfers" && bGet) {
 		rRoute.strCommand = "transfers/list";
 		CopyTransferListQueryParams(query, rRoute.params);

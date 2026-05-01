@@ -249,28 +249,38 @@ bool TryResolveCategoryName(const CString &rCategoryName, UINT &ruCategory)
 }
 
 /**
+ * Serializes one configured download category for controller UIs.
+ */
+json BuildCategoryJson(const INT_PTR i)
+{
+	const Category_Struct *const pCategory = thePrefs.GetCategory(i);
+	if (pCategory == NULL)
+		return json();
+
+	json item{
+		{"id", static_cast<uint64_t>(i)},
+		{"name", StdUtf8FromCString(GetCategoryName(static_cast<UINT>(i)))},
+		{"path", pCategory->strIncomingPath.IsEmpty() ? json(nullptr) : json(StdUtf8FromCString(pCategory->strIncomingPath))},
+		{"comment", StdUtf8FromCString(pCategory->strComment)},
+		{"priority", pCategory->prio}
+	};
+	if (pCategory->color == CLR_NONE)
+		item["color"] = nullptr;
+	else
+		item["color"] = static_cast<uint32_t>(pCategory->color);
+	return item;
+}
+
+/**
  * Serializes the configured download category list for controller UIs.
  */
 json BuildCategoriesJson()
 {
 	json result = json::array();
 	for (INT_PTR i = 0; i < thePrefs.GetCatCount(); ++i) {
-		const Category_Struct *const pCategory = thePrefs.GetCategory(i);
-		if (pCategory == NULL)
-			continue;
-
-		json item{
-			{"id", static_cast<uint64_t>(i)},
-			{"name", StdUtf8FromCString(GetCategoryName(static_cast<UINT>(i)))},
-			{"path", pCategory->strIncomingPath.IsEmpty() ? json(nullptr) : json(StdUtf8FromCString(pCategory->strIncomingPath))},
-			{"comment", StdUtf8FromCString(pCategory->strComment)},
-			{"priority", pCategory->prio}
-		};
-		if (pCategory->color == CLR_NONE)
-			item["color"] = nullptr;
-		else
-			item["color"] = static_cast<uint32_t>(pCategory->color);
-		result.push_back(item);
+		const json item = BuildCategoryJson(i);
+		if (!item.is_null())
+			result.push_back(item);
 	}
 	return result;
 }
@@ -584,7 +594,7 @@ json BuildAppJson(const char *pszBuildFlavor)
 			{"logs", true},
 			{"categoriesRead", true},
 			{"categoryAssignment", true},
-			{"categoryCrud", false},
+			{"categoryCrud", true},
 			{"renameFile", true},
 			{"fileRatingComment", true}
 		}},
@@ -1153,6 +1163,153 @@ bool TryBuildSharedDirectoryListsFromJson(
 }
 
 /**
+ * Parses one public category id carried as a route token.
+ */
+bool TryGetCategoryIdParam(const json &rValue, UINT &ruCategory, SPipeApiError &rError)
+{
+	uint64_t uCategory = 0;
+	if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rValue, uCategory) || uCategory > UINT_MAX) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("category id must be an unsigned number");
+		return false;
+	}
+	ruCategory = static_cast<UINT>(uCategory);
+	return true;
+}
+
+/**
+ * Parses a category priority value from the public string or numeric shape.
+ */
+bool TryGetCategoryPriorityParam(const json &rValue, UINT &ruPriority, SPipeApiError &rError)
+{
+	if (rValue.is_number_unsigned() || rValue.is_number_integer()) {
+		uint64_t uPriority = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rValue, uPriority) || uPriority > UINT_MAX) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("priority must be a supported priority value");
+			return false;
+		}
+		ruPriority = static_cast<UINT>(uPriority);
+		return true;
+	}
+
+	if (!rValue.is_string()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("priority must be a string or number");
+		return false;
+	}
+
+	switch (WebApiSurfaceSeams::ParseTransferPriorityName(rValue.get_ref<const std::string&>().c_str())) {
+	case WebApiSurfaceSeams::ETransferPriority::VeryLow:
+		ruPriority = PR_VERYLOW;
+		return true;
+	case WebApiSurfaceSeams::ETransferPriority::Low:
+		ruPriority = PR_LOW;
+		return true;
+	case WebApiSurfaceSeams::ETransferPriority::Normal:
+		ruPriority = PR_NORMAL;
+		return true;
+	case WebApiSurfaceSeams::ETransferPriority::High:
+		ruPriority = PR_HIGH;
+		return true;
+	case WebApiSurfaceSeams::ETransferPriority::VeryHigh:
+		ruPriority = PR_VERYHIGH;
+		return true;
+	case WebApiSurfaceSeams::ETransferPriority::Auto:
+	case WebApiSurfaceSeams::ETransferPriority::Invalid:
+	default:
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("priority must be one of very_low, low, normal, high, very_high");
+		return false;
+	}
+}
+
+/**
+ * Applies the mutable core fields accepted by the category CRUD REST surface.
+ */
+bool ApplyCategoryCoreFields(Category_Struct &rCategory, const json &rParams, const bool bRequireName, bool &rbPathChanged, SPipeApiError &rError)
+{
+	rbPathChanged = false;
+	if (bRequireName || rParams.contains("name")) {
+		if (!rParams.contains("name") || !rParams["name"].is_string()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("name must be a non-empty string");
+			return false;
+		}
+		CString strName(CStringFromStdUtf8(rParams["name"].get<std::string>()));
+		strName.Trim();
+		if (strName.IsEmpty()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("name must not be empty");
+			return false;
+		}
+		rCategory.strTitle = strName;
+	}
+
+	if (rParams.contains("path")) {
+		if (rParams["path"].is_null()) {
+			rCategory.strIncomingPath = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
+			rbPathChanged = true;
+		} else {
+			CString strPath;
+			if (!TryGetPathParam(rParams["path"], "path", strPath, rError))
+				return false;
+			strPath = PathHelpers::CanonicalizeDirectoryPath(strPath);
+			if (!thePrefs.IsShareableDirectory(strPath)) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("path is not a shareable directory");
+				return false;
+			}
+			rbPathChanged = !EqualPaths(rCategory.strIncomingPath, strPath);
+			rCategory.strIncomingPath = strPath;
+		}
+	}
+
+	if (rParams.contains("comment")) {
+		if (!rParams["comment"].is_string()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("comment must be a string");
+			return false;
+		}
+		rCategory.strComment = CStringFromStdUtf8(rParams["comment"].get<std::string>());
+	}
+
+	if (rParams.contains("color")) {
+		if (rParams["color"].is_null())
+			rCategory.color = CLR_NONE;
+		else {
+			uint64_t uColor = 0;
+			if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rParams["color"], uColor) || uColor > 0x00FFFFFFui64) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("color must be null or an RGB integer");
+				return false;
+			}
+			rCategory.color = static_cast<COLORREF>(uColor);
+		}
+	}
+
+	if (rParams.contains("priority") && !TryGetCategoryPriorityParam(rParams["priority"], rCategory.prio, rError))
+		return false;
+
+	return true;
+}
+
+/**
+ * Refreshes category tabs and dependent shared-file state after category CRUD.
+ */
+void RefreshCategoryUi(const bool bReloadSharedFiles)
+{
+	if (theApp.emuledlg == NULL)
+		return;
+	if (theApp.emuledlg->transferwnd != NULL)
+		theApp.emuledlg->transferwnd->UpdateCatTabTitles(true);
+	if (theApp.emuledlg->searchwnd != NULL)
+		theApp.emuledlg->searchwnd->UpdateCatTabs();
+	if (bReloadSharedFiles && theApp.emuledlg->sharedfileswnd != NULL)
+		(void)theApp.emuledlg->sharedfileswnd->Reload(true);
+}
+
+/**
  * Persists shared-directory state and reloads the live shared-files model.
  */
 void ApplySharedDirectoryLists(const CStringList &rSharedDirs, const CStringList &rMonitoredRoots, const CStringList &rMonitorOwnedDirs)
@@ -1442,6 +1599,84 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	if (strCommand == "categories/list")
 		return ItemsEnvelopeIfRequested(params, BuildCategoriesJson());
+
+	if (strCommand == "categories/get") {
+		UINT uCategory = 0;
+		if (!TryGetCategoryIdParam(params.contains("id") ? params["id"] : json(), uCategory, rError))
+			return json();
+		if (uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("category not found");
+			return json();
+		}
+		return BuildCategoryJson(uCategory);
+	}
+
+	if (strCommand == "categories/create") {
+		Category_Struct *pCategory = new Category_Struct;
+		pCategory->strIncomingPath = thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR);
+		pCategory->strTitle.Empty();
+		pCategory->strComment.Empty();
+		pCategory->autocat.Empty();
+		pCategory->regexp.Empty();
+		pCategory->color = CLR_NONE;
+		pCategory->prio = PR_NORMAL;
+		pCategory->filter = 0;
+		pCategory->filterNeg = false;
+		pCategory->care4all = false;
+		pCategory->ac_regexpeval = false;
+		pCategory->downloadInAlphabeticalOrder = false;
+
+		bool bPathChanged = false;
+		if (!ApplyCategoryCoreFields(*pCategory, params, true, bPathChanged, rError)) {
+			delete pCategory;
+			return json();
+		}
+
+		const INT_PTR iCategory = thePrefs.AddCat(pCategory);
+		thePrefs.SaveCats();
+		RefreshCategoryUi(bPathChanged);
+		return BuildCategoryJson(iCategory);
+	}
+
+	if (strCommand == "categories/update") {
+		UINT uCategory = 0;
+		if (!TryGetCategoryIdParam(params.contains("id") ? params["id"] : json(), uCategory, rError))
+			return json();
+		if (uCategory == 0 || uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = uCategory == 0 ? "INVALID_ARGUMENT" : "NOT_FOUND";
+			rError.strMessage = uCategory == 0 ? _T("default category cannot be updated") : _T("category not found");
+			return json();
+		}
+
+		Category_Struct *const pCategory = thePrefs.GetCategory(uCategory);
+		bool bPathChanged = false;
+		if (pCategory == NULL || !ApplyCategoryCoreFields(*pCategory, params, false, bPathChanged, rError))
+			return json();
+
+		thePrefs.SaveCats();
+		RefreshCategoryUi(bPathChanged);
+		return BuildCategoryJson(uCategory);
+	}
+
+	if (strCommand == "categories/delete") {
+		UINT uCategory = 0;
+		if (!TryGetCategoryIdParam(params.contains("id") ? params["id"] : json(), uCategory, rError))
+			return json();
+		if (uCategory == 0 || uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = uCategory == 0 ? "INVALID_ARGUMENT" : "NOT_FOUND";
+			rError.strMessage = uCategory == 0 ? _T("default category cannot be deleted") : _T("category not found");
+			return json();
+		}
+
+		const CString strIncomingPath(thePrefs.GetCatPath(uCategory));
+		const bool bReloadSharedFiles = !EqualPaths(strIncomingPath, thePrefs.GetMuleDirectory(EMULE_INCOMINGDIR));
+		theApp.downloadqueue->ResetCatParts(uCategory);
+		thePrefs.RemoveCat(uCategory);
+		thePrefs.SaveCats();
+		RefreshCategoryUi(bReloadSharedFiles);
+		return json{{"ok", true}};
+	}
 
 	if (strCommand == "shared_directories/get")
 		return BuildSharedDirectoriesJson();
