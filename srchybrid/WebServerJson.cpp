@@ -47,6 +47,7 @@
 #include "ServerConnect.h"
 #include "ServerList.h"
 #include "ServerWnd.h"
+#include "SharedDirectoryOps.h"
 #include "SharedFileList.h"
 #include "SharedFilesWnd.h"
 #include "Statistics.h"
@@ -578,6 +579,7 @@ json BuildAppJson(const char *pszBuildFlavor)
 			{"searches", true},
 			{"servers", true},
 			{"sharedFiles", true},
+			{"sharedDirectories", true},
 			{"uploads", true},
 			{"logs", true},
 			{"categoriesRead", true},
@@ -607,6 +609,55 @@ json BuildSharedFilesListJson()
 			result.push_back(BuildSharedFileJson(*pair->value));
 	}
 	return result;
+}
+
+/**
+ * Builds one shared-directory row with stable flags for REST management UIs.
+ */
+json BuildSharedDirectoryRowJson(const CString &rDirectory, const CStringList &rMonitoredRoots, const CStringList &rMonitorOwnedDirs)
+{
+	return json{
+		{"path", StdUtf8FromCString(rDirectory)},
+		{"recursive", SharedDirectoryOps::ListContainsEquivalentPath(rMonitoredRoots, rDirectory)},
+		{"monitorOwned", SharedDirectoryOps::ListContainsEquivalentPath(rMonitorOwnedDirs, rDirectory)},
+		{"shareable", thePrefs.IsShareableDirectory(rDirectory)},
+		{"accessible", DirAccsess(rDirectory)}
+	};
+}
+
+/**
+ * Builds the native shared-directory management model exposed over REST.
+ */
+json BuildSharedDirectoriesJson()
+{
+	CStringList sharedDirs;
+	CStringList monitoredRoots;
+	CStringList monitorOwnedDirs;
+	thePrefs.CopySharedDirectoryList(sharedDirs);
+	thePrefs.CopyMonitoredSharedRootList(monitoredRoots);
+	thePrefs.CopyMonitorOwnedDirectoryList(monitorOwnedDirs);
+
+	json roots = json::array();
+	json items = json::array();
+	json monitorOwned = json::array();
+
+	for (POSITION pos = sharedDirs.GetHeadPosition(); pos != NULL;) {
+		const CString strDirectory(sharedDirs.GetNext(pos));
+		const json row = BuildSharedDirectoryRowJson(strDirectory, monitoredRoots, monitorOwnedDirs);
+		items.push_back(row);
+		if (!row.value("monitorOwned", false))
+			roots.push_back(row);
+	}
+
+	for (POSITION pos = monitorOwnedDirs.GetHeadPosition(); pos != NULL;)
+		monitorOwned.push_back(StdUtf8FromCString(monitorOwnedDirs.GetNext(pos)));
+
+	return json{
+		{"roots", roots},
+		{"items", items},
+		{"monitorOwned", monitorOwned},
+		{"hashingCount", static_cast<int64_t>(theApp.sharedfiles->GetHashingCount())}
+	};
 }
 
 /**
@@ -1036,6 +1087,88 @@ bool TryGetPathParam(const json &rValue, const char *pszFieldName, CString &rPat
 }
 
 /**
+ * Parses one shared-directory root entry accepted by PATCH /shared-directories.
+ */
+bool TryParseSharedDirectoryRoot(const json &rValue, CString &rDirectory, bool &rbRecursive, SPipeApiError &rError)
+{
+	rbRecursive = false;
+	const json *pPathValue = &rValue;
+	if (rValue.is_object()) {
+		pPathValue = rValue.contains("path") ? &rValue["path"] : NULL;
+		rbRecursive = rValue.value("recursive", false);
+	}
+
+	if (pPathValue == NULL || !TryGetPathParam(*pPathValue, "path", rDirectory, rError))
+		return false;
+
+	rDirectory = PathHelpers::CanonicalizeDirectoryPath(rDirectory);
+	if (!thePrefs.IsShareableDirectory(rDirectory)) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("path is not a shareable directory");
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * Parses and materializes the native shared-directory roots payload.
+ */
+bool TryBuildSharedDirectoryListsFromJson(
+	const json &rParams,
+	CStringList &rSharedDirs,
+	CStringList &rMonitoredRoots,
+	CStringList &rMonitorOwnedDirs,
+	SPipeApiError &rError)
+{
+	if (!rParams.contains("roots") || !rParams["roots"].is_array()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("roots must be an array");
+		return false;
+	}
+
+	rSharedDirs.RemoveAll();
+	rMonitoredRoots.RemoveAll();
+	rMonitorOwnedDirs.RemoveAll();
+
+	for (const json &rootValue : rParams["roots"]) {
+		CString strDirectory;
+		bool bRecursive = false;
+		if (!TryParseSharedDirectoryRoot(rootValue, strDirectory, bRecursive, rError))
+			return false;
+
+		(void)SharedDirectoryOps::AddSharedDirectory(rSharedDirs, strDirectory, bRecursive, [](const CString &rstrDirectory) -> bool {
+			return thePrefs.IsShareableDirectory(rstrDirectory);
+		});
+		if (bRecursive) {
+			if (!SharedDirectoryOps::ListContainsEquivalentPath(rMonitoredRoots, strDirectory))
+				rMonitoredRoots.AddTail(strDirectory);
+			SharedDirectoryOps::CollectDirectorySubtree(rMonitorOwnedDirs, strDirectory, false, [](const CString &rstrDirectory) -> bool {
+				return thePrefs.IsShareableDirectory(rstrDirectory);
+			});
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Persists shared-directory state and reloads the live shared-files model.
+ */
+void ApplySharedDirectoryLists(const CStringList &rSharedDirs, const CStringList &rMonitoredRoots, const CStringList &rMonitorOwnedDirs)
+{
+	thePrefs.ReplaceSharedDirectoryList(rSharedDirs);
+	thePrefs.ReplaceMonitoredSharedRootList(rMonitoredRoots);
+	thePrefs.ReplaceMonitorOwnedDirectoryList(rMonitorOwnedDirs);
+	(void)thePrefs.Save();
+	theApp.WakeSharedDirectoryMonitor();
+	if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL)
+		(void)theApp.emuledlg->sharedfileswnd->Reload(true);
+	else if (theApp.sharedfiles != NULL)
+		theApp.sharedfiles->Reload();
+}
+
+/**
  * Finds one shared file by full normalized path.
  */
 CKnownFile* FindSharedFileByPath(const CString &rFilePath)
@@ -1309,6 +1442,28 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	if (strCommand == "categories/list")
 		return ItemsEnvelopeIfRequested(params, BuildCategoriesJson());
+
+	if (strCommand == "shared_directories/get")
+		return BuildSharedDirectoriesJson();
+
+	if (strCommand == "shared_directories/set") {
+		CStringList sharedDirs;
+		CStringList monitoredRoots;
+		CStringList monitorOwnedDirs;
+		if (!TryBuildSharedDirectoryListsFromJson(params, sharedDirs, monitoredRoots, monitorOwnedDirs, rError))
+			return json();
+
+		ApplySharedDirectoryLists(sharedDirs, monitoredRoots, monitorOwnedDirs);
+		return json{{"ok", true}, {"sharedDirectories", BuildSharedDirectoriesJson()}};
+	}
+
+	if (strCommand == "shared_directories/reload") {
+		if (theApp.emuledlg != NULL && theApp.emuledlg->sharedfileswnd != NULL)
+			(void)theApp.emuledlg->sharedfileswnd->Reload(true);
+		else if (theApp.sharedfiles != NULL)
+			theApp.sharedfiles->Reload();
+		return json{{"ok", true}};
+	}
 
 	if (strCommand == "snapshot/get") {
 		SPipeApiError listError;

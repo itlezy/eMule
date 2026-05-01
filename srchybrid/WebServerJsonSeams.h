@@ -484,6 +484,19 @@ inline bool TryBuildRoute(
 		rErrorMessage = "kad PATCH action must be connect, disconnect, or recheck_firewall";
 		return false;
 	}
+	if (route.size() == 1 && route[0] == "shared-directories" && bGet) {
+		rRoute.strCommand = "shared_directories/get";
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "shared-directories" && bPatch) {
+		rRoute.strCommand = "shared_directories/set";
+		rRoute.params = body;
+		return true;
+	}
+	if (route.size() == 2 && route[0] == "shared-directories" && route[1] == "reload" && bPost) {
+		rRoute.strCommand = "shared_directories/reload";
+		return true;
+	}
 	if (route.size() == 1 && route[0] == "shared-files" && bGet) {
 		rRoute.strCommand = "shared/list";
 		RequestItemsEnvelope(rRoute.params);
