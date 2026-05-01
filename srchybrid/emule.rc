@@ -279,7 +279,7 @@ BEGIN
     CONTROL         "Prompt on exit",IDC_EXIT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,84,202,10
     CONTROL         "Onlinesig",IDC_ONLINESIG,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,94,202,10
     GROUPBOX        "Startup",IDC_STARTUP,3,156,223,61
-    CONTROL         "Check for new version on startup",IDC_CHECK4UPDATE,
+    CONTROL         "Open GitHub Releases on startup",IDC_CHECK4UPDATE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,172,153,10
     CONTROL         "",IDC_CHECKDAYS,"msctls_trackbar32",TBS_AUTOTICKS | WS_TABSTOP,169,175,53,10
     LTEXT           "days",IDC_DAYS,171,166,48,9
@@ -3210,7 +3210,7 @@ BEGIN
     IDS_WEBSVEDIT           "Edit Web Services..."
     IDS_IRC_EMULEPROTO_IGNORESENDLINK
                             "Ignore eMule send link protocol messages"
-    IDS_CHECK4UPDATE        "Check for new version"
+    IDS_CHECK4UPDATE        "Open GitHub Releases on startup"
     IDS_STARTUP             "Startup"
     IDS_NEWVERSIONAVL       "A new version of eMule is available! Check the project-homepage for more information."
     IDS_NEWVERSIONAVLPOPUP  "A new version of eMule is available. Click here to read about the new version!"

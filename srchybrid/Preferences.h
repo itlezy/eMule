@@ -1325,8 +1325,8 @@ public:
 	static bool		GetAutoConnectToStaticServersOnly()	{ return m_bAutoConnectToStaticServersOnly; }
 	static UINT		GetUpdateDays()						{ return versioncheckdays; }
 	static UINT		GetDefaultUpdateDays()				{ return 5; }
-	static UINT		GetMinUpdateDays()					{ return 2; }
-	static UINT		GetMaxUpdateDays()					{ return 7; }
+	static UINT		GetMinUpdateDays()					{ return 1; }
+	static UINT		GetMaxUpdateDays()					{ return 30; }
 	static UINT		NormalizeUpdateDays(UINT in);
 	static void		SetUpdateDays(UINT in);
 	static time_t	GetLastVC()							{ return versioncheckLastAutomatic; }

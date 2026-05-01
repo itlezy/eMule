@@ -3541,59 +3541,18 @@ void CPreferences::SetMaxDownload(uint32 val)
 
 CString CPreferences::GetHomepageBaseURLForLevel(int nLevel)
 {
-	CString tmp;
-	if (nLevel == 0)
-		tmp = _T("https://emule-project.net");
-	else if (nLevel == 1)
-		tmp = _T("https://www.emule-project.org");
-	else if (nLevel == 2)
-		tmp = _T("https://www.emule-project.com");
-	else if (nLevel < 100)
-		tmp.Format(_T("https://www%i.emule-project.net"), nLevel - 2);
-	else if (nLevel < 150)
-		tmp.Format(_T("https://www%i.emule-project.org"), nLevel);
-	else if (nLevel < 200)
-		tmp.Format(_T("https://www%i.emule-project.com"), nLevel);
-	else if (nLevel == 200)
-		tmp = _T("https://emule.sf.net");
-	else if (nLevel == 201)
-		tmp = _T("https://www.emuleproject.net");
-	else if (nLevel == 202)
-		tmp = _T("https://sourceforge.net/projects/emule/");
-	else
-		tmp = _T("https://www.emule-project.net");
-	return tmp;
+	UNREFERENCED_PARAMETER(nLevel);
+	return _T("https://github.com/itlezy/eMule");
 }
 
 CString CPreferences::GetVersionCheckBaseURL()
 {
-	CString tmp;
-	LPCTSTR p = NULL;
-	UINT nWebMirrorAlertLevel = GetWebMirrorAlertLevel();
-	if (nWebMirrorAlertLevel < 100)
-		p = _T("https://vcheck.emule-project.net");
-	else if (nWebMirrorAlertLevel < 150)
-		tmp.Format(_T("https://vcheck%u.emule-project.org"), nWebMirrorAlertLevel);
-	else if (nWebMirrorAlertLevel < 200)
-		tmp.Format(_T("https://vcheck%u.emule-project.com"), nWebMirrorAlertLevel);
-	else if (nWebMirrorAlertLevel == 200)
-		p = _T("https://emule.sf.net");
-	else if (nWebMirrorAlertLevel == 201)
-		p = _T("https://www.emuleproject.net");
-	else
-		p = _T("https://vcheck.emule-project.net");
-	if (p)
-		tmp = p;
-	return tmp;
+	return _T("https://github.com/itlezy/eMule/releases");
 }
 
 CString CPreferences::GetVersionCheckURL()
 {
-	CString theUrl(thePrefs.GetVersionCheckBaseURL());
-	theUrl.AppendFormat(_T("/en/version_check.php?version=%u&language=%u") _T("&mod=1") //this suffix for community version only
-		, theApp.m_uCurVersionCheck
-		, thePrefs.GetLanguageID());
-	return theUrl;
+	return thePrefs.GetVersionCheckBaseURL() + _T("/latest");
 }
 
 bool CPreferences::IsDefaultNick(const CString &strCheck)

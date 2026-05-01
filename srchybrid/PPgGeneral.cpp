@@ -148,7 +148,7 @@ BOOL CPPgGeneral::OnInitDialog()
 	UpdateEd2kLinkFixCtrl();
 
 	CSliderCtrl *sliderUpdate = static_cast<CSliderCtrl*>(GetDlgItem(IDC_CHECKDAYS));
-	sliderUpdate->SetRange(2, 7, true);
+	sliderUpdate->SetRange(CPreferences::GetMinUpdateDays(), CPreferences::GetMaxUpdateDays(), true);
 	sliderUpdate->SetPos(thePrefs.GetUpdateDays());
 
 	LoadSettings();
@@ -173,8 +173,8 @@ void CPPgGeneral::UpdateToolTips()
 		_T("Brings eMule to the foreground when a handled ed2k link or similar external action targets the app.\r\n\r\n")
 		_T("Enable it if you want link clicks to reveal eMule immediately. Leave it off if you prefer background handling."));
 	m_toolTip.SetTool(this, IDC_CHECK4UPDATE,
-		_T("Checks the project update feed on startup and reminds you when a newer build is available.\r\n\r\n")
-		_T("Recommended: enabled for normal use. Increase the day interval if you want fewer checks."));
+		_T("Opens the GitHub Releases page on startup when the configured interval has elapsed.\r\n\r\n")
+		_T("Leave it off for a quiet startup, or enable it if you want a periodic release reminder."));
 	m_toolTip.SetTool(this, IDC_PREVENTSTANDBY,
 		_T("Blocks system standby while eMule is running so long transfers, Kad, and server sessions are not interrupted.\r\n\r\n")
 		_T("Recommended: enabled on desktops or dedicated boxes. Disable it if you want the machine's normal sleep policy to win."));

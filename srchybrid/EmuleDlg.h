@@ -183,7 +183,6 @@ protected:
 	UINT			m_uLastSysTrayIconCookie;
 	uint32			m_uUpDatarate;
 	uint32			m_uDownDatarate;
-	char			m_acVCDNSBuffer[MAXGETHOSTSTRUCT];
 	bool			m_bStartMinimizedChecked;
 	bool			m_bStartMinimized;
 	bool			m_bMsgBlinkState;
@@ -303,8 +302,6 @@ protected:
 	afx_msg LRESULT OnWebAddDownloads(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebSetCatPrio(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnAddRemoveFriend(WPARAM wParam, LPARAM lParam);
-	// VersionCheck DNS
-	afx_msg LRESULT OnVersionCheckResponse(WPARAM, LPARAM lParam);
 	// Terminal Services
 	afx_msg LRESULT OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam);
 	// UPnP

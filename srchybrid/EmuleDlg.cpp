@@ -286,9 +286,6 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(WEB_CATPRIO, OnWebSetCatPrio)
 	ON_MESSAGE(WEB_ADDREMOVEFRIEND, OnAddRemoveFriend)
 
-	// Version Check DNS
-	ON_MESSAGE(UM_VERSIONCHECK_RESPONSE, OnVersionCheckResponse)
-
 	// UPnP
 	ON_MESSAGE(UM_UPNP_RESULT, OnUPnPResult)
 	ON_MESSAGE(UM_PARTFILE_DISPLAY_UPDATE, OnPartFileDisplayUpdate)
@@ -336,7 +333,6 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_uLastSysTrayIconCookie(SYS_TRAY_ICON_COOKIE_FORCE_UPDATE)
 	, m_uUpDatarate()
 	, m_uDownDatarate()
-	, m_acVCDNSBuffer()
 	, m_bStartMinimizedChecked()
 	, m_bStartMinimized()
 	, m_bMsgBlinkState()
@@ -771,7 +767,6 @@ BOOL CemuleDlg::OnInitDialog()
 	return TRUE;
 }
 
-// modders: don't remove or change the original version check! (additional are OK)
 void CemuleDlg::DoVersioncheck(bool manual)
 {
 #ifndef _DEVBUILD
@@ -783,12 +778,8 @@ void CemuleDlg::DoVersioncheck(bool manual)
 		if (difftime(tNow, tLast) / DAY2S(1) < thePrefs.GetUpdateDays())
 			return;
 	}
-//Automatic version check for community and official versions use different domain names
-//Hence "cv" prefix was added for community version
-	if (WSAAsyncGetHostByName(m_hWnd, UM_VERSIONCHECK_RESPONSE, "cv" "vcdns2.emule-project.org", m_acVCDNSBuffer, sizeof m_acVCDNSBuffer) == 0)
-	{
-		AddLogLine(true, GetResString(IDS_NEWVERSIONFAILED));
-	}
+	thePrefs.UpdateLastVC();
+	BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
 #endif
 }
 
@@ -3060,38 +3051,6 @@ void InitWindowStyles(CWnd *pWnd)
 		if (!s_bIsXPStyle)
 			FlatWindowStyles(pWnd);
 	}
-}
-
-LRESULT CemuleDlg::OnVersionCheckResponse(WPARAM, LPARAM lParam)
-{
-	if (WSAGETASYNCERROR(lParam) == 0) {
-		WORD iBufLen = WSAGETASYNCBUFLEN(lParam);
-		if (iBufLen >= sizeof(HOSTENT)) {
-			LPHOSTENT pHost = (LPHOSTENT)m_acVCDNSBuffer;
-			if (pHost->h_length == 4 && pHost->h_addr_list && pHost->h_addr_list[0]) {
-				uint32 dwResult = ((LPIN_ADDR)(pHost->h_addr_list[0]))->s_addr;
-				// last byte contains informations about mirror urls, to avoid effects of future DDoS Attacks against eMules Homepage
-				thePrefs.SetWebMirrorAlertLevel((uint8)(dwResult >> 24));
-				uint8 abyCurVer[4] = {(uint8)(CemuleApp::m_nVersionBld + 1), (uint8)(CemuleApp::m_nVersionUpd), (uint8)(CemuleApp::m_nVersionMin), (uint8)0};
-				dwResult &= 0x00FFFFFF;
-				if (dwResult > *(uint32*)abyCurVer) {
-					SetActiveWindow();
-					Log(LOG_SUCCESS | LOG_STATUSBAR, GetResString(IDS_NEWVERSIONAVL));
-					ShowNotifier(GetResString(IDS_NEWVERSIONAVLPOPUP), TBN_NEWVERSION);
-					thePrefs.UpdateLastVC();
-					if (!thePrefs.GetNotifierOnNewVersion())
-						if (AfxMessageBox(GetResString(IDS_NEWVERSIONAVL) + GetResString(IDS_VISITVERSIONCHECK), MB_YESNO) == IDYES)
-							BrowserOpen(thePrefs.GetVersionCheckURL(), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-				} else {
-					thePrefs.UpdateLastVC();
-					AddLogLine(true, GetResString(IDS_NONEWERVERSION));
-				}
-				return 0;
-			}
-		}
-	}
-	LogWarning(LOG_STATUSBAR, GetResString(IDS_NEWVERSIONFAILED));
-	return 0;
 }
 
 void CemuleDlg::ShowSplash()
