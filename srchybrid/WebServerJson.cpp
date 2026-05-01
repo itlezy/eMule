@@ -202,6 +202,79 @@ CString GetTransferPriorityName(const CPartFile &rPartFile)
 }
 
 /**
+ * Returns the stable public name for one download category.
+ */
+CString GetCategoryName(const UINT uCategory)
+{
+	if (uCategory == 0)
+		return _T("Default");
+
+	const Category_Struct *const pCategory = thePrefs.GetCategory(uCategory);
+	CString strTitle(pCategory != NULL ? pCategory->strTitle : CString());
+	strTitle.Trim();
+	if (pCategory == NULL || strTitle.IsEmpty()) {
+		CString strFallback;
+		strFallback.Format(_T("Category %u"), uCategory);
+		return strFallback;
+	}
+
+	return strTitle;
+}
+
+/**
+ * Resolves a public category name to the matching configured category id.
+ */
+bool TryResolveCategoryName(const CString &rCategoryName, UINT &ruCategory)
+{
+	CString strName(rCategoryName);
+	strName.Trim();
+	if (strName.IsEmpty())
+		return false;
+
+	if (strName.CompareNoCase(_T("Default")) == 0 || strName.CompareNoCase(_T("All")) == 0) {
+		ruCategory = 0;
+		return true;
+	}
+
+	for (INT_PTR i = 1; i < thePrefs.GetCatCount(); ++i) {
+		const Category_Struct *const pCategory = thePrefs.GetCategory(i);
+		if (pCategory != NULL && pCategory->strTitle.CompareNoCase(strName) == 0) {
+			ruCategory = static_cast<UINT>(i);
+			return true;
+		}
+	}
+
+	return false;
+}
+
+/**
+ * Serializes the configured download category list for controller UIs.
+ */
+json BuildCategoriesJson()
+{
+	json result = json::array();
+	for (INT_PTR i = 0; i < thePrefs.GetCatCount(); ++i) {
+		const Category_Struct *const pCategory = thePrefs.GetCategory(i);
+		if (pCategory == NULL)
+			continue;
+
+		json item{
+			{"id", static_cast<uint64_t>(i)},
+			{"name", StdUtf8FromCString(GetCategoryName(static_cast<UINT>(i)))},
+			{"path", pCategory->strIncomingPath.IsEmpty() ? json(nullptr) : json(StdUtf8FromCString(pCategory->strIncomingPath))},
+			{"comment", StdUtf8FromCString(pCategory->strComment)},
+			{"priority", pCategory->prio}
+		};
+		if (pCategory->color == CLR_NONE)
+			item["color"] = nullptr;
+		else
+			item["color"] = static_cast<uint32_t>(pCategory->color);
+		result.push_back(item);
+	}
+	return result;
+}
+
+/**
  * Maps the shared-file upload priority into the public API string.
  */
 CString GetUploadPriorityName(const CKnownFile &rKnownFile)
@@ -330,6 +403,7 @@ json BuildTransferJson(const CPartFile &rPartFile)
 		{"priority", StdUtf8FromCString(GetTransferPriorityName(rPartFile))},
 		{"autoPriority", rPartFile.IsAutoDownPriority()},
 		{"category", const_cast<CPartFile&>(rPartFile).GetCategory()},
+		{"categoryName", StdUtf8FromCString(GetCategoryName(const_cast<CPartFile&>(rPartFile).GetCategory()))},
 		{"downloadSpeed", rPartFile.GetDatarate()},
 		{"uploadSpeed", 0},
 		{"sources", rPartFile.GetSourceCount()},
@@ -493,7 +567,21 @@ json BuildAppJson(const char *pszBuildFlavor)
 	return json{
 		{"appName", "eMule"},
 		{"version", StdUtf8FromCString(theApp.m_strCurVersionLong)},
+		{"apiVersion", "v1"},
 		{"build", pszBuildFlavor},
+		{"capabilities", json{
+			{"transfers", true},
+			{"searches", true},
+			{"servers", true},
+			{"sharedFiles", true},
+			{"uploads", true},
+			{"logs", true},
+			{"categoriesRead", true},
+			{"categoryAssignment", true},
+			{"categoryCrud", false},
+			{"renameFile", false},
+			{"fileRatingComment", false}
+		}},
 #if defined(_M_ARM64)
 		{"platform", "arm64"}
 #else
@@ -1190,6 +1278,9 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		};
 	}
 
+	if (strCommand == "categories/list")
+		return ItemsEnvelopeIfRequested(params, BuildCategoriesJson());
+
 	if (strCommand == "snapshot/get") {
 		SPipeApiError listError;
 		json transfers = BuildTransfersListJson(json::object(), listError);
@@ -1768,13 +1859,31 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		if (pPartFile == NULL)
 			return json();
 		uint64_t uRequestedCategory = 0;
-		if (!params.contains("category") || !WebApiCommandSeams::TryParseNonNegativeUInt64(params["category"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
+		UINT uCategory = 0;
+		if (params.contains("category")) {
+			if (!WebApiCommandSeams::TryParseNonNegativeUInt64(params["category"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("category must be an unsigned number");
+				return json();
+			}
+			uCategory = static_cast<UINT>(uRequestedCategory);
+		} else if (params.contains("categoryName")) {
+			if (!params["categoryName"].is_string()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryName must be a string");
+				return json();
+			}
+			if (!TryResolveCategoryName(CStringFromStdUtf8(params["categoryName"].get<std::string>()), uCategory)) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryName does not match a configured category");
+				return json();
+			}
+		} else {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("category must be an unsigned number");
+			rError.strMessage = _T("category or categoryName is required");
 			return json();
 		}
 
-		const UINT uCategory = static_cast<UINT>(uRequestedCategory);
 		if (uCategory >= thePrefs.GetCatCount()) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("category is out of range");

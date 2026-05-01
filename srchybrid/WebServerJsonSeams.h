@@ -335,6 +335,11 @@ inline bool TryBuildRoute(
 		CopyLogQueryParams(query, rRoute.params);
 		return true;
 	}
+	if (route.size() == 1 && route[0] == "categories" && bGet) {
+		rRoute.strCommand = "categories/list";
+		RequestItemsEnvelope(rRoute.params);
+		return true;
+	}
 	if (route.size() == 1 && route[0] == "transfers" && bGet) {
 		rRoute.strCommand = "transfers/list";
 		CopyTransferListQueryParams(query, rRoute.params);
@@ -371,14 +376,14 @@ inline bool TryBuildRoute(
 			rRoute.params["hash"] = route[1];
 			return true;
 		}
-		if (body.contains("category")) {
+		if (body.contains("category") || body.contains("categoryName")) {
 			rRoute.strCommand = "transfers/set_category";
 			rRoute.params = body;
 			rRoute.params["hash"] = route[1];
 			return true;
 		}
 		rErrorCode = "INVALID_ARGUMENT";
-		rErrorMessage = "transfer PATCH requires action, priority, or category";
+		rErrorMessage = "transfer PATCH requires action, priority, category, or categoryName";
 		return false;
 	}
 	if (route.size() == 2 && route[0] == "transfers" && bDelete) {
