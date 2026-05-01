@@ -706,6 +706,9 @@ bool	CPreferences::showRatesInTitle;
 CString	CPreferences::m_strTxtEditor;
 CString	CPreferences::m_strVideoPlayer;
 CString CPreferences::m_strVideoPlayerArgs;
+bool	CPreferences::m_bRunCommandOnFileCompletion;
+CString CPreferences::m_strFileCompletionProgram;
+CString CPreferences::m_strFileCompletionArguments;
 bool	CPreferences::m_bMoviePreviewBackup;
 int		CPreferences::m_iPreviewSmallBlocks;
 bool	CPreferences::m_bPreviewCopiedArchives;
@@ -2331,6 +2334,9 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("TxtEditor"), m_strTxtEditor);
 	ini.WriteString(_T("VideoPlayer"), m_strVideoPlayer);
 	ini.WriteString(_T("VideoPlayerArgs"), m_strVideoPlayerArgs);
+	ini.WriteBool(_T("RunCommandOnFileCompletion"), m_bRunCommandOnFileCompletion);
+	ini.WriteString(_T("FileCompletionProgram"), m_strFileCompletionProgram);
+	ini.WriteString(_T("FileCompletionArguments"), m_strFileCompletionArguments);
 	ini.WriteString(_T("MessageFilter"), messageFilter);
 	ini.WriteString(_T("CommentFilter"), commentFilter);
 	ini.WriteString(_T("DateTimeFormat"), GetDateTimeFormat());
@@ -2992,6 +2998,9 @@ void CPreferences::LoadPreferences()
 	m_strTxtEditor = ini.GetString(_T("TxtEditor"), _T("notepad.exe"));
 	m_strVideoPlayer = ini.GetString(_T("VideoPlayer"), _T(""));
 	m_strVideoPlayerArgs = ini.GetString(_T("VideoPlayerArgs"), _T(""));
+	m_bRunCommandOnFileCompletion = ini.GetBool(_T("RunCommandOnFileCompletion"), false);
+	m_strFileCompletionProgram = ini.GetString(_T("FileCompletionProgram"), _T(""));
+	m_strFileCompletionArguments = ini.GetString(_T("FileCompletionArguments"), _T(""));
 
 	m_strTemplateFile = ini.GetString(_T("WebTemplateFile"), GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule.tmpl"));
 	// if emule is using the default, check if the file is in the config folder, as it used to be val prior version

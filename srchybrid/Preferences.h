@@ -507,6 +507,9 @@ public:
 	static CString	m_strTxtEditor;
 	static CString	m_strVideoPlayer;
 	static CString	m_strVideoPlayerArgs;
+	static bool		m_bRunCommandOnFileCompletion;
+	static CString	m_strFileCompletionProgram;
+	static CString	m_strFileCompletionArguments;
 	static bool		m_bMoviePreviewBackup;
 	static int		m_iPreviewSmallBlocks;
 	static bool		m_bPreviewCopiedArchives;
@@ -1210,6 +1213,9 @@ public:
 	static const CString& GetTxtEditor()				{ return m_strTxtEditor; }
 	static const CString& GetVideoPlayer()				{ return m_strVideoPlayer; }
 	static const CString& GetVideoPlayerArgs()			{ return m_strVideoPlayerArgs; }
+	static bool		GetRunCommandOnFileCompletion()		{ return m_bRunCommandOnFileCompletion; }
+	static const CString& GetFileCompletionProgram()		{ return m_strFileCompletionProgram; }
+	static const CString& GetFileCompletionArguments()	{ return m_strFileCompletionArguments; }
 
 	static UINT		GetFileBufferSize()					{ return m_uFileBufferSize; }
 	static UINT		GetDefaultFileBufferSizeBytes()		{ return 64u * 1024u * 1024u; }

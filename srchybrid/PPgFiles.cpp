@@ -23,6 +23,7 @@
 #include "emuledlg.h"
 #include "Preferences.h"
 #include "HelpIDs.h"
+#include "FileCompletionCommandSeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -49,9 +50,13 @@ BEGIN_MESSAGE_MAP(CPPgFiles, CPropertyPage)
 	ON_EN_CHANGE(IDC_VIDEOPLAYER, OnSettingsChange)
 	ON_EN_CHANGE(IDC_VIDEOPLAYER_ARGS, OnSettingsChange)
 	ON_BN_CLICKED(IDC_VIDEOBACKUP, OnSettingsChange)
+	ON_BN_CLICKED(IDC_RUNONFILECOMPLETE, OnSettingsChange)
+	ON_EN_CHANGE(IDC_FILECOMPLETEPROGRAM, OnSettingsChange)
+	ON_EN_CHANGE(IDC_FILECOMPLETEARGS, OnSettingsChange)
 	ON_BN_CLICKED(IDC_REMEMBERDOWNLOADED, OnSettingsChange)
 	ON_BN_CLICKED(IDC_REMEMBERCANCELLED, OnSettingsChange)
 	ON_BN_CLICKED(IDC_BROWSEV, BrowseVideoplayer)
+	ON_BN_CLICKED(IDC_BROWSE_FILECOMPLETEPROGRAM, BrowseFileCompletionProgram)
 	ON_WM_HELPINFO()
 	ON_WM_DESTROY()
 END_MESSAGE_MAP()
@@ -74,6 +79,8 @@ BOOL CPPgFiles::OnInitDialog()
 
 	AddBuddyButton(GetDlgItem(IDC_VIDEOPLAYER)->m_hWnd, ::GetDlgItem(m_hWnd, IDC_BROWSEV));
 	InitAttachedBrowseButton(::GetDlgItem(m_hWnd, IDC_BROWSEV), m_icoBrowse);
+	AddBuddyButton(GetDlgItem(IDC_FILECOMPLETEPROGRAM)->m_hWnd, ::GetDlgItem(m_hWnd, IDC_BROWSE_FILECOMPLETEPROGRAM));
+	InitAttachedBrowseButton(::GetDlgItem(m_hWnd, IDC_BROWSE_FILECOMPLETEPROGRAM), m_icoBrowse);
 
 	LoadSettings();
 	Localize();
@@ -103,6 +110,12 @@ void CPPgFiles::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_STARTNEXTFILE,
 		_T("Starts the next queued file automatically when another download finishes or pauses out.\r\n\r\n")
 		_T("Recommended: enabled if you use paused queues to control how many files run at once."));
+	m_toolTip.SetTool(this, IDC_RUNONFILECOMPLETE,
+		_T("Runs an executable after a file is successfully completed and kept.\r\n\r\n")
+		_T("This is disabled by default. The program is launched directly without the Windows shell."));
+	m_toolTip.SetTool(this, IDC_FILECOMPLETEARGS,
+		_T("Supported tokens: %F full path, %D directory, %N file name, %H file hash, %S size bytes, %C category.\r\n\r\n")
+		_T("%F and %D are quoted automatically. Environment variables are not expanded."));
 }
 
 void CPPgFiles::LoadSettings()
@@ -127,6 +140,9 @@ void CPPgFiles::LoadSettings()
 
 	SetDlgItemText(IDC_VIDEOPLAYER, thePrefs.m_strVideoPlayer);
 	SetDlgItemText(IDC_VIDEOPLAYER_ARGS, thePrefs.m_strVideoPlayerArgs);
+	CheckDlgButton(IDC_RUNONFILECOMPLETE, static_cast<UINT>(thePrefs.GetRunCommandOnFileCompletion()));
+	SetDlgItemText(IDC_FILECOMPLETEPROGRAM, thePrefs.GetFileCompletionProgram());
+	SetDlgItemText(IDC_FILECOMPLETEARGS, thePrefs.GetFileCompletionArguments());
 
 	CheckDlgButton(IDC_VIDEOBACKUP, static_cast<UINT>(thePrefs.m_bMoviePreviewBackup));
 	CheckDlgButton(IDC_FNCLEANUP, static_cast<UINT>(thePrefs.AutoFilenameCleanup()));
@@ -135,6 +151,7 @@ void CPPgFiles::LoadSettings()
 	CheckDlgButton(IDC_REMEMBERCANCELLED, static_cast<UINT>(thePrefs.IsRememberingCancelledFiles()));
 
 	GetDlgItem(IDC_STARTNEXTFILECAT)->EnableWindow(IsDlgButtonChecked(IDC_STARTNEXTFILE));
+	UpdateCompletionCommandControls();
 }
 
 BOOL CPPgFiles::OnApply()
@@ -173,6 +190,15 @@ BOOL CPPgFiles::OnApply()
 	thePrefs.m_strVideoPlayer.Trim();
 	GetDlgItemText(IDC_VIDEOPLAYER_ARGS, thePrefs.m_strVideoPlayerArgs);
 	thePrefs.m_strVideoPlayerArgs.Trim();
+	thePrefs.m_bRunCommandOnFileCompletion = IsDlgButtonChecked(IDC_RUNONFILECOMPLETE) != 0;
+	GetDlgItemText(IDC_FILECOMPLETEPROGRAM, thePrefs.m_strFileCompletionProgram);
+	thePrefs.m_strFileCompletionProgram.Trim();
+	GetDlgItemText(IDC_FILECOMPLETEARGS, thePrefs.m_strFileCompletionArguments);
+	thePrefs.m_strFileCompletionArguments.Trim();
+	if (thePrefs.m_bRunCommandOnFileCompletion && !FileCompletionCommandSeams::IsValidConfiguredProgramPath(thePrefs.m_strFileCompletionProgram)) {
+		AfxMessageBox(GetResString(IDS_COMPLETIONCOMMAND_INVALID), MB_ICONWARNING);
+		return FALSE;
+	}
 	thePrefs.m_bMoviePreviewBackup = IsDlgButtonChecked(IDC_VIDEOBACKUP) != 0;
 
 	LoadSettings();
@@ -202,6 +228,10 @@ void CPPgFiles::Localize()
 		SetDlgItemText(IDC_VIDEOPLAYER_CMD_LBL, GetResString(IDS_COMMAND));
 		SetDlgItemText(IDC_VIDEOPLAYER_ARGS_LBL, GetResString(IDS_ARGUMENTS));
 		SetDlgItemText(IDC_VIDEOBACKUP, GetResString(IDS_VIDEOBACKUP));
+		SetDlgItemText(IDC_FILECOMPLETE_GROUP, GetResString(IDS_COMPLETIONCOMMAND));
+		SetDlgItemText(IDC_RUNONFILECOMPLETE, GetResString(IDS_RUNONFILECOMPLETE));
+		SetDlgItemText(IDC_FILECOMPLETEPROGRAM_LBL, GetResString(IDS_COMMAND));
+		SetDlgItemText(IDC_FILECOMPLETEARGS_LBL, GetResString(IDS_ARGUMENTS));
 		SetDlgItemText(IDC_REMEMBERDOWNLOADED, GetResString(IDS_PW_REMEMBERDOWNLOADED));
 		SetDlgItemText(IDC_REMEMBERCANCELLED, GetResString(IDS_PW_REMEMBERCANCELLED));
 	}
@@ -216,12 +246,32 @@ void CPPgFiles::OnSetCleanupFilter()
 		thePrefs.SetFilenameCleanups(inputbox.GetInput());
 }
 
+void CPPgFiles::UpdateCompletionCommandControls()
+{
+	const BOOL bEnabled = IsDlgButtonChecked(IDC_RUNONFILECOMPLETE) != 0;
+	GetDlgItem(IDC_FILECOMPLETEPROGRAM_LBL)->EnableWindow(bEnabled);
+	GetDlgItem(IDC_FILECOMPLETEPROGRAM)->EnableWindow(bEnabled);
+	GetDlgItem(IDC_BROWSE_FILECOMPLETEPROGRAM)->EnableWindow(bEnabled);
+	GetDlgItem(IDC_FILECOMPLETEARGS_LBL)->EnableWindow(bEnabled);
+	GetDlgItem(IDC_FILECOMPLETEARGS)->EnableWindow(bEnabled);
+}
+
 void CPPgFiles::BrowseVideoplayer()
 {
 	CString strPlayerPath;
 	GetDlgItemText(IDC_VIDEOPLAYER, strPlayerPath);
 	if (DialogBrowseFile(strPlayerPath, _T("Executable (*.exe)|*.exe||"), (strPlayerPath.IsEmpty() ? NULL : strPlayerPath), OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY, true, GetSafeHwnd(), NULL, _T("exe"))) {
 		SetDlgItemText(IDC_VIDEOPLAYER, strPlayerPath);
+		SetModified();
+	}
+}
+
+void CPPgFiles::BrowseFileCompletionProgram()
+{
+	CString strProgramPath;
+	GetDlgItemText(IDC_FILECOMPLETEPROGRAM, strProgramPath);
+	if (DialogBrowseFile(strProgramPath, _T("Executable (*.exe;*.com)|*.exe;*.com||"), (strProgramPath.IsEmpty() ? NULL : strProgramPath), OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY, true, GetSafeHwnd(), NULL, _T("exe"))) {
+		SetDlgItemText(IDC_FILECOMPLETEPROGRAM, strProgramPath);
 		SetModified();
 	}
 }
@@ -253,6 +303,7 @@ void CPPgFiles::OnSettingsChange()
 	SetModified();
 	GetDlgItem(IDC_STARTNEXTFILECAT)->EnableWindow(IsDlgButtonChecked(IDC_STARTNEXTFILE));
 	GetDlgItem(IDC_STARTNEXTFILECAT2)->EnableWindow(IsDlgButtonChecked(IDC_STARTNEXTFILE));
+	UpdateCompletionCommandControls();
 }
 
 void CPPgFiles::OnSettingsChangeCat(uint8 index)

@@ -327,6 +327,14 @@ BEGIN
     EDITTEXT        IDC_VIDEOPLAYER_ARGS,10,208,211,12,ES_AUTOHSCROLL
     CONTROL         "Create file backup for preview",IDC_VIDEOBACKUP,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,224,195,8
     GROUPBOX        "Static",IDC_LBL_MISC,4,60,223,104
+    GROUPBOX        "Run Program On Completion",IDC_FILECOMPLETE_GROUP,4,242,223,78
+    CONTROL         "Run program when a file completes",IDC_RUNONFILECOMPLETE,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,10,253,209,10
+    LTEXT           "Command:",IDC_FILECOMPLETEPROGRAM_LBL,10,267,151,8
+    EDITTEXT        IDC_FILECOMPLETEPROGRAM,10,276,211,12,ES_AUTOHSCROLL
+    PUSHBUTTON      "...",IDC_BROWSE_FILECOMPLETEPROGRAM,210,271,14,14
+    LTEXT           "Arguments:",IDC_FILECOMPLETEARGS_LBL,10,290,151,8
+    EDITTEXT        IDC_FILECOMPLETEARGS,10,299,211,12,ES_AUTOHSCROLL
 END
 
 IDD_PPG_DIRECTORIES DIALOGEX 0, 0, 391, 381
@@ -3243,6 +3251,10 @@ BEGIN
     IDS_IPFILTER_AUTO_UPDATE_NO_URL "IP filter auto update skipped because no update URL is configured."
     IDS_IPFILTER_AUTO_UPDATE_DONE "IP filter auto update loaded %u ranges."
     IDS_IPFILTER_AUTO_UPDATE_FAILED "IP filter auto update failed: %s"
+    IDS_COMPLETIONCOMMAND   "File Completion Program"
+    IDS_RUNONFILECOMPLETE   "Run program when a file completes"
+    IDS_COMPLETIONCOMMAND_INVALID
+                            "Select an existing .exe or .com program before enabling the file completion command."
     IDS_PERCENTAGE          "%"
     IDS_CLIENT_UPLOADED     "Client Uploaded"
     IDS_CLIENT_HASH         "Client Hash"

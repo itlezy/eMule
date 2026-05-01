@@ -22,6 +22,7 @@ protected:
 
 	void LoadSettings();
 	void OnSettingsChangeCat(uint8 index);
+	void UpdateCompletionCommandControls();
 	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);    // DDX/DDV support
@@ -33,6 +34,7 @@ protected:
 	DECLARE_MESSAGE_MAP()
 	afx_msg void OnSetCleanupFilter();
 	afx_msg void BrowseVideoplayer();
+	afx_msg void BrowseFileCompletionProgram();
 	afx_msg void OnSettingsChange();
 	afx_msg void OnSettingsChangeCat1()		{ OnSettingsChangeCat(1); }
 	afx_msg void OnSettingsChangeCat2()		{ OnSettingsChangeCat(2); }
