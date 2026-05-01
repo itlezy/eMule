@@ -1,6 +1,9 @@
 #pragma once
 
+#include <atlstr.h>
+
 #include "types.h"
+#include "Version.h"
 
 enum FriendLinkTransitionAction
 {
@@ -45,6 +48,27 @@ struct BuddyHelloSnapshot
 };
 
 /**
+ * @brief Returns the peer-visible mod identity advertised in eMule hello tags.
+ */
+inline CString GetAdvertisedClientModIdentity()
+{
+	return MOD_CLIENT_MOD_VERSION_TEXT;
+}
+
+/**
+ * @brief Formats a client software label with its optional mod identity.
+ */
+inline CString BuildFullClientSoftVersionDisplay(const CString &strClientSoftware, const CString &strClientModVersion)
+{
+	if (strClientModVersion.IsEmpty())
+		return strClientSoftware;
+
+	CString strDisplay;
+	strDisplay.Format(_T("%s [%s]"), (LPCTSTR)strClientSoftware, (LPCTSTR)strClientModVersion);
+	return strDisplay;
+}
+
+/**
  * @brief Builds the one-shot buddy payload snapshot used while serializing hello tags.
  */
 inline BuddyHelloSnapshot BuildBuddyHelloSnapshot(bool bIsFirewalled, bool bHasBuddy, uint32 dwBuddyIP, uint16 nBuddyPort)
@@ -61,5 +85,5 @@ inline BuddyHelloSnapshot BuildBuddyHelloSnapshot(bool bIsFirewalled, bool bHasB
  */
 inline uint32 GetHelloTagCount(const BuddyHelloSnapshot &rBuddySnapshot)
 {
-	return 6u + (rBuddySnapshot.bShouldAdvertise ? 2u : 0u);
+	return 7u + (rBuddySnapshot.bShouldAdvertise ? 2u : 0u);
 }

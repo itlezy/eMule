@@ -112,7 +112,7 @@ void CChatWnd::ShowFriendMsgDetails(CFriend *pFriend)
 		if (linkedc) {
 			SetDlgItemText(IDC_FRIENDS_NAME_EDIT, linkedc->GetUserName());
 			SetDlgItemText(IDC_FRIENDS_USERHASH_EDIT, md4str(linkedc->GetUserHash()));
-			SetDlgItemText(IDC_FRIENDS_CLIENTE_EDIT, linkedc->GetClientSoftVer());
+			SetDlgItemText(IDC_FRIENDS_CLIENTE_EDIT, linkedc->DbgGetFullClientSoftVer());
 		} else {
 			SetDlgItemText(IDC_FRIENDS_NAME_EDIT, (pFriend->m_strName.IsEmpty() ? _T("?") : (LPCTSTR)pFriend->m_strName));
 			SetDlgItemText(IDC_FRIENDS_USERHASH_EDIT, (pFriend->HasUserhash() ? (LPCTSTR)md4str(pFriend->m_abyUserhash) : _T("?")));

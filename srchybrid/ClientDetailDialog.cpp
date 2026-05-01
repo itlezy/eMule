@@ -104,7 +104,7 @@ BOOL CClientDetailPage::OnSetActive()
 		}
 		SetDlgItemText(IDC_DNAME, strClientName);
 		SetDlgItemText(IDC_DHASH, (client->HasValidHash() ? (LPCTSTR)md4str(client->GetUserHash()) : _T("?")));
-		SetDlgItemText(IDC_DSOFT, client->GetClientSoftVer());
+		SetDlgItemText(IDC_DSOFT, client->DbgGetFullClientSoftVer());
 
 		UINT uid;
 		if (!client->SupportsCryptLayer())

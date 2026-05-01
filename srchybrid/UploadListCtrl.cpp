@@ -367,7 +367,7 @@ CString  CUploadListCtrl::GetItemDisplayText(const CUpDownClient *client, int iS
 			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(client));
 		break;
 	case 13:
-		sText = client->GetClientSoftVer();
+		sText = client->DbgGetFullClientSoftVer();
 		break;
 	case 14:
 		if (client->Credits() != NULL)
@@ -607,7 +607,7 @@ int CALLBACK CUploadListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lP
 			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(item1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(item2)));
 		break;
 	case 13:
-		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		iResult = CompareLocaleStringNoCase(item1->DbgGetFullClientSoftVer(), item2->DbgGetFullClientSoftVer());
 		break;
 	case 14:
 		if (item1->Credits() != NULL && item2->Credits() != NULL)

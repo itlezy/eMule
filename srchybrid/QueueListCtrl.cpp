@@ -389,7 +389,7 @@ CString CQueueListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSub
 			sText = theApp.geolocation->GetDisplayText(GetClientGeoIP(client));
 		break;
 	case 15:
-		sText = client->GetClientSoftVer();
+		sText = client->DbgGetFullClientSoftVer();
 		break;
 	case 16:
 		if (client->Credits() != NULL)
@@ -576,7 +576,7 @@ int CALLBACK CQueueListCtrl::SortProc(LPARAM lParam1, LPARAM lParam2, LPARAM lPa
 			iResult = CompareLocaleStringNoCase(theApp.geolocation->GetDisplayText(GetClientGeoIP(item1)), theApp.geolocation->GetDisplayText(GetClientGeoIP(item2)));
 		break;
 	case 15:
-		iResult = CompareLocaleStringNoCase(item1->GetClientSoftVer(), item2->GetClientSoftVer());
+		iResult = CompareLocaleStringNoCase(item1->DbgGetFullClientSoftVer(), item2->DbgGetFullClientSoftVer());
 		break;
 	case 16:
 		if (item1->Credits() != NULL && item2->Credits() != NULL)

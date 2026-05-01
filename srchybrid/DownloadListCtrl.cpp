@@ -580,7 +580,7 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 	case 5: //file info
 		return GetResString(IDS_DL_PROGRESS);
 	case 6: //sources
-		return pClient->GetClientSoftVer();
+		return pClient->DbgGetFullClientSoftVer();
 	case 7: //prio
 		if (pClient->GetDownloadState() == DS_ONQUEUE) {
 			if (pClient->IsRemoteQueueFull())

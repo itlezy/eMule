@@ -242,7 +242,7 @@ CString CDownloadClientsCtrl::GetItemDisplayText(const CUpDownClient *client, in
 			sText.Format(_T("(%s)"), (LPCTSTR)GetResString(IDS_UNKNOWN));
 		break;
 	case 1:
-		sText = client->GetClientSoftVer();
+		sText = client->DbgGetFullClientSoftVer();
 		break;
 	case 2:
 		sText = client->GetRequestFile()->GetFileName();

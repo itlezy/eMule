@@ -250,7 +250,7 @@ CString CClientListCtrl::GetItemDisplayText(const CUpDownClient *client, int iSu
 		if (client->GetClientSoftVer().IsEmpty())
 			sText = GetResString(IDS_UNKNOWN);
 		else
-			sText = client->GetClientSoftVer();
+			sText = client->DbgGetFullClientSoftVer();
 		break;
 	case 6: //connected
 		sText = GetResString((client->socket && client->socket->IsConnected()) ? IDS_YES : IDS_NO);

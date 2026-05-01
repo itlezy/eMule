@@ -2014,7 +2014,7 @@ CString CWebServer::_GetTransferList(const ThreadData &Data)
 		dUser.nTransferredUp = cur_client.GetTransferredUp();
 		UINT uDataRate = cur_client.GetUploadDatarate();
 		dUser.nDataRate = (uDataRate == UNLIMITED) ? 0 : uDataRate;
-		dUser.sClientNameVersion = cur_client.GetClientSoftVer();
+		dUser.sClientNameVersion = cur_client.DbgGetFullClientSoftVer();
 		UploadArray.Add(dUser);
 	}
 
@@ -2071,7 +2071,7 @@ void CWebServer::_MakeTransferList(CString &Out, CWebServer *pThis, const Thread
 		}
 		dUser.sUserName = _SpecialChars(usn);
 
-		dUser.sClientNameVersion = cur_client.GetClientSoftVer();
+		dUser.sClientNameVersion = cur_client.DbgGetFullClientSoftVer();
 		CKnownFile *file = theApp.sharedfiles->GetFileByID(cur_client.GetUploadFileID());
 		dUser.sFileName = file ? _SpecialChars(file->GetFileName()) : _GetPlainResString(IDS_REQ_UNKNOWNFILE);
 		dUser.sClientState = dUser.sClientExtra;
@@ -4271,7 +4271,7 @@ CString CWebServer::_GetClientSummary(const CUpDownClient &client)
 	// name
 	buffer.AppendFormat(_T(" %s\n"), client.GetUserName());
 	// client version
-	buffer.AppendFormat(_T("%s: %s\n"), (LPCTSTR)GetResString(IDS_CD_CSOFT), (LPCTSTR)client.GetClientSoftVer());
+	buffer.AppendFormat(_T("%s: %s\n"), (LPCTSTR)GetResString(IDS_CD_CSOFT), (LPCTSTR)client.DbgGetFullClientSoftVer());
 
 	// uploading file
 	buffer.AppendFormat(_T("%s "), (LPCTSTR)GetResString(IDS_CD_UPLOADREQ));

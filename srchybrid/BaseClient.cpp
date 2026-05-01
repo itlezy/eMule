@@ -28,6 +28,7 @@
 #include "Opcodes.h"
 #include "SafeFile.h"
 #include "Preferences.h"
+#include "BaseClientFriendBuddySeams.h"
 #include "ClientSocketLifetimeSeams.h"
 #include "Server.h"
 #include "ClientCredits.h"
@@ -927,10 +928,13 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 	data.WriteUInt32(theApp.GetID());
 	data.WriteUInt16(thePrefs.GetPort());
 
-	uint32 tagcount = 6;
+	CUpDownClient *pBuddy = theApp.clientlist->GetBuddy();
+	const BuddyHelloSnapshot buddySnapshot = BuildBuddyHelloSnapshot(theApp.IsFirewalled(),
+		pBuddy != NULL,
+		pBuddy != NULL ? pBuddy->GetIP() : 0,
+		pBuddy != NULL ? pBuddy->GetUDPPort() : 0);
 
-	if (theApp.clientlist->GetBuddy() && theApp.IsFirewalled())
-		tagcount += 2;
+	uint32 tagcount = GetHelloTagCount(buddySnapshot);
 
 	data.WriteUInt32(tagcount);
 
@@ -962,11 +966,11 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 				);
 	tagUdpPorts.WriteTagToFile(data);
 
-	if (theApp.clientlist->GetBuddy() && theApp.IsFirewalled()) {
-		CTag tagBuddyIP(CT_EMULE_BUDDYIP, theApp.clientlist->GetBuddy()->GetIP());
+	if (buddySnapshot.bShouldAdvertise) {
+		CTag tagBuddyIP(CT_EMULE_BUDDYIP, buddySnapshot.dwBuddyIP);
 		tagBuddyIP.WriteTagToFile(data);
 
-		CTag tagBuddyPort(CT_EMULE_BUDDYUDP, ((uint32)theApp.clientlist->GetBuddy()->GetUDPPort()));
+		CTag tagBuddyPort(CT_EMULE_BUDDYUDP, ((uint32)buddySnapshot.nBuddyPort));
 		tagBuddyPort.WriteTagToFile(data);
 	}
 
@@ -1039,6 +1043,10 @@ void CUpDownClient::SendHelloTypePacket(CSafeMemFile &data)
 				//(RESERVED					   )
 				);
 	tagMuleVersion.WriteTagToFile(data);
+
+	const CString strModIdentity(GetAdvertisedClientModIdentity());
+	CTag tagModVersion(CT_MOD_VERSION, (LPCTSTR)strModIdentity);
+	tagModVersion.WriteTagToFile(data);
 
 	uint32 dwIP;
 	uint16 nPort;
@@ -2369,11 +2377,7 @@ LPCTSTR CUpDownClient::DbgGetKadState() const
 
 CString CUpDownClient::DbgGetFullClientSoftVer() const
 {
-	if (GetClientModVer().IsEmpty())
-		return GetClientSoftVer();
-	CString str;
-	str.Format(_T("%s [%s]"), (LPCTSTR)GetClientSoftVer(), (LPCTSTR)GetClientModVer());
-	return str;
+	return BuildFullClientSoftVersionDisplay(GetClientSoftVer(), GetClientModVer());
 }
 
 CString CUpDownClient::DbgGetClientInfo(bool bFormatIP) const
