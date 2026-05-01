@@ -6,6 +6,9 @@
 #include "types.h"
 
 #define EMULE_TEST_HAVE_COLLECTION_OWNERSHIP_SEAMS 1
+#define EMULE_TEST_HAVE_COLLECTION_FILE_IMPORT_SEAMS 1
+
+constexpr uint32 COLLECTION_FILE_MAX_ENTRY_TAGS = 256u;
 
 struct CollectionSignatureLayout
 {
@@ -46,6 +49,40 @@ inline bool TryConvertCollectionSerializedLength(const ULONGLONG nSerializedLeng
  * @brief Keeps collection import tolerant of malformed individual entries while continuing the outer file load.
  */
 inline bool ShouldContinueAfterCollectionEntryFailure()
+{
+	return true;
+}
+
+/**
+ * @brief Rejects impossible or hostile per-file tag counts before parsing collection file tags.
+ */
+inline bool HasSaneCollectionFileTagCount(const ULONGLONG nPosition, const ULONGLONG nLength, const uint32 nTagCount, const uint32 nMaxTagCount = COLLECTION_FILE_MAX_ENTRY_TAGS)
+{
+	return nPosition <= nLength
+		&& nTagCount <= nMaxTagCount
+		&& static_cast<ULONGLONG>(nTagCount) <= nLength - nPosition;
+}
+
+/**
+ * @brief Keeps malformed optional collection file tags skippable within one serialized entry.
+ */
+inline bool ShouldSkipMalformedCollectionFileTag()
+{
+	return true;
+}
+
+/**
+ * @brief Rejects collection file entries which cannot identify an eD2K file hash.
+ */
+inline bool ShouldRejectCollectionFileWithoutHash()
+{
+	return true;
+}
+
+/**
+ * @brief Ignores malformed optional AICH metadata while keeping the collection entry importable.
+ */
+inline bool ShouldIgnoreInvalidCollectionAICHHash()
 {
 	return true;
 }
