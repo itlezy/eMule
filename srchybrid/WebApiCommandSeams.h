@@ -95,6 +95,14 @@ struct STransferBulkMutationRequest
 };
 
 /**
+ * @brief Carries the validated transfer rename payload.
+ */
+struct STransferRenameRequest
+{
+	std::string strName;
+};
+
+/**
  * @brief Carries the validated shared-file rating/comment mutation payload.
  */
 struct SSharedFileRatingCommentRequest
@@ -344,6 +352,27 @@ inline bool TryParseTransferBulkMutationRequest(const json &rParams, STransferBu
 	for (const json &hashValue : rParams["hashes"])
 		rRequest.hashes.push_back(hashValue);
 	rRequest.bDeleteFiles = rParams.value("deleteFiles", rParams.value("delete_files", false));
+	return true;
+}
+
+/**
+ * @brief Validates a transfer rename payload before the UI layer resolves the
+ * transfer hash.
+ */
+inline bool TryParseTransferRenameRequest(const json &rParams, STransferRenameRequest &rRequest, std::string &rError)
+{
+	if (!rParams.contains("name") || !rParams["name"].is_string()) {
+		rError = "name must be a string";
+		return false;
+	}
+
+	const std::string strName = TrimAsciiWhitespace(rParams["name"].get<std::string>());
+	if (strName.empty()) {
+		rError = "name must not be empty";
+		return false;
+	}
+
+	rRequest.strName = strName;
 	return true;
 }
 

@@ -583,7 +583,7 @@ json BuildAppJson(const char *pszBuildFlavor)
 			{"categoriesRead", true},
 			{"categoryAssignment", true},
 			{"categoryCrud", false},
-			{"renameFile", false},
+			{"renameFile", true},
 			{"fileRatingComment", true}
 		}},
 #if defined(_M_ARM64)
@@ -1946,6 +1946,38 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		pPartFile->UpdateDisplayedInfo(true);
 		theApp.emuledlg->transferwnd->UpdateCatTabTitles();
 		return json{{"ok", true}};
+	}
+
+	if (strCommand == "transfers/rename") {
+		CPartFile *const pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pPartFile == NULL)
+			return json();
+
+		WebApiCommandSeams::STransferRenameRequest request;
+		std::string strError;
+		if (!WebApiCommandSeams::TryParseTransferRenameRequest(params, request, strError)) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = CStringFromStdUtf8(strError);
+			return json();
+		}
+
+		if (pPartFile->GetStatus() == PS_COMPLETE || pPartFile->GetStatus() == PS_COMPLETING) {
+			rError.strCode = "INVALID_STATE";
+			rError.strMessage = _T("completed transfers cannot be renamed through this endpoint");
+			return json();
+		}
+
+		const CString strNewName(CStringFromStdUtf8(request.strName));
+		if (!IsValidEd2kString(strNewName)) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("name must be a valid eD2K filename");
+			return json();
+		}
+
+		pPartFile->SetFileName(strNewName, true);
+		pPartFile->UpdateDisplayedInfo(true);
+		pPartFile->SavePartFile();
+		return BuildTransferJson(*pPartFile);
 	}
 
 	if (strCommand == "search/start") {

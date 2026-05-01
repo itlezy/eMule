@@ -382,8 +382,14 @@ inline bool TryBuildRoute(
 			rRoute.params["hash"] = route[1];
 			return true;
 		}
+		if (body.contains("name")) {
+			rRoute.strCommand = "transfers/rename";
+			rRoute.params = body;
+			rRoute.params["hash"] = route[1];
+			return true;
+		}
 		rErrorCode = "INVALID_ARGUMENT";
-		rErrorMessage = "transfer PATCH requires action, priority, category, or categoryName";
+		rErrorMessage = "transfer PATCH requires action, priority, category, categoryName, or name";
 		return false;
 	}
 	if (route.size() == 2 && route[0] == "transfers" && bDelete) {
