@@ -62,7 +62,7 @@
 #include "kademlia/kademlia/Kademlia.h"
 
 #pragma warning(push, 0)
-#include "nlohmann/json.hpp"
+#include <nlohmann/json.hpp>
 #pragma warning(pop)
 
 #ifdef _DEBUG

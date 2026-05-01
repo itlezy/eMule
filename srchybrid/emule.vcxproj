@@ -53,6 +53,7 @@
     <PcpNatPmpRoot>$(ThirdPartyRoot)eMule-libpcpnatpmp\</PcpNatPmpRoot>
     <ResizableLibRoot>$(ThirdPartyRoot)eMule-ResizableLib\</ResizableLibRoot>
     <CryptoPpRoot>$(ThirdPartyRoot)eMule-cryptopp\</CryptoPpRoot>
+    <NlohmannJsonRoot>$(ThirdPartyRoot)eMule-nlohmann-json\single_include\</NlohmannJsonRoot>
     <ZlibRoot>$(ThirdPartyRoot)eMule-zlib\</ZlibRoot>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)'=='x64'">
@@ -67,7 +68,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(NlohmannJsonRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -102,7 +103,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
-      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(NlohmannJsonRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
       <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -685,7 +686,6 @@
     <ClInclude Include="WebSocket.h" />
     <ClInclude Include="Wizard.h" />
     <ClInclude Include="ZIPFile.h" />
-    <ClInclude Include="nlohmann\json.hpp" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\all.ico" />
