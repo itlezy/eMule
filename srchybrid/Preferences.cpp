@@ -2825,7 +2825,7 @@ void CPreferences::LoadPreferences()
 	filterLANIPs = ini.GetBool(_T("FilterBadIPs"), true);
 	m_bAllocLocalHostIP = ini.GetBool(_T("AllowLocalHostIP"), false);
 	autoconnect = ini.GetBool(_T("Autoconnect"), false);
-	showRatesInTitle = ini.GetBool(_T("ShowRatesOnTitle"), false);
+	showRatesInTitle = ini.GetBool(_T("ShowRatesOnTitle"), true);
 	m_bIconflashOnNewMessage = ini.GetBool(_T("IconflashOnNewMessage"), false);
 
 	onlineSig = ini.GetBool(_T("OnlineSignature"), false);
