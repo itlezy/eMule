@@ -92,15 +92,9 @@ void CPPgScheduler::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_ENABLE,
-		_T("Enables the scheduler so time-based rules can change settings automatically.\r\n\r\n")
-		_T("Leave it off unless you actively use scheduled bandwidth, connection, or category changes."));
-	m_toolTip.SetTool(this, IDC_CHECKNOENDTIME,
-		_T("Runs the selected schedule entry without a stop time.\r\n\r\n")
-		_T("Use it for one-way state changes that should stay active until another schedule overrides them."));
-	m_toolTip.SetTool(this, IDC_APPLY,
-		_T("Applies the edited details to the currently selected schedule entry.\r\n\r\n")
-		_T("Use this after changing the day, time, or action list for that row."));
+	m_toolTip.SetTool(this, IDC_ENABLE, GetResString(IDS_PPG_SCHEDULER_TT_ENABLE));
+	m_toolTip.SetTool(this, IDC_CHECKNOENDTIME, GetResString(IDS_PPG_SCHEDULER_TT_CHECKNOENDTIME));
+	m_toolTip.SetTool(this, IDC_APPLY, GetResString(IDS_PPG_SCHEDULER_TT_APPLY));
 }
 
 void CPPgScheduler::Localize()

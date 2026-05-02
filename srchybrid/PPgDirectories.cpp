@@ -86,15 +86,9 @@ void CPPgDirectories::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_INCFILES,
-		_T("Main incoming directory for completed downloads.\r\n\r\n")
-		_T("Use a stable local path with enough free space. Avoid temporary or removable locations unless you really want finished files there."));
-	m_toolTip.SetTool(this, IDC_TEMPFILES,
-		_T("Working directory list for part files, hashes, and transfer state.\r\n\r\n")
-		_T("These paths must stay available while downloads run. Fast local disks are recommended over removable or unreliable network paths."));
-	m_toolTip.SetTool(this, IDC_SHARESELECTOR,
-		_T("Selects which local folders eMule shares to other clients.\r\n\r\n")
-		_T("Share only the directories you intend to publish. Avoid broad roots such as an entire drive."));
+	m_toolTip.SetTool(this, IDC_INCFILES, GetResString(IDS_PPG_DIRECTORIES_TT_INCFILES));
+	m_toolTip.SetTool(this, IDC_TEMPFILES, GetResString(IDS_PPG_DIRECTORIES_TT_TEMPFILES));
+	m_toolTip.SetTool(this, IDC_SHARESELECTOR, GetResString(IDS_PPG_DIRECTORIES_TT_SHARESELECTOR));
 }
 
 void CPPgDirectories::LoadSettings()

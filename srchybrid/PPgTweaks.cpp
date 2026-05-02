@@ -90,7 +90,7 @@ namespace
 		RevealTreeItem(ctrl, hItem);
 		const CString label = GetTreeItemLabel(ctrl, hItem);
 		CString message;
-		message.Format(_T("Invalid value for \"%s\".\n\n%s"), static_cast<LPCTSTR>(label), static_cast<LPCTSTR>(detail));
+		message.Format(GetResString(IDS_TWEAKS_VALIDATION_INVALID_VALUE_FMT), static_cast<LPCTSTR>(label), static_cast<LPCTSTR>(detail));
 		AfxMessageBox(message);
 		pDX->PrepareEditCtrl(IDC_EXT_OPTS);
 		pDX->Fail();
@@ -132,7 +132,7 @@ namespace
 	{
 		if (pDX->m_bSaveAndValidate) {
 			if (!TryParseTreeInt(ctrl.GetEditText(hItem), value))
-				FailTreeValidation(pDX, ctrl, hItem, _T("Please enter an integer."));
+				FailTreeValidation(pDX, ctrl, hItem, GetResString(IDS_TWEAKS_VALIDATION_INTEGER));
 		} else {
 			CString text;
 			text.Format(_T("%d"), value);
@@ -144,7 +144,7 @@ namespace
 	{
 		if (pDX->m_bSaveAndValidate) {
 			if (!TryParseTreeUInt(ctrl.GetEditText(hItem), value))
-				FailTreeValidation(pDX, ctrl, hItem, _T("Please enter an integer."));
+				FailTreeValidation(pDX, ctrl, hItem, GetResString(IDS_TWEAKS_VALIDATION_INTEGER));
 		} else {
 			CString text;
 			text.Format(_T("%u"), value);
@@ -183,233 +183,230 @@ namespace
 
 	static CString GetFileBufferSizeLabel()
 	{
-		CString label(GetResString(IDS_FILEBUFFERSIZE));
-		label.Append(_T(" [KiB]"));
+		CString label;
+		label.Format(GetResString(IDS_TWEAKS_FILE_BUFFER_SIZE_LABEL_FMT), (LPCTSTR)GetResString(IDS_FILEBUFFERSIZE));
 		return label;
 	}
 
 	static CString GetCreateCrashDumpLabel()
 	{
-		return _T("Crash dump creation");
+		return GetResString(IDS_TWEAKS_CRASH_DUMP_CREATION);
 	}
 
 	static CString GetCreateCrashDumpDisabledLabel()
 	{
-		return _T("Disabled");
+		return GetResString(IDS_DISABLED);
 	}
 
 	static CString GetCreateCrashDumpPromptLabel()
 	{
-		return _T("Ask before creating dump");
+		return GetResString(IDS_TWEAKS_CRASH_DUMP_PROMPT);
 	}
 
 	static CString GetCreateCrashDumpAlwaysLabel()
 	{
-		return _T("Create dump automatically");
+		return GetResString(IDS_TWEAKS_CRASH_DUMP_ALWAYS);
 	}
 
 	static CString GetMaxLogFileSizeLabel()
 	{
-		return _T("Maximum log file size [KiB]");
+		return GetResString(IDS_TWEAKS_MAX_LOG_FILE_SIZE);
 	}
 
 	static CString GetMaxLogBufferLabel()
 	{
-		return _T("Log view buffer [KiB]");
+		return GetResString(IDS_TWEAKS_MAX_LOG_BUFFER);
 	}
 
 	static CString GetLogFileFormatLabel()
 	{
-		return _T("Log file format");
+		return GetResString(IDS_TWEAKS_LOG_FILE_FORMAT);
 	}
 
 	static CString GetLogFileFormatUnicodeLabel()
 	{
-		return _T("UTF-16 Unicode");
+		return GetResString(IDS_TWEAKS_LOG_FILE_FORMAT_UTF16);
 	}
 
 	static CString GetLogFileFormatUtf8Label()
 	{
-		return _T("UTF-8");
+		return GetResString(IDS_TWEAKS_LOG_FILE_FORMAT_UTF8);
 	}
 
 	static CString GetFullVerboseLabel()
 	{
-		return _T("Full verbose logging");
+		return GetResString(IDS_TWEAKS_FULL_VERBOSE_LOGGING);
 	}
 
 	static CString GetPerfLogFileFormatLabel()
 	{
-		return _T("Performance log format");
+		return GetResString(IDS_TWEAKS_PERF_LOG_FORMAT);
 	}
 
 	static CString GetPerfLogFileLabel()
 	{
-		return _T("Performance log file");
+		return GetResString(IDS_TWEAKS_PERF_LOG_FILE);
 	}
 
 	static CString GetPerfLogIntervalLabel()
 	{
-		return _T("Performance log interval [minutes]");
+		return GetResString(IDS_TWEAKS_PERF_LOG_INTERVAL);
 	}
 
 	static CString GetHighresTimerLabel()
 	{
-		return _T("High-resolution system timer");
+		return GetResString(IDS_TWEAKS_HIGHRES_TIMER);
 	}
 
 	static CString GetIchLabel()
 	{
-		return _T("Intelligent Corruption Handling");
+		return GetResString(IDS_TWEAKS_ICH);
 	}
 
 	static CString GetPreviewSmallBlocksLabel()
 	{
-		return _T("Preview incomplete media blocks");
+		return GetResString(IDS_TWEAKS_PREVIEW_SMALL_BLOCKS);
 	}
 
 	static CString GetPreviewSmallBlocksAllowLabel()
 	{
-		return _T("Allow after safety checks");
+		return GetResString(IDS_TWEAKS_PREVIEW_SMALL_BLOCKS_ALLOW);
 	}
 
 	static CString GetPreviewSmallBlocksForceLabel()
 	{
-		return _T("Force even with missing first block");
+		return GetResString(IDS_TWEAKS_PREVIEW_SMALL_BLOCKS_FORCE);
 	}
 
 	static CString GetBeepOnErrorLabel()
 	{
-		return _T("Beep on important errors");
+		return GetResString(IDS_TWEAKS_BEEP_ON_ERROR);
 	}
 
 	static CString GetShowCopyEd2kLinkCmdLabel()
 	{
-		return _T("Show Copy ed2k Link command");
+		return GetResString(IDS_TWEAKS_SHOW_COPY_ED2K_LINK);
 	}
 
 	static CString GetIconFlashOnNewMessageLabel()
 	{
-		return _T("Flash tray icon on new message");
+		return GetResString(IDS_TWEAKS_ICON_FLASH_NEW_MESSAGE);
 	}
 
 	static CString GetDateTimeFormatLabel()
 	{
-		return _T("General date/time format");
+		return GetResString(IDS_TWEAKS_DATETIME_FORMAT);
 	}
 
 	static CString GetDateTimeFormat4LogLabel()
 	{
-		return _T("Log date/time format");
+		return GetResString(IDS_TWEAKS_DATETIME_LOG_FORMAT);
 	}
 
 	static CString GetTxtEditorLabel()
 	{
-		return _T("Text editor command");
+		return GetResString(IDS_TWEAKS_TEXT_EDITOR_COMMAND);
 	}
 
 	static CString GetMaxChatHistoryLinesLabel()
 	{
-		return _T("Maximum chat history lines");
+		return GetResString(IDS_TWEAKS_MAX_CHAT_HISTORY_LINES);
 	}
 
 	static CString GetMaxMessageSessionsLabel()
 	{
-		return _T("Maximum message sessions");
+		return GetResString(IDS_TWEAKS_MAX_MESSAGE_SESSIONS);
 	}
 
 	static CString GetGeneralAdvancedLabel()
 	{
-		return _T("General Advanced");
+		return GetResString(IDS_TWEAKS_GENERAL_ADVANCED);
 	}
 
 	static CString GetFileBehaviorLabel()
 	{
-		return _T("File Behavior");
+		return GetResString(IDS_TWEAKS_FILE_BEHAVIOR);
 	}
 
 	static CString GetFollowMajorityFilenameDefaultLabel()
 	{
-		return _T("Follow majority filename for new downloads");
+		return GetResString(IDS_FOLLOW_MAJORITY_FILENAME_NEW_DOWNLOADS);
 	}
 
 	static CString GetFollowMajorityFilenameRequiredPercentLabel()
 	{
-		return _T("Follow majority required agreement [%]");
+		return GetResString(IDS_TWEAKS_FOLLOW_MAJORITY_REQUIRED_AGREEMENT);
 	}
 
 	static CString GetFollowMajorityFilenameMinimumVotesLabel()
 	{
-		return _T("Follow majority minimum votes");
+		return GetResString(IDS_TWEAKS_FOLLOW_MAJORITY_MINIMUM_VOTES);
 	}
 
 	static CString GetStoragePersistenceLabel()
 	{
-		return _T("Storage & Persistence");
+		return GetResString(IDS_TWEAKS_STORAGE_PERSISTENCE);
 	}
 
 	static CString GetStartupTweaksLabel()
 	{
-		return _T("Startup");
+		return GetResString(IDS_TWEAKS_STARTUP);
 	}
 
 	static CString GetDisplayTweaksLabel()
 	{
-		return _T("Display & Indicators");
+		return GetResString(IDS_TWEAKS_DISPLAY_INDICATORS);
 	}
 
 	static CString GetSecurityTweaksLabel()
 	{
-		return _T("Security & Filtering");
+		return GetResString(IDS_TWEAKS_SECURITY_FILTERING);
 	}
 
 	static CString GetLoggingTweaksLabel()
 	{
-		return _T("Logging & Diagnostics");
+		return GetResString(IDS_TWEAKS_LOGGING_DIAGNOSTICS);
 	}
 
 	static CString GetConfigDiskSpaceLabel()
 	{
-		CString label(_T("Config Drive"));
-		label.Append(_T(" - "));
-		label.Append(GetResString(IDS_MINFREEDISKSPACE));
+		CString label;
+		label.Format(GetResString(IDS_TWEAKS_DISK_SPACE_LABEL_FMT), (LPCTSTR)GetResString(IDS_TWEAKS_CONFIG_DRIVE), (LPCTSTR)GetResString(IDS_MINFREEDISKSPACE));
 		return label;
 	}
 
 	static CString GetTempDiskSpaceLabel()
 	{
-		CString label(_T("Temp Drives"));
-		label.Append(_T(" - "));
-		label.Append(GetResString(IDS_MINFREEDISKSPACE));
+		CString label;
+		label.Format(GetResString(IDS_TWEAKS_DISK_SPACE_LABEL_FMT), (LPCTSTR)GetResString(IDS_TWEAKS_TEMP_DRIVES), (LPCTSTR)GetResString(IDS_MINFREEDISKSPACE));
 		return label;
 	}
 
 	static CString GetIncomingDiskSpaceLabel()
 	{
-		CString label(_T("Incoming Drives"));
-		label.Append(_T(" - "));
-		label.Append(GetResString(IDS_MINFREEDISKSPACE));
+		CString label;
+		label.Format(GetResString(IDS_TWEAKS_DISK_SPACE_LABEL_FMT), (LPCTSTR)GetResString(IDS_TWEAKS_INCOMING_DRIVES), (LPCTSTR)GetResString(IDS_MINFREEDISKSPACE));
 		return label;
 	}
 
 	static CString GetCommitPolicyLabel()
 	{
-		return _T("Flush File Data To Disk");
+		return GetResString(IDS_TWEAKS_FLUSH_FILE_DATA);
 	}
 
 	static CString GetCommitNeverLabel()
 	{
-		return _T("Never force flush");
+		return GetResString(IDS_TWEAKS_COMMIT_NEVER);
 	}
 
 	static CString GetCommitOnShutdownLabel()
 	{
-		return _T("Only on shutdown");
+		return GetResString(IDS_TWEAKS_COMMIT_ON_SHUTDOWN);
 	}
 
 	static CString GetCommitAlwaysLabel()
 	{
-		return _T("On every save");
+		return GetResString(IDS_TWEAKS_COMMIT_ALWAYS);
 	}
 }
 
@@ -898,8 +895,8 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiLog2Disk = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_LOG2DISK), m_htiLoggingGroup, m_bLog2Disk);
 		m_htiPerfLog = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_ENABLE_PERFLOG), m_htiLoggingGroup, m_bPerfLogEnabled);
 		m_htiPerfLogFileFormat = m_ctrlTreeOptions.InsertGroup(GetPerfLogFileFormatLabel(), iImgLog, m_htiPerfLog);
-		m_htiPerfLogFileFormatCsv = m_ctrlTreeOptions.InsertRadioButton(_T("CSV"), m_htiPerfLogFileFormat, m_iPerfLogFileFormat == CPerfLog::CSV);
-		m_htiPerfLogFileFormatMrtg = m_ctrlTreeOptions.InsertRadioButton(_T("MRTG"), m_htiPerfLogFileFormat, m_iPerfLogFileFormat == CPerfLog::MRTG);
+		m_htiPerfLogFileFormatCsv = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_TWEAKS_PERF_LOG_FORMAT_CSV), m_htiPerfLogFileFormat, m_iPerfLogFileFormat == CPerfLog::CSV);
+		m_htiPerfLogFileFormatMrtg = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_TWEAKS_PERF_LOG_FORMAT_MRTG), m_htiPerfLogFileFormat, m_iPerfLogFileFormat == CPerfLog::MRTG);
 		m_htiPerfLogFile = m_ctrlTreeOptions.InsertItem(GetPerfLogFileLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiPerfLog);
 		m_ctrlTreeOptions.AddEditBox(m_htiPerfLogFile, RUNTIME_CLASS(CTreeOptionsEditEx));
 		m_htiPerfLogInterval = m_ctrlTreeOptions.InsertItem(GetPerfLogIntervalLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiPerfLog);
@@ -939,403 +936,143 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiShareeMulePublicUser = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_SHAREEMULEPUBLIC), m_htiShareeMule, m_iShareeMule == 1);
 		m_htiShareeMuleOldStyle = m_ctrlTreeOptions.InsertRadioButton(GetResString(IDS_SHAREEMULEOLD), m_htiShareeMule, m_iShareeMule == 2);
 
-		SetTreeToolTip(m_htiConditionalTCPAccept,
-			_T("Prefers accepting inbound TCP connections only when they look useful.\r\n\r\n")
-			_T("Advanced traffic-shaping tweak. Leave it at the default unless you are diagnosing connection pressure."));
-		SetTreeToolTip(m_htiMaxCon5Sec,
-			_T("Maximum number of new TCP connections eMule may open within five seconds.\r\n\r\n")
-			_T("Lower values are gentler on Windows and routers. Leave it near the default unless you are tuning connection burst behavior."));
-		SetTreeToolTip(m_htiMaxHalfOpen,
-			_T("Upper limit for half-open outbound TCP connection attempts.\r\n\r\n")
-			_T("Mostly a compatibility safeguard. The default is usually the right choice unless you are investigating TCP setup issues."));
-		SetTreeToolTip(m_htiConnectionTimeout,
-			_T("How long eMule waits for a new connection to make progress before considering it failed.\r\n\r\n")
-			_T("Shorter values recover faster from dead peers; longer values are more tolerant of slow networks. Default values are recommended."));
-		SetTreeToolTip(m_htiDownloadTimeout,
-			_T("How long a download source may stay idle before eMule drops it as stalled.\r\n\r\n")
-			_T("Lower values clean up dead sources faster, but very low values can hurt slow peers. Leave the default unless you are diagnosing stalls."));
-		SetTreeToolTip(m_htiServerKeepAliveTimeout,
-			_T("How often eMule refreshes an otherwise idle server connection.\r\n\r\n")
-			_T("Use minutes. Set 0 to disable keepalives. Leave the default unless you are solving a specific server-idle disconnect problem."));
-		SetTreeToolTip(m_htiSearchEd2kMaxResults,
-			_T("Maximum number of results requested from an eD2K server for one search.\r\n\r\n")
-			_T("Higher values can find more files but increase server work and UI noise. Stay near the default unless you have a specific reason."));
-		SetTreeToolTip(m_htiSearchEd2kMaxMoreRequests,
-			_T("Maximum number of follow-up result pages eMule requests from an eD2K search.\r\n\r\n")
-			_T("Higher values can pull in more results but cost more server traffic and time. Conservative values are recommended."));
-		SetTreeToolTip(m_htiSearchKadFileTotal,
-			_T("Target number of results for Kad file searches.\r\n\r\n")
-			_T("Higher values search more broadly but keep Kad lookups alive longer. Stay near the default unless you want deeper searches."));
-		SetTreeToolTip(m_htiSearchKadKeywordTotal,
-			_T("Target number of results for Kad keyword searches.\r\n\r\n")
-			_T("Higher values can find more matches but increase Kad query load and UI noise. The default is usually the right balance."));
-		SetTreeToolTip(m_htiSearchKadFileLifetime,
-			_T("Maximum lifetime of one Kad file search in seconds.\r\n\r\n")
-			_T("Raise it only if you deliberately want longer-running Kad searches."));
-		SetTreeToolTip(m_htiSearchKadKeywordLifetime,
-			_T("Maximum lifetime of one Kad keyword search in seconds.\r\n\r\n")
-			_T("Longer lifetimes may find later results but increase background search activity."));
-		SetTreeToolTip(m_htiGeneralAdvanced,
-			_T("General advanced behavior that does not fit cleanly under network, file, display, or security.\r\n\r\n")
-			_T("Most users should leave these near their defaults."));
-		SetTreeToolTip(m_htiHiddenFile,
-			_T("Advanced file-handling behavior, preview inspection, and file-history related options.\r\n\r\n")
-			_T("These settings shape how eMule treats files, not how much disk space it reserves."));
-		SetTreeToolTip(m_htiStoragePersistence,
-			_T("Advanced disk-space protection, file-buffering, and metadata persistence settings.\r\n\r\n")
-			_T("This is the main group for storage safety and disk-I/O tradeoffs."));
-		SetTreeToolTip(m_htiHiddenStartup,
-			_T("Advanced startup restore behavior.\r\n\r\n")
-			_T("These options only affect which UI panes come back when eMule starts."));
-		SetTreeToolTip(m_htiHiddenDisplay,
-			_T("Advanced display, taskbar, tray, and visual-information settings.\r\n\r\n")
-			_T("These options change presentation only, not transfer behavior."));
-		SetTreeToolTip(m_htiHiddenSecurity,
-			_T("Advanced filtering and protection options for stricter peer and message handling.\r\n\r\n")
-			_T("Recommended defaults are appropriate for most users."));
-		SetTreeToolTip(m_htiLoggingGroup,
-			_T("Persistent logging and diagnostic output controls.\r\n\r\n")
-			_T("Most of these settings are only useful while diagnosing a problem."));
-		SetTreeToolTip(m_htiAutoTakeEd2kLinks,
-			_T("Registers eMule as the default handler for ed2k:// links.\r\n\r\n")
-			_T("Enable it if this machine should open ed2k links in eMule automatically. Disable it if another tool should own that association."));
-		SetTreeToolTip(m_htiCreditSystem,
-			_T("Uses the normal eMule credit system when ranking upload clients.\r\n\r\n")
-			_T("Recommended: enabled. Disable it only for debugging or deliberate compatibility experiments."));
-		SetTreeToolTip(m_htiYourHostname,
-			_T("Optional hostname label eMule reports where your local identity text is shown.\r\n\r\n")
-			_T("Leave it blank unless you intentionally want to name this instance."));
-		SetTreeToolTip(m_htiTxtEditor,
-			_T("Command used when eMule opens text files such as logs or generated text output.\r\n\r\n")
-			_T("Use a full path if the editor is not on PATH. The default is notepad.exe."));
-		SetTreeToolTip(m_htiHighresTimer,
-			_T("Requests a high-resolution Windows timer while eMule is running.\r\n\r\n")
-			_T("This can make timing smoother on some systems, but it may increase power use. Restart eMule after changing it."));
-		SetTreeToolTip(m_htiICH,
-			_T("Enables Intelligent Corruption Handling for damaged downloaded chunks.\r\n\r\n")
-			_T("Recommended: enabled. It helps recover good data inside corrupted parts instead of redownloading more than necessary."));
-		SetTreeToolTip(m_htiPreviewSmallBlocks,
-			_T("Controls whether media preview is offered before the normal preview safety checks are fully satisfied.\r\n\r\n")
-			_T("Higher levels make preview available earlier, but failed or misleading previews become more likely."));
-		SetTreeToolTip(m_htiPreviewSmallBlocksDisabled,
-			_T("Use the normal conservative preview rules."));
-		SetTreeToolTip(m_htiPreviewSmallBlocksAllow,
-			_T("Allow preview with smaller available blocks after the normal metadata and player checks pass."));
-		SetTreeToolTip(m_htiPreviewSmallBlocksForce,
-			_T("Offer preview even when the first block is missing.\r\n\r\n")
-			_T("Use only with players that can tolerate incomplete media, such as VLC."));
-		SetTreeToolTip(m_htiBeepOnError,
-			_T("Plays the system error sound when eMule reports important errors.\r\n\r\n")
-			_T("Useful for unattended troubleshooting. Disable it if audible alerts would be distracting."));
-		SetTreeToolTip(m_htiShowCopyEd2kLinkCmd,
-			_T("Changes file context menus to show a direct Copy ed2k Link command instead of the standard Show ed2k Link action.\r\n\r\n")
-			_T("Enable it if copying links is your normal workflow."));
-		SetTreeToolTip(m_htiSparsePartFiles,
-			_T("Uses sparse files for part files when the filesystem supports them.\r\n\r\n")
-			_T("Recommended: enabled on NTFS to reduce upfront disk allocation. Disable only if sparse-file behavior causes a filesystem-specific problem."));
-		SetTreeToolTip(m_htiFullAlloc,
-			_T("Preallocates the full target file size on disk when downloads start.\r\n\r\n")
-			_T("Can reduce fragmentation, but it reserves space immediately and costs more disk work. Leave it off unless you prefer full preallocation."));
-		SetTreeToolTip(m_htiMinFreeDiskSpaceConfig,
-			_T("Minimum free space reserved on the volume hosting eMule's config files.\r\n\r\n")
-			_T("Hard minimum: 1 GiB. If this volume falls below the effective limit, eMule stops all downloads and immediately saves .part.met files.\r\n")
-			_T("If config shares a volume with temp or incoming, the largest limit on that volume wins."));
-		SetTreeToolTip(m_htiMinFreeDiskSpaceTemp,
-			_T("Minimum free space reserved on every volume hosting temp files.\r\n\r\n")
-			_T("Hard minimum: 5 GiB. If any protected volume falls below its effective limit, eMule stops all downloads and immediately saves .part.met files.\r\n")
-			_T("If temp shares a volume with config or incoming, the largest limit on that volume wins."));
-		SetTreeToolTip(m_htiMinFreeDiskSpaceIncoming,
-			_T("Minimum free space reserved on every volume hosting incoming files, including category-specific incoming directories.\r\n\r\n")
-			_T("Hard minimum: 5 GiB. If incoming shares a volume with config or temp, the largest limit on that volume wins and all downloads are stopped when it is breached."));
-		SetTreeToolTip(m_htiPerfLog,
-			_T("Writes periodic payload and overhead samples for external graphing tools.\r\n\r\n")
-			_T("Operator/debug feature only. Leave it off unless you actively consume the generated files."));
-		SetTreeToolTip(m_htiCommit,
-			_T("Controls how aggressively eMule forces Windows to flush saved file data out to disk.\r\n\r\n")
-			_T("Safer settings reduce crash-loss risk but cost more disk I/O. 'Only on shutdown' is the balanced default."));
-		SetTreeToolTip(m_htiCommitNever,
-			_T("Close files normally without forcing an OS-level disk flush.\r\n\r\n")
-			_T("Fastest and lightest on disk I/O, but the most dependent on Windows flushing later."));
-		SetTreeToolTip(m_htiCommitOnShutdown,
-			_T("Force an OS-level disk flush only while eMule is closing.\r\n\r\n")
-			_T("Recommended default. It improves persistence safety on clean exit without forcing extra flushes during every save."));
-		SetTreeToolTip(m_htiCommitAlways,
-			_T("Force an OS-level disk flush on every save path that uses eMule's commit-close helper.\r\n\r\n")
-			_T("Safest against crash or power-loss metadata loss, but it causes the most disk I/O."));
-		SetTreeToolTip(m_htiExtractMetaData,
-			_T("Controls whether eMule extracts metadata such as tags and media duration from files.\r\n\r\n")
-			_T("Useful for richer file info, but it adds background file inspection. Disable it if you want the lightest scanning."));
-		SetTreeToolTip(m_htiGeoLocationEnabled,
-			_T("Resolves peer IPs to country-level location data for display.\r\n\r\n")
-			_T("Purely informational. Disable it if you do not care about country flags or want no background refreshes."));
-		SetTreeToolTip(m_htiCloseUPnPPorts,
-			_T("Closes router mappings on clean exit when automatic NAT mapping was used.\r\n\r\n")
-			_T("Recommended: enabled. Disable it only if you deliberately want the mappings left behind."));
-		SetTreeToolTip(m_htiUPnPBackendMode,
-			_T("Selects how eMule performs automatic NAT mapping.\r\n\r\n")
-			_T("Recommended: Automatic. That tries UPnP IGD first and falls back to PCP/NAT-PMP if needed."));
-		SetTreeToolTip(m_htiUPnPBackendModeAutomatic,
-			_T("Recommended mode. Try UPnP IGD first, then fall back to PCP/NAT-PMP if mapping fails."));
-		SetTreeToolTip(m_htiUPnPBackendModeIgdOnly,
-			_T("Use only UPnP IGD mapping. Choose this if you want strictly classic UPnP behavior."));
-		SetTreeToolTip(m_htiUPnPBackendModePcpNatPmpOnly,
-			_T("Use only PCP/NAT-PMP mapping. Choose this only if your router environment clearly prefers it."));
-		SetTreeToolTip(m_htiPreviewCopiedArchives,
-			_T("Allows preview helpers to inspect copied archive contents when possible.\r\n\r\n")
-			_T("Useful for archive-heavy workflows, but it adds extra inspection work. Disable it if you want less background probing."));
-		SetTreeToolTip(m_htiFileBufferTimeLimit,
-			_T("Maximum age of buffered file data before eMule flushes it to disk.\r\n\r\n")
-			_T("Lower values reduce data-at-risk during crashes. Higher values can reduce disk churn. The default is usually a good compromise."));
-		SetTreeToolTip(m_htiFileBufferSize,
-			_T("Size of the per-file write buffer used before flushing download data to disk.\r\n\r\n")
-			_T("Larger buffers can reduce disk activity, but they increase memory use and delayed writes. Keep moderate values unless you are tuning for a specific storage setup."));
-		SetTreeToolTip(m_htiQueueSize,
-			_T("Target size of the upload waiting queue.\r\n\r\n")
-			_T("Higher values let more clients wait, but they add memory use and management overhead. Default values are recommended for most users."));
-		SetTreeToolTip(m_htiDateTimeFormat4Lists,
-			_T("Custom date/time format used in list views.\r\n\r\n")
-			_T("Leave it blank to use the normal default formatting. Change it only if you want a specific custom timestamp style."));
-		SetTreeToolTip(m_htiDateTimeFormat,
-			_T("Custom date/time format used by general file and peer detail displays.\r\n\r\n")
-			_T("Uses CTime formatting tokens. Keep it non-empty; invalid tokens can produce confusing timestamps."));
-		SetTreeToolTip(m_htiDateTimeFormat4Log,
-			_T("Custom date/time format used in log lines and log-like status output.\r\n\r\n")
-			_T("Uses CTime formatting tokens. Keep it concise so log lines stay readable."));
-		SetTreeToolTip(m_htiIconFlashOnNewMessage,
-			_T("Flashes the tray icon when a new chat message arrives.\r\n\r\n")
-			_T("Purely a notification preference. Enable it if you want messages to stand out while eMule is minimized."));
-		SetTreeToolTip(m_htiInspectAllFileTypes,
-			_T("Also run the expensive MediaInfo-style inspection path for file types that are not already classified as audio or video.\r\n\r\n")
-			_T("Enable it if you want richer file-info probing for unusual or mislabeled files. Leave it off to inspect only likely audio/video files and reduce background inspection work."));
-		SetTreeToolTip(m_htiReBarToolbar,
-			_T("Uses the older rebar-style main toolbar container instead of the simpler plain toolbar layout.\r\n\r\n")
-			_T("Mostly a UI layout preference. Leave it enabled only if you prefer the legacy toolbar presentation."));
-		SetTreeToolTip(m_htiShowUpDownIconInTaskbar,
-			_T("Shows the combined upload/download rate icon in the taskbar notification area.\r\n\r\n")
-			_T("Purely visual. Disable it if you want a cleaner tray area."));
-		SetTreeToolTip(m_htiShowVerticalHourMarkers,
-			_T("Draws hourly guide markers in the long-term statistics graphs.\r\n\r\n")
-			_T("Useful for reading time-based traffic patterns. Disable it if you prefer less graph clutter."));
-		SetTreeToolTip(m_htiForceSpeedsToKB,
-			_T("Forces rate displays to use KB/s-style units instead of automatically scaling to larger units.\r\n\r\n")
-			_T("Enable it if you prefer fixed familiar units. Leave it off for more readable large-speed displays."));
-		SetTreeToolTip(m_htiRearrangeKadSearchKeywords,
-			_T("Reorders Kad keyword search terms to try a more useful query shape first.\r\n\r\n")
-			_T("Advanced search-behavior tweak. Leave it at the default unless you are tuning Kad search behavior deliberately."));
-		SetTreeToolTip(m_htiMessageFromValidSourcesOnly,
-			_T("Accepts messages only from peers that already look like valid sources for your transfers.\r\n\r\n")
-			_T("Stronger privacy/spam protection, but it can block unsolicited contact. Enable it if you want a stricter message policy."));
-		SetTreeToolTip(m_htiMaxChatHistoryLines,
-			_T("Maximum number of history lines retained per chat or IRC channel view.\r\n\r\n")
-			_T("Higher values keep more context but use more memory and can make busy chats slower to display."));
-		SetTreeToolTip(m_htiMaxMessageSessions,
-			_T("Maximum number of peer message sessions retained at once.\r\n\r\n")
-			_T("Higher values keep more conversations available, but they increase memory use. The default is conservative."));
-		SetTreeToolTip(m_htiCreateCrashDump,
-			_T("Controls crash dump creation when eMule encounters an unhandled crash.\r\n\r\n")
-			_T("Crash dumps help diagnose hard failures but can contain process memory. Share them only with trusted developers."));
-		SetTreeToolTip(m_htiCreateCrashDumpDisabled,
-			_T("Do not create crash dump files."));
-		SetTreeToolTip(m_htiCreateCrashDumpPrompt,
-			_T("Ask before writing a crash dump when a crash occurs."));
-		SetTreeToolTip(m_htiCreateCrashDumpAlways,
-			_T("Create a crash dump automatically when a crash occurs.\r\n\r\n")
-			_T("Best for debugging repeatable crashes on a trusted machine."));
-		SetTreeToolTip(m_htiMaxLogFileSize,
-			_T("Maximum size of each on-disk log file in KiB.\r\n\r\n")
-			_T("Use 0 for no rotation limit. Very large values keep more history but consume more disk space."));
-		SetTreeToolTip(m_htiMaxLogBuffer,
-			_T("Maximum in-memory log view buffer in KiB.\r\n\r\n")
-			_T("Higher values keep more visible log history but use more memory and can slow very busy log views."));
-		SetTreeToolTip(m_htiLogFileFormat,
-			_T("Encoding used for newly opened on-disk log files.\r\n\r\n")
-			_T("Changing this while logs are already open is persisted, but the new format is used after the log file is reopened or eMule restarts."));
-		SetTreeToolTip(m_htiLogFileFormatUnicode,
-			_T("Write logs as UTF-16 Unicode. This is the legacy default and preserves Windows text broadly."));
-		SetTreeToolTip(m_htiLogFileFormatUtf8,
-			_T("Write logs as UTF-8. Useful for tools that expect modern UTF-8 text files."));
-		SetTreeToolTip(m_htiLog2Disk,
-			_T("Writes the normal application log to disk instead of keeping it in memory only.\r\n\r\n")
-			_T("Useful for debugging and long-running unattended use, but it adds disk writes. Leave it off unless you want persistent logs."));
-		SetTreeToolTip(m_htiPerfLogFileFormat,
-			_T("Output format for performance logging samples.\r\n\r\n")
-			_T("CSV is easiest to inspect manually. MRTG writes sidecar files for graphing tools that expect MRTG-style input."));
-		SetTreeToolTip(m_htiPerfLogFileFormatCsv,
-			_T("Write one CSV performance log file with timestamped payload and overhead samples."));
-		SetTreeToolTip(m_htiPerfLogFileFormatMrtg,
-			_T("Write MRTG-style data and overhead sidecar files derived from the configured base path."));
-		SetTreeToolTip(m_htiPerfLogFile,
-			_T("Base file path for performance logging.\r\n\r\n")
-			_T("Leave it blank to use the default file in eMule's config directory. MRTG mode derives _data and _overhead files from this path."));
-		SetTreeToolTip(m_htiPerfLogInterval,
-			_T("Sampling interval for performance logging in minutes.\r\n\r\n")
-			_T("Short intervals create finer graphs but more disk writes. Use 1..1440."));
-		SetTreeToolTip(m_htiVerboseGroup,
-			_T("Extra diagnostic logging controls for deep troubleshooting.\r\n\r\n")
-			_T("These options are for debugging, not normal operation. Leave them off unless you are investigating a specific issue."));
-		SetTreeToolTip(m_htiRestoreLastMainWndDlg,
-			_T("Restores the last selected main-window page on startup.\r\n\r\n")
-			_T("Enable it if you want eMule to reopen where you left off."));
-		SetTreeToolTip(m_htiRestoreLastLogPane,
-			_T("Restores the last selected log pane on startup.\r\n\r\n")
-			_T("Purely a convenience option for users who spend time in the log views."));
-		SetTreeToolTip(m_htiKeepUnavailableFixedSharedDirs,
-			_T("Keeps manually configured shared directories in the list even when they are currently unavailable.\r\n\r\n")
-			_T("Useful for removable or occasionally missing storage. Disable it if you want missing folders pruned aggressively."));
-		SetTreeToolTip(m_htiPartiallyPurgeOldKnownFiles,
-			_T("Allows more aggressive cleanup of stale entries in the known-files history.\r\n\r\n")
-			_T("Can reduce clutter over time, but it also forgets old file history sooner. Leave the default unless you want a leaner history."));
-		SetTreeToolTip(m_htiDetectTCPErrorFlooder,
-			_T("Detects repeated TCP error bursts that may indicate abusive or broken peers.\r\n\r\n")
-			_T("Recommended: enabled. Disable it only if you are diagnosing false positives."));
-		SetTreeToolTip(m_htiTCPErrorFlooderIntervalMinutes,
-			_T("Time window used for TCP error-flood detection.\r\n\r\n")
-			_T("Shorter windows react faster; longer windows are less sensitive. Default values are recommended."));
-		SetTreeToolTip(m_htiTCPErrorFlooderThreshold,
-			_T("Number of TCP errors within the interval that triggers flooder handling.\r\n\r\n")
-			_T("Lower values are stricter. Raise it only if your environment produces harmless frequent TCP errors."));
-		SetTreeToolTip(m_htiShareeMule,
-			_T("Controls how eMule stores and shares per-user state on this Windows machine.\r\n\r\n")
-			_T("Leave the current mode unless you are intentionally changing how multiple local users share configuration and data."));
-		SetTreeToolTip(m_htiTCPGroup,
-			_T("Advanced TCP connection burst, timeout, and keepalive controls.\r\n\r\n")
-			_T("These settings affect connection behavior rather than transfer limits. Default values are recommended unless you are diagnosing network setup issues."));
-		SetTreeToolTip(m_htiSearchGroup,
-			_T("Advanced limits for how broadly and how long eMule searches on eD2K and Kad.\r\n\r\n")
-			_T("Higher values can return more results, but they also add more network traffic and UI noise."));
-		SetTreeToolTip(m_htiSearchEd2kGroup,
-			_T("Server-based eD2K search limits.\r\n\r\n")
-			_T("Use conservative values unless you deliberately want deeper server searches."));
-		SetTreeToolTip(m_htiSearchKadGroup,
-			_T("Kad search breadth and lifetime controls.\r\n\r\n")
-			_T("Higher values keep distributed searches alive longer and can find more results, but they cost more background activity."));
-		SetTreeToolTip(m_htiBroadband,
-			_T("Advanced upload-slot recycling and queue-scoring policy for broadband-style upload behavior.\r\n\r\n")
-			_T("These settings are for deliberate tuning. Leave them at their defaults unless you are adjusting upload fairness or slot turnover."));
-		SetTreeToolTip(m_htiBBMaxUploadClients,
-			_T("Soft cap for concurrently active upload clients under the broadband scheduler.\r\n\r\n")
-			_T("Higher values spread bandwidth across more peers but make each slot thinner. Lower values keep fewer, stronger slots."));
-		SetTreeToolTip(m_htiBBSlowThreshold,
-			_T("Fraction of the target per-slot upload rate below which a slot is considered slow.\r\n\r\n")
-			_T("Lower values tolerate weaker slots longer. Higher values recycle underperforming slots more aggressively."));
-		SetTreeToolTip(m_htiBBSlowGrace,
-			_T("How long a slot may remain below the slow threshold before eMule considers recycling it.\r\n\r\n")
-			_T("Longer grace is more patient with weak peers; shorter grace turns over weak slots sooner."));
-		SetTreeToolTip(m_htiBBSlowWarmup,
-			_T("Warm-up period for a fresh upload slot before slow-slot detection starts.\r\n\r\n")
-			_T("This avoids penalizing new uploads for startup noise and ramp-up time."));
-		SetTreeToolTip(m_htiBBZeroRateGrace,
-			_T("Grace period for slots that deliver essentially no upload data at all.\r\n\r\n")
-			_T("Lower values react faster to dead or stalled slots."));
-		SetTreeToolTip(m_htiBBCooldown,
-			_T("How long a recycled slow slot stays penalized in queue scoring before it can compete normally again.\r\n\r\n")
-			_T("Longer cooldown reduces immediate re-selection of recently weak clients."));
-		SetTreeToolTip(m_htiBBLowRatioBoost,
-			_T("Adds extra queue score for clients asking for files with a low historical upload ratio.\r\n\r\n")
-			_T("Use it if you want to favor files that have received comparatively little upload so far."));
-		SetTreeToolTip(m_htiBBLowRatioThreshold,
-			_T("Upload-ratio cutoff below which the low-ratio queue-score boost applies.\r\n\r\n")
-			_T("Lower values restrict the boost to more strongly under-served files."));
-		SetTreeToolTip(m_htiBBLowRatioBonus,
-			_T("Additional effective queue score granted when the low-ratio boost triggers.\r\n\r\n")
-			_T("Higher values make the boost matter more strongly in upload ordering."));
-		SetTreeToolTip(m_htiBBLowIdDivisor,
-			_T("Penalty divisor applied to LowID clients during upload queue scoring.\r\n\r\n")
-			_T("Higher values reduce LowID priority more aggressively. Set 1 to disable the extra LowID penalty."));
-		SetTreeToolTip(m_htiBBSessionTransfer,
-			_T("Limits how much one upload session may transfer before eMule considers rotating that slot.\r\n\r\n")
-			_T("Rotation happens only when another client actually needs the slot."));
-		SetTreeToolTip(m_htiBBSessionTransferDisabled,
-			_T("Do not recycle upload sessions based on transferred payload amount."));
-		SetTreeToolTip(m_htiBBSessionTransferPercent,
-			_T("Limit each upload session to a percentage of the requested file size."));
-		SetTreeToolTip(m_htiBBSessionTransferPercentValue,
-			_T("Percentage used when the session transfer limit is configured as a share of the file size."));
-		SetTreeToolTip(m_htiBBSessionTransferMiB,
-			_T("Limit each upload session to a fixed MiB amount regardless of file size."));
-		SetTreeToolTip(m_htiBBSessionTransferMiBValue,
-			_T("Absolute MiB amount used when the session transfer limit is configured as a fixed size."));
-		SetTreeToolTip(m_htiBBSessionTimeLimit,
-			_T("Maximum duration of one upload session before eMule considers rotating the slot.\r\n\r\n")
-			_T("Set 0 to disable the time-based limit."));
-		SetTreeToolTip(m_htiA4AFSaveCpu,
-			_T("Reduces repeated A4AF (Asked For Another File) source checks to save CPU time.\r\n\r\n")
-			_T("Useful on busy clients, but it can make same-client source switching less eager."));
-		SetTreeToolTip(m_htiAutoArch,
-			_T("Prevents archive preview windows from starting their preview work automatically.\r\n\r\n")
-			_T("Enable it if you want archive preview opened in a more manual, less eager way."));
-		SetTreeToolTip(m_htiExtractMetaDataNever,
-			_T("Do not extract metadata from files.\r\n\r\n")
-			_T("Lightest option. Use it if you want no background metadata probing."));
-		SetTreeToolTip(m_htiExtractMetaDataID3Lib,
-			_T("Extract metadata only through the ID3 library path for MPEG audio files.\r\n\r\n")
-			_T("Balanced default for basic music tags without broader media inspection."));
-		SetTreeToolTip(m_htiPreviewOnIconDblClk,
-			_T("Double-clicking a file icon opens preview instead of the usual default action.\r\n\r\n")
-			_T("Purely a UI workflow preference."));
-		SetTreeToolTip(m_htiExtraPreviewWithMenu,
-			_T("Shows preview commands through a dedicated preview action menu instead of only exposing the simpler direct preview action.\r\n\r\n")
-			_T("Useful if you want more explicit preview choices in the download list context menu."));
-		SetTreeToolTip(m_htiShowActiveDownloadsBold,
-			_T("Draws actively transferring downloads in bold in the download list.\r\n\r\n")
-			_T("Purely visual. Enable it if you want active items to stand out more clearly."));
-		SetTreeToolTip(m_htiUseSystemFontForMainControls,
-			_T("Uses the normal Windows UI font for main controls and list views instead of eMule's custom font setup.\r\n\r\n")
-			_T("Useful if you prefer native-looking text or need better compatibility with your system font settings."));
-		SetTreeToolTip(m_htiFilterLANIPs,
-			_T("Ignores server and client addresses from private/LAN ranges.\r\n\r\n")
-			_T("Recommended: enabled. This avoids trying to use non-routable peer addresses from the public network."));
-		SetTreeToolTip(m_htiGeoLocationCheckDays,
-			_T("How often eMule checks for updated geolocation database content.\r\n\r\n")
-			_T("Set 0 to disable automatic update checks. Larger values reduce background refresh activity."));
-		SetTreeToolTip(m_htiVerbose,
-			_T("Master switch for the verbose logging controls below.\r\n\r\n")
-			_T("Disable it for normal use. Enable it only while investigating a specific problem."));
-		SetTreeToolTip(m_htiFullVerbose,
-			_T("Records the fullest available verbose trace when verbose logging is enabled.\r\n\r\n")
-			_T("This can become very noisy and should be used only for focused troubleshooting."));
-		SetTreeToolTip(m_htiLogLevel,
-			_T("Verbosity threshold for diagnostic log output.\r\n\r\n")
-			_T("Higher levels record more detail but create more noise."));
-		SetTreeToolTip(m_htiDebug2Disk,
-			_T("Writes verbose diagnostic output to disk instead of keeping it transient.\r\n\r\n")
-			_T("Useful when you need a persistent debug trace, but it increases disk activity."));
-		SetTreeToolTip(m_htiDebugSourceExchange,
-			_T("Logs source-exchange related packets and decisions.\r\n\r\n")
-			_T("Specialized diagnostic option. Enable it only while debugging source discovery behavior."));
-		SetTreeToolTip(m_htiLogBannedClients,
-			_T("Records when peers are banned and why.\r\n\r\n")
-			_T("Useful for abuse or false-positive diagnosis, but too noisy for normal operation."));
-		SetTreeToolTip(m_htiLogRatingDescReceived,
-			_T("Records received file comments, descriptions, and ratings.\r\n\r\n")
-			_T("Useful for debugging metadata flow, but not generally needed."));
-		SetTreeToolTip(m_htiLogSecureIdent,
-			_T("Records secure-ident verification and related identity checks.\r\n\r\n")
-			_T("Useful for trust/authentication troubleshooting."));
-		SetTreeToolTip(m_htiLogFilteredIPs,
-			_T("Records when IP filter or ignore logic drops peer or server addresses.\r\n\r\n")
-			_T("Useful for diagnosing why some peers are rejected."));
-		SetTreeToolTip(m_htiLogFileSaving,
-			_T("Records saves of persistent data such as known files, credits, and related state.\r\n\r\n")
-			_T("Useful for persistence debugging, but unnecessary for normal use."));
-		SetTreeToolTip(m_htiLogA4AF,
-			_T("Records A4AF (Asked For Another File) source-reassignment activity.\r\n\r\n")
-			_T("Specialized download-manager diagnostic option."));
-		SetTreeToolTip(m_htiLogUlDlEvents,
-			_T("Records upload-slot and download-event lifecycle changes.\r\n\r\n")
-			_T("Useful when diagnosing queue churn, slot rotation, or transfer-state transitions."));
-		SetTreeToolTip(m_htiUPnP,
-			_T("Automatic router port-mapping settings for inbound connectivity.\r\n\r\n")
-			_T("Most users should leave this group on automatic defaults unless their router environment requires something specific."));
-		SetTreeToolTip(m_htiShareeMuleMultiUser,
-			_T("Each Windows user gets a separate eMule configuration and separate download state.\r\n\r\n")
-			_T("Config lives under Local AppData, and downloads use that user's own Downloads folder. Best fit for shared PCs where users should not share eMule data."));
-		SetTreeToolTip(m_htiShareeMulePublicUser,
-			_T("All Windows users share the same eMule configuration and downloads.\r\n\r\n")
-			_T("Config lives under ProgramData, and downloads use Public Downloads. Use this only if the machine is intentionally sharing one common eMule state."));
-		SetTreeToolTip(m_htiShareeMuleOldStyle,
-			_T("Keep configuration and downloads in the program directory, using the older legacy layout.\r\n\r\n")
-			_T("Legacy compatibility mode only. It is usually the least desirable choice on modern Windows."));
+		SetTreeToolTip(m_htiConditionalTCPAccept, IDS_TWEAKS_TT_CONDITIONAL_TCP_ACCEPT);
+		SetTreeToolTip(m_htiMaxCon5Sec, IDS_TWEAKS_TT_MAX_CON5_SEC);
+		SetTreeToolTip(m_htiMaxHalfOpen, IDS_TWEAKS_TT_MAX_HALF_OPEN);
+		SetTreeToolTip(m_htiConnectionTimeout, IDS_TWEAKS_TT_CONNECTION_TIMEOUT);
+		SetTreeToolTip(m_htiDownloadTimeout, IDS_TWEAKS_TT_DOWNLOAD_TIMEOUT);
+		SetTreeToolTip(m_htiServerKeepAliveTimeout, IDS_TWEAKS_TT_SERVER_KEEP_ALIVE_TIMEOUT);
+		SetTreeToolTip(m_htiSearchEd2kMaxResults, IDS_TWEAKS_TT_SEARCH_ED2K_MAX_RESULTS);
+		SetTreeToolTip(m_htiSearchEd2kMaxMoreRequests, IDS_TWEAKS_TT_SEARCH_ED2K_MAX_MORE_REQUESTS);
+		SetTreeToolTip(m_htiSearchKadFileTotal, IDS_TWEAKS_TT_SEARCH_KAD_FILE_TOTAL);
+		SetTreeToolTip(m_htiSearchKadKeywordTotal, IDS_TWEAKS_TT_SEARCH_KAD_KEYWORD_TOTAL);
+		SetTreeToolTip(m_htiSearchKadFileLifetime, IDS_TWEAKS_TT_SEARCH_KAD_FILE_LIFETIME);
+		SetTreeToolTip(m_htiSearchKadKeywordLifetime, IDS_TWEAKS_TT_SEARCH_KAD_KEYWORD_LIFETIME);
+		SetTreeToolTip(m_htiGeneralAdvanced, IDS_TWEAKS_TT_GENERAL_ADVANCED);
+		SetTreeToolTip(m_htiHiddenFile, IDS_TWEAKS_TT_HIDDEN_FILE);
+		SetTreeToolTip(m_htiStoragePersistence, IDS_TWEAKS_TT_STORAGE_PERSISTENCE);
+		SetTreeToolTip(m_htiHiddenStartup, IDS_TWEAKS_TT_HIDDEN_STARTUP);
+		SetTreeToolTip(m_htiHiddenDisplay, IDS_TWEAKS_TT_HIDDEN_DISPLAY);
+		SetTreeToolTip(m_htiHiddenSecurity, IDS_TWEAKS_TT_HIDDEN_SECURITY);
+		SetTreeToolTip(m_htiLoggingGroup, IDS_TWEAKS_TT_LOGGING_GROUP);
+		SetTreeToolTip(m_htiAutoTakeEd2kLinks, IDS_TWEAKS_TT_AUTO_TAKE_ED2K_LINKS);
+		SetTreeToolTip(m_htiCreditSystem, IDS_TWEAKS_TT_CREDIT_SYSTEM);
+		SetTreeToolTip(m_htiYourHostname, IDS_TWEAKS_TT_YOUR_HOSTNAME);
+		SetTreeToolTip(m_htiTxtEditor, IDS_TWEAKS_TT_TXT_EDITOR);
+		SetTreeToolTip(m_htiHighresTimer, IDS_TWEAKS_TT_HIGHRES_TIMER);
+		SetTreeToolTip(m_htiICH, IDS_TWEAKS_TT_ICH);
+		SetTreeToolTip(m_htiPreviewSmallBlocks, IDS_TWEAKS_TT_PREVIEW_SMALL_BLOCKS);
+		SetTreeToolTip(m_htiPreviewSmallBlocksDisabled, IDS_TWEAKS_TT_PREVIEW_SMALL_BLOCKS_DISABLED);
+		SetTreeToolTip(m_htiPreviewSmallBlocksAllow, IDS_TWEAKS_TT_PREVIEW_SMALL_BLOCKS_ALLOW);
+		SetTreeToolTip(m_htiPreviewSmallBlocksForce, IDS_TWEAKS_TT_PREVIEW_SMALL_BLOCKS_FORCE);
+		SetTreeToolTip(m_htiBeepOnError, IDS_TWEAKS_TT_BEEP_ON_ERROR);
+		SetTreeToolTip(m_htiShowCopyEd2kLinkCmd, IDS_TWEAKS_TT_SHOW_COPY_ED2K_LINK_CMD);
+		SetTreeToolTip(m_htiSparsePartFiles, IDS_TWEAKS_TT_SPARSE_PART_FILES);
+		SetTreeToolTip(m_htiFullAlloc, IDS_TWEAKS_TT_FULL_ALLOC);
+		SetTreeToolTip(m_htiMinFreeDiskSpaceConfig, IDS_TWEAKS_TT_MIN_FREE_DISK_SPACE_CONFIG);
+		SetTreeToolTip(m_htiMinFreeDiskSpaceTemp, IDS_TWEAKS_TT_MIN_FREE_DISK_SPACE_TEMP);
+		SetTreeToolTip(m_htiMinFreeDiskSpaceIncoming, IDS_TWEAKS_TT_MIN_FREE_DISK_SPACE_INCOMING);
+		SetTreeToolTip(m_htiPerfLog, IDS_TWEAKS_TT_PERF_LOG);
+		SetTreeToolTip(m_htiCommit, IDS_TWEAKS_TT_COMMIT);
+		SetTreeToolTip(m_htiCommitNever, IDS_TWEAKS_TT_COMMIT_NEVER);
+		SetTreeToolTip(m_htiCommitOnShutdown, IDS_TWEAKS_TT_COMMIT_ON_SHUTDOWN);
+		SetTreeToolTip(m_htiCommitAlways, IDS_TWEAKS_TT_COMMIT_ALWAYS);
+		SetTreeToolTip(m_htiExtractMetaData, IDS_TWEAKS_TT_EXTRACT_META_DATA);
+		SetTreeToolTip(m_htiGeoLocationEnabled, IDS_TWEAKS_TT_GEO_LOCATION_ENABLED);
+		SetTreeToolTip(m_htiCloseUPnPPorts, IDS_TWEAKS_TT_CLOSE_U_PN_P_PORTS);
+		SetTreeToolTip(m_htiUPnPBackendMode, IDS_TWEAKS_TT_U_PN_P_BACKEND_MODE);
+		SetTreeToolTip(m_htiUPnPBackendModeAutomatic, IDS_TWEAKS_TT_U_PN_P_BACKEND_MODE_AUTOMATIC);
+		SetTreeToolTip(m_htiUPnPBackendModeIgdOnly, IDS_TWEAKS_TT_U_PN_P_BACKEND_MODE_IGD_ONLY);
+		SetTreeToolTip(m_htiUPnPBackendModePcpNatPmpOnly, IDS_TWEAKS_TT_U_PN_P_BACKEND_MODE_PCP_NAT_PMP_ONLY);
+		SetTreeToolTip(m_htiPreviewCopiedArchives, IDS_TWEAKS_TT_PREVIEW_COPIED_ARCHIVES);
+		SetTreeToolTip(m_htiFileBufferTimeLimit, IDS_TWEAKS_TT_FILE_BUFFER_TIME_LIMIT);
+		SetTreeToolTip(m_htiFileBufferSize, IDS_TWEAKS_TT_FILE_BUFFER_SIZE);
+		SetTreeToolTip(m_htiQueueSize, IDS_TWEAKS_TT_QUEUE_SIZE);
+		SetTreeToolTip(m_htiDateTimeFormat4Lists, IDS_TWEAKS_TT_DATE_TIME_FORMAT4_LISTS);
+		SetTreeToolTip(m_htiDateTimeFormat, IDS_TWEAKS_TT_DATE_TIME_FORMAT);
+		SetTreeToolTip(m_htiDateTimeFormat4Log, IDS_TWEAKS_TT_DATE_TIME_FORMAT4_LOG);
+		SetTreeToolTip(m_htiIconFlashOnNewMessage, IDS_TWEAKS_TT_ICON_FLASH_ON_NEW_MESSAGE);
+		SetTreeToolTip(m_htiInspectAllFileTypes, IDS_TWEAKS_TT_INSPECT_ALL_FILE_TYPES);
+		SetTreeToolTip(m_htiReBarToolbar, IDS_TWEAKS_TT_RE_BAR_TOOLBAR);
+		SetTreeToolTip(m_htiShowUpDownIconInTaskbar, IDS_TWEAKS_TT_SHOW_UP_DOWN_ICON_IN_TASKBAR);
+		SetTreeToolTip(m_htiShowVerticalHourMarkers, IDS_TWEAKS_TT_SHOW_VERTICAL_HOUR_MARKERS);
+		SetTreeToolTip(m_htiForceSpeedsToKB, IDS_TWEAKS_TT_FORCE_SPEEDS_TO_KB);
+		SetTreeToolTip(m_htiRearrangeKadSearchKeywords, IDS_TWEAKS_TT_REARRANGE_KAD_SEARCH_KEYWORDS);
+		SetTreeToolTip(m_htiMessageFromValidSourcesOnly, IDS_TWEAKS_TT_MESSAGE_FROM_VALID_SOURCES_ONLY);
+		SetTreeToolTip(m_htiMaxChatHistoryLines, IDS_TWEAKS_TT_MAX_CHAT_HISTORY_LINES);
+		SetTreeToolTip(m_htiMaxMessageSessions, IDS_TWEAKS_TT_MAX_MESSAGE_SESSIONS);
+		SetTreeToolTip(m_htiCreateCrashDump, IDS_TWEAKS_TT_CREATE_CRASH_DUMP);
+		SetTreeToolTip(m_htiCreateCrashDumpDisabled, IDS_TWEAKS_TT_CREATE_CRASH_DUMP_DISABLED);
+		SetTreeToolTip(m_htiCreateCrashDumpPrompt, IDS_TWEAKS_TT_CREATE_CRASH_DUMP_PROMPT);
+		SetTreeToolTip(m_htiCreateCrashDumpAlways, IDS_TWEAKS_TT_CREATE_CRASH_DUMP_ALWAYS);
+		SetTreeToolTip(m_htiMaxLogFileSize, IDS_TWEAKS_TT_MAX_LOG_FILE_SIZE);
+		SetTreeToolTip(m_htiMaxLogBuffer, IDS_TWEAKS_TT_MAX_LOG_BUFFER);
+		SetTreeToolTip(m_htiLogFileFormat, IDS_TWEAKS_TT_LOG_FILE_FORMAT);
+		SetTreeToolTip(m_htiLogFileFormatUnicode, IDS_TWEAKS_TT_LOG_FILE_FORMAT_UNICODE);
+		SetTreeToolTip(m_htiLogFileFormatUtf8, IDS_TWEAKS_TT_LOG_FILE_FORMAT_UTF8);
+		SetTreeToolTip(m_htiLog2Disk, IDS_TWEAKS_TT_LOG2_DISK);
+		SetTreeToolTip(m_htiPerfLogFileFormat, IDS_TWEAKS_TT_PERF_LOG_FILE_FORMAT);
+		SetTreeToolTip(m_htiPerfLogFileFormatCsv, IDS_TWEAKS_TT_PERF_LOG_FILE_FORMAT_CSV);
+		SetTreeToolTip(m_htiPerfLogFileFormatMrtg, IDS_TWEAKS_TT_PERF_LOG_FILE_FORMAT_MRTG);
+		SetTreeToolTip(m_htiPerfLogFile, IDS_TWEAKS_TT_PERF_LOG_FILE);
+		SetTreeToolTip(m_htiPerfLogInterval, IDS_TWEAKS_TT_PERF_LOG_INTERVAL);
+		SetTreeToolTip(m_htiVerboseGroup, IDS_TWEAKS_TT_VERBOSE_GROUP);
+		SetTreeToolTip(m_htiRestoreLastMainWndDlg, IDS_TWEAKS_TT_RESTORE_LAST_MAIN_WND_DLG);
+		SetTreeToolTip(m_htiRestoreLastLogPane, IDS_TWEAKS_TT_RESTORE_LAST_LOG_PANE);
+		SetTreeToolTip(m_htiKeepUnavailableFixedSharedDirs, IDS_TWEAKS_TT_KEEP_UNAVAILABLE_FIXED_SHARED_DIRS);
+		SetTreeToolTip(m_htiPartiallyPurgeOldKnownFiles, IDS_TWEAKS_TT_PARTIALLY_PURGE_OLD_KNOWN_FILES);
+		SetTreeToolTip(m_htiDetectTCPErrorFlooder, IDS_TWEAKS_TT_DETECT_TCP_ERROR_FLOODER);
+		SetTreeToolTip(m_htiTCPErrorFlooderIntervalMinutes, IDS_TWEAKS_TT_TCP_ERROR_FLOODER_INTERVAL_MINUTES);
+		SetTreeToolTip(m_htiTCPErrorFlooderThreshold, IDS_TWEAKS_TT_TCP_ERROR_FLOODER_THRESHOLD);
+		SetTreeToolTip(m_htiShareeMule, IDS_TWEAKS_TT_SHAREE_MULE);
+		SetTreeToolTip(m_htiTCPGroup, IDS_TWEAKS_TT_TCP_GROUP);
+		SetTreeToolTip(m_htiSearchGroup, IDS_TWEAKS_TT_SEARCH_GROUP);
+		SetTreeToolTip(m_htiSearchEd2kGroup, IDS_TWEAKS_TT_SEARCH_ED2K_GROUP);
+		SetTreeToolTip(m_htiSearchKadGroup, IDS_TWEAKS_TT_SEARCH_KAD_GROUP);
+		SetTreeToolTip(m_htiBroadband, IDS_TWEAKS_TT_BROADBAND);
+		SetTreeToolTip(m_htiBBMaxUploadClients, IDS_TWEAKS_TT_BB_MAX_UPLOAD_CLIENTS);
+		SetTreeToolTip(m_htiBBSlowThreshold, IDS_TWEAKS_TT_BB_SLOW_THRESHOLD);
+		SetTreeToolTip(m_htiBBSlowGrace, IDS_TWEAKS_TT_BB_SLOW_GRACE);
+		SetTreeToolTip(m_htiBBSlowWarmup, IDS_TWEAKS_TT_BB_SLOW_WARMUP);
+		SetTreeToolTip(m_htiBBZeroRateGrace, IDS_TWEAKS_TT_BB_ZERO_RATE_GRACE);
+		SetTreeToolTip(m_htiBBCooldown, IDS_TWEAKS_TT_BB_COOLDOWN);
+		SetTreeToolTip(m_htiBBLowRatioBoost, IDS_TWEAKS_TT_BB_LOW_RATIO_BOOST);
+		SetTreeToolTip(m_htiBBLowRatioThreshold, IDS_TWEAKS_TT_BB_LOW_RATIO_THRESHOLD);
+		SetTreeToolTip(m_htiBBLowRatioBonus, IDS_TWEAKS_TT_BB_LOW_RATIO_BONUS);
+		SetTreeToolTip(m_htiBBLowIdDivisor, IDS_TWEAKS_TT_BB_LOW_ID_DIVISOR);
+		SetTreeToolTip(m_htiBBSessionTransfer, IDS_TWEAKS_TT_BB_SESSION_TRANSFER);
+		SetTreeToolTip(m_htiBBSessionTransferDisabled, IDS_TWEAKS_TT_BB_SESSION_TRANSFER_DISABLED);
+		SetTreeToolTip(m_htiBBSessionTransferPercent, IDS_TWEAKS_TT_BB_SESSION_TRANSFER_PERCENT);
+		SetTreeToolTip(m_htiBBSessionTransferPercentValue, IDS_TWEAKS_TT_BB_SESSION_TRANSFER_PERCENT_VALUE);
+		SetTreeToolTip(m_htiBBSessionTransferMiB, IDS_TWEAKS_TT_BB_SESSION_TRANSFER_MI_B);
+		SetTreeToolTip(m_htiBBSessionTransferMiBValue, IDS_TWEAKS_TT_BB_SESSION_TRANSFER_MI_B_VALUE);
+		SetTreeToolTip(m_htiBBSessionTimeLimit, IDS_TWEAKS_TT_BB_SESSION_TIME_LIMIT);
+		SetTreeToolTip(m_htiA4AFSaveCpu, IDS_TWEAKS_TT_A4_AF_SAVE_CPU);
+		SetTreeToolTip(m_htiAutoArch, IDS_TWEAKS_TT_AUTO_ARCH);
+		SetTreeToolTip(m_htiExtractMetaDataNever, IDS_TWEAKS_TT_EXTRACT_META_DATA_NEVER);
+		SetTreeToolTip(m_htiExtractMetaDataID3Lib, IDS_TWEAKS_TT_EXTRACT_META_DATA_ID3_LIB);
+		SetTreeToolTip(m_htiPreviewOnIconDblClk, IDS_TWEAKS_TT_PREVIEW_ON_ICON_DBL_CLK);
+		SetTreeToolTip(m_htiExtraPreviewWithMenu, IDS_TWEAKS_TT_EXTRA_PREVIEW_WITH_MENU);
+		SetTreeToolTip(m_htiShowActiveDownloadsBold, IDS_TWEAKS_TT_SHOW_ACTIVE_DOWNLOADS_BOLD);
+		SetTreeToolTip(m_htiUseSystemFontForMainControls, IDS_TWEAKS_TT_USE_SYSTEM_FONT_FOR_MAIN_CONTROLS);
+		SetTreeToolTip(m_htiFilterLANIPs, IDS_TWEAKS_TT_FILTER_LANI_PS);
+		SetTreeToolTip(m_htiGeoLocationCheckDays, IDS_TWEAKS_TT_GEO_LOCATION_CHECK_DAYS);
+		SetTreeToolTip(m_htiVerbose, IDS_TWEAKS_TT_VERBOSE);
+		SetTreeToolTip(m_htiFullVerbose, IDS_TWEAKS_TT_FULL_VERBOSE);
+		SetTreeToolTip(m_htiLogLevel, IDS_TWEAKS_TT_LOG_LEVEL);
+		SetTreeToolTip(m_htiDebug2Disk, IDS_TWEAKS_TT_DEBUG2_DISK);
+		SetTreeToolTip(m_htiDebugSourceExchange, IDS_TWEAKS_TT_DEBUG_SOURCE_EXCHANGE);
+		SetTreeToolTip(m_htiLogBannedClients, IDS_TWEAKS_TT_LOG_BANNED_CLIENTS);
+		SetTreeToolTip(m_htiLogRatingDescReceived, IDS_TWEAKS_TT_LOG_RATING_DESC_RECEIVED);
+		SetTreeToolTip(m_htiLogSecureIdent, IDS_TWEAKS_TT_LOG_SECURE_IDENT);
+		SetTreeToolTip(m_htiLogFilteredIPs, IDS_TWEAKS_TT_LOG_FILTERED_I_PS);
+		SetTreeToolTip(m_htiLogFileSaving, IDS_TWEAKS_TT_LOG_FILE_SAVING);
+		SetTreeToolTip(m_htiLogA4AF, IDS_TWEAKS_TT_LOG_A4_AF);
+		SetTreeToolTip(m_htiLogUlDlEvents, IDS_TWEAKS_TT_LOG_UL_DL_EVENTS);
+		SetTreeToolTip(m_htiUPnP, IDS_TWEAKS_TT_U_PN_P);
+		SetTreeToolTip(m_htiShareeMuleMultiUser, IDS_TWEAKS_TT_SHAREE_MULE_MULTI_USER);
+		SetTreeToolTip(m_htiShareeMulePublicUser, IDS_TWEAKS_TT_SHAREE_MULE_PUBLIC_USER);
+		SetTreeToolTip(m_htiShareeMuleOldStyle, IDS_TWEAKS_TT_SHAREE_MULE_OLD_STYLE);
 
 		ExpandAllTreeItems(m_ctrlTreeOptions);
 		m_ctrlTreeOptions.SendMessage(WM_VSCROLL, SB_TOP);
@@ -1431,7 +1168,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiHighresTimer, m_bHighresTimer);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoArch, m_bAutoArchDisable);
 	if (pDX->m_bSaveAndValidate && m_sTxtEditor.Trim().IsEmpty())
-		FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiTxtEditor, _T("Please enter an editor command, for example notepad.exe."));
+		FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiTxtEditor, GetResString(IDS_TWEAKS_VALIDATION_EDITOR_COMMAND));
 
 	/////////////////////////////////////////////////////////////////////////////
 	// File related group
@@ -1475,18 +1212,18 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	if (pDX->m_bSaveAndValidate) {
 		if (m_uFollowMajorityFilenameRequiredPercent < thePrefs.GetMinFollowMajorityFilenameRequiredPercent() || m_uFollowMajorityFilenameRequiredPercent > thePrefs.GetMaxFollowMajorityFilenameRequiredPercent()) {
 			CString detail;
-			detail.Format(_T("Expected range: %u..%u percent."), thePrefs.GetMinFollowMajorityFilenameRequiredPercent(), thePrefs.GetMaxFollowMajorityFilenameRequiredPercent());
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_FOLLOW_MAJORITY_PERCENT_RANGE_FMT), thePrefs.GetMinFollowMajorityFilenameRequiredPercent(), thePrefs.GetMaxFollowMajorityFilenameRequiredPercent());
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiFollowMajorityFilenameRequiredPercent, detail);
 		}
 		if (m_uFollowMajorityFilenameMinimumVotes > thePrefs.GetMaxFollowMajorityFilenameMinimumVotes()) {
 			CString detail;
-			detail.Format(_T("Expected range: 0..%u votes."), thePrefs.GetMaxFollowMajorityFilenameMinimumVotes());
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_FOLLOW_MAJORITY_VOTES_RANGE_FMT), thePrefs.GetMaxFollowMajorityFilenameMinimumVotes());
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiFollowMajorityFilenameMinimumVotes, detail);
 		}
 		if (m_sDateTimeFormat.Trim().IsEmpty())
-			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat, _T("Please enter a non-empty CTime format string."));
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat, GetResString(IDS_TWEAKS_VALIDATION_CTIME_FORMAT));
 		if (m_sDateTimeFormat4Log.Trim().IsEmpty())
-			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat4Log, _T("Please enter a non-empty CTime format string."));
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat4Log, GetResString(IDS_TWEAKS_VALIDATION_CTIME_FORMAT));
 	}
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiGeoLocationEnabled, m_bGeoLocationEnabled);
 	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiGeoLocationCheckDays, m_uGeoLocationCheckDays);
@@ -1495,7 +1232,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 			&& (m_uGeoLocationCheckDays < thePrefs.GetMinGeoLocationCheckDays() || m_uGeoLocationCheckDays > thePrefs.GetMaxGeoLocationCheckDays()))
 		{
 			CString detail;
-			detail.Format(_T("Expected value: 0, or %u..%u."), thePrefs.GetMinGeoLocationCheckDays(), thePrefs.GetMaxGeoLocationCheckDays());
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_ZERO_OR_RANGE_FMT), thePrefs.GetMinGeoLocationCheckDays(), thePrefs.GetMaxGeoLocationCheckDays());
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiGeoLocationCheckDays, detail);
 		}
 	}
@@ -1515,12 +1252,12 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	if (pDX->m_bSaveAndValidate) {
 		if (!PreferenceUiSeams::IsPositiveBounded(m_uMaxChatHistoryLines, PreferenceUiSeams::kMaxChatHistoryLines)) {
 			CString detail;
-			detail.Format(_T("Expected range: 1..%u."), PreferenceUiSeams::kMaxChatHistoryLines);
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_POSITIVE_UINT_RANGE_FMT), PreferenceUiSeams::kMaxChatHistoryLines);
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxChatHistoryLines, detail);
 		}
 		if (!PreferenceUiSeams::IsPositiveBounded(m_uMaxMessageSessions, PreferenceUiSeams::kMaxMessageSessions)) {
 			CString detail;
-			detail.Format(_T("Expected range: 1..%u."), PreferenceUiSeams::kMaxMessageSessions);
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_POSITIVE_UINT_RANGE_FMT), PreferenceUiSeams::kMaxMessageSessions);
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxMessageSessions, detail);
 		}
 	}
@@ -1530,7 +1267,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		const UINT uMaxFileBufferSizeKiB = thePrefs.GetMaxFileBufferSizeBytes() / 1024u;
 		if (m_uFileBufferSizeKiB < uMinFileBufferSizeKiB || m_uFileBufferSizeKiB > uMaxFileBufferSizeKiB) {
 			CString detail;
-			detail.Format(_T("Expected range: %u..%u KiB."), uMinFileBufferSizeKiB, uMaxFileBufferSizeKiB);
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_UINT_KIB_RANGE_FMT), uMinFileBufferSizeKiB, uMaxFileBufferSizeKiB);
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiFileBufferSize, detail);
 		}
 	}
@@ -1538,7 +1275,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	if (pDX->m_bSaveAndValidate) {
 		if (m_iQueueSize < static_cast<int>(thePrefs.GetMinQueueSize()) || m_iQueueSize > static_cast<int>(thePrefs.GetMaxQueueSize())) {
 			CString detail;
-			detail.Format(_T("Expected range: %d..%d."), static_cast<int>(thePrefs.GetMinQueueSize()), static_cast<int>(thePrefs.GetMaxQueueSize()));
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_INT_RANGE_FMT), static_cast<int>(thePrefs.GetMinQueueSize()), static_cast<int>(thePrefs.GetMaxQueueSize()));
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiQueueSize, detail);
 		}
 	}
@@ -1553,12 +1290,12 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	if (pDX->m_bSaveAndValidate) {
 		if (!PreferenceUiSeams::IsLogFileSizeKiBAllowed(m_uMaxLogFileSizeKiB)) {
 			CString detail;
-			detail.Format(_T("Expected range: 0..%u KiB. Use 0 for no rotation limit."), PreferenceUiSeams::kMaxLogFileSizeKiB);
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_LOG_FILE_SIZE_RANGE_FMT), PreferenceUiSeams::kMaxLogFileSizeKiB);
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxLogFileSize, detail);
 		}
 		if (!PreferenceUiSeams::IsLogBufferKiBAllowed(m_uMaxLogBufferKiB)) {
 			CString detail;
-			detail.Format(_T("Expected range: %u..%u KiB."), PreferenceUiSeams::kMinLogBufferKiB, PreferenceUiSeams::kMaxLogBufferKiB);
+			detail.Format(GetResString(IDS_TWEAKS_VALIDATION_UINT_KIB_RANGE_FMT), PreferenceUiSeams::kMinLogBufferKiB, PreferenceUiSeams::kMaxLogBufferKiB);
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiMaxLogBuffer, detail);
 		}
 	}
@@ -1571,7 +1308,7 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		&& !PreferenceUiSeams::IsPositiveBounded(m_uPerfLogIntervalMinutes, PreferenceUiSeams::kMaxPerfLogIntervalMinutes))
 	{
 		CString detail;
-		detail.Format(_T("Expected range: 1..%u minutes."), PreferenceUiSeams::kMaxPerfLogIntervalMinutes);
+		detail.Format(GetResString(IDS_TWEAKS_VALIDATION_MINUTES_RANGE_FMT), PreferenceUiSeams::kMaxPerfLogIntervalMinutes);
 		FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiPerfLogInterval, detail);
 	}
 	if (m_htiLogLevel) {
@@ -1968,6 +1705,11 @@ void CPPgTweaks::SetTreeToolTip(HTREEITEM item, const CString &text)
 		m_treeToolTips[item] = text;
 }
 
+void CPPgTweaks::SetTreeToolTip(HTREEITEM item, UINT strid)
+{
+	SetTreeToolTip(item, GetResString(strid));
+}
+
 void CPPgTweaks::Localize()
 {
 	if (m_hWnd) {
@@ -2065,8 +1807,8 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiLog2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiPerfLog, IDS_ENABLE_PERFLOG);
 		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormat, GetPerfLogFileFormatLabel());
-		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormatCsv, _T("CSV"));
-		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormatMrtg, _T("MRTG"));
+		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormatCsv, GetResString(IDS_TWEAKS_PERF_LOG_FORMAT_CSV));
+		m_ctrlTreeOptions.SetItemText(m_htiPerfLogFileFormatMrtg, GetResString(IDS_TWEAKS_PERF_LOG_FORMAT_MRTG));
 		m_ctrlTreeOptions.SetEditLabel(m_htiPerfLogFile, GetPerfLogFileLabel());
 		m_ctrlTreeOptions.SetEditLabel(m_htiPerfLogInterval, GetPerfLogIntervalLabel());
 		LocalizeItemText(m_htiLogA4AF, IDS_LOG_A4AF);

@@ -29,6 +29,7 @@ their client on the eMule forum.
 */
 #include "stdafx.h"
 #include "Log.h"
+#include "OtherFunctions.h"
 #include "resource.h"
 #include "StringConversion.h"
 #include "SafeFile.h"
@@ -493,7 +494,7 @@ namespace Kademlia
 
 		// NOTE: It's very important that the Unicode->LowerCase map already was initialized!
 		if (s_awcLowerMap[L'A'] != L'a') {
-			AfxMessageBox(_T("Kad Unicode lower case character map not initialized!"));
+			AfxMessageBox(GetResString(IDS_KAD_UNICODE_MAP_NOT_INITIALIZED));
 			exit(1);
 		}
 
@@ -508,7 +509,7 @@ namespace Kademlia
 	{
 		// NOTE: It's very important that the Unicode->LowerCase map already was initialized!
 		if (s_awcLowerMap[L'A'] != L'a') {
-			AfxMessageBox(_T("Kad Unicode lower case character map not initialized!"));
+			AfxMessageBox(GetResString(IDS_KAD_UNICODE_MAP_NOT_INITIALIZED));
 			exit(1);
 		}
 

@@ -13,6 +13,7 @@ class CPPgTweaks : public CPropertyPage
 	void LocalizeItemText(HTREEITEM item, UINT strid);
 	void LocalizeEditLabel(HTREEITEM item, UINT strid);
 	void SetTreeToolTip(HTREEITEM item, const CString &text);
+	void SetTreeToolTip(HTREEITEM item, UINT strid);
 
 public:
 	CPPgTweaks();

@@ -72,24 +72,12 @@ void CPPgProxy::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_ENABLEPROXY,
-		_T("Routes supported outbound connections through the configured proxy.\r\n\r\n")
-		_T("Enable it only if you intentionally run eMule behind a proxy. Direct connections are simpler and usually faster."));
-	m_toolTip.SetTool(this, IDC_PROXYTYPE,
-		_T("Selects the proxy protocol expected by your proxy server.\r\n\r\n")
-		_T("Use the exact type provided by the proxy operator; the wrong type usually means immediate connection failures."));
-	m_toolTip.SetTool(this, IDC_PROXYNAME,
-		_T("Hostname or IP address of the proxy server.\r\n\r\n")
-		_T("Enter exactly the endpoint provided by your proxy service. A wrong host means all proxied traffic will fail."));
-	m_toolTip.SetTool(this, IDC_PROXYPORT,
-		_T("Listening port of the proxy server.\r\n\r\n")
-		_T("Use the exact port required by the proxy. Common SOCKS defaults are not guaranteed to be correct."));
-	m_toolTip.SetTool(this, IDC_ENABLEAUTH,
-		_T("Sends proxy username and password credentials when the proxy requires authentication.\r\n\r\n")
-		_T("Enable it only if your proxy service actually uses login credentials."));
-	m_toolTip.SetTool(this, IDC_USERNAME_A,
-		_T("Proxy account username.\r\n\r\n")
-		_T("Leave it empty unless your proxy explicitly requires authenticated access."));
+	m_toolTip.SetTool(this, IDC_ENABLEPROXY, GetResString(IDS_PPG_PROXY_TT_ENABLEPROXY));
+	m_toolTip.SetTool(this, IDC_PROXYTYPE, GetResString(IDS_PPG_PROXY_TT_PROXYTYPE));
+	m_toolTip.SetTool(this, IDC_PROXYNAME, GetResString(IDS_PPG_PROXY_TT_PROXYNAME));
+	m_toolTip.SetTool(this, IDC_PROXYPORT, GetResString(IDS_PPG_PROXY_TT_PROXYPORT));
+	m_toolTip.SetTool(this, IDC_ENABLEAUTH, GetResString(IDS_PPG_PROXY_TT_ENABLEAUTH));
+	m_toolTip.SetTool(this, IDC_USERNAME_A, GetResString(IDS_PPG_PROXY_TT_USERNAME_A));
 }
 
 BOOL CPPgProxy::OnApply()

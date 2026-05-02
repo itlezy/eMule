@@ -86,18 +86,10 @@ void CPPgMessages::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_MSGONLYFRIENDS,
-		_T("Accepts direct messages only from users on your friends list.\r\n\r\n")
-		_T("Recommended if you want a very quiet chat setup. Leave it off if you still want messages from ordinary clients."));
-	m_toolTip.SetTool(this, IDC_ADVSPAMFILTER,
-		_T("Enables the stronger message spam filter path.\r\n\r\n")
-		_T("Recommended: enabled for normal public-network use. It works together with chat captchas for stricter filtering."));
-	m_toolTip.SetTool(this, IDC_USECAPTCHAS,
-		_T("Requires a captcha challenge before unknown clients can complete a chat conversation.\r\n\r\n")
-		_T("Useful against chat spam. Best used together with the advanced spam filter."));
-	m_toolTip.SetTool(this, IDC_COMMENTFILTER,
-		_T("Blocks file comments containing the configured filter terms.\r\n\r\n")
-		_T("Use a '|' separator between terms. Good for known spam words or nuisance patterns."));
+	m_toolTip.SetTool(this, IDC_MSGONLYFRIENDS, GetResString(IDS_PPG_MESSAGES_TT_MSGONLYFRIENDS));
+	m_toolTip.SetTool(this, IDC_ADVSPAMFILTER, GetResString(IDS_PPG_MESSAGES_TT_ADVSPAMFILTER));
+	m_toolTip.SetTool(this, IDC_USECAPTCHAS, GetResString(IDS_PPG_MESSAGES_TT_USECAPTCHAS));
+	m_toolTip.SetTool(this, IDC_COMMENTFILTER, GetResString(IDS_PPG_MESSAGES_TT_COMMENTFILTER));
 }
 
 BOOL CPPgMessages::OnApply()

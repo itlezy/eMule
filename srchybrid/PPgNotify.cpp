@@ -125,24 +125,12 @@ void CPPgNotify::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_CB_TBN_USESOUND,
-		_T("Plays a custom WAV file for taskbar notifications.\r\n\r\n")
-		_T("Use this if you want an audible alert. Leave it off if silent popups or speech are enough."));
-	m_toolTip.SetTool(this, IDC_CB_TBN_USESPEECH,
-		_T("Uses text-to-speech for taskbar notifications when a speech engine is available.\r\n\r\n")
-		_T("Useful on unattended systems where spoken alerts are easier to notice than sounds."));
-	m_toolTip.SetTool(this, IDC_CB_TBN_POP_ALWAYS,
-		_T("Shows a popup for every incoming chat message instead of only the first one.\r\n\r\n")
-		_T("Enable it if you do not want follow-up chat messages to stay quiet."));
-	m_toolTip.SetTool(this, IDC_CB_TBN_USEWINDOWSTOAST,
-		_T("Uses Windows toast notifications instead of the custom eMule popup.\r\n\r\n")
-		_T("If Windows rejects a toast notification, eMule falls back to the custom popup."));
-	m_toolTip.SetTool(this, IDC_CB_ENABLENOTIFICATIONS,
-		_T("Enables outbound email notifications for the configured events.\r\n\r\n")
-		_T("Only enable it if you have already configured a working SMTP server and addresses."));
-	m_toolTip.SetTool(this, IDC_SMTPSERVER,
-		_T("Opens the SMTP server configuration used by email notifications.\r\n\r\n")
-		_T("You only need this if email notifications are enabled."));
+	m_toolTip.SetTool(this, IDC_CB_TBN_USESOUND, GetResString(IDS_NOTIFY_TT_CB_TBN_USESOUND));
+	m_toolTip.SetTool(this, IDC_CB_TBN_USESPEECH, GetResString(IDS_NOTIFY_TT_CB_TBN_USESPEECH));
+	m_toolTip.SetTool(this, IDC_CB_TBN_POP_ALWAYS, GetResString(IDS_NOTIFY_TT_CB_TBN_POP_ALWAYS));
+	m_toolTip.SetTool(this, IDC_CB_TBN_USEWINDOWSTOAST, GetResString(IDS_NOTIFY_TT_CB_TBN_USEWINDOWSTOAST));
+	m_toolTip.SetTool(this, IDC_CB_ENABLENOTIFICATIONS, GetResString(IDS_NOTIFY_TT_CB_ENABLENOTIFICATIONS));
+	m_toolTip.SetTool(this, IDC_SMTPSERVER, GetResString(IDS_NOTIFY_TT_SMTPSERVER));
 }
 
 void CPPgNotify::UpdateControls()
@@ -160,6 +148,9 @@ void CPPgNotify::UpdateControls()
 void CPPgNotify::Localize()
 {
 	if (m_hWnd) {
+		CString strEmailNotificationGroup;
+		strEmailNotificationGroup.Format(GetResString(IDS_EMAILNOT_GROUP_FMT), (LPCTSTR)GetResString(IDS_PW_EMAILNOTIFICATIONS));
+
 		SetWindowText(GetResString(IDS_PW_EKDEV_OPTIONS));
 		SetDlgItemText(IDC_CB_TBN_USESOUND, GetResString(IDS_PW_TBN_USESOUND));
 		SetDlgItemText(IDC_CB_TBN_NOSOUND, GetResString(IDS_NOSOUND));
@@ -171,10 +162,10 @@ void CPPgNotify::Localize()
 		SetDlgItemText(IDC_TASKBARNOTIFIER, GetResString(IDS_PW_TASKBARNOTIFIER));
 		SetDlgItemText(IDC_CB_TBN_IMPORTATNT, GetResString(IDS_PS_TBN_IMPORTANT) + _T(" (*)"));
 		SetDlgItemText(IDC_CB_TBN_ONNEWVERSION, GetResString(IDS_CB_TBN_ONNEWVERSION));
-		SetDlgItemText(IDC_CB_TBN_USEWINDOWSTOAST, _T("Use Windows toast notifications"));
+		SetDlgItemText(IDC_CB_TBN_USEWINDOWSTOAST, GetResString(IDS_USE_WINDOWS_TOAST_NOTIFICATIONS));
 		SetDlgItemText(IDC_TBN_OPTIONS, GetResString(IDS_PW_TBN_OPTIONS));
 		SetDlgItemText(IDC_CB_TBN_USESPEECH, GetResString(IDS_USESPEECH));
-		SetDlgItemText(IDC_EMAILNOT_GROUP, _T("(*) ") + GetResString(IDS_PW_EMAILNOTIFICATIONS));
+		SetDlgItemText(IDC_EMAILNOT_GROUP, strEmailNotificationGroup);
 		SetDlgItemText(IDC_SMTPSERVER, GetResString(IDS_SMTPSERVER) + _T("..."));
 		SetDlgItemText(IDC_TXT_RECEIVER, GetResString(IDS_PW_RECEIVERADDRESS));
 		SetDlgItemText(IDC_TXT_SENDER, GetResString(IDS_PW_SENDERADDRESS));

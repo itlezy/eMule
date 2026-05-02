@@ -865,7 +865,7 @@ BOOL CSearchListCtrl::OnCommand(WPARAM wParam, LPARAM)
 
 					newclient->SendPreviewRequest(*file);
 					// add to res - later
-					AddLogLine(true, _T("Preview Requested - Please wait"));
+					AddLogLine(true, GetResString(IDS_PREVIEW_REQUESTED_WAIT));
 				}
 			}
 			return TRUE;
@@ -1096,7 +1096,7 @@ void CSearchListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 						CString strSource;
 						if (bFirst) {
 							bFirst = false;
-							strSource = _T("Sources");
+							strSource = GetResString(IDS_SEARCH_INFOTIP_SOURCES);
 						}
 						strSource.AppendFormat(_T(": %u.%u.%u.%u:%u  Server: %u.%u.%u.%u:%u")
 							, (uint8)uClientIP, (uint8)(uClientIP >> 8), (uint8)(uClientIP >> 16), (uint8)(uClientIP >> 24), file->GetClientPort()
@@ -1113,7 +1113,7 @@ void CSearchListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 						CString strSource;
 						if (bFirst) {
 							bFirst = false;
-							strSource = _T("Sources");
+							strSource = GetResString(IDS_SEARCH_INFOTIP_SOURCES);
 						}
 						strSource.AppendFormat(_T(": %u.%u.%u.%u:%u  Server: %u.%u.%u.%u:%u")
 							, (uint8)uClientIP, (uint8)(uClientIP >> 8), (uint8)(uClientIP >> 16), (uint8)(uClientIP >> 24), aClients[i].m_nPort
@@ -1132,7 +1132,7 @@ void CSearchListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 						uint32 uServerIP = aServers[i].m_nIP;
 						CString strServer;
 						if (i == 0)
-							strServer = _T("Servers");
+							strServer = GetResString(IDS_SEARCH_INFOTIP_SERVERS);
 						strServer.AppendFormat(_T(": %u.%u.%u.%u:%u  Avail: %u")
 							, (uint8)uServerIP, (uint8)(uServerIP >> 8), (uint8)(uServerIP >> 16), (uint8)(uServerIP >> 24)
 							, aServers[i].m_nPort

@@ -89,6 +89,18 @@ LPCTSTR const ONLINEHELPURL = _T("https://github.com/itlezy/eMule-tooling/blob/m
 constexpr DWORD kMonitoredSharedFileWatchMask = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE;
 constexpr DWORD kMonitoredSharedDirectoryWatchMask = FILE_NOTIFY_CHANGE_DIR_NAME;
 
+BindStartupPolicy::CBindStartupPolicyText GetBindStartupPolicyText()
+{
+	BindStartupPolicy::CBindStartupPolicyText text;
+	text.strAnyInterface = GetResString(IDS_BIND_ANY_INTERFACE);
+	text.strInterfaceNotFoundFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_NOT_FOUND_FMT);
+	text.strInterfaceNameAmbiguousFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_AMBIGUOUS_FMT);
+	text.strInterfaceHasNoAddressFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_NO_ADDRESS_FMT);
+	text.strAddressNotFoundOnInterfaceFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_ADDRESS_MISSING_FMT);
+	text.strAddressNotFoundFormat = GetResString(IDS_BIND_STARTUP_ADDRESS_MISSING_FMT);
+	return text;
+}
+
 struct SMonitoredRootWatcher
 {
 	CString strRootPath;
@@ -1160,10 +1172,10 @@ BOOL CemuleApp::InitInstance()
 
 	AfxEnableControlContainer();
 	if (!AfxInitRichEdit5())
-		AfxMessageBox(_T("Fatal Error: No Rich Edit control library found!")); // should never happen.
+		AfxMessageBox(GetResString(IDS_FATAL_NO_RICHEDIT)); // should never happen.
 
 	if (!Kademlia::CKademlia::InitUnicode(AfxGetInstanceHandle())) {
-		AfxMessageBox(_T("Fatal Error: Failed to load Unicode character tables for Kademlia!")); // should never happen.
+		AfxMessageBox(GetResString(IDS_FATAL_KAD_UNICODE_TABLES)); // should never happen.
 		return FALSE; // DO *NOT* START !!!
 	}
 
@@ -1808,7 +1820,7 @@ void CemuleApp::RefreshStartupBindBlockState()
 	m_bStartupBindBlocked = BindStartupPolicy::ShouldBlockSessionNetworking(thePrefs.IsActiveStartupBindBlockEnabled()
 		, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult());
 	m_strStartupBindBlockReason = BindStartupPolicy::FormatStartupBlockReason(thePrefs.GetActiveBindInterfaceName()
-		, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult());
+		, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult(), GetBindStartupPolicyText());
 }
 
 #ifdef _DEBUG

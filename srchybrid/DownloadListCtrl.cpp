@@ -2149,7 +2149,7 @@ void CDownloadListCtrl::CreateMenus()
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_METINFO, GetResString(IDS_DL_INFO), _T("FILEINFO"));
 	m_FileMenu.AppendMenu(MF_STRING, MP_VIEWFILECOMMENTS, GetResString(IDS_CMT_SHOWALL), _T("FILECOMMENTS"));
-	m_FileMenu.AppendMenu(MF_STRING, MP_FOLLOWMAJORITYFILENAME, _T("Follow majority filename"), _T("FILERENAME"));
+	m_FileMenu.AppendMenu(MF_STRING, MP_FOLLOWMAJORITYFILENAME, GetResString(IDS_FOLLOW_MAJORITY_FILENAME), _T("FILERENAME"));
 	m_FileMenu.AppendMenu(MF_SEPARATOR);
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_CLEARCOMPLETED, GetResString(IDS_DL_CLEAR), _T("CLEARCOMPLETE"));

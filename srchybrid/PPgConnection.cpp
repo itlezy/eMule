@@ -48,7 +48,7 @@ namespace
 	CString FormatRuntimeBindTarget(const CString &strInterfaceName, const CString &strBindAddress)
 	{
 		if (strInterfaceName.IsEmpty() && strBindAddress.IsEmpty())
-			return _T("Any interface");
+			return GetResString(IDS_BIND_ANY_INTERFACE);
 		if (strInterfaceName.IsEmpty())
 			return strBindAddress;
 		if (strBindAddress.IsEmpty())
@@ -59,27 +59,46 @@ namespace
 		return strTarget;
 	}
 
+	CString FormatBindStatus(UINT uStringId, const CString &strTarget)
+	{
+		CString strStatus;
+		strStatus.Format(GetResString(uStringId), (LPCTSTR)strTarget);
+		return strStatus;
+	}
+
+	BindStartupPolicy::CBindStartupPolicyText GetBindStartupPolicyText()
+	{
+		BindStartupPolicy::CBindStartupPolicyText text;
+		text.strAnyInterface = GetResString(IDS_BIND_ANY_INTERFACE);
+		text.strInterfaceNotFoundFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_NOT_FOUND_FMT);
+		text.strInterfaceNameAmbiguousFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_AMBIGUOUS_FMT);
+		text.strInterfaceHasNoAddressFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_NO_ADDRESS_FMT);
+		text.strAddressNotFoundOnInterfaceFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_ADDRESS_MISSING_FMT);
+		text.strAddressNotFoundFormat = GetResString(IDS_BIND_STARTUP_ADDRESS_MISSING_FMT);
+		return text;
+	}
+
 	CString FormatFallbackBindStatus(const CString &strInterfaceName, const CString &strConfiguredAddress, EBindAddressResolveResult eResult)
 	{
-		CString strTarget = BindStartupPolicy::FormatConfiguredBindTarget(strInterfaceName, strInterfaceName, strConfiguredAddress);
+		CString strTarget = BindStartupPolicy::FormatConfiguredBindTarget(strInterfaceName, strInterfaceName, strConfiguredAddress, GetResString(IDS_BIND_ANY_INTERFACE));
 		if (strTarget.IsEmpty())
-			strTarget = _T("Any interface");
+			strTarget = GetResString(IDS_BIND_ANY_INTERFACE);
 
 		switch (eResult) {
 		case BARR_InterfaceNotFound:
-			return _T("Active P2P bind: Any interface. The saved interface is unavailable: ") + strTarget;
+			return FormatBindStatus(IDS_BIND_STATUS_INTERFACE_NOT_FOUND_FMT, strTarget);
 		case BARR_InterfaceNameAmbiguous:
-			return _T("Active P2P bind: Any interface. The saved interface name is ambiguous: ") + strTarget;
+			return FormatBindStatus(IDS_BIND_STATUS_INTERFACE_AMBIGUOUS_FMT, strTarget);
 		case BARR_InterfaceHasNoAddress:
-			return _T("Active P2P bind: Any interface. The saved interface has no usable IPv4 address: ") + strTarget;
+			return FormatBindStatus(IDS_BIND_STATUS_INTERFACE_NO_ADDRESS_FMT, strTarget);
 		case BARR_AddressNotFoundOnInterface:
-			return _T("Active P2P bind: Any interface. The saved bind IP is missing on the selected interface: ") + strTarget;
+			return FormatBindStatus(IDS_BIND_STATUS_INTERFACE_ADDRESS_MISSING_FMT, strTarget);
 		case BARR_AddressNotFound:
-			return _T("Active P2P bind: Any interface. The saved bind IP is missing on all live interfaces: ") + strTarget;
+			return FormatBindStatus(IDS_BIND_STATUS_ADDRESS_MISSING_FMT, strTarget);
 		case BARR_Default:
 		case BARR_Resolved:
 		default:
-			return _T("Active P2P bind: Any interface.");
+			return GetResString(IDS_BIND_STATUS_ACTIVE_ANY);
 		}
 	}
 
@@ -217,12 +236,12 @@ void CPPgConnection::UpdateBindStatus()
 	if (theApp.IsStartupBindBlocked())
 		strStatus = theApp.GetStartupBindBlockReason();
 	else if (thePrefs.GetActiveBindAddressResolveResult() == BARR_Default)
-		strStatus = _T("Active P2P bind: Any interface.");
+		strStatus = GetResString(IDS_BIND_STATUS_ACTIVE_ANY);
 	else if (thePrefs.GetActiveBindAddressResolveResult() == BARR_Resolved) {
 		CString strRuntimeBindAddress;
 		if (thePrefs.GetBindAddr() != NULL)
 			strRuntimeBindAddress = thePrefs.GetBindAddr();
-		strStatus = _T("Active P2P bind: ") + FormatRuntimeBindTarget(thePrefs.GetActiveBindInterfaceName(), strRuntimeBindAddress);
+		strStatus.Format(GetResString(IDS_BIND_STATUS_ACTIVE_FMT), (LPCTSTR)FormatRuntimeBindTarget(thePrefs.GetActiveBindInterfaceName(), strRuntimeBindAddress));
 	}
 	else
 		strStatus = FormatFallbackBindStatus(thePrefs.GetActiveBindInterfaceName(), thePrefs.GetActiveConfiguredBindAddr(), thePrefs.GetActiveBindAddressResolveResult());
@@ -254,14 +273,15 @@ void CPPgConnection::UpdateRestartRequiredNotice()
 		CString strResolvedInterfaceName;
 		const EBindAddressResolveResult ePendingResult = CBindAddressResolver::ResolveBindAddress(strPendingInterface
 			, strPendingAddress, strResolvedAddress, &strResolvedInterfaceName);
-		strRestartNote = _T("Restart required: the new bind settings take effect only after restarting eMule.");
+		strRestartNote = GetResString(IDS_BIND_RESTART_REQUIRED);
 		if (BindStartupPolicy::ShouldBlockSessionNetworking(bPendingStartupBlock, strPendingInterface, strPendingAddress, ePendingResult)) {
 			CString strReason = BindStartupPolicy::FormatStartupBlockReason(strResolvedInterfaceName.IsEmpty() ? strPendingInterface : strResolvedInterfaceName
-				, strPendingInterface, strPendingAddress, ePendingResult);
+				, strPendingInterface, strPendingAddress, ePendingResult, GetBindStartupPolicyText());
 			if (!strReason.IsEmpty())
 				strRestartNote.AppendFormat(_T(" %s"), (LPCTSTR)strReason);
 		} else if (ePendingResult != BARR_Default && ePendingResult != BARR_Resolved) {
-			strRestartNote.Append(_T(" Restart will fall back to the default interface because the saved bind target is unresolved."));
+			strRestartNote.Append(_T(" "));
+			strRestartNote.Append(GetResString(IDS_BIND_RESTART_FALLBACK_DEFAULT));
 		}
 	}
 
@@ -379,63 +399,25 @@ void CPPgConnection::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_AUTOCONNECT,
-		_T("Automatically starts the enabled networks when eMule launches.\r\n\r\n")
-		_T("Recommended: enabled for normal unattended use. Disable it only if you want to connect manually every session."));
-	m_toolTip.SetTool(this, IDC_RECONN,
-		_T("Retries server connections after disconnects or failed attempts.\r\n\r\n")
-		_T("Recommended: enabled if you use the eD2K server network. It has no effect when server networking is disabled."));
-	m_toolTip.SetTool(this, IDC_SHOWOVERHEAD,
-		_T("Shows protocol overhead separately in the transfer rates and statistics.\r\n\r\n")
-		_T("Enable it if you want a more honest view of wire traffic. Leave it off if you prefer simpler payload-only numbers."));
-	m_toolTip.SetTool(this, IDC_PORT,
-		_T("Main TCP port used for incoming client connections.\r\n\r\n")
-		_T("Change it only when you intentionally reconfigure firewall or router rules. After changing it, retest connectivity."));
-	m_toolTip.SetTool(this, IDC_UDPPORT,
-		_T("UDP port used for Kad and other UDP-assisted features.\r\n\r\n")
-		_T("Recommended: keep it enabled and reachable unless you intentionally want to disable UDP-based networking."));
-	m_toolTip.SetTool(this, IDC_MAXSOURCEPERFILE,
-		_T("Hard limit for how many remote sources eMule keeps per download.\r\n\r\n")
-		_T("Higher values can improve availability for rare files but cost more memory and source-management traffic. Use moderate values unless you have a specific reason to raise it."));
-	m_toolTip.SetTool(this, IDC_MAXCON,
-		_T("Upper limit for simultaneous connections eMule may keep open.\r\n\r\n")
-		_T("Higher values are not automatically better. Leave this near the tuned default unless you are diagnosing a specific network limitation."));
-	m_toolTip.SetTool(this, IDC_DOWNLOAD_CAP,
-		_T("Your configured downstream capacity in KiB/s. eMule uses this as an upper reference for sliders and bandwidth decisions.\r\n\r\n")
-		_T("Set it close to your real usable line rate, not the marketing maximum."));
-	m_toolTip.SetTool(this, IDC_UPLOAD_CAP,
-		_T("Your configured upstream capacity in KiB/s. eMule uses this as an upper reference for upload control.\r\n\r\n")
-		_T("Set it close to the real usable sustained upload rate of your line."));
-	m_toolTip.SetTool(this, IDC_NETWORK_ED2K,
-		_T("Enables the classic eD2K server network.\r\n\r\n")
-		_T("Leave it enabled if you still use server-based source discovery. Disable it only if you intentionally want Kad-only operation."));
-	m_toolTip.SetTool(this, IDC_NETWORK_KADEMLIA,
-		_T("Enables the Kad distributed network.\r\n\r\n")
-		_T("Recommended: enabled for modern use. It requires the UDP port to stay enabled."));
-	m_toolTip.SetTool(this, IDC_PREF_UPNPONSTART,
-		_T("Attempts automatic NAT port mapping on startup for the configured TCP and UDP ports.\r\n\r\n")
-		_T("Recommended: enabled when your router supports UPnP or PCP/NAT-PMP. Disable it if you forward ports manually."));
-	m_toolTip.SetTool(this, IDC_RANDOMIZE_PORTS_ON_STARTUP,
-		_T("Chooses new TCP and UDP listen ports at startup before automatic port mapping runs.\r\n\r\n")
-		_T("The option uses eMule's existing random port range and leaves UDP disabled when the UDP port is disabled."));
-	m_toolTip.SetTool(this, IDC_UDPDISABLE,
-		_T("Disables eMule's UDP port and therefore disables UDP-dependent features such as Kad networking.\r\n\r\n")
-		_T("Recommended: leave this off unless you must run TCP-only for a very specific network environment."));
-	m_toolTip.SetTool(this, IDC_STARTTEST,
-		_T("Launches the external connectivity test for the currently configured TCP and UDP ports.\r\n\r\n")
-		_T("Use it after changing ports, bind settings, or router mapping rules."));
-	m_toolTip.SetTool(this, IDC_BIND_INTERFACE,
-		_T("Optional Windows network interface name used for P2P socket binding.\r\n\r\n")
-		_T("Match is by friendly interface name, not adapter number. Changes take effect after restart."));
-	m_toolTip.SetTool(this, IDC_BIND_ADDRESS,
-		_T("Optional IPv4 address used for P2P socket binding.\r\n\r\n")
-		_T("Leave it empty to use the first IPv4 on the selected interface, or the default routing choice when no interface is selected."));
-	m_toolTip.SetTool(this, IDC_STARTUP_BIND_BLOCK,
-		_T("Keeps P2P networking offline for the session if the configured bind target cannot be resolved at startup.\r\n\r\n")
-		_T("Available only when a bind interface is selected. Recommended when you explicitly bind to a named interface and do not want silent fallback."));
-	m_toolTip.SetTool(this, IDC_EXIT_ON_BIND_LOSS,
-		_T("Exits eMule if the selected bind interface disappears after startup.\r\n\r\n")
-		_T("Available only when a bind interface is selected. Use this as VPN protection when P2P networking is bound to a VPN adapter."));
+	m_toolTip.SetTool(this, IDC_AUTOCONNECT, GetResString(IDS_CONNECTION_TT_AUTOCONNECT));
+	m_toolTip.SetTool(this, IDC_RECONN, GetResString(IDS_CONNECTION_TT_RECONN));
+	m_toolTip.SetTool(this, IDC_SHOWOVERHEAD, GetResString(IDS_CONNECTION_TT_SHOWOVERHEAD));
+	m_toolTip.SetTool(this, IDC_PORT, GetResString(IDS_CONNECTION_TT_PORT));
+	m_toolTip.SetTool(this, IDC_UDPPORT, GetResString(IDS_CONNECTION_TT_UDPPORT));
+	m_toolTip.SetTool(this, IDC_MAXSOURCEPERFILE, GetResString(IDS_CONNECTION_TT_MAXSOURCEPERFILE));
+	m_toolTip.SetTool(this, IDC_MAXCON, GetResString(IDS_CONNECTION_TT_MAXCON));
+	m_toolTip.SetTool(this, IDC_DOWNLOAD_CAP, GetResString(IDS_CONNECTION_TT_DOWNLOAD_CAP));
+	m_toolTip.SetTool(this, IDC_UPLOAD_CAP, GetResString(IDS_CONNECTION_TT_UPLOAD_CAP));
+	m_toolTip.SetTool(this, IDC_NETWORK_ED2K, GetResString(IDS_CONNECTION_TT_NETWORK_ED2_K));
+	m_toolTip.SetTool(this, IDC_NETWORK_KADEMLIA, GetResString(IDS_CONNECTION_TT_NETWORK_KADEMLIA));
+	m_toolTip.SetTool(this, IDC_PREF_UPNPONSTART, GetResString(IDS_CONNECTION_TT_PREF_UPNPONSTART));
+	m_toolTip.SetTool(this, IDC_RANDOMIZE_PORTS_ON_STARTUP, GetResString(IDS_CONNECTION_TT_RANDOMIZE_PORTS_ON_STARTUP));
+	m_toolTip.SetTool(this, IDC_UDPDISABLE, GetResString(IDS_CONNECTION_TT_UDPDISABLE));
+	m_toolTip.SetTool(this, IDC_STARTTEST, GetResString(IDS_CONNECTION_TT_STARTTEST));
+	m_toolTip.SetTool(this, IDC_BIND_INTERFACE, GetResString(IDS_CONNECTION_TT_BIND_INTERFACE));
+	m_toolTip.SetTool(this, IDC_BIND_ADDRESS, GetResString(IDS_CONNECTION_TT_BIND_ADDRESS));
+	m_toolTip.SetTool(this, IDC_STARTUP_BIND_BLOCK, GetResString(IDS_CONNECTION_TT_STARTUP_BIND_BLOCK));
+	m_toolTip.SetTool(this, IDC_EXIT_ON_BIND_LOSS, GetResString(IDS_CONNECTION_TT_EXIT_ON_BIND_LOSS));
 }
 
 void CPPgConnection::LoadSettings()
@@ -531,7 +513,7 @@ BOOL CPPgConnection::OnApply()
 	const CString strBindInterface = GetBindInterfaceText();
 	const CString strBindAddress = GetBindAddressText();
 	if (!strBindAddress.IsEmpty() && !IsValidIPv4Literal(strBindAddress)) {
-		AfxMessageBox(_T("BindAddr must be empty or a valid IPv4 address."), MB_ICONWARNING | MB_OK);
+		AfxMessageBox(GetResString(IDS_BIND_ADDRESS_INVALID_IPV4), MB_ICONWARNING | MB_OK);
 		GetDlgItem(IDC_BIND_ADDRESS)->SetFocus();
 		static_cast<CEdit*>(GetDlgItem(IDC_BIND_ADDRESS))->SetSel(0, -1);
 		return FALSE;
@@ -624,12 +606,12 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_CAPACITIES_FRM, GetResString(IDS_SPEED_LIMITS));
 		SetDlgItemText(IDC_DCAP_LBL, GetResString(IDS_PW_CON_DOWNLBL));
 		SetDlgItemText(IDC_UCAP_LBL, GetResString(IDS_PW_CON_UPLBL));
-		SetDlgItemText(IDC_LIMITS_FRM, _T("Equivalent"));
+		SetDlgItemText(IDC_LIMITS_FRM, GetResString(IDS_EQUIVALENT));
 		SetDlgItemText(IDC_DLIMIT_LBL, GetResString(IDS_PW_CON_DOWNLBL));
 		SetDlgItemText(IDC_ULIMIT_LBL, GetResString(IDS_PW_CON_UPLBL));
 		SetDlgItemText(IDC_CONNECTION_NETWORK, GetResString(IDS_NETWORK));
-		SetDlgItemText(IDC_KBS2, _T("KiB/s"));
-		SetDlgItemText(IDC_KBS3, _T("KiB/s"));
+		SetDlgItemText(IDC_KBS2, GetResString(IDS_UNIT_KIB_PER_SEC));
+		SetDlgItemText(IDC_KBS3, GetResString(IDS_UNIT_KIB_PER_SEC));
 		SetDlgItemText(IDC_MAXCONN_FRM, GetResString(IDS_PW_CONLIMITS));
 		SetDlgItemText(IDC_MAXCONLABEL, GetResString(IDS_PW_MAXC));
 		SetDlgItemText(IDC_SHOWOVERHEAD, GetResString(IDS_SHOWOVERHEAD));
@@ -641,11 +623,11 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));
-		SetDlgItemText(IDC_RANDOMIZE_PORTS_ON_STARTUP, _T("Randomize listen ports on startup"));
+		SetDlgItemText(IDC_RANDOMIZE_PORTS_ON_STARTUP, GetResString(IDS_RANDOMIZE_PORTS_ON_STARTUP));
 		SetDlgItemText(IDC_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE));
 		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS));
-		SetDlgItemText(IDC_STARTUP_BIND_BLOCK, _T("Keep networking offline if the bind target is unavailable at startup"));
-		SetDlgItemText(IDC_EXIT_ON_BIND_LOSS, _T("Exit eMule if the bound interface is lost"));
+		SetDlgItemText(IDC_STARTUP_BIND_BLOCK, GetResString(IDS_STARTUP_BIND_BLOCK));
+		SetDlgItemText(IDC_EXIT_ON_BIND_LOSS, GetResString(IDS_EXIT_ON_BIND_LOSS));
 		ShowLimitValues();
 	}
 }
@@ -687,10 +669,10 @@ void CPPgConnection::ShowLimitValues()
 	const UINT uploadLimit = GetDlgItemInt(IDC_UPLOAD_CAP, NULL, FALSE);
 	const UINT downloadLimit = GetDlgItemInt(IDC_DOWNLOAD_CAP, NULL, FALSE);
 
-	buffer.Format(_T("%.2f MiB/s"), static_cast<double>(uploadLimit) / kKiBPerMiB);
+	buffer.Format(GetResString(IDS_SPEED_MIB_PER_SEC_FMT), static_cast<double>(uploadLimit) / kKiBPerMiB);
 	SetDlgItemText(IDC_KBS4, buffer);
 
-	buffer.Format(_T("%.2f MiB/s"), static_cast<double>(downloadLimit) / kKiBPerMiB);
+	buffer.Format(GetResString(IDS_SPEED_MIB_PER_SEC_FMT), static_cast<double>(downloadLimit) / kKiBPerMiB);
 	SetDlgItemText(IDC_KBS1, buffer);
 }
 

@@ -3,6 +3,8 @@
 #include <atlstr.h>
 #include "types.h"
 
+#define EMULE_STATUS_BAR_INFO_USES_EXTERNAL_TEXT 1
+
 namespace StatusBarInfo
 {
 	namespace Detail
@@ -19,27 +21,43 @@ namespace StatusBarInfo
 			return strIp;
 		}
 
-		inline CString GetBindAddressDisplayValue(const CString &strBindAddress)
+		inline CString GetBindAddressDisplayValue(const CString &strBindAddress, const CString &strAnyBindAddressLabel)
 		{
-			return strBindAddress.IsEmpty() ? CString(_T("Any")) : strBindAddress;
+			return strBindAddress.IsEmpty() ? strAnyBindAddressLabel : strBindAddress;
 		}
 	}
 
-	inline CString FormatNetworkAddressPaneText(const CString &strBindAddress, uint32 dwPublicIp)
+	inline CString FormatNetworkAddressPaneText(const CString &strBindAddress
+		, uint32 dwPublicIp
+		, const CString &strBindIpLabel
+		, const CString &strPublicIpLabel
+		, const CString &strAnyBindAddressLabel
+		, const CString &strUnknownPublicIpLabel
+		, const CString &strFormat)
 	{
 		CString strPaneText;
-		strPaneText.Format(_T("B:%s|P:%s")
-			, (LPCTSTR)Detail::GetBindAddressDisplayValue(strBindAddress)
-			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatStoredIPv4Address(dwPublicIp) : _T("?"));
+		strPaneText.Format(strFormat
+			, (LPCTSTR)strBindIpLabel
+			, (LPCTSTR)Detail::GetBindAddressDisplayValue(strBindAddress, strAnyBindAddressLabel)
+			, (LPCTSTR)strPublicIpLabel
+			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatStoredIPv4Address(dwPublicIp) : (LPCTSTR)strUnknownPublicIpLabel);
 		return strPaneText;
 	}
 
-	inline CString FormatNetworkAddressPaneToolTip(const CString &strBindAddress, uint32 dwPublicIp)
+	inline CString FormatNetworkAddressPaneToolTip(const CString &strBindAddress
+		, uint32 dwPublicIp
+		, const CString &strBindIpLabel
+		, const CString &strPublicIpLabel
+		, const CString &strAnyInterfaceLabel
+		, const CString &strUnknownLabel
+		, const CString &strFormat)
 	{
 		CString strToolTip;
-		strToolTip.Format(_T("Bind IP: %s | Public IP: %s")
-			, strBindAddress.IsEmpty() ? _T("Any interface") : (LPCTSTR)strBindAddress
-			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatStoredIPv4Address(dwPublicIp) : _T("Unknown"));
+		strToolTip.Format(strFormat
+			, (LPCTSTR)strBindIpLabel
+			, strBindAddress.IsEmpty() ? (LPCTSTR)strAnyInterfaceLabel : (LPCTSTR)strBindAddress
+			, (LPCTSTR)strPublicIpLabel
+			, dwPublicIp != 0 ? (LPCTSTR)Detail::FormatStoredIPv4Address(dwPublicIp) : (LPCTSTR)strUnknownLabel);
 		return strToolTip;
 	}
 }

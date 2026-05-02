@@ -3,8 +3,23 @@
 #include <atlstr.h>
 #include "BindAddressResolver.h"
 
+#define EMULE_BIND_STARTUP_POLICY_USES_EXTERNAL_TEXT 1
+
 namespace BindStartupPolicy
 {
+	/**
+	 * User-visible text used when formatting bind startup policy messages.
+	 */
+	struct CBindStartupPolicyText
+	{
+		CString strAnyInterface;
+		CString strInterfaceNotFoundFormat;
+		CString strInterfaceNameAmbiguousFormat;
+		CString strInterfaceHasNoAddressFormat;
+		CString strAddressNotFoundOnInterfaceFormat;
+		CString strAddressNotFoundFormat;
+	};
+
 	/**
 	 * Reports whether the user explicitly selected a bind interface or bind IP.
 	 */
@@ -29,7 +44,8 @@ namespace BindStartupPolicy
 	 */
 	inline CString FormatConfiguredBindTarget(const CString &strInterfaceName
 		, const CString &strInterfaceId
-		, const CString &strConfiguredAddress)
+		, const CString &strConfiguredAddress
+		, const CString &strAnyInterface)
 	{
 		CString strTarget;
 		if (!strInterfaceName.IsEmpty())
@@ -37,7 +53,7 @@ namespace BindStartupPolicy
 		else if (!strInterfaceId.IsEmpty())
 			strTarget = strInterfaceId;
 		else
-			strTarget = _T("Any interface");
+			strTarget = strAnyInterface;
 
 		if (!strConfiguredAddress.IsEmpty()) {
 			if (!strTarget.IsEmpty())
@@ -48,26 +64,37 @@ namespace BindStartupPolicy
 	}
 
 	/**
+	 * Formats one bind-policy message with the already formatted bind target.
+	 */
+	inline CString FormatMessage(const CString &strFormat, const CString &strTarget)
+	{
+		CString strMessage;
+		strMessage.Format(strFormat, (LPCTSTR)strTarget);
+		return strMessage;
+	}
+
+	/**
 	 * Explains why startup networking was blocked for the current bind selection.
 	 */
 	inline CString FormatStartupBlockReason(const CString &strInterfaceName
 		, const CString &strInterfaceId
 		, const CString &strConfiguredAddress
-		, EBindAddressResolveResult eResult)
+		, EBindAddressResolveResult eResult
+		, const CBindStartupPolicyText &text)
 	{
-		const CString strTarget = FormatConfiguredBindTarget(strInterfaceName, strInterfaceId, strConfiguredAddress);
+		const CString strTarget = FormatConfiguredBindTarget(strInterfaceName, strInterfaceId, strConfiguredAddress, text.strAnyInterface);
 
 		switch (eResult) {
 		case BARR_InterfaceNotFound:
-			return _T("Networking disabled for this session because the selected bind interface is no longer available: ") + strTarget;
+			return FormatMessage(text.strInterfaceNotFoundFormat, strTarget);
 		case BARR_InterfaceNameAmbiguous:
-			return _T("Networking disabled for this session because the selected bind interface name matches multiple live adapters: ") + strTarget;
+			return FormatMessage(text.strInterfaceNameAmbiguousFormat, strTarget);
 		case BARR_InterfaceHasNoAddress:
-			return _T("Networking disabled for this session because the selected bind interface has no usable IPv4 address: ") + strTarget;
+			return FormatMessage(text.strInterfaceHasNoAddressFormat, strTarget);
 		case BARR_AddressNotFoundOnInterface:
-			return _T("Networking disabled for this session because the selected bind IP is no longer present on the selected interface: ") + strTarget;
+			return FormatMessage(text.strAddressNotFoundOnInterfaceFormat, strTarget);
 		case BARR_AddressNotFound:
-			return _T("Networking disabled for this session because the selected bind IP is no longer present on any live interface: ") + strTarget;
+			return FormatMessage(text.strAddressNotFoundFormat, strTarget);
 		case BARR_Default:
 		case BARR_Resolved:
 		default:

@@ -688,7 +688,7 @@ void CListCtrlX::DoFind(int iStartItem, int iDirection /*1 = down, -1 = up*/, BO
 	}
 
 	if (bShowError)
-		AfxMessageBox(_T("No matching entry found."), MB_ICONINFORMATION);
+		AfxMessageBox(GetResString(IDS_NO_MATCHING_ENTRY_FOUND), MB_ICONINFORMATION);
 	else
 		MessageBeep(MB_OK);
 }

@@ -140,42 +140,18 @@ void CPPgSecurity::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_USESECIDENT,
-		_T("Uses secure identification when supported to make client credit identities harder to spoof.\r\n\r\n")
-		_T("Recommended: enabled. Disabling it only reduces identity trust and is rarely useful."));
-	m_toolTip.SetTool(this, IDC_FILTERSERVERBYIPFILTER,
-		_T("Applies the IP filter to the visible server list so filtered servers are hidden or removed.\r\n\r\n")
-		_T("Recommended: enabled if you rely on the IP filter for server hygiene as well as peer filtering."));
-	m_toolTip.SetTool(this, IDC_UPDATEURL,
-		_T("Source URL used when downloading refreshed IP-filter lists.\r\n\r\n")
-		_T("Use a trusted provider only. Automatic updates reuse this URL and keep the existing filter if the download is invalid."));
-	m_toolTip.SetTool(this, IDC_AUTOUPDATE_IPFILTER,
-		_T("Checks the configured IP-filter URL automatically after startup when the update interval is due.\r\n\r\n")
-		_T("Recommended: disabled unless you trust the provider and want the filter refreshed without manual action."));
-	m_toolTip.SetTool(this, IDC_IPFILTERPERIOD,
-		_T("Number of days between automatic IP-filter update attempts.\r\n\r\n")
-		_T("Allowed range: 1 to 365 days. Failed attempts are still counted to avoid retry loops when a provider is unavailable."));
-	m_toolTip.SetTool(this, IDC_SEESHARE1,
-		_T("Allows everyone to browse your shared files when the remote client supports it.\r\n\r\n")
-		_T("Most permissive option. Use it only if you are comfortable exposing your shared list broadly."));
-	m_toolTip.SetTool(this, IDC_SEESHARE2,
-		_T("Allows only friends to browse your shared files.\r\n\r\n")
-		_T("Balanced privacy choice if you still want browse support for explicitly trusted contacts."));
-	m_toolTip.SetTool(this, IDC_SEESHARE3,
-		_T("Prevents remote clients from browsing your shared-file list.\r\n\r\n")
-		_T("Recommended if you want the strictest privacy stance for shared-file browsing."));
-	m_toolTip.SetTool(this, IDC_ENABLEOBFUSCATION,
-		_T("Prefers protocol obfuscation when the remote side also supports it.\r\n\r\n")
-		_T("Recommended: enabled. It can help on restrictive networks without forcing an obfuscation-only policy."));
-	m_toolTip.SetTool(this, IDC_ONLYOBFUSCATED,
-		_T("Requires obfuscated connections instead of accepting normal ones.\r\n\r\n")
-		_T("Only use this if your network environment truly needs it. It can reduce connectivity and peer reach."));
-	m_toolTip.SetTool(this, IDC_SEARCHSPAMFILTER,
-		_T("Filters obvious spam from search results before they clutter the UI.\r\n\r\n")
-		_T("Recommended: enabled for normal public-network use."));
-	m_toolTip.SetTool(this, IDC_CHECK_FILE_OPEN,
-		_T("Checks downloaded files for open/locked state before operations that require exclusive access.\r\n\r\n")
-		_T("Recommended: enabled unless you have a specific reason to skip the safety check."));
+	m_toolTip.SetTool(this, IDC_USESECIDENT, GetResString(IDS_PPG_SECURITY_TT_USESECIDENT));
+	m_toolTip.SetTool(this, IDC_FILTERSERVERBYIPFILTER, GetResString(IDS_PPG_SECURITY_TT_FILTERSERVERBYIPFILTER));
+	m_toolTip.SetTool(this, IDC_UPDATEURL, GetResString(IDS_PPG_SECURITY_TT_UPDATEURL));
+	m_toolTip.SetTool(this, IDC_AUTOUPDATE_IPFILTER, GetResString(IDS_PPG_SECURITY_TT_AUTOUPDATE_IPFILTER));
+	m_toolTip.SetTool(this, IDC_IPFILTERPERIOD, GetResString(IDS_PPG_SECURITY_TT_IPFILTERPERIOD));
+	m_toolTip.SetTool(this, IDC_SEESHARE1, GetResString(IDS_PPG_SECURITY_TT_SEESHARE1));
+	m_toolTip.SetTool(this, IDC_SEESHARE2, GetResString(IDS_PPG_SECURITY_TT_SEESHARE2));
+	m_toolTip.SetTool(this, IDC_SEESHARE3, GetResString(IDS_PPG_SECURITY_TT_SEESHARE3));
+	m_toolTip.SetTool(this, IDC_ENABLEOBFUSCATION, GetResString(IDS_PPG_SECURITY_TT_ENABLEOBFUSCATION));
+	m_toolTip.SetTool(this, IDC_ONLYOBFUSCATED, GetResString(IDS_PPG_SECURITY_TT_ONLYOBFUSCATED));
+	m_toolTip.SetTool(this, IDC_SEARCHSPAMFILTER, GetResString(IDS_PPG_SECURITY_TT_SEARCHSPAMFILTER));
+	m_toolTip.SetTool(this, IDC_CHECK_FILE_OPEN, GetResString(IDS_PPG_SECURITY_TT_CHECK_FILE_OPEN));
 }
 
 BOOL CPPgSecurity::OnApply()

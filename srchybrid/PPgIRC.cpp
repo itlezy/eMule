@@ -183,18 +183,10 @@ void CPPgIRC::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_IRC_USECHANFILTER,
-		_T("Applies the channel-name and minimum-user filter when requesting the IRC channel list.\r\n\r\n")
-		_T("Enable it if you want the list narrowed automatically. Disable it to always fetch the full channel list."));
-	m_toolTip.SetTool(this, IDC_IRC_USEPERFORM,
-		_T("Runs the perform script after connecting to IRC.\r\n\r\n")
-		_T("Use it for automatic joins or IRC commands. Leave it off if you do not maintain a perform script."));
-	m_toolTip.SetTool(this, IDC_IRC_NAME_BOX,
-		_T("Filter text for the IRC channel list.\r\n\r\n")
-		_T("Only channels matching this text are kept when the channel filter is enabled."));
-	m_toolTip.SetTool(this, IDC_IRC_MINUSER_BOX,
-		_T("Minimum user count for channels shown by the IRC channel list filter.\r\n\r\n")
-		_T("Raise it to hide tiny channels. Use 0 to keep channels regardless of size."));
+	m_toolTip.SetTool(this, IDC_IRC_USECHANFILTER, GetResString(IDS_PPG_IRC_TT_IRC_USECHANFILTER));
+	m_toolTip.SetTool(this, IDC_IRC_USEPERFORM, GetResString(IDS_PPG_IRC_TT_IRC_USEPERFORM));
+	m_toolTip.SetTool(this, IDC_IRC_NAME_BOX, GetResString(IDS_PPG_IRC_TT_IRC_NAME_BOX));
+	m_toolTip.SetTool(this, IDC_IRC_MINUSER_BOX, GetResString(IDS_PPG_IRC_TT_IRC_MINUSER_BOX));
 }
 
 BOOL CPPgIRC::OnKillActive()

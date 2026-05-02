@@ -1999,7 +1999,7 @@ void CSharedFilesCtrl::CreateMenus()
 
 #if defined(_DEBUG)
 	//JOHNTODO: Not for release as we need kad lowID users in the network to see how well this works. Also, we do not support these links yet.
-	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_GETKADSOURCELINK, _T("Copy eD2K Links To Clipboard (Kad)"));
+	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_GETKADSOURCELINK, GetResString(IDS_COPY_ED2K_LINKS_TO_CLIPBOARD_KAD));
 	m_SharedFilesMenu.AppendMenu(MF_STRING | MF_SEPARATOR);
 #endif
 }

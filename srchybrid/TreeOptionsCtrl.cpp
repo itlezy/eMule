@@ -2201,17 +2201,17 @@ void CTreeOptionsEdit::OnKillFocus(CWnd *pNewWnd)
 
 CString CTreeOptionsEdit::GetBrowseForFolderCaption()
 {
-	return CString(_T("Please specify a folder"));
+	return GetResString(IDS_TREEOPTIONS_BROWSE_FOLDER_CAPTION);
 }
 
 CString CTreeOptionsEdit::GetBrowseForFileCaption()
 {
-	return CString(_T("Please specify a file"));
+	return GetResString(IDS_TREEOPTIONS_BROWSE_FILE_CAPTION);
 }
 
 CString CTreeOptionsEdit::GetFileExtensionFilter()
 {
-	return CString(_T("All Files (*.*)|*.*||"));
+	return GetResString(IDS_TREEOPTIONS_ALL_FILES_FILTER);
 }
 
 void CTreeOptionsEdit::BrowseForFolder(const CString &sInitialFolder)

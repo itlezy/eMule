@@ -128,6 +128,18 @@ namespace
 	static const UINT_PTR kBindLossWatchdogTimerId = 0xB10D;
 	static const UINT kBindLossWatchdogIntervalMs = SEC2MS(10);
 
+	static BindStartupPolicy::CBindStartupPolicyText GetBindStartupPolicyText()
+	{
+		BindStartupPolicy::CBindStartupPolicyText text;
+		text.strAnyInterface = GetResString(IDS_BIND_ANY_INTERFACE);
+		text.strInterfaceNotFoundFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_NOT_FOUND_FMT);
+		text.strInterfaceNameAmbiguousFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_AMBIGUOUS_FMT);
+		text.strInterfaceHasNoAddressFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_NO_ADDRESS_FMT);
+		text.strAddressNotFoundOnInterfaceFormat = GetResString(IDS_BIND_STARTUP_INTERFACE_ADDRESS_MISSING_FMT);
+		text.strAddressNotFoundFormat = GetResString(IDS_BIND_STARTUP_ADDRESS_MISSING_FMT);
+		return text;
+	}
+
 	static void PostBindInterfaceChanged(PVOID pContext)
 	{
 		const HWND hWnd = reinterpret_cast<HWND>(pContext);
@@ -223,7 +235,7 @@ namespace
 			m_ctrlProgress.SubclassDlgItem(IDC_PROGRESS1, this);
 			m_ctrlProgress.SetRange32(0, 100);
 			m_ctrlProgress.SetPos(0);
-			SetWindowText(_T("Shutting down eMule"));
+			SetWindowText(GetResString(IDS_SHUTTING_DOWN_EMULE));
 			return TRUE;
 		}
 
@@ -1157,18 +1169,18 @@ void CemuleDlg::CheckBindLossMonitor()
 
 	CString strReason;
 	if (eResult == BARR_Resolved) {
-		strReason.Format(_T("Exiting eMule because the selected bind interface changed address from %s to %s: %s")
+		strReason.Format(GetResString(IDS_BIND_EXIT_INTERFACE_CHANGED_FMT)
 			, (LPCTSTR)strActiveBindAddress
 			, (LPCTSTR)strResolvedAddress
 			, (LPCTSTR)BindStartupPolicy::FormatConfiguredBindTarget(thePrefs.GetActiveBindInterfaceName()
-				, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr()));
+				, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), GetResString(IDS_BIND_ANY_INTERFACE)));
 	} else {
 		strReason = BindStartupPolicy::FormatStartupBlockReason(strResolvedInterfaceName
-			, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), eResult);
+			, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), eResult, GetBindStartupPolicyText());
 		if (strReason.IsEmpty())
-			strReason = _T("Exiting eMule because the selected bind interface is no longer available.");
+			strReason = GetResString(IDS_BIND_EXIT_INTERFACE_UNAVAILABLE);
 		else
-			strReason.Replace(_T("Networking disabled for this session"), _T("Exiting eMule"));
+			strReason.Replace(GetResString(IDS_BIND_STARTUP_DISABLED_PREFIX), GetResString(IDS_BIND_EXIT_PREFIX));
 	}
 	ExitForBindLoss(strReason);
 }
@@ -1463,7 +1475,13 @@ CString CemuleDlg::GetNetworkAddressStateString() const
 	CString strBindAddress;
 	if (thePrefs.GetBindAddr() != NULL)
 		strBindAddress = thePrefs.GetBindAddr();
-	return StatusBarInfo::FormatNetworkAddressPaneText(strBindAddress, theApp.GetPublicIP());
+	return StatusBarInfo::FormatNetworkAddressPaneText(strBindAddress
+		, theApp.GetPublicIP()
+		, GetResString(IDS_STATUS_BIND_IP_COMPACT_LABEL)
+		, GetResString(IDS_STATUS_PUBLIC_IP_COMPACT_LABEL)
+		, GetResString(IDS_STATUS_ANY_COMPACT)
+		, GetResString(IDS_STATUS_UNKNOWN_COMPACT)
+		, GetResString(IDS_STATUS_NETWORK_ADDRESS_TEXT_FMT));
 }
 
 void CemuleDlg::ShowNetworkAddressState()

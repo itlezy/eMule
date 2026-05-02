@@ -119,21 +119,11 @@ void CPPgDisplay::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_MINTRAY,
-		_T("Minimizes eMule to the tray instead of leaving it on the taskbar.\r\n\r\n")
-		_T("Useful for always-on setups. Leave it off if you prefer normal taskbar behavior."));
-	m_toolTip.SetTool(this, IDC_TOOLTIPDELAY,
-		_T("Delay before UI tooltips appear.\r\n\r\n")
-		_T("Lower values feel faster, higher values reduce accidental popups. The default range is usually a good compromise."));
-	m_toolTip.SetTool(this, IDC_SHOWRATEONTITLE,
-		_T("Shows the current upload and download rates in the main window title.\r\n\r\n")
-		_T("Useful when eMule stays in the background and you still want a quick speed glance."));
-	m_toolTip.SetTool(this, IDC_STORESEARCHES,
-		_T("Keeps recent search terms so they can be reused later.\r\n\r\n")
-		_T("Recommended: enabled unless you specifically want no retained search history."));
-	m_toolTip.SetTool(this, IDC_WIN7TASKBARGOODIES,
-		_T("Enables Windows taskbar progress and related shell integration where supported.\r\n\r\n")
-		_T("Recommended: enabled on modern Windows unless you want a more minimal shell presence."));
+	m_toolTip.SetTool(this, IDC_MINTRAY, GetResString(IDS_PPG_DISPLAY_TT_MINTRAY));
+	m_toolTip.SetTool(this, IDC_TOOLTIPDELAY, GetResString(IDS_PPG_DISPLAY_TT_TOOLTIPDELAY));
+	m_toolTip.SetTool(this, IDC_SHOWRATEONTITLE, GetResString(IDS_PPG_DISPLAY_TT_SHOWRATEONTITLE));
+	m_toolTip.SetTool(this, IDC_STORESEARCHES, GetResString(IDS_PPG_DISPLAY_TT_STORESEARCHES));
+	m_toolTip.SetTool(this, IDC_WIN7TASKBARGOODIES, GetResString(IDS_PPG_DISPLAY_TT_WIN7_TASKBARGOODIES));
 }
 
 BOOL CPPgDisplay::OnApply()

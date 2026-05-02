@@ -95,27 +95,13 @@ void CPPgFiles::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_PF_TIMECALC,
-		_T("Uses the more detailed remaining-time calculation for downloads.\r\n\r\n")
-		_T("Recommended: enabled if you want steadier ETA estimates. Disable it only if you prefer the older simpler calculation."));
-	m_toolTip.SetTool(this, IDC_PREVIEWPRIO,
-		_T("Prioritizes movie preview chunks so partially downloaded media becomes previewable earlier.\r\n\r\n")
-		_T("Useful for video downloads. Leave it off if you prefer neutral chunk ordering."));
-	m_toolTip.SetTool(this, IDC_WATCHCB,
-		_T("Watches the clipboard for ed2k links and offers to handle them.\r\n\r\n")
-		_T("Convenient if you add downloads from browsers a lot. Disable it if you do not want eMule watching the clipboard."));
-	m_toolTip.SetTool(this, IDC_FNCLEANUP,
-		_T("Cleans up downloaded file names automatically according to the configured rules.\r\n\r\n")
-		_T("Recommended: enabled if you want more consistent final filenames without manual cleanup."));
-	m_toolTip.SetTool(this, IDC_STARTNEXTFILE,
-		_T("Starts the next queued file automatically when another download finishes or pauses out.\r\n\r\n")
-		_T("Recommended: enabled if you use paused queues to control how many files run at once."));
-	m_toolTip.SetTool(this, IDC_RUNONFILECOMPLETE,
-		_T("Runs an executable after a file is successfully completed and kept.\r\n\r\n")
-		_T("This is disabled by default. The program is launched directly without the Windows shell."));
-	m_toolTip.SetTool(this, IDC_FILECOMPLETEARGS,
-		_T("Supported tokens: %F full path, %D directory, %N file name, %H file hash, %S size bytes, %C category.\r\n\r\n")
-		_T("%F and %D are quoted automatically. Environment variables are not expanded."));
+	m_toolTip.SetTool(this, IDC_PF_TIMECALC, GetResString(IDS_PPG_FILES_TT_PF_TIMECALC));
+	m_toolTip.SetTool(this, IDC_PREVIEWPRIO, GetResString(IDS_PPG_FILES_TT_PREVIEWPRIO));
+	m_toolTip.SetTool(this, IDC_WATCHCB, GetResString(IDS_PPG_FILES_TT_WATCHCB));
+	m_toolTip.SetTool(this, IDC_FNCLEANUP, GetResString(IDS_PPG_FILES_TT_FNCLEANUP));
+	m_toolTip.SetTool(this, IDC_STARTNEXTFILE, GetResString(IDS_PPG_FILES_TT_STARTNEXTFILE));
+	m_toolTip.SetTool(this, IDC_RUNONFILECOMPLETE, GetResString(IDS_PPG_FILES_TT_RUNONFILECOMPLETE));
+	m_toolTip.SetTool(this, IDC_FILECOMPLETEARGS, GetResString(IDS_PPG_FILES_TT_FILECOMPLETEARGS));
 }
 
 void CPPgFiles::LoadSettings()

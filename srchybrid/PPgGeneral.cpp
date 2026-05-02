@@ -166,30 +166,14 @@ void CPPgGeneral::UpdateToolTips()
 	if (!m_toolTip.Init(this))
 		return;
 
-	m_toolTip.SetTool(this, IDC_ONLINESIG,
-		_T("Writes the legacy status file onlinesig.dat for external pages, scripts, or widgets that read eMule status.\r\n\r\n")
-		_T("It does not improve transfer speed or networking. Leave it off unless you actively consume that file somewhere."));
-	m_toolTip.SetTool(this, IDC_BRINGTOFOREGROUND,
-		_T("Brings eMule to the foreground when a handled ed2k link or similar external action targets the app.\r\n\r\n")
-		_T("Enable it if you want link clicks to reveal eMule immediately. Leave it off if you prefer background handling."));
-	m_toolTip.SetTool(this, IDC_CHECK4UPDATE,
-		_T("Checks GitHub Releases on startup when the configured interval has elapsed and only alerts when a newer eMule BB package is available.\r\n\r\n")
-		_T("Leave it off for a quiet startup, or enable it if you want a periodic update check."));
-	m_toolTip.SetTool(this, IDC_PREVENTSTANDBY,
-		_T("Blocks system standby while eMule is running so long transfers, Kad, and server sessions are not interrupted.\r\n\r\n")
-		_T("Recommended: enabled on desktops or dedicated boxes. Disable it if you want the machine's normal sleep policy to win."));
-	m_toolTip.SetTool(this, IDC_WEBSVEDIT,
-		_T("Edits the configured web-services list used by helper actions such as web lookups from the UI.\r\n\r\n")
-		_T("You normally only need this if you want to customize or repair those external lookup entries."));
-	m_toolTip.SetTool(this, IDC_ED2KFIX,
-		_T("Repairs the Windows ed2k link registration so browser and shell ed2k links open in eMule again.\r\n\r\n")
-		_T("Use it when ed2k links stop launching eMule or were stolen by another client."));
-	m_toolTip.SetTool(this, IDC_STARTMIN,
-		_T("Starts eMule minimized instead of opening the main window immediately.\r\n\r\n")
-		_T("Useful for unattended startup. Leave it off if you usually want to inspect the UI right away."));
-	m_toolTip.SetTool(this, IDC_STARTWIN,
-		_T("Registers eMule to start with Windows for the current user.\r\n\r\n")
-		_T("Enable it only on machines where eMule is meant to run persistently in the background."));
+	m_toolTip.SetTool(this, IDC_ONLINESIG, GetResString(IDS_PPG_GENERAL_TT_ONLINESIG));
+	m_toolTip.SetTool(this, IDC_BRINGTOFOREGROUND, GetResString(IDS_PPG_GENERAL_TT_BRINGTOFOREGROUND));
+	m_toolTip.SetTool(this, IDC_CHECK4UPDATE, GetResString(IDS_PPG_GENERAL_TT_CHECK4_UPDATE));
+	m_toolTip.SetTool(this, IDC_PREVENTSTANDBY, GetResString(IDS_PPG_GENERAL_TT_PREVENTSTANDBY));
+	m_toolTip.SetTool(this, IDC_WEBSVEDIT, GetResString(IDS_PPG_GENERAL_TT_WEBSVEDIT));
+	m_toolTip.SetTool(this, IDC_ED2KFIX, GetResString(IDS_PPG_GENERAL_TT_ED2_KFIX));
+	m_toolTip.SetTool(this, IDC_STARTMIN, GetResString(IDS_PPG_GENERAL_TT_STARTMIN));
+	m_toolTip.SetTool(this, IDC_STARTWIN, GetResString(IDS_PPG_GENERAL_TT_STARTWIN));
 }
 
 void ModifyAllWindowStyles(CWnd *pWnd, DWORD dwRemove, DWORD dwAdd)
