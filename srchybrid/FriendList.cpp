@@ -148,6 +148,13 @@ void CFriendList::ShowFriends() const
 	m_wndOutput->UpdateList();
 }
 
+void CFriendList::CopyFriends(CArray<CFriend*, CFriend*> &rFriends) const
+{
+	rFriends.RemoveAll();
+	for (POSITION pos = m_listFriends.GetHeadPosition(); pos != NULL;)
+		rFriends.Add(m_listFriends.GetNext(pos));
+}
+
 //You can add a friend without an IP to allow the IRC to trade links with lowID users.
 bool CFriendList::AddFriend(const uchar *abyUserhash, uint32 dwLastSeen, uint32 dwLastUsedIP, uint16 nLastUsedPort,
 	uint32 dwLastChatted, LPCTSTR pszName, uint32 dwHasHash)

@@ -255,19 +255,19 @@ inline bool TryParseSearchStartRequest(const json &rParams, SSearchStartRequest 
 	}
 
 	rRequest.strExtension.clear();
-	if (rParams.contains("ext")) {
-		if (!rParams["ext"].is_string()) {
-			rError = "ext must be a string";
+	if (rParams.contains("extension")) {
+		if (!rParams["extension"].is_string()) {
+			rError = "extension must be a string";
 			return false;
 		}
-		rRequest.strExtension = rParams["ext"].get<std::string>();
+		rRequest.strExtension = rParams["extension"].get<std::string>();
 	}
 
 	rRequest.ullMinSize = 0;
 	rRequest.bHasMinSize = false;
-	if (rParams.contains("min_size")) {
-		if (!TryParseNonNegativeUInt64(rParams["min_size"], rRequest.ullMinSize)) {
-			rError = "min_size must be an unsigned number";
+	if (rParams.contains("minSizeBytes")) {
+		if (!TryParseNonNegativeUInt64(rParams["minSizeBytes"], rRequest.ullMinSize)) {
+			rError = "minSizeBytes must be an unsigned number";
 			return false;
 		}
 		rRequest.bHasMinSize = true;
@@ -275,9 +275,9 @@ inline bool TryParseSearchStartRequest(const json &rParams, SSearchStartRequest 
 
 	rRequest.ullMaxSize = 0;
 	rRequest.bHasMaxSize = false;
-	if (rParams.contains("max_size")) {
-		if (!TryParseNonNegativeUInt64(rParams["max_size"], rRequest.ullMaxSize)) {
-			rError = "max_size must be an unsigned number";
+	if (rParams.contains("maxSizeBytes")) {
+		if (!TryParseNonNegativeUInt64(rParams["maxSizeBytes"], rRequest.ullMaxSize)) {
+			rError = "maxSizeBytes must be an unsigned number";
 			return false;
 		}
 		rRequest.bHasMaxSize = true;
@@ -304,10 +304,10 @@ inline bool TryParseTransfersListRequest(const json &rParams, STransfersListRequ
 		rRequest.strFilterLower = ToLowerAscii(rParams["filter"].get<std::string>());
 	}
 
-	if (rParams.contains("category")) {
+	if (rParams.contains("categoryId")) {
 		uint64_t uCategory = 0;
-		if (!TryParseNonNegativeUInt64(rParams["category"], uCategory) || uCategory > UINT_MAX) {
-			rError = "category must be an unsigned number";
+		if (!TryParseNonNegativeUInt64(rParams["categoryId"], uCategory) || uCategory > UINT_MAX) {
+			rError = "categoryId must be an unsigned number";
 			return false;
 		}
 		rRequest.uCategory = static_cast<unsigned>(uCategory);
@@ -351,7 +351,7 @@ inline bool TryParseTransferBulkMutationRequest(const json &rParams, STransferBu
 	rRequest.hashes.clear();
 	for (const json &hashValue : rParams["hashes"])
 		rRequest.hashes.push_back(hashValue);
-	rRequest.bDeleteFiles = rParams.value("deleteFiles", rParams.value("delete_files", false));
+	rRequest.bDeleteFiles = rParams.value("deleteFiles", false);
 	return true;
 }
 
@@ -409,13 +409,13 @@ inline bool TryParseSharedFileRatingCommentRequest(const json &rParams, SSharedF
 inline bool TryParseSearchId(const json &rValue, uint32_t &ruSearchID, std::string &rError)
 {
 	if (!rValue.is_string()) {
-		rError = "search_id must be a decimal string";
+		rError = "searchId must be a decimal string";
 		return false;
 	}
 
 	const std::string strValue = rValue.get<std::string>();
 	if (strValue.empty()) {
-		rError = "search_id must not be empty";
+		rError = "searchId must not be empty";
 		return false;
 	}
 
@@ -423,7 +423,7 @@ inline bool TryParseSearchId(const json &rValue, uint32_t &ruSearchID, std::stri
 	errno = 0;
 	const unsigned long uValue = std::strtoul(strValue.c_str(), &pEnd, 10);
 	if (errno != 0 || pEnd == nullptr || *pEnd != '\0' || uValue > UINT32_MAX) {
-		rError = "search_id must be a valid uint32 decimal string";
+		rError = "searchId must be a valid uint32 decimal string";
 		return false;
 	}
 

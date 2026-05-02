@@ -41,6 +41,7 @@ public:
 	void		RemoveAllFriendSlots();
 	void		Process();
 	INT_PTR		GetCount() const					{ return m_listFriends.GetCount(); }
+	void		CopyFriends(CArray<CFriend*, CFriend*> &rFriends) const;
 
 private:
 	CTypedPtrList<CPtrList, CFriend*>	m_listFriends;

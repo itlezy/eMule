@@ -105,6 +105,7 @@
 #include "ClientCredits.h"
 #include "ReleaseUpdateCheck.h"
 #include "Version.h"
+#include "WebServerJson.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -349,6 +350,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	// Web Server messages
 	ON_MESSAGE(WEB_GUI_INTERACTION, OnWebGUIInteraction)
 	ON_MESSAGE(WEB_CLEAR_COMPLETED, OnWebServerClearCompleted)
+	ON_MESSAGE(WEB_REST_API_COMMAND, OnWebRestApiCommand)
 	ON_MESSAGE(WEB_FILE_RENAME, OnWebServerFileRename)
 	ON_MESSAGE(WEB_ADDDOWNLOADS, OnWebAddDownloads)
 	ON_MESSAGE(WEB_CATPRIO, OnWebSetCatPrio)
@@ -3811,6 +3813,12 @@ LRESULT CemuleDlg::OnWebServerFileRename(WPARAM wParam, LPARAM lParam)
 	reinterpret_cast<CPartFile*>(wParam)->UpdateDisplayedInfo();
 	sharedfileswnd->sharedfilesctrl.UpdateFile(reinterpret_cast<CKnownFile*>(wParam));
 
+	return 0;
+}
+
+LRESULT CemuleDlg::OnWebRestApiCommand(WPARAM, LPARAM lParam)
+{
+	WebServerJson::RunDispatchedCommand(reinterpret_cast<void*>(lParam));
 	return 0;
 }
 

@@ -317,6 +317,7 @@ protected:
 	//Web Interface
 	afx_msg LRESULT OnWebGUIInteraction(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebServerClearCompleted(WPARAM wParam, LPARAM lParam);
+	afx_msg LRESULT OnWebRestApiCommand(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebServerFileRename(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebAddDownloads(WPARAM wParam, LPARAM lParam);
 	afx_msg LRESULT OnWebSetCatPrio(WPARAM wParam, LPARAM lParam);

@@ -81,7 +81,7 @@ inline ETransferPriority ParseTransferPriorityName(const char *pszPriority)
 		return ETransferPriority::Invalid;
 	if (strcmp(pszPriority, "auto") == 0)
 		return ETransferPriority::Auto;
-	if (strcmp(pszPriority, "very_low") == 0)
+	if (strcmp(pszPriority, "veryLow") == 0)
 		return ETransferPriority::VeryLow;
 	if (strcmp(pszPriority, "low") == 0)
 		return ETransferPriority::Low;
@@ -89,7 +89,7 @@ inline ETransferPriority ParseTransferPriorityName(const char *pszPriority)
 		return ETransferPriority::Normal;
 	if (strcmp(pszPriority, "high") == 0)
 		return ETransferPriority::High;
-	if (strcmp(pszPriority, "very_high") == 0)
+	if (strcmp(pszPriority, "veryHigh") == 0)
 		return ETransferPriority::VeryHigh;
 	return ETransferPriority::Invalid;
 }
@@ -101,13 +101,13 @@ inline EMutablePreference ParseMutablePreferenceName(const char *pszPreferenceNa
 {
 	if (pszPreferenceName == nullptr || pszPreferenceName[0] == '\0')
 		return EMutablePreference::Invalid;
-	if (strcmp(pszPreferenceName, "maxUploadKiB") == 0)
+	if (strcmp(pszPreferenceName, "uploadLimitKiBps") == 0)
 		return EMutablePreference::MaxUploadKiB;
-	if (strcmp(pszPreferenceName, "maxDownloadKiB") == 0)
+	if (strcmp(pszPreferenceName, "downloadLimitKiBps") == 0)
 		return EMutablePreference::MaxDownloadKiB;
 	if (strcmp(pszPreferenceName, "maxConnections") == 0)
 		return EMutablePreference::MaxConnections;
-	if (strcmp(pszPreferenceName, "maxConPerFive") == 0)
+	if (strcmp(pszPreferenceName, "maxConnectionsPerFiveSeconds") == 0)
 		return EMutablePreference::MaxConPerFive;
 	if (strcmp(pszPreferenceName, "maxSourcesPerFile") == 0)
 		return EMutablePreference::MaxSourcesPerFile;
