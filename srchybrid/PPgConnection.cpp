@@ -388,10 +388,10 @@ void CPPgConnection::UpdateToolTips()
 		_T("Upper limit for simultaneous connections eMule may keep open.\r\n\r\n")
 		_T("Higher values are not automatically better. Leave this near the tuned default unless you are diagnosing a specific network limitation."));
 	m_toolTip.SetTool(this, IDC_DOWNLOAD_CAP,
-		_T("Your configured downstream capacity. eMule uses this as an upper reference for sliders and bandwidth decisions.\r\n\r\n")
+		_T("Your configured downstream capacity in KiB/s. eMule uses this as an upper reference for sliders and bandwidth decisions.\r\n\r\n")
 		_T("Set it close to your real usable line rate, not the marketing maximum."));
 	m_toolTip.SetTool(this, IDC_UPLOAD_CAP,
-		_T("Your configured upstream capacity. eMule uses this as an upper reference for upload control.\r\n\r\n")
+		_T("Your configured upstream capacity in KiB/s. eMule uses this as an upper reference for upload control.\r\n\r\n")
 		_T("Set it close to the real usable sustained upload rate of your line."));
 	m_toolTip.SetTool(this, IDC_NETWORK_ED2K,
 		_T("Enables the classic eD2K server network.\r\n\r\n")
@@ -598,12 +598,12 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_CAPACITIES_FRM, GetResString(IDS_SPEED_LIMITS));
 		SetDlgItemText(IDC_DCAP_LBL, GetResString(IDS_PW_CON_DOWNLBL));
 		SetDlgItemText(IDC_UCAP_LBL, GetResString(IDS_PW_CON_UPLBL));
-		SetDlgItemText(IDC_LIMITS_FRM, GetResString(IDS_SPEED_LIMITS));
+		SetDlgItemText(IDC_LIMITS_FRM, _T("Equivalent"));
 		SetDlgItemText(IDC_DLIMIT_LBL, GetResString(IDS_PW_CON_DOWNLBL));
 		SetDlgItemText(IDC_ULIMIT_LBL, GetResString(IDS_PW_CON_UPLBL));
 		SetDlgItemText(IDC_CONNECTION_NETWORK, GetResString(IDS_NETWORK));
-		SetDlgItemText(IDC_KBS2, GetResString(IDS_KBYTESPERSEC));
-		SetDlgItemText(IDC_KBS3, GetResString(IDS_KBYTESPERSEC));
+		SetDlgItemText(IDC_KBS2, _T("KiB/s"));
+		SetDlgItemText(IDC_KBS3, _T("KiB/s"));
 		SetDlgItemText(IDC_MAXCONN_FRM, GetResString(IDS_PW_CONLIMITS));
 		SetDlgItemText(IDC_MAXCONLABEL, GetResString(IDS_PW_MAXC));
 		SetDlgItemText(IDC_SHOWOVERHEAD, GetResString(IDS_SHOWOVERHEAD));
@@ -653,15 +653,15 @@ void CPPgConnection::OnCbnSelChangeBindInterface()
 
 void CPPgConnection::ShowLimitValues()
 {
-	static LPCTSTR const pszFmt = _T("%i %s");
+	static constexpr double kKiBPerMiB = 1024.0;
 	CString buffer;
 	const UINT uploadLimit = GetDlgItemInt(IDC_UPLOAD_CAP, NULL, FALSE);
 	const UINT downloadLimit = GetDlgItemInt(IDC_DOWNLOAD_CAP, NULL, FALSE);
 
-	buffer.Format(pszFmt, uploadLimit, (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	buffer.Format(_T("%.2f MiB/s"), static_cast<double>(uploadLimit) / kKiBPerMiB);
 	SetDlgItemText(IDC_KBS4, buffer);
 
-	buffer.Format(pszFmt, downloadLimit, (LPCTSTR)GetResString(IDS_KBYTESPERSEC));
+	buffer.Format(_T("%.2f MiB/s"), static_cast<double>(downloadLimit) / kKiBPerMiB);
 	SetDlgItemText(IDC_KBS1, buffer);
 }
 
