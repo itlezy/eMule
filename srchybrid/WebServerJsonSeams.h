@@ -377,6 +377,24 @@ inline bool TryBuildRoute(
 		rRoute.params["hash"] = route[1];
 		return true;
 	}
+	if (route.size() == 4 && route[0] == "transfers" && route[2] == "operations" && bPost) {
+		const std::string strOperation = route[3];
+		if (strOperation == "pause" || strOperation == "resume" || strOperation == "stop") {
+			rRoute.strCommand = "transfers/" + strOperation;
+			rRoute.params = body;
+			rRoute.params["hashes"] = json::array({route[1]});
+			return true;
+		}
+		if (strOperation == "recheck" || strOperation == "preview") {
+			rRoute.strCommand = "transfers/" + strOperation;
+			rRoute.params = body;
+			rRoute.params["hash"] = route[1];
+			return true;
+		}
+		rErrorCode = "NOT_FOUND";
+		rErrorMessage = "API route not found";
+		return false;
+	}
 	if (route.size() == 2 && route[0] == "transfers" && bPatch) {
 		const std::string strAction = body.value("action", std::string());
 		if (strAction == "pause" || strAction == "resume" || strAction == "stop") {
@@ -425,6 +443,18 @@ inline bool TryBuildRoute(
 		RequestItemsEnvelope(rRoute.params);
 		return true;
 	}
+	if (route.size() == 3 && route[0] == "transfers" && route[2] == "details" && bGet) {
+		rRoute.strCommand = "transfers/details";
+		rRoute.params["hash"] = route[1];
+		return true;
+	}
+	if (route.size() == 6 && route[0] == "transfers" && route[2] == "sources" && route[4] == "operations" && route[5] == "browse" && bPost) {
+		rRoute.strCommand = "transfers/source_browse";
+		rRoute.params = body;
+		rRoute.params["hash"] = route[1];
+		rRoute.params["userHash"] = route[3];
+		return true;
+	}
 	if (route.size() == 4 && route[0] == "transfers" && route[2] == "sources" && route[3] == "browse" && bPost) {
 		rRoute.strCommand = "transfers/source_browse";
 		rRoute.params = body;
@@ -448,7 +478,9 @@ inline bool TryBuildRoute(
 			rRoute.params["userHash"] = route[1];
 		return true;
 	}
-	if (route.size() == 3 && route[0] == "uploads" && route[2] == "release-slot" && bPost) {
+	if ((route.size() == 3 && route[0] == "uploads" && route[2] == "release-slot" && bPost)
+		|| (route.size() == 4 && route[0] == "uploads" && route[2] == "operations" && route[3] == "release-slot" && bPost))
+	{
 		rRoute.strCommand = "uploads/release_slot";
 		rRoute.params = body;
 		if (route[1].size() == 32)
@@ -463,6 +495,26 @@ inline bool TryBuildRoute(
 	if (route.size() == 1 && route[0] == "servers" && bPost) {
 		rRoute.strCommand = "servers/add";
 		rRoute.params = body;
+		return true;
+	}
+	if (route.size() == 3 && route[0] == "servers" && route[1] == "operations" && bPost) {
+		if (route[2] == "connect" || route[2] == "disconnect") {
+			rRoute.strCommand = "servers/" + route[2];
+			rRoute.params = body;
+			return true;
+		}
+		rErrorCode = "NOT_FOUND";
+		rErrorMessage = "API route not found";
+		return false;
+	}
+	if (route.size() == 4 && route[0] == "servers" && route[2] == "operations" && route[3] == "connect" && bPost) {
+		rRoute.strCommand = "servers/connect";
+		rRoute.params = body;
+		if (!TryCopyEndpointToken(route[1], rRoute.params)) {
+			rErrorCode = "INVALID_ARGUMENT";
+			rErrorMessage = "server id must use address:port";
+			return false;
+		}
 		return true;
 	}
 	if (route.size() == 2 && route[0] == "servers" && bPatch) {
@@ -495,6 +547,26 @@ inline bool TryBuildRoute(
 		rRoute.strCommand = "kad/status";
 		return true;
 	}
+	if (route.size() == 3 && route[0] == "kad" && route[1] == "operations" && bPost) {
+		if (route[2] == "start" || route[2] == "bootstrap") {
+			rRoute.strCommand = "kad/connect";
+			rRoute.params = body;
+			return true;
+		}
+		if (route[2] == "stop") {
+			rRoute.strCommand = "kad/disconnect";
+			rRoute.params = body;
+			return true;
+		}
+		if (route[2] == "recheck-firewall") {
+			rRoute.strCommand = "kad/recheck_firewall";
+			rRoute.params = body;
+			return true;
+		}
+		rErrorCode = "NOT_FOUND";
+		rErrorMessage = "API route not found";
+		return false;
+	}
 	if (route.size() == 1 && route[0] == "kad" && bPatch) {
 		const std::string strAction = body.value("action", std::string());
 		if (strAction == "connect" || strAction == "disconnect" || strAction == "recheck_firewall") {
@@ -514,7 +586,9 @@ inline bool TryBuildRoute(
 		rRoute.params = body;
 		return true;
 	}
-	if (route.size() == 2 && route[0] == "shared-directories" && route[1] == "reload" && bPost) {
+	if ((route.size() == 2 && route[0] == "shared-directories" && route[1] == "reload" && bPost)
+		|| (route.size() == 3 && route[0] == "shared-directories" && route[1] == "operations" && route[2] == "reload" && bPost))
+	{
 		rRoute.strCommand = "shared_directories/reload";
 		return true;
 	}
@@ -526,6 +600,10 @@ inline bool TryBuildRoute(
 	if (route.size() == 1 && route[0] == "shared-files" && bPost) {
 		rRoute.strCommand = "shared/add";
 		rRoute.params = body;
+		return true;
+	}
+	if (route.size() == 3 && route[0] == "shared-files" && route[1] == "operations" && route[2] == "reload" && bPost) {
+		rRoute.strCommand = "shared_directories/reload";
 		return true;
 	}
 	if (route.size() == 1 && route[0] == "shared-files" && bDelete) {

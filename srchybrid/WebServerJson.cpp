@@ -453,6 +453,60 @@ json BuildSourceJson(const CUpDownClient &rClient)
 	};
 }
 
+json BuildTransferSourcesJson(CPartFile &rPartFile)
+{
+	json result = json::array();
+	for (POSITION pos = rPartFile.srclist.GetHeadPosition(); pos != NULL;)
+		result.push_back(BuildSourceJson(*rPartFile.srclist.GetNext(pos)));
+	return result;
+}
+
+json BuildTransferPartsJson(CPartFile &rPartFile)
+{
+	json parts = json::array();
+	const uint64 uFileSize = static_cast<uint64>(rPartFile.GetFileSize());
+	const UINT uPartCount = rPartFile.GetPartCount();
+	for (UINT uPart = 0; uPart < uPartCount; ++uPart) {
+		const uint64 uStart = static_cast<uint64>(uPart) * PARTSIZE;
+		const uint64 uEndExclusive = min(uStart + static_cast<uint64>(PARTSIZE), uFileSize);
+		if (uEndExclusive <= uStart)
+			continue;
+
+		const uint64 uEnd = uEndExclusive - 1;
+		const uint64 uSize = uEnd - uStart + 1;
+		const uint64 uGapBytes = rPartFile.GetTotalGapSizeInRange(uStart, uEnd);
+		UINT uAvailableSources = 0;
+		for (POSITION pos = rPartFile.srclist.GetHeadPosition(); pos != NULL;) {
+			const CUpDownClient *const pClient = rPartFile.srclist.GetNext(pos);
+			if (pClient != NULL && pClient->IsPartAvailable(uPart))
+				++uAvailableSources;
+		}
+
+		parts.push_back(json{
+			{"index", uPart},
+			{"start", uStart},
+			{"end", uEnd},
+			{"size", uSize},
+			{"completedBytes", uSize >= uGapBytes ? uSize - uGapBytes : 0},
+			{"gapBytes", uGapBytes},
+			{"complete", uGapBytes == 0},
+			{"requested", rPartFile.IsAlreadyRequested(uStart, uEnd, true)},
+			{"corrupted", rPartFile.IsCorruptedPart(uPart)},
+			{"availableSources", uAvailableSources}
+		});
+	}
+	return parts;
+}
+
+json BuildTransferDetailsJson(CPartFile &rPartFile)
+{
+	return json{
+		{"transfer", BuildTransferJson(rPartFile)},
+		{"parts", BuildTransferPartsJson(rPartFile)},
+		{"sources", BuildTransferSourcesJson(rPartFile)}
+	};
+}
+
 /**
  * Serializes one shared file with non-localized counters and share metadata.
  */
@@ -2032,10 +2086,12 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		if (pPartFile == NULL)
 			return json();
 
-		json result = json::array();
-		for (POSITION pos = pPartFile->srclist.GetHeadPosition(); pos != NULL;)
-			result.push_back(BuildSourceJson(*pPartFile->srclist.GetNext(pos)));
-		return ItemsEnvelopeIfRequested(params, result);
+		return ItemsEnvelopeIfRequested(params, BuildTransferSourcesJson(*pPartFile));
+	}
+
+	if (strCommand == "transfers/details") {
+		CPartFile *pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		return pPartFile != NULL ? BuildTransferDetailsJson(*pPartFile) : json();
 	}
 
 	if (strCommand == "transfers/source_browse") {
@@ -2249,6 +2305,19 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		if (!StartPartFileRecheck(*pPartFile, rError))
 			return json();
 		return json{{"ok", true}};
+	}
+
+	if (strCommand == "transfers/preview") {
+		CPartFile *const pPartFile = FindPartFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pPartFile == NULL)
+			return json();
+		if (!pPartFile->IsReadyForPreview()) {
+			rError.strCode = "INVALID_STATE";
+			rError.strMessage = _T("transfer is not ready for preview");
+			return json();
+		}
+		pPartFile->PreviewFile();
+		return BuildTransferJson(*pPartFile);
 	}
 
 	if (strCommand == "transfers/set_priority") {
