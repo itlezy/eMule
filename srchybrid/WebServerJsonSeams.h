@@ -23,11 +23,23 @@ struct SApiRoute
 {
 	std::string strCommand;
 	json params;
+	std::string strPathTemplate;
 
 	SApiRoute()
 		: params(json::object())
 	{
 	}
+};
+
+/**
+ * @brief Describes one public REST route and its strict request surface.
+ */
+struct SApiRouteSpec
+{
+	const char *pszMethod;
+	const char *pszPathTemplate;
+	const char *pszBodyFields;
+	const char *pszQueryFields;
 };
 
 inline std::string ToLowerAscii(const std::string &rValue)
@@ -125,6 +137,30 @@ inline std::map<std::string, std::string> ParseQueryString(const std::string &rR
 	return query;
 }
 
+/**
+ * @brief Reports whether a comma-separated token list contains one exact name.
+ */
+inline bool HasToken(const char *pszTokens, const std::string &rName)
+{
+	if (pszTokens == NULL || *pszTokens == '\0')
+		return false;
+
+	const std::string tokens(pszTokens);
+	size_t uPos = 0;
+	while (uPos <= tokens.size()) {
+		const std::string::size_type uComma = tokens.find(',', uPos);
+		const std::string token = tokens.substr(
+			uPos,
+			uComma == std::string::npos ? std::string::npos : (uComma - uPos));
+		if (token == rName)
+			return true;
+		if (uComma == std::string::npos)
+			break;
+		uPos = uComma + 1;
+	}
+	return false;
+}
+
 inline std::vector<std::string> SplitPathSegments(const std::string &rPath)
 {
 	std::vector<std::string> segments;
@@ -158,6 +194,190 @@ inline bool TryParseUnsignedQueryValue(const std::map<std::string, std::string> 
 		return false;
 
 	ruValue = static_cast<uint64_t>(ullValue);
+	return true;
+}
+
+inline bool IsValidUnsignedDecimal(const std::string &rValue)
+{
+	if (rValue.empty())
+		return false;
+	char *pEnd = NULL;
+	errno = 0;
+	(void)std::strtoull(rValue.c_str(), &pEnd, 10);
+	return errno == 0 && pEnd != NULL && *pEnd == '\0';
+}
+
+inline void SetInvalidArgument(std::string &rErrorCode, std::string &rErrorMessage, const std::string &rMessage)
+{
+	rErrorCode = "INVALID_ARGUMENT";
+	rErrorMessage = rMessage;
+}
+
+/**
+ * @brief Returns the strict route table used before legacy command dispatch.
+ */
+inline const std::vector<SApiRouteSpec> &GetApiRouteSpecs()
+{
+	static const std::vector<SApiRouteSpec> specs = {
+		{"GET", "/app", "", ""},
+		{"GET", "/app/preferences", "", ""},
+		{"PATCH", "/app/preferences", "uploadLimitKiBps,downloadLimitKiBps,maxConnections,maxConnectionsPerFiveSeconds,maxSourcesPerFile,uploadClientDataRate,maxUploadSlots,queueSize,autoConnect,newAutoUp,newAutoDown,creditSystem,safeServerConnect,networkKademlia,networkEd2k", ""},
+		{"POST", "/app/shutdown", "", ""},
+		{"GET", "/status", "", ""},
+		{"GET", "/stats", "", ""},
+		{"GET", "/snapshot", "", "limit"},
+		{"GET", "/categories", "", "offset,limit"},
+		{"POST", "/categories", "name,path,comment,color,priority", ""},
+		{"GET", "/categories/{categoryId}", "", ""},
+		{"PATCH", "/categories/{categoryId}", "name,path,comment,color,priority", ""},
+		{"DELETE", "/categories/{categoryId}", "", ""},
+		{"GET", "/transfers", "", "state,categoryId,offset,limit"},
+		{"POST", "/transfers", "link,links,categoryId,categoryName", ""},
+		{"POST", "/transfers/operations/clear-completed", "", ""},
+		{"GET", "/transfers/{hash}", "", ""},
+		{"PATCH", "/transfers/{hash}", "name,priority,categoryId,categoryName", ""},
+		{"DELETE", "/transfers/{hash}", "deleteFiles", ""},
+		{"GET", "/transfers/{hash}/details", "", ""},
+		{"GET", "/transfers/{hash}/sources", "", "offset,limit"},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/browse", "", ""},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/add-friend", "", ""},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/remove-friend", "", ""},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/remove", "", ""},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/ban", "", ""},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/unban", "", ""},
+		{"POST", "/transfers/{hash}/sources/{clientId}/operations/release-slot", "", ""},
+		{"POST", "/transfers/{hash}/operations/pause", "", ""},
+		{"POST", "/transfers/{hash}/operations/resume", "", ""},
+		{"POST", "/transfers/{hash}/operations/stop", "", ""},
+		{"POST", "/transfers/{hash}/operations/recheck", "", ""},
+		{"POST", "/transfers/{hash}/operations/preview", "", ""},
+		{"GET", "/shared-files", "", "offset,limit"},
+		{"POST", "/shared-files", "path", ""},
+		{"POST", "/shared-files/operations/reload", "", ""},
+		{"GET", "/shared-files/{hash}", "", ""},
+		{"PATCH", "/shared-files/{hash}", "priority,rating,comment", ""},
+		{"DELETE", "/shared-files/{hash}", "deleteFiles", ""},
+		{"GET", "/shared-files/{hash}/ed2k-link", "", ""},
+		{"GET", "/shared-files/{hash}/comments", "", "offset,limit"},
+		{"GET", "/shared-directories", "", ""},
+		{"PATCH", "/shared-directories", "roots", ""},
+		{"POST", "/shared-directories/operations/reload", "", ""},
+		{"GET", "/uploads", "", "offset,limit"},
+		{"DELETE", "/uploads/{clientId}", "", ""},
+		{"POST", "/uploads/{clientId}/operations/remove", "", ""},
+		{"POST", "/uploads/{clientId}/operations/release-slot", "", ""},
+		{"POST", "/uploads/{clientId}/operations/add-friend", "", ""},
+		{"POST", "/uploads/{clientId}/operations/remove-friend", "", ""},
+		{"POST", "/uploads/{clientId}/operations/ban", "", ""},
+		{"POST", "/uploads/{clientId}/operations/unban", "", ""},
+		{"GET", "/upload-queue", "", "offset,limit"},
+		{"POST", "/upload-queue/{clientId}/operations/remove", "", ""},
+		{"POST", "/upload-queue/{clientId}/operations/release-slot", "", ""},
+		{"POST", "/upload-queue/{clientId}/operations/add-friend", "", ""},
+		{"POST", "/upload-queue/{clientId}/operations/remove-friend", "", ""},
+		{"POST", "/upload-queue/{clientId}/operations/ban", "", ""},
+		{"POST", "/upload-queue/{clientId}/operations/unban", "", ""},
+		{"GET", "/servers", "", "offset,limit"},
+		{"POST", "/servers", "address,port,name,priority,static,connect", ""},
+		{"POST", "/servers/operations/connect", "", ""},
+		{"POST", "/servers/operations/disconnect", "", ""},
+		{"POST", "/servers/met-url-imports", "url", ""},
+		{"GET", "/servers/{serverId}", "", ""},
+		{"PATCH", "/servers/{serverId}", "name,priority,static", ""},
+		{"DELETE", "/servers/{serverId}", "", ""},
+		{"POST", "/servers/{serverId}/operations/connect", "", ""},
+		{"GET", "/kad", "", ""},
+		{"POST", "/kad/operations/start", "", ""},
+		{"POST", "/kad/operations/stop", "", ""},
+		{"POST", "/kad/operations/bootstrap", "address,port", ""},
+		{"POST", "/kad/operations/recheck-firewall", "", ""},
+		{"POST", "/searches", "query,method,type,minSizeBytes,maxSizeBytes,minAvailability,extension,clearExisting", ""},
+		{"DELETE", "/searches", "", ""},
+		{"GET", "/searches/{searchId}", "", ""},
+		{"DELETE", "/searches/{searchId}", "", ""},
+		{"POST", "/searches/{searchId}/results/{hash}/operations/download", "categoryId,categoryName,paused", ""},
+		{"GET", "/friends", "", "offset,limit"},
+		{"POST", "/friends", "userHash,name", ""},
+		{"DELETE", "/friends/{userHash}", "", ""},
+		{"GET", "/logs", "", "offset,limit"},
+	};
+	return specs;
+}
+
+inline std::string BuildRoutePathForSpec(const std::vector<std::string> &rRoute)
+{
+	std::string path;
+	for (const std::string &segment : rRoute) {
+		path += "/";
+		path += segment;
+	}
+	return path.empty() ? "/" : path;
+}
+
+inline bool IsTemplateParameter(const std::string &rSegment)
+{
+	return rSegment.size() >= 3 && rSegment.front() == '{' && rSegment.back() == '}';
+}
+
+inline bool DoesPathMatchTemplate(const std::string &rPath, const char *pszPathTemplate)
+{
+	const std::vector<std::string> pathSegments = SplitPathSegments(rPath);
+	const std::vector<std::string> templateSegments = SplitPathSegments(pszPathTemplate != NULL ? pszPathTemplate : "");
+	if (pathSegments.size() != templateSegments.size())
+		return false;
+	for (size_t i = 0; i < pathSegments.size(); ++i) {
+		if (IsTemplateParameter(templateSegments[i])) {
+			if (pathSegments[i].empty())
+				return false;
+			continue;
+		}
+		if (pathSegments[i] != templateSegments[i])
+			return false;
+	}
+	return true;
+}
+
+inline const SApiRouteSpec *FindRouteSpec(const std::string &rMethodUpper, const std::string &rApiPath)
+{
+	const std::vector<SApiRouteSpec> &specs = GetApiRouteSpecs();
+	for (size_t i = 0; i < specs.size(); ++i) {
+		if (rMethodUpper == specs[i].pszMethod && DoesPathMatchTemplate(rApiPath, specs[i].pszPathTemplate))
+			return &specs[i];
+	}
+	return NULL;
+}
+
+inline std::string ToUpperAscii(const std::string &rValue)
+{
+	std::string result(rValue);
+	for (char &rCh : result)
+		rCh = static_cast<char>(std::toupper(static_cast<unsigned char>(rCh)));
+	return result;
+}
+
+inline bool ValidateRequestBodyFields(const json &rBody, const SApiRouteSpec &rSpec, std::string &rErrorCode, std::string &rErrorMessage)
+{
+	for (json::const_iterator it = rBody.begin(); it != rBody.end(); ++it) {
+		if (!HasToken(rSpec.pszBodyFields, it.key())) {
+			SetInvalidArgument(rErrorCode, rErrorMessage, "unknown JSON field: " + it.key());
+			return false;
+		}
+	}
+	return true;
+}
+
+inline bool ValidateQueryFields(const std::map<std::string, std::string> &rQuery, const SApiRouteSpec &rSpec, std::string &rErrorCode, std::string &rErrorMessage)
+{
+	for (std::map<std::string, std::string>::const_iterator it = rQuery.begin(); it != rQuery.end(); ++it) {
+		if (!HasToken(rSpec.pszQueryFields, it->first)) {
+			SetInvalidArgument(rErrorCode, rErrorMessage, "unknown query parameter: " + it->first);
+			return false;
+		}
+		if ((it->first == "limit" || it->first == "offset" || it->first == "categoryId") && !IsValidUnsignedDecimal(it->second)) {
+			SetInvalidArgument(rErrorCode, rErrorMessage, it->first + " must be an unsigned number");
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -332,6 +552,19 @@ inline bool TryBuildRoute(
 		rErrorMessage = "API route not found";
 		return false;
 	}
+
+	const std::string strApiPath(BuildRoutePathForSpec(route));
+	const SApiRouteSpec *const pRouteSpec = FindRouteSpec(ToUpperAscii(rMethod), strApiPath);
+	if (pRouteSpec == NULL) {
+		rErrorCode = "NOT_FOUND";
+		rErrorMessage = "API route not found";
+		return false;
+	}
+	rRoute.strPathTemplate = pRouteSpec->pszPathTemplate;
+	if (!ValidateQueryFields(query, *pRouteSpec, rErrorCode, rErrorMessage))
+		return false;
+	if (!ValidateRequestBodyFields(body, *pRouteSpec, rErrorCode, rErrorMessage))
+		return false;
 
 	if (route.size() == 1 && route[0] == "app" && bGet) {
 		rRoute.strCommand = "app/version";

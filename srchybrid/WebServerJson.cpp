@@ -3210,7 +3210,8 @@ json BuildErrorEnvelope(LPCSTR pszCode, const CString &strMessage)
 	return json{
 		{"error", json{
 			{"code", pszCode != NULL ? pszCode : "EMULE_ERROR"},
-			{"message", StdUtf8FromCString(strMessage)}
+			{"message", StdUtf8FromCString(strMessage)},
+			{"details", json::object()}
 		}}
 	};
 }
