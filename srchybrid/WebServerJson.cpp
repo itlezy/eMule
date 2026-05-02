@@ -1090,6 +1090,102 @@ bool TryApplySharedFileRatingComment(CKnownFile &rKnownFile, const json &rParams
 }
 
 /**
+ * Parses the upload-priority vocabulary accepted for shared files.
+ */
+bool TryGetSharedUploadPriorityParam(const json &rValue, uint8 &ruPriority, bool &rbAuto, SPipeApiError &rError)
+{
+	if (!rValue.is_string()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("priority must be a string");
+		return false;
+	}
+
+	const std::string strPriority = WebServerJsonSeams::ToLowerAscii(rValue.get<std::string>());
+	if (strPriority == "auto") {
+		rbAuto = true;
+		ruPriority = PR_HIGH;
+		return true;
+	}
+	rbAuto = false;
+	if (strPriority == "very_low") {
+		ruPriority = PR_VERYLOW;
+		return true;
+	}
+	if (strPriority == "low") {
+		ruPriority = PR_LOW;
+		return true;
+	}
+	if (strPriority == "normal") {
+		ruPriority = PR_NORMAL;
+		return true;
+	}
+	if (strPriority == "high") {
+		ruPriority = PR_HIGH;
+		return true;
+	}
+	if (strPriority == "very_high" || strPriority == "release") {
+		ruPriority = PR_VERYHIGH;
+		return true;
+	}
+
+	rError.strCode = "INVALID_ARGUMENT";
+	rError.strMessage = _T("priority must be one of auto, very_low, low, normal, high, very_high, release");
+	return false;
+}
+
+/**
+ * Serializes local known-file comment metadata as a stable comments collection.
+ */
+json BuildSharedFileCommentsJson(CKnownFile &rKnownFile)
+{
+	json comments = json::array();
+	const CString strComment(rKnownFile.GetFileComment());
+	const UINT uRating = rKnownFile.GetFileRating();
+	if (!strComment.IsEmpty() || uRating != 0) {
+		comments.push_back(json{
+			{"source", "local"},
+			{"userName", nullptr},
+			{"fileName", StdUtf8FromCString(rKnownFile.GetFileName())},
+			{"comment", StdUtf8FromCString(strComment)},
+			{"rating", uRating}
+		});
+	}
+	return comments;
+}
+
+/**
+ * Locates a visible search result by search id and file hash.
+ */
+const CSearchFile* FindSearchResultByHash(const uint32 uSearchID, const uchar *pHash, SPipeApiError &rError)
+{
+	if (theApp.emuledlg == NULL || theApp.emuledlg->searchwnd == NULL || theApp.emuledlg->searchwnd->m_pwndResults == NULL || theApp.searchlist == NULL) {
+		rError.strCode = "EMULE_UNAVAILABLE";
+		rError.strMessage = _T("search window is not available");
+		return NULL;
+	}
+	if (theApp.emuledlg->searchwnd->m_pwndResults->GetSearchResultsParams(uSearchID) == NULL) {
+		rError.strCode = "NOT_FOUND";
+		rError.strMessage = _T("search not found");
+		return NULL;
+	}
+
+	CArray<const CSearchFile*, const CSearchFile*> aResults;
+	if (!theApp.searchlist->GetVisibleResults(uSearchID, aResults)) {
+		rError.strCode = "NOT_FOUND";
+		rError.strMessage = _T("search not found");
+		return NULL;
+	}
+	for (INT_PTR i = 0; i < aResults.GetCount(); ++i) {
+		if (memcmp(aResults[i]->GetFileHash(), pHash, MDX_DIGEST_SIZE) == 0)
+			return aResults[i];
+	}
+
+	rError.strCode = "NOT_FOUND";
+	rError.strMessage = _T("search result not found");
+	return NULL;
+}
+
+/**
  * Parses and validates a 32-character MD4 hash parameter.
  */
 bool TryDecodeHash(const json &rValue, uchar *pOutHash, SPipeApiError &rError)
@@ -1108,6 +1204,23 @@ bool TryDecodeHash(const json &rValue, uchar *pOutHash, SPipeApiError &rError)
 	}
 
 	return true;
+}
+
+/**
+ * Resolves one shared file by public hash and emits a standard REST error.
+ */
+CKnownFile* FindSharedFileByHash(const json &rValue, SPipeApiError &rError)
+{
+	uchar hash[MDX_DIGEST_SIZE];
+	if (!TryDecodeHash(rValue, hash, rError))
+		return NULL;
+
+	CKnownFile *const pKnownFile = theApp.sharedfiles->GetFileByID(hash);
+	if (pKnownFile == NULL) {
+		rError.strCode = "NOT_FOUND";
+		rError.strMessage = _T("shared file not found");
+	}
+	return pKnownFile;
 }
 
 /**
@@ -2090,37 +2203,64 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "shared/get") {
-		uchar hash[MDX_DIGEST_SIZE];
-		if (!TryDecodeHash(params.contains("hash") ? params["hash"] : json(), hash, rError))
+		CKnownFile *const pKnownFile = FindSharedFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pKnownFile == NULL)
 			return json();
-
-		CKnownFile *const pKnownFile = theApp.sharedfiles->GetFileByID(hash);
-		if (pKnownFile == NULL) {
-			rError.strCode = "NOT_FOUND";
-			rError.strMessage = _T("shared file not found");
-			return json();
-		}
 		return BuildSharedFileJson(*pKnownFile);
 	}
 
-	if (strCommand == "shared/set_rating_comment") {
-		uchar hash[MDX_DIGEST_SIZE];
-		if (!TryDecodeHash(params.contains("hash") ? params["hash"] : json(), hash, rError))
+	if (strCommand == "shared/ed2k_link") {
+		CKnownFile *const pKnownFile = FindSharedFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pKnownFile == NULL)
 			return json();
+		return json{
+			{"hash", StdUtf8FromCString(HashToHex(pKnownFile->GetFileHash()))},
+			{"link", StdUtf8FromCString(pKnownFile->GetED2kLink())}
+		};
+	}
 
-		CKnownFile *const pKnownFile = theApp.sharedfiles->GetFileByID(hash);
-		if (pKnownFile == NULL) {
-			rError.strCode = "NOT_FOUND";
-			rError.strMessage = _T("shared file not found");
+	if (strCommand == "shared/comments") {
+		CKnownFile *const pKnownFile = FindSharedFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pKnownFile == NULL)
 			return json();
-		}
+		return ItemsEnvelopeIfRequested(params, BuildSharedFileCommentsJson(*pKnownFile));
+	}
+
+	if (strCommand == "shared/set_rating_comment") {
+		CKnownFile *const pKnownFile = FindSharedFileByHash(params.contains("hash") ? params["hash"] : json(), rError);
+		if (pKnownFile == NULL)
+			return json();
 		if (pKnownFile->IsPartFile()) {
 			rError.strCode = "INVALID_ARGUMENT";
-			rError.strMessage = _T("part files cannot have shared-file rating/comment metadata set through this endpoint");
+			rError.strMessage = _T("part files cannot be updated through this endpoint");
 			return json();
 		}
-		if (!TryApplySharedFileRatingComment(*pKnownFile, params, rError))
+
+		if (params.contains("priority")) {
+			uint8 uPriority = PR_NORMAL;
+			bool bAuto = false;
+			if (!TryGetSharedUploadPriorityParam(params["priority"], uPriority, bAuto, rError))
+				return json();
+			if (bAuto) {
+				pKnownFile->SetAutoUpPriority(true);
+				pKnownFile->UpdateAutoUpPriority();
+			} else {
+				pKnownFile->SetAutoUpPriority(false);
+				pKnownFile->SetUpPriority(uPriority);
+			}
+			InvokeWebGuiInteraction(WEBGUIIA_UPD_SFUPDATE, reinterpret_cast<LPARAM>(pKnownFile));
+		}
+
+		if (params.contains("comment") || params.contains("rating")) {
+			if (!TryApplySharedFileRatingComment(*pKnownFile, params, rError))
+				return json();
+		}
+
+		if (!params.contains("priority") && !params.contains("comment") && !params.contains("rating")) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("shared-file PATCH requires priority, comment, or rating");
 			return json();
+		}
 
 		RefreshSharedFilesUi();
 		return BuildSharedFileJson(*pKnownFile);
@@ -2213,6 +2353,16 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			rError.strMessage = _T("client does not currently hold an upload slot");
 			return json();
 		}
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "transfers/clear_completed") {
+		if (theApp.emuledlg == NULL || theApp.emuledlg->GetSafeHwnd() == NULL) {
+			rError.strCode = "EMULE_UNAVAILABLE";
+			rError.strMessage = _T("main window is not available");
+			return json();
+		}
+		theApp.emuledlg->SendMessage(WEB_CLEAR_COMPLETED, static_cast<WPARAM>(0), static_cast<LPARAM>(-1));
 		return json{{"ok", true}};
 	}
 
@@ -2727,6 +2877,73 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 		theApp.emuledlg->searchwnd->m_pwndResults->CancelSearch(uSearchID);
 		return json{{"ok", true}};
+	}
+
+	if (strCommand == "search/clear") {
+		if (theApp.emuledlg == NULL || theApp.emuledlg->searchwnd == NULL) {
+			rError.strCode = "EMULE_UNAVAILABLE";
+			rError.strMessage = _T("search window is not available");
+			return json();
+		}
+		InvokeWebGuiInteraction(WEBGUIIA_DELETEALLSEARCHES);
+		return json{{"ok", true}};
+	}
+
+	if (strCommand == "search/download_result") {
+		uint32 uSearchID = 0;
+		if (!TryGetSearchId(params.contains("search_id") ? params["search_id"] : json(), uSearchID, rError))
+			return json();
+
+		uchar hash[MDX_DIGEST_SIZE];
+		if (!TryDecodeHash(params.contains("hash") ? params["hash"] : json(), hash, rError))
+			return json();
+		const CSearchFile *const pSearchFile = FindSearchResultByHash(uSearchID, hash, rError);
+		if (pSearchFile == NULL)
+			return json();
+
+		uint8 uPaused = 2;
+		if (params.contains("paused")) {
+			if (!params["paused"].is_boolean()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("paused must be a boolean");
+				return json();
+			}
+			uPaused = params["paused"].get<bool>() ? 1 : 0;
+		}
+
+		UINT uCategory = 0;
+		if (params.contains("category")) {
+			uint64_t uRequestedCategory = 0;
+			if (!WebApiCommandSeams::TryParseNonNegativeUInt64(params["category"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("category must be an unsigned number");
+				return json();
+			}
+			uCategory = static_cast<UINT>(uRequestedCategory);
+		} else if (params.contains("categoryName")) {
+			if (!params["categoryName"].is_string()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryName must be a string");
+				return json();
+			}
+			if (!TryResolveCategoryName(CStringFromStdUtf8(params["categoryName"].get<std::string>()), uCategory)) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryName does not match a configured category");
+				return json();
+			}
+		}
+		if (uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("category is out of range");
+			return json();
+		}
+
+		theApp.downloadqueue->AddSearchToDownload(const_cast<CSearchFile*>(pSearchFile), uPaused, static_cast<int>(uCategory));
+		return json{
+			{"ok", true},
+			{"searchId", StdUtf8FromCString(FormatSearchId(uSearchID))},
+			{"hash", StdUtf8FromCString(HashToHex(hash))}
+		};
 	}
 
 	if (strCommand == "log/get") {

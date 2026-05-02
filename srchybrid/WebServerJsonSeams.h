@@ -372,6 +372,11 @@ inline bool TryBuildRoute(
 		rRoute.params = body;
 		return true;
 	}
+	if (route.size() == 3 && route[0] == "transfers" && route[1] == "operations" && route[2] == "clear-completed" && bPost) {
+		rRoute.strCommand = "transfers/clear_completed";
+		rRoute.params = body;
+		return true;
+	}
 	if (route.size() == 2 && route[0] == "transfers" && bGet) {
 		rRoute.strCommand = "transfers/get";
 		rRoute.params["hash"] = route[1];
@@ -633,6 +638,17 @@ inline bool TryBuildRoute(
 		rRoute.params["hash"] = route[1];
 		return true;
 	}
+	if (route.size() == 3 && route[0] == "shared-files" && route[2] == "ed2k-link" && bGet) {
+		rRoute.strCommand = "shared/ed2k_link";
+		rRoute.params["hash"] = route[1];
+		return true;
+	}
+	if (route.size() == 3 && route[0] == "shared-files" && route[2] == "comments" && bGet) {
+		rRoute.strCommand = "shared/comments";
+		rRoute.params["hash"] = route[1];
+		RequestItemsEnvelope(rRoute.params);
+		return true;
+	}
 	if (route.size() == 2 && route[0] == "shared-files" && bGet) {
 		rRoute.strCommand = "shared/get";
 		rRoute.params["hash"] = route[1];
@@ -647,6 +663,18 @@ inline bool TryBuildRoute(
 	if (route.size() == 1 && route[0] == "searches" && bPost) {
 		rRoute.strCommand = "search/start";
 		rRoute.params = body;
+		return true;
+	}
+	if (route.size() == 1 && route[0] == "searches" && bDelete) {
+		rRoute.strCommand = "search/clear";
+		rRoute.params = body;
+		return true;
+	}
+	if (route.size() == 6 && route[0] == "searches" && route[2] == "results" && route[4] == "operations" && route[5] == "download" && bPost) {
+		rRoute.strCommand = "search/download_result";
+		rRoute.params = body;
+		rRoute.params["search_id"] = route[1];
+		rRoute.params["hash"] = route[3];
 		return true;
 	}
 	if (route.size() == 2 && route[0] == "searches" && bGet) {
