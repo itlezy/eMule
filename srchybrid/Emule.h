@@ -279,10 +279,7 @@ public:
 	bool		IsModernThemedControlsActive() const;
 	void		RefreshStartupBindBlockState();
 
-	bool		GetLangHelpFilePath(CString &strResult);
-	void		SetHelpFilePath(LPCTSTR pszHelpFilePath);
 	void		ShowHelp(UINT uTopic, UINT uCmd = HELP_CONTEXT);
-	bool		ShowWebHelp(UINT uTopic);
 
 	// Elandal:ThreadSafeLogging -->
 	// thread safe log calls

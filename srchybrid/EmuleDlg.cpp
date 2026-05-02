@@ -27,7 +27,6 @@
 #define MMNOMMIO		// mmsystem: Multimedia file I/O support
 #define MMNOMMSYSTEM	// mmsystem: General MMSYSTEM functions
 #include <Mmsystem.h>
-#include <HtmlHelp.h>
 #include <share.h>
 #include <dbt.h>
 #include <dwmapi.h>
@@ -3436,69 +3435,6 @@ BOOL CemuleDlg::PreTranslateMessage(MSG *pMsg)
 		}
 
 	return bResult;
-}
-
-void CemuleDlg::HtmlHelp(DWORD_PTR dwData, UINT nCmd)
-{
-	CWinApp *pApp = AfxGetApp();
-	ASSERT_VALID(pApp);
-	ASSERT(pApp->m_pszHelpFilePath != NULL);
-	// to use HtmlHelp the method EnableHtmlHelp() must be called in
-	// application's constructor
-	ASSERT(pApp->m_eHelpType == afxHTMLHelp);
-
-	CWaitCursor wait;
-
-	PrepareForHelp();
-
-	// need to use top level parent (for the case where m_hWnd is in DLL)
-	CWnd *pWnd = GetTopLevelParent();
-
-	TRACE(traceAppMsg, 0, _T("HtmlHelp: pszHelpFile = '%s', dwData: $%lx, fuCommand: %d.\n"), pApp->m_pszHelpFilePath, dwData, nCmd);
-
-	bool bHelpError = false;
-	CString strHelpError;
-	for (int iTry = 0; iTry < 2; ++iTry) {
-		if (AfxHtmlHelp(pWnd->m_hWnd, pApp->m_pszHelpFilePath, nCmd, dwData))
-			return;
-		bHelpError = true;
-		strHelpError.LoadString(AFX_IDP_FAILED_TO_LAUNCH_HELP);
-
-		typedef struct tagHH_LAST_ERROR
-		{
-			int		cbStruct;
-			HRESULT	hr;
-			BSTR	description;
-		} HH_LAST_ERROR;
-		HH_LAST_ERROR hhLastError = {};
-		hhLastError.cbStruct = (int)sizeof hhLastError;
-		if (!AfxHtmlHelp(pWnd->m_hWnd, NULL, HH_GET_LAST_ERROR, reinterpret_cast<DWORD_PTR>(&hhLastError))) {
-			if (FAILED(hhLastError.hr)) {
-				if (hhLastError.description) {
-					strHelpError = hhLastError.description;
-					SysFreeString(hhLastError.description);
-				}
-				if ((ULONG)hhLastError.hr == 0x8004020Aul  /*no topics IDs available in Help file*/
-					|| (ULONG)hhLastError.hr == 0x8004020Bul) /*requested Help topic ID not found*/
-				{
-					// try opening once again without help topic ID
-					if (nCmd != HH_DISPLAY_TOC) {
-						nCmd = HH_DISPLAY_TOC;
-						dwData = 0;
-						continue;
-					}
-				}
-			}
-		}
-		break;
-	}
-
-	if (bHelpError) {
-		CString msg;
-		msg.Format(_T("%s\n\n%s\n\n%s"), pApp->m_pszHelpFilePath, (LPCTSTR)strHelpError, (LPCTSTR)GetResString(IDS_ERR_NOHELP));
-		if (AfxMessageBox(msg, MB_YESNO | MB_ICONERROR) == IDYES)
-			BrowserOpen(thePrefs.GetHomepageBaseURL() + _T("/home/perl/help.cgi"), thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-	}
 }
 
 void CemuleDlg::CreateToolbarCmdIconMap()

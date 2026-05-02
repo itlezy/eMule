@@ -145,7 +145,6 @@ public:
 	virtual void OnTrayLButtonUp();
 	virtual void TrayMinimizeToTrayChange();
 	virtual void RestoreWindow();
-	virtual void HtmlHelp(DWORD_PTR dwData, UINT nCmd = 0x000F);
 
 	CTransferDlg	*transferwnd;
 	CServerWnd		*serverwnd;

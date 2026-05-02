@@ -85,6 +85,7 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 LPCTSTR const MONITOREDSHAREDJOURNALSTATE = _T("shareddir.monitor-journal.dat");
+LPCTSTR const ONLINEHELPURL = _T("https://github.com/itlezy/eMule-tooling/blob/main/docs/HELP.md");
 constexpr DWORD kMonitoredSharedFileWatchMask = FILE_NOTIFY_CHANGE_FILE_NAME | FILE_NOTIFY_CHANGE_SIZE | FILE_NOTIFY_CHANGE_LAST_WRITE;
 constexpr DWORD kMonitoredSharedDirectoryWatchMask = FILE_NOTIFY_CHANGE_DIR_NAME;
 
@@ -860,7 +861,6 @@ CemuleApp::CemuleApp(LPCTSTR lpszAppName)
 	ASSERT(m_uCurVersionCheck < 0x999);
 // MOD Note: end
 
-	EnableHtmlHelp();
 }
 
 void CemuleApp::ResetStartupProfile()
@@ -2131,41 +2131,10 @@ void CemuleApp::OnlineSig() // Added By Bouc7
 	}
 } //End Added By Bouc7
 
-bool CemuleApp::GetLangHelpFilePath(CString &strResult)
-{
-	// Change extension for help file
-	strResult = m_pszHelpFilePath;
-	WORD langID = thePrefs.GetLanguageID();
-	CString temp;
-	if (langID == MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT))
-		langID = (WORD)(-1);
-	else
-		temp.Format(_T(".%u"), langID);
-	int pos = strResult.ReverseFind(_T('\\'));   //CML
-	if (pos < 0)
-		strResult.Replace(_T(".HLP"), _T(".chm"));
-	else {
-		strResult.Truncate(pos);
-		strResult.AppendFormat(_T("\\eMule%s.chm"), (LPCTSTR)temp);
-	}
-	bool bFound = LongPathSeams::PathExists(strResult);
-	if (!bFound && langID > 0) {
-		strResult = m_pszHelpFilePath; // if not exists, use original help (English)
-		strResult.Replace(_T(".HLP"), _T(".chm"));
-	}
-	return bFound;
-}
-
-void CemuleApp::SetHelpFilePath(LPCTSTR pszHelpFilePath)
-{
-	free((void*)m_pszHelpFilePath);
-	m_pszHelpFilePath = _tcsdup(pszHelpFilePath);
-}
-
 void CemuleApp::OnHelp()
 {
 	if (m_dwPromptContext != 0) {
-		// do not call WinHelp when the error is failing to lauch help
+		// do not re-enter help when the error is failing to launch help
 		if (m_dwPromptContext != HID_BASE_PROMPT + AFX_IDP_FAILED_TO_LAUNCH_HELP)
 			ShowHelp(m_dwPromptContext);
 		return;
@@ -2175,19 +2144,13 @@ void CemuleApp::OnHelp()
 
 void CemuleApp::ShowHelp(UINT uTopic, UINT uCmd)
 {
-	CString strHelpFilePath;
-	if (GetLangHelpFilePath(strHelpFilePath) || !ShowWebHelp(uTopic)) {
-		SetHelpFilePath(strHelpFilePath);
-		WinHelpInternal(uTopic, uCmd);
-	}
-}
+	UNREFERENCED_PARAMETER(uTopic);
+	UNREFERENCED_PARAMETER(uCmd);
 
-bool CemuleApp::ShowWebHelp(UINT uTopic)
-{
-	CString strHelpURL;
-	strHelpURL.Format(_T("https://onlinehelp.emule-project.net/help.php?language=%u&topic=%u"), thePrefs.GetLanguageID(), uTopic);
-	BrowserOpen(strHelpURL, thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
-	return true;
+	const HINSTANCE hResult = BrowserOpen(ONLINEHELPURL, thePrefs.GetMuleDirectory(EMULE_EXECUTABLEDIR));
+	if (reinterpret_cast<INT_PTR>(hResult) <= 32) {
+		QueueDebugLogLineEx(LOG_ERROR, _T("Failed to open online help URL \"%s\" (ShellExecute result %Id)"), ONLINEHELPURL, reinterpret_cast<INT_PTR>(hResult));
+	}
 }
 
 int CemuleApp::GetFileTypeSystemImageIdx(LPCTSTR pszFilePath, int iLength /* = -1 */, bool bNormalsSize)
