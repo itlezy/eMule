@@ -134,6 +134,19 @@ bool RemoveMonitoredSharedRootJournalState(std::vector<SMonitoredSharedRootJourn
 	return false;
 }
 
+bool IsCurrentProcessElevated()
+{
+	HANDLE hToken = NULL;
+	if (!::OpenProcessToken(::GetCurrentProcess(), TOKEN_QUERY, &hToken))
+		return false;
+
+	TOKEN_ELEVATION elevation = {};
+	DWORD dwLength = 0;
+	const BOOL bResult = ::GetTokenInformation(hToken, TokenElevation, &elevation, sizeof(elevation), &dwLength);
+	::CloseHandle(hToken);
+	return bResult && elevation.TokenIsElevated != 0;
+}
+
 void PruneMonitoredSharedRootJournalStates(std::vector<SMonitoredSharedRootJournalState> &rStates, const CStringList &rConfiguredRoots)
 {
 	for (std::vector<SMonitoredSharedRootJournalState>::iterator it = rStates.begin(); it != rStates.end();) {
@@ -1190,6 +1203,8 @@ BOOL CemuleApp::InitInstance()
 #endif
 	if (!IsWin32LongPathsEnabled())
 		QueueLogLineEx(LOG_WARNING, _T("Windows long-path support is disabled. Enable LongPathsEnabled to avoid failures with overlong paths."));
+	if (IsCurrentProcessElevated())
+		QueueLogLineEx(LOG_WARNING, _T("eMule is running with administrator privileges. This is not recommended for normal P2P use; restart without elevation unless required."));
 
 	SetConsoleCtrlHandler(ConsoleCtrlHandler, TRUE);
 
