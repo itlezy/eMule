@@ -1556,6 +1556,83 @@ CServer* FindServerByEndpoint(const SPipeApiServerEndpoint &rEndpoint)
 }
 
 /**
+ * Converts a REST server priority token into the legacy server priority enum.
+ */
+bool TryGetServerPriorityParam(const json &rValue, UINT &ruPriority, SPipeApiError &rError)
+{
+	if (!rValue.is_string()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("priority must be a string");
+		return false;
+	}
+
+	const std::string strPriority = WebServerJsonSeams::ToLowerAscii(rValue.get<std::string>());
+	if (strPriority == "low") {
+		ruPriority = SRV_PR_LOW;
+		return true;
+	}
+	if (strPriority == "normal") {
+		ruPriority = SRV_PR_NORMAL;
+		return true;
+	}
+	if (strPriority == "high") {
+		ruPriority = SRV_PR_HIGH;
+		return true;
+	}
+
+	rError.strCode = "INVALID_ARGUMENT";
+	rError.strMessage = _T("priority must be one of low, normal, high");
+	return false;
+}
+
+/**
+ * Applies REST server fields that correspond to legacy WebServer server actions.
+ */
+bool ApplyServerPatchParams(CServer &rServer, const json &rParams, SPipeApiError &rError)
+{
+	if (rParams.contains("name")) {
+		if (!rParams["name"].is_string()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("name must be a string when provided");
+			return false;
+		}
+		rServer.SetListName(CStringFromStdUtf8(rParams["name"].get<std::string>()));
+	}
+
+	if (rParams.contains("priority")) {
+		UINT uPriority = SRV_PR_NORMAL;
+		if (!TryGetServerPriorityParam(rParams["priority"], uPriority, rError))
+			return false;
+		rServer.SetPreference(uPriority);
+	}
+
+	if (rParams.contains("static")) {
+		if (!rParams["static"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("static must be a boolean");
+			return false;
+		}
+		rServer.SetIsStaticMember(rParams["static"].get<bool>());
+		if (!theApp.serverlist->SaveStaticServers()) {
+			rError.strCode = "EMULE_ERROR";
+			rError.strMessage = _T("failed to save static server list");
+			return false;
+		}
+	}
+
+	if (!theApp.serverlist->SaveServermetToFile()) {
+		rError.strCode = "EMULE_ERROR";
+		rError.strMessage = _T("failed to save server.met");
+		return false;
+	}
+
+	if (theApp.emuledlg != NULL && theApp.emuledlg->serverwnd != NULL)
+		theApp.emuledlg->serverwnd->serverlistctrl.RefreshServer(&rServer);
+
+	return true;
+}
+
+/**
  * Marshals one legacy web action onto the main UI thread before it mutates
  * connection state owned by the dialog and socket layers.
  */
@@ -1849,11 +1926,60 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 		}
 
 		CServer *const pServer = FindServerByEndpoint(endpoint);
-		return pServer != NULL ? BuildServerJson(*pServer) : json{
+		if (pServer != NULL) {
+			if (!ApplyServerPatchParams(*pServer, params, rError))
+				return json();
+			if (params.contains("connect") && !params["connect"].is_boolean()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("connect must be a boolean");
+				return json();
+			}
+			if (params.value("connect", false))
+				InvokeWebGuiInteraction(WEBGUIIA_CONNECTTOSERVER, reinterpret_cast<LPARAM>(pServer));
+			return BuildServerJson(*pServer);
+		}
+
+		return json{
 			{"name", StdUtf8FromCString(strName)},
 			{"address", StdUtf8FromCString(endpoint.strAddress)},
 			{"port", endpoint.uPort}
 		};
+	}
+
+	if (strCommand == "servers/update") {
+		SPipeApiServerEndpoint endpoint;
+		bool bHasEndpoint = false;
+		if (!TryGetServerEndpoint(params, endpoint, bHasEndpoint, rError))
+			return json();
+		if (!bHasEndpoint) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("addr and port are required");
+			return json();
+		}
+
+		CServer *const pServer = FindServerByEndpoint(endpoint);
+		if (pServer == NULL) {
+			rError.strCode = "NOT_FOUND";
+			rError.strMessage = _T("server not found");
+			return json();
+		}
+		return ApplyServerPatchParams(*pServer, params, rError) ? BuildServerJson(*pServer) : json();
+	}
+
+	if (strCommand == "servers/import_met_url") {
+		if (!params.contains("url") || !params["url"].is_string()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("url must be a string");
+			return json();
+		}
+		const CString strURL(CStringFromStdUtf8(params["url"].get<std::string>()));
+		if (theApp.emuledlg == NULL || theApp.emuledlg->serverwnd == NULL) {
+			rError.strCode = "EMULE_ERROR";
+			rError.strMessage = _T("failed to update server.met from URL");
+			return json();
+		}
+		InvokeWebGuiInteraction(WEBGUIIA_UPDATESERVERMETFROMURL, reinterpret_cast<LPARAM>(static_cast<LPCTSTR>(strURL)));
+		return json{{"ok", true}};
 	}
 
 	if (strCommand == "servers/remove") {
@@ -1884,6 +2010,27 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 
 	if (strCommand == "kad/connect") {
 		InvokeWebGuiInteraction(WEBGUIIA_KAD_START);
+		return BuildKadStatusJson();
+	}
+
+	if (strCommand == "kad/bootstrap") {
+		if (params.contains("address") || params.contains("port")) {
+			if (!params.contains("address") || !params["address"].is_string() || !params.contains("port") || !params["port"].is_number_unsigned()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("address and port are required together for Kad bootstrap");
+				return json();
+			}
+			const unsigned uPort = params["port"].get<unsigned>();
+			if (uPort == 0 || uPort > 0xFFFFu) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("port must be between 1 and 65535");
+				return json();
+			}
+			CString strDest;
+			strDest.Format(_T("%s:%u"), static_cast<LPCTSTR>(CStringFromStdUtf8(params["address"].get<std::string>())), uPort);
+			InvokeWebGuiInteraction(WEBGUIIA_KAD_BOOTSTRAP, reinterpret_cast<LPARAM>(static_cast<LPCTSTR>(strDest)));
+		} else
+			InvokeWebGuiInteraction(WEBGUIIA_KAD_START);
 		return BuildKadStatusJson();
 	}
 

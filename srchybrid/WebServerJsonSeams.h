@@ -507,6 +507,11 @@ inline bool TryBuildRoute(
 		rErrorMessage = "API route not found";
 		return false;
 	}
+	if (route.size() == 2 && route[0] == "servers" && route[1] == "met-url-imports" && bPost) {
+		rRoute.strCommand = "servers/import_met_url";
+		rRoute.params = body;
+		return true;
+	}
 	if (route.size() == 4 && route[0] == "servers" && route[2] == "operations" && route[3] == "connect" && bPost) {
 		rRoute.strCommand = "servers/connect";
 		rRoute.params = body;
@@ -518,19 +523,25 @@ inline bool TryBuildRoute(
 		return true;
 	}
 	if (route.size() == 2 && route[0] == "servers" && bPatch) {
-		const std::string strAction = body.value("action", std::string());
-		if (strAction != "connect" && strAction != "disconnect") {
-			rErrorCode = "INVALID_ARGUMENT";
-			rErrorMessage = "server PATCH action must be connect or disconnect";
-			return false;
+		std::string strAction;
+		if (body.contains("action")) {
+			if (!body["action"].is_string()) {
+				rErrorCode = "INVALID_ARGUMENT";
+				rErrorMessage = "server PATCH action must be a string";
+				return false;
+			}
+			strAction = body["action"].get<std::string>();
 		}
-		rRoute.strCommand = "servers/" + strAction;
 		rRoute.params = body;
-		if (!TryCopyEndpointToken(route[1], rRoute.params) && strAction == "connect") {
+		if (!TryCopyEndpointToken(route[1], rRoute.params)) {
 			rErrorCode = "INVALID_ARGUMENT";
 			rErrorMessage = "server id must use address:port";
 			return false;
 		}
+		if (strAction == "connect" || strAction == "disconnect")
+			rRoute.strCommand = "servers/" + strAction;
+		else
+			rRoute.strCommand = "servers/update";
 		return true;
 	}
 	if (route.size() == 2 && route[0] == "servers" && bDelete) {
@@ -548,8 +559,13 @@ inline bool TryBuildRoute(
 		return true;
 	}
 	if (route.size() == 3 && route[0] == "kad" && route[1] == "operations" && bPost) {
-		if (route[2] == "start" || route[2] == "bootstrap") {
+		if (route[2] == "start") {
 			rRoute.strCommand = "kad/connect";
+			rRoute.params = body;
+			return true;
+		}
+		if (route[2] == "bootstrap") {
+			rRoute.strCommand = "kad/bootstrap";
 			rRoute.params = body;
 			return true;
 		}
