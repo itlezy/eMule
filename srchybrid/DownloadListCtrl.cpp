@@ -1020,6 +1020,8 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			int iFilesCanPauseOnPreview = 0;
 			int iFilesDoPauseOnPreview = 0;
 			int iFilesInCats = 0;
+			int iFilesFollowMajority = 0;
+			int iFilesFollowMajorityApplicable = 0;
 			UINT uPrioMenuItem = 0;
 			const CPartFile *file1 = NULL;
 
@@ -1043,6 +1045,10 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 				iFilesCanPauseOnPreview += static_cast<int>(pFile->IsPreviewableFileType() && !pFile->IsReadyForPreview() && pFile->CanPauseFile());
 				iFilesDoPauseOnPreview += static_cast<int>(pFile->IsPausingOnPreview());
 				iFilesInCats += static_cast<int>(!pFile->HasDefaultCategory());
+				if (pFile->GetStatus() != PS_COMPLETE && pFile->GetStatus() != PS_COMPLETING) {
+					++iFilesFollowMajorityApplicable;
+					iFilesFollowMajority += static_cast<int>(pFile->IsFollowMajorityFilenameEnabled());
+				}
 				UINT uCurPrioMenuItem;
 				if (pFile->IsAutoDownPriority())
 					uCurPrioMenuItem = MP_PRIOAUTO;
@@ -1115,6 +1121,8 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			else
 				m_FileMenu.SetDefaultItem(UINT_MAX);
 			m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, (iSelectedItems >= 1 /*&& iFilesNotDone == 1*/) ? MF_ENABLED : MF_GRAYED);
+			m_FileMenu.EnableMenuItem(MP_FOLLOWMAJORITYFILENAME, iFilesFollowMajorityApplicable > 0 ? MF_ENABLED : MF_GRAYED);
+			m_FileMenu.CheckMenuItem(MP_FOLLOWMAJORITYFILENAME, MF_BYCOMMAND | ((iFilesFollowMajorityApplicable > 0 && iFilesFollowMajority == iFilesFollowMajorityApplicable) ? MF_CHECKED : MF_UNCHECKED));
 			int total;
 			m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
 			if (thePrefs.IsExtControlsEnabled()) {
@@ -1220,6 +1228,8 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 
 		m_FileMenu.EnableMenuItem(MP_METINFO, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, MF_GRAYED);
+		m_FileMenu.EnableMenuItem(MP_FOLLOWMAJORITYFILENAME, MF_GRAYED);
+		m_FileMenu.CheckMenuItem(MP_FOLLOWMAJORITYFILENAME, MF_BYCOMMAND | MF_UNCHECKED);
 		m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
 		m_FileMenu.EnableMenuItem(thePrefs.GetShowCopyEd2kLinkCmd() ? MP_GETED2KLINK : MP_SHOWED2KLINK, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_PASTE, theApp.IsEd2kFileLinkInClipboard() ? MF_ENABLED : MF_GRAYED);
@@ -1495,7 +1505,9 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 							CPartFile *partfile = selectedList.RemoveHead();
 							if (partfile->IsPartFile()) {
 								HideSources(partfile);
+								partfile->DisableFollowMajorityFilenameForManualRename();
 								partfile->SetFileName(CleanupFilename(partfile->GetFileName()));
+								partfile->SavePartFile();
 							}
 						}
 				} else {
@@ -1505,6 +1517,7 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 						inputbox.SetEditFilenameMode();
 						if (inputbox.DoModal() == IDOK && !inputbox.GetInput().IsEmpty() && IsValidEd2kString(inputbox.GetInput())) {
 							HideSources(file);
+							file->DisableFollowMajorityFilenameForManualRename();
 							file->SetFileName(inputbox.GetInput(), true);
 							file->UpdateDisplayedInfo();
 							file->SavePartFile();
@@ -1567,6 +1580,26 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				break;
 			case MP_VIEWFILECOMMENTS:
 				ShowFileDialog(IDD_COMMENTLST);
+				break;
+			case MP_FOLLOWMAJORITYFILENAME:
+				{
+					bool bEnable = false;
+					for (POSITION pos = selectedList.GetHeadPosition(); pos != NULL;) {
+						const CPartFile *partfile = selectedList.GetNext(pos);
+						if (partfile->GetStatus() != PS_COMPLETE && partfile->GetStatus() != PS_COMPLETING && !partfile->IsFollowMajorityFilenameEnabled()) {
+							bEnable = true;
+							break;
+						}
+					}
+					while (!selectedList.IsEmpty()) {
+						CPartFile *partfile = selectedList.RemoveHead();
+						if (partfile->GetStatus() != PS_COMPLETE && partfile->GetStatus() != PS_COMPLETING) {
+							partfile->SetFollowMajorityFilename(bEnable);
+							partfile->SavePartFile();
+							partfile->UpdateDisplayedInfo();
+						}
+					}
+				}
 				break;
 			case MP_SHOWED2KLINK:
 				ShowFileDialog(IDD_ED2KLINK);
@@ -2029,6 +2062,7 @@ void CDownloadListCtrl::CreateMenus()
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_METINFO, GetResString(IDS_DL_INFO), _T("FILEINFO"));
 	m_FileMenu.AppendMenu(MF_STRING, MP_VIEWFILECOMMENTS, GetResString(IDS_CMT_SHOWALL), _T("FILECOMMENTS"));
+	m_FileMenu.AppendMenu(MF_STRING, MP_FOLLOWMAJORITYFILENAME, _T("Follow majority filename"), _T("FILERENAME"));
 	m_FileMenu.AppendMenu(MF_SEPARATOR);
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_CLEARCOMPLETED, GetResString(IDS_DL_CLEAR), _T("CLEARCOMPLETE"));

@@ -448,6 +448,7 @@ void CUpDownClient::ProcessFileInfo(CSafeMemFile &data, CPartFile *file)
 		throw GetResString(IDS_ERR_WRONGFILEID) + p;
 
 	m_strClientFilename = data.ReadString(GetUnicodeSupport() != UTF8strNone);
+	m_reqfile->UpdateSourceFileName(this);
 	if (thePrefs.GetDebugClientTCPLevel() > 0)
 		Debug(_T("  Filename=\"%s\"\n"), (LPCTSTR)m_strClientFilename);
 	// 26-Jul-2003: removed requesting the file status for files <= PARTSIZE for better compatibility with
@@ -1841,9 +1842,10 @@ bool CUpDownClient::DoSwap(CPartFile *SwapTo, bool bRemoveCompletely, LPCTSTR re
 	// function here is still (again) a performance problem, there is a more efficient way to handle
 	// the 'Find' situation. Hint: usage of a node ptr which is stored in the CUpDownClient.
 	POSITION pos = m_reqfile->srclist.Find(this);
-	if (pos)
+	if (pos) {
 		m_reqfile->srclist.RemoveAt(pos);
-	else
+		m_reqfile->RemoveSourceFileName(this);
+	} else
 		AddDebugLogLine(DLP_HIGH, true, _T("o-o Unsync between partfile->srclist and client otherfiles list. Swapping client where client has file as reqfile, but file doesn't have client in srclist. %s Remove = %s '%s'   -->   '%s'  SwapReason: %s"), (LPCTSTR)DbgGetClientInfo(), (bRemoveCompletely ? _T("Yes") : _T("No")), (LPCTSTR)m_reqfile->GetFileName(), (LPCTSTR)SwapTo->GetFileName(), reason);
 
 	// remove this client from the A4AF list of our new reqfile
@@ -1875,6 +1877,7 @@ bool CUpDownClient::DoSwap(CPartFile *SwapTo, bool bRemoveCompletely, LPCTSTR re
 	pOldRequestFile->UpdateAvailablePartsCount();
 
 	SwapTo->srclist.AddTail(this);
+	SwapTo->UpdateSourceFileName(this);
 	theApp.emuledlg->transferwnd->GetDownloadList()->AddSource(SwapTo, this, false);
 
 	return true;

@@ -121,6 +121,9 @@ protected:
 	HTREEITEM m_htiPreviewSmallBlocksForce;
 	HTREEITEM m_htiPreviewOnIconDblClk;
 	HTREEITEM m_htiShowCopyEd2kLinkCmd;
+	HTREEITEM m_htiFollowMajorityFilenameForNewDownloads;
+	HTREEITEM m_htiFollowMajorityFilenameRequiredPercent;
+	HTREEITEM m_htiFollowMajorityFilenameMinimumVotes;
 	HTREEITEM m_htiShowActiveDownloadsBold;
 	HTREEITEM m_htiUseSystemFontForMainControls;
 	HTREEITEM m_htiReBarToolbar;
@@ -168,6 +171,8 @@ protected:
 	UINT m_uMaxLogBufferKiB;
 	UINT m_uMaxChatHistoryLines;
 	UINT m_uMaxMessageSessions;
+	UINT m_uFollowMajorityFilenameRequiredPercent;
+	UINT m_uFollowMajorityFilenameMinimumVotes;
 	UINT m_uPerfLogIntervalMinutes;
 	int m_iMinFreeDiskSpaceConfigGB;
 	int m_iMinFreeDiskSpaceTempGB;
@@ -249,6 +254,7 @@ protected:
 	bool m_bShowedWarning;
 	bool m_bShowActiveDownloadsBold;
 	bool m_bShowCopyEd2kLinkCmd;
+	bool m_bFollowMajorityFilenameForNewDownloads;
 	bool m_bShowUpDownIconInTaskbar;
 	bool m_bShowVerticalHourMarkers;
 	bool m_bSparsePartFiles;

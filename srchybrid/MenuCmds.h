@@ -118,6 +118,7 @@
 #define MPG_ALTENTER			10330
 #define MPG_F2					10331
 #define	MP_RENAME				10332
+#define	MP_FOLLOWMAJORITYFILENAME	10370
 #define	MP_FIND					10333
 #define	MP_UNDO					10334
 #define	MP_CUT					10335

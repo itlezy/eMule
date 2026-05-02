@@ -841,6 +841,9 @@ int		CPreferences::m_byLogLevel;
 bool	CPreferences::m_bRememberCancelledFiles;
 bool	CPreferences::m_bRememberDownloadedFiles;
 bool	CPreferences::m_bPartiallyPurgeOldKnownFiles;
+bool	CPreferences::m_bFollowMajorityFilenameForNewDownloads;
+UINT	CPreferences::m_uFollowMajorityFilenameRequiredPercent;
+UINT	CPreferences::m_uFollowMajorityFilenameMinimumVotes;
 UINT	CPreferences::m_uBBMaxUploadClientsAllowed;
 float	CPreferences::m_fBBSlowUploadThresholdFactor;
 UINT	CPreferences::m_uBBSlowUploadGraceSeconds;
@@ -2428,6 +2431,9 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("MessageUseCaptchas"), m_bUseChatCaptchas);
 	ini.WriteBool(_T("ShowInfoOnCatTabs"), showCatTabInfos);
 	ini.WriteBool(_T("AutoFilenameCleanup"), autofilenamecleanup);
+	ini.WriteBool(_T("FollowMajorityFilenameForNewDownloads"), m_bFollowMajorityFilenameForNewDownloads);
+	ini.WriteInt(_T("FollowMajorityFilenameRequiredPercent"), static_cast<int>(m_uFollowMajorityFilenameRequiredPercent));
+	ini.WriteInt(_T("FollowMajorityFilenameMinimumVotes"), static_cast<int>(m_uFollowMajorityFilenameMinimumVotes));
 	ini.WriteBool(_T("ShowExtControls"), m_bExtControls);
 	ini.WriteBool(_T("UseAutocompletion"), m_bUseAutocompl);
 	ini.WriteBool(_T("NetworkKademlia"), networkkademlia);
@@ -3006,6 +3012,13 @@ void CPreferences::LoadPreferences()
 	msgsecure = ini.GetBool(_T("MessageFromValidSourcesOnly"), true);
 	m_bUseChatCaptchas = ini.GetBool(_T("MessageUseCaptchas"), true);
 	autofilenamecleanup = ini.GetBool(_T("AutoFilenameCleanup"), false);
+	m_bFollowMajorityFilenameForNewDownloads = ini.GetBool(_T("FollowMajorityFilenameForNewDownloads"), false);
+	SetFollowMajorityFilenameRequiredPercent(NormalizeBoundedPreference(
+		ini.GetInt(_T("FollowMajorityFilenameRequiredPercent"), static_cast<int>(GetDefaultFollowMajorityFilenameRequiredPercent())),
+		GetDefaultFollowMajorityFilenameRequiredPercent(),
+		GetMinFollowMajorityFilenameRequiredPercent(),
+		GetMaxFollowMajorityFilenameRequiredPercent()));
+	SetFollowMajorityFilenameMinimumVotes(static_cast<UINT>(max(0, ini.GetInt(_T("FollowMajorityFilenameMinimumVotes"), static_cast<int>(GetDefaultFollowMajorityFilenameMinimumVotes())))));
 	m_bUseAutocompl = ini.GetBool(_T("UseAutocompletion"), true);
 	m_bShowDwlPercentage = ini.GetBool(_T("ShowDwlPercentage"), true);
 	networkkademlia = ini.GetBool(_T("NetworkKademlia"), true);

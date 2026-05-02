@@ -650,6 +650,9 @@ public:
 	static bool		m_bRememberCancelledFiles;
 	static bool		m_bRememberDownloadedFiles;
 	static bool		m_bPartiallyPurgeOldKnownFiles;
+	static bool		m_bFollowMajorityFilenameForNewDownloads;
+	static UINT		m_uFollowMajorityFilenameRequiredPercent;
+	static UINT		m_uFollowMajorityFilenameMinimumVotes;
 	static UINT		m_uBBMaxUploadClientsAllowed;
 	static float	m_fBBSlowUploadThresholdFactor;
 	static UINT		m_uBBSlowUploadGraceSeconds;
@@ -1585,6 +1588,17 @@ public:
 	static bool		AutoFilenameCleanup()				{ return autofilenamecleanup; }
 	static void		AutoFilenameCleanup(bool in)		{ autofilenamecleanup = in; }
 	static void		SetFilenameCleanups(const CString &in) { filenameCleanups = in; }
+	static bool		GetFollowMajorityFilenameForNewDownloads() { return m_bFollowMajorityFilenameForNewDownloads; }
+	static void		SetFollowMajorityFilenameForNewDownloads(bool in) { m_bFollowMajorityFilenameForNewDownloads = in; }
+	static UINT		GetFollowMajorityFilenameRequiredPercent() { return m_uFollowMajorityFilenameRequiredPercent; }
+	static UINT		GetDefaultFollowMajorityFilenameRequiredPercent() { return 51; }
+	static UINT		GetMinFollowMajorityFilenameRequiredPercent() { return 1; }
+	static UINT		GetMaxFollowMajorityFilenameRequiredPercent() { return 100; }
+	static void		SetFollowMajorityFilenameRequiredPercent(UINT in) { m_uFollowMajorityFilenameRequiredPercent = min(max(in, GetMinFollowMajorityFilenameRequiredPercent()), GetMaxFollowMajorityFilenameRequiredPercent()); }
+	static UINT		GetFollowMajorityFilenameMinimumVotes() { return m_uFollowMajorityFilenameMinimumVotes; }
+	static UINT		GetDefaultFollowMajorityFilenameMinimumVotes() { return 0; }
+	static UINT		GetMaxFollowMajorityFilenameMinimumVotes() { return 1000; }
+	static void		SetFollowMajorityFilenameMinimumVotes(UINT in) { m_uFollowMajorityFilenameMinimumVotes = min(in, GetMaxFollowMajorityFilenameMinimumVotes()); }
 
 	static bool		GetResumeSameCat()					{ return resumeSameCat; }
 	static bool		IsGraphRecreateDisabled()			{ return dontRecreateGraphs; }

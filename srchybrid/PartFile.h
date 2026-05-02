@@ -19,6 +19,7 @@
 #include "DeadSourceList.h"
 #include "CorruptionBlackBox.h"
 #include "DisplayRefreshSeams.h"
+#include "PartFileMajorityNameSeams.h"
 #include "SafeFile.h"
 
 enum EPartFileStatus : uint8
@@ -135,6 +136,12 @@ public:
 
 	// eD2K filename
 	virtual void SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystemChars = false, bool bRemoveControlChars = false); // 'bReplaceInvalidFileSystemChars' is set to 'false' for backward compatibility!
+	bool	IsFollowMajorityFilenameEnabled() const		{ return m_bFollowMajorityFilename; }
+	void	SetFollowMajorityFilename(bool bEnabled);
+	void	ToggleFollowMajorityFilename()				{ SetFollowMajorityFilename(!m_bFollowMajorityFilename); }
+	void	UpdateSourceFileName(CUpDownClient *pSource);
+	void	RemoveSourceFileName(CUpDownClient *pSource);
+	void	DisableFollowMajorityFilenameForManualRename();
 
 	// part.met filename (without path!)
 	const CString& GetPartMetFileName() const			{ return m_partmetfilename; }
@@ -368,6 +375,9 @@ private:
 	 * @brief Returns whether an insufficient-space download may resume under the current per-volume disk-space floors.
 	 */
 	bool	CanResumeInsufficientForDiskSpace(ULONGLONG *pOutFreeBytes = NULL, ULONGLONG *pOutRequiredBytes = NULL) const;
+	bool	GetMajoritySourceFileName(PartFileMajorityNameSeams::MajorityNameSelection &selection) const;
+	void	ApplyFollowMajorityFilename();
+	void	ResetFollowMajorityFilenameTracking();
 
 	static CBarShader s_LoadBar;
 	static CBarShader s_ChunkBar;
@@ -427,4 +437,6 @@ private:
 	bool	m_bDelayDelete;
 	bool	m_bpreviewprio;
 	bool	m_bUpdateMet;
+	bool	m_bFollowMajorityFilename;
+	CString	m_strLastFollowMajorityFilenameCandidate;
 };

@@ -328,6 +328,21 @@ namespace
 		return _T("File Behavior");
 	}
 
+	static CString GetFollowMajorityFilenameDefaultLabel()
+	{
+		return _T("Follow majority filename for new downloads");
+	}
+
+	static CString GetFollowMajorityFilenameRequiredPercentLabel()
+	{
+		return _T("Follow majority required agreement [%]");
+	}
+
+	static CString GetFollowMajorityFilenameMinimumVotesLabel()
+	{
+		return _T("Follow majority minimum votes");
+	}
+
 	static CString GetStoragePersistenceLabel()
 	{
 		return _T("Storage & Persistence");
@@ -510,6 +525,9 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiPreviewSmallBlocksForce()
 	, m_htiPreviewOnIconDblClk()
 	, m_htiShowCopyEd2kLinkCmd()
+	, m_htiFollowMajorityFilenameForNewDownloads()
+	, m_htiFollowMajorityFilenameRequiredPercent()
+	, m_htiFollowMajorityFilenameMinimumVotes()
 	, m_htiShowActiveDownloadsBold()
 	, m_htiUseSystemFontForMainControls()
 	, m_htiReBarToolbar()
@@ -556,6 +574,8 @@ CPPgTweaks::CPPgTweaks()
 	, m_uMaxLogBufferKiB()
 	, m_uMaxChatHistoryLines()
 	, m_uMaxMessageSessions()
+	, m_uFollowMajorityFilenameRequiredPercent()
+	, m_uFollowMajorityFilenameMinimumVotes()
 	, m_uPerfLogIntervalMinutes()
 	, m_iMinFreeDiskSpaceConfigGB()
 	, m_iMinFreeDiskSpaceTempGB()
@@ -635,6 +655,7 @@ CPPgTweaks::CPPgTweaks()
 	, m_bShowedWarning()
 	, m_bShowActiveDownloadsBold()
 	, m_bShowCopyEd2kLinkCmd()
+	, m_bFollowMajorityFilenameForNewDownloads()
 	, m_bShowUpDownIconInTaskbar()
 	, m_bShowVerticalHourMarkers()
 	, m_bSparsePartFiles()
@@ -778,6 +799,11 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiPreviewSmallBlocksForce = m_ctrlTreeOptions.InsertRadioButton(GetPreviewSmallBlocksForceLabel(), m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks == 2);
 		m_htiBeepOnError = m_ctrlTreeOptions.InsertCheckBox(GetBeepOnErrorLabel(), m_htiHiddenFile, m_bBeepOnError);
 		m_htiShowCopyEd2kLinkCmd = m_ctrlTreeOptions.InsertCheckBox(GetShowCopyEd2kLinkCmdLabel(), m_htiHiddenFile, m_bShowCopyEd2kLinkCmd);
+		m_htiFollowMajorityFilenameForNewDownloads = m_ctrlTreeOptions.InsertCheckBox(GetFollowMajorityFilenameDefaultLabel(), m_htiHiddenFile, m_bFollowMajorityFilenameForNewDownloads);
+		m_htiFollowMajorityFilenameRequiredPercent = m_ctrlTreeOptions.InsertItem(GetFollowMajorityFilenameRequiredPercentLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiFollowMajorityFilenameForNewDownloads);
+		m_ctrlTreeOptions.AddEditBox(m_htiFollowMajorityFilenameRequiredPercent, RUNTIME_CLASS(CNumTreeOptionsEdit));
+		m_htiFollowMajorityFilenameMinimumVotes = m_ctrlTreeOptions.InsertItem(GetFollowMajorityFilenameMinimumVotesLabel(), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiFollowMajorityFilenameForNewDownloads);
+		m_ctrlTreeOptions.AddEditBox(m_htiFollowMajorityFilenameMinimumVotes, RUNTIME_CLASS(CNumTreeOptionsEdit));
 		m_htiSparsePartFiles = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SPARSEPARTFILES), m_htiHiddenFile, m_bSparsePartFiles);
 		m_htiFullAlloc = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_FULLALLOC), m_htiHiddenFile, m_bFullAlloc);
 		m_htiExtractMetaData = m_ctrlTreeOptions.InsertGroup(GetResString(IDS_EXTRACT_META_DATA), iImgMetaData, m_htiHiddenFile);
@@ -1421,6 +1447,9 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeRadio(pDX, IDC_EXT_OPTS, m_htiPreviewSmallBlocks, m_iPreviewSmallBlocks);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiBeepOnError, m_bBeepOnError);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowCopyEd2kLinkCmd, m_bShowCopyEd2kLinkCmd);
+	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFollowMajorityFilenameForNewDownloads, m_bFollowMajorityFilenameForNewDownloads);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiFollowMajorityFilenameRequiredPercent, m_uFollowMajorityFilenameRequiredPercent);
+	ExchangeTreeUInt(pDX, m_ctrlTreeOptions, m_htiFollowMajorityFilenameMinimumVotes, m_uFollowMajorityFilenameMinimumVotes);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiSparsePartFiles, m_bSparsePartFiles);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFullAlloc, m_bFullAlloc);
 	DDX_Text(pDX, IDC_EXT_OPTS, m_htiMinFreeDiskSpaceConfig, m_iMinFreeDiskSpaceConfigGB);
@@ -1451,6 +1480,16 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiShowVerticalHourMarkers, m_bShowVerticalHourMarkers);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiForceSpeedsToKB, m_bForceSpeedsToKB);
 	if (pDX->m_bSaveAndValidate) {
+		if (m_uFollowMajorityFilenameRequiredPercent < thePrefs.GetMinFollowMajorityFilenameRequiredPercent() || m_uFollowMajorityFilenameRequiredPercent > thePrefs.GetMaxFollowMajorityFilenameRequiredPercent()) {
+			CString detail;
+			detail.Format(_T("Expected range: %u..%u percent."), thePrefs.GetMinFollowMajorityFilenameRequiredPercent(), thePrefs.GetMaxFollowMajorityFilenameRequiredPercent());
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiFollowMajorityFilenameRequiredPercent, detail);
+		}
+		if (m_uFollowMajorityFilenameMinimumVotes > thePrefs.GetMaxFollowMajorityFilenameMinimumVotes()) {
+			CString detail;
+			detail.Format(_T("Expected range: 0..%u votes."), thePrefs.GetMaxFollowMajorityFilenameMinimumVotes());
+			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiFollowMajorityFilenameMinimumVotes, detail);
+		}
 		if (m_sDateTimeFormat.Trim().IsEmpty())
 			FailTreeValidation(pDX, m_ctrlTreeOptions, m_htiDateTimeFormat, _T("Please enter a non-empty CTime format string."));
 		if (m_sDateTimeFormat4Log.Trim().IsEmpty())
@@ -1688,6 +1727,9 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iPreviewSmallBlocks = thePrefs.GetPreviewSmallBlocks();
 	m_bBeepOnError = thePrefs.IsErrorBeepEnabled();
 	m_bShowCopyEd2kLinkCmd = thePrefs.GetShowCopyEd2kLinkCmd();
+	m_bFollowMajorityFilenameForNewDownloads = thePrefs.GetFollowMajorityFilenameForNewDownloads();
+	m_uFollowMajorityFilenameRequiredPercent = thePrefs.GetFollowMajorityFilenameRequiredPercent();
+	m_uFollowMajorityFilenameMinimumVotes = thePrefs.GetFollowMajorityFilenameMinimumVotes();
 	m_sDateTimeFormat4Lists = thePrefs.GetDateTimeFormat4Lists();
 	m_sDateTimeFormat = thePrefs.GetDateTimeFormat();
 	m_sDateTimeFormat4Log = thePrefs.GetDateTimeFormat4Log();
@@ -1835,6 +1877,9 @@ BOOL CPPgTweaks::OnApply()
 	thePrefs.m_iPreviewSmallBlocks = PreferenceUiSeams::NormalizePreviewSmallBlocks(m_iPreviewSmallBlocks);
 	thePrefs.beepOnError = m_bBeepOnError;
 	thePrefs.m_bShowCopyEd2kLinkCmd = m_bShowCopyEd2kLinkCmd;
+	thePrefs.SetFollowMajorityFilenameForNewDownloads(m_bFollowMajorityFilenameForNewDownloads);
+	thePrefs.SetFollowMajorityFilenameRequiredPercent(m_uFollowMajorityFilenameRequiredPercent);
+	thePrefs.SetFollowMajorityFilenameMinimumVotes(m_uFollowMajorityFilenameMinimumVotes);
 	thePrefs.m_bHighresTimer = m_bHighresTimer;
 	thePrefs.m_strTxtEditor = m_sTxtEditor;
 	thePrefs.SetFileBufferSize(m_uFileBufferSizeKiB * 1024u);
@@ -2015,6 +2060,9 @@ void CPPgTweaks::Localize()
 		m_ctrlTreeOptions.SetItemText(m_htiPreviewSmallBlocksForce, GetPreviewSmallBlocksForceLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiBeepOnError, GetBeepOnErrorLabel());
 		m_ctrlTreeOptions.SetItemText(m_htiShowCopyEd2kLinkCmd, GetShowCopyEd2kLinkCmdLabel());
+		m_ctrlTreeOptions.SetItemText(m_htiFollowMajorityFilenameForNewDownloads, GetFollowMajorityFilenameDefaultLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiFollowMajorityFilenameRequiredPercent, GetFollowMajorityFilenameRequiredPercentLabel());
+		m_ctrlTreeOptions.SetEditLabel(m_htiFollowMajorityFilenameMinimumVotes, GetFollowMajorityFilenameMinimumVotesLabel());
 		LocalizeItemText(m_htiDetectTCPErrorFlooder, IDS_DETECT_TCP_ERROR_FLOODER);
 		LocalizeEditLabel(m_htiTCPErrorFlooderIntervalMinutes, IDS_TCP_ERROR_FLOODER_INTERVAL_MINUTES);
 		LocalizeEditLabel(m_htiTCPErrorFlooderThreshold, IDS_TCP_ERROR_FLOODER_THRESHOLD);
@@ -2140,6 +2188,9 @@ void CPPgTweaks::OnDestroy()
 	m_htiHiddenDisplay = NULL;
 	m_htiHiddenFile = NULL;
 	m_htiHiddenSecurity = NULL;
+	m_htiFollowMajorityFilenameForNewDownloads = NULL;
+	m_htiFollowMajorityFilenameRequiredPercent = NULL;
+	m_htiFollowMajorityFilenameMinimumVotes = NULL;
 	m_htiICH = NULL;
 	m_htiIconFlashOnNewMessage = NULL;
 	m_htiDetectTCPErrorFlooder = NULL;

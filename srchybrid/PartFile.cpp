@@ -45,6 +45,7 @@
 #include "PartFilePreviewSeams.h"
 #include "PartFilePersistenceSeams.h"
 #include "SafeFile.h"
+#include "StringConversion.h"
 #include "UserMsgs.h"
 #include "SharedFileList.h"
 #include "ListenSocket.h"
@@ -78,6 +79,7 @@ static char THIS_FILE[] = __FILE__;
 namespace
 {
 constexpr DWORD kShutdownFlushWaitMs = 5000;
+constexpr LPCSTR kFollowMajorityFilenameTag = "BBFollowMajorityFilename";
 constexpr DWORD kShutdownFlushPollMs = 10;
 
 PartFilePauseResumeSeams::RuntimeStatus ResolvePauseResumeRuntimeStatus(const EPartFileStatus eStatus)
@@ -398,6 +400,8 @@ void CPartFile::Init()
 	m_bDelayDelete = false;
 	m_bpreviewprio = false;
 	m_bUpdateMet = false;
+	m_bFollowMajorityFilename = false;
+	m_strLastFollowMajorityFilenameCandidate.Empty();
 }
 
 CPartFile::~CPartFile()
@@ -604,6 +608,7 @@ void CPartFile::CreatePartFile(UINT cat)
 	if (thePrefs.AutoFilenameCleanup())
 		SetFileName(NormalizeDownloadFilename(CleanupFilename(GetFileName())));
 
+	m_bFollowMajorityFilename = thePrefs.GetFollowMajorityFilenameForNewDownloads();
 	SavePartFile();
 	m_CorruptionBlackBox.Init(m_nFileSize);
 	SetActive(theApp.IsConnected());
@@ -1114,7 +1119,11 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 						ASSERT(0);
 					break;
 				default:
-					if (newtag->GetNameID() == 0 && (newtag->GetName()[0] == FT_GAPSTART || newtag->GetName()[0] == FT_GAPEND)) {
+					if (newtag->HasName() && strcmp(newtag->GetName(), kFollowMajorityFilenameTag) == 0) {
+						ASSERT(newtag->IsInt());
+						if (newtag->IsInt())
+							m_bFollowMajorityFilename = newtag->GetInt() != 0;
+					} else if (newtag->GetNameID() == 0 && (newtag->GetName()[0] == FT_GAPSTART || newtag->GetName()[0] == FT_GAPEND)) {
 						ASSERT(newtag->IsInt64(true));
 						if (newtag->IsInt64(true)) {
 							UINT gapkey = atoi(&newtag->GetName()[1]);
@@ -1436,6 +1445,12 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 			UINT uTagValue = (static_cast<UINT>(IsPausingOnPreview()) << 1) | (static_cast<UINT>(GetPreviewPrio()) << 0);
 			CTag tagDlPreview(FT_DL_PREVIEW, uTagValue);
 			tagDlPreview.WriteTagToFile(file);
+			++uTagCount;
+		}
+
+		if (m_bFollowMajorityFilename) {
+			CTag followMajorityTag(kFollowMajorityFilenameTag, static_cast<uint64>(1));
+			followMajorityTag.WriteTagToFile(file);
 			++uTagCount;
 		}
 
@@ -5342,6 +5357,107 @@ bool CPartFile::CheckShowItemInGivenCat(INT_PTR inCategory) /*const*/
 		}
 
 	return thePrefs.GetCatFilterNeg(inCategory) ? !ret : ret;
+}
+
+void CPartFile::ResetFollowMajorityFilenameTracking()
+{
+	m_strLastFollowMajorityFilenameCandidate.Empty();
+}
+
+bool CPartFile::GetMajoritySourceFileName(PartFileMajorityNameSeams::MajorityNameSelection &selection) const
+{
+	std::vector<CString> sourceNames;
+	for (POSITION pos = srclist.GetHeadPosition(); pos != NULL;) {
+		const CUpDownClient *cur_src = srclist.GetNext(pos);
+		if (cur_src == NULL || cur_src->GetRequestFile() != this)
+			continue;
+
+		CString sourceName(NormalizeDownloadFilename(cur_src->GetClientFilename()));
+		sourceName.Trim();
+		if (sourceName.IsEmpty() || !IsValidEd2kString(sourceName))
+			continue;
+		sourceNames.push_back(sourceName);
+	}
+
+	selection = PartFileMajorityNameSeams::SelectMajorityName(
+		sourceNames,
+		thePrefs.GetFollowMajorityFilenameMinimumVotes(),
+		thePrefs.GetFollowMajorityFilenameRequiredPercent());
+	return selection.HasCandidate;
+}
+
+void CPartFile::ApplyFollowMajorityFilename()
+{
+	if (GetStatus() == PS_COMPLETE || GetStatus() == PS_COMPLETING || !m_bFollowMajorityFilename) {
+		ResetFollowMajorityFilenameTracking();
+		return;
+	}
+
+	PartFileMajorityNameSeams::MajorityNameSelection selection;
+	if (!GetMajoritySourceFileName(selection)) {
+		ResetFollowMajorityFilenameTracking();
+		return;
+	}
+
+	const CString strCurrentFileName(GetFileName());
+	if (strCurrentFileName.CompareNoCase(selection.Name) == 0) {
+		ResetFollowMajorityFilenameTracking();
+		return;
+	}
+
+	if (m_strLastFollowMajorityFilenameCandidate.CompareNoCase(selection.Name) == 0)
+		return;
+
+	SetFileName(selection.Name, true);
+	const CString strRenamedFileName(GetFileName());
+	if (strCurrentFileName.CompareNoCase(strRenamedFileName) == 0) {
+		ResetFollowMajorityFilenameTracking();
+		return;
+	}
+
+	UpdateDisplayedInfo();
+	if (SavePartFile()) {
+		theApp.QueueLogLine(true,
+			_T("Follow majority filename renamed \"%s\" to \"%s\" (%u/%u source names, threshold %u%%, minimum votes %u)."),
+			(LPCTSTR)strCurrentFileName,
+			(LPCTSTR)strRenamedFileName,
+			selection.CandidateVotes,
+			selection.TotalVotes,
+			selection.RequiredPercent,
+			selection.MinimumVotes);
+	}
+	m_strLastFollowMajorityFilenameCandidate = selection.Name;
+}
+
+void CPartFile::SetFollowMajorityFilename(bool bEnabled)
+{
+	if (m_bFollowMajorityFilename == bEnabled)
+		return;
+
+	m_bFollowMajorityFilename = bEnabled;
+	ResetFollowMajorityFilenameTracking();
+	if (m_bFollowMajorityFilename)
+		ApplyFollowMajorityFilename();
+}
+
+void CPartFile::UpdateSourceFileName(CUpDownClient *pSource)
+{
+	if (pSource != NULL)
+		ApplyFollowMajorityFilename();
+}
+
+void CPartFile::RemoveSourceFileName(CUpDownClient *pSource)
+{
+	if (pSource != NULL)
+		ApplyFollowMajorityFilename();
+}
+
+void CPartFile::DisableFollowMajorityFilenameForManualRename()
+{
+	if (!m_bFollowMajorityFilename)
+		return;
+	m_bFollowMajorityFilename = false;
+	ResetFollowMajorityFilenameTracking();
 }
 
 void CPartFile::SetFileName(LPCTSTR pszFileName, bool bReplaceInvalidFileSystemChars, bool bRemoveControlChars)

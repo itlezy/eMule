@@ -811,6 +811,7 @@ bool CDownloadQueue::RemoveSource(CUpDownClient *toremove, bool bDoStatsUpdate)
 		POSITION pos2 = cur_file->srclist.Find(toremove);
 		if (pos2) {
 			cur_file->srclist.RemoveAt(pos2);
+			cur_file->RemoveSourceFileName(toremove);
 			bRemovedSrcFromPartFile = true;
 			if (bDoStatsUpdate) {
 				cur_file->RemoveDownloadingSource(toremove);
