@@ -21,6 +21,7 @@ class CPPgConnection : public CPropertyPage
 	CString GetBindInterfaceText() const;
 	CString GetBindAddressText() const;
 	void UpdateBindStatus();
+	void UpdateBindProtectionControls();
 	void UpdateRestartRequiredNotice();
 	void SyncBindInterfaceEditTextFromSelection();
 

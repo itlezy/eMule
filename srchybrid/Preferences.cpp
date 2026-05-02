@@ -2706,6 +2706,10 @@ void CPreferences::LoadPreferences()
 	m_strBindInterfaceName = m_strBindInterface;
 	m_bBlockNetworkWhenBindUnavailableAtStartup = ini.GetBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), !m_strBindInterface.IsEmpty());
 	m_bExitOnBindInterfaceLoss = ini.GetBool(_T("ExitOnBindInterfaceLoss"), false);
+	if (m_strBindInterface.IsEmpty()) {
+		m_bBlockNetworkWhenBindUnavailableAtStartup = false;
+		m_bExitOnBindInterfaceLoss = false;
+	}
 	m_strActiveConfiguredBindAddr = m_strConfiguredBindAddr;
 	m_strActiveBindInterface = m_strBindInterface;
 	m_strActiveBindInterfaceName = m_strBindInterfaceName;

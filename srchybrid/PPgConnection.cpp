@@ -230,12 +230,23 @@ void CPPgConnection::UpdateBindStatus()
 	SetDlgItemText(IDC_BIND_STATUS, strStatus);
 }
 
+void CPPgConnection::UpdateBindProtectionControls()
+{
+	const bool bHasSpecificInterface = !GetBindInterfaceText().IsEmpty();
+	if (!bHasSpecificInterface) {
+		CheckDlgButton(IDC_STARTUP_BIND_BLOCK, 0);
+		CheckDlgButton(IDC_EXIT_ON_BIND_LOSS, 0);
+	}
+	GetDlgItem(IDC_STARTUP_BIND_BLOCK)->EnableWindow(bHasSpecificInterface);
+	GetDlgItem(IDC_EXIT_ON_BIND_LOSS)->EnableWindow(bHasSpecificInterface);
+}
+
 void CPPgConnection::UpdateRestartRequiredNotice()
 {
 	CString strRestartNote;
 	const CString strPendingInterface = GetBindInterfaceText();
 	const CString strPendingAddress = GetBindAddressText();
-	const bool bPendingStartupBlock = (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
+	const bool bPendingStartupBlock = !strPendingInterface.IsEmpty() && (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
 	if (thePrefs.GetActiveBindInterface().CompareNoCase(strPendingInterface)
 		|| thePrefs.GetActiveConfiguredBindAddr().CompareNoCase(strPendingAddress)
 		|| thePrefs.IsActiveStartupBindBlockEnabled() != bPendingStartupBlock) {
@@ -421,10 +432,10 @@ void CPPgConnection::UpdateToolTips()
 		_T("Leave it empty to use the first IPv4 on the selected interface, or the default routing choice when no interface is selected."));
 	m_toolTip.SetTool(this, IDC_STARTUP_BIND_BLOCK,
 		_T("Keeps P2P networking offline for the session if the configured bind target cannot be resolved at startup.\r\n\r\n")
-		_T("Recommended when you explicitly bind to a named interface and do not want silent fallback."));
+		_T("Available only when a bind interface is selected. Recommended when you explicitly bind to a named interface and do not want silent fallback."));
 	m_toolTip.SetTool(this, IDC_EXIT_ON_BIND_LOSS,
 		_T("Exits eMule if the selected bind interface disappears after startup.\r\n\r\n")
-		_T("Use this as VPN protection when P2P networking is bound to a VPN adapter. It requires a selected bind interface."));
+		_T("Available only when a bind interface is selected. Use this as VPN protection when P2P networking is bound to a VPN adapter."));
 }
 
 void CPPgConnection::LoadSettings()
@@ -460,6 +471,7 @@ void CPPgConnection::LoadSettings()
 		SetDlgItemText(IDC_BIND_ADDRESS, thePrefs.GetConfiguredBindAddr());
 		CheckDlgButton(IDC_STARTUP_BIND_BLOCK, static_cast<UINT>(thePrefs.IsStartupBindBlockEnabled()));
 		CheckDlgButton(IDC_EXIT_ON_BIND_LOSS, static_cast<UINT>(thePrefs.IsExitOnBindInterfaceLossEnabled()));
+		UpdateBindProtectionControls();
 
 		ShowLimitValues();
 	}
@@ -529,12 +541,13 @@ BOOL CPPgConnection::OnApply()
 		thePrefs.SetBindNetworkSelection(strBindInterface, strBindAddress);
 		bBindRestartRequired = true;
 	}
-	const bool bStartupBindBlock = (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
+	const bool bHasSpecificBindInterface = !strBindInterface.IsEmpty();
+	const bool bStartupBindBlock = bHasSpecificBindInterface && (IsDlgButtonChecked(IDC_STARTUP_BIND_BLOCK) != 0);
 	if (thePrefs.IsStartupBindBlockEnabled() != bStartupBindBlock) {
 		thePrefs.m_bBlockNetworkWhenBindUnavailableAtStartup = bStartupBindBlock;
 		bBindRestartRequired = true;
 	}
-	thePrefs.SetExitOnBindInterfaceLossEnabled(IsDlgButtonChecked(IDC_EXIT_ON_BIND_LOSS) != 0);
+	thePrefs.SetExitOnBindInterfaceLossEnabled(bHasSpecificBindInterface && (IsDlgButtonChecked(IDC_EXIT_ON_BIND_LOSS) != 0));
 
 	if (thePrefs.m_bshowoverhead != (IsDlgButtonChecked(IDC_SHOWOVERHEAD) != 0)) {
 		thePrefs.m_bshowoverhead = !thePrefs.m_bshowoverhead;
@@ -656,6 +669,7 @@ void CPPgConnection::OnSettingsChange()
 	SetModified();
 	if (m_hWnd) {
 		ShowLimitValues();
+		UpdateBindProtectionControls();
 		UpdateRestartRequiredNotice();
 	}
 }
