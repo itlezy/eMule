@@ -2532,6 +2532,31 @@ CStringA JsonDump(const json &rJson)
 	return CStringA(strSerialized.c_str(), static_cast<int>(strSerialized.size()));
 }
 
+json BuildResponseMetaJson()
+{
+	return json{
+		{"apiVersion", "v1"}
+	};
+}
+
+json BuildSuccessEnvelope(const json &rPayload)
+{
+	return json{
+		{"data", rPayload},
+		{"meta", BuildResponseMetaJson()}
+	};
+}
+
+json BuildErrorEnvelope(LPCSTR pszCode, const CString &strMessage)
+{
+	return json{
+		{"error", json{
+			{"code", pszCode != NULL ? pszCode : "EMULE_ERROR"},
+			{"message", StdUtf8FromCString(strMessage)}
+		}}
+	};
+}
+
 bool HasValidApiKey(const ThreadData &rData)
 {
 	if (thePrefs.GetWSApiKey().IsEmpty() || rData.strApiKey.IsEmpty())
@@ -2544,7 +2569,7 @@ void SendJsonResponse(CWebSocket *pSocket, const int iStatusCode, LPCSTR pszReas
 	if (pSocket == NULL)
 		return;
 
-	const CStringA strBody(JsonDump(rPayload));
+	const CStringA strBody(JsonDump(BuildSuccessEnvelope(rPayload)));
 	CStringA strHeader;
 	strHeader.Format(
 		"HTTP/1.1 %d %s\r\n"
@@ -2561,10 +2586,22 @@ void SendJsonResponse(CWebSocket *pSocket, const int iStatusCode, LPCSTR pszReas
 
 void SendJsonError(CWebSocket *pSocket, const int iStatusCode, LPCSTR pszReason, LPCSTR pszCode, const CString &strMessage)
 {
-	SendJsonResponse(pSocket, iStatusCode, pszReason, json{
-		{"error", pszCode != NULL ? pszCode : "EMULE_ERROR"},
-		{"message", StdUtf8FromCString(strMessage)}
-	});
+	if (pSocket == NULL)
+		return;
+
+	const CStringA strBody(JsonDump(BuildErrorEnvelope(pszCode, strMessage)));
+	CStringA strHeader;
+	strHeader.Format(
+		"HTTP/1.1 %d %s\r\n"
+		"Content-Type: application/json; charset=utf-8\r\n"
+		"Cache-Control: no-store\r\n"
+		"Content-Length: %u\r\n\r\n",
+		iStatusCode,
+		pszReason != NULL ? pszReason : "Error",
+		static_cast<UINT>(strBody.GetLength()));
+	pSocket->SendData(strHeader, strHeader.GetLength());
+	if (!strBody.IsEmpty())
+		pSocket->SendData(strBody, strBody.GetLength());
 }
 
 LPCSTR GetHttpReasonPhrase(const int iStatusCode)
