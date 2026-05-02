@@ -11,12 +11,20 @@ indent_size = 4
 [*.{c,cc,cpp,cxx,h,hh,hpp,hxx,inl,idl,def,txt}]
 end_of_line = lf
 
-[*.{cmd,bat,ps1,psm1,ps1xml}]
+[*.{ps1,psm1,psd1,ps1xml}]
+end_of_line = lf
+indent_style = tab
+trim_trailing_whitespace = false
+
+[*.{cmd,bat}]
 end_of_line = crlf
 indent_style = tab
 trim_trailing_whitespace = false
 
-[*.{sln,slnx,vcxproj,vcproj,vcxproj.filters,props,targets,rc,rc2}]
+[*.{sln,slnx,vcxproj,vcproj,vcxproj.filters,props,targets}]
+end_of_line = lf
+
+[*.{rc,rc2}]
 end_of_line = crlf
 
 [*.{rc,rc2}]
@@ -24,7 +32,7 @@ charset = utf-8-bom
 
 [*.manifest]
 charset = utf-8-bom
-end_of_line = crlf
+end_of_line = lf
 
 [*.md]
 trim_trailing_whitespace = false
