@@ -400,8 +400,10 @@ BEGIN
     EDITTEXT        IDC_BIND_ADDRESS,11,269,114,12,ES_AUTOHSCROLL
     CONTROL         "Keep networking offline if the bind target is unavailable at startup",IDC_STARTUP_BIND_BLOCK,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,286,208,18
-    LTEXT           "",IDC_BIND_STATUS,11,306,370,16
-    LTEXT           "",IDC_BIND_RESTART_NOTE,11,324,370,28
+    CONTROL         "Exit eMule if the bound interface is lost",IDC_EXIT_ON_BIND_LOSS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,306,208,18
+    LTEXT           "",IDC_BIND_STATUS,11,326,370,16
+    LTEXT           "",IDC_BIND_RESTART_NOTE,11,344,370,28
 END
 
 IDD_WIZARD DIALOGEX 0, 0, 257, 223

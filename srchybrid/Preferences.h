@@ -189,6 +189,7 @@ public:
 	static EBindAddressResolveResult m_eActiveBindAddrResolveResult;
 	static bool		m_bBlockNetworkWhenBindUnavailableAtStartup;
 	static bool		m_bActiveStartupBindBlockEnabled;
+	static bool		m_bExitOnBindInterfaceLoss;
 	static bool		m_bRandomizePortsOnStartup;
 	static uint16	port;
 	static uint16	udpport;
@@ -777,6 +778,10 @@ public:
 	static const CString& GetBindInterfaceName()		{ return m_strBindInterfaceName; }
 	static EBindAddressResolveResult GetBindAddressResolveResult() { return m_eActiveBindAddrResolveResult; }
 	static bool		IsStartupBindBlockEnabled()			{ return m_bBlockNetworkWhenBindUnavailableAtStartup; }
+	/// Returns whether eMule should exit when the configured bind interface disappears after startup.
+	static bool		IsExitOnBindInterfaceLossEnabled()	{ return m_bExitOnBindInterfaceLoss; }
+	/// Configures whether eMule should exit when the configured bind interface disappears after startup.
+	static void		SetExitOnBindInterfaceLossEnabled(bool bEnabled) { m_bExitOnBindInterfaceLoss = bEnabled; }
 	static const CString& GetActiveConfiguredBindAddr()	{ return m_strActiveConfiguredBindAddr; }
 	static const CString& GetActiveBindInterface()		{ return m_strActiveBindInterface; }
 	static const CString& GetActiveBindInterfaceName()	{ return m_strActiveBindInterfaceName; }

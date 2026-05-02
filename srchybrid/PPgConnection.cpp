@@ -139,6 +139,7 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
 	ON_BN_CLICKED(IDC_RANDOMIZE_PORTS_ON_STARTUP, OnSettingsChange)
 	ON_BN_CLICKED(IDC_STARTUP_BIND_BLOCK, OnSettingsChange)
+	ON_BN_CLICKED(IDC_EXIT_ON_BIND_LOSS, OnSettingsChange)
 	ON_CBN_SELCHANGE(IDC_BIND_INTERFACE, OnCbnSelChangeBindInterface)
 	ON_CBN_EDITCHANGE(IDC_BIND_INTERFACE, OnSettingsChange)
 	ON_EN_CHANGE(IDC_BIND_ADDRESS, OnSettingsChange)
@@ -421,6 +422,9 @@ void CPPgConnection::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_STARTUP_BIND_BLOCK,
 		_T("Keeps P2P networking offline for the session if the configured bind target cannot be resolved at startup.\r\n\r\n")
 		_T("Recommended when you explicitly bind to a named interface and do not want silent fallback."));
+	m_toolTip.SetTool(this, IDC_EXIT_ON_BIND_LOSS,
+		_T("Exits eMule if the selected bind interface disappears after startup.\r\n\r\n")
+		_T("Use this as VPN protection when P2P networking is bound to a VPN adapter. It requires a selected bind interface."));
 }
 
 void CPPgConnection::LoadSettings()
@@ -455,6 +459,7 @@ void CPPgConnection::LoadSettings()
 		FillBindInterfaceCombo();
 		SetDlgItemText(IDC_BIND_ADDRESS, thePrefs.GetConfiguredBindAddr());
 		CheckDlgButton(IDC_STARTUP_BIND_BLOCK, static_cast<UINT>(thePrefs.IsStartupBindBlockEnabled()));
+		CheckDlgButton(IDC_EXIT_ON_BIND_LOSS, static_cast<UINT>(thePrefs.IsExitOnBindInterfaceLossEnabled()));
 
 		ShowLimitValues();
 	}
@@ -529,6 +534,7 @@ BOOL CPPgConnection::OnApply()
 		thePrefs.m_bBlockNetworkWhenBindUnavailableAtStartup = bStartupBindBlock;
 		bBindRestartRequired = true;
 	}
+	thePrefs.SetExitOnBindInterfaceLossEnabled(IsDlgButtonChecked(IDC_EXIT_ON_BIND_LOSS) != 0);
 
 	if (thePrefs.m_bshowoverhead != (IsDlgButtonChecked(IDC_SHOWOVERHEAD) != 0)) {
 		thePrefs.m_bshowoverhead = !thePrefs.m_bshowoverhead;
@@ -586,6 +592,7 @@ BOOL CPPgConnection::OnApply()
 	SetModified(FALSE);
 	UpdateBindStatus();
 	UpdateRestartRequiredNotice();
+	theApp.emuledlg->UpdateBindLossMonitor();
 
 	theApp.emuledlg->ShowConnectionState();
 
@@ -625,6 +632,7 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE));
 		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS));
 		SetDlgItemText(IDC_STARTUP_BIND_BLOCK, _T("Keep networking offline if the bind target is unavailable at startup"));
+		SetDlgItemText(IDC_EXIT_ON_BIND_LOSS, _T("Exit eMule if the bound interface is lost"));
 		ShowLimitValues();
 	}
 }

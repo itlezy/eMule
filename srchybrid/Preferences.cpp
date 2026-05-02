@@ -443,6 +443,7 @@ CStringW CPreferences::m_strBindAddrW;
 EBindAddressResolveResult CPreferences::m_eActiveBindAddrResolveResult = BARR_Default;
 bool	CPreferences::m_bBlockNetworkWhenBindUnavailableAtStartup = false;
 bool	CPreferences::m_bActiveStartupBindBlockEnabled = false;
+bool	CPreferences::m_bExitOnBindInterfaceLoss = false;
 bool	CPreferences::m_bRandomizePortsOnStartup = false;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
@@ -2224,6 +2225,7 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("BindAddr"), m_strConfiguredBindAddr);
 	ini.WriteString(_T("BindInterface"), m_strBindInterface);
 	ini.WriteBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), m_bBlockNetworkWhenBindUnavailableAtStartup);
+	ini.WriteBool(_T("ExitOnBindInterfaceLoss"), m_bExitOnBindInterfaceLoss);
 	ini.WriteInt(_T("MaxSourcesPerFile"), maxsourceperfile);
 	ini.WriteWORD(_T("Language"), m_wLanguageID);
 	ini.WriteInt(_T("SeeShare"), m_iSeeShares);
@@ -2703,6 +2705,7 @@ void CPreferences::LoadPreferences()
 	m_strBindInterface = ini.GetString(_T("BindInterface")).Trim();
 	m_strBindInterfaceName = m_strBindInterface;
 	m_bBlockNetworkWhenBindUnavailableAtStartup = ini.GetBool(_T("BlockNetworkWhenBindUnavailableAtStartup"), !m_strBindInterface.IsEmpty());
+	m_bExitOnBindInterfaceLoss = ini.GetBool(_T("ExitOnBindInterfaceLoss"), false);
 	m_strActiveConfiguredBindAddr = m_strConfiguredBindAddr;
 	m_strActiveBindInterface = m_strBindInterface;
 	m_strActiveBindInterfaceName = m_strBindInterfaceName;

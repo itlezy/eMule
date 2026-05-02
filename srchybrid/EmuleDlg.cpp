@@ -30,6 +30,8 @@
 #include <share.h>
 #include <dbt.h>
 #include <dwmapi.h>
+#include <iphlpapi.h>
+#include <netioapi.h>
 #include <uxtheme.h>
 #include <memory>
 #include "emule.h"
@@ -88,6 +90,7 @@
 #include "WebServices.h"
 #include "DirectDownloadDlg.h"
 #include "StringConversion.h"
+#include "BindStartupPolicy.h"
 #include "aichsyncthread.h"
 #include "Log.h"
 #include "UserMsgs.h"
@@ -122,6 +125,26 @@ static const UINT UWM_TASK_BUTTON_CREATED = RegisterWindowMessage(_T("TaskbarBut
 
 namespace
 {
+	static const UINT_PTR kBindLossWatchdogTimerId = 0xB10D;
+	static const UINT kBindLossWatchdogIntervalMs = SEC2MS(10);
+
+	static void PostBindInterfaceChanged(PVOID pContext)
+	{
+		const HWND hWnd = reinterpret_cast<HWND>(pContext);
+		if (hWnd != NULL && ::IsWindow(hWnd))
+			(void)::PostMessage(hWnd, UM_BIND_INTERFACE_CHANGED, 0, 0);
+	}
+
+	static VOID CALLBACK BindLossIpInterfaceChangeCallback(PVOID pContext, PMIB_IPINTERFACE_ROW, MIB_NOTIFICATION_TYPE)
+	{
+		PostBindInterfaceChanged(pContext);
+	}
+
+	static VOID CALLBACK BindLossUnicastAddressChangeCallback(PVOID pContext, PMIB_UNICASTIPADDRESS_ROW, MIB_NOTIFICATION_TYPE)
+	{
+		PostBindInterfaceChanged(pContext);
+	}
+
 	struct SVersionCheckContext
 	{
 		HWND hNotifyWnd = NULL;
@@ -278,9 +301,11 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_MESSAGE(UM_VERSIONCHECK_RESPONSE, OnVersionCheckResponse)
 	ON_MESSAGE(UM_GEOLOCATION_UPDATED, OnGeoLocationUpdated)
 	ON_MESSAGE(UM_IPFILTER_UPDATED, OnIPFilterUpdated)
+	ON_MESSAGE(UM_BIND_INTERFACE_CHANGED, OnBindInterfaceChanged)
 	ON_WM_SHOWWINDOW()
 	ON_WM_DESTROY()
 	ON_WM_SETTINGCHANGE()
+	ON_WM_TIMER()
 	ON_WM_DEVICECHANGE()
 	ON_MESSAGE(WM_DISPLAYCHANGE, OnDisplayChange)
 	ON_MESSAGE(WM_POWERBROADCAST, OnPowerBroadcast)
@@ -372,6 +397,11 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_bKadSuspendDisconnect()
 	, m_bEd2kSuspendDisconnect()
 	, m_bInitedCOM()
+	, m_bBindLossMonitorActive()
+	, m_bBindLossShutdown()
+	, m_uBindLossWatchdogTimer()
+	, m_hBindLossInterfaceNotification()
+	, m_hBindLossAddressNotification()
 	, m_thbButtons()
 	, m_currentTBP_state(TBPF_NOPROGRESS)
 	, m_prevProgress()
@@ -1048,11 +1078,121 @@ void CemuleDlg::StopTimer()
 		OnWMData(NULL, (LPARAM)&theApp.sendstruct);
 		theApp.m_strPendingLink.Empty();
 	}
+
+	UpdateBindLossMonitor();
+}
+
+bool CemuleDlg::IsBindLossMonitorConfigured() const
+{
+	return theApp.IsRunning()
+		&& thePrefs.IsExitOnBindInterfaceLossEnabled()
+		&& !theApp.IsStartupBindBlocked()
+		&& !thePrefs.GetActiveBindInterface().IsEmpty()
+		&& thePrefs.GetActiveBindAddressResolveResult() == BARR_Resolved
+		&& thePrefs.GetBindAddr() != NULL
+		&& *thePrefs.GetBindAddr() != _T('\0');
+}
+
+void CemuleDlg::UpdateBindLossMonitor()
+{
+	StopBindLossMonitor();
+	if (!IsBindLossMonitorConfigured())
+		return;
+
+	const DWORD dwInterfaceNotify = NotifyIpInterfaceChange(AF_INET, BindLossIpInterfaceChangeCallback, m_hWnd, FALSE, &m_hBindLossInterfaceNotification);
+	if (dwInterfaceNotify != NO_ERROR) {
+		m_hBindLossInterfaceNotification = NULL;
+		DebugLogWarning(_T("Bind-loss protection: NotifyIpInterfaceChange registration failed with error %lu"), dwInterfaceNotify);
+	}
+
+	const DWORD dwAddressNotify = NotifyUnicastIpAddressChange(AF_INET, BindLossUnicastAddressChangeCallback, m_hWnd, FALSE, &m_hBindLossAddressNotification);
+	if (dwAddressNotify != NO_ERROR) {
+		m_hBindLossAddressNotification = NULL;
+		DebugLogWarning(_T("Bind-loss protection: NotifyUnicastIpAddressChange registration failed with error %lu"), dwAddressNotify);
+	}
+
+	m_uBindLossWatchdogTimer = SetTimer(kBindLossWatchdogTimerId, kBindLossWatchdogIntervalMs, NULL);
+	if (m_uBindLossWatchdogTimer == 0)
+		DebugLogWarning(_T("Bind-loss protection: failed to start the watchdog timer."));
+
+	m_bBindLossMonitorActive = m_uBindLossWatchdogTimer != 0
+		|| m_hBindLossInterfaceNotification != NULL
+		|| m_hBindLossAddressNotification != NULL;
+	CheckBindLossMonitor();
+}
+
+void CemuleDlg::StopBindLossMonitor()
+{
+	if (m_uBindLossWatchdogTimer != 0) {
+		VERIFY(KillTimer(m_uBindLossWatchdogTimer));
+		m_uBindLossWatchdogTimer = 0;
+	}
+	if (m_hBindLossInterfaceNotification != NULL) {
+		(void)CancelMibChangeNotify2(m_hBindLossInterfaceNotification);
+		m_hBindLossInterfaceNotification = NULL;
+	}
+	if (m_hBindLossAddressNotification != NULL) {
+		(void)CancelMibChangeNotify2(m_hBindLossAddressNotification);
+		m_hBindLossAddressNotification = NULL;
+	}
+	m_bBindLossMonitorActive = false;
+}
+
+void CemuleDlg::CheckBindLossMonitor()
+{
+	if (m_bBindLossShutdown || !m_bBindLossMonitorActive || !IsBindLossMonitorConfigured())
+		return;
+
+	CString strResolvedAddress;
+	CString strResolvedInterfaceName;
+	const EBindAddressResolveResult eResult = CBindAddressResolver::ResolveBindAddress(thePrefs.GetActiveBindInterface()
+		, thePrefs.GetActiveConfiguredBindAddr(), strResolvedAddress, &strResolvedInterfaceName);
+
+	CString strActiveBindAddress;
+	if (thePrefs.GetBindAddr() != NULL)
+		strActiveBindAddress = thePrefs.GetBindAddr();
+
+	if (eResult == BARR_Resolved && !strResolvedAddress.CompareNoCase(strActiveBindAddress))
+		return;
+
+	CString strReason;
+	if (eResult == BARR_Resolved) {
+		strReason.Format(_T("Exiting eMule because the selected bind interface changed address from %s to %s: %s")
+			, (LPCTSTR)strActiveBindAddress
+			, (LPCTSTR)strResolvedAddress
+			, (LPCTSTR)BindStartupPolicy::FormatConfiguredBindTarget(thePrefs.GetActiveBindInterfaceName()
+				, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr()));
+	} else {
+		strReason = BindStartupPolicy::FormatStartupBlockReason(strResolvedInterfaceName
+			, thePrefs.GetActiveBindInterface(), thePrefs.GetActiveConfiguredBindAddr(), eResult);
+		if (strReason.IsEmpty())
+			strReason = _T("Exiting eMule because the selected bind interface is no longer available.");
+		else
+			strReason.Replace(_T("Networking disabled for this session"), _T("Exiting eMule"));
+	}
+	ExitForBindLoss(strReason);
+}
+
+void CemuleDlg::ExitForBindLoss(const CString &strReason)
+{
+	if (m_bBindLossShutdown)
+		return;
+
+	m_bBindLossShutdown = true;
+	StopBindLossMonitor();
+	LogError(LOG_STATUSBAR, _T("%s"), (LPCTSTR)strReason);
+	PostMessage(WM_CLOSE);
 }
 
 LRESULT CemuleDlg::OnStartupNextStage(WPARAM, LPARAM)
 {
 	OnStartupTimer();
+	return 0;
+}
+
+LRESULT CemuleDlg::OnBindInterfaceChanged(WPARAM, LPARAM)
+{
+	CheckBindLossMonitor();
 	return 0;
 }
 
@@ -1924,6 +2064,7 @@ LRESULT CemuleDlg::OnConsoleThreadEvent(WPARAM wParam, LPARAM lParam)
 void CemuleDlg::OnDestroy()
 {
 	AddDebugLogLine(DLP_VERYLOW, _T("%hs"), __FUNCTION__);
+	StopBindLossMonitor();
 	m_wndWindowsToastNotifier.Shutdown();
 
 	// If eMule was started with "RUNAS":
@@ -1938,6 +2079,9 @@ void CemuleDlg::OnDestroy()
 
 bool CemuleDlg::CanClose()
 {
+	if (m_bBindLossShutdown)
+		return true;
+
 	if (theApp.m_app_state == APP_STATE_RUNNING && thePrefs.IsConfirmExitEnabled()) {
 		theApp.m_app_state = APP_STATE_ASKCLOSE; //disable tray menu
 		RestoreWindow(); // make sure the window is in foreground for this prompt
@@ -1961,6 +2105,7 @@ void CemuleDlg::OnClose()
 		::InterlockedExchange(&closing, 0);
 		return;
 	}
+	StopBindLossMonitor();
 	notifierenabled = false;
 
 	CShutdownProgressDlg shutdownProgress(this);
@@ -3921,6 +4066,15 @@ void CemuleDlg::RefreshUPnP(bool bRequestAnswer)
 		}
 	} else
 		ASSERT(0);
+}
+
+void CemuleDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	if (nIDEvent == kBindLossWatchdogTimerId) {
+		CheckBindLossMonitor();
+		return;
+	}
+	__super::OnTimer(nIDEvent);
 }
 
 BOOL CemuleDlg::OnDeviceChange(UINT nEventType, DWORD_PTR dwData)

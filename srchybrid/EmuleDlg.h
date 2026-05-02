@@ -129,6 +129,8 @@ public:
 
 	void StopTimer();
 	void DoVersioncheck(bool manual);
+	/// Starts or stops the runtime bind-loss monitor according to the current preferences.
+	void UpdateBindLossMonitor();
 	void ApplyHyperTextFont(LPLOGFONT pFont);
 	void ApplyLogFont(LPLOGFONT pFont);
 	void ProcessED2KLink(LPCTSTR pszData);
@@ -192,6 +194,11 @@ protected:
 	bool			m_bKadSuspendDisconnect;
 	bool			m_bEd2kSuspendDisconnect;
 	bool			m_bInitedCOM;
+	bool			m_bBindLossMonitorActive;
+	bool			m_bBindLossShutdown;
+	UINT_PTR		m_uBindLossWatchdogTimer;
+	HANDLE			m_hBindLossInterfaceNotification;
+	HANDLE			m_hBindLossAddressNotification;
 #ifdef HAVE_WIN7_SDK_H
 	CComPtr<ITaskbarList3>	m_pTaskbarList;
 	THUMBBUTTON		m_thbButtons[TBB_LAST + 1];
@@ -212,6 +219,10 @@ protected:
 
 	// Startup Timer
 	void OnStartupTimer() noexcept;
+	void StopBindLossMonitor();
+	void CheckBindLossMonitor();
+	void ExitForBindLoss(const CString &strReason);
+	bool IsBindLossMonitorConfigured() const;
 
 	// UPnP TimeOutTimer
 	UINT_PTR m_hUPnPTimeOutTimer;
@@ -255,6 +266,7 @@ protected:
 	afx_msg LRESULT OnStartupNextStage(WPARAM, LPARAM);
 	afx_msg LRESULT OnGeoLocationUpdated(WPARAM, LPARAM);
 	afx_msg LRESULT OnIPFilterUpdated(WPARAM, LPARAM);
+	afx_msg LRESULT OnBindInterfaceChanged(WPARAM, LPARAM);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	afx_msg void OnBnClickedConnect();
@@ -264,6 +276,7 @@ protected:
 	afx_msg void OnSysColorChange();
 	afx_msg HBRUSH OnCtlColor(CDC *pDC, CWnd *pWnd, UINT nCtlColor);
 	afx_msg void OnSettingChange(UINT uFlags, LPCTSTR lpszSection);
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 	afx_msg BOOL OnDeviceChange(UINT nEventType, DWORD_PTR dwData);
 	afx_msg BOOL OnQueryEndSession();
 	afx_msg void OnEndSession(BOOL bEnding);
