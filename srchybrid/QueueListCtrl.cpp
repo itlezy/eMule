@@ -35,6 +35,7 @@
 #include "Kademlia/Kademlia/Kademlia.h"
 #include "Log.h"
 #include "OtherFunctions.h"
+#include "ProUserMenuCopySeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -659,20 +660,29 @@ void CQueueListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsFriend()) ? MF_ENABLED : MF_GRAYED), MP_REMOVEFRIEND, GetResString(IDS_REMOVEFRIEND), _T("DELETEFRIEND"));
 	ClientMenu.AppendMenu(MF_STRING | (is_ed2k ? MF_ENABLED : MF_GRAYED), MP_MESSAGE, GetResString(IDS_SEND_MSG), _T("SENDMESSAGE"));
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
-	if (thePrefs.IsExtControlsEnabled()) {
-		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
-		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
-	}
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() != 0 && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
 	const CKnownFile *file = GetQueueClientFile(client);
 	const bool bCanOpenFile = (file != NULL && !file->IsPartFile());
 	ClientMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_OPEN, GetResString(IDS_OPENFILE), _T("OPENFILE"));
 	ClientMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_OPENFOLDER, GetResString(IDS_OPENFOLDER), _T("OPENFOLDER"));
-	ClientMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_COPY_ED2K_HASH, GetResString(IDS_COPY_HASH));
+	CTitledMenu CopyMenu;
+	CopyMenu.CreateMenu();
+	CopyMenu.AddMenuTitle(NULL, true);
+	CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_IP, GetResString(IDS_COPY_CLIENT_IP));
+	CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_USERHASH, GetResString(IDS_COPY_USER_HASH));
+	CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_SUMMARY, GetResString(IDS_COPY_CLIENT_SUMMARY));
+	CopyMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_NAME, GetResString(IDS_COPY_FILE_NAME));
+	CopyMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_COPY_ED2K_HASH, GetResString(IDS_COPY_HASH));
+	CopyMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_PATH, GetResString(IDS_COPY_FILE_PATH));
+	CopyMenu.AppendMenu(MF_STRING | (bCanOpenFile ? MF_ENABLED : MF_GRAYED), MP_COPY_FOLDER_PATH, GetResString(IDS_COPY_FOLDER_PATH));
+	ClientMenu.AppendMenu(MF_POPUP | (client ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
+	VERIFY(CopyMenu.DestroyMenu());
 }
 
 BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
@@ -723,10 +733,43 @@ BOOL CQueueListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			}
 			break;
 		case MP_COPY_ED2K_HASH:
+		case MP_COPY_FILE_NAME:
+		case MP_COPY_FILE_PATH:
+		case MP_COPY_FOLDER_PATH:
+		case MP_COPY_CLIENT_IP:
+		case MP_COPY_CLIENT_USERHASH:
+		case MP_COPY_CLIENT_SUMMARY:
 			if (client) {
 				const CKnownFile *file = GetQueueClientFile(client);
-				if (file != NULL && !file->IsPartFile())
-					theApp.CopyTextToClipboard(md4str(file->GetFileHash()));
+				CString text;
+				if (wParam == MP_COPY_CLIENT_IP)
+					text = ipstr(GetClientGeoIP(client));
+				else if (wParam == MP_COPY_CLIENT_USERHASH)
+					text = md4str(client->GetUserHash());
+				else if (wParam == MP_COPY_CLIENT_SUMMARY) {
+					std::vector<ProUserMenuCopySeams::NamedField> fields;
+					ProUserMenuCopySeams::AppendField(fields, _T("username"), client->GetUserName());
+					ProUserMenuCopySeams::AppendField(fields, _T("client"), client->GetClientSoftVer());
+					ProUserMenuCopySeams::AppendField(fields, _T("ip"), ipstr(GetClientGeoIP(client)));
+					ProUserMenuCopySeams::AppendField(fields, _T("userhash"), md4str(client->GetUserHash()));
+					ProUserMenuCopySeams::AppendField(fields, _T("upload_state"), client->GetUploadStateDisplayString());
+					if (file != NULL && !file->IsPartFile()) {
+						ProUserMenuCopySeams::AppendField(fields, _T("file"), file->GetFileName());
+						ProUserMenuCopySeams::AppendField(fields, _T("filehash"), md4str(file->GetFileHash()));
+					}
+					text = ProUserMenuCopySeams::FormatSummary(fields);
+				} else if (file != NULL && !file->IsPartFile()) {
+					if (wParam == MP_COPY_ED2K_HASH)
+						text = md4str(file->GetFileHash());
+					else if (wParam == MP_COPY_FILE_NAME)
+						text = file->GetFileName();
+					else if (wParam == MP_COPY_FILE_PATH)
+						text = file->GetFilePath();
+					else if (wParam == MP_COPY_FOLDER_PATH)
+						text = file->GetPath();
+				}
+				if (!text.IsEmpty())
+					theApp.CopyTextToClipboard(text);
 			}
 			break;
 		case MP_OPEN:

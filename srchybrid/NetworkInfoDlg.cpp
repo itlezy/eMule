@@ -178,15 +178,14 @@ void CreateNetworkInfo(CRichEditCtrlX &rCtrl, CHARFORMAT &rcfDef, CHARFORMAT &rc
 
 				rCtrl << GetResString(IDS_SERVER_LIMITS) << _T(": ") << GetFormatedUInt(srv->GetSoftFiles()) << _T("/") << GetFormatedUInt(srv->GetHardFiles()) << _T("\r\n");
 
-				if (thePrefs.IsExtControlsEnabled()) {
-					CString sNo, sYes;
-					sNo.Format(_T(": %s\r\n"), (LPCTSTR)GetResString(IDS_NO));
-					sYes.Format(_T(": %s\r\n"), (LPCTSTR)GetResString(IDS_YES));
-					bool bYes = srv->GetTCPFlags() & SRV_TCPFLG_COMPRESSION;
-					rCtrl << GetResString(IDS_SRV_TCPCOMPR) << (bYes ? sYes : sNo);
+				CString sNo, sYes;
+				sNo.Format(_T(": %s\r\n"), (LPCTSTR)GetResString(IDS_NO));
+				sYes.Format(_T(": %s\r\n"), (LPCTSTR)GetResString(IDS_YES));
+				bool bYes = srv->GetTCPFlags() & SRV_TCPFLG_COMPRESSION;
+				rCtrl << GetResString(IDS_SRV_TCPCOMPR) << (bYes ? sYes : sNo);
 
-					bYes = (srv->GetTCPFlags() & SRV_TCPFLG_NEWTAGS) || (srv->GetUDPFlags() & SRV_UDPFLG_NEWTAGS);
-					rCtrl << GetResString(IDS_SHORTTAGS) << (bYes ? sYes : sNo);
+				bYes = (srv->GetTCPFlags() & SRV_TCPFLG_NEWTAGS) || (srv->GetUDPFlags() & SRV_UDPFLG_NEWTAGS);
+				rCtrl << GetResString(IDS_SHORTTAGS) << (bYes ? sYes : sNo);
 
 					bYes = (srv->GetTCPFlags() & SRV_TCPFLG_UNICODE) || (srv->GetUDPFlags() & SRV_UDPFLG_UNICODE);
 					rCtrl << _T("Unicode") << (bYes ? sYes : sNo);
@@ -211,7 +210,6 @@ void CreateNetworkInfo(CRichEditCtrlX &rCtrl, CHARFORMAT &rcfDef, CHARFORMAT &rc
 
 					bYes = srv->SupportsObfuscationTCP();
 					rCtrl << GetResString(IDS_PROTOCOLOBFUSCATION) << _T(" (TCP)") << (bYes ? sYes : sNo);
-				}
 			}
 		}
 	}

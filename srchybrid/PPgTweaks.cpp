@@ -459,7 +459,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_htiCreditSystem()
 	, m_htiDebug2Disk()
 	, m_htiDebugSourceExchange()
-	, m_htiExtControls()
 	, m_htiBeepOnError()
 	, m_htiCreateCrashDump()
 	, m_htiCreateCrashDumpDisabled()
@@ -623,7 +622,6 @@ CPPgTweaks::CPPgTweaks()
 	, m_bCreditSystem()
 	, m_bDebug2Disk()
 	, m_bDebugSourceExchange()
-	, m_bExtControls()
 	, m_bExtraPreviewWithMenu()
 	, m_bFilterLANIPs()
 	, m_bFullAlloc()
@@ -779,7 +777,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		m_htiGeneralAdvanced = m_ctrlTreeOptions.InsertGroup(GetGeneralAdvancedLabel(), iImgConnection, TVI_ROOT);
 		m_htiAutoTakeEd2kLinks = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_AUTOTAKEED2KLINKS), m_htiGeneralAdvanced, m_bAutoTakeEd2kLinks);
 		m_htiCreditSystem = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_USECREDITSYSTEM), m_htiGeneralAdvanced, m_bCreditSystem);
-		m_htiExtControls = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_SHOWEXTSETTINGS), m_htiGeneralAdvanced, m_bExtControls);
 		m_htiA4AFSaveCpu = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_A4AF_SAVE_CPU), m_htiGeneralAdvanced, m_bA4AFSaveCpu); // ZZ:DownloadManager
 		m_htiAutoArch = m_ctrlTreeOptions.InsertCheckBox(GetResString(IDS_DISABLE_AUTOARCHPREV), m_htiGeneralAdvanced, m_bAutoArchDisable);
 		m_htiYourHostname = m_ctrlTreeOptions.InsertItem(GetResString(IDS_YOURHOSTNAME), TREEOPTSCTRLIMG_EDIT, TREEOPTSCTRLIMG_EDIT, m_htiGeneralAdvanced);
@@ -1005,9 +1002,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 		SetTreeToolTip(m_htiCreditSystem,
 			_T("Uses the normal eMule credit system when ranking upload clients.\r\n\r\n")
 			_T("Recommended: enabled. Disable it only for debugging or deliberate compatibility experiments."));
-		SetTreeToolTip(m_htiExtControls,
-			_T("Shows extra advanced controls and context actions in several parts of the UI.\r\n\r\n")
-			_T("Enable it if you want the additional advanced surface. Disable it for a simpler interface."));
 		SetTreeToolTip(m_htiYourHostname,
 			_T("Optional hostname label eMule reports where your local identity text is shown.\r\n\r\n")
 			_T("Leave it blank unless you intentionally want to name this instance."));
@@ -1431,7 +1425,6 @@ void CPPgTweaks::DoDataExchange(CDataExchange *pDX)
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiAutoTakeEd2kLinks, m_bAutoTakeEd2kLinks);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiCreditSystem, m_bCreditSystem);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiFilterLANIPs, m_bFilterLANIPs);
-	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiExtControls, m_bExtControls);
 	DDX_TreeCheck(pDX, IDC_EXT_OPTS, m_htiA4AFSaveCpu, m_bA4AFSaveCpu);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiYourHostname, m_sYourHostname);
 	DDX_TreeEdit(pDX, IDC_EXT_OPTS, m_htiTxtEditor, m_sTxtEditor);
@@ -1673,7 +1666,6 @@ BOOL CPPgTweaks::OnInitDialog()
 	m_iCommitFiles = thePrefs.m_iCommitFiles;
 	m_iExtractMetaData = thePrefs.m_iExtractMetaData;
 	m_bFilterLANIPs = thePrefs.filterLANIPs;
-	m_bExtControls = thePrefs.m_bExtControls;
 	m_uServerKeepAliveTimeout = thePrefs.GetServerKeepAliveTimeout() == 0
 		? 0
 		: max(1u, static_cast<UINT>((thePrefs.GetServerKeepAliveTimeout() + MIN2MS(1) - 1) / MIN2MS(1)));
@@ -1887,14 +1879,7 @@ BOOL CPPgTweaks::OnApply()
 	m_uFileBufferSizeKiB = thePrefs.GetFileBufferSize() / 1024u;
 	m_iQueueSize = static_cast<int>(thePrefs.GetQueueSize());
 
-	bool bUpdateDLmenu = bShowCopyEd2kLinkCmdChanged;
-	if (thePrefs.m_bExtControls != m_bExtControls) {
-		bUpdateDLmenu = true;
-		thePrefs.m_bExtControls = m_bExtControls;
-		theApp.emuledlg->searchwnd->CreateMenus();
-		theApp.emuledlg->sharedfileswnd->sharedfilesctrl.CreateMenus();
-	}
-	if (bUpdateDLmenu)
+	if (bShowCopyEd2kLinkCmdChanged)
 		theApp.emuledlg->transferwnd->GetDownloadList()->CreateMenus();
 
 	if (thePrefs.GetServerKeepAliveTimeout() != MIN2MS(CPreferences::NormalizeServerKeepAliveTimeoutMinutes(m_uServerKeepAliveTimeout))) {
@@ -2041,7 +2026,6 @@ void CPPgTweaks::Localize()
 		LocalizeItemText(m_htiCreditSystem, IDS_USECREDITSYSTEM);
 		LocalizeItemText(m_htiDebug2Disk, IDS_LOG2DISK);
 		LocalizeItemText(m_htiDebugSourceExchange, IDS_DEBUG_SOURCE_EXCHANGE);
-		LocalizeItemText(m_htiExtControls, IDS_SHOWEXTSETTINGS);
 		LocalizeItemText(m_htiExtraPreviewWithMenu, IDS_EXTRAPREVIEWWITHMENU);
 		LocalizeItemText(m_htiExtractMetaData, IDS_EXTRACT_META_DATA);
 		LocalizeItemText(m_htiExtractMetaDataID3Lib, IDS_META_DATA_ID3LIB);
@@ -2258,7 +2242,6 @@ void CPPgTweaks::OnDestroy()
 	m_htiCommitOnShutdown = NULL;
 	m_htiCommitAlways = NULL;
 	m_htiFilterLANIPs = NULL;
-	m_htiExtControls = NULL;
 	m_htiServerKeepAliveTimeout = NULL;
 	m_htiSparsePartFiles = NULL;
 	m_htiFullAlloc = NULL;

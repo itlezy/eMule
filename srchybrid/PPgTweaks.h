@@ -54,7 +54,6 @@ protected:
 	HTREEITEM m_htiCreditSystem;
 	HTREEITEM m_htiDebug2Disk;
 	HTREEITEM m_htiDebugSourceExchange;
-	HTREEITEM m_htiExtControls;
 	HTREEITEM m_htiBeepOnError;
 	HTREEITEM m_htiCreateCrashDump;
 	HTREEITEM m_htiCreateCrashDumpDisabled;
@@ -222,7 +221,6 @@ protected:
 	bool m_bCreditSystem;
 	bool m_bDebug2Disk;
 	bool m_bDebugSourceExchange;
-	bool m_bExtControls;
 	bool m_bExtraPreviewWithMenu;
 	bool m_bFilterLANIPs;
 	bool m_bFullAlloc;

@@ -754,13 +754,11 @@ void CTransferWnd::OnNmRClickDltab(LPNMHDR, LRESULT *pResult)
 
 	// selector for regular expression view filter
 	if (m_rightclickindex) {
-		if (thePrefs.IsExtControlsEnabled())
-			CatMenu.AppendMenu(MF_STRING, MP_CAT_SET0 + 18, GetResString(IDS_REGEXPRESSION));
+		CatMenu.AppendMenu(MF_STRING, MP_CAT_SET0 + 18, GetResString(IDS_REGEXPRESSION));
 
 		flag = (thePrefs.GetCategory(m_rightclickindex)->care4all) ? MF_STRING | MF_CHECKED | MF_BYCOMMAND : MF_STRING;
 
-		if (thePrefs.IsExtControlsEnabled())
-			CatMenu.AppendMenu(flag, MP_CAT_SET0 + 17, GetResString(IDS_CARE4ALL));
+		CatMenu.AppendMenu(flag, MP_CAT_SET0 + 17, GetResString(IDS_CARE4ALL));
 	}
 
 	CatMenu.AppendMenu(MF_SEPARATOR);
@@ -781,12 +779,10 @@ void CTransferWnd::OnNmRClickDltab(LPNMHDR, LRESULT *pResult)
 	CatMenu.AppendMenu(MF_STRING, MP_CAT_SET0 + 16, GetResString(IDS_SEARCH_PRG));
 	CatMenu.AppendMenu(MF_STRING, MP_CAT_SET0 + 20, GetResString(IDS_SEARCH_EMULECOLLECTION));
 
-	if (thePrefs.IsExtControlsEnabled()) {
-		CatMenu.AppendMenu(MF_SEPARATOR);
-		CatMenu.AppendMenu(thePrefs.GetCatFilter(m_rightclickindex) > 0 ? MF_STRING : MF_GRAYED, MP_CAT_SET0 + 19, GetResString(IDS_NEGATEFILTER));
-		if (thePrefs.GetCatFilterNeg(m_rightclickindex))
-			CatMenu.CheckMenuItem(MP_CAT_SET0 + 19, MF_CHECKED | MF_BYCOMMAND);
-	}
+	CatMenu.AppendMenu(MF_SEPARATOR);
+	CatMenu.AppendMenu(thePrefs.GetCatFilter(m_rightclickindex) > 0 ? MF_STRING : MF_GRAYED, MP_CAT_SET0 + 19, GetResString(IDS_NEGATEFILTER));
+	if (thePrefs.GetCatFilterNeg(m_rightclickindex))
+		CatMenu.CheckMenuItem(MP_CAT_SET0 + 19, MF_CHECKED | MF_BYCOMMAND);
 
 	CatMenu.CheckMenuItem(MP_CAT_SET0 + thePrefs.GetCatFilter(m_rightclickindex), MF_CHECKED | MF_BYCOMMAND);
 
@@ -798,7 +794,7 @@ void CTransferWnd::OnNmRClickDltab(LPNMHDR, LRESULT *pResult)
 	menu.AppendMenu(MF_STRING, MP_PAUSE, GetResString(IDS_DL_PAUSE), _T("PAUSE"));
 	menu.AppendMenu(MF_STRING, MP_RESUME, GetResString(IDS_DL_RESUME), _T("RESUME"));
 	menu.AppendMenu(MF_STRING, MP_RESUMENEXT, GetResString(IDS_DL_RESUMENEXT), _T("RESUME"));
-	if (thePrefs.IsExtControlsEnabled() && m_rightclickindex != 0) {
+	if (m_rightclickindex != 0) {
 		menu.AppendMenu(MF_STRING, MP_DOWNLOAD_ALPHABETICAL, GetResString(IDS_DOWNLOAD_ALPHABETICAL));
 		menu.CheckMenuItem(MP_DOWNLOAD_ALPHABETICAL, category_Struct && category_Struct->downloadInAlphabeticalOrder ? MF_CHECKED : MF_UNCHECKED);
 	}

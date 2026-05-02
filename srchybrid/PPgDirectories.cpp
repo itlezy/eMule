@@ -71,7 +71,7 @@ BOOL CPPgDirectories::OnInitDialog()
 	AddBuddyButton(GetDlgItem(IDC_TEMPFILES)->m_hWnd, ::GetDlgItem(m_hWnd, IDC_SELTEMPDIR));
 	InitAttachedBrowseButton(::GetDlgItem(m_hWnd, IDC_SELTEMPDIR), m_icoBrowse);
 
-	GetDlgItem(IDC_SELTEMPDIRADD)->ShowWindow(thePrefs.IsExtControlsEnabled() ? SW_SHOW : SW_HIDE);
+	GetDlgItem(IDC_SELTEMPDIRADD)->ShowWindow(SW_SHOW);
 
 	LoadSettings();
 	Localize();

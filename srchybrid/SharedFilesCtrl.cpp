@@ -48,6 +48,8 @@
 #include "SearchParams.h"
 #include "SearchDlg.h"
 #include "SearchResultsWnd.h"
+#include "OtherFunctions.h"
+#include "ProUserMenuCopySeams.h"
 #include "ToolTipCtrlX.h"
 #include "kademlia/kademlia/kademlia.h"
 #include "kademlia/kademlia/UDPFirewallTester.h"
@@ -333,7 +335,7 @@ CSharedFileDetailsSheet::CSharedFileDetailsSheet(CTypedPtrList<CPtrList, CSharea
 	m_wndMetaData.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMetaData.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMetaData.m_psp.pszIcon = _T("METADATA");
-	if (m_aItems.GetSize() == 1 && thePrefs.IsExtControlsEnabled()) {
+	if (m_aItems.GetSize() == 1) {
 		m_wndMetaData.SetFiles(&m_aItems);
 		AddPage(&m_wndMetaData);
 	}
@@ -1392,13 +1394,21 @@ void CSharedFilesCtrl::OnContextMenu(CWnd*, CPoint point)
 	m_CollectionsMenu.EnableMenuItem(MP_VIEWCOLLECTION, (!bContainsShareableFiles && coll != NULL) ? MF_ENABLED : MF_GRAYED);
 	m_CollectionsMenu.EnableMenuItem(MP_SEARCHAUTHOR, (!bContainsShareableFiles && coll != NULL && !coll->GetAuthorKeyHashString().IsEmpty()) ? MF_ENABLED : MF_GRAYED);
 #if defined(_DEBUG)
-	if (thePrefs.IsExtControlsEnabled()) {
-		//JOHNTODO: Not for release as we need kad lowID users in the network to see how well this work. Also, we do not support these links yet.
-		bool bEnable = (iSelectedItems > 0 && theApp.IsConnected() && theApp.IsFirewalled() && theApp.clientlist->GetBuddy());
-		m_SharedFilesMenu.EnableMenuItem(MP_GETKADSOURCELINK, (bEnable ? MF_ENABLED : MF_GRAYED));
-	}
+	//JOHNTODO: Not for release as we need kad lowID users in the network to see how well this work. Also, we do not support these links yet.
+	bool bEnable = (iSelectedItems > 0 && theApp.IsConnected() && theApp.IsFirewalled() && theApp.clientlist->GetBuddy());
+	m_SharedFilesMenu.EnableMenuItem(MP_GETKADSOURCELINK, (bEnable ? MF_ENABLED : MF_GRAYED));
 #endif
 	m_SharedFilesMenu.EnableMenuItem(Irc_SetSendLink, (!bContainsOnlyShareableFile && iSelectedItems == 1 && theApp.emuledlg->ircwnd->IsConnected()) ? MF_ENABLED : MF_GRAYED);
+
+	CTitledMenu CopyMenu;
+	CopyMenu.CreateMenu();
+	CopyMenu.AddMenuTitle(NULL, true);
+	CopyMenu.AppendMenu(MF_STRING | ((!bContainsOnlyShareableFile && iSelectedItems > 0) ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_NAME, GetResString(IDS_COPY_FILE_NAME));
+	CopyMenu.AppendMenu(MF_STRING | ((!bContainsOnlyShareableFile && iSelectedItems > 0) ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_HASH, GetResString(IDS_COPY_HASH));
+	CopyMenu.AppendMenu(MF_STRING | ((!bContainsOnlyShareableFile && iSelectedItems > 0) ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_PATH, GetResString(IDS_COPY_FILE_PATH));
+	CopyMenu.AppendMenu(MF_STRING | ((!bContainsOnlyShareableFile && iSelectedItems > 0) ? MF_ENABLED : MF_GRAYED), MP_COPY_FOLDER_PATH, GetResString(IDS_COPY_FOLDER_PATH));
+	CopyMenu.AppendMenu(MF_STRING | ((!bContainsOnlyShareableFile && iSelectedItems > 0) ? MF_ENABLED : MF_GRAYED), MP_GETED2KLINK, GetResString(IDS_DL_LINK1), _T("ED2KLINK"));
+	m_SharedFilesMenu.AppendMenu(MF_POPUP | ((!bContainsOnlyShareableFile && iSelectedItems > 0) ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
 
 	CTitledMenu WebMenu;
 	WebMenu.CreateMenu();
@@ -1411,6 +1421,8 @@ void CSharedFilesCtrl::OnContextMenu(CWnd*, CPoint point)
 	m_SharedFilesMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 
 	m_SharedFilesMenu.RemoveMenu(m_SharedFilesMenu.GetMenuItemCount() - 1, MF_BYPOSITION);
+	m_SharedFilesMenu.RemoveMenu(m_SharedFilesMenu.GetMenuItemCount() - 1, MF_BYPOSITION);
+	VERIFY(CopyMenu.DestroyMenu());
 	VERIFY(WebMenu.DestroyMenu());
 	if (uInsertedMenuItem)
 		VERIFY(m_SharedFilesMenu.RemoveMenu(uInsertedMenuItem, MF_BYCOMMAND));
@@ -1449,6 +1461,30 @@ BOOL CSharedFilesCtrl::OnCommand(WPARAM wParam, LPARAM)
 					}
 				}
 				theApp.CopyTextToClipboard(str);
+			}
+			break;
+		case MP_COPY_FILE_NAME:
+		case MP_COPY_FILE_HASH:
+		case MP_COPY_FILE_PATH:
+		case MP_COPY_FOLDER_PATH:
+			{
+				std::vector<CString> lines;
+				for (POSITION pos = selectedList.GetHeadPosition(); pos != NULL;) {
+					CKnownFile *pfile = static_cast<CKnownFile*>(selectedList.GetNext(pos));
+					if (pfile == NULL || !pfile->IsKindOf(RUNTIME_CLASS(CKnownFile)))
+						continue;
+					if (wParam == MP_COPY_FILE_NAME)
+						lines.push_back(pfile->GetFileName());
+					else if (wParam == MP_COPY_FILE_HASH)
+						lines.push_back(md4str(pfile->GetFileHash()));
+					else if (wParam == MP_COPY_FILE_PATH)
+						lines.push_back(pfile->GetFilePath());
+					else if (wParam == MP_COPY_FOLDER_PATH)
+						lines.push_back(pfile->GetPath());
+				}
+				const CString text = ProUserMenuCopySeams::JoinLines(lines);
+				if (!text.IsEmpty())
+					theApp.CopyTextToClipboard(text);
 			}
 			break;
 #if defined(_DEBUG)
@@ -1941,8 +1977,7 @@ void CSharedFilesCtrl::CreateMenus()
 	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_RENAME, GetResString(IDS_RENAME) + _T("..."), _T("FILERENAME"));
 	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_REMOVE, GetResString(IDS_DELETE), _T("DELETE"));
 	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_UNSHAREFILE, GetResString(IDS_UNSHARE), _T("KADBOOTSTRAP")); // TODO: better icon
-	if (thePrefs.IsExtControlsEnabled())
-		m_SharedFilesMenu.AppendMenu(MF_STRING, Irc_SetSendLink, GetResString(IDS_IRC_ADDLINKTOIRC), _T("IRCCLIPBOARD"));
+	m_SharedFilesMenu.AppendMenu(MF_STRING, Irc_SetSendLink, GetResString(IDS_IRC_ADDLINKTOIRC), _T("IRCCLIPBOARD"));
 
 	m_SharedFilesMenu.AppendMenu(MF_STRING | MF_SEPARATOR);
 	CString sPrio(GetResString(IDS_PRIORITY));
@@ -1963,11 +1998,9 @@ void CSharedFilesCtrl::CreateMenus()
 	m_SharedFilesMenu.AppendMenu(MF_STRING | MF_SEPARATOR);
 
 #if defined(_DEBUG)
-	if (thePrefs.IsExtControlsEnabled()) {
-		//JOHNTODO: Not for release as we need kad lowID users in the network to see how well this works. Also, we do not support these links yet.
-		m_SharedFilesMenu.AppendMenu(MF_STRING, MP_GETKADSOURCELINK, _T("Copy eD2K Links To Clipboard (Kad)"));
-		m_SharedFilesMenu.AppendMenu(MF_STRING | MF_SEPARATOR);
-	}
+	//JOHNTODO: Not for release as we need kad lowID users in the network to see how well this works. Also, we do not support these links yet.
+	m_SharedFilesMenu.AppendMenu(MF_STRING, MP_GETKADSOURCELINK, _T("Copy eD2K Links To Clipboard (Kad)"));
+	m_SharedFilesMenu.AppendMenu(MF_STRING | MF_SEPARATOR);
 #endif
 }
 

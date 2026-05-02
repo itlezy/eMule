@@ -40,6 +40,8 @@
 #include "SharedFileList.h"
 #include "GeoLocation.h"
 #include "ClientList.h"
+#include "OtherFunctions.h"
+#include "ProUserMenuCopySeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -596,24 +598,22 @@ CString CDownloadListCtrl::GetSourceItemDisplayText(const CtrlItem_Struct *pCtrl
 			else {
 				sText = GetResString(IDS_ASKED4ANOTHERFILE);
 // ZZ:DownloadManager -->
-				if (thePrefs.IsExtControlsEnabled()) {
-					UINT uid;
-					if (pClient->IsInNoNeededList(pCtrlItem->owner))
-						uid = IDS_NONEEDEDPARTS;
-					else if (pClient->GetDownloadState() == DS_DOWNLOADING)
-						uid = IDS_TRANSFERRING;
-					else if (const_cast<CUpDownClient*>(pClient)->IsSwapSuspended(pClient->GetRequestFile()))
-						uid = IDS_SOURCESWAPBLOCKED;
-					else
-						uid = 0;
-					if (uid)
-						sText.AppendFormat(_T(" (%s)"), (LPCTSTR)GetResString(uid));
-					if (pClient->GetRequestFile() && !pClient->GetRequestFile()->GetFileName().IsEmpty())
-						sText.AppendFormat(_T(": \"%s\""), (LPCTSTR)pClient->GetRequestFile()->GetFileName());
-				}
+				UINT uid;
+				if (pClient->IsInNoNeededList(pCtrlItem->owner))
+					uid = IDS_NONEEDEDPARTS;
+				else if (pClient->GetDownloadState() == DS_DOWNLOADING)
+					uid = IDS_TRANSFERRING;
+				else if (const_cast<CUpDownClient*>(pClient)->IsSwapSuspended(pClient->GetRequestFile()))
+					uid = IDS_SOURCESWAPBLOCKED;
+				else
+					uid = 0;
+				if (uid)
+					sText.AppendFormat(_T(" (%s)"), (LPCTSTR)GetResString(uid));
+				if (pClient->GetRequestFile() && !pClient->GetRequestFile()->GetFileName().IsEmpty())
+					sText.AppendFormat(_T(": \"%s\""), (LPCTSTR)pClient->GetRequestFile()->GetFileName());
 			}
 
-			if (thePrefs.IsExtControlsEnabled() && !pClient->m_OtherRequests_list.IsEmpty())
+			if (!pClient->m_OtherRequests_list.IsEmpty())
 				sText += _T('*');
 // ZZ:DownloadManager <--
 		}
@@ -1091,25 +1091,20 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			CMenu PreviewWithMenu;
 			PreviewWithMenu.CreateMenu();
 			int iPreviewMenuEntries = thePreviewApps.GetAllMenuEntries(PreviewWithMenu, (iSelectedItems == 1) ? file1 : NULL);
-			if (thePrefs.IsExtControlsEnabled()) {
-				if (!thePrefs.GetPreviewPrio()) {
-					m_PreviewMenu.EnableMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, (iSelectedItems == 1 && iFilesPreviewType == 1 && iFilesToPreview == 0 && iFilesNotDone == 1) ? MF_ENABLED : MF_GRAYED);
-					m_PreviewMenu.CheckMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, (iSelectedItems == 1 && iFilesGetPreviewParts == 1) ? MF_CHECKED : MF_UNCHECKED);
-				}
-				m_PreviewMenu.EnableMenuItem(MP_PREVIEW, (iSelectedItems == 1 && iFilesToPreview == 1) ? MF_ENABLED : MF_GRAYED);
-				m_PreviewMenu.EnableMenuItem(MP_PAUSEONPREVIEW, iFilesCanPauseOnPreview > 0 ? MF_ENABLED : MF_GRAYED);
-				m_PreviewMenu.CheckMenuItem(MP_PAUSEONPREVIEW, (iSelectedItems > 0 && iFilesDoPauseOnPreview == iSelectedItems) ? MF_CHECKED : MF_UNCHECKED);
-				m_FileMenu.EnableMenuItem((UINT)m_PreviewMenu.m_hMenu, m_PreviewMenu.HasEnabledItems() ? MF_ENABLED : MF_GRAYED);
+			if (!thePrefs.GetPreviewPrio()) {
+				m_PreviewMenu.EnableMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, (iSelectedItems == 1 && iFilesPreviewType == 1 && iFilesToPreview == 0 && iFilesNotDone == 1) ? MF_ENABLED : MF_GRAYED);
+				m_PreviewMenu.CheckMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, (iSelectedItems == 1 && iFilesGetPreviewParts == 1) ? MF_CHECKED : MF_UNCHECKED);
+			}
+			m_PreviewMenu.EnableMenuItem(MP_PREVIEW, (iSelectedItems == 1 && iFilesToPreview == 1) ? MF_ENABLED : MF_GRAYED);
+			m_PreviewMenu.EnableMenuItem(MP_PAUSEONPREVIEW, iFilesCanPauseOnPreview > 0 ? MF_ENABLED : MF_GRAYED);
+			m_PreviewMenu.CheckMenuItem(MP_PAUSEONPREVIEW, (iSelectedItems > 0 && iFilesDoPauseOnPreview == iSelectedItems) ? MF_CHECKED : MF_UNCHECKED);
+			m_FileMenu.EnableMenuItem((UINT)m_PreviewMenu.m_hMenu, m_PreviewMenu.HasEnabledItems() ? MF_ENABLED : MF_GRAYED);
 
-				if (iPreviewMenuEntries > 0)
-					if (thePrefs.GetExtraPreviewWithMenu())
-						m_FileMenu.InsertMenu(MP_METINFO, MF_POPUP | MF_BYCOMMAND | (iSelectedItems == 1 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)PreviewWithMenu.m_hMenu, GetResString(IDS_PREVIEWWITH));
-					else
-						m_PreviewMenu.InsertMenu(1, MF_POPUP | MF_BYPOSITION | (iSelectedItems == 1 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)PreviewWithMenu.m_hMenu, GetResString(IDS_PREVIEWWITH));
-			} else {
-				m_FileMenu.EnableMenuItem(MP_PREVIEW, (iSelectedItems == 1 && iFilesToPreview == 1) ? MF_ENABLED : MF_GRAYED);
-				if (iPreviewMenuEntries > 0)
+			if (iPreviewMenuEntries > 0) {
+				if (thePrefs.GetExtraPreviewWithMenu())
 					m_FileMenu.InsertMenu(MP_METINFO, MF_POPUP | MF_BYCOMMAND | (iSelectedItems == 1 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)PreviewWithMenu.m_hMenu, GetResString(IDS_PREVIEWWITH));
+				else
+					m_PreviewMenu.InsertMenu(1, MF_POPUP | MF_BYPOSITION | (iSelectedItems == 1 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)PreviewWithMenu.m_hMenu, GetResString(IDS_PREVIEWWITH));
 			}
 
 			bool bDetailsEnabled = (iSelectedItems > 0);
@@ -1125,16 +1120,24 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			m_FileMenu.CheckMenuItem(MP_FOLLOWMAJORITYFILENAME, MF_BYCOMMAND | ((iFilesFollowMajorityApplicable > 0 && iFilesFollowMajority == iFilesFollowMajorityApplicable) ? MF_CHECKED : MF_UNCHECKED));
 			int total;
 			m_FileMenu.EnableMenuItem(MP_CLEARCOMPLETED, GetCompleteDownloads(m_curTab, total) > 0 ? MF_ENABLED : MF_GRAYED);
-			if (thePrefs.IsExtControlsEnabled()) {
-				m_FileMenu.EnableMenuItem((UINT)m_SourcesMenu.m_hMenu, MF_ENABLED);
-				m_SourcesMenu.EnableMenuItem(MP_ADDSOURCE, (iSelectedItems == 1 && iFilesToStop == 1) ? MF_ENABLED : MF_GRAYED);
-				m_SourcesMenu.EnableMenuItem(MP_SETSOURCELIMIT, (iFilesNotDone == iSelectedItems) ? MF_ENABLED : MF_GRAYED);
-			}
+			m_FileMenu.EnableMenuItem((UINT)m_SourcesMenu.m_hMenu, MF_ENABLED);
+			m_SourcesMenu.EnableMenuItem(MP_ADDSOURCE, (iSelectedItems == 1 && iFilesToStop == 1) ? MF_ENABLED : MF_GRAYED);
+			m_SourcesMenu.EnableMenuItem(MP_SETSOURCELIMIT, (iFilesNotDone == iSelectedItems) ? MF_ENABLED : MF_GRAYED);
 
 			m_FileMenu.EnableMenuItem(thePrefs.GetShowCopyEd2kLinkCmd() ? MP_GETED2KLINK : MP_SHOWED2KLINK, iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED);
 			m_FileMenu.EnableMenuItem(MP_PASTE, theApp.IsEd2kFileLinkInClipboard() ? MF_ENABLED : MF_GRAYED);
 			m_FileMenu.EnableMenuItem(MP_FIND, GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED);
 			m_FileMenu.EnableMenuItem(MP_SEARCHRELATED, theApp.emuledlg->searchwnd->CanSearchRelatedFiles() ? MF_ENABLED : MF_GRAYED);
+
+			CTitledMenu CopyMenu;
+			CopyMenu.CreateMenu();
+			CopyMenu.AddMenuTitle(NULL, true);
+			CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_NAME, GetResString(IDS_COPY_FILE_NAME));
+			CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_HASH, GetResString(IDS_COPY_HASH));
+			CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_PATH, GetResString(IDS_COPY_FILE_PATH));
+			CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_FOLDER_PATH, GetResString(IDS_COPY_FOLDER_PATH));
+			CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_GETED2KLINK, GetResString(IDS_DL_LINK1), _T("ED2KLINK"));
+			m_FileMenu.AppendMenu(MF_POPUP | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
 
 			CTitledMenu WebMenu;
 			WebMenu.CreateMenu();
@@ -1163,13 +1166,15 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			}
 			VERIFY(m_FileMenu.RemoveMenu(m_FileMenu.GetMenuItemCount() - 1, MF_BYPOSITION));
 			VERIFY(m_FileMenu.RemoveMenu(m_FileMenu.GetMenuItemCount() - 1, MF_BYPOSITION));
+			VERIFY(m_FileMenu.RemoveMenu(m_FileMenu.GetMenuItemCount() - 1, MF_BYPOSITION));
 			if (iPreviewMenuEntries)
-				if (thePrefs.IsExtControlsEnabled() && !thePrefs.GetExtraPreviewWithMenu())
+				if (!thePrefs.GetExtraPreviewWithMenu())
 					VERIFY(m_PreviewMenu.RemoveMenu((UINT)PreviewWithMenu.m_hMenu, MF_BYCOMMAND));
 				else
 					VERIFY(m_FileMenu.RemoveMenu((UINT)PreviewWithMenu.m_hMenu, MF_BYCOMMAND));
 
 			VERIFY(WebMenu.DestroyMenu());
+			VERIFY(CopyMenu.DestroyMenu());
 			VERIFY(CatsMenu.DestroyMenu());
 			VERIFY(PreviewWithMenu.DestroyMenu());
 		} else {
@@ -1185,25 +1190,38 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 			ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
 			if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 				ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
+			CTitledMenu CopyMenu;
+			CopyMenu.CreateMenu();
+			CopyMenu.AddMenuTitle(NULL, true);
+			CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_IP, GetResString(IDS_COPY_CLIENT_IP));
+			CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_USERHASH, GetResString(IDS_COPY_USER_HASH));
+			CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_SUMMARY, GetResString(IDS_COPY_CLIENT_SUMMARY));
+			if (client != NULL && client->GetRequestFile() != NULL) {
+				CopyMenu.AppendMenu(MF_STRING, MP_COPY_FILE_NAME, GetResString(IDS_COPY_FILE_NAME));
+				CopyMenu.AppendMenu(MF_STRING, MP_COPY_FILE_HASH, GetResString(IDS_COPY_HASH));
+			}
+			ClientMenu.AppendMenu(MF_POPUP | (client ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
+			ClientMenu.AppendMenu(MF_SEPARATOR);
+			ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
+			ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
 			ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
 
 			CMenu A4AFMenu;
 			A4AFMenu.CreateMenu();
-			if (thePrefs.IsExtControlsEnabled()) {
 // ZZ:DownloadManager -->
 #ifdef _DEBUG
-				if (content && content->type == UNAVAILABLE_SOURCE)
-					A4AFMenu.AppendMenu(MF_STRING, MP_A4AF_CHECK_THIS_NOW, GetResString(IDS_A4AF_CHECK_THIS_NOW));
+			if (content && content->type == UNAVAILABLE_SOURCE)
+				A4AFMenu.AppendMenu(MF_STRING, MP_A4AF_CHECK_THIS_NOW, GetResString(IDS_A4AF_CHECK_THIS_NOW));
 # endif
 // <-- ZZ:DownloadManager
-				if (A4AFMenu.GetMenuItemCount() > 0)
-					ClientMenu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)A4AFMenu.m_hMenu, GetResString(IDS_A4AF));
-			}
+			if (A4AFMenu.GetMenuItemCount() > 0)
+				ClientMenu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)A4AFMenu.m_hMenu, GetResString(IDS_A4AF));
 
 			GetPopupMenuPos(*this, point);
 			ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 
 			VERIFY(A4AFMenu.DestroyMenu());
+			VERIFY(CopyMenu.DestroyMenu());
 			VERIFY(ClientMenu.DestroyMenu());
 		}
 	} else { // nothing selected
@@ -1215,16 +1233,13 @@ void CDownloadListCtrl::OnContextMenu(CWnd*, CPoint point)
 		m_FileMenu.EnableMenuItem(MP_RESUME, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_OPEN, MF_GRAYED);
 
-		if (thePrefs.IsExtControlsEnabled()) {
-			m_FileMenu.EnableMenuItem((UINT)m_PreviewMenu.m_hMenu, MF_GRAYED);
-			if (!thePrefs.GetPreviewPrio()) {
-				m_PreviewMenu.EnableMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, MF_GRAYED);
-				m_PreviewMenu.CheckMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, MF_UNCHECKED);
-			}
-			m_PreviewMenu.EnableMenuItem(MP_PREVIEW, MF_GRAYED);
-			m_PreviewMenu.EnableMenuItem(MP_PAUSEONPREVIEW, MF_GRAYED);
-		} else
-			m_FileMenu.EnableMenuItem(MP_PREVIEW, MF_GRAYED);
+		m_FileMenu.EnableMenuItem((UINT)m_PreviewMenu.m_hMenu, MF_GRAYED);
+		if (!thePrefs.GetPreviewPrio()) {
+			m_PreviewMenu.EnableMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, MF_GRAYED);
+			m_PreviewMenu.CheckMenuItem(MP_TRY_TO_GET_PREVIEW_PARTS, MF_UNCHECKED);
+		}
+		m_PreviewMenu.EnableMenuItem(MP_PREVIEW, MF_GRAYED);
+		m_PreviewMenu.EnableMenuItem(MP_PAUSEONPREVIEW, MF_GRAYED);
 
 		m_FileMenu.EnableMenuItem(MP_METINFO, MF_GRAYED);
 		m_FileMenu.EnableMenuItem(MP_VIEWFILECOMMENTS, MF_GRAYED);
@@ -1545,6 +1560,36 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 					theApp.CopyTextToClipboard(str);
 				}
 				break;
+			case MP_COPY_FILE_NAME:
+			case MP_COPY_FILE_HASH:
+			case MP_COPY_FILE_PATH:
+			case MP_COPY_FOLDER_PATH:
+				{
+					std::vector<CString> lines;
+					for (POSITION pos = selectedList.GetHeadPosition(); pos != NULL;) {
+						const CPartFile *partfile = selectedList.GetNext(pos);
+						if (partfile == NULL)
+							continue;
+						switch (wParam) {
+						case MP_COPY_FILE_NAME:
+							lines.push_back(partfile->GetFileName());
+							break;
+						case MP_COPY_FILE_HASH:
+							lines.push_back(md4str(partfile->GetFileHash()));
+							break;
+						case MP_COPY_FILE_PATH:
+							lines.push_back(partfile->GetFullName());
+							break;
+						case MP_COPY_FOLDER_PATH:
+							lines.push_back(partfile->GetPath());
+							break;
+						}
+					}
+					const CString text = ProUserMenuCopySeams::JoinLines(lines);
+					if (!text.IsEmpty())
+						theApp.CopyTextToClipboard(text);
+				}
+				break;
 			case MP_SEARCHRELATED:
 				theApp.emuledlg->searchwnd->SearchRelatedFiles(selectedList);
 				theApp.emuledlg->SetActiveDialog(theApp.emuledlg->searchwnd);
@@ -1666,6 +1711,51 @@ BOOL CDownloadListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			case MP_ADDFRIEND:
 				if (theApp.friendlist->AddFriend(client))
 					UpdateItem(client);
+				break;
+			case MP_BAN:
+				if (!client->IsBanned()) {
+					client->Ban(_T("Manual download-source ban"));
+					UpdateItem(client);
+				}
+				break;
+			case MP_UNBAN:
+				if (client->IsBanned()) {
+					client->UnBan();
+					UpdateItem(client);
+				}
+				break;
+			case MP_COPY_CLIENT_IP:
+			case MP_COPY_CLIENT_USERHASH:
+			case MP_COPY_CLIENT_SUMMARY:
+			case MP_COPY_FILE_NAME:
+			case MP_COPY_FILE_HASH:
+				{
+					CString text;
+					if (wParam == MP_COPY_CLIENT_IP) {
+						text = ipstr(GetClientGeoIP(client));
+					} else if (wParam == MP_COPY_CLIENT_USERHASH) {
+						text = md4str(client->GetUserHash());
+					} else if (wParam == MP_COPY_FILE_NAME && client->GetRequestFile() != NULL) {
+						text = client->GetRequestFile()->GetFileName();
+					} else if (wParam == MP_COPY_FILE_HASH && client->GetRequestFile() != NULL) {
+						text = md4str(client->GetRequestFile()->GetFileHash());
+					} else if (wParam == MP_COPY_CLIENT_SUMMARY) {
+						std::vector<ProUserMenuCopySeams::NamedField> fields;
+						ProUserMenuCopySeams::AppendField(fields, _T("username"), client->GetUserName());
+						ProUserMenuCopySeams::AppendField(fields, _T("client"), client->GetClientSoftVer());
+						ProUserMenuCopySeams::AppendField(fields, _T("ip"), ipstr(GetClientGeoIP(client)));
+						ProUserMenuCopySeams::AppendField(fields, _T("userhash"), md4str(client->GetUserHash()));
+						ProUserMenuCopySeams::AppendField(fields, _T("download_state"), client->GetDownloadStateDisplayString());
+						ProUserMenuCopySeams::AppendField(fields, _T("upload_state"), client->GetUploadStateDisplayString());
+						if (client->GetRequestFile() != NULL) {
+							ProUserMenuCopySeams::AppendField(fields, _T("file"), client->GetRequestFile()->GetFileName());
+							ProUserMenuCopySeams::AppendField(fields, _T("filehash"), md4str(client->GetRequestFile()->GetFileHash()));
+						}
+						text = ProUserMenuCopySeams::FormatSummary(fields);
+					}
+					if (!text.IsEmpty())
+						theApp.CopyTextToClipboard(text);
+				}
 				break;
 			case MP_DETAIL:
 			case MPG_ALTENTER:
@@ -2049,16 +2139,13 @@ void CDownloadListCtrl::CreateMenus()
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_OPEN, GetResString(IDS_DL_OPEN), _T("OPENFILE"));
 	// Extended: Submenu with Preview options, Normal: Preview and possibly 'Preview with' item
-	if (thePrefs.IsExtControlsEnabled()) {
-		m_PreviewMenu.CreateMenu();
-		m_PreviewMenu.AddMenuTitle(NULL, true);
-		m_PreviewMenu.AppendMenu(MF_STRING, MP_PREVIEW, GetResString(IDS_DL_PREVIEW), _T("PREVIEW"));
-		m_PreviewMenu.AppendMenu(MF_STRING, MP_PAUSEONPREVIEW, GetResString(IDS_PAUSEONPREVIEW));
-		if (!thePrefs.GetPreviewPrio())
-			m_PreviewMenu.AppendMenu(MF_STRING, MP_TRY_TO_GET_PREVIEW_PARTS, GetResString(IDS_DL_TRY_TO_GET_PREVIEW_PARTS));
-		m_FileMenu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)m_PreviewMenu.m_hMenu, GetResString(IDS_DL_PREVIEW), _T("PREVIEW"));
-	} else
-		m_FileMenu.AppendMenu(MF_STRING, MP_PREVIEW, GetResString(IDS_DL_PREVIEW), _T("PREVIEW"));
+	m_PreviewMenu.CreateMenu();
+	m_PreviewMenu.AddMenuTitle(NULL, true);
+	m_PreviewMenu.AppendMenu(MF_STRING, MP_PREVIEW, GetResString(IDS_DL_PREVIEW), _T("PREVIEW"));
+	m_PreviewMenu.AppendMenu(MF_STRING, MP_PAUSEONPREVIEW, GetResString(IDS_PAUSEONPREVIEW));
+	if (!thePrefs.GetPreviewPrio())
+		m_PreviewMenu.AppendMenu(MF_STRING, MP_TRY_TO_GET_PREVIEW_PARTS, GetResString(IDS_DL_TRY_TO_GET_PREVIEW_PARTS));
+	m_FileMenu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)m_PreviewMenu.m_hMenu, GetResString(IDS_DL_PREVIEW), _T("PREVIEW"));
 
 	m_FileMenu.AppendMenu(MF_STRING, MP_METINFO, GetResString(IDS_DL_INFO), _T("FILEINFO"));
 	m_FileMenu.AppendMenu(MF_STRING, MP_VIEWFILECOMMENTS, GetResString(IDS_CMT_SHOWALL), _T("FILECOMMENTS"));
@@ -2069,12 +2156,10 @@ void CDownloadListCtrl::CreateMenus()
 
 	// Add (extended user mode) 'Source Handling' sub menu
 	//
-	if (thePrefs.IsExtControlsEnabled()) {
-		m_SourcesMenu.CreateMenu();
-		m_SourcesMenu.AppendMenu(MF_STRING, MP_ADDSOURCE, GetResString(IDS_ADDSRCMANUALLY));
-		m_SourcesMenu.AppendMenu(MF_STRING, MP_SETSOURCELIMIT, GetResString(IDS_SETPFSLIMIT));
-		m_FileMenu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)m_SourcesMenu.m_hMenu, GetResString(IDS_A4AF));
-	}
+	m_SourcesMenu.CreateMenu();
+	m_SourcesMenu.AppendMenu(MF_STRING, MP_ADDSOURCE, GetResString(IDS_ADDSRCMANUALLY));
+	m_SourcesMenu.AppendMenu(MF_STRING, MP_SETSOURCELIMIT, GetResString(IDS_SETPFSLIMIT));
+	m_FileMenu.AppendMenu(MF_STRING | MF_POPUP, (UINT_PTR)m_SourcesMenu.m_hMenu, GetResString(IDS_A4AF));
 	m_FileMenu.AppendMenu(MF_SEPARATOR);
 
 	// Add 'Copy & Paste' commands
@@ -2172,13 +2257,13 @@ CString CDownloadListCtrl::GetFileItemDisplayText(const CPartFile *lpPartFile, i
 				sText.Format(_T("%u"), sc - ncsc);
 				if (ncsc > 0)
 					sText.AppendFormat(_T("/%u"), sc);
-				if (thePrefs.IsExtControlsEnabled() && lpPartFile->GetSrcA4AFCount() > 0)
+				if (lpPartFile->GetSrcA4AFCount() > 0)
 					sText.AppendFormat(_T("+%u"), lpPartFile->GetSrcA4AFCount());
 				if (lpPartFile->GetTransferringSrcCount() > 0)
 					sText.AppendFormat(_T(" (%u)"), lpPartFile->GetTransferringSrcCount());
 			}
 // <-- ZZ:DownloadManager
-			if (thePrefs.IsExtControlsEnabled() && lpPartFile->GetPrivateMaxSources() > 0)
+			if (lpPartFile->GetPrivateMaxSources() > 0)
 				sText.AppendFormat(_T(" [%u]"), lpPartFile->GetPrivateMaxSources());
 		}
 		break;
@@ -2476,8 +2561,7 @@ void CDownloadListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 						, client->GetServerPort());
 					if (client->GetDownloadState() != DS_CONNECTING && client->GetDownloadState() != DS_DOWNLOADING) { //do not display inappropriate 'next re-ask'
 						info.AppendFormat(GetResString(IDS_NEXT_REASK) + _T(":%s"), (LPCTSTR)CastSecondsToHM(client->GetTimeUntilReask(client->GetRequestFile()) / SEC2MS(1)));
-						if (thePrefs.IsExtControlsEnabled())
-							info.AppendFormat(_T(" (%s)"), (LPCTSTR)CastSecondsToHM(client->GetTimeUntilReask(content->owner) / SEC2MS(1)));
+						info.AppendFormat(_T(" (%s)"), (LPCTSTR)CastSecondsToHM(client->GetTimeUntilReask(content->owner) / SEC2MS(1)));
 						info += _T('\n');
 					}
 					info.AppendFormat(GetResString(IDS_SOURCEINFO), client->GetAskedCountDown(), client->GetAvailablePartCount());
@@ -2495,7 +2579,7 @@ void CDownloadListCtrl::OnLvnGetInfoTip(LPNMHDR pNMHDR, LRESULT *pResult)
 							info.AppendFormat(_T(": %s"), (LPCTSTR)client->GetRequestFile()->GetFileName());
 					}
 
-					if (thePrefs.IsExtControlsEnabled() && !client->m_OtherRequests_list.IsEmpty()) {
+					if (!client->m_OtherRequests_list.IsEmpty()) {
 						CSimpleArray<const CString*> apstrFileNames;
 						for (POSITION pos = client->m_OtherRequests_list.GetHeadPosition(); pos != NULL;)
 							apstrFileNames.Add(&client->m_OtherRequests_list.GetNext(pos)->GetFileName());

@@ -71,13 +71,6 @@ BOOL CCatDialog::OnInitDialog()
 	m_ctlColor.SetDefaultColor(::GetSysColor(COLOR_BTNTEXT));
 	UpdateData();
 
-	if (!thePrefs.IsExtControlsEnabled()) {
-		GetDlgItem(IDC_REGEXPR)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_STATIC_REGEXP)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_REGEXP)->ShowWindow(SW_HIDE);
-		GetDlgItem(IDC_REB)->ShowWindow(SW_HIDE);
-	}
-
 	m_pacRegExp = new CCustomAutoComplete();
 	m_pacRegExp->AddRef();
 	if (m_pacRegExp->Bind(::GetDlgItem(m_hWnd, IDC_REGEXP), ACO_UPDOWNKEYDROPSLIST | ACO_AUTOSUGGEST))

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <afxstr.h>
+#include <atlstr.h>
 #include <cstdint>
 #include <vector>
 

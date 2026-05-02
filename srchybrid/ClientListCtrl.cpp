@@ -30,6 +30,8 @@
 #include "ListenSocket.h"
 #include "ChatWnd.h"
 #include "Kademlia/Kademlia/Kademlia.h"
+#include "OtherFunctions.h"
+#include "ProUserMenuCopySeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -426,9 +428,20 @@ void CClientListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetViewSharedFilesSupport()) ? MF_ENABLED : MF_GRAYED), MP_SHOWLIST, GetResString(IDS_VIEWFILES), _T("VIEWFILES"));
 	if (Kademlia::CKademlia::IsRunning() && !Kademlia::CKademlia::IsConnected())
 		ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->GetKadPort() && client->GetKadVersion() >= KADEMLIA_VERSION2_47a) ? MF_ENABLED : MF_GRAYED), MP_BOOT, GetResString(IDS_BOOTSTRAP));
+	CTitledMenu CopyMenu;
+	CopyMenu.CreateMenu();
+	CopyMenu.AddMenuTitle(NULL, true);
+	CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_IP, GetResString(IDS_COPY_CLIENT_IP));
+	CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_USERHASH, GetResString(IDS_COPY_USER_HASH));
+	CopyMenu.AppendMenu(MF_STRING | (client ? MF_ENABLED : MF_GRAYED), MP_COPY_CLIENT_SUMMARY, GetResString(IDS_COPY_CLIENT_SUMMARY));
+	ClientMenu.AppendMenu(MF_POPUP | (client ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
+	ClientMenu.AppendMenu(MF_SEPARATOR);
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && !client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_BAN, GetResString(IDS_BAN));
+	ClientMenu.AppendMenu(MF_STRING | ((is_ed2k && client->IsBanned()) ? MF_ENABLED : MF_GRAYED), MP_UNBAN, GetResString(IDS_UNBAN));
 	ClientMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_FIND, GetResString(IDS_FIND), _T("Search"));
 	GetPopupMenuPos(*this, point);
 	ClientMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
+	VERIFY(CopyMenu.DestroyMenu());
 }
 
 BOOL CClientListCtrl::OnCommand(WPARAM wParam, LPARAM)
@@ -456,10 +469,39 @@ BOOL CClientListCtrl::OnCommand(WPARAM wParam, LPARAM)
 			if (client && theApp.friendlist->AddFriend(const_cast<CUpDownClient*>(client)))
 				Update(iSel);
 			break;
+		case MP_BAN:
+			if (client && !client->IsBanned()) {
+				const_cast<CUpDownClient*>(client)->Ban(_T("Manual client-list ban"));
+				Update(iSel);
+			}
+			break;
 		case MP_UNBAN:
 			if (client && client->IsBanned()) {
 				const_cast<CUpDownClient*>(client)->UnBan();
 				Update(iSel);
+			}
+			break;
+		case MP_COPY_CLIENT_IP:
+		case MP_COPY_CLIENT_USERHASH:
+		case MP_COPY_CLIENT_SUMMARY:
+			if (client) {
+				CString text;
+				if (wParam == MP_COPY_CLIENT_IP) {
+					text = ipstr(GetClientGeoIP(client));
+				} else if (wParam == MP_COPY_CLIENT_USERHASH) {
+					text = md4str(client->GetUserHash());
+				} else {
+					std::vector<ProUserMenuCopySeams::NamedField> fields;
+					ProUserMenuCopySeams::AppendField(fields, _T("username"), client->GetUserName());
+					ProUserMenuCopySeams::AppendField(fields, _T("client"), client->GetClientSoftVer());
+					ProUserMenuCopySeams::AppendField(fields, _T("ip"), ipstr(GetClientGeoIP(client)));
+					ProUserMenuCopySeams::AppendField(fields, _T("userhash"), md4str(client->GetUserHash()));
+					ProUserMenuCopySeams::AppendField(fields, _T("download_state"), client->GetDownloadStateDisplayString());
+					ProUserMenuCopySeams::AppendField(fields, _T("upload_state"), client->GetUploadStateDisplayString());
+					text = ProUserMenuCopySeams::FormatSummary(fields);
+				}
+				if (!text.IsEmpty())
+					theApp.CopyTextToClipboard(text);
 			}
 			break;
 		case MP_DETAIL:

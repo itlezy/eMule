@@ -44,6 +44,7 @@
 #include "UserMsgs.h"
 #include "SearchResultsWnd.h"
 #include "MediaInfo.h"
+#include "ProUserMenuCopySeams.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -115,7 +116,7 @@ CSearchResultFileDetailSheet::CSearchResultFileDetailSheet(CTypedPtrList<CPtrLis
 	m_wndMetaData.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMetaData.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMetaData.m_psp.pszIcon = _T("METADATA");
-	if (thePrefs.IsExtControlsEnabled() && m_aItems.GetSize() == 1) {
+	if (m_aItems.GetSize() == 1) {
 		m_wndMetaData.SetFiles(&m_aItems);
 		AddPage(&m_wndMetaData);
 	}
@@ -325,8 +326,7 @@ void CSearchListCtrl::Localize()
 	HDITEM hdi;
 	hdi.mask = HDI_TEXT;
 	CString strRes(GetResString(IDS_SEARCHAVAIL));
-	if (thePrefs.IsExtControlsEnabled())
-		strRes.AppendFormat(_T(" (%s)"), (LPCTSTR)GetResString(IDS_DL_SOURCES)); //modify "availability" header
+	strRes.AppendFormat(_T(" (%s)"), (LPCTSTR)GetResString(IDS_DL_SOURCES)); //modify "availability" header
 	hdi.pszText = (LPTSTR)(LPCTSTR)strRes;
 	GetHeaderCtrl()->SetItem(2, &hdi);
 
@@ -364,7 +364,7 @@ void CSearchListCtrl::UpdateSources(const CSearchFile *toupdate)
 		uint32 nSources = toupdate->GetSourceCount();
 		int iClients = toupdate->GetClientsCount();
 		CString strBuffer;
-		if (thePrefs.IsExtControlsEnabled() && iClients > 0)
+		if (iClients > 0)
 			strBuffer.Format(_T("%u (%i)"), nSources, iClients);
 		else
 			strBuffer.Format(_T("%u"), nSources);
@@ -460,8 +460,7 @@ CString CSearchListCtrl::GetCompleteSourcesDisplayString(const CSearchFile *pFil
 	} else if (iComplete > 0) {	// '> 0' ... we know it's complete
 		if (uSources && uCompleteSources) {
 			str.Format(_T("%u%%"), (uCompleteSources * 100) / uSources);
-			if (thePrefs.IsExtControlsEnabled())
-				str.AppendFormat(_T(" (%u)"), uCompleteSources);
+			str.AppendFormat(_T(" (%u)"), uCompleteSources);
 		} else {
 			// we know it's complete, but we don't know the degree. (for files <= PARTSIZE in Kad searches)
 			str = GetResString(IDS_YES);
@@ -470,8 +469,7 @@ CString CSearchListCtrl::GetCompleteSourcesDisplayString(const CSearchFile *pFil
 			*pbComplete = true;
 	} else {					// '= 0' ... we know it's not complete
 		str = _T("0%");
-		if (thePrefs.IsExtControlsEnabled())
-			str.AppendFormat(_T(" (0)"));
+		str.AppendFormat(_T(" (0)"));
 		if (pbComplete)
 			*pbComplete = false;
 	}
@@ -690,10 +688,8 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 	}
 
 	m_SearchFileMenu.EnableMenuItem(MP_RESUME, iToDownload > 0 ? MF_ENABLED : MF_GRAYED);
-	if (thePrefs.IsExtControlsEnabled()) {
-		m_SearchFileMenu.EnableMenuItem(MP_RESUMEPAUSED, iToDownload > 0 ? MF_ENABLED : MF_GRAYED);
-		m_SearchFileMenu.EnableMenuItem(MP_DETAIL, iSelected == 1 ? MF_ENABLED : MF_GRAYED);
-	}
+	m_SearchFileMenu.EnableMenuItem(MP_RESUMEPAUSED, iToDownload > 0 ? MF_ENABLED : MF_GRAYED);
+	m_SearchFileMenu.EnableMenuItem(MP_DETAIL, iSelected == 1 ? MF_ENABLED : MF_GRAYED);
 	m_SearchFileMenu.EnableMenuItem(MP_CMT, iSelected > 0 ? MF_ENABLED : MF_GRAYED);
 	m_SearchFileMenu.EnableMenuItem(MP_GETED2KLINK, iSelected > 0 ? MF_ENABLED : MF_GRAYED);
 	m_SearchFileMenu.EnableMenuItem(MP_GETHTMLED2KLINK, iSelected > 0 ? MF_ENABLED : MF_GRAYED);
@@ -713,6 +709,15 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 		uInsertedMenuItem2 = MP_MARKASSPAM;
 		m_SearchFileMenu.EnableMenuItem(MP_MARKASSPAM, iSelected > 0 ? MF_ENABLED : MF_GRAYED);
 	}
+	CTitledMenu CopyMenu;
+	CopyMenu.CreateMenu();
+	CopyMenu.AddMenuTitle(NULL, true);
+	CopyMenu.AppendMenu(MF_STRING | (iSelected > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_NAME, GetResString(IDS_COPY_FILE_NAME));
+	CopyMenu.AppendMenu(MF_STRING | (iSelected > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_FILE_HASH, GetResString(IDS_COPY_HASH));
+	CopyMenu.AppendMenu(MF_STRING | (iSelected > 0 ? MF_ENABLED : MF_GRAYED), MP_GETED2KLINK, GetResString(IDS_DL_LINK1), _T("ED2KLink"));
+	CopyMenu.AppendMenu(MF_STRING | (iSelected > 0 ? MF_ENABLED : MF_GRAYED), MP_GETHTMLED2KLINK, GetResString(IDS_DL_LINK2), _T("ED2KLink"));
+	CopyMenu.AppendMenu(MF_STRING | (iSelected > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_SEARCH_SUMMARY, GetResString(IDS_COPY_RESULT_SUMMARY));
+	m_SearchFileMenu.AppendMenu(MF_POPUP | (iSelected > 0 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
 	CTitledMenu WebMenu;
 	WebMenu.CreateMenu();
 	WebMenu.AddMenuTitle(NULL, true);
@@ -721,7 +726,7 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 	m_SearchFileMenu.AppendMenu(MF_POPUP | flag2, (UINT_PTR)WebMenu.m_hMenu, GetResString(IDS_WEBSERVICES), _T("WEB"));
 
 	if (iToDownload > 0)
-		m_SearchFileMenu.SetDefaultItem((!thePrefs.AddNewFilesPaused() || !thePrefs.IsExtControlsEnabled()) ? MP_RESUME : MP_RESUMEPAUSED);
+		m_SearchFileMenu.SetDefaultItem(!thePrefs.AddNewFilesPaused() ? MP_RESUME : MP_RESUMEPAUSED);
 	else
 		m_SearchFileMenu.SetDefaultItem(UINT_MAX);
 
@@ -732,6 +737,8 @@ void CSearchListCtrl::OnContextMenu(CWnd*, CPoint point)
 	if (uInsertedMenuItem2)
 		VERIFY(m_SearchFileMenu.RemoveMenu(uInsertedMenuItem2, MF_BYCOMMAND));
 	m_SearchFileMenu.RemoveMenu(m_SearchFileMenu.GetMenuItemCount() - 1, MF_BYPOSITION);
+	m_SearchFileMenu.RemoveMenu(m_SearchFileMenu.GetMenuItemCount() - 1, MF_BYPOSITION);
+	VERIFY(CopyMenu.DestroyMenu());
 	VERIFY(WebMenu.DestroyMenu());
 }
 
@@ -785,11 +792,38 @@ BOOL CSearchListCtrl::OnCommand(WPARAM wParam, LPARAM)
 				theApp.CopyTextToClipboard(clpbrd);
 			}
 			return TRUE;
+		case MP_COPY_FILE_NAME:
+		case MP_COPY_FILE_HASH:
+		case MP_COPY_SEARCH_SUMMARY:
+			{
+				std::vector<CString> lines;
+				for (POSITION pos = selectedList.GetHeadPosition(); pos != NULL;) {
+					file = selectedList.GetNext(pos);
+					if (file == NULL)
+						continue;
+					if (wParam == MP_COPY_FILE_NAME) {
+						lines.push_back(file->GetFileName());
+					} else if (wParam == MP_COPY_FILE_HASH) {
+						lines.push_back(md4str(file->GetFileHash()));
+					} else {
+						std::vector<ProUserMenuCopySeams::NamedField> fields;
+						CString size;
+						size.Format(_T("%I64u"), file->GetFileSize());
+						ProUserMenuCopySeams::AppendField(fields, _T("name"), file->GetFileName());
+						ProUserMenuCopySeams::AppendField(fields, _T("hash"), md4str(file->GetFileHash()));
+						ProUserMenuCopySeams::AppendField(fields, _T("size"), size);
+						ProUserMenuCopySeams::AppendField(fields, _T("type"), file->GetFileTypeDisplayStr());
+						ProUserMenuCopySeams::AppendField(fields, _T("link"), file->GetED2kLink());
+						lines.push_back(ProUserMenuCopySeams::FormatSummary(fields));
+					}
+				}
+				const CString text = ProUserMenuCopySeams::JoinLines(lines);
+				if (!text.IsEmpty())
+					theApp.CopyTextToClipboard(text);
+			}
+			return TRUE;
 		case MP_RESUME:
-			if (thePrefs.IsExtControlsEnabled())
-				theApp.emuledlg->searchwnd->DownloadSelected(false);
-			else
-				theApp.emuledlg->searchwnd->DownloadSelected();
+			theApp.emuledlg->searchwnd->DownloadSelected(false);
 			return TRUE;
 		case MP_RESUMEPAUSED:
 			theApp.emuledlg->searchwnd->DownloadSelected(true);
@@ -901,13 +935,10 @@ void CSearchListCtrl::CreateMenus()
 	m_SearchFileMenu.CreatePopupMenu();
 	m_SearchFileMenu.AddMenuTitle(GetResString(IDS_FILE), true);
 	m_SearchFileMenu.AppendMenu(MF_STRING, MP_RESUME, GetResString(IDS_DOWNLOAD), _T("Resume"));
-	if (thePrefs.IsExtControlsEnabled()) {
-		CString sResumePaused(GetResString(IDS_DOWNLOAD));
-		sResumePaused.AppendFormat(_T(" (%s)"), (LPCTSTR)GetResString(IDS_PAUSED));
-		m_SearchFileMenu.AppendMenu(MF_STRING, MP_RESUMEPAUSED, sResumePaused);
-	}
-	if (thePrefs.IsExtControlsEnabled())
-		m_SearchFileMenu.AppendMenu(MF_STRING, MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("FileInfo"));
+	CString sResumePaused(GetResString(IDS_DOWNLOAD));
+	sResumePaused.AppendFormat(_T(" (%s)"), (LPCTSTR)GetResString(IDS_PAUSED));
+	m_SearchFileMenu.AppendMenu(MF_STRING, MP_RESUMEPAUSED, sResumePaused);
+	m_SearchFileMenu.AppendMenu(MF_STRING, MP_DETAIL, GetResString(IDS_SHOWDETAILS), _T("FileInfo"));
 	m_SearchFileMenu.AppendMenu(MF_STRING, MP_CMT, GetResString(IDS_CMT_ADD), _T("FILECOMMENTS"));
 	m_SearchFileMenu.AppendMenu(MF_SEPARATOR);
 	m_SearchFileMenu.AppendMenu(MF_STRING, MP_GETED2KLINK, GetResString(IDS_DL_LINK1), _T("ED2KLink"));
@@ -1553,16 +1584,14 @@ CString CSearchListCtrl::GetItemDisplayText(const CSearchFile *src, int iSubItem
 	case 2: //avail
 		if (src->GetListParent() == NULL) {
 			sText.Format(_T("%u"), src->GetSourceCount());
-			if (thePrefs.IsExtControlsEnabled()) {
-				if (src->IsKademlia()) {
-					uint32 nKnownPublisher = (src->GetKadPublishInfo() >> 16) & 0xffu;
-					if (nKnownPublisher > 0)
-						sText.AppendFormat(_T(" (%u)"), nKnownPublisher);
-				} else {
-					int iClients = src->GetClientsCount();
-					if (iClients > 0)
-						sText.AppendFormat(_T(" (%i)"), iClients);
-				}
+			if (src->IsKademlia()) {
+				uint32 nKnownPublisher = (src->GetKadPublishInfo() >> 16) & 0xffu;
+				if (nKnownPublisher > 0)
+					sText.AppendFormat(_T(" (%u)"), nKnownPublisher);
+			} else {
+				int iClients = src->GetClientsCount();
+				if (iClients > 0)
+					sText.AppendFormat(_T(" (%i)"), iClients);
 			}
 #ifdef _DEBUG
 			if (src->GetKadPublishInfo() == 0)
@@ -1578,7 +1607,7 @@ CString CSearchListCtrl::GetItemDisplayText(const CSearchFile *src, int iSubItem
 		break;
 	case 3: //complete sources
 		if (src->GetListParent() == NULL
-			|| (thePrefs.IsExtControlsEnabled() && thePrefs.GetDebugSearchResultDetailLevel() >= 1))
+			|| (thePrefs.GetDebugSearchResultDetailLevel() >= 1))
 		{
 			sText = GetCompleteSourcesDisplayString(src, src->GetSourceCount());
 		}

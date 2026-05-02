@@ -171,7 +171,7 @@ CFileDetailDialog::CFileDetailDialog(const CSimpleArray<CPartFile*> *paFiles, UI
 	m_wndMetaData.m_psp.dwFlags &= ~PSP_HASHELP;
 	m_wndMetaData.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMetaData.m_psp.pszIcon = _T("METADATA");
-	if (thePrefs.IsExtControlsEnabled() && m_aItems.GetSize() == 1) {
+	if (m_aItems.GetSize() == 1) {
 		m_wndMetaData.SetFiles(&m_aItems);
 		AddPage(&m_wndMetaData);
 	}

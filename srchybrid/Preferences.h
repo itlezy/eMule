@@ -500,7 +500,6 @@ public:
 	static bool		m_bUAP;
 	static bool		m_bDisableKnownClientList;
 	static bool		m_bDisableQueueList;
-	static bool		m_bExtControls;
 	static bool		m_bTransflstRemain;
 
 	static UINT		versioncheckdays;
@@ -1602,8 +1601,6 @@ public:
 
 	static bool		GetResumeSameCat()					{ return resumeSameCat; }
 	static bool		IsGraphRecreateDisabled()			{ return dontRecreateGraphs; }
-	static bool		IsExtControlsEnabled()				{ return m_bExtControls; }
-	static void		SetExtControls(bool in)				{ m_bExtControls = in; }
 	static bool		GetRemoveFinishedDownloads()		{ return m_bRemoveFinishedDownloads; }
 
 	static INT_PTR	GetMaxChatHistoryLines()			{ return m_iMaxChatHistory; }

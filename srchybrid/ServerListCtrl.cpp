@@ -18,6 +18,7 @@
 #include "emule.h"
 #include "ServerListCtrl.h"
 #include "OtherFunctions.h"
+#include "ProUserMenuCopySeams.h"
 #include "emuledlg.h"
 #include "DownloadQueue.h"
 #include "ServerList.h"
@@ -443,7 +444,14 @@ void CServerListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ServerMenu.AppendMenu(MF_STRING | (iStaticServers > 0 ? MF_ENABLED : MF_GRAYED), MP_REMOVEFROMSTATIC, GetResString(IDS_REMOVEFROMSTATIC), _T("ListRemove"));
 	ServerMenu.AppendMenu(MF_SEPARATOR);
 
-	ServerMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_GETED2KLINK, GetResString(IDS_DL_LINK1), _T("ED2KLINK"));
+	CTitledMenu CopyMenu;
+	CopyMenu.CreateMenu();
+	CopyMenu.AddMenuTitle(NULL, true);
+	CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_SERVER_ENDPOINT, GetResString(IDS_COPY_SERVER_ENDPOINT));
+	CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_SERVER_NAME, GetResString(IDS_COPY_SERVER_NAME));
+	CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_GETED2KLINK, GetResString(IDS_DL_LINK1), _T("ED2KLINK"));
+	CopyMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_COPY_SERVER_SUMMARY, GetResString(IDS_COPY_SERVER_SUMMARY));
+	ServerMenu.AppendMenu(MF_POPUP | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), (UINT_PTR)CopyMenu.m_hMenu, GetResString(IDS_COPY));
 	ServerMenu.AppendMenu(MF_STRING | (theApp.IsEd2kServerLinkInClipboard() ? MF_ENABLED : MF_GRAYED), MP_PASTE, GetResString(IDS_SW_DIRECTDOWNLOAD), _T("PASTELINK"));
 	ServerMenu.AppendMenu(MF_STRING | (iSelectedItems > 0 ? MF_ENABLED : MF_GRAYED), MP_REMOVE, GetResString(IDS_REMOVETHIS), _T("DELETESELECTED"));
 	ServerMenu.AppendMenu(MF_STRING | (GetItemCount() > 0 ? MF_ENABLED : MF_GRAYED), MP_REMOVEALL, GetResString(IDS_REMOVEALL), _T("DELETE"));
@@ -455,6 +463,7 @@ void CServerListCtrl::OnContextMenu(CWnd*, CPoint point)
 	ServerMenu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 
 	VERIFY(ServerPrioMenu.DestroyMenu());
+	VERIFY(CopyMenu.DestroyMenu());
 	VERIFY(ServerMenu.DestroyMenu());
 }
 
@@ -505,6 +514,47 @@ BOOL CServerListCtrl::OnCommand(WPARAM wParam, LPARAM)
 					theApp.emuledlg->ircwnd->SetSendFileString(strURLs);
 				else
 					theApp.CopyTextToClipboard(strURLs);
+		}
+		return TRUE;
+	case MP_COPY_SERVER_ENDPOINT:
+	case MP_COPY_SERVER_NAME:
+	case MP_COPY_SERVER_SUMMARY:
+		{
+			std::vector<CString> lines;
+			for (POSITION pos = GetFirstSelectedItemPosition(); pos != NULL;) {
+				const CServer *pServer = GetLiveServerByIndex(GetNextSelectedItem(pos));
+				if (pServer == NULL)
+					continue;
+
+				CString line;
+				if (wParam == MP_COPY_SERVER_ENDPOINT)
+					line.Format(_T("%s:%u"), pServer->GetAddress(), pServer->GetPort());
+				else if (wParam == MP_COPY_SERVER_NAME)
+					line = pServer->GetListName();
+				else {
+					std::vector<ProUserMenuCopySeams::NamedField> fields;
+					CString endpoint;
+					endpoint.Format(_T("%s:%u"), pServer->GetAddress(), pServer->GetPort());
+					ProUserMenuCopySeams::AppendField(fields, _T("name"), pServer->GetListName());
+					ProUserMenuCopySeams::AppendField(fields, _T("endpoint"), endpoint);
+					ProUserMenuCopySeams::AppendField(fields, _T("description"), pServer->GetDescription());
+					if (pServer->GetUsers()) {
+						CString users;
+						users.Format(_T("%u"), pServer->GetUsers());
+						ProUserMenuCopySeams::AppendField(fields, _T("users"), users);
+					}
+					if (pServer->GetFiles()) {
+						CString files;
+						files.Format(_T("%u"), pServer->GetFiles());
+						ProUserMenuCopySeams::AppendField(fields, _T("files"), files);
+					}
+					line = ProUserMenuCopySeams::FormatSummary(fields);
+				}
+				lines.push_back(line);
+			}
+			const CString text = ProUserMenuCopySeams::JoinLines(lines);
+			if (!text.IsEmpty())
+				theApp.CopyTextToClipboard(text);
 		}
 		return TRUE;
 	case MP_PASTE:

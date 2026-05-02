@@ -838,8 +838,7 @@ CSharedFileDetailsModelessSheet::CSharedFileDetailsModelessSheet()
 	m_wndMetaData.m_psp.dwFlags |= PSP_USEICONID;
 	m_wndMetaData.m_psp.pszIcon = _T("METADATA");
 	m_wndMetaData.SetFiles(&m_aItems);
-	if (thePrefs.IsExtControlsEnabled())
-		AddPage(&m_wndMetaData);
+	AddPage(&m_wndMetaData);
 
 	/*LPCTSTR pPshStartPage = m_pPshStartPage;
 	if (m_uInvokePage != 0)

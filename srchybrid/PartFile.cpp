@@ -4913,7 +4913,7 @@ bool CPartFile::GetNextRequestedBlock(CUpDownClient *sender, Requested_Block_Str
 			const uint16 almostRareBound = 4 * limit;
 
 			// Cache Preview state (Criterion 2)
-			const bool isPreviewEnable = (thePrefs.GetPreviewPrio() || (GetPreviewPrio() && thePrefs.IsExtControlsEnabled()))
+			const bool isPreviewEnable = (thePrefs.GetPreviewPrio() || GetPreviewPrio())
 				&& (uint64)m_nFileSize > 2 * PARTSIZE
 				&& IsPreviewableFileType();
 
@@ -5505,7 +5505,6 @@ bool CPartFile::RightFileHasHigherPrio(CPartFile *left, CPartFile *right)
 				|| (right->GetDownPriority() == left->GetDownPriority()
 					&& rCat != 0 && rCat == lCat
 					&& rCatStruct->downloadInAlphabeticalOrder
-					&& thePrefs.IsExtControlsEnabled()
 					&& !right->GetFileName().IsEmpty() && !left->GetFileName().IsEmpty()
 					&& right->GetFileName().CompareNoCase(left->GetFileName()) < 0
 				   )
@@ -5687,9 +5686,7 @@ void CPartFile::AICHRecoveryDataAvailable(UINT nPart)
 
 UINT CPartFile::GetMaxSources() const
 {
-	// Ignore any specified 'max sources' value if not in 'extended mode' -> don't use a parameter
-	// which was once specified in GUI but can not be seen/modified any longer.
-	return (!thePrefs.IsExtControlsEnabled() || m_uMaxSources == 0) ? thePrefs.GetConfiguredMaxSourcesPerFile() : m_uMaxSources;
+	return (m_uMaxSources == 0) ? thePrefs.GetConfiguredMaxSourcesPerFile() : m_uMaxSources;
 }
 
 UINT CPartFile::GetMaxSourcePerFileSoft() const

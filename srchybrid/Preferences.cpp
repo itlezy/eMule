@@ -701,7 +701,6 @@ bool	CPreferences::m_bDAP;
 bool	CPreferences::m_bUAP;
 bool	CPreferences::m_bDisableKnownClientList;
 bool	CPreferences::m_bDisableQueueList;
-bool	CPreferences::m_bExtControls;
 bool	CPreferences::m_bTransflstRemain;
 UINT	CPreferences::versioncheckdays;
 bool	CPreferences::showRatesInTitle;
@@ -2434,7 +2433,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("FollowMajorityFilenameForNewDownloads"), m_bFollowMajorityFilenameForNewDownloads);
 	ini.WriteInt(_T("FollowMajorityFilenameRequiredPercent"), static_cast<int>(m_uFollowMajorityFilenameRequiredPercent));
 	ini.WriteInt(_T("FollowMajorityFilenameMinimumVotes"), static_cast<int>(m_uFollowMajorityFilenameMinimumVotes));
-	ini.WriteBool(_T("ShowExtControls"), m_bExtControls);
 	ini.WriteBool(_T("UseAutocompletion"), m_bUseAutocompl);
 	ini.WriteBool(_T("NetworkKademlia"), networkkademlia);
 	ini.WriteBool(_T("NetworkED2K"), networked2k);
@@ -3001,8 +2999,6 @@ void CPreferences::LoadPreferences()
 	showCatTabInfos = ini.GetBool(_T("ShowInfoOnCatTabs"), false);
 	//resumeSameCat = ini.GetBool(_T("ResumeNextFromSameCat"), false);
 	dontRecreateGraphs = ini.GetBool(_T("DontRecreateStatGraphsOnResize"), false);
-	m_bExtControls = ini.GetBool(_T("ShowExtControls"), true);
-
 	versioncheckLastAutomatic = ini.GetInt(_T("VersionCheckLastAutomatic"), 0);
 	m_bDisableKnownClientList = ini.GetBool(_T("DisableKnownClientList"), false);
 	m_bDisableQueueList = ini.GetBool(_T("DisableQueueList"), false);

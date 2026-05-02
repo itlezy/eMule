@@ -2425,6 +2425,16 @@
 #define IDS_COPY_HASH                   1699
 #define IDS_BAN                         1700
 #define IDS_BAN_ARBITRARY               1701
+#define IDS_COPY_CLIENT_IP              1739
+#define IDS_COPY_USER_HASH              1740
+#define IDS_COPY_CLIENT_SUMMARY         1741
+#define IDS_COPY_FILE_NAME              1742
+#define IDS_COPY_FILE_PATH              1743
+#define IDS_COPY_FOLDER_PATH            1744
+#define IDS_COPY_SERVER_ENDPOINT        1745
+#define IDS_COPY_SERVER_NAME            1746
+#define IDS_COPY_SERVER_SUMMARY         1747
+#define IDS_COPY_RESULT_SUMMARY         1748
 #define IDS_SEARCHLIMITS                1702
 #define IDS_ED2K_SEARCH                 1703
 #define IDS_ED2K_SEARCH_MAX_RESULTS     1704
@@ -2500,6 +2510,6 @@
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
 #define _APS_NEXT_CONTROL_VALUE         3083
-#define _APS_NEXT_SYMED_VALUE           1739
+#define _APS_NEXT_SYMED_VALUE           1749
 #endif
 #endif

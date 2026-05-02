@@ -2505,11 +2505,11 @@ CString CUpDownClient::GetUploadStateDisplayString() const
 		/* GetNumberOfRequestedBlocksInQueue is no longer available and retrieving it would cause quite some extra load
 		 (either due to thread syncing or due to adding redundant extra vars just for this function), so given that
 		 "stalled, waiting for disk" should happen like never, it is removed for now
-		if (GetPayloadInBuffer() == 0 && GetNumberOfRequestedBlocksInQueue() == 0 && thePrefs.IsExtControlsEnabled())
+		if (GetPayloadInBuffer() == 0 && GetNumberOfRequestedBlocksInQueue() == 0)
 			uid = IDS_US_STALLEDW4BR;
-		else if(GetPayloadInBuffer() == 0 && thePrefs.IsExtControlsEnabled())
+		else if(GetPayloadInBuffer() == 0)
 			uid = IDS_US_STALLEDREADINGFDISK; */
-		if (thePrefs.IsExtControlsEnabled() && GetPayloadInBuffer() == 0)
+		if (GetPayloadInBuffer() == 0)
 			uid = IDS_US_STALLEDW4BR;
 		else if (GetSlotNumber() <= (UINT)theApp.uploadqueue->GetActiveUploadsCount())
 			uid = IDS_TRANSFERRING;
