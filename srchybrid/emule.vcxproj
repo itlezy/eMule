@@ -69,8 +69,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Debug'">
     <ClCompile>
       <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(NlohmannJsonRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
-      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <SDLCheck>true</SDLCheck>
@@ -83,6 +83,7 @@
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
@@ -104,8 +105,8 @@
   <ItemDefinitionGroup Condition="'$(Configuration)'=='Release'">
     <ClCompile>
       <AdditionalIncludeDirectories>.;..;$(ZlibRoot);$(CryptoPpRoot);$(Id3libRoot)include;$(MiniUpnpRoot);$(PcpNatPmpRoot)lib\include;$(MbedTlsRoot)include;$(MbedTlsRoot)tf-psa-crypto\include;$(MbedTlsRoot)tf-psa-crypto\drivers\builtin\include;$(ResizableLibRoot);$(NlohmannJsonRoot);$(VC_ATLMFC_SourcePath);$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\cppwinrt\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\um\;$(UniversalCRTSdkDir)Include\$(WindowsTargetPlatformVersion)\shared;</AdditionalIncludeDirectories>
-      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:W0 /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'!='ARM64'">/external:anglebrackets /external:I$(ThirdPartyRoot) /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions Condition="'$(Platform)'=='ARM64'">/external:anglebrackets /external:I$(ThirdPartyRoot) /Zc:enumTypes /Zc:throwingNew /FS %(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <SDLCheck>true</SDLCheck>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -118,6 +119,7 @@
       <PreprocessorDefinitions>ID3LIB_LINKOPTION=1;MINIUPNP_STATICLIB;SUPPORT_LARGE_FILES;NDEBUG;EMULE_ENABLE_STARTUP_PROFILING;MBEDTLS_ALLOW_PRIVATE_ACCESS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <WarningLevel>EnableAllWarnings</WarningLevel>
+      <ExternalWarningLevel>TurnOffAllWarnings</ExternalWarningLevel>
       <ControlFlowGuard>Guard</ControlFlowGuard>
     </ClCompile>
     <Link>
