@@ -189,6 +189,7 @@ public:
 	static EBindAddressResolveResult m_eActiveBindAddrResolveResult;
 	static bool		m_bBlockNetworkWhenBindUnavailableAtStartup;
 	static bool		m_bActiveStartupBindBlockEnabled;
+	static bool		m_bRandomizePortsOnStartup;
 	static uint16	port;
 	static uint16	udpport;
 	static uint16	nServerUDPPort;
@@ -1690,6 +1691,10 @@ public:
 	static bool		IsCryptLayerRequiredStrict()			{ return false; } // not even incoming test connections will be answered
 	static uint32	GetKadUDPKey()						{ return m_dwKadUDPKey; }
 	static uint8	GetCryptTCPPaddingLength()			{ return m_byCryptTCPPaddingLength; }
+	/// Returns whether eMule should choose fresh listen ports during startup.
+	static bool		IsPortRandomizationOnStartupEnabled() { return m_bRandomizePortsOnStartup; }
+	/// Configures whether eMule should choose fresh listen ports during startup.
+	static void		SetPortRandomizationOnStartupEnabled(bool bEnabled) { m_bRandomizePortsOnStartup = bEnabled; }
 
 	// UPnP
 	static bool		IsUPnPEnabled()						{ return m_bEnableUPnP; }

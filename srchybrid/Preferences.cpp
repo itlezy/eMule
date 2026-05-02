@@ -443,6 +443,7 @@ CStringW CPreferences::m_strBindAddrW;
 EBindAddressResolveResult CPreferences::m_eActiveBindAddrResolveResult = BARR_Default;
 bool	CPreferences::m_bBlockNetworkWhenBindUnavailableAtStartup = false;
 bool	CPreferences::m_bActiveStartupBindBlockEnabled = false;
+bool	CPreferences::m_bRandomizePortsOnStartup = false;
 uint16	CPreferences::port;
 uint16	CPreferences::udpport;
 uint16	CPreferences::nServerUDPPort;
@@ -2216,6 +2217,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("DetectTCPErrorFlooder"), m_bDetectTCPErrorFlooder);
 	ini.WriteInt(_T("TCPErrorFlooderIntervalMinutes"), static_cast<int>(m_uTCPErrorFlooderIntervalMinutes));
 	ini.WriteInt(_T("TCPErrorFlooderThreshold"), static_cast<int>(m_uTCPErrorFlooderThreshold));
+	ini.WriteBool(_T("RandomizePortsOnStartup"), m_bRandomizePortsOnStartup);
 	ini.WriteInt(_T("Port"), port);
 	ini.WriteInt(_T("UDPPort"), udpport);
 	ini.WriteInt(_T("ServerUDPPort"), nServerUDPPort);
@@ -2721,6 +2723,19 @@ void CPreferences::LoadPreferences()
 	// 0 is a valid value for the UDP port setting, as it is used for disabling it.
 	int iPort = ini.GetInt(_T("UDPPort"), INT_MAX/*invalid port value*/);
 	udpport = (iPort == INT_MAX) ? thePrefs.GetRandomUDPPort() : NormalizePortPreferenceValue(iPort, thePrefs.GetRandomUDPPort(), true);
+	m_bRandomizePortsOnStartup = ini.GetBool(_T("RandomizePortsOnStartup"), false);
+	if (m_bRandomizePortsOnStartup) {
+		port = thePrefs.GetRandomTCPPort();
+		if (udpport != 0) {
+			for (int i = 0; i < 8; ++i) {
+				udpport = thePrefs.GetRandomUDPPort();
+				if (udpport != port)
+					break;
+			}
+			if (udpport == port)
+				udpport = static_cast<uint16>((port > 4096) ? port - 1 : port + 1);
+		}
+	}
 
 	nServerUDPPort = NormalizeServerUDPPortValue(ini.GetInt(_T("ServerUDPPort"), -1)); // 0 = Don't use UDP port for servers, -1 = use a random port (for backward compatibility)
 	SetMaxSourcesPerFile(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxSourcesPerFile"), GetDefaultMaxSourcesPerFile()), GetDefaultMaxSourcesPerFile()));

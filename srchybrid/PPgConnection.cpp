@@ -137,6 +137,7 @@ BEGIN_MESSAGE_MAP(CPPgConnection, CPropertyPage)
 	ON_BN_CLICKED(IDC_NETWORK_KADEMLIA, OnSettingsChange)
 	ON_WM_HELPINFO()
 	ON_BN_CLICKED(IDC_PREF_UPNPONSTART, OnSettingsChange)
+	ON_BN_CLICKED(IDC_RANDOMIZE_PORTS_ON_STARTUP, OnSettingsChange)
 	ON_BN_CLICKED(IDC_STARTUP_BIND_BLOCK, OnSettingsChange)
 	ON_CBN_SELCHANGE(IDC_BIND_INTERFACE, OnCbnSelChangeBindInterface)
 	ON_CBN_EDITCHANGE(IDC_BIND_INTERFACE, OnSettingsChange)
@@ -402,6 +403,9 @@ void CPPgConnection::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_PREF_UPNPONSTART,
 		_T("Attempts automatic NAT port mapping on startup for the configured TCP and UDP ports.\r\n\r\n")
 		_T("Recommended: enabled when your router supports UPnP or PCP/NAT-PMP. Disable it if you forward ports manually."));
+	m_toolTip.SetTool(this, IDC_RANDOMIZE_PORTS_ON_STARTUP,
+		_T("Chooses new TCP and UDP listen ports at startup before automatic port mapping runs.\r\n\r\n")
+		_T("The option uses eMule's existing random port range and leaves UDP disabled when the UDP port is disabled."));
 	m_toolTip.SetTool(this, IDC_UDPDISABLE,
 		_T("Disables eMule's UDP port and therefore disables UDP-dependent features such as Kad networking.\r\n\r\n")
 		_T("Recommended: leave this off unless you must run TCP-only for a very specific network environment."));
@@ -446,6 +450,7 @@ void CPPgConnection::LoadSettings()
 		GetDlgItem(IDC_PREF_UPNPONSTART)->EnableWindow(TRUE);
 
 		CheckDlgButton(IDC_PREF_UPNPONSTART, static_cast<UINT>(thePrefs.IsUPnPEnabled()));
+		CheckDlgButton(IDC_RANDOMIZE_PORTS_ON_STARTUP, static_cast<UINT>(thePrefs.IsPortRandomizationOnStartupEnabled()));
 
 		FillBindInterfaceCombo();
 		SetDlgItemText(IDC_BIND_ADDRESS, thePrefs.GetConfiguredBindAddr());
@@ -540,6 +545,7 @@ BOOL CPPgConnection::OnApply()
 
 	thePrefs.autoconnect = IsDlgButtonChecked(IDC_AUTOCONNECT) != 0;
 	thePrefs.reconnect = IsDlgButtonChecked(IDC_RECONN) != 0;
+	thePrefs.SetPortRandomizationOnStartupEnabled(IsDlgButtonChecked(IDC_RANDOMIZE_PORTS_ON_STARTUP) != 0);
 
 	if (lastmaxgu != thePrefs.GetMaxUpload())
 		theApp.emuledlg->statisticswnd->SetARange(false, thePrefs.GetMaxUpload());
@@ -615,6 +621,7 @@ void CPPgConnection::Localize()
 		SetDlgItemText(IDC_UDPDISABLE, GetResString(IDS_UDPDISABLED));
 		SetDlgItemText(IDC_STARTTEST, GetResString(IDS_STARTTEST));
 		SetDlgItemText(IDC_PREF_UPNPONSTART, GetResString(IDS_UPNPSTART));
+		SetDlgItemText(IDC_RANDOMIZE_PORTS_ON_STARTUP, _T("Randomize listen ports on startup"));
 		SetDlgItemText(IDC_BIND_INTERFACE_LABEL, GetResString(IDS_BIND_INTERFACE));
 		SetDlgItemText(IDC_BIND_ADDRESS_LABEL, GetResString(IDS_BIND_ADDRESS));
 		SetDlgItemText(IDC_STARTUP_BIND_BLOCK, _T("Keep networking offline if the bind target is unavailable at startup"));

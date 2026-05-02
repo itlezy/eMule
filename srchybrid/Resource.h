@@ -2489,6 +2489,7 @@
 #define IDC_BROWSE_FILECOMPLETEPROGRAM  3078
 #define IDC_FILECOMPLETEARGS_LBL        3079
 #define IDC_FILECOMPLETEARGS            3080
+#define IDC_RANDOMIZE_PORTS_ON_STARTUP  3081
 #define IDA_ENTER                       32771
 
 // Next default values for new objects
@@ -2497,7 +2498,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        3055
 #define _APS_NEXT_COMMAND_VALUE         32773
-#define _APS_NEXT_CONTROL_VALUE         3081
+#define _APS_NEXT_CONTROL_VALUE         3082
 #define _APS_NEXT_SYMED_VALUE           1739
 #endif
 #endif
