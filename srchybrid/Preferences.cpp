@@ -2324,7 +2324,6 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("AutoTakeED2KLinks"), autotakeed2klinks);
 	ini.WriteBool(_T("AddNewFilesPaused"), addnewfilespaused);
 	ini.WriteInt(_T("3DDepth"), depth3D);
-	ini.DeleteKey(_T("MiniMule"));
 
 	ini.WriteString(_T("NotifierConfiguration"), notifierConfiguration);
 	ini.WriteBool(_T("NotifyOnDownload"), notifierOnDownloadFinished);
@@ -2412,10 +2411,8 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("PreviewSmallBlocks"), m_iPreviewSmallBlocks);
 	ini.WriteInt(_T("StartNextFile"), m_istartnextfile);
 
-	ini.DeleteKey(_T("FileBufferSizePref")); // delete old 'file buff size' setting
 	ini.WriteInt(_T("FileBufferSize"), m_uFileBufferSize);
 
-	ini.DeleteKey(_T("QueueSizePref")); // delete old 'queue size' setting
 	ini.WriteInt(_T("QueueSize"), (int)m_iQueueSize);
 
 	ini.WriteInt(_T("CommitFiles"), m_iCommitFiles);
@@ -2490,7 +2487,6 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(prefini::UploadPolicyKeys::SessionTransferLimitValue, m_uBBSessionTransferValue, prefini::Sections::UploadPolicy);
 	ini.WriteInt(prefini::UploadPolicyKeys::SessionTimeLimitSeconds, m_uBBSessionTimeLimitSeconds, prefini::Sections::UploadPolicy);
 	ini.SetSection(prefini::Sections::eMule);
-	ini.DeleteKey(_T("AICHTrustEveryHash"));
 
 	// Toolbar
 	ini.WriteString(_T("ToolbarSetting"), m_sToolbarSettings);
