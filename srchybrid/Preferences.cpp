@@ -2215,9 +2215,6 @@ void CPreferences::SavePreferences()
 
 	ini.WriteInt(_T("MaxUpload"), m_maxupload);
 	ini.WriteInt(_T("MaxDownload"), m_maxdownload);
-	ini.DeleteKey(_T("DownloadCapacity"));
-	ini.DeleteKey(_T("UploadCapacityNew"));
-	ini.DeleteKey(_T("UploadCapacity"));
 	ini.WriteInt(_T("MaxConnections"), maxconnections);
 	ini.WriteInt(_T("MaxHalfConnections"), maxhalfconnections);
 	ini.WriteBool(_T("ConditionalTCPAccept"), m_bConditionalTCPAccept);
@@ -2694,17 +2691,8 @@ void CPreferences::LoadPreferences()
 			tempdir.Add(sTmp);
 	}
 
-	const bool bHasLegacyBandwidthKeys =
-		ini.GetInt(_T("DownloadCapacity"), -1) >= 0 ||
-		ini.GetInt(_T("UploadCapacityNew"), -1) >= 0 ||
-		ini.GetInt(_T("UploadCapacity"), -1) >= 0;
-	if (bHasLegacyBandwidthKeys) {
-		SetMaxUpload(kDefaultConfiguredUploadLimitKiB);
-		SetMaxDownload(kDefaultBroadbandDownloadLimitKiB);
-	} else {
-		SetMaxUpload((uint32)ini.GetInt(_T("MaxUpload"), kDefaultConfiguredUploadLimitKiB));
-		SetMaxDownload((uint32)ini.GetInt(_T("MaxDownload"), kDefaultBroadbandDownloadLimitKiB));
-	}
+	SetMaxUpload((uint32)ini.GetInt(_T("MaxUpload"), kDefaultConfiguredUploadLimitKiB));
+	SetMaxDownload((uint32)ini.GetInt(_T("MaxDownload"), kDefaultBroadbandDownloadLimitKiB));
 	SetMaxGraphDownloadRate(m_maxdownload);
 	SetMaxConnections(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxConnections"), GetRecommendedMaxConnections()), GetRecommendedMaxConnections()));
 	SetMaxHalfConnections(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("MaxHalfConnections"), GetDefaultMaxHalfConnections()), GetDefaultMaxHalfConnections()));
