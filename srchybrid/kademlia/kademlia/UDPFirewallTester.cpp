@@ -76,6 +76,20 @@ bool CUDPFirewallTester::GetUDPCheckClientsNeeded()
 	return (m_byFWChecksRunningUDP + m_byFWChecksFinishedUDP) < UDP_FIREWALLTEST_CLIENTSTOASK;
 }
 
+void CUDPFirewallTester::CancelRunningUDPFirewallCheck()
+{
+	if (m_byFWChecksRunningUDP == 0 && m_liPossibleTestClients.IsEmpty() && !m_bNodeSearchStarted)
+		return;
+
+	DebugLogWarning(_T("Kad UDP firewall check restarted while %u probe(s) were still pending"), m_byFWChecksRunningUDP);
+	for (POSITION pos = m_liUsedTestClients.GetHeadPosition(); pos != NULL;)
+		m_liUsedTestClients.GetNext(pos).bAnswered = true;
+	m_liPossibleTestClients.RemoveAll();
+	m_byFWChecksRunningUDP = 0;
+	m_bNodeSearchStarted = false;
+	CSearchManager::CancelNodeFWCheckUDPSearch();
+}
+
 void CUDPFirewallTester::SetUDPFWCheckResult(bool bSucceeded, bool bTestCancelled, uint32 uFromIP, uint16 nIncomingPort)
 {
 	if (!CKademlia::IsRunning())
@@ -167,7 +181,7 @@ void CUDPFirewallTester::SetUDPFWCheckResult(bool bSucceeded, bool bTestCancelle
 
 void CUDPFirewallTester::ReCheckFirewallUDP(bool bSetUnverified)
 {
-	ASSERT(m_byFWChecksRunningUDP == 0);
+	CancelRunningUDPFirewallCheck();
 	m_byFWChecksRunningUDP = 0;
 	m_byFWChecksFinishedUDP = 0;
 	m_dwLastSucceededTime = 0;

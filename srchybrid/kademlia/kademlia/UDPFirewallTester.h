@@ -42,6 +42,10 @@ namespace Kademlia
 		static void		QueryNextClient(); // try the next available client for the firewall check
 	private:
 		static bool		GetUDPCheckClientsNeeded(); // are we in search for test clients
+		/**
+		 * @brief Cancels in-flight UDP firewall probes before starting a new check.
+		 */
+		static void		CancelRunningUDPFirewallCheck();
 		static bool		m_bFirewalledUDP;
 		static bool		m_bFirewalledLastStateUDP;
 		static bool		m_bIsFWVerifiedUDP;
