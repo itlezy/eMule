@@ -5,6 +5,7 @@
 #include "emule.h"
 #include "StringConversion.h"
 #include "WebServer.h"
+#include "WebServerArrCompat.h"
 #include "WebServerAuthStateSeams.h"
 #include "WebServerJson.h"
 #include "WebServerLegacySeams.h"
@@ -373,6 +374,12 @@ void CWebServer::_ProcessURL(const ThreadData &Data)
 #ifndef _DEBUG
 	try {
 #endif
+		if (WebServerArrCompat::IsCompatRequest(Data)) {
+			WebServerArrCompat::ProcessRequest(Data);
+			::CoUninitialize();
+			return;
+		}
+
 		if (WebServerJson::IsApiRequest(Data)) {
 			WebServerJson::ProcessRequest(Data);
 			::CoUninitialize();

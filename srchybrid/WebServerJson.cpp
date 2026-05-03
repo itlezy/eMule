@@ -3383,6 +3383,35 @@ void WebServerJson::RunDispatchedCommand(void *pContext)
 	}
 }
 
+bool WebServerJson::ExecuteInternalCommand(const nlohmann::json &rRequest, nlohmann::json &rResult, CStringA &rErrorCode, CString &rErrorMessage)
+{
+	rErrorCode.Empty();
+	rErrorMessage.Empty();
+	try {
+		SPipeApiError error;
+		rResult = ExecuteUiThreadCommand(rRequest, error);
+		if (error.strCode.IsEmpty())
+			return true;
+		rErrorCode = error.strCode;
+		rErrorMessage = error.strMessage;
+	} catch (const json::exception &rJsonError) {
+		rErrorCode = "EMULE_ERROR";
+		rErrorMessage.Format(_T("JSON serialization failure: %hs"), rJsonError.what());
+	} catch (CException *pException) {
+		TCHAR szError[512] = {0};
+		if (pException != NULL) {
+			pException->GetErrorMessage(szError, _countof(szError));
+			pException->Delete();
+		}
+		rErrorCode = "EMULE_ERROR";
+		rErrorMessage = szError[0] != _T('\0') ? CString(szError) : CString(_T("REST UI command failed"));
+	} catch (...) {
+		rErrorCode = "EMULE_ERROR";
+		rErrorMessage = _T("REST UI command failed");
+	}
+	return false;
+}
+
 bool WebServerJson::IsApiRequest(const ThreadData &rData)
 {
 	return WebServerJsonSeams::IsApiRequestTarget(StdStringFromCStringA(rData.strRequestTarget));
