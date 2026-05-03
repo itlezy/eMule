@@ -12,7 +12,11 @@ namespace PreferenceIniMap
 namespace Sections
 {
 inline constexpr const TCHAR* FileCompletion = _T("FileCompletion");
+inline constexpr const TCHAR* Proxy = _T("Proxy");
+inline constexpr const TCHAR* Statistics = _T("Statistics");
 inline constexpr const TCHAR* UploadPolicy = _T("UploadPolicy");
+inline constexpr const TCHAR* UPnP = _T("UPnP");
+inline constexpr const TCHAR* WebServer = _T("WebServer");
 inline constexpr const TCHAR* eMule = _T("eMule");
 }
 

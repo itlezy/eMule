@@ -2536,57 +2536,57 @@ void CPreferences::SavePreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Proxy"
 	//
-	ini.WriteBool(_T("ProxyEnablePassword"), proxy.bEnablePassword, _T("Proxy"));
-	ini.WriteBool(_T("ProxyEnableProxy"), proxy.bUseProxy, _T("Proxy"));
-	ini.WriteString(_T("ProxyName"), proxy.host, _T("Proxy"));
-	ini.WriteString(_T("ProxyPassword"), proxy.password, _T("Proxy"));
-	ini.WriteString(_T("ProxyUser"), proxy.user, _T("Proxy"));
-	ini.WriteInt(_T("ProxyPort"), proxy.port, _T("Proxy"));
-	ini.WriteInt(_T("ProxyType"), proxy.type, _T("Proxy"));
+	ini.WriteBool(_T("ProxyEnablePassword"), proxy.bEnablePassword, prefini::Sections::Proxy);
+	ini.WriteBool(_T("ProxyEnableProxy"), proxy.bUseProxy, prefini::Sections::Proxy);
+	ini.WriteString(_T("ProxyName"), proxy.host, prefini::Sections::Proxy);
+	ini.WriteString(_T("ProxyPassword"), proxy.password, prefini::Sections::Proxy);
+	ini.WriteString(_T("ProxyUser"), proxy.user, prefini::Sections::Proxy);
+	ini.WriteInt(_T("ProxyPort"), proxy.port, prefini::Sections::Proxy);
+	ini.WriteInt(_T("ProxyType"), proxy.type, prefini::Sections::Proxy);
 
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Statistics"
 	//
-	ini.WriteInt(_T("SaveInterval"), statsSaveInterval, _T("Statistics"));
-	ini.WriteInt(_T("statsConnectionsGraphRatio"), statsConnectionsGraphRatio, _T("Statistics"));
-	ini.WriteString(_T("statsExpandedTreeItems"), m_strStatsExpandedTreeItems);
+	ini.WriteInt(_T("SaveInterval"), statsSaveInterval, prefini::Sections::Statistics);
+	ini.WriteInt(_T("statsConnectionsGraphRatio"), statsConnectionsGraphRatio, prefini::Sections::Statistics);
+	ini.WriteString(_T("statsExpandedTreeItems"), m_strStatsExpandedTreeItems, prefini::Sections::Statistics);
 	CString sValue, sKey;
 	for (int i = 0; i < 15; ++i) {
 		sValue.Format(_T("0x%06lx"), GetStatsColor(i));
 		sKey.Format(_T("StatColor%i"), i);
-		ini.WriteString(sKey, sValue, _T("Statistics"));
+		ini.WriteString(sKey, sValue, prefini::Sections::Statistics);
 	}
-	ini.WriteBool(_T("HasCustomTaskIconColor"), m_bHasCustomTaskIconColor, _T("Statistics"));
+	ini.WriteBool(_T("HasCustomTaskIconColor"), m_bHasCustomTaskIconColor, prefini::Sections::Statistics);
 
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "WebServer"
 	//
-	ini.WriteString(_T("Password"), GetWSPass(), _T("WebServer"));
-	ini.WriteString(_T("PasswordLow"), GetWSLowPass());
-	ini.WriteString(_T("ApiKey"), GetWSApiKey());
-	ini.WriteString(_T("BindAddr"), m_strWebBindAddr);
-	ini.WriteInt(_T("Port"), m_nWebPort);
-	ini.WriteBool(_T("WebUseUPnP"), m_bWebUseUPnP);
-	ini.WriteBool(_T("Enabled"), m_bWebEnabled);
-	ini.WriteBool(_T("UseGzip"), m_bWebUseGzip);
-	ini.WriteInt(_T("PageRefreshTime"), m_nWebPageRefresh);
-	ini.WriteBool(_T("UseLowRightsUser"), m_bWebLowEnabled);
-	ini.WriteBool(_T("AllowAdminHiLevelFunc"), m_bAllowAdminHiLevFunc);
-	ini.WriteInt(_T("WebTimeoutMins"), m_iWebTimeoutMins);
-	ini.WriteInt(_T("MaxFileUploadSizeMB"), m_iWebFileUploadSizeLimitMB);
-	ini.WriteString(_T("AllowedIPs"), GetAllowedRemoteAccessIPsString());
-	ini.WriteBool(_T("UseHTTPS"), m_bWebUseHttps);
-	ini.WriteString(_T("HTTPSCertificate"), m_sWebHttpsCertificate);
-	ini.WriteString(_T("HTTPSKey"), m_sWebHttpsKey);
+	ini.WriteString(_T("Password"), GetWSPass(), prefini::Sections::WebServer);
+	ini.WriteString(_T("PasswordLow"), GetWSLowPass(), prefini::Sections::WebServer);
+	ini.WriteString(_T("ApiKey"), GetWSApiKey(), prefini::Sections::WebServer);
+	ini.WriteString(_T("BindAddr"), m_strWebBindAddr, prefini::Sections::WebServer);
+	ini.WriteInt(_T("Port"), m_nWebPort, prefini::Sections::WebServer);
+	ini.WriteBool(_T("WebUseUPnP"), m_bWebUseUPnP, prefini::Sections::WebServer);
+	ini.WriteBool(_T("Enabled"), m_bWebEnabled, prefini::Sections::WebServer);
+	ini.WriteBool(_T("UseGzip"), m_bWebUseGzip, prefini::Sections::WebServer);
+	ini.WriteInt(_T("PageRefreshTime"), m_nWebPageRefresh, prefini::Sections::WebServer);
+	ini.WriteBool(_T("UseLowRightsUser"), m_bWebLowEnabled, prefini::Sections::WebServer);
+	ini.WriteBool(_T("AllowAdminHiLevelFunc"), m_bAllowAdminHiLevFunc, prefini::Sections::WebServer);
+	ini.WriteInt(_T("WebTimeoutMins"), m_iWebTimeoutMins, prefini::Sections::WebServer);
+	ini.WriteInt(_T("MaxFileUploadSizeMB"), m_iWebFileUploadSizeLimitMB, prefini::Sections::WebServer);
+	ini.WriteString(_T("AllowedIPs"), GetAllowedRemoteAccessIPsString(), prefini::Sections::WebServer);
+	ini.WriteBool(_T("UseHTTPS"), m_bWebUseHttps, prefini::Sections::WebServer);
+	ini.WriteString(_T("HTTPSCertificate"), m_sWebHttpsCertificate, prefini::Sections::WebServer);
+	ini.WriteString(_T("HTTPSKey"), m_sWebHttpsKey, prefini::Sections::WebServer);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
-	ini.WriteBool(_T("EnableUPnP"), m_bEnableUPnP, _T("UPnP"));
-	ini.WriteBool(_T("CloseUPnPOnExit"), m_bCloseUPnPOnExit);
-	ini.WriteInt(_T("BackendMode"), m_uUPnPBackendMode);
+	ini.WriteBool(_T("EnableUPnP"), m_bEnableUPnP, prefini::Sections::UPnP);
+	ini.WriteBool(_T("CloseUPnPOnExit"), m_bCloseUPnPOnExit, prefini::Sections::UPnP);
+	ini.WriteInt(_T("BackendMode"), m_uUPnPBackendMode, prefini::Sections::UPnP);
 }
 
 void CPreferences::ResetStatsColor(int index)
@@ -3133,30 +3133,30 @@ void CPreferences::LoadPreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Proxy"
 	//
-	proxy.bEnablePassword = ini.GetBool(_T("ProxyEnablePassword"), false, _T("Proxy"));
-	proxy.bUseProxy = ini.GetBool(_T("ProxyEnableProxy"), false);
-	proxy.host = ini.GetString(_T("ProxyName"), _T(""));
-	proxy.user = ini.GetString(_T("ProxyUser"), _T(""));
-	proxy.password = ini.GetString(_T("ProxyPassword"), _T(""));
-	proxy.port = NormalizePortPreferenceValue(ini.GetInt(_T("ProxyPort"), 1080), 1080, false);
-	proxy.type = NormalizeProxyTypeValue(ini.GetInt(_T("ProxyType"), PROXYTYPE_NOPROXY));
+	proxy.bEnablePassword = ini.GetBool(_T("ProxyEnablePassword"), false, prefini::Sections::Proxy);
+	proxy.bUseProxy = ini.GetBool(_T("ProxyEnableProxy"), false, prefini::Sections::Proxy);
+	proxy.host = ini.GetString(_T("ProxyName"), _T(""), prefini::Sections::Proxy);
+	proxy.user = ini.GetString(_T("ProxyUser"), _T(""), prefini::Sections::Proxy);
+	proxy.password = ini.GetString(_T("ProxyPassword"), _T(""), prefini::Sections::Proxy);
+	proxy.port = NormalizePortPreferenceValue(ini.GetInt(_T("ProxyPort"), 1080, prefini::Sections::Proxy), 1080, false);
+	proxy.type = NormalizeProxyTypeValue(ini.GetInt(_T("ProxyType"), PROXYTYPE_NOPROXY, prefini::Sections::Proxy));
 	SetProxySettings(proxy);
 
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "Statistics"
 	//
-	statsSaveInterval = ini.GetInt(_T("SaveInterval"), 60, _T("Statistics"));
-	SetStatsConnectionsGraphRatio(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("statsConnectionsGraphRatio"), static_cast<int>(GetDefaultStatsConnectionsGraphRatio())), GetDefaultStatsConnectionsGraphRatio()));
-	m_strStatsExpandedTreeItems = ini.GetString(_T("statsExpandedTreeItems"), _T("111000000100000110000010000011110000010010"));
+	statsSaveInterval = ini.GetInt(_T("SaveInterval"), 60, prefini::Sections::Statistics);
+	SetStatsConnectionsGraphRatio(NormalizePositivePreferenceOrDefault(ini.GetInt(_T("statsConnectionsGraphRatio"), static_cast<int>(GetDefaultStatsConnectionsGraphRatio()), prefini::Sections::Statistics), GetDefaultStatsConnectionsGraphRatio()));
+	m_strStatsExpandedTreeItems = ini.GetString(_T("statsExpandedTreeItems"), _T("111000000100000110000010000011110000010010"), prefini::Sections::Statistics);
 	CString buffer;
 	for (unsigned i = 0; i < _countof(m_adwStatsColors); ++i) {
 		buffer.Format(_T("StatColor%u"), i);
 		m_adwStatsColors[i] = 0;
-		if (_stscanf(ini.GetString(buffer, _T("")), _T("%li"), (long*)&m_adwStatsColors[i]) != 1)
+		if (_stscanf(ini.GetString(buffer, _T(""), prefini::Sections::Statistics), _T("%li"), (long*)&m_adwStatsColors[i]) != 1)
 			ResetStatsColor(i);
 	}
-	m_bHasCustomTaskIconColor = ini.GetBool(_T("HasCustomTaskIconColor"), false);
+	m_bHasCustomTaskIconColor = ini.GetBool(_T("HasCustomTaskIconColor"), false, prefini::Sections::Statistics);
 	m_bShowVerticalHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), true, _T("eMule"));
 
 	// -khaos--+++> Load Stats
@@ -3168,21 +3168,21 @@ void CPreferences::LoadPreferences()
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "WebServer"
 	//
-	m_strWebPassword = ini.GetString(_T("Password"), _T(""), _T("WebServer"));
-	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""));
-	SetWSApiKey(ini.GetString(_T("ApiKey"), _T("")));
-	m_strWebBindAddr = ini.GetString(_T("BindAddr"), _T("")).Trim();
-	SetWSPort(NormalizePortPreferenceValue(ini.GetInt(_T("Port"), GetDefaultWSPort()), GetDefaultWSPort(), false));
-	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false);
-	m_bWebEnabled = ini.GetBool(_T("Enabled"), false);
-	m_bWebLowEnabled = ini.GetBool(_T("UseLowRightsUser"), false);
-	SetWebPageRefresh(NormalizeNonNegativePreference(ini.GetInt(_T("PageRefreshTime"), static_cast<int>(GetDefaultWebPageRefresh())), GetDefaultWebPageRefresh()));
-	SetWebTimeoutMins(NormalizeNonNegativePreference(ini.GetInt(_T("WebTimeoutMins"), static_cast<int>(GetDefaultWebTimeoutMins())), GetDefaultWebTimeoutMins()));
-	SetMaxWebUploadFileSizeMB(NormalizeNonNegativePreference(ini.GetInt(_T("MaxFileUploadSizeMB"), static_cast<int>(GetDefaultMaxWebUploadFileSizeMB())), GetDefaultMaxWebUploadFileSizeMB()));
-	m_bAllowAdminHiLevFunc = ini.GetBool(_T("AllowAdminHiLevelFunc"), false);
+	m_strWebPassword = ini.GetString(_T("Password"), _T(""), prefini::Sections::WebServer);
+	m_strWebLowPassword = ini.GetString(_T("PasswordLow"), _T(""), prefini::Sections::WebServer);
+	SetWSApiKey(ini.GetString(_T("ApiKey"), _T(""), prefini::Sections::WebServer));
+	m_strWebBindAddr = ini.GetString(_T("BindAddr"), _T(""), prefini::Sections::WebServer).Trim();
+	SetWSPort(NormalizePortPreferenceValue(ini.GetInt(_T("Port"), GetDefaultWSPort(), prefini::Sections::WebServer), GetDefaultWSPort(), false));
+	m_bWebUseUPnP = ini.GetBool(_T("WebUseUPnP"), false, prefini::Sections::WebServer);
+	m_bWebEnabled = ini.GetBool(_T("Enabled"), false, prefini::Sections::WebServer);
+	m_bWebLowEnabled = ini.GetBool(_T("UseLowRightsUser"), false, prefini::Sections::WebServer);
+	SetWebPageRefresh(NormalizeNonNegativePreference(ini.GetInt(_T("PageRefreshTime"), static_cast<int>(GetDefaultWebPageRefresh()), prefini::Sections::WebServer), GetDefaultWebPageRefresh()));
+	SetWebTimeoutMins(NormalizeNonNegativePreference(ini.GetInt(_T("WebTimeoutMins"), static_cast<int>(GetDefaultWebTimeoutMins()), prefini::Sections::WebServer), GetDefaultWebTimeoutMins()));
+	SetMaxWebUploadFileSizeMB(NormalizeNonNegativePreference(ini.GetInt(_T("MaxFileUploadSizeMB"), static_cast<int>(GetDefaultMaxWebUploadFileSizeMB()), prefini::Sections::WebServer), GetDefaultMaxWebUploadFileSizeMB()));
+	m_bAllowAdminHiLevFunc = ini.GetBool(_T("AllowAdminHiLevelFunc"), false, prefini::Sections::WebServer);
 
 	m_aAllowedRemoteAccessIPs.RemoveAll();
-	buffer = ini.GetString(_T("AllowedIPs"));
+	buffer = ini.GetString(_T("AllowedIPs"), _T(""), prefini::Sections::WebServer);
 	for (int iPos = 0; iPos >= 0;) {
 		const CString &strIP(buffer.Tokenize(_T(";"), iPos));
 		if (!strIP.IsEmpty()) {
@@ -3191,17 +3191,17 @@ void CPreferences::LoadPreferences()
 				m_aAllowedRemoteAccessIPs.Add(static_cast<UINT>(uIP));
 		}
 	}
-	m_bWebUseHttps = ini.GetBool(_T("UseHTTPS"), false);
-	m_bWebUseGzip = m_bWebUseHttps ? false : ini.GetBool(_T("UseGzip"), true); //allow only for HTTP
-	m_sWebHttpsCertificate = ini.GetString(_T("HTTPSCertificate"), _T(""));
-	m_sWebHttpsKey = ini.GetString(_T("HTTPSKey"), _T(""));
+	m_bWebUseHttps = ini.GetBool(_T("UseHTTPS"), false, prefini::Sections::WebServer);
+	m_bWebUseGzip = m_bWebUseHttps ? false : ini.GetBool(_T("UseGzip"), true, prefini::Sections::WebServer); //allow only for HTTP
+	m_sWebHttpsCertificate = ini.GetString(_T("HTTPSCertificate"), _T(""), prefini::Sections::WebServer);
+	m_sWebHttpsKey = ini.GetString(_T("HTTPSKey"), _T(""), prefini::Sections::WebServer);
 
 	///////////////////////////////////////////////////////////////////////////
 	// Section: "UPnP"
 	//
-	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), true, _T("UPnP"));
-	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true);
-	m_uUPnPBackendMode = static_cast<uint8>(NormalizeBoundedPreference(ini.GetInt(_T("BackendMode"), UPNP_BACKEND_AUTOMATIC), UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_PCP_NATPMP_ONLY));
+	m_bEnableUPnP = ini.GetBool(_T("EnableUPnP"), true, prefini::Sections::UPnP);
+	m_bCloseUPnPOnExit = ini.GetBool(_T("CloseUPnPOnExit"), true, prefini::Sections::UPnP);
+	m_uUPnPBackendMode = static_cast<uint8>(NormalizeBoundedPreference(ini.GetInt(_T("BackendMode"), UPNP_BACKEND_AUTOMATIC, prefini::Sections::UPnP), UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_AUTOMATIC, UPNP_BACKEND_PCP_NATPMP_ONLY));
 
 	LoadCats();
 	SetLanguage();
