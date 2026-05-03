@@ -54,9 +54,11 @@ CTrayDialog::CTrayDialog(UINT uIDD, CWnd *pParent /*=NULL*/)
 	, m_uLButtonDown()
 	, m_bCurIconDelete()
 	, m_bTrayIconVisible()
+	, m_bTrayModernCallbacks()
 	//, m_nDefaultMenuItem()
 {
-	m_nidIconData.cbSize = NOTIFYICONDATA_V2_SIZE; //for Windows 2K and above
+	memset(&m_nidIconData, 0, sizeof m_nidIconData);
+	m_nidIconData.cbSize = sizeof(m_nidIconData);
 	m_nidIconData.hWnd = 0;
 	m_nidIconData.uID = 1;
 	m_nidIconData.uCallbackMessage = UM_TRAY_ICON_NOTIFY_MESSAGE;
@@ -123,7 +125,14 @@ void CTrayDialog::TraySetToolTip(LPCTSTR lpszToolTip)
 
 bool CTrayDialog::TrayShow()
 {
+	if (m_bTrayIconVisible)
+		return true;
+
 	m_bTrayIconVisible = Shell_NotifyIcon(NIM_ADD, &m_nidIconData) != 0;
+	if (m_bTrayIconVisible) {
+		m_nidIconData.uVersion = NOTIFYICON_VERSION_4;
+		m_bTrayModernCallbacks = Shell_NotifyIcon(NIM_SETVERSION, &m_nidIconData) != 0;
+	}
 	return m_bTrayIconVisible;
 }
 
@@ -131,6 +140,7 @@ bool CTrayDialog::TrayHide()
 {
 	bool bSuccess = Shell_NotifyIcon(NIM_DELETE, &m_nidIconData);
 	m_bTrayIconVisible = false;
+	m_bTrayModernCallbacks = false;
 	m_uLButtonDown = 0;
 	return bSuccess;
 }
@@ -138,7 +148,10 @@ bool CTrayDialog::TrayHide()
 void CTrayDialog::TrayReset()
 {
 	Shell_NotifyIcon(NIM_DELETE, &m_nidIconData); //fix for DPI change as it keeps the icon
-	if (m_bTrayIconVisible)
+	const bool bWasVisible = m_bTrayIconVisible;
+	m_bTrayIconVisible = false;
+	m_bTrayModernCallbacks = false;
+	if (bWasVisible)
 		TrayShow();
 }
 
@@ -159,6 +172,19 @@ BOOL CTrayDialog::TrayUpdate()
 	}
 
 	return bSuccess;
+}
+
+bool CTrayDialog::TrayShowBalloon(LPCTSTR pszTitle, LPCTSTR pszText, DWORD dwInfoFlags)
+{
+	if (!m_bTrayIconVisible)
+		return false;
+
+	NOTIFYICONDATA nidBalloon = m_nidIconData;
+	nidBalloon.uFlags |= NIF_INFO;
+	_tcsncpy_s(nidBalloon.szInfoTitle, _countof(nidBalloon.szInfoTitle), pszTitle != NULL ? pszTitle : _T(""), _TRUNCATE);
+	_tcsncpy_s(nidBalloon.szInfo, _countof(nidBalloon.szInfo), pszText != NULL ? pszText : _T(""), _TRUNCATE);
+	nidBalloon.dwInfoFlags = dwInfoFlags;
+	return Shell_NotifyIcon(NIM_MODIFY, &nidBalloon) != 0;
 }
 
 BOOL CTrayDialog::TraySetMenu(UINT nResourceID)
@@ -183,11 +209,30 @@ BOOL CTrayDialog::TraySetMenu(HMENU hMenu)
 
 LRESULT CTrayDialog::OnTrayNotify(WPARAM wParam, LPARAM lParam)
 {
-	if (wParam != 1u) //check ID
-		return 0;
+	UINT uEvent = 0;
+	if (m_bTrayModernCallbacks) {
+		if (HIWORD(lParam) != m_nidIconData.uID)
+			return 0;
+		uEvent = LOWORD(lParam);
+	} else {
+		if (wParam != m_nidIconData.uID) //check ID
+			return 0;
+		uEvent = static_cast<UINT>(lParam);
+	}
+
+	if (uEvent == NIN_BALLOONUSERCLICK) {
+		OnTrayBalloonUserClick();
+		return 1;
+	}
+
+	if (uEvent == NIN_SELECT || uEvent == NIN_KEYSELECT) {
+		KillSingleClickTimer();
+		RestoreWindow();
+		return 1;
+	}
 
 	POINT pt;
-	switch (lParam) {
+	switch (uEvent) {
 	case WM_MOUSEMOVE:
 		OnTrayMouseMove();
 		break;
@@ -302,6 +347,11 @@ void CTrayDialog::OnTrayMouseMove()
 	/*POINT pt;
 	::GetCursorPos(&pt);
 	ClientToScreen(&pt);*/
+}
+
+void CTrayDialog::OnTrayBalloonUserClick()
+{
+	RestoreWindow();
 }
 
 LRESULT CTrayDialog::OnTaskBarCreated(WPARAM, LPARAM)

@@ -479,8 +479,8 @@ BEGIN
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,19,128,191,10
     CONTROL         "Urgent: out of disk space, server connection lost",IDC_CB_TBN_IMPORTATNT,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,19,139,191,19
-    CONTROL         "Use Windows toast notifications",IDC_CB_TBN_USEWINDOWSTOAST,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,11,163,209,10
+    LTEXT           "Display mode:",IDC_TBN_DISPLAYMODE_LABEL,19,164,54,8
+    COMBOBOX        IDC_TBN_DISPLAYMODE,75,160,145,50,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     GROUPBOX        "Email Notifications",IDC_EMAILNOT_GROUP,4,184,223,71
     CONTROL         "Enable email notifications",IDC_CB_ENABLENOTIFICATIONS,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,11,196,200,10
@@ -4249,6 +4249,10 @@ BEGIN
     IDS_WEB_INVALID_UPLOAD_SIZE_MIB        "Please enter a valid WebServer upload size in MiB."
     IDS_WEB_INVALID_ALLOWED_IP_FMT         "Invalid allowed WebServer IP address ""%s"".\r\n\r\nUse semicolon-separated IPv4 addresses, or leave the field blank to allow any remote address."
     IDS_USE_WINDOWS_TOAST_NOTIFICATIONS    "Use Windows toast notifications"
+    IDS_NOTIFICATION_DISPLAY_MODE          "Display mode:"
+    IDS_NOTIFICATION_MODE_WINDOWS_TOAST    "Windows toast"
+    IDS_NOTIFICATION_MODE_CLASSIC_TRAY_BALLOON "Classic tray balloon"
+    IDS_NOTIFICATION_MODE_CUSTOM_POPUP     "Custom popup"
     IDS_EMAILNOT_GROUP_FMT                 "(*) %s"
     IDS_FOLLOW_MAJORITY_FILENAME           "Follow majority filename"
     IDS_COPY_ED2K_LINKS_TO_CLIPBOARD_KAD   "Copy eD2K Links To Clipboard (Kad)"
@@ -4349,6 +4353,8 @@ BEGIN
     IDS_TWEAKS_TT_INSPECT_ALL_FILE_TYPES   "Also run the expensive MediaInfo-style inspection path for file types that are not already classified as audio or video.\r\n\r\nEnable it if you want richer file-info probing for unusual or mislabeled files. Leave it off to inspect only likely audio/video files and reduce background inspection work."
     IDS_TWEAKS_TT_RE_BAR_TOOLBAR           "Uses the older rebar-style main toolbar container instead of the simpler plain toolbar layout.\r\n\r\nMostly a UI layout preference. Leave it enabled only if you prefer the legacy toolbar presentation."
     IDS_TWEAKS_TT_SHOW_UP_DOWN_ICON_IN_TASKBAR "Shows the combined upload/download rate icon in the taskbar notification area.\r\n\r\nPurely visual. Disable it if you want a cleaner tray area."
+    IDS_ALWAYS_SHOW_TRAY_ICON              "Always show tray icon"
+    IDS_TWEAKS_TT_ALWAYS_SHOW_TRAY_ICON    "Keeps the eMule icon visible in the Windows notification area while eMule is running.\r\n\r\nClassic tray balloon notifications and minimize-to-tray can still force the tray icon visible when this is disabled."
     IDS_TWEAKS_TT_SHOW_VERTICAL_HOUR_MARKERS "Draws hourly guide markers in the long-term statistics graphs.\r\n\r\nUseful for reading time-based traffic patterns. Disable it if you prefer less graph clutter."
 END
 
@@ -4491,6 +4497,7 @@ BEGIN
     IDS_NOTIFY_TT_CB_TBN_USESPEECH         "Uses text-to-speech for taskbar notifications when a speech engine is available.\r\n\r\nUseful on unattended systems where spoken alerts are easier to notice than sounds."
     IDS_NOTIFY_TT_CB_TBN_POP_ALWAYS        "Shows a popup for every incoming chat message instead of only the first one.\r\n\r\nEnable it if you do not want follow-up chat messages to stay quiet."
     IDS_NOTIFY_TT_CB_TBN_USEWINDOWSTOAST   "Uses Windows toast notifications instead of the custom eMule popup.\r\n\r\nIf Windows rejects a toast notification, eMule falls back to the custom popup."
+    IDS_NOTIFY_TT_TBN_DISPLAYMODE          "Selects how eMule shows enabled pop-up notifications.\r\n\r\nWindows toast is the default. If Windows rejects a toast notification, including when eMule is running as administrator, eMule falls back to the classic tray balloon."
     IDS_NOTIFY_TT_CB_ENABLENOTIFICATIONS   "Enables outbound email notifications for the configured events.\r\n\r\nOnly enable it if you have already configured a working SMTP server and addresses."
     IDS_NOTIFY_TT_SMTPSERVER               "Opens the SMTP server configuration used by email notifications.\r\n\r\nYou only need this if email notifications are enabled."
     IDS_BIND_STARTUP_INTERFACE_NOT_FOUND_FMT "Networking disabled for this session because the selected bind interface is no longer available: %s"

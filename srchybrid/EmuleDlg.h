@@ -86,6 +86,7 @@ public:
 	void SetActiveDialog(CWnd *dlg);
 	CWnd* GetActiveDialog() const				{ return activewnd; }
 	void ShowTransferRate(bool bForceAll = false);
+	void UpdateTrayVisibility();
 	void Localize();
 
 #ifdef HAVE_WIN7_SDK_H
@@ -194,6 +195,7 @@ protected:
 	bool			m_bConnectRequestDelayedForUPnP;
 	bool			m_bKadSuspendDisconnect;
 	bool			m_bEd2kSuspendDisconnect;
+	bool			m_bTrayBalloonFallbackForSession;
 	bool			m_bInitedCOM;
 	bool			m_bBindLossMonitorActive;
 	bool			m_bBindLossShutdown;
@@ -241,7 +243,10 @@ protected:
 	int  GetRecMaxUpload();
 	void LoadNotifier(const CString &configuration);
 	void ShowNotificationPopup(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink);
+	bool ShowTrayBalloonNotification(LPCTSTR pszText, TbnMsg nMsgType);
 	void HandleNotifierClicked(TbnMsg nMsgType, LPARAM lParam);
+	bool ShouldTrayIconBeVisible();
+	void ForceTrayBalloonFallbackForSession();
 	bool notifierenabled;
 	void ShowToolPopup(bool toolsonly = false);
 	void SetAllIcons();
@@ -256,6 +261,7 @@ protected:
 	virtual BOOL OnInitDialog();
 	virtual void OnCancel();
 	virtual void OnOK();
+	virtual void OnTrayBalloonUserClick();
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);
 	virtual BOOL PreTranslateMessage(MSG *pMsg);
 

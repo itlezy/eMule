@@ -623,7 +623,7 @@ bool	CPreferences::notifierOnLog;
 bool	CPreferences::notifierOnImportantError;
 bool	CPreferences::notifierOnEveryChatMsg;
 bool	CPreferences::notifierOnNewVersion;
-ENotifierDisplayMode CPreferences::notifierDisplayMode = ntfdmCustomPopup;
+ENotifierDisplayMode CPreferences::notifierDisplayMode = ntfdmWindowsToast;
 ENotifierSoundType CPreferences::notifierSoundType = ntfstNoSound;
 CString	CPreferences::notifierSoundFile;
 CString CPreferences::m_strIRCServer;
@@ -816,6 +816,7 @@ bool	CPreferences::m_bAutomaticArcPreviewStart;
 bool    CPreferences::m_bAllocFull;
 bool	CPreferences::m_bShowSharedFilesDetails;
 bool	CPreferences::m_bShowUpDownIconInTaskbar;
+bool	CPreferences::m_bAlwaysShowTrayIcon;
 bool	CPreferences::m_bShowWin7TaskbarGoodies;
 bool	CPreferences::m_bForceSpeedsToKB;
 bool	CPreferences::m_bAutoShowLookups;
@@ -2464,6 +2465,7 @@ void CPreferences::SavePreferences()
 	ini.WriteBool(_T("UseSystemFontForMainControls"), m_bUseSystemFontForMainControls);
 	ini.WriteBool(_T("ReBarToolbar"), m_bReBarToolbar);
 	ini.WriteBool(_T("ShowUpDownIconInTaskbar"), m_bShowUpDownIconInTaskbar);
+	ini.WriteBool(_T("AlwaysShowTrayIcon"), m_bAlwaysShowTrayIcon);
 	ini.WriteBool(_T("ShowVerticalHourMarkers"), m_bShowVerticalHourMarkers);
 	ini.WriteBool(_T("ForceSpeedsToKB"), m_bForceSpeedsToKB);
 	ini.WriteBool(_T("ExtraPreviewWithMenu"), m_bExtraPreviewWithMenu);
@@ -2879,8 +2881,17 @@ void CPreferences::LoadPreferences()
 	notifierOnImportantError = ini.GetBool(_T("NotifyOnImportantError"));
 	notifierOnEveryChatMsg = ini.GetBool(_T("NotifierPopEveryChatMessage"));
 	notifierOnNewVersion = ini.GetBool(_T("NotifierPopNewVersion"));
-	const int iNotifierDisplayMode = ini.GetInt(_T("NotifierDisplayMode"), ntfdmCustomPopup);
-	notifierDisplayMode = iNotifierDisplayMode == ntfdmWindowsToast ? ntfdmWindowsToast : ntfdmCustomPopup;
+	const int iNotifierDisplayMode = ini.GetInt(_T("NotifierDisplayMode"), ntfdmWindowsToast);
+	switch (iNotifierDisplayMode) {
+	case ntfdmCustomPopup:
+		notifierDisplayMode = ntfdmCustomPopup;
+		break;
+	case ntfdmTrayBalloon:
+		notifierDisplayMode = ntfdmTrayBalloon;
+		break;
+	default:
+		notifierDisplayMode = ntfdmWindowsToast;
+	}
 	notifierSoundType = (ENotifierSoundType)ini.GetInt(_T("NotifierUseSound"), ntfstNoSound);
 	notifierSoundFile = ini.GetString(_T("NotifierSoundPath"));
 
@@ -2975,6 +2986,7 @@ void CPreferences::LoadPreferences()
 	m_bShowSharedFilesDetails = ini.GetBool(_T("ShowSharedFilesDetails"), true);
 	m_bAutoShowLookups = ini.GetBool(_T("AutoShowLookups"), true);
 	m_bShowUpDownIconInTaskbar = ini.GetBool(_T("ShowUpDownIconInTaskbar"), false);
+	m_bAlwaysShowTrayIcon = ini.GetBool(_T("AlwaysShowTrayIcon"), false);
 	m_bShowWin7TaskbarGoodies = ini.GetBool(_T("ShowWin7TaskbarGoodies"), true);
 	m_bForceSpeedsToKB = ini.GetBool(_T("ForceSpeedsToKB"), false);
 	m_bExtraPreviewWithMenu = ini.GetBool(_T("ExtraPreviewWithMenu"), false);

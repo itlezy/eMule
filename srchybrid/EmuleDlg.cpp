@@ -147,6 +147,55 @@ namespace
 		return text;
 	}
 
+	static CString GetNotifierFallbackTitle(TbnMsg nMsgType)
+	{
+		switch (nMsgType) {
+		case TBN_CHAT:
+			return _T("Chat");
+		case TBN_DOWNLOADFINISHED:
+			return _T("Download finished");
+		case TBN_DOWNLOADADDED:
+			return _T("Download added");
+		case TBN_LOG:
+			return _T("Log");
+		case TBN_IMPORTANTEVENT:
+			return _T("Important event");
+		case TBN_NEWVERSION:
+			return _T("New version");
+		default:
+			return MOD_RELEASE_PRODUCT_NAME;
+		}
+	}
+
+	static void SplitNotifierText(LPCTSTR pszText, TbnMsg nMsgType, CString &strTitle, CString &strBody)
+	{
+		CString strText(pszText != NULL ? pszText : _T(""));
+		strText.Replace(_T("\r\n"), _T("\n"));
+		strText.Replace(_T("\r"), _T("\n"));
+		strText.Trim();
+
+		const int iBreak = strText.Find(_T('\n'));
+		if (iBreak >= 0) {
+			strTitle = strText.Left(iBreak);
+			strBody = strText.Mid(iBreak + 1);
+		} else {
+			strTitle = GetNotifierFallbackTitle(nMsgType);
+			strBody = strText;
+		}
+
+		strTitle.Trim();
+		strBody.Trim();
+		if (strTitle.IsEmpty())
+			strTitle = GetNotifierFallbackTitle(nMsgType);
+		if (strBody.IsEmpty())
+			strBody = strTitle;
+	}
+
+	static DWORD GetTrayBalloonInfoFlags(TbnMsg nMsgType)
+	{
+		return nMsgType == TBN_IMPORTANTEVENT ? NIIF_WARNING : NIIF_INFO;
+	}
+
 	static void PostBindInterfaceChanged(PVOID pContext)
 	{
 		const HWND hWnd = reinterpret_cast<HWND>(pContext);
@@ -417,6 +466,7 @@ CemuleDlg::CemuleDlg(CWnd *pParent /*=NULL*/)
 	, m_bConnectRequestDelayedForUPnP()
 	, m_bKadSuspendDisconnect()
 	, m_bEd2kSuspendDisconnect()
+	, m_bTrayBalloonFallbackForSession()
 	, m_bInitedCOM()
 	, m_bBindLossMonitorActive()
 	, m_bBindLossShutdown()
@@ -757,6 +807,7 @@ BOOL CemuleDlg::OnInitDialog()
 	TrayMinimizeToTrayChange();
 
 	ShowTransferRate(true);
+	UpdateTrayVisibility();
 	searchwnd->UpdateCatTabs();
 
 	///////////////////////////////////////////////////////////////////////////
@@ -1669,8 +1720,8 @@ void CemuleDlg::OnCancel()
 void CemuleDlg::MinimizeWindow()
 {
 	if (*thePrefs.GetMinTrayPTR()) {
-		TrayShow();
 		ShowWindow(SW_HIDE);
+		UpdateTrayVisibility();
 	} else
 		ShowWindow(SW_MINIMIZE);
 
@@ -2585,8 +2636,6 @@ void CemuleDlg::RestoreWindow()
 		return;
 	}
 
-	TrayHide();
-
 	if (m_wpFirstRestore.length) {
 		SetWindowPlacement(&m_wpFirstRestore);
 		memset(&m_wpFirstRestore, 0, sizeof m_wpFirstRestore);
@@ -2594,6 +2643,7 @@ void CemuleDlg::RestoreWindow()
 		BringWindowToTop();
 	} else
 		CTrayDialog::RestoreWindow();
+	UpdateTrayVisibility();
 }
 
 void CemuleDlg::UpdateTrayIcon(int iPercent)
@@ -2657,6 +2707,32 @@ void CemuleDlg::OnShowWindow(BOOL bShow, UINT nStatus)
 			chatwnd->chatselector.ShowChat();
 	}
 	CTrayDialog::OnShowWindow(bShow, nStatus);
+}
+
+bool CemuleDlg::ShouldTrayIconBeVisible()
+{
+	return thePrefs.IsAlwaysShowTrayIcon()
+		|| thePrefs.GetNotifierDisplayMode() == ntfdmTrayBalloon
+		|| (thePrefs.GetNotifierDisplayMode() == ntfdmWindowsToast && m_bTrayBalloonFallbackForSession)
+		|| (!IsWindowVisible() && thePrefs.GetMinToTray());
+}
+
+void CemuleDlg::UpdateTrayVisibility()
+{
+	if (ShouldTrayIconBeVisible()) {
+		if (!TrayIconVisible()) {
+			ShowTransferRate(true);
+			TrayShow();
+			ShowTransferRate(true);
+		}
+	} else if (TrayIconVisible())
+		TrayHide();
+}
+
+void CemuleDlg::ForceTrayBalloonFallbackForSession()
+{
+	m_bTrayBalloonFallbackForSession = true;
+	UpdateTrayVisibility();
 }
 
 void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, bool bForceSoundOFF)
@@ -2741,9 +2817,37 @@ void CemuleDlg::ShowNotifier(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink, 
 
 void CemuleDlg::ShowNotificationPopup(LPCTSTR pszText, TbnMsg nMsgType, LPCTSTR pszLink)
 {
-	if (thePrefs.GetNotifierDisplayMode() == ntfdmWindowsToast && m_wndWindowsToastNotifier.Show(m_hWnd, pszText, nMsgType, pszLink))
-		return;
+	switch (thePrefs.GetNotifierDisplayMode()) {
+	case ntfdmWindowsToast:
+		if (m_wndWindowsToastNotifier.Show(m_hWnd, pszText, nMsgType, pszLink))
+			return;
+		ForceTrayBalloonFallbackForSession();
+		if (ShowTrayBalloonNotification(pszText, nMsgType))
+			return;
+		break;
+	case ntfdmTrayBalloon:
+		UpdateTrayVisibility();
+		if (ShowTrayBalloonNotification(pszText, nMsgType))
+			return;
+		break;
+	default:
+		break;
+	}
+
 	m_wndTaskbarNotifier.Show(pszText, nMsgType, pszLink);
+}
+
+bool CemuleDlg::ShowTrayBalloonNotification(LPCTSTR pszText, TbnMsg nMsgType)
+{
+	if (!TrayIconVisible())
+		UpdateTrayVisibility();
+	if (!TrayIconVisible())
+		return false;
+
+	CString strTitle;
+	CString strBody;
+	SplitNotifierText(pszText, nMsgType, strTitle, strBody);
+	return TrayShowBalloon(strTitle, strBody, GetTrayBalloonInfoFlags(nMsgType));
 }
 
 void CemuleDlg::LoadNotifier(const CString &configuration)
@@ -2761,6 +2865,11 @@ LRESULT CemuleDlg::OnWindowsToastClicked(WPARAM wParam, LPARAM lParam)
 {
 	HandleNotifierClicked(static_cast<TbnMsg>(wParam), lParam);
 	return 0;
+}
+
+void CemuleDlg::OnTrayBalloonUserClick()
+{
+	RestoreWindow();
 }
 
 void CemuleDlg::HandleNotifierClicked(TbnMsg nMsgType, LPARAM lParam)
@@ -3966,6 +4075,7 @@ void CemuleDlg::TrayMinimizeToTrayChange()
 			(void)pSysMenu->RemoveMenu(MP_MINIMIZETOTRAY, MF_BYCOMMAND);
 	}
 	CTrayDialog::TrayMinimizeToTrayChange();
+	UpdateTrayVisibility();
 }
 
 void CemuleDlg::SetToolTipsDelay(UINT uMilliseconds)

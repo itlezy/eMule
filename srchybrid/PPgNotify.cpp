@@ -49,7 +49,7 @@ BEGIN_MESSAGE_MAP(CPPgNotify, CPropertyPage)
 	ON_BN_CLICKED(IDC_CB_TBN_IMPORTATNT, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CB_TBN_POP_ALWAYS, OnSettingsChange)
 	ON_BN_CLICKED(IDC_CB_TBN_ONNEWVERSION, OnSettingsChange)
-	ON_BN_CLICKED(IDC_CB_TBN_USEWINDOWSTOAST, OnSettingsChange)
+	ON_CBN_SELCHANGE(IDC_TBN_DISPLAYMODE, OnSettingsChange)
 	ON_BN_CLICKED(IDC_SMTPSERVER, OnBnClickedSMTPserver)
 	ON_EN_CHANGE(IDC_EDIT_SENDER, OnSettingsChange)
 	ON_EN_CHANGE(IDC_EDIT_RECEIVER, OnSettingsChange)
@@ -99,7 +99,7 @@ BOOL CPPgNotify::OnInitDialog()
 	CheckDlgButton(IDC_CB_TBN_IMPORTATNT, thePrefs.notifierOnImportantError ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_POP_ALWAYS, thePrefs.notifierOnEveryChatMsg ? BST_CHECKED : BST_UNCHECKED);
 	CheckDlgButton(IDC_CB_TBN_ONNEWVERSION, thePrefs.notifierOnNewVersion ? BST_CHECKED : BST_UNCHECKED);
-	CheckDlgButton(IDC_CB_TBN_USEWINDOWSTOAST, thePrefs.notifierDisplayMode == ntfdmWindowsToast ? BST_CHECKED : BST_UNCHECKED);
+	InitializeNotifierDisplayMode();
 
 	GetDlgItem(IDC_CB_TBN_POP_ALWAYS)->EnableWindow(IsDlgButtonChecked(IDC_CB_TBN_ONCHAT));
 
@@ -128,7 +128,7 @@ void CPPgNotify::UpdateToolTips()
 	m_toolTip.SetTool(this, IDC_CB_TBN_USESOUND, GetResString(IDS_NOTIFY_TT_CB_TBN_USESOUND));
 	m_toolTip.SetTool(this, IDC_CB_TBN_USESPEECH, GetResString(IDS_NOTIFY_TT_CB_TBN_USESPEECH));
 	m_toolTip.SetTool(this, IDC_CB_TBN_POP_ALWAYS, GetResString(IDS_NOTIFY_TT_CB_TBN_POP_ALWAYS));
-	m_toolTip.SetTool(this, IDC_CB_TBN_USEWINDOWSTOAST, GetResString(IDS_NOTIFY_TT_CB_TBN_USEWINDOWSTOAST));
+	m_toolTip.SetTool(this, IDC_TBN_DISPLAYMODE, GetResString(IDS_NOTIFY_TT_TBN_DISPLAYMODE));
 	m_toolTip.SetTool(this, IDC_CB_ENABLENOTIFICATIONS, GetResString(IDS_NOTIFY_TT_CB_ENABLENOTIFICATIONS));
 	m_toolTip.SetTool(this, IDC_SMTPSERVER, GetResString(IDS_NOTIFY_TT_SMTPSERVER));
 }
@@ -162,7 +162,7 @@ void CPPgNotify::Localize()
 		SetDlgItemText(IDC_TASKBARNOTIFIER, GetResString(IDS_PW_TASKBARNOTIFIER));
 		SetDlgItemText(IDC_CB_TBN_IMPORTATNT, GetResString(IDS_PS_TBN_IMPORTANT) + _T(" (*)"));
 		SetDlgItemText(IDC_CB_TBN_ONNEWVERSION, GetResString(IDS_CB_TBN_ONNEWVERSION));
-		SetDlgItemText(IDC_CB_TBN_USEWINDOWSTOAST, GetResString(IDS_USE_WINDOWS_TOAST_NOTIFICATIONS));
+		SetDlgItemText(IDC_TBN_DISPLAYMODE_LABEL, GetResString(IDS_NOTIFICATION_DISPLAY_MODE));
 		SetDlgItemText(IDC_TBN_OPTIONS, GetResString(IDS_PW_TBN_OPTIONS));
 		SetDlgItemText(IDC_CB_TBN_USESPEECH, GetResString(IDS_USESPEECH));
 		SetDlgItemText(IDC_EMAILNOT_GROUP, strEmailNotificationGroup);
@@ -194,7 +194,7 @@ BOOL CPPgNotify::OnApply()
 	thePrefs.notifierOnImportantError = IsDlgButtonChecked(IDC_CB_TBN_IMPORTATNT) != 0;
 	thePrefs.notifierOnEveryChatMsg = IsDlgButtonChecked(IDC_CB_TBN_POP_ALWAYS) != 0;
 	thePrefs.notifierOnNewVersion = IsDlgButtonChecked(IDC_CB_TBN_ONNEWVERSION) != 0;
-	thePrefs.notifierDisplayMode = IsDlgButtonChecked(IDC_CB_TBN_USEWINDOWSTOAST) != 0 ? ntfdmWindowsToast : ntfdmCustomPopup;
+	ApplyNotifierDisplayMode();
 
 	GetDlgItemText(IDC_EDIT_SENDER, m_mail.sFrom);
 	GetDlgItemText(IDC_EDIT_RECEIVER, m_mail.sTo);
@@ -203,9 +203,55 @@ BOOL CPPgNotify::OnApply()
 	ApplyNotifierSoundType();
 	if (thePrefs.notifierSoundType != ntfstSpeech)
 		ReleaseTTS();
+	theApp.emuledlg->UpdateTrayVisibility();
 
 	SetModified(FALSE);
 	return CPropertyPage::OnApply();
+}
+
+void CPPgNotify::InitializeNotifierDisplayMode()
+{
+	CComboBox *pDisplayMode = static_cast<CComboBox*>(GetDlgItem(IDC_TBN_DISPLAYMODE));
+	if (pDisplayMode == NULL)
+		return;
+
+	pDisplayMode->ResetContent();
+	const struct
+	{
+		ENotifierDisplayMode eMode;
+		UINT uStringID;
+	} aModes[] = {
+		{ ntfdmWindowsToast, IDS_NOTIFICATION_MODE_WINDOWS_TOAST },
+		{ ntfdmTrayBalloon, IDS_NOTIFICATION_MODE_CLASSIC_TRAY_BALLOON },
+		{ ntfdmCustomPopup, IDS_NOTIFICATION_MODE_CUSTOM_POPUP }
+	};
+
+	int iSelected = 0;
+	for (const auto &mode : aModes) {
+		const int iItem = pDisplayMode->AddString(GetResString(mode.uStringID));
+		if (iItem >= 0) {
+			pDisplayMode->SetItemData(iItem, static_cast<DWORD_PTR>(mode.eMode));
+			if (mode.eMode == thePrefs.notifierDisplayMode)
+				iSelected = iItem;
+		}
+	}
+	pDisplayMode->SetCurSel(iSelected);
+}
+
+void CPPgNotify::ApplyNotifierDisplayMode()
+{
+	CComboBox *pDisplayMode = static_cast<CComboBox*>(GetDlgItem(IDC_TBN_DISPLAYMODE));
+	if (pDisplayMode == NULL) {
+		thePrefs.notifierDisplayMode = ntfdmWindowsToast;
+		return;
+	}
+
+	const int iSelected = pDisplayMode->GetCurSel();
+	if (iSelected == CB_ERR) {
+		thePrefs.notifierDisplayMode = ntfdmWindowsToast;
+		return;
+	}
+	thePrefs.notifierDisplayMode = static_cast<ENotifierDisplayMode>(pDisplayMode->GetItemData(iSelected));
 }
 
 void CPPgNotify::ApplyNotifierSoundType()
@@ -261,11 +307,13 @@ void CPPgNotify::OnBnClickedTestNotification()
 	// save current pref settings
 	bool bCurNotifyOnImportantError = thePrefs.notifierOnImportantError;
 	ENotifierSoundType iCurSoundType = thePrefs.notifierSoundType;
+	ENotifierDisplayMode eCurDisplayMode = thePrefs.notifierDisplayMode;
 	CString strSoundFile(thePrefs.notifierSoundFile);
 
 	// temporary apply current settings from dialog
 	thePrefs.notifierOnImportantError = true;
 	ApplyNotifierSoundType();
+	ApplyNotifierDisplayMode();
 
 	// play test notification
 	CString strTest;
@@ -275,7 +323,9 @@ void CPPgNotify::OnBnClickedTestNotification()
 	// restore pref settings
 	thePrefs.notifierSoundFile = strSoundFile;
 	thePrefs.notifierSoundType = iCurSoundType;
+	thePrefs.notifierDisplayMode = eCurDisplayMode;
 	thePrefs.notifierOnImportantError = bCurNotifyOnImportantError;
+	theApp.emuledlg->UpdateTrayVisibility();
 }
 
 void CPPgNotify::OnHelp()

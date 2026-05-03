@@ -36,6 +36,8 @@ protected:
 
 	void UpdateControls();
 	void ApplyNotifierSoundType();
+	void ApplyNotifierDisplayMode();
+	void InitializeNotifierDisplayMode();
 	void UpdateToolTips();
 
 	virtual void DoDataExchange(CDataExchange *pDX);
