@@ -1157,7 +1157,7 @@ void CPreferences::SetGeoLocationLastCheckTime(__time64_t tTimestamp, bool bPers
 	CIni ini(GetConfigFile(), _T("eMule"));
 	CString strValue;
 	strValue.Format(_T("%I64d"), static_cast<LONGLONG>(m_tGeoLocationLastCheckTime));
-	ini.WriteString(_T("GeoLocationLastCheckTime"), strValue);
+	ini.WriteString(prefini::GeoLocationKeys::LastUpdateTime, strValue);
 }
 
 void CPreferences::SetIPFilterLastUpdateTime(__time64_t tTimestamp, bool bPersist)
@@ -1169,7 +1169,7 @@ void CPreferences::SetIPFilterLastUpdateTime(__time64_t tTimestamp, bool bPersis
 	CIni ini(GetConfigFile(), _T("eMule"));
 	CString strValue;
 	strValue.Format(_T("%I64d"), static_cast<LONGLONG>(m_tIPFilterLastUpdateTime));
-	ini.WriteString(_T("LastIPFilterUpdate"), strValue);
+	ini.WriteString(prefini::IPFilterUpdateKeys::LastUpdateTime, strValue);
 }
 
 void CPreferences::SetIPFilterUpdateUrl(const CString& strUrl, bool bPersist)
@@ -1180,7 +1180,7 @@ void CPreferences::SetIPFilterUpdateUrl(const CString& strUrl, bool bPersist)
 		return;
 
 	CIni ini(GetConfigFile(), _T("eMule"));
-	ini.WriteString(_T("IPFilterUpdateUrl"), m_strIPFilterUpdateUrl);
+	ini.WriteString(prefini::IPFilterUpdateKeys::Url, m_strIPFilterUpdateUrl);
 }
 
 void CPreferences::MovePreferences(EDefaultDirectory eSrc, LPCTSTR const sFile, const CString &dst)
@@ -2274,22 +2274,22 @@ void CPreferences::SavePreferences()
 		ini.WriteBool(_T("MinToTray"), mintotray);
 	ini.WriteBool(_T("PreventStandby"), m_bPreventStandby);
 	ini.WriteBool(_T("StoreSearches"), m_bStoreSearches);
-	ini.WriteBool(_T("GeoLocationEnabled"), m_bGeoLocationEnabled);
-	ini.WriteInt(_T("GeoLocationCheckDays"), static_cast<int>(m_uGeoLocationCheckDays));
+	ini.WriteBool(prefini::GeoLocationKeys::LookupEnabled, m_bGeoLocationEnabled);
+	ini.WriteInt(prefini::GeoLocationKeys::UpdatePeriodDays, static_cast<int>(m_uGeoLocationCheckDays));
 	{
 		CString strGeoLocationLastCheckTime;
 		strGeoLocationLastCheckTime.Format(_T("%I64d"), static_cast<LONGLONG>(m_tGeoLocationLastCheckTime));
-		ini.WriteString(_T("GeoLocationLastCheckTime"), strGeoLocationLastCheckTime);
+		ini.WriteString(prefini::GeoLocationKeys::LastUpdateTime, strGeoLocationLastCheckTime);
 	}
-	ini.WriteString(_T("GeoLocationUpdateUrl"), m_strGeoLocationUpdateUrl);
-	ini.WriteBool(_T("AutoIPFilterUpdate"), m_bAutoIPFilterUpdate);
-	ini.WriteInt(_T("IPFilterUpdatePeriodDays"), static_cast<int>(m_uIPFilterUpdatePeriodDays));
+	ini.WriteString(prefini::GeoLocationKeys::UpdateUrl, m_strGeoLocationUpdateUrl);
+	ini.WriteBool(prefini::IPFilterUpdateKeys::Enabled, m_bAutoIPFilterUpdate);
+	ini.WriteInt(prefini::IPFilterUpdateKeys::PeriodDays, static_cast<int>(m_uIPFilterUpdatePeriodDays));
 	{
 		CString strIPFilterLastUpdateTime;
 		strIPFilterLastUpdateTime.Format(_T("%I64d"), static_cast<LONGLONG>(m_tIPFilterLastUpdateTime));
-		ini.WriteString(_T("LastIPFilterUpdate"), strIPFilterLastUpdateTime);
+		ini.WriteString(prefini::IPFilterUpdateKeys::LastUpdateTime, strIPFilterLastUpdateTime);
 	}
-	ini.WriteString(_T("IPFilterUpdateUrl"), m_strIPFilterUpdateUrl);
+	ini.WriteString(prefini::IPFilterUpdateKeys::Url, m_strIPFilterUpdateUrl);
 	ini.WriteBool(_T("AddServersFromServer"), m_bAddServersFromServer);
 	ini.WriteBool(_T("AddServersFromClient"), m_bAddServersFromClients);
 	ini.WriteBool(_T("Splashscreen"), splashscreen);
@@ -2815,14 +2815,14 @@ void CPreferences::LoadPreferences()
 
 	m_bPreventStandby = ini.GetBool(_T("PreventStandby"), false);
 	m_bStoreSearches = ini.GetBool(_T("StoreSearches"), true);
-	m_bGeoLocationEnabled = ini.GetBool(_T("GeoLocationEnabled"), GetDefaultGeoLocationEnabled());
-	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(_T("GeoLocationCheckDays"), static_cast<int>(GetDefaultGeoLocationCheckDays())))));
-	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(_T("GeoLocationLastCheckTime"), _T("0")))));
-	m_strGeoLocationUpdateUrl = ini.GetString(_T("GeoLocationUpdateUrl"), _T("https://download.db-ip.com/free/dbip-city-lite-%Y-%m.mmdb.gz"));
-	m_bAutoIPFilterUpdate = ini.GetBool(_T("AutoIPFilterUpdate"), false);
-	SetIPFilterUpdatePeriodDays(static_cast<UINT>(max(0, ini.GetInt(_T("IPFilterUpdatePeriodDays"), static_cast<int>(GetDefaultIPFilterUpdatePeriodDays())))));
-	m_tIPFilterLastUpdateTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(_T("LastIPFilterUpdate"), _T("0")))));
-	SetIPFilterUpdateUrl(ini.GetString(_T("IPFilterUpdateUrl"), GetDefaultIPFilterUpdateUrl()));
+	m_bGeoLocationEnabled = ini.GetBool(prefini::GeoLocationKeys::LookupEnabled, GetDefaultGeoLocationEnabled());
+	SetGeoLocationCheckDays(static_cast<UINT>(max(0, ini.GetInt(prefini::GeoLocationKeys::UpdatePeriodDays, static_cast<int>(GetDefaultGeoLocationCheckDays())))));
+	m_tGeoLocationLastCheckTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(prefini::GeoLocationKeys::LastUpdateTime, _T("0")))));
+	m_strGeoLocationUpdateUrl = ini.GetString(prefini::GeoLocationKeys::UpdateUrl, _T("https://download.db-ip.com/free/dbip-city-lite-%Y-%m.mmdb.gz"));
+	m_bAutoIPFilterUpdate = ini.GetBool(prefini::IPFilterUpdateKeys::Enabled, false);
+	SetIPFilterUpdatePeriodDays(static_cast<UINT>(max(0, ini.GetInt(prefini::IPFilterUpdateKeys::PeriodDays, static_cast<int>(GetDefaultIPFilterUpdatePeriodDays())))));
+	m_tIPFilterLastUpdateTime = max(static_cast<__time64_t>(0), static_cast<__time64_t>(_tstoi64(ini.GetString(prefini::IPFilterUpdateKeys::LastUpdateTime, _T("0")))));
+	SetIPFilterUpdateUrl(ini.GetString(prefini::IPFilterUpdateKeys::Url, GetDefaultIPFilterUpdateUrl()));
 	m_bAddServersFromServer = ini.GetBool(_T("AddServersFromServer"), false);
 	m_bAddServersFromClients = ini.GetBool(_T("AddServersFromClient"), false);
 	splashscreen = ini.GetBool(_T("Splashscreen"), false);

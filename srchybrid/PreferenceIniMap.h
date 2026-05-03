@@ -23,6 +23,22 @@ inline constexpr const TCHAR* Program = _T("FileCompletionProgram");
 inline constexpr const TCHAR* Arguments = _T("FileCompletionArguments");
 }
 
+namespace GeoLocationKeys
+{
+inline constexpr const TCHAR* LookupEnabled = _T("GeoLocationLookupEnabled");
+inline constexpr const TCHAR* UpdatePeriodDays = _T("GeoLocationUpdatePeriodDays");
+inline constexpr const TCHAR* LastUpdateTime = _T("GeoLocationLastUpdateTime");
+inline constexpr const TCHAR* UpdateUrl = _T("GeoLocationUpdateUrl");
+}
+
+namespace IPFilterUpdateKeys
+{
+inline constexpr const TCHAR* Enabled = _T("IPFilterUpdateEnabled");
+inline constexpr const TCHAR* PeriodDays = _T("IPFilterUpdatePeriodDays");
+inline constexpr const TCHAR* LastUpdateTime = _T("IPFilterLastUpdateTime");
+inline constexpr const TCHAR* Url = _T("IPFilterUpdateUrl");
+}
+
 namespace UploadPolicyKeys
 {
 inline constexpr const TCHAR* MaxUploadClientsAllowed = _T("MaxUploadClientsAllowed");
