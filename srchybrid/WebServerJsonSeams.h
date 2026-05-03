@@ -109,12 +109,15 @@ inline bool IsApiRequestTarget(const std::string &rRequestTarget)
 	return strPathLower == "/api/v1" || strPathLower.rfind("/api/v1/", 0) == 0;
 }
 
-inline std::map<std::string, std::string> ParseQueryString(const std::string &rRequestTarget)
+/**
+ * @brief Parses a query string into unique decoded parameters.
+ */
+inline bool TryParseQueryString(const std::string &rRequestTarget, std::map<std::string, std::string> &rQuery, std::string &rErrorMessage)
 {
-	std::map<std::string, std::string> query;
+	rQuery.clear();
 	const std::string::size_type uQuery = rRequestTarget.find('?');
 	if (uQuery == std::string::npos || uQuery + 1 >= rRequestTarget.size())
-		return query;
+		return true;
 
 	size_t uPos = uQuery + 1;
 	while (uPos <= rRequestTarget.size()) {
@@ -126,7 +129,11 @@ inline std::map<std::string, std::string> ParseQueryString(const std::string &rR
 			const std::string::size_type uEquals = token.find('=');
 			const std::string strName = UrlDecodeUtf8(token.substr(0, uEquals));
 			const std::string strValue = uEquals == std::string::npos ? std::string() : UrlDecodeUtf8(token.substr(uEquals + 1));
-			query[strName] = strValue;
+			if (rQuery.find(strName) != rQuery.end()) {
+				rErrorMessage = "duplicate query parameter: " + strName;
+				return false;
+			}
+			rQuery[strName] = strValue;
 		}
 
 		if (uAmp == std::string::npos)
@@ -134,7 +141,7 @@ inline std::map<std::string, std::string> ParseQueryString(const std::string &rR
 		uPos = uAmp + 1;
 	}
 
-	return query;
+	return true;
 }
 
 /**
@@ -181,30 +188,42 @@ inline std::vector<std::string> SplitPathSegments(const std::string &rPath)
 	return segments;
 }
 
+inline bool IsValidUnsignedDecimal(const std::string &rValue)
+{
+	if (rValue.empty())
+		return false;
+	for (const char ch : rValue) {
+		if (std::isdigit(static_cast<unsigned char>(ch)) == 0)
+			return false;
+	}
+	char *pEnd = NULL;
+	errno = 0;
+	(void)std::strtoull(rValue.c_str(), &pEnd, 10);
+	return errno == 0 && pEnd != NULL && *pEnd == '\0';
+}
+
 inline bool TryParseUnsignedQueryValue(const std::map<std::string, std::string> &rQuery, const char *pszName, uint64_t &ruValue)
 {
 	const auto it = rQuery.find(pszName);
 	if (it == rQuery.end())
 		return false;
 
-	char *pEnd = NULL;
-	errno = 0;
-	const unsigned long long ullValue = std::strtoull(it->second.c_str(), &pEnd, 10);
-	if (errno != 0 || pEnd == NULL || *pEnd != '\0')
+	if (!IsValidUnsignedDecimal(it->second))
 		return false;
 
-	ruValue = static_cast<uint64_t>(ullValue);
+	ruValue = static_cast<uint64_t>(std::strtoull(it->second.c_str(), NULL, 10));
 	return true;
 }
 
-inline bool IsValidUnsignedDecimal(const std::string &rValue)
+inline bool IsLowercaseMd4HexString(const std::string &rValue)
 {
-	if (rValue.empty())
+	if (rValue.size() != 32)
 		return false;
-	char *pEnd = NULL;
-	errno = 0;
-	(void)std::strtoull(rValue.c_str(), &pEnd, 10);
-	return errno == 0 && pEnd != NULL && *pEnd == '\0';
+	for (const char ch : rValue) {
+		if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')))
+			return false;
+	}
+	return true;
 }
 
 inline void SetInvalidArgument(std::string &rErrorCode, std::string &rErrorMessage, const std::string &rMessage)
@@ -355,6 +374,138 @@ inline std::string ToUpperAscii(const std::string &rValue)
 	return result;
 }
 
+/**
+ * @brief Parses an endpoint route token in the public "address:port" form.
+ */
+inline bool TryCopyEndpointToken(const std::string &rValue, json &rParams)
+{
+	const std::string::size_type uColon = rValue.rfind(':');
+	if (uColon == std::string::npos || uColon == 0 || uColon + 1 >= rValue.size())
+		return false;
+
+	const std::string strPort = rValue.substr(uColon + 1);
+	if (!IsValidUnsignedDecimal(strPort))
+		return false;
+
+	const unsigned long ulPort = std::strtoul(strPort.c_str(), NULL, 10);
+	if (ulPort == 0 || ulPort > 0xFFFFul)
+		return false;
+
+	rParams["addr"] = rValue.substr(0, uColon);
+	rParams["port"] = static_cast<unsigned>(ulPort);
+	return true;
+}
+
+inline bool TryValidateBoundedUnsignedDecimal(
+	const std::string &rValue,
+	const uint64_t uMaxValue,
+	const char *pszErrorFieldName,
+	std::string &rErrorCode,
+	std::string &rErrorMessage)
+{
+	if (!IsValidUnsignedDecimal(rValue)) {
+		SetInvalidArgument(rErrorCode, rErrorMessage, std::string(pszErrorFieldName) + " must be an unsigned decimal string");
+		return false;
+	}
+
+	const uint64_t uValue = static_cast<uint64_t>(std::strtoull(rValue.c_str(), NULL, 10));
+	if (uValue > uMaxValue) {
+		SetInvalidArgument(rErrorCode, rErrorMessage, std::string(pszErrorFieldName) + " is out of range");
+		return false;
+	}
+	return true;
+}
+
+/**
+ * @brief Validates one unsigned query parameter against the published bounds.
+ */
+inline bool TryParseBoundedQueryUInt(
+	const std::string &rValue,
+	const uint64_t uMinValue,
+	const uint64_t uMaxValue,
+	const char *pszFieldName,
+	std::string &rErrorCode,
+	std::string &rErrorMessage)
+{
+	if (!IsValidUnsignedDecimal(rValue)) {
+		SetInvalidArgument(rErrorCode, rErrorMessage, std::string(pszFieldName) + " must be an unsigned number");
+		return false;
+	}
+	const uint64_t uValue = static_cast<uint64_t>(std::strtoull(rValue.c_str(), NULL, 10));
+	if (uValue < uMinValue || uValue > uMaxValue) {
+		SetInvalidArgument(rErrorCode, rErrorMessage, std::string(pszFieldName) + " is out of range");
+		return false;
+	}
+	return true;
+}
+
+/**
+ * @brief Rejects ambiguous category selectors before command dispatch.
+ */
+inline bool ValidateCategorySelectorBody(const json &rBody, std::string &rErrorCode, std::string &rErrorMessage)
+{
+	if (rBody.contains("categoryId") && rBody.contains("categoryName")) {
+		SetInvalidArgument(rErrorCode, rErrorMessage, "categoryId and categoryName are mutually exclusive");
+		return false;
+	}
+	return true;
+}
+
+inline bool ValidateTemplateParameter(
+	const std::string &rTemplateSegment,
+	const std::string &rValue,
+	std::string &rErrorCode,
+	std::string &rErrorMessage)
+{
+	if (rTemplateSegment == "{hash}" || rTemplateSegment == "{userHash}") {
+		if (!IsLowercaseMd4HexString(rValue)) {
+			SetInvalidArgument(rErrorCode, rErrorMessage, rTemplateSegment.substr(1, rTemplateSegment.size() - 2) + " must be a 32-character lowercase hex string");
+			return false;
+		}
+		return true;
+	}
+
+	if (rTemplateSegment == "{categoryId}")
+		return TryValidateBoundedUnsignedDecimal(rValue, UINT_MAX, "categoryId", rErrorCode, rErrorMessage);
+
+	if (rTemplateSegment == "{searchId}")
+		return TryValidateBoundedUnsignedDecimal(rValue, UINT32_MAX, "searchId", rErrorCode, rErrorMessage);
+
+	if (rTemplateSegment == "{serverId}") {
+		json endpoint = json::object();
+		if (!TryCopyEndpointToken(rValue, endpoint)) {
+			SetInvalidArgument(rErrorCode, rErrorMessage, "serverId must use address:port with a port in the range 1..65535");
+			return false;
+		}
+		return true;
+	}
+
+	if (rTemplateSegment == "{clientId}") {
+		json endpoint = json::object();
+		if (!IsLowercaseMd4HexString(rValue) && !TryCopyEndpointToken(rValue, endpoint)) {
+			SetInvalidArgument(rErrorCode, rErrorMessage, "clientId must be a 32-character lowercase hex string or address:port");
+			return false;
+		}
+		return true;
+	}
+
+	return true;
+}
+
+inline bool ValidatePathParameters(const std::string &rApiPath, const SApiRouteSpec &rSpec, std::string &rErrorCode, std::string &rErrorMessage)
+{
+	const std::vector<std::string> pathSegments = SplitPathSegments(rApiPath);
+	const std::vector<std::string> templateSegments = SplitPathSegments(rSpec.pszPathTemplate != NULL ? rSpec.pszPathTemplate : "");
+	if (pathSegments.size() != templateSegments.size())
+		return true;
+
+	for (size_t i = 0; i < pathSegments.size(); ++i) {
+		if (IsTemplateParameter(templateSegments[i]) && !ValidateTemplateParameter(templateSegments[i], pathSegments[i], rErrorCode, rErrorMessage))
+			return false;
+	}
+	return true;
+}
+
 inline bool ValidateRequestBodyFields(const json &rBody, const SApiRouteSpec &rSpec, std::string &rErrorCode, std::string &rErrorMessage)
 {
 	for (json::const_iterator it = rBody.begin(); it != rBody.end(); ++it) {
@@ -363,6 +514,12 @@ inline bool ValidateRequestBodyFields(const json &rBody, const SApiRouteSpec &rS
 			return false;
 		}
 	}
+	if ((rSpec.pszPathTemplate != NULL && (
+		std::string(rSpec.pszPathTemplate) == "/transfers"
+		|| std::string(rSpec.pszPathTemplate) == "/transfers/{hash}"
+		|| std::string(rSpec.pszPathTemplate) == "/searches/{searchId}/results/{hash}/operations/download"))
+		&& !ValidateCategorySelectorBody(rBody, rErrorCode, rErrorMessage))
+		return false;
 	return true;
 }
 
@@ -373,10 +530,12 @@ inline bool ValidateQueryFields(const std::map<std::string, std::string> &rQuery
 			SetInvalidArgument(rErrorCode, rErrorMessage, "unknown query parameter: " + it->first);
 			return false;
 		}
-		if ((it->first == "limit" || it->first == "offset" || it->first == "categoryId") && !IsValidUnsignedDecimal(it->second)) {
-			SetInvalidArgument(rErrorCode, rErrorMessage, it->first + " must be an unsigned number");
+		if (it->first == "limit" && !TryParseBoundedQueryUInt(it->second, 1, 1000, "limit", rErrorCode, rErrorMessage))
 			return false;
-		}
+		if (it->first == "offset" && !TryParseBoundedQueryUInt(it->second, 0, static_cast<uint64_t>(INT_MAX), "offset", rErrorCode, rErrorMessage))
+			return false;
+		if (it->first == "categoryId" && !TryParseBoundedQueryUInt(it->second, 0, static_cast<uint64_t>(UINT_MAX), "categoryId", rErrorCode, rErrorMessage))
+			return false;
 	}
 	return true;
 }
@@ -412,26 +571,6 @@ inline void CopyPagingQueryParams(const std::map<std::string, std::string> &rQue
 	uint64_t ullOffset = 0;
 	if (TryParseUnsignedQueryValue(rQuery, "offset", ullOffset))
 		rParams["_offset"] = ullOffset > INT_MAX ? INT_MAX : static_cast<int>(ullOffset);
-}
-
-/**
- * @brief Parses an endpoint route token in the public "address:port" form.
- */
-inline bool TryCopyEndpointToken(const std::string &rValue, json &rParams)
-{
-	const std::string::size_type uColon = rValue.rfind(':');
-	if (uColon == std::string::npos || uColon == 0 || uColon + 1 >= rValue.size())
-		return false;
-
-	char *pEnd = NULL;
-	errno = 0;
-	const unsigned long ulPort = std::strtoul(rValue.substr(uColon + 1).c_str(), &pEnd, 10);
-	if (errno != 0 || pEnd == NULL || *pEnd != '\0' || ulPort == 0 || ulPort > 0xFFFFul)
-		return false;
-
-	rParams["addr"] = rValue.substr(0, uColon);
-	rParams["port"] = static_cast<unsigned>(ulPort);
-	return true;
 }
 
 /**
@@ -521,7 +660,11 @@ inline bool TryBuildRoute(
 	}
 
 	const std::vector<std::string> route(segments.begin() + 2, segments.end());
-	const std::map<std::string, std::string> query = ParseQueryString(rRequestTarget);
+	std::map<std::string, std::string> query;
+	if (!TryParseQueryString(rRequestTarget, query, rErrorMessage)) {
+		rErrorCode = "INVALID_ARGUMENT";
+		return false;
+	}
 	json body;
 	if (!TryParseRequestBody(rRequestBody, body, rErrorMessage)) {
 		rErrorCode = "INVALID_ARGUMENT";
@@ -561,6 +704,8 @@ inline bool TryBuildRoute(
 		return false;
 	}
 	rRoute.strPathTemplate = pRouteSpec->pszPathTemplate;
+	if (!ValidatePathParameters(strApiPath, *pRouteSpec, rErrorCode, rErrorMessage))
+		return false;
 	if (!ValidateQueryFields(query, *pRouteSpec, rErrorCode, rErrorMessage))
 		return false;
 	if (!ValidateRequestBodyFields(body, *pRouteSpec, rErrorCode, rErrorMessage))

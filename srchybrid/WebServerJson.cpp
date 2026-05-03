@@ -921,48 +921,53 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 	}
 
 	if (rPrefs.contains("uploadLimitKiBps")) {
-		if (!rPrefs["uploadLimitKiBps"].is_number_unsigned()) {
+		uint64_t ullValue = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["uploadLimitKiBps"], ullValue) || ullValue > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("uploadLimitKiBps must be an unsigned number");
 			return false;
 		}
-		thePrefs.SetMaxUpload(rPrefs["uploadLimitKiBps"].get<uint32>());
+		thePrefs.SetMaxUpload(static_cast<uint32>(ullValue));
 	}
 
 	if (rPrefs.contains("downloadLimitKiBps")) {
-		if (!rPrefs["downloadLimitKiBps"].is_number_unsigned()) {
+		uint64_t ullValue = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["downloadLimitKiBps"], ullValue) || ullValue > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("downloadLimitKiBps must be an unsigned number");
 			return false;
 		}
-		thePrefs.SetMaxDownload(rPrefs["downloadLimitKiBps"].get<uint32>());
+		thePrefs.SetMaxDownload(static_cast<uint32>(ullValue));
 	}
 
 	if (rPrefs.contains("maxConnections")) {
-		if (!rPrefs["maxConnections"].is_number_unsigned()) {
+		uint64_t ullValue = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["maxConnections"], ullValue) || ullValue > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("maxConnections must be an unsigned number");
 			return false;
 		}
-		thePrefs.SetMaxConnections(static_cast<UINT>(rPrefs["maxConnections"].get<unsigned>()));
+		thePrefs.SetMaxConnections(static_cast<UINT>(ullValue));
 	}
 
 	if (rPrefs.contains("maxConnectionsPerFiveSeconds")) {
-		if (!rPrefs["maxConnectionsPerFiveSeconds"].is_number_unsigned()) {
+		uint64_t ullValue = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["maxConnectionsPerFiveSeconds"], ullValue) || ullValue > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("maxConnectionsPerFiveSeconds must be an unsigned number");
 			return false;
 		}
-		thePrefs.SetMaxConsPerFive(static_cast<UINT>(rPrefs["maxConnectionsPerFiveSeconds"].get<unsigned>()));
+		thePrefs.SetMaxConsPerFive(static_cast<UINT>(ullValue));
 	}
 
 	if (rPrefs.contains("maxSourcesPerFile")) {
-		if (!rPrefs["maxSourcesPerFile"].is_number_unsigned()) {
+		uint64_t ullValue = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["maxSourcesPerFile"], ullValue) || ullValue > UINT_MAX) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("maxSourcesPerFile must be an unsigned number");
 			return false;
 		}
-		thePrefs.SetMaxSourcesPerFile(static_cast<UINT>(rPrefs["maxSourcesPerFile"].get<unsigned>()));
+		thePrefs.SetMaxSourcesPerFile(static_cast<UINT>(ullValue));
 	}
 
 	if (rPrefs.contains("uploadClientDataRate")) {
@@ -990,12 +995,13 @@ bool ApplyPreferencesJson(const json &rPrefs, SPipeApiError &rError)
 	}
 
 	if (rPrefs.contains("queueSize")) {
-		if (!rPrefs["queueSize"].is_number_unsigned()) {
+		uint64_t ullValue = 0;
+		if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rPrefs["queueSize"], ullValue) || ullValue > static_cast<uint64_t>(INT_MAX)) {
 			rError.strCode = "INVALID_ARGUMENT";
 			rError.strMessage = _T("queueSize must be an unsigned number");
 			return false;
 		}
-		thePrefs.SetQueueSize(static_cast<INT_PTR>(rPrefs["queueSize"].get<unsigned>()));
+		thePrefs.SetQueueSize(static_cast<INT_PTR>(ullValue));
 	}
 
 	if (rPrefs.contains("autoConnect")) {
@@ -1276,8 +1282,9 @@ bool TryDecodeHash(const json &rValue, uchar *pOutHash, SPipeApiError &rError)
 		return false;
 	}
 
-	const CString strHash(CStringFromStdUtf8(rValue.get<std::string>()));
-	if (strHash.GetLength() != MDX_DIGEST_SIZE * 2 || !DecodeBase16(strHash, strHash.GetLength(), pOutHash, MDX_DIGEST_SIZE)) {
+	const std::string strHashUtf8(rValue.get<std::string>());
+	const CString strHash(CStringFromStdUtf8(strHashUtf8));
+	if (!WebApiCommandSeams::IsLowercaseMd4HexString(strHashUtf8) || !DecodeBase16(strHash, strHash.GetLength(), pOutHash, MDX_DIGEST_SIZE)) {
 		rError.strCode = "INVALID_ARGUMENT";
 		rError.strMessage = _T("hash must be a valid 32-character lowercase hex string");
 		return false;
@@ -1352,7 +1359,14 @@ bool TryParseSharedDirectoryRoot(const json &rValue, CString &rDirectory, bool &
 	const json *pPathValue = &rValue;
 	if (rValue.is_object()) {
 		pPathValue = rValue.contains("path") ? &rValue["path"] : NULL;
-		rbRecursive = rValue.value("recursive", false);
+		if (rValue.contains("recursive")) {
+			if (!rValue["recursive"].is_boolean()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("recursive must be a boolean");
+				return false;
+			}
+			rbRecursive = rValue["recursive"].get<bool>();
+		}
 	}
 
 	if (pPathValue == NULL || !TryGetPathParam(*pPathValue, "path", rDirectory, rError))
@@ -1415,7 +1429,10 @@ bool TryBuildSharedDirectoryListsFromJson(
 bool TryGetCategoryIdParam(const json &rValue, UINT &ruCategory, SPipeApiError &rError)
 {
 	uint64_t uCategory = 0;
-	if (!WebApiCommandSeams::TryParseNonNegativeUInt64(rValue, uCategory) || uCategory > UINT_MAX) {
+	const bool bParsed = rValue.is_string()
+		? WebApiCommandSeams::TryParseUnsignedDecimalString(rValue.get<std::string>(), uCategory)
+		: WebApiCommandSeams::TryParseNonNegativeUInt64(rValue, uCategory);
+	if (!bParsed || uCategory > UINT_MAX) {
 		rError.strCode = "INVALID_ARGUMENT";
 		rError.strMessage = _T("category id must be an unsigned number");
 		return false;
@@ -2374,6 +2391,11 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			rError.strMessage = _T("exactly one of hash or path is required");
 			return json();
 		}
+		if (params.contains("deleteFiles") && !params["deleteFiles"].is_boolean()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("deleteFiles must be a boolean");
+			return json();
+		}
 
 		CString strFilePath;
 		CKnownFile *pKnownFile = NULL;
@@ -2612,6 +2634,33 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "transfers/add") {
+		UINT uCategory = 0;
+		if (params.contains("categoryId")) {
+			uint64_t uRequestedCategory = 0;
+			if (!WebApiCommandSeams::TryParseNonNegativeUInt64(params["categoryId"], uRequestedCategory) || uRequestedCategory > UINT_MAX) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryId must be an unsigned number");
+				return json();
+			}
+			uCategory = static_cast<UINT>(uRequestedCategory);
+		} else if (params.contains("categoryName")) {
+			if (!params["categoryName"].is_string()) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryName must be a string");
+				return json();
+			}
+			if (!TryResolveCategoryName(CStringFromStdUtf8(params["categoryName"].get<std::string>()), uCategory)) {
+				rError.strCode = "INVALID_ARGUMENT";
+				rError.strMessage = _T("categoryName does not match a configured category");
+				return json();
+			}
+		}
+		if (uCategory >= thePrefs.GetCatCount()) {
+			rError.strCode = "INVALID_ARGUMENT";
+			rError.strMessage = _T("category is out of range");
+			return json();
+		}
+
 		auto addOneLink = [&](const std::string &rLinkUtf8, CString &rLinkError) -> json
 		{
 			CED2KLink *pLink = NULL;
@@ -2623,7 +2672,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 					throw CString(_T("invalid ed2k link"));
 
 				const CED2KFileLink *const pFileLink = pLink->GetFileLink();
-				theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, 0);
+				theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, static_cast<int>(uCategory));
 				const json result{
 					{"hash", StdUtf8FromCString(HashToHex(pFileLink->GetHashKey()))},
 					{"name", StdUtf8FromCString(pFileLink->GetName())}
@@ -2996,8 +3045,12 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			pSearchParams->ullMinSize = request.ullMinSize;
 		if (request.bHasMaxSize)
 			pSearchParams->ullMaxSize = request.ullMaxSize;
+		if (request.bHasMinAvailability)
+			pSearchParams->uAvailability = static_cast<UINT>(request.ullMinAvailability);
 
 		CString strSearchError;
+		if (request.bClearExisting)
+			pSearchResults->DeleteAllSearches();
 		if (!pSearchResults->StartSearchFromApi(pSearchParams, strSearchError)) {
 			rError.strCode = "EMULE_ERROR";
 			rError.strMessage = strSearchError.IsEmpty() ? CString(_T("failed to start search")) : strSearchError;

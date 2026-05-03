@@ -5,6 +5,7 @@
 #include <cctype>
 #include <cstdint>
 #include <cstdlib>
+#include <climits>
 #include <string>
 #include <vector>
 
@@ -49,16 +50,22 @@ struct SSearchStartRequest
 	std::string strExtension;
 	uint64_t ullMinSize;
 	uint64_t ullMaxSize;
+	uint64_t ullMinAvailability;
 	bool bHasMinSize;
 	bool bHasMaxSize;
+	bool bHasMinAvailability;
+	bool bClearExisting;
 
 	SSearchStartRequest()
 		: eMethod(ESearchMethod::Automatic)
 		, eFileType(ESearchFileType::Any)
 		, ullMinSize(0)
 		, ullMaxSize(0)
+		, ullMinAvailability(0)
 		, bHasMinSize(false)
 		, bHasMaxSize(false)
+		, bHasMinAvailability(false)
+		, bClearExisting(false)
 	{
 	}
 };
@@ -137,6 +144,54 @@ inline std::string TrimAsciiWhitespace(const std::string &rValue)
 		--uEnd;
 
 	return rValue.substr(uBegin, uEnd - uBegin);
+}
+
+/**
+ * @brief Reports whether a string is made only of ASCII decimal digits.
+ */
+inline bool IsUnsignedDecimalString(const std::string &rValue)
+{
+	if (rValue.empty())
+		return false;
+	for (const char ch : rValue) {
+		if (std::isdigit(static_cast<unsigned char>(ch)) == 0)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * @brief Parses a strict unsigned decimal string without accepting signs or
+ * whitespace.
+ */
+inline bool TryParseUnsignedDecimalString(const std::string &rValue, uint64_t &ruValue)
+{
+	if (!IsUnsignedDecimalString(rValue))
+		return false;
+
+	char *pEnd = nullptr;
+	errno = 0;
+	const unsigned long long ullValue = std::strtoull(rValue.c_str(), &pEnd, 10);
+	if (errno != 0 || pEnd == nullptr || *pEnd != '\0')
+		return false;
+
+	ruValue = static_cast<uint64_t>(ullValue);
+	return true;
+}
+
+/**
+ * @brief Reports whether a public MD4 hash token uses the required lowercase
+ * 32-character hexadecimal form.
+ */
+inline bool IsLowercaseMd4HexString(const std::string &rValue)
+{
+	if (rValue.size() != 32)
+		return false;
+	for (const char ch : rValue) {
+		if (!((ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f')))
+			return false;
+	}
+	return true;
 }
 
 /**
@@ -283,6 +338,30 @@ inline bool TryParseSearchStartRequest(const json &rParams, SSearchStartRequest 
 		rRequest.bHasMaxSize = true;
 	}
 
+	if (rRequest.bHasMinSize && rRequest.bHasMaxSize && rRequest.ullMaxSize < rRequest.ullMinSize) {
+		rError = "maxSizeBytes must be greater than or equal to minSizeBytes";
+		return false;
+	}
+
+	rRequest.ullMinAvailability = 0;
+	rRequest.bHasMinAvailability = false;
+	if (rParams.contains("minAvailability")) {
+		if (!TryParseNonNegativeUInt64(rParams["minAvailability"], rRequest.ullMinAvailability) || rRequest.ullMinAvailability > 1000000ui64) {
+			rError = "minAvailability must be an unsigned number in the range 0..1000000";
+			return false;
+		}
+		rRequest.bHasMinAvailability = true;
+	}
+
+	rRequest.bClearExisting = false;
+	if (rParams.contains("clearExisting")) {
+		if (!rParams["clearExisting"].is_boolean()) {
+			rError = "clearExisting must be a boolean";
+			return false;
+		}
+		rRequest.bClearExisting = rParams["clearExisting"].get<bool>();
+	}
+
 	return true;
 }
 
@@ -347,10 +426,19 @@ inline bool TryParseTransferBulkMutationRequest(const json &rParams, STransferBu
 		rError = "hashes must be a string array";
 		return false;
 	}
+	if (rParams.contains("deleteFiles") && !rParams["deleteFiles"].is_boolean()) {
+		rError = "deleteFiles must be a boolean";
+		return false;
+	}
 
 	rRequest.hashes.clear();
-	for (const json &hashValue : rParams["hashes"])
+	for (const json &hashValue : rParams["hashes"]) {
+		if (!hashValue.is_string() || !IsLowercaseMd4HexString(hashValue.get<std::string>())) {
+			rError = "hashes must be a string array of 32-character lowercase hex strings";
+			return false;
+		}
 		rRequest.hashes.push_back(hashValue);
+	}
 	rRequest.bDeleteFiles = rParams.value("deleteFiles", false);
 	return true;
 }
@@ -419,10 +507,8 @@ inline bool TryParseSearchId(const json &rValue, uint32_t &ruSearchID, std::stri
 		return false;
 	}
 
-	char *pEnd = nullptr;
-	errno = 0;
-	const unsigned long uValue = std::strtoul(strValue.c_str(), &pEnd, 10);
-	if (errno != 0 || pEnd == nullptr || *pEnd != '\0' || uValue > UINT32_MAX) {
+	uint64_t uValue = 0;
+	if (!TryParseUnsignedDecimalString(strValue, uValue) || uValue > UINT32_MAX) {
 		rError = "searchId must be a valid uint32 decimal string";
 		return false;
 	}
