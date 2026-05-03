@@ -3157,8 +3157,7 @@ void CPreferences::LoadPreferences()
 			ResetStatsColor(i);
 	}
 	m_bHasCustomTaskIconColor = ini.GetBool(_T("HasCustomTaskIconColor"), false);
-	const bool bLegacyStatisticsHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), true);
-	m_bShowVerticalHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), bLegacyStatisticsHourMarkers, _T("eMule"));
+	m_bShowVerticalHourMarkers = ini.GetBool(_T("ShowVerticalHourMarkers"), true, _T("eMule"));
 
 	// -khaos--+++> Load Stats
 	// I changed this to a separate function because it is now also used
