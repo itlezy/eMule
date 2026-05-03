@@ -63,6 +63,7 @@
 #include "DownloadQueue.h"
 #include "Opcodes.h"
 #include "kademlia/kademlia/Kademlia.h"
+#include "kademlia/kademlia/UDPFirewallTester.h"
 
 #pragma warning(push, 0)
 #include <nlohmann/json.hpp>
@@ -257,6 +258,23 @@ bool TryResolveCategoryName(const CString &rCategoryName, UINT &ruCategory)
 	}
 
 	return false;
+}
+
+/**
+ * Parses the optional paused flag used by REST download creation operations.
+ */
+bool TryParseOptionalDownloadPaused(const json &rParams, uint8 &ruPaused, SPipeApiError &rError)
+{
+	ruPaused = 2;
+	if (!rParams.contains("paused"))
+		return true;
+	if (!rParams["paused"].is_boolean()) {
+		rError.strCode = "INVALID_ARGUMENT";
+		rError.strMessage = _T("paused must be a boolean");
+		return false;
+	}
+	ruPaused = rParams["paused"].get<bool>() ? 1 : 0;
+	return true;
 }
 
 /**
@@ -1854,6 +1872,17 @@ void InvokeWebGuiInteraction(const WPARAM wAction, const LPARAM lParam = 0)
 }
 
 /**
+ * Queues a legacy web action on the main UI thread without blocking the REST
+ * caller on connection-layer work.
+ */
+bool PostWebGuiInteraction(const WPARAM wAction, const LPARAM lParam = 0)
+{
+	if (theApp.emuledlg == NULL || theApp.emuledlg->GetSafeHwnd() == NULL)
+		return false;
+	return ::PostMessage(theApp.emuledlg->m_hWnd, WEB_GUI_INTERACTION, wAction, lParam) != FALSE;
+}
+
+/**
  * Starts the existing eMule rehash flow for a part file.
  */
 bool StartPartFileRecheck(CPartFile &rPartFile, SPipeApiError &rError)
@@ -2270,8 +2299,15 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 	}
 
 	if (strCommand == "kad/recheck_firewall") {
-		InvokeWebGuiInteraction(WEBGUIIA_KAD_RCFW);
-		return BuildKadStatusJson();
+		json result = BuildKadStatusJson();
+		if (Kademlia::CUDPFirewallTester::IsFWCheckUDPRunning()) {
+			result["operationQueued"] = false;
+			result["alreadyRunning"] = true;
+			return result;
+		}
+		result["operationQueued"] = PostWebGuiInteraction(WEBGUIIA_KAD_RCFW);
+		result["alreadyRunning"] = false;
+		return result;
 	}
 
 	if (strCommand == "shared/list") {
@@ -2661,18 +2697,25 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 		}
 
+		uint8 uPaused = 2;
+		if (!TryParseOptionalDownloadPaused(params, uPaused, rError))
+			return json();
+
 		auto addOneLink = [&](const std::string &rLinkUtf8, CString &rLinkError) -> json
 		{
 			CED2KLink *pLink = NULL;
 			try {
 				CString strLink(CStringFromStdUtf8(rLinkUtf8));
+				if (strLink.IsEmpty())
+					throw CString(_T("invalid ed2k link"));
 				const bool bSlash = (strLink[strLink.GetLength() - 1] == _T('/'));
-				pLink = CED2KLink::CreateLinkFromUrl(bSlash ? strLink : strLink + _T('/'));
+				const CString strNormalizedLink(bSlash ? strLink : strLink + _T('/'));
+				pLink = CED2KLink::CreateLinkFromUrl(strNormalizedLink);
 				if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
 					throw CString(_T("invalid ed2k link"));
 
 				const CED2KFileLink *const pFileLink = pLink->GetFileLink();
-				theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, static_cast<int>(uCategory));
+				theApp.downloadqueue->AddFileLinkToDownload(*pFileLink, static_cast<int>(uCategory), uPaused);
 				const json result{
 					{"hash", StdUtf8FromCString(HashToHex(pFileLink->GetHashKey()))},
 					{"name", StdUtf8FromCString(pFileLink->GetName())}
@@ -3144,14 +3187,8 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 
 		uint8 uPaused = 2;
-		if (params.contains("paused")) {
-			if (!params["paused"].is_boolean()) {
-				rError.strCode = "INVALID_ARGUMENT";
-				rError.strMessage = _T("paused must be a boolean");
-				return json();
-			}
-			uPaused = params["paused"].get<bool>() ? 1 : 0;
-		}
+		if (!TryParseOptionalDownloadPaused(params, uPaused, rError))
+			return json();
 
 		UINT uCategory = 0;
 		if (params.contains("categoryId")) {
@@ -3180,7 +3217,19 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 		}
 
-		theApp.downloadqueue->AddSearchToDownload(pSearchFile->GetED2kLink(), uPaused, static_cast<int>(uCategory));
+		CED2KLink *pLink = NULL;
+		try {
+			pLink = CED2KLink::CreateLinkFromUrl(pSearchFile->GetED2kLink());
+			if (pLink == NULL || pLink->GetKind() != CED2KLink::kFile)
+				throw CString(_T("invalid search-result ed2k link"));
+			theApp.downloadqueue->AddFileLinkToDownload(*pLink->GetFileLink(), static_cast<int>(uCategory), uPaused);
+			delete pLink;
+		} catch (const CString &rCaughtError) {
+			delete pLink;
+			rError.strCode = "INVALID_STATE";
+			rError.strMessage = rCaughtError;
+			return json();
+		}
 		return json{
 			{"ok", true},
 			{"searchId", StdUtf8FromCString(FormatSearchId(uSearchID))},

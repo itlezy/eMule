@@ -251,7 +251,7 @@ inline const std::vector<SApiRouteSpec> &GetApiRouteSpecs()
 		{"PATCH", "/categories/{categoryId}", "name,path,comment,color,priority", ""},
 		{"DELETE", "/categories/{categoryId}", "", ""},
 		{"GET", "/transfers", "", "state,categoryId,offset,limit"},
-		{"POST", "/transfers", "link,links,categoryId,categoryName", ""},
+		{"POST", "/transfers", "link,links,categoryId,categoryName,paused", ""},
 		{"POST", "/transfers/operations/clear-completed", "", ""},
 		{"GET", "/transfers/{hash}", "", ""},
 		{"PATCH", "/transfers/{hash}", "name,priority,categoryId,categoryName", ""},

@@ -74,7 +74,7 @@ public:
 	void	AddDownload(CPartFile *newfile, bool paused);
 	void	AddSearchToDownload(CSearchFile *toadd, uint8 paused = 2, int cat = 0);
 	void	AddSearchToDownload(const CString &link, uint8 paused = 2, int cat = 0);
-	void	AddFileLinkToDownload(const CED2KFileLink &Link, int cat = 0);
+	void	AddFileLinkToDownload(const CED2KFileLink &Link, int cat = 0, uint8 paused = 2);
 	void	RemoveFile(CPartFile *toremove);
 	void	DeleteAll();
 

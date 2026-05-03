@@ -357,6 +357,7 @@ void CPartFile::Init()
 	m_bMD4HashsetNeeded = true;
 
 	m_pAICHRecoveryHashSet = new CAICHRecoveryHashSet(this);
+	m_nFileSize = 0ull;
 	m_completedsize = 0ull;
 	m_uTransferred = 0;
 	m_uCorruptionLoss = 0;

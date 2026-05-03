@@ -448,14 +448,17 @@ void CDownloadQueue::StartNextFile(int cat, bool force)
 		pfile->ResumeFile();
 }
 
-void CDownloadQueue::AddFileLinkToDownload(const CED2KFileLink &Link, int cat)
+void CDownloadQueue::AddFileLinkToDownload(const CED2KFileLink &Link, int cat, uint8 paused)
 {
 	CPartFile *newfile = new CPartFile(Link, cat);
 	if (newfile->GetStatus() == PS_ERROR) {
 		delete newfile;
 		newfile = NULL;
-	} else
-		AddDownload(newfile, thePrefs.AddNewFilesPaused());
+	} else {
+		if (paused == 2)
+			paused = static_cast<uint8>(thePrefs.AddNewFilesPaused());
+		AddDownload(newfile, paused == 1);
+	}
 
 	CPartFile *partfile = newfile;
 	if (partfile == NULL)
