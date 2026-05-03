@@ -599,6 +599,7 @@
     <ClInclude Include="PPgStats.h" />
     <ClInclude Include="PPgTweaks.h" />
     <ClInclude Include="PPgWebServer.h" />
+    <ClInclude Include="PreferenceIniMap.h" />
     <ClInclude Include="Preferences.h" />
     <ClInclude Include="PreferencesDlg.h" />
     <ClInclude Include="Preview.h" />

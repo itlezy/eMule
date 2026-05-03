@@ -40,9 +40,12 @@
 #include "StatisticsDlg.h"
 #include "Log.h"
 #include "MuleToolbarCtrl.h"
+#include "PreferenceIniMap.h"
 #include "PreferenceUiSeams.h"
 #include "VistaDefines.h"
 #include <osrng.h>
+
+namespace prefini = PreferenceIniMap;
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -1537,7 +1540,7 @@ void CPreferences::SaveStats(int bBackUp)
 	ini.WriteFloat(_T("ConnMaxAvgDownRate"), GetConnMaxAvgDownRate());
 
 	// Max Download Rate
-	tempRate = theApp.downloadqueue->GetDatarate() / 1024.0f;
+	tempRate = static_cast<float>(theApp.downloadqueue->GetDatarate()) / 1024.0f;
 	if (tempRate > GetConnMaxDownRate())
 		SetConnMaxDownRate(tempRate);
 	ini.WriteFloat(_T("ConnMaxDownRate"), GetConnMaxDownRate());
@@ -1552,7 +1555,7 @@ void CPreferences::SaveStats(int bBackUp)
 	ini.WriteFloat(_T("ConnMaxAvgUpRate"), GetConnMaxAvgUpRate());
 
 	// Max Upload Rate
-	tempRate = theApp.uploadqueue->GetDatarate() / 1024.0f;
+	tempRate = static_cast<float>(theApp.uploadqueue->GetDatarate()) / 1024.0f;
 	if (tempRate > GetConnMaxUpRate())
 		SetConnMaxUpRate(tempRate);
 	ini.WriteFloat(_T("ConnMaxUpRate"), GetConnMaxUpRate());
@@ -1565,7 +1568,7 @@ void CPreferences::SaveStats(int bBackUp)
 
 	// Average Connections
 	if (theApp.serverconnect->IsConnected())
-		ini.WriteInt(_T("ConnAvgConnections"), (UINT)((theApp.listensocket->GetAverageConnections() + cumConnAvgConnections) / 2));
+		ini.WriteInt(_T("ConnAvgConnections"), static_cast<UINT>((theApp.listensocket->GetAverageConnections() + static_cast<float>(cumConnAvgConnections)) / 2.0f));
 
 	// Peak Connections
 	if (theApp.listensocket->GetPeakConnections() > cumConnPeakConnections)
@@ -2341,9 +2344,10 @@ void CPreferences::SavePreferences()
 	ini.WriteString(_T("TxtEditor"), m_strTxtEditor);
 	ini.WriteString(_T("VideoPlayer"), m_strVideoPlayer);
 	ini.WriteString(_T("VideoPlayerArgs"), m_strVideoPlayerArgs);
-	ini.WriteBool(_T("RunCommandOnFileCompletion"), m_bRunCommandOnFileCompletion);
-	ini.WriteString(_T("FileCompletionProgram"), m_strFileCompletionProgram);
-	ini.WriteString(_T("FileCompletionArguments"), m_strFileCompletionArguments);
+	ini.WriteBool(prefini::FileCompletionKeys::RunCommandOnFileCompletion, m_bRunCommandOnFileCompletion, prefini::Sections::FileCompletion);
+	ini.WriteString(prefini::FileCompletionKeys::Program, m_strFileCompletionProgram, prefini::Sections::FileCompletion);
+	ini.WriteString(prefini::FileCompletionKeys::Arguments, m_strFileCompletionArguments, prefini::Sections::FileCompletion);
+	ini.SetSection(prefini::Sections::eMule);
 	ini.WriteString(_T("MessageFilter"), messageFilter);
 	ini.WriteString(_T("CommentFilter"), commentFilter);
 	ini.WriteString(_T("DateTimeFormat"), GetDateTimeFormat());
@@ -2475,19 +2479,20 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("MaxChatHistoryLines"), (int)m_iMaxChatHistory);
 	ini.WriteInt(_T("MaxMessageSessions"), maxmsgsessions);
 	ini.WriteBool(_T("RearrangeKadSearchKeywords"), m_bRearrangeKadSearchKeywords);
-	ini.WriteInt(_T("BBMaxUpClientsAllowed"), m_uBBMaxUploadClientsAllowed);
-	ini.WriteFloat(_T("BBSlowThresholdFactor"), m_fBBSlowUploadThresholdFactor);
-	ini.WriteInt(_T("BBSlowGraceSeconds"), m_uBBSlowUploadGraceSeconds);
-	ini.WriteInt(_T("BBSlowWarmupSeconds"), m_uBBSlowUploadWarmupSeconds);
-	ini.WriteInt(_T("BBZeroRateGraceSeconds"), m_uBBZeroRateGraceSeconds);
-	ini.WriteInt(_T("BBSlowCooldownSeconds"), m_uBBSlowUploadCooldownSeconds);
-	ini.WriteBool(_T("BBLowRatioBoostEnabled"), m_bBBLowRatioBoostEnabled);
-	ini.WriteFloat(_T("BBLowRatioThreshold"), m_fBBLowRatioThreshold);
-	ini.WriteInt(_T("BBLowRatioBonus"), m_uBBLowRatioBonus);
-	ini.WriteInt(_T("BBLowIDDivisor"), m_uBBLowIDDivisor);
-	ini.WriteInt(_T("BBSessionTransferMode"), (int)m_eBBSessionTransferMode);
-	ini.WriteInt(_T("BBSessionTransferValue"), m_uBBSessionTransferValue);
-	ini.WriteInt(_T("BBSessionTimeLimitSeconds"), m_uBBSessionTimeLimitSeconds);
+	ini.WriteInt(prefini::UploadPolicyKeys::MaxUploadClientsAllowed, m_uBBMaxUploadClientsAllowed, prefini::Sections::UploadPolicy);
+	ini.WriteFloat(prefini::UploadPolicyKeys::SlowUploadThresholdFactor, m_fBBSlowUploadThresholdFactor, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::SlowUploadGraceSeconds, m_uBBSlowUploadGraceSeconds, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::SlowUploadWarmupSeconds, m_uBBSlowUploadWarmupSeconds, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::ZeroUploadRateGraceSeconds, m_uBBZeroRateGraceSeconds, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::SlowUploadCooldownSeconds, m_uBBSlowUploadCooldownSeconds, prefini::Sections::UploadPolicy);
+	ini.WriteBool(prefini::UploadPolicyKeys::LowRatioBoostEnabled, m_bBBLowRatioBoostEnabled, prefini::Sections::UploadPolicy);
+	ini.WriteFloat(prefini::UploadPolicyKeys::LowRatioThreshold, m_fBBLowRatioThreshold, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::LowRatioScoreBonus, m_uBBLowRatioBonus, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::LowIDScoreDivisor, m_uBBLowIDDivisor, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::SessionTransferLimitMode, (int)m_eBBSessionTransferMode, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::SessionTransferLimitValue, m_uBBSessionTransferValue, prefini::Sections::UploadPolicy);
+	ini.WriteInt(prefini::UploadPolicyKeys::SessionTimeLimitSeconds, m_uBBSessionTimeLimitSeconds, prefini::Sections::UploadPolicy);
+	ini.SetSection(prefini::Sections::eMule);
 	ini.DeleteKey(_T("AICHTrustEveryHash"));
 
 	// Toolbar
@@ -2843,25 +2848,26 @@ void CPreferences::LoadPreferences()
 	m_bTransflstRemain = ini.GetBool(_T("TransflstRemainOrder"), false);
 	filterserverbyip = ini.GetBool(_T("FilterServersByIP"), false);
 	filterlevel = ini.GetInt(_T("FilterLevel"), 127);
-	SetBBMaxUploadClientsAllowed((UINT)max(0, ini.GetInt(_T("BBMaxUpClientsAllowed"), 8)));
-	SetBBSlowUploadThresholdFactor(ini.GetFloat(_T("BBSlowThresholdFactor"), 0.33f));
-	SetBBSlowUploadGraceSeconds((UINT)max(0, ini.GetInt(_T("BBSlowGraceSeconds"), 30)));
-	SetBBSlowUploadWarmupSeconds((UINT)max(0, ini.GetInt(_T("BBSlowWarmupSeconds"), 60)));
-	SetBBZeroRateGraceSeconds((UINT)max(0, ini.GetInt(_T("BBZeroRateGraceSeconds"), 10)));
-	SetBBSlowUploadCooldownSeconds((UINT)max(0, ini.GetInt(_T("BBSlowCooldownSeconds"), 120)));
-	m_bBBLowRatioBoostEnabled = ini.GetBool(_T("BBLowRatioBoostEnabled"), true);
-	SetBBLowRatioThreshold(ini.GetFloat(_T("BBLowRatioThreshold"), 0.5f));
-	SetBBLowRatioBonus((UINT)max(0, ini.GetInt(_T("BBLowRatioBonus"), 50)));
-	SetBBLowIDDivisor((UINT)max(0, ini.GetInt(_T("BBLowIDDivisor"), 2)));
-	m_eBBSessionTransferMode = (EBBSessionTransferMode)ini.GetInt(_T("BBSessionTransferMode"), BBSTM_PERCENT_OF_FILE);
+	SetBBMaxUploadClientsAllowed((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::MaxUploadClientsAllowed, 8, prefini::Sections::UploadPolicy)));
+	SetBBSlowUploadThresholdFactor(ini.GetFloat(prefini::UploadPolicyKeys::SlowUploadThresholdFactor, 0.33f, prefini::Sections::UploadPolicy));
+	SetBBSlowUploadGraceSeconds((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::SlowUploadGraceSeconds, 30, prefini::Sections::UploadPolicy)));
+	SetBBSlowUploadWarmupSeconds((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::SlowUploadWarmupSeconds, 60, prefini::Sections::UploadPolicy)));
+	SetBBZeroRateGraceSeconds((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::ZeroUploadRateGraceSeconds, 10, prefini::Sections::UploadPolicy)));
+	SetBBSlowUploadCooldownSeconds((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::SlowUploadCooldownSeconds, 120, prefini::Sections::UploadPolicy)));
+	m_bBBLowRatioBoostEnabled = ini.GetBool(prefini::UploadPolicyKeys::LowRatioBoostEnabled, true, prefini::Sections::UploadPolicy);
+	SetBBLowRatioThreshold(ini.GetFloat(prefini::UploadPolicyKeys::LowRatioThreshold, 0.5f, prefini::Sections::UploadPolicy));
+	SetBBLowRatioBonus((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::LowRatioScoreBonus, 50, prefini::Sections::UploadPolicy)));
+	SetBBLowIDDivisor((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::LowIDScoreDivisor, 2, prefini::Sections::UploadPolicy)));
+	m_eBBSessionTransferMode = (EBBSessionTransferMode)ini.GetInt(prefini::UploadPolicyKeys::SessionTransferLimitMode, BBSTM_PERCENT_OF_FILE, prefini::Sections::UploadPolicy);
 	if (m_eBBSessionTransferMode != BBSTM_DISABLED && m_eBBSessionTransferMode != BBSTM_PERCENT_OF_FILE && m_eBBSessionTransferMode != BBSTM_ABSOLUTE_MIB)
 		m_eBBSessionTransferMode = BBSTM_PERCENT_OF_FILE;
-	SetBBSessionTransferValue((UINT)max(0, ini.GetInt(_T("BBSessionTransferValue"), 55)));
+	SetBBSessionTransferValue((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::SessionTransferLimitValue, 55, prefini::Sections::UploadPolicy)));
 	if (m_eBBSessionTransferMode == BBSTM_PERCENT_OF_FILE)
 		m_uBBSessionTransferValue = min(100u, max(1u, m_uBBSessionTransferValue));
 	else if (m_eBBSessionTransferMode == BBSTM_ABSOLUTE_MIB)
 		m_uBBSessionTransferValue = min(4096u, max(1u, m_uBBSessionTransferValue));
-	SetBBSessionTimeLimitSeconds((UINT)max(0, ini.GetInt(_T("BBSessionTimeLimitSeconds"), 3600)));
+	SetBBSessionTimeLimitSeconds((UINT)max(0, ini.GetInt(prefini::UploadPolicyKeys::SessionTimeLimitSeconds, 3600, prefini::Sections::UploadPolicy)));
+	ini.SetSection(prefini::Sections::eMule);
 	SetMinFreeDiskSpaceConfig(ini.GetUInt64(_T("MinFreeDiskSpaceConfig"), GetMinFreeDiskSpaceConfigFloor()));
 	SetMinFreeDiskSpaceTemp(ini.GetUInt64(_T("MinFreeDiskSpaceTemp"), GetMinFreeDiskSpaceTempFloor()));
 	SetMinFreeDiskSpaceIncoming(ini.GetUInt64(_T("MinFreeDiskSpaceIncoming"), GetMinFreeDiskSpaceIncomingFloor()));
@@ -3042,9 +3048,10 @@ void CPreferences::LoadPreferences()
 	m_strTxtEditor = ini.GetString(_T("TxtEditor"), _T("notepad.exe"));
 	m_strVideoPlayer = ini.GetString(_T("VideoPlayer"), _T(""));
 	m_strVideoPlayerArgs = ini.GetString(_T("VideoPlayerArgs"), _T(""));
-	m_bRunCommandOnFileCompletion = ini.GetBool(_T("RunCommandOnFileCompletion"), false);
-	m_strFileCompletionProgram = ini.GetString(_T("FileCompletionProgram"), _T(""));
-	m_strFileCompletionArguments = ini.GetString(_T("FileCompletionArguments"), _T(""));
+	m_bRunCommandOnFileCompletion = ini.GetBool(prefini::FileCompletionKeys::RunCommandOnFileCompletion, false, prefini::Sections::FileCompletion);
+	m_strFileCompletionProgram = ini.GetString(prefini::FileCompletionKeys::Program, _T(""), prefini::Sections::FileCompletion);
+	m_strFileCompletionArguments = ini.GetString(prefini::FileCompletionKeys::Arguments, _T(""), prefini::Sections::FileCompletion);
+	ini.SetSection(prefini::Sections::eMule);
 
 	m_strTemplateFile = ini.GetString(_T("WebTemplateFile"), GetMuleDirectory(EMULE_EXECUTABLEDIR) + _T("eMule.tmpl"));
 	// if emule is using the default, check if the file is in the config folder, as it used to be val prior version
