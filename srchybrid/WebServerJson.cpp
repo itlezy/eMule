@@ -3180,7 +3180,7 @@ json HandleUiCommand(const json &rRequest, SPipeApiError &rError)
 			return json();
 		}
 
-		theApp.downloadqueue->AddSearchToDownload(const_cast<CSearchFile*>(pSearchFile), uPaused, static_cast<int>(uCategory));
+		theApp.downloadqueue->AddSearchToDownload(pSearchFile->GetED2kLink(), uPaused, static_cast<int>(uCategory));
 		return json{
 			{"ok", true},
 			{"searchId", StdUtf8FromCString(FormatSearchId(uSearchID))},
