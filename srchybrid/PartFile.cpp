@@ -539,8 +539,8 @@ void CPartFile::CreatePartFile(UINT cat)
 	// decide which temp folder to use
 	const CString tempdirtouse(theApp.downloadqueue->GetOptimalTempDir(cat, m_nFileSize));
 	if (tempdirtouse.IsEmpty()) {
-		LogError(LOG_STATUSBAR, _T("Cannot create part file for \"%s\" because no temp/incoming volume placement satisfies the protected disk-space thresholds.")
-			, (LPCTSTR)GetFileName());
+		LogError(LOG_STATUSBAR, _T("Cannot create part file for %s because no temp/incoming volume placement satisfies the protected disk-space thresholds.")
+			, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		SetStatus(PS_ERROR);
 		return;
 	}
@@ -834,19 +834,19 @@ EPartFileLoadResult CPartFile::ImportShareazaTempfile(LPCTSTR in_directory, LPCT
 		// Close the file
 		sdFile.Close();
 	} catch (CArchiveException *ex) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), in_filename, (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), in_filename, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)CExceptionStr(*ex));
 		ex->Delete();
 		return PLR_FAILED_OTHER;
 	} catch (CFileException *ex) {
 		if (ex->m_cause == CFileException::endOfFile)
-			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), in_filename, (LPCTSTR)GetFileName());
+			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), in_filename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		else
-			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), in_filename, (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), in_filename, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)CExceptionStr(*ex));
 		ex->Delete();
 		return PLR_FAILED_OTHER;
 #ifndef _DEBUG
 	} catch (...) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), in_filename, (LPCTSTR)GetFileName());
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), in_filename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		ASSERT(0);
 		return PLR_FAILED_OTHER;
 #endif
@@ -895,7 +895,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 			if (version == 83)
 				return ImportShareazaTempfile(in_directory, in_filename, pOutCheckFileFormat);
 
-			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_BADMETVERSION), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_BADMETVERSION), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 			return PLR_FAILED_METFILE_CORRUPT;
 		}
 
@@ -939,7 +939,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 				switch (newtag->GetNameID()) {
 				case FT_FILENAME:
 					if (!newtag->IsStr()) {
-						LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+						LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 						delete newtag;
 						return PLR_FAILED_METFILE_CORRUPT;
 					}
@@ -1174,21 +1174,21 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 		metFile.Close();
 	} catch (CFileException *ex) {
 		if (ex->m_cause == CFileException::endOfFile)
-			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		else
-			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName(), (LPCTSTR)CExceptionStr(*ex));
+			LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)CExceptionStr(*ex));
 		ex->Delete();
 		return PLR_FAILED_METFILE_CORRUPT;
 #ifndef _DEBUG
 	} catch (...) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_METCORRUPT), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		ASSERT(0);
 		return PLR_FAILED_METFILE_CORRUPT;
 #endif
 	}
 
 	if ((uint64)m_nFileSize > MAX_EMULE_FILE_SIZE) {
-		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName(), _T("File size exceeds supported limit"));
+		LogError(LOG_STATUSBAR, GetResString(IDS_ERR_FILEERROR), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()), _T("File size exceeds supported limit"));
 		return PLR_FAILED_OTHER;
 	}
 
@@ -1224,7 +1224,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 	//CFileException fex;
 	if (!LongPathSeams::OpenFile(m_hpartfile, searchpath, CFile::modeReadWrite | CFile::shareDenyNone | CFile::osSequentialScan, &fex)) {
 		CString s;
-		s.Format(GetResString(IDS_ERR_FILEOPEN), (LPCTSTR)searchpath, (LPCTSTR)GetFileName());
+		s.Format(GetResString(IDS_ERR_FILEOPEN), (LPCTSTR)searchpath, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		LogError(LOG_STATUSBAR, _T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
 		return PLR_FAILED_OTHER;
 	}
@@ -1294,7 +1294,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 
 			if (m_tUtcLastModified != fdate) {
 				CString strFileInfo(GetFilePath());
-				strFileInfo.AppendFormat(_T(" (%s)"), (LPCTSTR)GetFileName());
+				strFileInfo.AppendFormat(_T(" (%s)"), (LPCTSTR)FormatDisplayFileName(GetFileName()));
 				LogError(LOG_STATUSBAR, GetResString(IDS_ERR_REHASH), (LPCTSTR)strFileInfo);
 				// rehash
 				SetStatus(PS_WAITINGFORHASH);
@@ -1312,7 +1312,7 @@ EPartFileLoadResult CPartFile::LoadPartFile(LPCTSTR in_directory, LPCTSTR in_fil
 	} catch (CFileException *ex) {
 		LogError(LOG_STATUSBAR, _T("Failed to initialize part file \"%s\" (%s)%s")
 			, (LPCTSTR)m_hpartfile.GetFilePath()
-			, (LPCTSTR)GetFileName()
+			, (LPCTSTR)FormatDisplayFileName(GetFileName())
 			, (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
 		return PLR_FAILED_OTHER;
@@ -1333,7 +1333,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 	if (!LongPathSeams::GetFileAttributesEx(searchpath, GetFileExInfoStandard, &fileAttributes)
 		|| (fileAttributes.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0)
 	{
-		LogError(GetResString(IDS_ERR_SAVEMET) + _T(" - %s"), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName(), (LPCTSTR)GetResString(IDS_ERR_PART_FNF));
+		LogError(GetResString(IDS_ERR_SAVEMET) + _T(" - %s"), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()), (LPCTSTR)GetResString(IDS_ERR_PART_FNF));
 		return false;
 	}
 
@@ -1353,7 +1353,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 	CFileException fex;
 	if (!LongPathSeams::OpenFile(file, strTmpFile, CFile::modeWrite | CFile::modeCreate | CFile::typeBinary | CFile::shareDenyWrite, &fex)) {
 		CString s;
-		s.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+		s.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		LogError(_T("%s%s"), (LPCTSTR)s, (LPCTSTR)CExceptionStrDash(fex));
 		theApp.InvalidatePartMetWriteGuardCache(m_fullname);
 		return false;
@@ -1606,7 +1606,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 		CommitAndClose(file);
 	} catch (CFileException *ex) {
 		CString strError;
-		strError.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+		strError.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		LogError(_T("%s%s"), (LPCTSTR)strError, (LPCTSTR)CExceptionStrDash(*ex));
 		ex->Delete();
 
@@ -1636,7 +1636,7 @@ bool CPartFile::SavePartFile(bool bDontOverrideBak, bool bBypassDiskSpaceGuard)
 			DebugLogError(_T("Failed to replace temporary part.met file \"%s\" with \"%s\" - %s"), (LPCTSTR)strTmpFile, (LPCTSTR)m_fullname, (LPCTSTR)GetErrorMessage(dwReplaceError));
 
 		CString strError;
-		strError.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)GetFileName());
+		strError.Format(GetResString(IDS_ERR_SAVEMET), (LPCTSTR)m_partmetfilename, (LPCTSTR)FormatDisplayFileName(GetFileName()));
 		strError.AppendFormat(_T(" - %s"), (LPCTSTR)GetErrorMessage(dwReplaceError));
 		LogError(_T("%s"), (LPCTSTR)strError);
 		theApp.InvalidatePartMetWriteGuardCache(m_fullname);

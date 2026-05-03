@@ -37,6 +37,7 @@
 #include "TaskbarNotifier.h"
 #include "MenuCmds.h"
 #include "Log.h"
+#include "OtherFunctions.h"
 #include "PathHelpers.h"
 #include "DownloadQueueOverviewSeams.h"
 
@@ -286,7 +287,7 @@ void CDownloadQueue::Init()
 				eResult = toadd->LoadPartFile(strTempDir, strFileName + PARTMET_BAK_EXT);
 				if (eResult == PLR_LOADSUCCESS) {
 					toadd->SavePartFile(true); // don't override our just used .bak file yet
-					AddLogLine(false, GetResString(IDS_RECOVERED_PARTMET), (LPCTSTR)toadd->GetFileName());
+					AddLogLine(false, GetResString(IDS_RECOVERED_PARTMET), (LPCTSTR)FormatDisplayFileName(toadd->GetFileName()));
 				}
 			}
 
@@ -316,7 +317,7 @@ void CDownloadQueue::Init()
 					theApp.sharedfiles->SafeAddKFile(toadd); // part files are always shared files
 				theApp.emuledlg->transferwnd->GetDownloadList()->AddFile(toadd);// show in downloads window
 
-				AddLogLine(false, GetResString(IDS_RECOVERED_PARTMET), (LPCTSTR)toadd->GetFileName());
+				AddLogLine(false, GetResString(IDS_RECOVERED_PARTMET), (LPCTSTR)FormatDisplayFileName(toadd->GetFileName()));
 			} else
 				delete toadd;
 			return true;
@@ -505,9 +506,10 @@ void CDownloadQueue::AddDownload(CPartFile *newfile, bool paused)
 	SortByPriority();
 	CheckDiskspace();
 	theApp.emuledlg->transferwnd->GetDownloadList()->AddFile(newfile);
-	AddLogLine(true, GetResString(IDS_NEWDOWNLOAD), (LPCTSTR)newfile->GetFileName());
+	const CString strDisplayFileName(FormatDisplayFileName(newfile->GetFileName()));
+	AddLogLine(true, GetResString(IDS_NEWDOWNLOAD), (LPCTSTR)strDisplayFileName);
 	CString msgTemp;
-	msgTemp.Format(GetResString(IDS_NEWDOWNLOAD), (LPCTSTR)newfile->GetFileName());
+	msgTemp.Format(GetResString(IDS_NEWDOWNLOAD), (LPCTSTR)strDisplayFileName);
 	msgTemp += _T('\n');
 	theApp.emuledlg->ShowNotifier(msgTemp, TBN_DOWNLOADADDED);
 	ExportPartMetFilesOverview();
@@ -519,9 +521,9 @@ bool CDownloadQueue::IsFileExisting(const uchar *fileid, bool bLogWarnings) cons
 	if (file) {
 		if (bLogWarnings) {
 			if (file->IsPartFile())
-				LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_ALREADY_DOWNLOADING), (LPCTSTR)file->GetFileName());
+				LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_ALREADY_DOWNLOADING), (LPCTSTR)FormatDisplayFileName(file->GetFileName()));
 			else
-				LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_ALREADY_DOWNLOADED), (LPCTSTR)file->GetFileName());
+				LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_ALREADY_DOWNLOADED), (LPCTSTR)FormatDisplayFileName(file->GetFileName()));
 		}
 		return true;
 	}
@@ -529,7 +531,7 @@ bool CDownloadQueue::IsFileExisting(const uchar *fileid, bool bLogWarnings) cons
 	if (!file)
 		return false;
 	if (bLogWarnings)
-		LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_ALREADY_DOWNLOADING), (LPCTSTR)file->GetFileName());
+		LogWarning(LOG_STATUSBAR, GetResString(IDS_ERR_ALREADY_DOWNLOADING), (LPCTSTR)FormatDisplayFileName(file->GetFileName()));
 	return true;
 }
 
