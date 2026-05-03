@@ -1741,9 +1741,9 @@ void CSearchResultsWnd::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) != SC_KEYMENU)
 		__super::OnSysCommand(nID, lParam);
-	else if (lParam == EMULE_HOTMENU_ACCEL)
-		theApp.emuledlg->SendMessage(WM_COMMAND, IDC_HOTMENU);
-	else
+	else if (theApp.emuledlg != NULL && theApp.emuledlg->searchwnd != NULL)
+		theApp.emuledlg->searchwnd->SendMessage(WM_SYSCOMMAND, nID, lParam);
+	else if (theApp.emuledlg != NULL)
 		theApp.emuledlg->SendMessage(WM_SYSCOMMAND, nID, lParam);
 }
 

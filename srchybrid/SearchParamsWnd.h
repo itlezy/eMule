@@ -47,6 +47,8 @@ public:
 	void Localize();
 	void ResetHistory();
 	void SaveSettings()				{ SaveSearchStrings(); }
+	/** Handles one Search-local Alt mnemonic forwarded as `SC_KEYMENU`. */
+	bool HandleSearchKeyMenu(UINT nID, LPARAM lParam);
 
 	SSearchParams* GetParameters();
 	void SetParameters(const SSearchParams *pParams);

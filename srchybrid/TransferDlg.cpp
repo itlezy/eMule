@@ -139,6 +139,8 @@ void CTransferDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) != SC_KEYMENU)
 		CFrameWnd::OnSysCommand(nID, lParam);
+	else if (lParam == EMULE_EXIT_ACCEL)
+		theApp.emuledlg->SendMessage(WM_COMMAND, IDC_EXIT);
 	else if (lParam == EMULE_HOTMENU_ACCEL)
 		theApp.emuledlg->SendMessage(WM_COMMAND, IDC_HOTMENU);
 	else

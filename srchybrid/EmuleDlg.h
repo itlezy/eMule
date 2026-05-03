@@ -53,7 +53,8 @@ extern UINT g_uMainThreadId;
 #define OP_CLCOMMAND			12001
 #define OP_COLLECTION			12002
 
-#define	EMULE_HOTMENU_ACCEL		'x'
+#define	EMULE_EXIT_ACCEL			'x'
+#define	EMULE_HOTMENU_ACCEL		'u'
 #define	EMULSKIN_BASEEXT		_T("eMuleSkin")
 
 class CemuleDlg : public CTrayDialog

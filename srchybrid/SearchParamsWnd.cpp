@@ -20,6 +20,7 @@
 #include "SearchDlg.h"
 #include "SearchParamsWnd.h"
 #include "SearchResultsWnd.h"
+#include "AppKeyboardShortcutsSeams.h"
 #include "OtherFunctions.h"
 #include "CustomAutoComplete.h"
 #include "HelpIDs.h"
@@ -577,14 +578,14 @@ void CSearchParamsWnd::Localize()
 {
 	SetWindowText(GetResString(IDS_SEARCHPARAMS));
 
-	SetDlgItemText(IDC_MSTATIC3, GetResString(IDS_SW_NAME));
-	SetDlgItemText(IDC_MSTATIC7, GetResString(IDS_TYPE));
-	SetDlgItemText(IDC_SEARCH_RESET, GetResString(IDS_PW_RESET));
-	SetDlgItemText(IDC_METH, GetResString(IDS_METHOD));
+	SetDlgItemText(IDC_MSTATIC3, GetResString(IDS_SEARCHPARAMS_NAME_LABEL));
+	SetDlgItemText(IDC_MSTATIC7, GetResString(IDS_SEARCHPARAMS_TYPE_LABEL));
+	SetDlgItemText(IDC_SEARCH_RESET, GetResString(IDS_SEARCHPARAMS_RESET_BUTTON));
+	SetDlgItemText(IDC_METH, GetResString(IDS_SEARCHPARAMS_METHOD_LABEL));
 
-	m_ctlStart.SetWindowText(GetResString(IDS_SW_START));
-	m_ctlCancel.SetWindowText(GetResString(IDS_CANCEL));
-	m_ctlMore.SetWindowText(GetResString(IDS_MORE));
+	m_ctlStart.SetWindowText(GetResString(IDS_SEARCHPARAMS_START_BUTTON));
+	m_ctlCancel.SetWindowText(GetResString(IDS_SEARCHPARAMS_CANCEL_BUTTON));
+	m_ctlMore.SetWindowText(GetResString(IDS_SEARCHPARAMS_MORE_BUTTON));
 
 	SetWindowText(GetResString(IDS_SEARCHPARAMS));
 
@@ -715,6 +716,50 @@ void CSearchParamsWnd::OnDDClicked()
 	m_ctlName.SendMessage(WM_KEYDOWN, VK_DOWN, 0x00510001);
 }
 
+bool CSearchParamsWnd::HandleSearchKeyMenu(UINT nID, LPARAM lParam)
+{
+	const AppKeyboardShortcutsSeams::ESearchCommand eCommand =
+		AppKeyboardShortcutsSeams::ClassifySearchKeyMenu(nID, lParam, false);
+	if (eCommand == AppKeyboardShortcutsSeams::ESearchCommand::None)
+		return false;
+	if (!IsWindowVisible())
+		return true;
+
+	switch (eCommand) {
+	case AppKeyboardShortcutsSeams::ESearchCommand::FocusName:
+		if (m_ctlName.GetSafeHwnd() != NULL && m_ctlName.IsWindowEnabled())
+			m_ctlName.SetFocus();
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::FocusType:
+		if (m_ctlFileType.GetSafeHwnd() != NULL && m_ctlFileType.IsWindowEnabled())
+			m_ctlFileType.SetFocus();
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::FocusMethod:
+		if (m_ctlMethod.GetSafeHwnd() != NULL && m_ctlMethod.IsWindowEnabled())
+			m_ctlMethod.SetFocus();
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::StartSearch:
+		if (m_ctlStart.GetSafeHwnd() != NULL && m_ctlStart.IsWindowEnabled())
+			m_ctlStart.SendMessage(BM_CLICK);
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::SearchMore:
+		if (m_ctlMore.GetSafeHwnd() != NULL && m_ctlMore.IsWindowEnabled())
+			m_ctlMore.SendMessage(BM_CLICK);
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::ResetSearch:
+		if (CWnd *pReset = GetDlgItem(IDC_SEARCH_RESET); pReset != NULL && pReset->IsWindowEnabled())
+			pReset->SendMessage(BM_CLICK);
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::CancelSearch:
+		if (m_ctlCancel.GetSafeHwnd() != NULL && m_ctlCancel.IsWindowEnabled())
+			m_ctlCancel.SendMessage(BM_CLICK);
+		break;
+	case AppKeyboardShortcutsSeams::ESearchCommand::None:
+		break;
+	}
+	return true;
+}
+
 BOOL CSearchParamsWnd::SaveSearchStrings()
 {
 	return m_pacSearchString && m_pacSearchString->SaveList(thePrefs.GetMuleDirectory(EMULE_CONFIGDIR) + SEARCH_STRINGS_PROFILE);
@@ -741,10 +786,18 @@ void CSearchParamsWnd::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) != SC_KEYMENU)
 		CDialogBar::OnSysCommand(nID, lParam);
-	else if (lParam == EMULE_HOTMENU_ACCEL)
-		theApp.emuledlg->SendMessage(WM_COMMAND, IDC_HOTMENU);
-	else
-		theApp.emuledlg->SendMessage(WM_SYSCOMMAND, nID, lParam);
+	else {
+		const AppKeyboardShortcutsSeams::ECommand eShortcutCommand =
+			AppKeyboardShortcutsSeams::ClassifySystemKeyMenu(nID, lParam, false);
+		if (eShortcutCommand == AppKeyboardShortcutsSeams::ECommand::ExitApp)
+			theApp.emuledlg->SendMessage(WM_COMMAND, IDC_EXIT);
+		else if (eShortcutCommand == AppKeyboardShortcutsSeams::ECommand::ShowHotMenu)
+			theApp.emuledlg->SendMessage(WM_COMMAND, IDC_HOTMENU);
+		else if (HandleSearchKeyMenu(nID, lParam))
+			return;
+		else
+			theApp.emuledlg->SendMessage(WM_SYSCOMMAND, nID, lParam);
+	}
 }
 
 void CSearchParamsWnd::SetParameters(const SSearchParams *pParams)

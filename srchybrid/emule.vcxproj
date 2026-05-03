@@ -425,6 +425,7 @@
     <ClInclude Include="AsyncProxySocketLayer.h" />
     <ClInclude Include="AsyncSocketEx.h" />
     <ClInclude Include="AsyncSocketExLayer.h" />
+    <ClInclude Include="AppKeyboardShortcutsSeams.h" />
     <ClInclude Include="BarShader.h" />
     <ClInclude Include="ButtonsTabCtrl.h" />
     <ClInclude Include="CaptchaGenerator.h" />

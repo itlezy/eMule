@@ -19,6 +19,7 @@
 #include "emuleDlg.h"
 #include "SearchDlg.h"
 #include "SearchResultsWnd.h"
+#include "AppKeyboardShortcutsSeams.h"
 #include "OtherFunctions.h"
 #include "HelpIDs.h"
 
@@ -246,9 +247,15 @@ CClosableTabCtrl& CSearchDlg::GetSearchSelector() const
 
 void CSearchDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
-	if (nID == SC_KEYMENU) {
-		if (lParam == EMULE_HOTMENU_ACCEL)
+	if ((nID & 0xFFF0) == SC_KEYMENU) {
+		const AppKeyboardShortcutsSeams::ECommand eShortcutCommand =
+			AppKeyboardShortcutsSeams::ClassifySystemKeyMenu(nID, lParam, false);
+		if (eShortcutCommand == AppKeyboardShortcutsSeams::ECommand::ExitApp)
+			theApp.emuledlg->SendMessage(WM_COMMAND, IDC_EXIT);
+		else if (eShortcutCommand == AppKeyboardShortcutsSeams::ECommand::ShowHotMenu)
 			theApp.emuledlg->SendMessage(WM_COMMAND, IDC_HOTMENU);
+		else if (m_wndParams.HandleSearchKeyMenu(nID, lParam))
+			return;
 		else
 			theApp.emuledlg->SendMessage(WM_SYSCOMMAND, nID, lParam);
 	} else

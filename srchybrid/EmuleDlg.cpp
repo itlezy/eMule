@@ -91,6 +91,7 @@
 #include "DirectDownloadDlg.h"
 #include "StringConversion.h"
 #include "BindStartupPolicy.h"
+#include "AppKeyboardShortcutsSeams.h"
 #include "aichsyncthread.h"
 #include "Log.h"
 #include "UserMsgs.h"
@@ -128,6 +129,11 @@ namespace
 {
 	static const UINT_PTR kBindLossWatchdogTimerId = 0xB10D;
 	static const UINT kBindLossWatchdogIntervalMs = SEC2MS(10);
+
+	static bool IsKeyboardShortcutModalContext(const CWnd &wnd)
+	{
+		return wnd.GetSafeHwnd() != NULL && !::IsWindowEnabled(wnd.GetSafeHwnd());
+	}
 
 	static BindStartupPolicy::CBindStartupPolicyText GetBindStartupPolicyText()
 	{
@@ -339,6 +345,7 @@ BEGIN_MESSAGE_MAP(CemuleDlg, CTrayDialog)
 	ON_NOTIFY_EX_RANGE(RBN_CHEVRONPUSHED, 0, 0xffff, OnChevronPushed)
 
 	ON_REGISTERED_MESSAGE(UWM_ARE_YOU_EMULE, OnAreYouEmule)
+	ON_BN_CLICKED(IDC_EXIT, OnClose)
 	ON_BN_CLICKED(IDC_HOTMENU, OnBnClickedHotmenu)
 
 	///////////////////////////////////////////////////////////////////////////
@@ -1226,6 +1233,17 @@ LRESULT CemuleDlg::OnIPFilterUpdated(WPARAM wParam, LPARAM)
 
 void CemuleDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
+	const AppKeyboardShortcutsSeams::ECommand eShortcutCommand =
+		AppKeyboardShortcutsSeams::ClassifySystemKeyMenu(nID, lParam, IsKeyboardShortcutModalContext(*this));
+	if (eShortcutCommand == AppKeyboardShortcutsSeams::ECommand::ExitApp) {
+		OnClose();
+		return;
+	}
+	if (eShortcutCommand == AppKeyboardShortcutsSeams::ECommand::ShowHotMenu) {
+		OnBnClickedHotmenu();
+		return;
+	}
+
 	// System menu - Speed selector
 	if (nID >= MP_QS_U10 && nID <= MP_QS_UP10) {
 		QuickSpeedUpload(nID);
@@ -3227,7 +3245,7 @@ void CemuleDlg::ShowToolPopup(bool toolsonly)
 
 	if (!toolsonly) {
 		menu.AppendMenu(MF_SEPARATOR);
-		menu.AppendMenu(MF_STRING, MP_HM_EXIT, GetResString(IDS_EXIT), _T("EXIT"));
+		menu.AppendMenu(MF_STRING, MP_HM_EXIT, GetResString(IDS_EXIT) + _T("\tAlt+X"), _T("EXIT"));
 	}
 	menu.TrackPopupMenu(TPM_LEFTALIGN | TPM_RIGHTBUTTON, point.x, point.y, this);
 	VERIFY(Links.DestroyMenu());
