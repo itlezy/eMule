@@ -126,7 +126,7 @@ const CString& CAbstractFile::GetFileComment()
 void CAbstractFile::LoadComment()
 {
 	CIni ini(thePrefs.GetFileCommentsFilePath(), md4str(GetFileHash()));
-	m_strComment = ini.GetStringUTF8(_T("Comment")).Left(MAXFILECOMMENTLEN);
+	m_strComment = ini.GetString(_T("Comment")).Left(MAXFILECOMMENTLEN);
 	m_uRating = ini.GetInt(_T("Rate"), 0);
 	m_bCommentLoaded = true;
 }

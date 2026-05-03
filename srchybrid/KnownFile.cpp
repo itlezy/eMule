@@ -1212,7 +1212,7 @@ void CKnownFile::SetFileComment(LPCTSTR pszComment)
 	if (m_strComment.Compare(pszComment) != 0) {
 		SetLastPublishTimeKadNotes(0);
 		CIni ini(thePrefs.GetFileCommentsFilePath(), md4str(GetFileHash()));
-		ini.WriteStringUTF8(_T("Comment"), pszComment);
+		ini.WriteString(_T("Comment"), pszComment);
 		m_strComment = pszComment;
 
 		for (POSITION pos = m_ClientUploadList.GetHeadPosition(); pos != NULL;)

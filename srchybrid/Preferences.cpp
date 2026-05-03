@@ -2198,7 +2198,7 @@ void CPreferences::SavePreferences()
 	ini.WriteInt(_T("DebugHeap"), m_iDbgHeap);
 #endif
 
-	ini.WriteStringUTF8(_T("Nick"), strNick);
+	ini.WriteString(_T("Nick"), strNick);
 	ini.WriteString(_T("IncomingDir"), m_strIncomingDir);
 
 	ini.WriteString(_T("TempDir"), tempdir[0]);
@@ -2641,6 +2641,7 @@ void CPreferences::IniCopy(const CString &si, const CString &di)
 
 void CPreferences::LoadPreferences()
 {
+	(void)CIni::NormalizeUnicodeProfileFile(GetConfigFile());
 	CIni ini(GetConfigFile(), _T("eMule"));
 	ini.SetSection(_T("eMule"));
 
@@ -2657,7 +2658,7 @@ void CPreferences::LoadPreferences()
 	m_nWebMirrorAlertLevel = ini.GetInt(_T("WebMirrorAlertLevel"), 0);
 	updatenotify = ini.GetBool(_T("UpdateNotifyTestClient"), false);
 
-	SetUserNick(ini.GetStringUTF8(_T("Nick"), DEFAULT_NICK));
+	SetUserNick(ini.GetString(_T("Nick"), DEFAULT_NICK));
 	if (strNick.IsEmpty() || IsDefaultNick(strNick))
 		SetUserNick(DEFAULT_NICK);
 
@@ -3303,13 +3304,13 @@ void CPreferences::SaveCats()
 
 		const Category_Struct *cmap = catArr[i];
 
-		ini.WriteStringUTF8(_T("Title"), cmap->strTitle);
-		ini.WriteStringUTF8(_T("Incoming"), cmap->strIncomingPath);
-		ini.WriteStringUTF8(_T("Comment"), cmap->strComment);
-		ini.WriteStringUTF8(_T("RegularExpression"), cmap->regexp);
+		ini.WriteString(_T("Title"), cmap->strTitle);
+		ini.WriteString(_T("Incoming"), cmap->strIncomingPath);
+		ini.WriteString(_T("Comment"), cmap->strComment);
+		ini.WriteString(_T("RegularExpression"), cmap->regexp);
 		ini.WriteInt(_T("Color"), (int)cmap->color);
 		ini.WriteInt(_T("a4afPriority"), cmap->prio); // ZZ:DownloadManager
-		ini.WriteStringUTF8(_T("AutoCat"), cmap->autocat);
+		ini.WriteString(_T("AutoCat"), cmap->autocat);
 		ini.WriteInt(_T("Filter"), cmap->filter);
 		ini.WriteBool(_T("FilterNegator"), cmap->filterNeg);
 		ini.WriteBool(_T("AutoCatAsRegularExpression"), cmap->ac_regexpeval);
@@ -3331,9 +3332,9 @@ void CPreferences::LoadCats()
 
 		Category_Struct *newcat = new Category_Struct;
 		newcat->filter = 0;
-		newcat->strTitle = ini.GetStringUTF8(_T("Title"));
+		newcat->strTitle = ini.GetString(_T("Title"));
 		if (i != 0) { // All category
-			newcat->strIncomingPath = PathHelpers::CanonicalizeDirectoryPath(ini.GetStringUTF8(_T("Incoming")));
+			newcat->strIncomingPath = PathHelpers::CanonicalizeDirectoryPath(ini.GetString(_T("Incoming")));
 			if (!IsShareableDirectory(newcat->strIncomingPath)
 				|| (!LongPathSeams::PathExists(newcat->strIncomingPath) && !LongPathSeams::CreateDirectory(newcat->strIncomingPath, 0)))
 			{
@@ -3341,14 +3342,14 @@ void CPreferences::LoadCats()
 			}
 		} else
 			newcat->strIncomingPath.Empty();
-		newcat->strComment = ini.GetStringUTF8(_T("Comment"));
+		newcat->strComment = ini.GetString(_T("Comment"));
 		newcat->prio = ini.GetInt(_T("a4afPriority"), PR_NORMAL); // ZZ:DownloadManager
 		newcat->filter = ini.GetInt(_T("Filter"), 0);
 		newcat->filterNeg = ini.GetBool(_T("FilterNegator"), FALSE);
 		newcat->ac_regexpeval = ini.GetBool(_T("AutoCatAsRegularExpression"), FALSE);
 		newcat->care4all = ini.GetBool(_T("Care4All"), FALSE);
-		newcat->regexp = ini.GetStringUTF8(_T("RegularExpression"));
-		newcat->autocat = ini.GetStringUTF8(_T("Autocat"));
+		newcat->regexp = ini.GetString(_T("RegularExpression"));
+		newcat->autocat = ini.GetString(_T("Autocat"));
 		newcat->downloadInAlphabeticalOrder = ini.GetBool(_T("downloadInAlphabeticalOrder"), FALSE); // ZZ:DownloadManager
 		newcat->color = (COLORREF)ini.GetInt(_T("Color"), -1);
 		AddCat(newcat);

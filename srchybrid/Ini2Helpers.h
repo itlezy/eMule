@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atlstr.h>
+#include <cstring>
 #include <vector>
 #include <windows.h>
 
@@ -94,86 +95,269 @@ inline bool RequiresFileBackedProfileIo(const CString &rstrProfilePath)
 	return !PathHelpers::IsShellSafePath(PathHelpers::StripExtendedLengthPrefix(rstrProfilePath));
 }
 
-/**
- * @brief Returns whether the logical profile path can be losslessly represented through the ANSI profile APIs.
- */
-inline bool CanRoundTripAnsiProfilePath(const CString &rstrProfilePath)
+namespace detail
 {
-#ifdef _UNICODE
-	const CString strLogicalPath(PathHelpers::StripExtendedLengthPrefix(rstrProfilePath));
-	if (strLogicalPath.IsEmpty())
+enum class ProfileTextEncoding
+{
+	Empty,
+	Ansi,
+	Utf16Le,
+	Unsupported
+};
+
+struct ProfileLineW
+{
+	CStringW strText;
+	CStringW strLineEnding;
+};
+
+inline bool HasUtf16LeBom(const std::vector<unsigned char> &rBytes)
+{
+	return rBytes.size() >= 2 && rBytes[0] == 0xFFu && rBytes[1] == 0xFEu;
+}
+
+inline bool HasUtf16BeBom(const std::vector<unsigned char> &rBytes)
+{
+	return rBytes.size() >= 2 && rBytes[0] == 0xFEu && rBytes[1] == 0xFFu;
+}
+
+inline bool HasUtf8Bom(const std::vector<unsigned char> &rBytes)
+{
+	return rBytes.size() >= 3 && rBytes[0] == 0xEFu && rBytes[1] == 0xBBu && rBytes[2] == 0xBFu;
+}
+
+inline bool ContainsNulByte(const std::vector<unsigned char> &rBytes)
+{
+	for (size_t i = 0; i < rBytes.size(); ++i)
+		if (rBytes[i] == 0)
+			return true;
+	return false;
+}
+
+inline ProfileTextEncoding DetectProfileTextEncoding(const std::vector<unsigned char> &rBytes)
+{
+	if (rBytes.empty())
+		return ProfileTextEncoding::Empty;
+	if (HasUtf16LeBom(rBytes))
+		return ProfileTextEncoding::Utf16Le;
+	if (HasUtf16BeBom(rBytes) || HasUtf8Bom(rBytes) || ContainsNulByte(rBytes))
+		return ProfileTextEncoding::Unsupported;
+	return ProfileTextEncoding::Ansi;
+}
+
+inline CStringW DecodeUtf16LeProfileText(const std::vector<unsigned char> &rBytes)
+{
+	if (!HasUtf16LeBom(rBytes))
+		return CStringW();
+
+	const size_t nPayloadBytes = rBytes.size() - 2u;
+	const int iWideChars = static_cast<int>(nPayloadBytes / sizeof(wchar_t));
+	return iWideChars > 0
+		? CStringW(reinterpret_cast<const wchar_t *>(rBytes.data() + 2u), iWideChars)
+		: CStringW();
+}
+
+inline std::vector<unsigned char> EncodeUtf16LeProfileText(const CStringW &rstrText)
+{
+	std::vector<unsigned char> bytes;
+	bytes.reserve(2u + static_cast<size_t>(rstrText.GetLength()) * sizeof(wchar_t));
+	bytes.push_back(0xFFu);
+	bytes.push_back(0xFEu);
+	const unsigned char *pTextBytes = reinterpret_cast<const unsigned char *>(static_cast<LPCWSTR>(rstrText));
+	bytes.insert(bytes.end(), pTextBytes, pTextBytes + static_cast<size_t>(rstrText.GetLength()) * sizeof(wchar_t));
+	return bytes;
+}
+
+inline bool TryDecodeAnsiExact(const CStringA &rstrAnsi, CStringW &rstrWide)
+{
+	rstrWide.Empty();
+	if (rstrAnsi.IsEmpty())
 		return true;
 
-	BOOL bUsedDefaultChar = FALSE;
-	const int iRequiredAnsiChars = ::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, strLogicalPath, -1, NULL, 0, NULL, &bUsedDefaultChar);
-	if (iRequiredAnsiChars <= 0 || bUsedDefaultChar != FALSE)
-		return false;
-
-	std::vector<char> ansiBuffer(static_cast<size_t>(iRequiredAnsiChars), '\0');
-	if (::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, strLogicalPath, -1, &ansiBuffer[0], iRequiredAnsiChars, NULL, &bUsedDefaultChar) != iRequiredAnsiChars
-		|| bUsedDefaultChar != FALSE)
-	{
-		return false;
-	}
-
-	const int iRequiredWideChars = ::MultiByteToWideChar(CP_ACP, 0, &ansiBuffer[0], -1, NULL, 0);
+	const int iRequiredWideChars = ::MultiByteToWideChar(CP_ACP, 0, rstrAnsi, rstrAnsi.GetLength(), NULL, 0);
 	if (iRequiredWideChars <= 0)
 		return false;
 
-	CString strRoundTrip;
-	LPWSTR pszRoundTrip = strRoundTrip.GetBuffer(iRequiredWideChars - 1);
-	const int iWrittenWideChars = ::MultiByteToWideChar(CP_ACP, 0, &ansiBuffer[0], -1, pszRoundTrip, iRequiredWideChars);
-	strRoundTrip.ReleaseBuffer(iWrittenWideChars > 0 ? iWrittenWideChars - 1 : 0);
-	return iWrittenWideChars == iRequiredWideChars && strRoundTrip == strLogicalPath;
-#else
+	LPWSTR pszWide = rstrWide.GetBuffer(iRequiredWideChars);
+	const int iWrittenWideChars = ::MultiByteToWideChar(CP_ACP, 0, rstrAnsi, rstrAnsi.GetLength(), pszWide, iRequiredWideChars);
+	rstrWide.ReleaseBuffer(iWrittenWideChars > 0 ? iWrittenWideChars : 0);
+	if (iWrittenWideChars != iRequiredWideChars)
+		return false;
+
+	BOOL bUsedDefaultChar = FALSE;
+	const int iRequiredAnsiChars = ::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rstrWide, rstrWide.GetLength(), NULL, 0, NULL, &bUsedDefaultChar);
+	if (iRequiredAnsiChars != rstrAnsi.GetLength() || bUsedDefaultChar != FALSE)
+		return false;
+
+	CStringA strRoundTrip;
+	LPSTR pszRoundTrip = strRoundTrip.GetBuffer(iRequiredAnsiChars);
+	const int iWrittenAnsiChars = ::WideCharToMultiByte(CP_ACP, WC_NO_BEST_FIT_CHARS, rstrWide, rstrWide.GetLength(), pszRoundTrip, iRequiredAnsiChars, NULL, &bUsedDefaultChar);
+	strRoundTrip.ReleaseBuffer(iWrittenAnsiChars > 0 ? iWrittenAnsiChars : 0);
+	return iWrittenAnsiChars == iRequiredAnsiChars && bUsedDefaultChar == FALSE && strRoundTrip == rstrAnsi;
+}
+
+inline bool TryDecodeUtf8Strict(const CStringA &rstrUtf8, CStringW &rstrWide)
+{
+	rstrWide.Empty();
+	if (rstrUtf8.IsEmpty())
+		return true;
+
+	const int iRequiredWideChars = ::MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, rstrUtf8, rstrUtf8.GetLength(), NULL, 0);
+	if (iRequiredWideChars <= 0)
+		return false;
+
+	LPWSTR pszWide = rstrWide.GetBuffer(iRequiredWideChars);
+	const int iWrittenWideChars = ::MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, rstrUtf8, rstrUtf8.GetLength(), pszWide, iRequiredWideChars);
+	rstrWide.ReleaseBuffer(iWrittenWideChars > 0 ? iWrittenWideChars : 0);
+	return iWrittenWideChars == iRequiredWideChars;
+}
+
+inline bool ContainsNonAsciiByte(const CStringA &rstrValue)
+{
+	for (int i = 0; i < rstrValue.GetLength(); ++i)
+		if (static_cast<unsigned char>(rstrValue[i]) >= 0x80u)
+			return true;
+	return false;
+}
+
+inline bool IsKnownUtf8SalvageValue(const CStringA &rstrSectionName, const CStringA &rstrEntryName)
+{
+	return rstrSectionName.CompareNoCase("eMule") == 0 && rstrEntryName.CompareNoCase("Nick") == 0;
+}
+
+inline bool IsWideSpace(const wchar_t ch)
+{
+	return ch == L' ' || ch == L'\t';
+}
+
+inline CStringW TrimWideWhitespace(const CStringW &rstrValue)
+{
+	int iStart = 0;
+	int iEnd = rstrValue.GetLength();
+	while (iStart < iEnd && IsWideSpace(rstrValue[iStart]))
+		++iStart;
+	while (iEnd > iStart && IsWideSpace(rstrValue[iEnd - 1]))
+		--iEnd;
+	return rstrValue.Mid(iStart, iEnd - iStart);
+}
+
+inline std::vector<ProfileLineW> SplitWideProfileLines(const CStringW &rstrContent)
+{
+	std::vector<ProfileLineW> lines;
+	const int nLength = rstrContent.GetLength();
+	int iLineStart = 0;
+	for (int i = 0; i < nLength; ++i) {
+		if (rstrContent[i] != L'\r' && rstrContent[i] != L'\n')
+			continue;
+
+		const int iLineEnd = i;
+		CStringW strLineEnding;
+		if (rstrContent[i] == L'\r' && i + 1 < nLength && rstrContent[i + 1] == L'\n') {
+			strLineEnding = L"\r\n";
+			++i;
+		} else {
+			const wchar_t chLineEnding = rstrContent[i];
+			strLineEnding = CStringW(&chLineEnding, 1);
+		}
+
+		ProfileLineW line = { rstrContent.Mid(iLineStart, iLineEnd - iLineStart), strLineEnding };
+		lines.push_back(line);
+		iLineStart = i + 1;
+	}
+
+	if (iLineStart < nLength) {
+		ProfileLineW line = { rstrContent.Mid(iLineStart), CStringW() };
+		lines.push_back(line);
+	}
+
+	return lines;
+}
+
+inline CStringW ChooseWideLineEnding(const std::vector<ProfileLineW> &rLines)
+{
+	for (size_t i = 0; i < rLines.size(); ++i) {
+		if (!rLines[i].strLineEnding.IsEmpty())
+			return rLines[i].strLineEnding;
+	}
+	return CStringW(L"\r\n");
+}
+
+inline CStringW JoinWideProfileLines(const std::vector<ProfileLineW> &rLines)
+{
+	CStringW strJoined;
+	const CStringW strDefaultLineEnding = ChooseWideLineEnding(rLines);
+	for (size_t i = 0; i < rLines.size(); ++i) {
+		strJoined += rLines[i].strText;
+		if (!rLines[i].strLineEnding.IsEmpty())
+			strJoined += rLines[i].strLineEnding;
+		else if (i + 1 < rLines.size())
+			strJoined += strDefaultLineEnding;
+	}
+	return strJoined;
+}
+
+inline bool TryParseWideSectionName(const CStringW &rstrLine, CStringW &rstrSectionName)
+{
+	const CStringW strTrimmed = TrimWideWhitespace(rstrLine);
+	if (strTrimmed.GetLength() < 3 || strTrimmed[0] != L'[')
+		return false;
+
+	const int iCloseBracket = strTrimmed.Find(L']');
+	if (iCloseBracket <= 1)
+		return false;
+
+	rstrSectionName = TrimWideWhitespace(strTrimmed.Mid(1, iCloseBracket - 1));
+	return !rstrSectionName.IsEmpty();
+}
+
+inline bool TryParseWideKeyValue(const CStringW &rstrLine, CStringW &rstrKeyName, int &riValueStart)
+{
+	riValueStart = -1;
+	int iStart = 0;
+	while (iStart < rstrLine.GetLength() && IsWideSpace(rstrLine[iStart]))
+		++iStart;
+	if (iStart >= rstrLine.GetLength() || rstrLine[iStart] == L';' || rstrLine[iStart] == L'#')
+		return false;
+
+	const int iEquals = rstrLine.Find(L'=', iStart);
+	if (iEquals <= iStart)
+		return false;
+
+	rstrKeyName = TrimWideWhitespace(rstrLine.Mid(iStart, iEquals - iStart));
+	if (rstrKeyName.IsEmpty())
+		return false;
+
+	int iValueStart = iEquals + 1;
+	while (iValueStart < rstrLine.GetLength() && IsWideSpace(rstrLine[iValueStart]))
+		++iValueStart;
+	riValueStart = iValueStart;
 	return true;
-#endif
 }
 
-/**
- * @brief Returns whether UTF-8 profile value I/O must bypass the ANSI profile APIs and use raw file access instead.
- */
-inline bool RequiresFileBackedProfileUtf8Io(const CString &rstrProfilePath)
+inline int FindWideSectionStartIndex(const std::vector<ProfileLineW> &rLines, const CStringW &rstrSectionName)
 {
-	return RequiresFileBackedProfileIo(rstrProfilePath) || !CanRoundTripAnsiProfilePath(rstrProfilePath);
+	for (size_t i = 0; i < rLines.size(); ++i) {
+		CStringW strLineSectionName;
+		if (TryParseWideSectionName(rLines[i].strText, strLineSectionName) && strLineSectionName.CompareNoCase(rstrSectionName) == 0)
+			return static_cast<int>(i);
+	}
+	return -1;
 }
 
-inline CStringA EncodeUtf8(const CString &rstrValue)
+inline int FindWideSectionInsertIndex(const std::vector<ProfileLineW> &rLines, const int iSectionStart)
 {
-#ifdef _UNICODE
-	const int iRequiredChars = ::WideCharToMultiByte(CP_UTF8, 0, rstrValue, rstrValue.GetLength(), NULL, 0, NULL, NULL);
-	if (iRequiredChars <= 0)
-		return CStringA();
+	if (iSectionStart < 0)
+		return static_cast<int>(rLines.size());
 
-	CStringA strUtf8;
-	LPSTR pszUtf8 = strUtf8.GetBuffer(iRequiredChars);
-	const int iWrittenChars = ::WideCharToMultiByte(CP_UTF8, 0, rstrValue, rstrValue.GetLength(), pszUtf8, iRequiredChars, NULL, NULL);
-	strUtf8.ReleaseBuffer(iWrittenChars > 0 ? iWrittenChars : 0);
-	return strUtf8;
-#else
-	return CStringA(rstrValue);
-#endif
+	for (size_t i = static_cast<size_t>(iSectionStart + 1); i < rLines.size(); ++i) {
+		CStringW strLineSectionName;
+		if (TryParseWideSectionName(rLines[i].strText, strLineSectionName))
+			return static_cast<int>(i);
+	}
+
+	return static_cast<int>(rLines.size());
 }
 
-inline CString DecodeUtf8(const CStringA &rstrUtf8)
-{
-#ifdef _UNICODE
-	const int iRequiredChars = ::MultiByteToWideChar(CP_UTF8, 0, rstrUtf8, rstrUtf8.GetLength(), NULL, 0);
-	if (iRequiredChars <= 0)
-		return CString(rstrUtf8);
-
-	CString strWide;
-	LPWSTR pszWide = strWide.GetBuffer(iRequiredChars);
-	const int iWrittenChars = ::MultiByteToWideChar(CP_UTF8, 0, rstrUtf8, rstrUtf8.GetLength(), pszWide, iRequiredChars);
-	strWide.ReleaseBuffer(iWrittenChars > 0 ? iWrittenChars : 0);
-	return strWide;
-#else
-	return CString(rstrUtf8);
-#endif
-}
-
-namespace detail
-{
 struct ProfileLine
 {
 	CStringA strText;
@@ -311,6 +495,191 @@ inline bool TryParseKeyValue(const CStringA &rstrLine, CStringA &rstrKeyName, in
 	return true;
 }
 
+inline bool DecodeLegacyProfileValue(const CStringA &rstrSectionName, const CStringA &rstrEntryName, const CStringA &rstrValueRaw, CStringW &rstrValue)
+{
+	if (IsKnownUtf8SalvageValue(rstrSectionName, rstrEntryName) && ContainsNonAsciiByte(rstrValueRaw) && TryDecodeUtf8Strict(rstrValueRaw, rstrValue))
+		return true;
+	return TryDecodeAnsiExact(rstrValueRaw, rstrValue);
+}
+
+inline bool DecodeLegacyProfileLine(const ProfileLine &rLine, const CStringA &rstrSectionName, CStringW &rstrLineText)
+{
+	CStringA strEntryName;
+	int iValueStart = -1;
+	if (TryParseKeyValue(rLine.strText, strEntryName, iValueStart)) {
+		CStringW strPrefix;
+		CStringW strValue;
+		if (!TryDecodeAnsiExact(rLine.strText.Left(iValueStart), strPrefix)
+			|| !DecodeLegacyProfileValue(rstrSectionName, strEntryName, rLine.strText.Mid(iValueStart), strValue))
+		{
+			return false;
+		}
+		rstrLineText = strPrefix + strValue;
+		return true;
+	}
+
+	return TryDecodeAnsiExact(rLine.strText, rstrLineText);
+}
+
+inline CStringW DecodeLegacyProfileBytesToWideText(const std::vector<unsigned char> &rBytes)
+{
+	std::vector<ProfileLine> legacyLines = SplitProfileLines(BytesToCStringA(rBytes));
+	std::vector<ProfileLineW> wideLines;
+	CStringA strCurrentSection;
+	for (size_t i = 0; i < legacyLines.size(); ++i) {
+		CStringA strLineSectionName;
+		if (TryParseSectionName(legacyLines[i].strText, strLineSectionName))
+			strCurrentSection = strLineSectionName;
+
+		CStringW strLineText;
+		if (DecodeLegacyProfileLine(legacyLines[i], strCurrentSection, strLineText))
+			wideLines.push_back(ProfileLineW{ strLineText, CStringW(legacyLines[i].strLineEnding) });
+	}
+	return JoinWideProfileLines(wideLines);
+}
+
+inline bool LoadProfileAsWideText(const CString &rstrProfilePath, CStringW &rstrText, bool &rbExists)
+{
+	rstrText.Empty();
+	rbExists = false;
+
+	std::vector<unsigned char> fileBytes;
+	if (!LongPathSeams::ReadAllBytes(rstrProfilePath, fileBytes)) {
+		const DWORD dwLastError = ::GetLastError();
+		return dwLastError == ERROR_FILE_NOT_FOUND || dwLastError == ERROR_PATH_NOT_FOUND;
+	}
+
+	rbExists = true;
+	switch (DetectProfileTextEncoding(fileBytes))
+	{
+		case ProfileTextEncoding::Empty:
+			return true;
+		case ProfileTextEncoding::Utf16Le:
+			rstrText = DecodeUtf16LeProfileText(fileBytes);
+			return true;
+		case ProfileTextEncoding::Ansi:
+			rstrText = DecodeLegacyProfileBytesToWideText(fileBytes);
+			return true;
+		case ProfileTextEncoding::Unsupported:
+			return true;
+	}
+	return true;
+}
+
+inline bool PersistProfileWideText(const CString &rstrProfilePath, const CStringW &rstrText)
+{
+	return LongPathSeams::WriteAllBytes(rstrProfilePath, EncodeUtf16LeProfileText(rstrText));
+}
+
+inline CStringW ReadProfileValueWide(const CString &rstrSection, const CString &rstrEntry, const CStringW &rstrDefaultValue, const CString &rstrProfilePath)
+{
+	CStringW strText;
+	bool bExists = false;
+	if (!LoadProfileAsWideText(rstrProfilePath, strText, bExists) || !bExists)
+		return rstrDefaultValue;
+
+	const CStringW strSectionName(rstrSection);
+	const CStringW strEntryName(rstrEntry);
+	const std::vector<ProfileLineW> lines = SplitWideProfileLines(strText);
+	bool bInTargetSection = false;
+	for (size_t i = 0; i < lines.size(); ++i) {
+		CStringW strLineSectionName;
+		if (TryParseWideSectionName(lines[i].strText, strLineSectionName)) {
+			bInTargetSection = (strLineSectionName.CompareNoCase(strSectionName) == 0);
+			continue;
+		}
+		if (!bInTargetSection)
+			continue;
+
+		CStringW strLineEntryName;
+		int iValueStart = -1;
+		if (TryParseWideKeyValue(lines[i].strText, strLineEntryName, iValueStart)
+			&& strLineEntryName.CompareNoCase(strEntryName) == 0)
+		{
+			return lines[i].strText.Mid(iValueStart);
+		}
+	}
+
+	return rstrDefaultValue;
+}
+
+inline void EnsureWritableWideLineEnding(ProfileLineW &rLine, const CStringW &rstrLineEnding)
+{
+	if (rLine.strLineEnding.IsEmpty())
+		rLine.strLineEnding = rstrLineEnding;
+}
+
+inline bool UpsertProfileValueWide(const CString &rstrSection, const CString &rstrEntry, LPCTSTR pszValue, const CString &rstrProfilePath)
+{
+	CStringW strText;
+	bool bExists = false;
+	if (!LoadProfileAsWideText(rstrProfilePath, strText, bExists))
+		return false;
+	(void)bExists;
+
+	std::vector<ProfileLineW> lines = SplitWideProfileLines(strText);
+	const CStringW strLineEnding = ChooseWideLineEnding(lines);
+	const CStringW strSectionName(rstrSection);
+	const CStringW strEntryName(rstrEntry);
+	const CStringW strNewLine = strEntryName + L"=" + CStringW(pszValue != NULL ? pszValue : _T(""));
+	const int iSectionStart = FindWideSectionStartIndex(lines, strSectionName);
+	if (iSectionStart >= 0) {
+		const int iSectionEnd = FindWideSectionInsertIndex(lines, iSectionStart);
+		for (int i = iSectionStart + 1; i < iSectionEnd; ++i) {
+			CStringW strLineEntryName;
+			int iValueStart = -1;
+			if (TryParseWideKeyValue(lines[i].strText, strLineEntryName, iValueStart)
+				&& strLineEntryName.CompareNoCase(strEntryName) == 0)
+			{
+				lines[i].strText = strNewLine;
+				EnsureWritableWideLineEnding(lines[i], strLineEnding);
+				return PersistProfileWideText(rstrProfilePath, JoinWideProfileLines(lines));
+			}
+		}
+
+		lines.insert(lines.begin() + iSectionEnd, ProfileLineW{ strNewLine, strLineEnding });
+		return PersistProfileWideText(rstrProfilePath, JoinWideProfileLines(lines));
+	}
+
+	if (!lines.empty() && !lines.back().strText.IsEmpty())
+		lines.push_back(ProfileLineW{ CStringW(), strLineEnding });
+	lines.push_back(ProfileLineW{ CStringW(L"[") + strSectionName + L"]", strLineEnding });
+	lines.push_back(ProfileLineW{ strNewLine, CStringW() });
+	return PersistProfileWideText(rstrProfilePath, JoinWideProfileLines(lines));
+}
+
+inline bool DeleteProfileKeyWide(const CString &rstrSection, const CString &rstrEntry, const CString &rstrProfilePath)
+{
+	CStringW strText;
+	bool bExists = false;
+	if (!LoadProfileAsWideText(rstrProfilePath, strText, bExists))
+		return false;
+	if (!bExists)
+		return true;
+
+	std::vector<ProfileLineW> lines = SplitWideProfileLines(strText);
+	const CStringW strSectionName(rstrSection);
+	const CStringW strEntryName(rstrEntry);
+	const int iSectionStart = FindWideSectionStartIndex(lines, strSectionName);
+	if (iSectionStart < 0)
+		return true;
+
+	const int iSectionEnd = FindWideSectionInsertIndex(lines, iSectionStart);
+	bool bRemoved = false;
+	for (int i = iSectionEnd - 1; i > iSectionStart; --i) {
+		CStringW strLineEntryName;
+		int iValueStart = -1;
+		if (TryParseWideKeyValue(lines[i].strText, strLineEntryName, iValueStart)
+			&& strLineEntryName.CompareNoCase(strEntryName) == 0)
+		{
+			lines.erase(lines.begin() + i);
+			bRemoved = true;
+		}
+	}
+
+	return !bRemoved || PersistProfileWideText(rstrProfilePath, JoinWideProfileLines(lines));
+}
+
 inline int FindSectionStartIndex(const std::vector<ProfileLine> &rLines, const CStringA &rstrSectionName)
 {
 	for (size_t i = 0; i < rLines.size(); ++i) {
@@ -369,11 +738,6 @@ inline CStringA ReadProfileValueRaw(const CString &rstrSection, const CString &r
 inline CString DecodeProfileValueRaw(const CStringA &rstrValueRaw)
 {
 	return CString(rstrValueRaw);
-}
-
-inline CString DecodeProfileUtf8ValueRaw(const CStringA &rstrValueRaw)
-{
-	return DecodeUtf8(rstrValueRaw);
 }
 
 inline bool PersistProfileLines(const CString &rstrProfilePath, const std::vector<ProfileLine> &rLines)
@@ -464,27 +828,38 @@ inline bool DeleteProfileKeyRaw(const CString &rstrSection, const CString &rstrE
 
 inline CString ReadProfileStringLongPath(const CString &rstrSection, const CString &rstrEntry, LPCTSTR pszDefaultValue, const CString &rstrProfilePath)
 {
-	return detail::DecodeProfileValueRaw(detail::ReadProfileValueRaw(rstrSection, rstrEntry, CStringA(pszDefaultValue != NULL ? pszDefaultValue : _T("")), rstrProfilePath));
-}
-
-inline CString ReadProfileUtf8StringLongPath(const CString &rstrSection, const CString &rstrEntry, LPCTSTR pszDefaultValue, const CString &rstrProfilePath)
-{
-	const CStringA strDefaultValueRaw = pszDefaultValue != NULL ? EncodeUtf8(CString(pszDefaultValue)) : CStringA();
-	return detail::DecodeProfileUtf8ValueRaw(detail::ReadProfileValueRaw(rstrSection, rstrEntry, strDefaultValueRaw, rstrProfilePath));
+	return CString(detail::ReadProfileValueWide(rstrSection, rstrEntry, CStringW(pszDefaultValue != NULL ? pszDefaultValue : _T("")), rstrProfilePath));
 }
 
 inline bool WriteProfileStringLongPath(const CString &rstrSection, const CString &rstrEntry, LPCTSTR pszValue, const CString &rstrProfilePath)
 {
-	return detail::UpsertProfileValueRaw(rstrSection, rstrEntry, CStringA(pszValue != NULL ? pszValue : _T("")), rstrProfilePath);
-}
-
-inline bool WriteProfileUtf8StringLongPath(const CString &rstrSection, const CString &rstrEntry, LPCTSTR pszValue, const CString &rstrProfilePath)
-{
-	return detail::UpsertProfileValueRaw(rstrSection, rstrEntry, EncodeUtf8(CString(pszValue != NULL ? pszValue : _T(""))), rstrProfilePath);
+	return detail::UpsertProfileValueWide(rstrSection, rstrEntry, pszValue, rstrProfilePath);
 }
 
 inline bool DeleteProfileKeyLongPath(const CString &rstrSection, const CString &rstrEntry, const CString &rstrProfilePath)
 {
-	return detail::DeleteProfileKeyRaw(rstrSection, rstrEntry, rstrProfilePath);
+	return detail::DeleteProfileKeyWide(rstrSection, rstrEntry, rstrProfilePath);
+}
+
+/**
+ * @brief Converts a profile file to UTF-16LE with BOM, preserving ANSI values and salvaging known prior UTF-8 values once.
+ */
+inline bool NormalizeProfileFileToUtf16Le(const CString &rstrProfilePath)
+{
+	std::vector<unsigned char> fileBytes;
+	if (!LongPathSeams::ReadAllBytes(rstrProfilePath, fileBytes)) {
+		const DWORD dwLastError = ::GetLastError();
+		if (dwLastError != ERROR_FILE_NOT_FOUND && dwLastError != ERROR_PATH_NOT_FOUND)
+			return false;
+		return detail::PersistProfileWideText(rstrProfilePath, CStringW());
+	}
+
+	if (detail::DetectProfileTextEncoding(fileBytes) == detail::ProfileTextEncoding::Utf16Le)
+		return true;
+
+	const CStringW strNormalized = detail::DetectProfileTextEncoding(fileBytes) == detail::ProfileTextEncoding::Ansi
+		? detail::DecodeLegacyProfileBytesToWideText(fileBytes)
+		: CStringW();
+	return detail::PersistProfileWideText(rstrProfilePath, strNormalized);
 }
 }

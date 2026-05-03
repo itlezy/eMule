@@ -1,7 +1,6 @@
 #include "stdafx.h"
 #include "Ini2.h"
 #include "Ini2Helpers.h"
-#include "StringConversion.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -25,6 +24,11 @@ CString CIni::GetDefaultIniFile(bool bModulPath)
 	const CString strModulePath = Ini2Helpers::GetModuleFilePath();
 	const CString strCurrentDirectory = bModulPath ? CString() : Ini2Helpers::GetCurrentDirectoryPath();
 	return Ini2Helpers::BuildDefaultIniFilePath(strModulePath, strCurrentDirectory, bModulPath);
+}
+
+bool CIni::NormalizeUnicodeProfileFile(LPCTSTR lpszFileName)
+{
+	return Ini2Helpers::NormalizeProfileFileToUtf16Le(lpszFileName);
 }
 
 CIni::CIni()
@@ -88,13 +92,6 @@ CString CIni::GetStringLong(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpsz
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
 	return Read(m_strFileName, m_strSection, lpszEntry, lpszDefault == NULL ? _T("") : lpszDefault);
-}
-
-CString CIni::GetStringUTF8(LPCTSTR lpszEntry, LPCTSTR lpszDefault, LPCTSTR lpszSection)
-{
-	if (lpszSection != NULL)
-		m_strSection = lpszSection;
-	return ReadUtf8(m_strFileName, m_strSection, lpszEntry, lpszDefault == NULL ? _T("") : lpszDefault);
 }
 
 double CIni::GetDouble(LPCTSTR lpszEntry, double fDefault, LPCTSTR lpszSection)
@@ -196,13 +193,6 @@ void CIni::WriteString(LPCTSTR lpszEntry, LPCTSTR lpsz, LPCTSTR lpszSection)
 	if (lpszSection != NULL)
 		m_strSection = lpszSection;
 	Write(m_strFileName, m_strSection, lpszEntry, lpsz);
-}
-
-void CIni::WriteStringUTF8(LPCTSTR lpszEntry, LPCTSTR lpsz, LPCTSTR lpszSection)
-{
-	if (lpszSection != NULL)
-		m_strSection = lpszSection;
-	WriteUtf8(m_strFileName, m_strSection, lpszEntry, lpsz);
 }
 
 void CIni::WriteDouble(LPCTSTR lpszEntry, double f, LPCTSTR lpszSection)
@@ -637,28 +627,6 @@ CString CIni::Read(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry,
 		});
 }
 
-CString CIni::ReadUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault)
-{
-	if (Ini2Helpers::RequiresFileBackedProfileUtf8Io(lpszFileName))
-		return Ini2Helpers::ReadProfileUtf8StringLongPath(lpszSection, lpszEntry, lpszDefault, lpszFileName);
-
-	const CStringA strSectionA(lpszSection);
-	const CStringA strEntryA(lpszEntry);
-	const CStringA strDefaultA(lpszDefault != NULL ? lpszDefault : _T(""));
-	const CStringA strFileNameA(lpszFileName);
-	const CStringA strUTF8 = Ini2Helpers::ReadProfileStringDynamic<CStringA>(
-		[&](LPSTR pszBuffer, DWORD dwCapacity) -> DWORD {
-			return ::GetPrivateProfileStringA(
-				strSectionA,
-				strEntryA,
-				strDefaultA,
-				pszBuffer,
-				dwCapacity,
-				strFileNameA);
-		});
-	return OptUtf8ToStr(strUTF8);
-}
-
 void CIni::Write(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue)
 {
 	if (Ini2Helpers::RequiresFileBackedProfileIo(lpszFileName)) {
@@ -666,17 +634,8 @@ void CIni::Write(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, L
 		return;
 	}
 
+	(void)Ini2Helpers::NormalizeProfileFileToUtf16Le(lpszFileName);
 	WritePrivateProfileString(lpszSection, lpszEntry, lpszValue, lpszFileName);
-}
-
-void CIni::WriteUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue)
-{
-	if (Ini2Helpers::RequiresFileBackedProfileUtf8Io(lpszFileName)) {
-		(void)Ini2Helpers::WriteProfileUtf8StringLongPath(lpszSection, lpszEntry, lpszValue, lpszFileName);
-		return;
-	}
-
-	WritePrivateProfileStringA((CStringA)lpszSection, CStringA(lpszEntry), StrToUtf8(CString(lpszValue != NULL ? lpszValue : _T(""))), CStringA(lpszFileName));
 }
 
 void CIni::Delete(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry)
@@ -686,6 +645,7 @@ void CIni::Delete(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry)
 		return;
 	}
 
+	(void)Ini2Helpers::NormalizeProfileFileToUtf16Le(lpszFileName);
 	WritePrivateProfileString(lpszSection, lpszEntry, NULL, lpszFileName);
 }
 

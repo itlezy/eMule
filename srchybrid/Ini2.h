@@ -39,6 +39,10 @@ public:
 	static void AddModulePath(CString &rstrFileName, bool bModulPath = true);
 	static CString GetDefaultSection()					{ return AfxGetAppName(); }
 	static CString GetDefaultIniFile(bool bModulPath = true);
+	/**
+	 * @brief Ensures an INI profile file is stored as UTF-16LE with BOM for native Unicode profile APIs.
+	 */
+	static bool NormalizeUnicodeProfileFile(LPCTSTR lpszFileName);
 
 	CIni();
 	explicit CIni(const CIni &Ini);
@@ -52,7 +56,6 @@ public:
 	const CString& GetFileName() const					{ return m_strFileName; }
 	const CString& GetSection() const					{ return m_strSection;}
 
-	CString	GetStringUTF8(LPCTSTR lpszEntry,LPCTSTR		lpszDefault = NULL,		LPCTSTR lpszSection = NULL);
 	CString	GetStringLong(LPCTSTR lpszEntry,LPCTSTR		lpszDefault = NULL,		LPCTSTR lpszSection = NULL);
 	double	GetDouble(LPCTSTR lpszEntry,	double		fDefault = 0.0,			LPCTSTR lpszSection = NULL);
 	CString	GetString(LPCTSTR lpszEntry,	LPCTSTR		lpszDefault = NULL,		LPCTSTR lpszSection = NULL);
@@ -67,7 +70,6 @@ public:
 	bool	GetBinary(LPCTSTR lpszEntry,	BYTE		**ppData, UINT *pBytes, LPCTSTR pszSection = NULL);
 
 	void	WriteString(LPCTSTR lpszEntry,	  LPCTSTR		lpsz,				LPCTSTR lpszSection = NULL);
-	void	WriteStringUTF8(LPCTSTR lpszEntry,LPCTSTR		lpsz,				LPCTSTR lpszSection = NULL);
 	void	WriteDouble(LPCTSTR lpszEntry,	  double		f,					LPCTSTR lpszSection = NULL);
 	void	WriteFloat(LPCTSTR lpszEntry,	  float			f,					LPCTSTR lpszSection = NULL);
 	void	WriteInt(LPCTSTR lpszEntry,		  int			n,					LPCTSTR lpszSection = NULL);
@@ -115,9 +117,7 @@ public:
 
 private:
 	static CString	Read(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault);
-	static CString	ReadUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszDefault);
 	static void		Write(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue);
-	static void		WriteUtf8(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry, LPCTSTR lpszValue);
 	static void		Delete(LPCTSTR lpszFileName, LPCTSTR lpszSection, LPCTSTR lpszEntry);
 
 	//true: Filenames without path take the Modulepath
